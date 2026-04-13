@@ -15,6 +15,11 @@ import ReportsPage from "./pages/panel/ReportsPage.tsx";
 import TeamPage from "./pages/panel/TeamPage.tsx";
 import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
+import AdminLayout from "./components/admin/AdminLayout.tsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import TenantsPage from "./pages/admin/TenantsPage.tsx";
+import BillingPage from "./pages/admin/BillingPage.tsx";
+import MonitoringPage from "./pages/admin/MonitoringPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -39,6 +44,14 @@ const App = () => (
             <Route path="totem" element={<TotemConfigPage />} />
             <Route path="printers" element={<PlaceholderPage title="Impressoras" />} />
             <Route path="settings" element={<PlaceholderPage title="Configurações" />} />
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="tenants" element={<TenantsPage />} />
+            <Route path="billing" element={<BillingPage />} />
+            <Route path="monitoring" element={<MonitoringPage />} />
+            <Route path="users" element={<PlaceholderPage title="Usuários do Sistema" />} />
+            <Route path="settings" element={<PlaceholderPage title="Configurações Globais" />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
