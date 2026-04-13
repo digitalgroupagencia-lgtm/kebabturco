@@ -700,6 +700,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_hourly_sales: {
+        Args: { _since: string; _store_id: string }
+        Returns: {
+          hour: number
+          order_count: number
+          revenue: number
+        }[]
+      }
+      get_sales_summary: {
+        Args: { _since: string; _store_id: string }
+        Returns: {
+          avg_ticket: number
+          total_cancelled: number
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_top_products: {
+        Args: { _limit?: number; _since: string; _store_id: string }
+        Returns: {
+          product_id: string
+          product_name: string
+          total_qty: number
+          total_revenue: number
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
