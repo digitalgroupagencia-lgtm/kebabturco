@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2 } from "lucide-react";
+import { Plus, Pencil, Store, Loader2, Building2 } from "lucide-react";
 
 interface TenantForm {
   name: string;
