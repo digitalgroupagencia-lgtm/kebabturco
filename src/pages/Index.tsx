@@ -3,11 +3,9 @@ import { CartProvider } from "@/contexts/CartContext";
 import { OrderProvider, useOrder } from "@/contexts/OrderContext";
 import CartBar from "@/components/CartBar";
 import SplashScreen from "@/components/screens/SplashScreen";
-import LanguageScreen from "@/components/screens/LanguageScreen";
 import OrderTypeScreen from "@/components/screens/OrderTypeScreen";
 import HomeScreen from "@/components/screens/HomeScreen";
 import ProductScreen from "@/components/screens/ProductScreen";
-import UpsellScreen from "@/components/screens/UpsellScreen";
 import ReviewScreen from "@/components/screens/ReviewScreen";
 import PaymentScreen from "@/components/screens/PaymentScreen";
 import ConfirmationScreen from "@/components/screens/ConfirmationScreen";
@@ -17,11 +15,9 @@ const ScreenRouter = () => {
 
   switch (screen) {
     case "splash": return <SplashScreen />;
-    case "language": return <LanguageScreen />;
     case "orderType": return <OrderTypeScreen />;
     case "home": return <HomeScreen />;
     case "product": return <ProductScreen />;
-    case "upsell": return <UpsellScreen />;
     case "review": return <ReviewScreen />;
     case "payment": return <PaymentScreen />;
     case "confirmation": return <ConfirmationScreen />;
@@ -33,7 +29,7 @@ const Index = () => (
   <LanguageProvider>
     <CartProvider>
       <OrderProvider>
-        <div className="max-w-md mx-auto min-h-screen bg-background relative overflow-hidden shadow-elevated">
+        <div className="max-w-md mx-auto min-h-[100dvh] bg-background relative overflow-hidden shadow-lg">
           <ScreenRouter />
           <CartBar />
         </div>

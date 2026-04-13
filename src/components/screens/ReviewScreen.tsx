@@ -2,38 +2,51 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, ShoppingCart } from "lucide-react";
 
 const ReviewScreen = () => {
   const { setScreen } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice } = useCart();
-  const { t, tProduct } = useLanguage();
+  const { tProduct } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-secondary animate-fade-in pb-28">
+    <div className="min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[140px]">
       <div className="bg-primary text-primary-foreground px-4 py-4 flex items-center gap-3">
         <button onClick={() => setScreen("home")} className="active:scale-90 transition-transform">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-xl font-black">{t("orderReview")}</h1>
+        <h1 className="text-lg font-black">Revisão do pedido</h1>
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-3">
         {items.map(item => (
-          <div key={item.id} className="bg-card rounded-2xl shadow-card p-4 border border-border">
+          <div key={item.id} className="bg-card rounded-2xl shadow-sm p-4 border border-border">
             <div className="flex gap-3">
-              <img src={item.product.image} alt={tProduct(item.product.name)} className="w-20 h-20 object-contain" />
-              <div className="flex-1">
-                <h3 className="font-bold text-foreground">{tProduct(item.product.name)}</h3>
-                {item.selectedSize && (
-                  <p className="text-xs text-muted-foreground">{tProduct(item.selectedSize.name)}</p>
+              {item.productImage ? (
+                <img src={item.productImage} alt={tProduct(item.productName)} className="w-16 h-16 object-contain rounded-xl" />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <span className="text-xl font-bold text-muted-foreground">
+                    {tProduct(item.productName).charAt(0)}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-foreground text-sm">{tProduct(item.productName)}</h3>
+                {item.sizeName && (
+                  <p className="text-xs text-muted-foreground">{tProduct(item.sizeName)}</p>
                 )}
-                {item.selectedExtras.map(e => (
-                  <p key={e.extra.id} className="text-xs text-muted-foreground">
-                    +{e.quantity}x {tProduct(e.extra.name)}
+                {item.extras.map(e => (
+                  <p key={e.id} className="text-xs text-muted-foreground">
+                    +{e.quantity}x {tProduct(e.name)}
                   </p>
                 ))}
-                <p className="text-lg font-black text-primary mt-1">€{item.totalPrice.toFixed(2)}</p>
+                {item.removedIngredients.length > 0 && (
+                  <p className="text-xs text-destructive">
+                    Sem: {item.removedIngredients.join(", ")}
+                  </p>
+                )}
+                <p className="text-base font-black text-primary mt-1">R$ {item.totalPrice.toFixed(2)}</p>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -41,7 +54,7 @@ const ReviewScreen = () => {
                 onClick={() => removeItem(item.id)}
                 className="flex items-center gap-1 text-destructive text-sm font-bold active:opacity-70"
               >
-                <Trash2 className="w-4 h-4" /> {t("remove")}
+                <Trash2 className="w-4 h-4" /> Remover
               </button>
               <QuantitySelector
                 value={item.quantity}
@@ -53,24 +66,27 @@ const ReviewScreen = () => {
         ))}
 
         {items.length === 0 && (
-          <div className="text-center text-muted-foreground py-12 text-lg">
-            🛒 {t("cart")} vazio
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <ShoppingCart className="w-12 h-12 mb-3 opacity-40" />
+            <span className="text-base">Carrinho vazio</span>
           </div>
         )}
       </div>
 
       {items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-lg font-bold text-foreground">{t("total")}</span>
-            <span className="text-2xl font-black text-primary">€{totalPrice.toFixed(2)}</span>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border p-4">
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-base font-bold text-foreground">Total</span>
+              <span className="text-xl font-black text-primary">R$ {totalPrice.toFixed(2)}</span>
+            </div>
+            <button
+              onClick={() => setScreen("payment")}
+              className="w-full py-4 bg-success text-success-foreground rounded-2xl text-base font-black active:scale-[0.97] transition-transform touch-action-manipulation"
+            >
+              Ir para pagamento
+            </button>
           </div>
-          <button
-            onClick={() => setScreen("payment")}
-            className="w-full py-4 bg-success text-success-foreground rounded-2xl text-lg font-black active:scale-95 transition-transform touch-action-manipulation"
-          >
-            {t("goToPayment")}
-          </button>
         </div>
       )}
     </div>

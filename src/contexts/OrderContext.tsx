@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 
-type Screen = "splash" | "language" | "orderType" | "home" | "product" | "upsell" | "review" | "payment" | "confirmation";
+type Screen = "splash" | "language" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
 
 interface OrderContextType {
   screen: Screen;
@@ -11,9 +11,13 @@ interface OrderContextType {
   setSelectedCategory: (id: string | null) => void;
   orderNumber: string;
   generateOrderNumber: () => void;
+  storeId: string;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
+
+// Default store for demo
+const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [screen, setScreen] = useState<Screen>("splash");
@@ -26,7 +30,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <OrderContext.Provider value={{ screen, setScreen, selectedProductId, setSelectedProductId, selectedCategory, setSelectedCategory, orderNumber, generateOrderNumber }}>
+    <OrderContext.Provider value={{
+      screen, setScreen,
+      selectedProductId, setSelectedProductId,
+      selectedCategory, setSelectedCategory,
+      orderNumber, generateOrderNumber,
+      storeId: DEFAULT_STORE_ID,
+    }}>
       {children}
     </OrderContext.Provider>
   );
