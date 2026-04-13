@@ -1,76 +1,102 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { products, categories } from "@/data/products";
-import { Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Loader2 } from "lucide-react";
+
+interface DBCategory {
+  id: string;
+  name: Record<string, string>;
+  image_url: string | null;
+  sort_order: number | null;
+}
+
+interface DBProduct {
+  id: string;
+  name: Record<string, string>;
+  description: Record<string, string> | null;
+  price: number;
+  image_url: string | null;
+  category_id: string;
+  is_bestseller: boolean | null;
+  is_promo: boolean | null;
+}
 
 const HomeScreen = () => {
-  const { setScreen, setSelectedProductId } = useOrder();
-  const { t, tProduct } = useLanguage();
+  const { setScreen, setSelectedProductId, storeId } = useOrder();
+  const { tProduct } = useLanguage();
   const { totalItems } = useCart();
-  const [activeCategory, setActiveCategory] = useState<string>("bestsellers");
+  const [categories, setCategories] = useState<DBCategory[]>([]);
+  const [products, setProducts] = useState<DBProduct[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
-  const filteredProducts =
-    activeCategory === "bestsellers"
-      ? products.filter((p) => p.isBestseller)
-      : products.filter((p) => p.category === activeCategory);
+  useEffect(() => {
+    const load = async () => {
+      const [catRes, prodRes] = await Promise.all([
+        supabase.from("categories").select("id, name, image_url, sort_order").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
+        supabase.from("products").select("id, name, description, price, image_url, category_id, is_bestseller, is_promo").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
+      ]);
+      const cats = (catRes.data || []) as unknown as DBCategory[];
+      const prods = (prodRes.data || []) as unknown as DBProduct[];
+      setCategories(cats);
+      setProducts(prods);
+      if (cats.length > 0) setActiveCategory(cats[0].id);
+      setLoading(false);
+    };
+    load();
+  }, [storeId]);
 
-  const activeCategoryName =
-    activeCategory === "bestsellers"
-      ? t("bestsellers")
-      : tProduct(categories.find((c) => c.id === activeCategory)?.name || { pt: "" });
+  const filteredProducts = products.filter((p) => p.category_id === activeCategory);
 
   const openProduct = (id: string) => {
     setSelectedProductId(id);
     setScreen("product");
   };
 
-  const allCategories = [
-    {
-      id: "bestsellers",
-      name: { pt: "Mais vendidos", en: "Bestsellers", es: "Más vendidos", fr: "Meilleures ventes" },
-      image: products.find((p) => p.isBestseller)?.image || "",
-    },
-    ...categories,
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className={`h-screen flex flex-col bg-background ${totalItems > 0 ? "pb-[60px]" : ""}`}>
-      {/* Top header */}
-      <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between shrink-0">
-        <h1 className="text-lg font-black tracking-wide">{t("menu")}</h1>
+    <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[64px]" : ""}`}>
+      {/* Header */}
+      <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center shrink-0">
+        <h1 className="text-lg font-black tracking-wide">Cardápio</h1>
       </div>
 
-      {/* Main kiosk layout: sidebar + content */}
+      {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT SIDEBAR — fixed 28% width */}
-        <aside className="w-[28%] min-w-[90px] bg-secondary border-r border-border overflow-y-auto shrink-0 no-scrollbar">
-          <div className="flex flex-col gap-1 p-1.5">
-            {allCategories.map((cat) => {
+        {/* Category sidebar */}
+        <aside className="w-[82px] bg-secondary/50 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
+          <div className="flex flex-col gap-0.5 p-1">
+            {categories.map((cat) => {
               const isActive = activeCategory === cat.id;
+              const nameStr = tProduct(cat.name as Record<string, string>);
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all touch-action-manipulation min-h-[70px] justify-center ${
+                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all touch-action-manipulation min-h-[72px] justify-center ${
                     isActive
-                      ? "bg-card shadow-card border-2 border-primary scale-[1.02]"
-                      : "bg-transparent border-2 border-transparent active:scale-95"
+                      ? "bg-card shadow-sm border-l-[3px] border-l-primary"
+                      : "border-l-[3px] border-l-transparent active:scale-95"
                   }`}
                 >
-                  <img
-                    src={cat.image}
-                    alt={tProduct(cat.name)}
-                    className="w-12 h-12 object-contain"
-                    loading="lazy"
-                  />
-                  <span
-                    className={`text-[10px] font-bold text-center leading-tight ${
-                      isActive ? "text-primary" : "text-foreground"
-                    }`}
-                  >
-                    {tProduct(cat.name)}
+                  {cat.image_url ? (
+                    <img src={cat.image_url} alt={nameStr} className="w-10 h-10 object-contain rounded-lg" loading="lazy" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                      <span className="text-xs font-bold text-muted-foreground">{nameStr.charAt(0)}</span>
+                    </div>
+                  )}
+                  <span className={`text-[10px] font-bold text-center leading-tight line-clamp-2 ${isActive ? "text-primary" : "text-foreground"}`}>
+                    {nameStr}
                   </span>
                 </button>
               );
@@ -78,50 +104,56 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        {/* RIGHT CONTENT — fills remaining space */}
+        {/* Products */}
         <main className="flex-1 overflow-y-auto bg-background no-scrollbar">
-          {/* Category title */}
-          <div className="px-3 pt-4 pb-2">
-            <h2 className="text-xl font-black text-foreground">{activeCategoryName}</h2>
+          <div className="px-3 pt-3 pb-2">
+            <h2 className="text-lg font-black text-foreground">
+              {activeCategory && categories.find(c => c.id === activeCategory)
+                ? tProduct(categories.find(c => c.id === activeCategory)!.name as Record<string, string>)
+                : ""}
+            </h2>
           </div>
 
-          {/* Products grid */}
           <div className="px-3 pb-6 grid grid-cols-2 gap-2.5">
-            {filteredProducts.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => openProduct(p.id)}
-                className="relative flex flex-col bg-card rounded-2xl shadow-card border border-border overflow-hidden active:scale-[0.97] transition-transform touch-action-manipulation"
-              >
-                {p.isPromo && (
-                  <span className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full z-10">
-                    PROMO
-                  </span>
-                )}
-                <div className="flex items-center justify-center bg-secondary p-3">
-                  <img
-                    src={p.image}
-                    alt={tProduct(p.name)}
-                    className="w-20 h-20 object-contain"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-2.5 flex flex-col gap-1 flex-1">
-                  <span className="text-xs font-bold text-foreground text-center leading-tight line-clamp-2">
-                    {tProduct(p.name)}
-                  </span>
-                  <span className="text-sm font-black text-primary text-center">
-                    €{p.price.toFixed(2)}
-                  </span>
-                </div>
-                <div className="px-2.5 pb-2.5">
-                  <div className="w-full flex items-center justify-center gap-1 bg-success text-success-foreground rounded-xl py-2 text-xs font-bold">
-                    <Plus className="w-3.5 h-3.5" />
-                    {t("addToOrder")}
+            {filteredProducts.map((p) => {
+              const nameStr = tProduct(p.name as Record<string, string>);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => openProduct(p.id)}
+                  className="relative flex flex-col bg-card rounded-2xl shadow-sm border border-border overflow-hidden active:scale-[0.97] transition-transform touch-action-manipulation"
+                >
+                  {p.is_promo && (
+                    <span className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[9px] font-bold px-2 py-0.5 rounded-full z-10">
+                      PROMO
+                    </span>
+                  )}
+                  <div className="flex items-center justify-center bg-secondary/50 p-3 aspect-square">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={nameStr} className="w-full h-full object-contain" loading="lazy" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
+                        <span className="text-2xl font-bold text-muted-foreground">{nameStr.charAt(0)}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </button>
-            ))}
+                  <div className="p-2.5 flex flex-col gap-1 flex-1">
+                    <span className="text-xs font-bold text-foreground text-center leading-tight line-clamp-2">
+                      {nameStr}
+                    </span>
+                    <span className="text-sm font-black text-primary text-center">
+                      R$ {Number(p.price).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="px-2 pb-2">
+                    <div className="w-full flex items-center justify-center gap-1 bg-success text-success-foreground rounded-xl py-2 text-xs font-bold">
+                      <Plus className="w-3.5 h-3.5" />
+                      Adicionar
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {filteredProducts.length === 0 && (
