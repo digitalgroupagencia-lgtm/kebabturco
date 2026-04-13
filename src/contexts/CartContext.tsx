@@ -1,12 +1,29 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { Product, Extra, Size } from "@/data/products";
+
+export interface CartItemExtra {
+  id: string;
+  name: Record<string, string>;
+  price: number;
+  quantity: number;
+}
+
+export interface CartItemIngredient {
+  name: string;
+  included: boolean;
+}
 
 export interface CartItem {
   id: string;
-  product: Product;
+  productId: string;
+  productName: Record<string, string>;
+  productImage: string | null;
+  basePrice: number;
   quantity: number;
-  selectedSize?: Size;
-  selectedExtras: { extra: Extra; quantity: number }[];
+  sizeName: Record<string, string> | null;
+  sizeAdd: number;
+  extras: CartItemExtra[];
+  removedIngredients: string[];
+  unitPrice: number;
   totalPrice: number;
 }
 
@@ -49,7 +66,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => prev.map(i => i.id === id ? {
       ...i,
       quantity: qty,
-      totalPrice: (i.totalPrice / i.quantity) * qty
+      totalPrice: i.unitPrice * qty
     } : i));
   };
 
