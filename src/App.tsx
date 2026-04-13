@@ -8,6 +8,8 @@ import Auth from "./pages/Auth.tsx";
 import PanelLayout from "./components/panel/PanelLayout.tsx";
 import Dashboard from "./pages/panel/Dashboard.tsx";
 import MenuPage from "./pages/panel/MenuPage.tsx";
+import OrdersPage from "./pages/panel/OrdersPage.tsx";
+import CashierPage from "./pages/panel/CashierPage.tsx";
 import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -26,9 +28,9 @@ const App = () => (
           <Route path="/panel" element={<PanelLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="menu" element={<MenuPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="cashier" element={<CashierPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
-            <Route path="orders" element={<PlaceholderPage title="Pedidos" />} />
-            <Route path="cashier" element={<PlaceholderPage title="Caixa" />} />
             <Route path="stock" element={<PlaceholderPage title="Estoque" />} />
             <Route path="reports" element={<PlaceholderPage title="Relatórios" />} />
             <Route path="printers" element={<PlaceholderPage title="Impressoras" />} />
