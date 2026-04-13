@@ -15,14 +15,12 @@ interface OrderContextType {
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
-
-// Default store for demo
 const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [screen, setScreen] = useState<Screen>("splash");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState("");
 
   const generateOrderNumber = () => {
@@ -30,13 +28,19 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <OrderContext.Provider value={{
-      screen, setScreen,
-      selectedProductId, setSelectedProductId,
-      selectedCategory, setSelectedCategory,
-      orderNumber, generateOrderNumber,
-      storeId: DEFAULT_STORE_ID,
-    }}>
+    <OrderContext.Provider
+      value={{
+        screen,
+        setScreen,
+        selectedProductId,
+        setSelectedProductId,
+        selectedCategory,
+        setSelectedCategory,
+        orderNumber,
+        generateOrderNumber,
+        storeId: DEFAULT_STORE_ID,
+      }}
+    >
       {children}
     </OrderContext.Provider>
   );
