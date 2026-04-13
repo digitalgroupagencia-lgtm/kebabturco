@@ -10,6 +10,9 @@ import Dashboard from "./pages/panel/Dashboard.tsx";
 import MenuPage from "./pages/panel/MenuPage.tsx";
 import OrdersPage from "./pages/panel/OrdersPage.tsx";
 import CashierPage from "./pages/panel/CashierPage.tsx";
+import StockPage from "./pages/panel/StockPage.tsx";
+import ReportsPage from "./pages/panel/ReportsPage.tsx";
+import TeamPage from "./pages/panel/TeamPage.tsx";
 import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -30,11 +33,11 @@ const App = () => (
             <Route path="menu" element={<MenuPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="cashier" element={<CashierPage />} />
+            <Route path="stock" element={<StockPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="team" element={<TeamPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
-            <Route path="stock" element={<PlaceholderPage title="Estoque" />} />
-            <Route path="reports" element={<PlaceholderPage title="Relatórios" />} />
             <Route path="printers" element={<PlaceholderPage title="Impressoras" />} />
-            <Route path="team" element={<PlaceholderPage title="Equipe" />} />
             <Route path="settings" element={<PlaceholderPage title="Configurações" />} />
           </Route>
           <Route path="*" element={<NotFound />} />
