@@ -6,6 +6,11 @@ import drink from "@/assets/drink.png";
 import dessert from "@/assets/dessert.png";
 import combo from "@/assets/combo.png";
 import veggie from "@/assets/veggie.png";
+import cocaCola from "@/assets/coca-cola.png";
+import sprite from "@/assets/sprite.png";
+import fanta from "@/assets/fanta.png";
+import water from "@/assets/water.png";
+import juice from "@/assets/juice.png";
 
 export interface Product {
   id: string;
@@ -59,6 +64,11 @@ const defaultExtras: Extra[] = [
 const defaultSizes: Size[] = [
   { id: "normal", name: { pt: "Normal", en: "Regular", es: "Normal", fr: "Normal" }, priceAdd: 0 },
   { id: "large", name: { pt: "Grande", en: "Large", es: "Grande", fr: "Grand" }, priceAdd: 3.00 },
+];
+
+const drinkSizes: Size[] = [
+  { id: "normal", name: { pt: "Normal", en: "Regular", es: "Normal", fr: "Normal" }, priceAdd: 0 },
+  { id: "large", name: { pt: "Grande", en: "Large", es: "Grande", fr: "Grand" }, priceAdd: 1.50 },
 ];
 
 export const products: Product[] = [
@@ -121,19 +131,59 @@ export const products: Product[] = [
       { id: "large", name: { pt: "Grande", en: "Large", es: "Grande", fr: "Grande" }, priceAdd: 2.00 },
     ],
   },
+  // === BEBIDAS ===
   {
-    id: "cola",
-    name: { pt: "Refrigerante", en: "Soft Drink", es: "Refresco", fr: "Boisson" },
-    description: { pt: "Refrigerante gelado com gelo", en: "Cold soft drink with ice", es: "Refresco frío con hielo", fr: "Boisson fraîche avec glace" },
-    price: 4.90,
-    image: drink,
+    id: "coca-cola",
+    name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" },
+    description: { pt: "Coca-Cola gelada", en: "Ice cold Coca-Cola", es: "Coca-Cola bien fría", fr: "Coca-Cola bien frais" },
+    price: 5.90,
+    image: cocaCola,
+    category: "drinks",
+    isBestseller: true,
+    extras: [],
+    sizes: drinkSizes,
+  },
+  {
+    id: "sprite",
+    name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" },
+    description: { pt: "Sprite gelada com limão", en: "Ice cold Sprite with lemon", es: "Sprite bien fría con limón", fr: "Sprite bien frais au citron" },
+    price: 5.90,
+    image: sprite,
     category: "drinks",
     extras: [],
-    sizes: [
-      { id: "normal", name: { pt: "Normal", en: "Regular", es: "Normal", fr: "Normal" }, priceAdd: 0 },
-      { id: "large", name: { pt: "Grande", en: "Large", es: "Grande", fr: "Grand" }, priceAdd: 1.50 },
-    ],
+    sizes: drinkSizes,
   },
+  {
+    id: "fanta",
+    name: { pt: "Fanta Laranja", en: "Fanta Orange", es: "Fanta Naranja", fr: "Fanta Orange" },
+    description: { pt: "Fanta Laranja gelada", en: "Ice cold Fanta Orange", es: "Fanta Naranja bien fría", fr: "Fanta Orange bien frais" },
+    price: 5.90,
+    image: fanta,
+    category: "drinks",
+    extras: [],
+    sizes: drinkSizes,
+  },
+  {
+    id: "water",
+    name: { pt: "Água Mineral", en: "Mineral Water", es: "Agua Mineral", fr: "Eau Minérale" },
+    description: { pt: "Água mineral sem gás 500ml", en: "Still mineral water 500ml", es: "Agua mineral sin gas 500ml", fr: "Eau minérale plate 500ml" },
+    price: 3.50,
+    image: water,
+    category: "drinks",
+    extras: [],
+    sizes: [],
+  },
+  {
+    id: "orange-juice",
+    name: { pt: "Suco de Laranja", en: "Orange Juice", es: "Zumo de Naranja", fr: "Jus d'Orange" },
+    description: { pt: "Suco de laranja natural", en: "Fresh squeezed orange juice", es: "Zumo de naranja natural", fr: "Jus d'orange pressé" },
+    price: 7.90,
+    image: juice,
+    category: "drinks",
+    extras: [],
+    sizes: drinkSizes,
+  },
+  // === SOBREMESAS ===
   {
     id: "sundae",
     name: { pt: "Sundae Chocolate", en: "Chocolate Sundae", es: "Sundae de Chocolate", fr: "Sundae Chocolat" },
@@ -144,6 +194,7 @@ export const products: Product[] = [
     extras: [],
     sizes: defaultSizes,
   },
+  // === VEGETARIANO ===
   {
     id: "veggie-burger",
     name: { pt: "Veggie Burger", en: "Veggie Burger", es: "Hamburguesa Vegetal", fr: "Burger Végétarien" },
@@ -161,6 +212,6 @@ export const products: Product[] = [
 
 export const upsellProducts = [
   products.find(p => p.id === "fries-medium")!,
-  products.find(p => p.id === "cola")!,
+  products.find(p => p.id === "coca-cola")!,
   products.find(p => p.id === "sundae")!,
 ];
