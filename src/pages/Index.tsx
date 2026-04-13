@@ -36,6 +36,7 @@ const ScreenRouter = () => {
   }
 };
 
+// Kiosk Self-Service App
 const Index = () => (
   <LanguageProvider>
     <CartProvider>
