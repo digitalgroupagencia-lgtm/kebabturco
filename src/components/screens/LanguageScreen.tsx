@@ -1,12 +1,16 @@
 import { Languages } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import flagBr from "@/assets/flag-br.png";
+import flagUs from "@/assets/flag-us.png";
+import flagEs from "@/assets/flag-es.png";
+import flagFr from "@/assets/flag-fr.png";
 
 const languages = [
-  { code: "pt" as const, label: "Português", short: "PT" },
-  { code: "en" as const, label: "English", short: "EN" },
-  { code: "es" as const, label: "Español", short: "ES" },
-  { code: "fr" as const, label: "Français", short: "FR" },
+  { code: "pt" as const, label: "Português", short: "PT", flag: flagBr },
+  { code: "en" as const, label: "English", short: "EN", flag: flagUs },
+  { code: "es" as const, label: "Español", short: "ES", flag: flagEs },
+  { code: "fr" as const, label: "Français", short: "FR", flag: flagFr },
 ];
 
 const LanguageScreen = () => {
@@ -33,9 +37,13 @@ const LanguageScreen = () => {
             onClick={() => handleSelect(language.code)}
             className="bg-card border border-border rounded-2xl p-5 shadow-sm active:scale-[0.97] transition-transform touch-action-manipulation text-left"
           >
-            <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-sm font-black text-primary mb-4">
-              {language.short}
-            </div>
+            <img
+              src={language.flag}
+              alt={language.label}
+              className="w-12 h-12 rounded-lg object-contain mb-4"
+              width={48}
+              height={48}
+            />
             <span className="block text-base font-bold text-foreground">{language.label}</span>
           </button>
         ))}
