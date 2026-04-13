@@ -1,102 +1,84 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { Plus } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Plus, Loader2 } from "lucide-react";
-
-interface DBCategory {
-  id: string;
-  name: Record<string, string>;
-  image_url: string | null;
-  sort_order: number | null;
-}
-
-interface DBProduct {
-  id: string;
-  name: Record<string, string>;
-  description: Record<string, string> | null;
-  price: number;
-  image_url: string | null;
-  category_id: string;
-  is_bestseller: boolean | null;
-  is_promo: boolean | null;
-}
+import { products, categories } from "@/data/products";
 
 const HomeScreen = () => {
-  const { setScreen, setSelectedProductId, storeId } = useOrder();
-  const { tProduct } = useLanguage();
-  const { totalItems } = useCart();
-  const [categories, setCategories] = useState<DBCategory[]>([]);
-  const [products, setProducts] = useState<DBProduct[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const { setScreen, setSelectedProductId, selectedCategory, setSelectedCategory } = useOrder();
+  const { t, tProduct } = useLanguage();
+  const { totalItems, orderType } = useCart();
 
   useEffect(() => {
-    const load = async () => {
-      const [catRes, prodRes] = await Promise.all([
-        supabase.from("categories").select("id, name, image_url, sort_order").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
-        supabase.from("products").select("id, name, description, price, image_url, category_id, is_bestseller, is_promo").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
-      ]);
-      const cats = (catRes.data || []) as unknown as DBCategory[];
-      const prods = (prodRes.data || []) as unknown as DBProduct[];
-      setCategories(cats);
-      setProducts(prods);
-      if (cats.length > 0) setActiveCategory(cats[0].id);
-      setLoading(false);
-    };
-    load();
-  }, [storeId]);
+    if (!selectedCategory) {
+      setSelectedCategory("bestsellers");
+    }
+  }, [selectedCategory, setSelectedCategory]);
 
-  const filteredProducts = products.filter((p) => p.category_id === activeCategory);
+  const allCategories = [
+    {
+      id: "bestsellers",
+      name: { pt: "Mais vendidos", en: "Bestsellers", es: "Más vendidos", fr: "Meilleures ventes" },
+      image: products.find((p) => p.isBestseller)?.image || categories[0]?.image || "",
+    },
+    ...categories,
+  ];
+
+  const activeCategory = selectedCategory || "bestsellers";
+  const filteredProducts =
+    activeCategory === "bestsellers"
+      ? products.filter((product) => product.isBestseller)
+      : products.filter((product) => product.category === activeCategory);
+
+  const activeCategoryName =
+    activeCategory === "bestsellers"
+      ? t("bestsellers")
+      : tProduct(categories.find((category) => category.id === activeCategory)?.name || { pt: "" });
 
   const openProduct = (id: string) => {
     setSelectedProductId(id);
     setScreen("product");
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[64px]" : ""}`}>
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center shrink-0">
-        <h1 className="text-lg font-black tracking-wide">Cardápio</h1>
+    <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
+      <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between shrink-0">
+        <div>
+          <h1 className="text-lg font-black tracking-wide">{t("menu")}</h1>
+          <p className="text-[11px] opacity-80 mt-0.5">
+            {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
+          </p>
+        </div>
       </div>
 
-      {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Category sidebar */}
-        <aside className="w-[82px] bg-secondary/50 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
-          <div className="flex flex-col gap-0.5 p-1">
-            {categories.map((cat) => {
-              const isActive = activeCategory === cat.id;
-              const nameStr = tProduct(cat.name as Record<string, string>);
+        <aside className="w-[104px] min-w-[104px] bg-secondary/70 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
+          <div className="flex flex-col gap-2 p-2">
+            {allCategories.map((category) => {
+              const isActive = activeCategory === category.id;
               return (
                 <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all touch-action-manipulation min-h-[72px] justify-center ${
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex flex-col items-center gap-2 p-2 rounded-2xl transition-all touch-action-manipulation min-h-[94px] justify-center border ${
                     isActive
-                      ? "bg-card shadow-sm border-l-[3px] border-l-primary"
-                      : "border-l-[3px] border-l-transparent active:scale-95"
+                      ? "bg-card border-primary shadow-sm"
+                      : "bg-transparent border-transparent active:scale-95"
                   }`}
                 >
-                  {cat.image_url ? (
-                    <img src={cat.image_url} alt={nameStr} className="w-10 h-10 object-contain rounded-lg" loading="lazy" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                      <span className="text-xs font-bold text-muted-foreground">{nameStr.charAt(0)}</span>
-                    </div>
-                  )}
-                  <span className={`text-[10px] font-bold text-center leading-tight line-clamp-2 ${isActive ? "text-primary" : "text-foreground"}`}>
-                    {nameStr}
+                  <img
+                    src={category.image}
+                    alt={tProduct(category.name)}
+                    className="w-12 h-12 object-contain"
+                    loading="lazy"
+                  />
+                  <span
+                    className={`text-[10px] font-bold text-center leading-tight line-clamp-2 ${
+                      isActive ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    {tProduct(category.name)}
                   </span>
                 </button>
               );
@@ -104,63 +86,48 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        {/* Products */}
         <main className="flex-1 overflow-y-auto bg-background no-scrollbar">
-          <div className="px-3 pt-3 pb-2">
-            <h2 className="text-lg font-black text-foreground">
-              {activeCategory && categories.find(c => c.id === activeCategory)
-                ? tProduct(categories.find(c => c.id === activeCategory)!.name as Record<string, string>)
-                : ""}
-            </h2>
+          <div className="px-4 pt-4 pb-3 sticky top-0 bg-background/95 backdrop-blur z-10">
+            <h2 className="text-xl font-black text-foreground">{activeCategoryName}</h2>
           </div>
 
-          <div className="px-3 pb-6 grid grid-cols-2 gap-2.5">
-            {filteredProducts.map((p) => {
-              const nameStr = tProduct(p.name as Record<string, string>);
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => openProduct(p.id)}
-                  className="relative flex flex-col bg-card rounded-2xl shadow-sm border border-border overflow-hidden active:scale-[0.97] transition-transform touch-action-manipulation"
-                >
-                  {p.is_promo && (
-                    <span className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[9px] font-bold px-2 py-0.5 rounded-full z-10">
-                      PROMO
-                    </span>
-                  )}
-                  <div className="flex items-center justify-center bg-secondary/50 p-3 aspect-square">
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={nameStr} className="w-full h-full object-contain" loading="lazy" />
-                    ) : (
-                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
-                        <span className="text-2xl font-bold text-muted-foreground">{nameStr.charAt(0)}</span>
-                      </div>
-                    )}
+          <div className="px-3 pb-6 grid grid-cols-2 gap-3">
+            {filteredProducts.map((product) => (
+              <button
+                key={product.id}
+                onClick={() => openProduct(product.id)}
+                className="relative flex flex-col bg-card rounded-[24px] shadow-sm border border-border overflow-hidden active:scale-[0.97] transition-transform touch-action-manipulation"
+              >
+                {product.isPromo && (
+                  <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-bold px-2 py-1 rounded-full z-10">
+                    Oferta
+                  </span>
+                )}
+                <div className="bg-secondary/60 aspect-square p-4 flex items-center justify-center">
+                  <img
+                    src={product.image}
+                    alt={tProduct(product.name)}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="p-3 flex flex-col gap-1 flex-1">
+                  <span className="text-sm font-bold text-foreground text-center leading-tight line-clamp-2 min-h-[40px]">
+                    {tProduct(product.name)}
+                  </span>
+                  <span className="text-base font-black text-primary text-center">
+                    R$ {product.price.toFixed(2)}
+                  </span>
+                </div>
+                <div className="px-3 pb-3">
+                  <div className="w-full flex items-center justify-center gap-1.5 bg-success text-success-foreground rounded-2xl py-3 text-sm font-bold">
+                    <Plus className="w-4 h-4" />
+                    {t("addToOrder")}
                   </div>
-                  <div className="p-2.5 flex flex-col gap-1 flex-1">
-                    <span className="text-xs font-bold text-foreground text-center leading-tight line-clamp-2">
-                      {nameStr}
-                    </span>
-                    <span className="text-sm font-black text-primary text-center">
-                      R$ {Number(p.price).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="px-2 pb-2">
-                    <div className="w-full flex items-center justify-center gap-1 bg-success text-success-foreground rounded-xl py-2 text-xs font-bold">
-                      <Plus className="w-3.5 h-3.5" />
-                      Adicionar
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+                </div>
+              </button>
+            ))}
           </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
-              Nenhum produto nesta categoria
-            </div>
-          )}
         </main>
       </div>
     </div>

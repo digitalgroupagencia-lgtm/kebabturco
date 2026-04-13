@@ -3,6 +3,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { OrderProvider, useOrder } from "@/contexts/OrderContext";
 import CartBar from "@/components/CartBar";
 import SplashScreen from "@/components/screens/SplashScreen";
+import LanguageScreen from "@/components/screens/LanguageScreen";
 import OrderTypeScreen from "@/components/screens/OrderTypeScreen";
 import HomeScreen from "@/components/screens/HomeScreen";
 import ProductScreen from "@/components/screens/ProductScreen";
@@ -14,14 +15,24 @@ const ScreenRouter = () => {
   const { screen } = useOrder();
 
   switch (screen) {
-    case "splash": return <SplashScreen />;
-    case "orderType": return <OrderTypeScreen />;
-    case "home": return <HomeScreen />;
-    case "product": return <ProductScreen />;
-    case "review": return <ReviewScreen />;
-    case "payment": return <PaymentScreen />;
-    case "confirmation": return <ConfirmationScreen />;
-    default: return <SplashScreen />;
+    case "splash":
+      return <SplashScreen />;
+    case "language":
+      return <LanguageScreen />;
+    case "orderType":
+      return <OrderTypeScreen />;
+    case "home":
+      return <HomeScreen />;
+    case "product":
+      return <ProductScreen />;
+    case "review":
+      return <ReviewScreen />;
+    case "payment":
+      return <PaymentScreen />;
+    case "confirmation":
+      return <ConfirmationScreen />;
+    default:
+      return <SplashScreen />;
   }
 };
 
