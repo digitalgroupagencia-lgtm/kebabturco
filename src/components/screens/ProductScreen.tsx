@@ -192,16 +192,14 @@ const ProductScreen = () => {
         </section>
 
         {(product.variants?.length || product.sizes?.length) && (
-          <section className="space-y-4 rounded-[24px] border border-border bg-card p-4 shadow-card">
+          <section className="space-y-5">
             {product.variants && product.variants.length > 0 && (
               <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Paso 1</p>
-                    <h3 className="text-xl font-black text-foreground">{t("choose")}</h3>
-                  </div>
+                <div className="mb-2.5 flex items-baseline justify-between">
+                  <h3 className="text-[17px] font-black text-foreground">{t("choose")}</h3>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Paso 1</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className={`grid gap-2 ${product.variants.length === 3 ? "grid-cols-3" : product.variants.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
                   {product.variants.map((v) => {
                     const sel = selectedVariant?.id === v.id;
                     const variantLabel = tProduct(v.name);
@@ -209,21 +207,14 @@ const ProductScreen = () => {
                       <button
                         key={v.id}
                         onClick={() => setSelectedVariant(v)}
-                        className={`relative rounded-[22px] border p-3 text-left transition-all active:scale-[0.98] flex flex-col items-center gap-2 ${
+                        className={`rounded-2xl border px-2 py-3 flex flex-col items-center gap-1.5 transition-all active:scale-[0.97] ${
                           sel
-                            ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                            : "border-border bg-secondary/30"
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card"
                         }`}
                       >
-                        {sel && (
-                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
-                            <Check className="w-3 h-3" strokeWidth={3.5} />
-                          </span>
-                        )}
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-[34px] leading-none transition-transform ${sel ? "bg-primary/10 scale-105" : "bg-background border border-border"}`}>
-                          <span aria-hidden>{emojiFor(variantLabel)}</span>
-                        </div>
-                        <span className={`text-base font-black text-center leading-tight ${sel ? "text-primary" : "text-foreground"}`}>
+                        <span className="text-[26px] leading-none" aria-hidden>{emojiFor(variantLabel)}</span>
+                        <span className={`text-[13px] font-bold text-center leading-tight ${sel ? "text-primary" : "text-foreground"}`}>
                           {variantLabel}
                         </span>
                       </button>
@@ -235,29 +226,22 @@ const ProductScreen = () => {
 
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <div className="mb-3">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Paso 2</p>
-                  <h3 className="text-xl font-black text-foreground">{t("size")}</h3>
+                <div className="mb-2.5 flex items-baseline justify-between">
+                  <h3 className="text-[17px] font-black text-foreground">{t("size")}</h3>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Paso 2</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   {product.sizes.map((size) => {
                     const selected = selectedSize?.id === size.id;
                     return (
                       <button
                         key={size.id}
                         onClick={() => setSelectedSize(size)}
-                        className={`rounded-[22px] border px-4 py-4 text-left transition-all ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-secondary/30"}`}
+                        className={`rounded-2xl border px-3 py-2.5 text-left transition-all active:scale-[0.98] ${selected ? "border-primary bg-primary/5" : "border-border bg-card"}`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className={`text-lg font-black ${selected ? "text-primary" : "text-foreground"}`}>{tProduct(size.name)}</div>
-                            <div className="text-sm text-muted-foreground mt-1 tabular-nums">
-                              {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
-                            </div>
-                          </div>
-                          <span className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
-                            {selected && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-                          </span>
+                        <div className={`text-[15px] font-black ${selected ? "text-primary" : "text-foreground"}`}>{tProduct(size.name)}</div>
+                        <div className="text-[12px] text-muted-foreground tabular-nums mt-0.5">
+                          {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
                         </div>
                       </button>
                     );
@@ -269,86 +253,88 @@ const ProductScreen = () => {
         )}
 
         {ingredientOptions.length > 0 && (
-          <section className="rounded-[24px] border border-border bg-card p-4 shadow-card">
-            <div className="mb-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Personalización</p>
-              <h3 className="text-[24px] font-black text-foreground">Personaliza tu pedido</h3>
-              <p className="text-sm text-muted-foreground mt-1">Toca para quitar un ingrediente</p>
+          <section>
+            <div className="mb-2.5 flex items-baseline justify-between">
+              <h3 className="text-[17px] font-black text-foreground">Personaliza tu pedido</h3>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Ingredientes</span>
             </div>
-            <div className="space-y-2.5">
+            <p className="text-[12px] text-muted-foreground mb-2">Toca para quitar</p>
+            <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card overflow-hidden">
               {ingredientOptions.map((ingredient) => {
                 const included = ingredients.get(ingredient) ?? true;
                 return (
-                  <button
-                    key={ingredient}
-                    onClick={() => {
-                      const next = new Map(ingredients);
-                      next.set(ingredient, !included);
-                      setIngredients(next);
-                    }}
-                    className={`relative w-full rounded-[18px] border px-3 py-2.5 flex items-center gap-3 text-left transition-all ${included ? "bg-secondary/30 border-border" : "bg-muted/40 border-border/60"}`}
-                  >
-                    <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center text-[26px] leading-none shrink-0 ${included ? "bg-background border border-border" : "bg-muted/60 grayscale opacity-60"}`}>
-                      <span aria-hidden>{emojiFor(ingredient)}</span>
-                      <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm ${included ? "bg-success text-success-foreground" : "bg-muted-foreground text-background"}`}>
-                        {included ? <Check className="w-3 h-3" strokeWidth={3.5} /> : <X className="w-3 h-3" strokeWidth={3.5} />}
+                  <li key={ingredient}>
+                    <button
+                      onClick={() => {
+                        const next = new Map(ingredients);
+                        next.set(ingredient, !included);
+                        setIngredients(next);
+                      }}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-muted/40 transition-colors"
+                    >
+                      <span className={`text-[22px] leading-none shrink-0 ${included ? "" : "grayscale opacity-40"}`} aria-hidden>{emojiFor(ingredient)}</span>
+                      <span className={`flex-1 text-[15px] font-semibold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>{ingredient}</span>
+                      <span
+                        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${included ? "bg-primary" : "bg-muted"}`}
+                        aria-hidden
+                      >
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-background shadow-sm transition-transform ${included ? "translate-x-[18px]" : "translate-x-0.5"}`} />
                       </span>
-                    </div>
-                    <span className={`flex-1 text-base font-bold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>{ingredient}</span>
-                  </button>
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </section>
         )}
 
         {availableExtras.length > 0 && (
-          <section className="rounded-[24px] border border-border bg-card p-4 shadow-card">
-            <div className="mb-4">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Extras</p>
-              <h3 className="text-[24px] font-black text-foreground">Añadir ingredientes</h3>
-              <p className="text-sm text-muted-foreground mt-1">Suplementos opcionales</p>
+          <section>
+            <div className="mb-2.5 flex items-baseline justify-between">
+              <h3 className="text-[17px] font-black text-foreground">Añadir ingredientes</h3>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Extras</span>
             </div>
-            <div className="space-y-3">
+            <p className="text-[12px] text-muted-foreground mb-2">Suplementos opcionales</p>
+            <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card overflow-hidden">
               {availableExtras.map((extra) => {
                 const qty = extras.get(extra.id) || 0;
-                const selected = qty > 0;
                 const extraLabel = tProduct(extra.name);
                 return (
-                  <div
-                    key={extra.id}
-                    className={`rounded-[20px] border px-3 py-2.5 flex items-center justify-between gap-3 ${selected ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/20"}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`relative w-14 h-14 rounded-[16px] flex items-center justify-center text-[30px] leading-none shrink-0 transition-all ${selected ? "bg-primary/10 ring-1 ring-primary/30" : "bg-background border border-border"}`}>
-                        <span aria-hidden>{emojiFor(extraLabel)}</span>
-                        {selected && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
-                            <Check className="w-3 h-3" strokeWidth={3.5} />
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-base font-black text-foreground truncate">{extraLabel}</div>
-                        <div className="text-sm font-bold text-price-muted tabular-nums">+{extra.price.toFixed(2)}€</div>
-                      </div>
+                  <li key={extra.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                    <span className="text-[22px] leading-none shrink-0" aria-hidden>{emojiFor(extraLabel)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-semibold text-foreground truncate">{extraLabel}</div>
+                      <div className="text-[12px] text-muted-foreground tabular-nums">+{extra.price.toFixed(2)}€</div>
                     </div>
-                    <QuantitySelector value={qty} onChange={(value) => toggleExtra(extra, value)} max={5} variant="compact" />
-                  </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => toggleExtra(extra, Math.max(0, qty - 1))}
+                        disabled={qty <= 0}
+                        className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-foreground disabled:opacity-30 active:scale-90 transition-transform"
+                        aria-label="Disminuir"
+                      >
+                        <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                      <span className="text-[14px] font-bold tabular-nums w-4 text-center text-foreground">{qty}</span>
+                      <button
+                        onClick={() => toggleExtra(extra, Math.min(5, qty + 1))}
+                        disabled={qty >= 5}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 ${qty > 0 ? "bg-primary text-primary-foreground" : "border border-border text-foreground"}`}
+                        aria-label="Aumentar"
+                      >
+                        <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </section>
         )}
 
-        <section className="rounded-[24px] border border-border bg-card p-4 shadow-card mb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Paso final</p>
-              <span className="text-[24px] font-black text-foreground">Cantidad</span>
-            </div>
-            <QuantitySelector value={quantity} onChange={setQuantity} min={1} variant="compact" />
-          </div>
+        <section className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 mb-2">
+          <span className="text-[15px] font-black text-foreground">Cantidad</span>
+          <QuantitySelector value={quantity} onChange={setQuantity} min={1} variant="compact" />
         </section>
       </div>
 
