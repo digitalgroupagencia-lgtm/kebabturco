@@ -89,7 +89,7 @@ const ProductScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background animate-fade-in pb-[92px]">
+    <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[110px]">
       <div className="relative">
         <button
           onClick={() => setScreen("home")}
