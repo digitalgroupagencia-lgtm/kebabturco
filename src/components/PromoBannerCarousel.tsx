@@ -25,8 +25,8 @@ const PromoBannerCarousel = () => {
   if (list.length === 0) return null;
 
   return (
-    <div className="px-3 pt-3">
-      <div className="relative aspect-[16/6] w-full rounded-3xl overflow-hidden shadow-card border border-border bg-secondary/40">
+    <div className="w-full">
+      <div className="relative aspect-[16/6] w-full rounded-[22px] overflow-hidden shadow-card border border-border/70 bg-secondary/40">
         {list.map((url, i) => (
           <img
             key={url + i}
