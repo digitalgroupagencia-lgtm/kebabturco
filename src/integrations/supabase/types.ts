@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          tenant_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_registers: {
         Row: {
           closed_at: string | null
@@ -1162,6 +1229,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      duplicate_tenant: {
+        Args: {
+          _copy_banners?: boolean
+          _copy_images?: boolean
+          _copy_products?: boolean
+          _new_name: string
+          _new_slug: string
+          _source_tenant_id: string
+        }
+        Returns: Json
+      }
       get_admin_dashboard_stats: {
         Args: never
         Returns: {

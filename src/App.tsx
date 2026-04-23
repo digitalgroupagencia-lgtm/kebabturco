@@ -28,6 +28,10 @@ import OperationsPage from "./pages/admin/OperationsPage.tsx";
 import PrinterPage from "./pages/admin/PrinterPage.tsx";
 import UsersPage from "./pages/admin/UsersPage.tsx";
 import AdminSettingsPage from "./pages/admin/SettingsPage.tsx";
+import GuidePage from "./pages/admin/GuidePage.tsx";
+import AiConversationsPage from "./pages/admin/AiConversationsPage.tsx";
+import TenantPanelLayout from "./components/admin/TenantPanelLayout.tsx";
+import TenantDuplicatePage from "./pages/admin/tenant/TenantDuplicatePage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -70,6 +74,24 @@ const App = () => (
             <Route path="printer" element={<PrinterPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="guide" element={<GuidePage />} />
+            <Route path="conversations" element={<AiConversationsPage />} />
+          </Route>
+          <Route path="/admin/tenants/:slug" element={<TenantPanelLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="menu" element={<MenuPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="cashier" element={<CashierPage />} />
+            <Route path="stock" element={<StockPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="team" element={<TeamPage />} />
+            <Route path="totem" element={<TotemConfigPage />} />
+            <Route path="branding" element={<BrandingPage />} />
+            <Route path="banners" element={<BannerPage />} />
+            <Route path="payments" element={<OperationsPage />} />
+            <Route path="printer" element={<PrinterPage />} />
+            <Route path="settings" element={<PanelSettingsPage />} />
+            <Route path="duplicate" element={<TenantDuplicatePage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
