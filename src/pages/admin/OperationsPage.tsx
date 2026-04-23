@@ -47,6 +47,7 @@ const OperationsPage = () => {
       pay_link_enabled: s.pay_link_enabled,
       msg_paid: s.msg_paid,
       msg_counter: s.msg_counter,
+      avg_prep_minutes: (s as any).avg_prep_minutes ?? 12,
     }).eq("store_id", STORE_ID);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Configuración guardada");
@@ -108,6 +109,17 @@ const OperationsPage = () => {
           <div>
             <Label>Mensaje para pagar en mostrador</Label>
             <Input value={s.msg_counter} onChange={(e) => update("msg_counter", e.target.value)} />
+          </div>
+          <div>
+            <Label>Tiempo medio de preparación (minutos)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={120}
+              value={(s as any).avg_prep_minutes ?? 12}
+              onChange={(e) => update("avg_prep_minutes" as any, Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground mt-1">Aparece en la pantalla de confirmación del totem.</p>
           </div>
         </CardContent>
       </Card>
