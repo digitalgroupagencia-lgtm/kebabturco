@@ -399,11 +399,14 @@ export type Database = {
           order_number: string
           order_type: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          seller_id: string | null
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal: number
+          table_customer_id: string | null
           table_number: string | null
+          table_session_id: string | null
           total: number
           updated_at: string
         }
@@ -416,11 +419,14 @@ export type Database = {
           order_number: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal?: number
+          table_customer_id?: string | null
           table_number?: string | null
+          table_session_id?: string | null
           total?: number
           updated_at?: string
         }
@@ -433,11 +439,14 @@ export type Database = {
           order_number?: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
           subtotal?: number
+          table_customer_id?: string | null
           table_number?: string | null
+          table_session_id?: string | null
           total?: number
           updated_at?: string
         }
@@ -447,6 +456,20 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_customer_id_fkey"
+            columns: ["table_customer_id"]
+            isOneToOne: false
+            referencedRelation: "table_session_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_session_id_fkey"
+            columns: ["table_session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1028,16 +1051,181 @@ export type Database = {
           },
         ]
       }
+      table_session_customers: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          name: string
+          payment_method: string | null
+          session_id: string
+          status: string
+          store_id: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          payment_method?: string | null
+          session_id: string
+          status?: string
+          store_id: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          payment_method?: string | null
+          session_id?: string
+          status?: string
+          store_id?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_session_customers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_session_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_sessions: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          opened_at: string
+          opened_by: string | null
+          payment_method: string | null
+          payment_mode: string | null
+          status: string
+          store_id: string
+          table_id: string | null
+          table_number: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          opened_at?: string
+          opened_by?: string | null
+          payment_method?: string | null
+          payment_mode?: string | null
+          status?: string
+          store_id: string
+          table_id?: string | null
+          table_number: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          opened_at?: string
+          opened_by?: string | null
+          payment_method?: string | null
+          payment_mode?: string | null
+          status?: string
+          store_id?: string
+          table_id?: string | null
+          table_number?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_sessions_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          id: string
+          is_active: boolean
+          number: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          number: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          number?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_subscriptions: {
         Row: {
           billing_day: number
           created_at: string
           currency: string
+          extra_seller_price: number
           id: string
           last_payment_date: string | null
           monthly_amount: number
           next_due_date: string
           notes: string | null
+          sellers_allowed: number
+          sellers_included: number
+          setup_fee: number
           status: string
           tenant_id: string
           updated_at: string
@@ -1046,11 +1234,15 @@ export type Database = {
           billing_day?: number
           created_at?: string
           currency?: string
+          extra_seller_price?: number
           id?: string
           last_payment_date?: string | null
           monthly_amount?: number
           next_due_date?: string
           notes?: string | null
+          sellers_allowed?: number
+          sellers_included?: number
+          setup_fee?: number
           status?: string
           tenant_id: string
           updated_at?: string
@@ -1059,11 +1251,15 @@ export type Database = {
           billing_day?: number
           created_at?: string
           currency?: string
+          extra_seller_price?: number
           id?: string
           last_payment_date?: string | null
           monthly_amount?: number
           next_due_date?: string
           notes?: string | null
+          sellers_allowed?: number
+          sellers_included?: number
+          setup_fee?: number
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -1229,6 +1425,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_active_sellers: { Args: { _tenant_id: string }; Returns: number }
       duplicate_tenant: {
         Args: {
           _copy_banners?: boolean
@@ -1288,6 +1485,23 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_tenant_billing: {
+        Args: { _tenant_id: string }
+        Returns: {
+          currency: string
+          extra_seller_price: number
+          extra_sellers: number
+          extra_total: number
+          monthly_base: number
+          monthly_total: number
+          next_due_date: string
+          sellers_active: number
+          sellers_allowed: number
+          sellers_included: number
+          setup_fee: number
+          status: string
+        }[]
+      }
       get_tenant_monthly_usage: {
         Args: { _tenant_id: string }
         Returns: {
@@ -1326,6 +1540,7 @@ export type Database = {
           tenant_name: string
         }[]
       }
+      get_user_store_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1334,6 +1549,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_seller: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
       reset_tenant_data: {
         Args: {
@@ -1349,8 +1565,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin_master" | "restaurant_admin" | "operator" | "kitchen"
-      order_source: "totem" | "ifood" | "counter" | "delivery"
+      app_role:
+        | "admin_master"
+        | "restaurant_admin"
+        | "operator"
+        | "kitchen"
+        | "seller"
+      order_source: "totem" | "ifood" | "counter" | "delivery" | "waiter"
       order_status:
         | "pending"
         | "preparing"
@@ -1485,8 +1706,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin_master", "restaurant_admin", "operator", "kitchen"],
-      order_source: ["totem", "ifood", "counter", "delivery"],
+      app_role: [
+        "admin_master",
+        "restaurant_admin",
+        "operator",
+        "kitchen",
+        "seller",
+      ],
+      order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
       payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
     },

@@ -38,6 +38,7 @@ const ROLE_LABEL: Record<AppRole, string> = {
   restaurant_admin: "Admin do Restaurante",
   operator: "Operador",
   kitchen: "Cozinha",
+  seller: "Vendedor",
 };
 
 const ROLE_DESC: Record<AppRole, string> = {
@@ -45,6 +46,7 @@ const ROLE_DESC: Record<AppRole, string> = {
   restaurant_admin: "Gerencia um tenant (todas as lojas)",
   operator: "Acesso ao painel de operações",
   kitchen: "Acesso à tela de cozinha",
+  seller: "Tira pedidos pelo celular (mesa/cliente)",
 };
 
 const UsersPage = () => {

@@ -17,6 +17,12 @@ import TeamPage from "./pages/panel/TeamPage.tsx";
 import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
 import PanelSettingsPage from "./pages/panel/SettingsPage.tsx";
+import SellersPage from "./pages/panel/SellersPage.tsx";
+import SellerLayout from "./components/seller/SellerLayout.tsx";
+import SellerHome from "./pages/seller/SellerHome.tsx";
+import SellerTables from "./pages/seller/SellerTables.tsx";
+import SellerMyOrders from "./pages/seller/SellerMyOrders.tsx";
+import SellerNewOrder from "./pages/seller/SellerNewOrder.tsx";
 import AdminLayout from "./components/admin/AdminLayout.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import TenantsPage from "./pages/admin/TenantsPage.tsx";
@@ -59,9 +65,16 @@ const App = () => (
             <Route path="stock" element={<StockPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="team" element={<TeamPage />} />
+            <Route path="sellers" element={<SellersPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
             <Route path="printers" element={<PlaceholderPage title="Impressoras" />} />
             <Route path="settings" element={<PanelSettingsPage />} />
+          </Route>
+          <Route path="/seller" element={<SellerLayout />}>
+            <Route index element={<SellerHome />} />
+            <Route path="tables" element={<SellerTables />} />
+            <Route path="my-orders" element={<SellerMyOrders />} />
+            <Route path="new" element={<SellerNewOrder />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />

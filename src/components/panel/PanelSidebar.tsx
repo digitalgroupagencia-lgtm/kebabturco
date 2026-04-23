@@ -10,6 +10,7 @@ import {
   LogOut,
   Monitor,
   DollarSign,
+  UserCog,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -41,6 +42,7 @@ const configItems = [
   { title: "Totem", url: "/panel/totem", icon: Monitor },
   { title: "Impressoras", url: "/panel/printers", icon: Printer },
   { title: "Equipe", url: "/panel/team", icon: Users },
+  { title: "Vendedores", url: "/panel/sellers", icon: UserCog },
   { title: "Configurações", url: "/panel/settings", icon: Settings },
 ];
 
