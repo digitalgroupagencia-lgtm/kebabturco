@@ -27,7 +27,12 @@ const SubscriptionDialog = ({ open, onOpenChange, tenantId, tenantName }: Props)
     next_due_date: format(addMonths(new Date(), 1), "yyyy-MM-dd"),
     status: "pending",
     notes: "",
+    setup_fee: "0",
+    sellers_included: "1",
+    sellers_allowed: "1",
+    extra_seller_price: "0",
   });
+  const [activeSellers, setActiveSellers] = useState(0);
   const [history, setHistory] = useState<any[]>([]);
   const [paymentAmount, setPaymentAmount] = useState("");
 
@@ -37,7 +42,8 @@ const SubscriptionDialog = ({ open, onOpenChange, tenantId, tenantName }: Props)
     Promise.all([
       supabase.from("tenant_subscriptions").select("*").eq("tenant_id", tenantId).maybeSingle(),
       supabase.from("payment_history").select("*").eq("tenant_id", tenantId).order("paid_at", { ascending: false }).limit(20),
-    ]).then(([s, h]) => {
+      supabase.rpc("count_active_sellers" as any, { _tenant_id: tenantId }),
+    ]).then(([s, h, c]: any[]) => {
       if (s.data) {
         setSub({
           monthly_amount: String(s.data.monthly_amount),
@@ -46,10 +52,19 @@ const SubscriptionDialog = ({ open, onOpenChange, tenantId, tenantName }: Props)
           next_due_date: s.data.next_due_date,
           status: s.data.status,
           notes: s.data.notes || "",
+          setup_fee: String(s.data.setup_fee ?? 0),
+          sellers_included: String(s.data.sellers_included ?? 1),
+          sellers_allowed: String(s.data.sellers_allowed ?? s.data.sellers_included ?? 1),
+          extra_seller_price: String(s.data.extra_seller_price ?? 0),
         });
-        setPaymentAmount(String(s.data.monthly_amount));
+        const incl = Number(s.data.sellers_included ?? 1);
+        const allowed = Number(s.data.sellers_allowed ?? incl);
+        const extras = Math.max(allowed - incl, 0);
+        const total = Number(s.data.monthly_amount) + extras * Number(s.data.extra_seller_price ?? 0);
+        setPaymentAmount(String(total.toFixed(2)));
       }
       setHistory(h.data || []);
+      setActiveSellers(Number(c?.data ?? 0));
       setLoading(false);
     });
   }, [open, tenantId]);
@@ -64,6 +79,10 @@ const SubscriptionDialog = ({ open, onOpenChange, tenantId, tenantName }: Props)
       next_due_date: sub.next_due_date,
       status: sub.status,
       notes: sub.notes,
+      setup_fee: Number(sub.setup_fee || 0),
+      sellers_included: Number(sub.sellers_included || 1),
+      sellers_allowed: Number(sub.sellers_allowed || 1),
+      extra_seller_price: Number(sub.extra_seller_price || 0),
     }, { onConflict: "tenant_id" });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
