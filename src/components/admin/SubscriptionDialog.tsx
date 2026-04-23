@@ -132,11 +132,53 @@ const SubscriptionDialog = ({ open, onOpenChange, tenantId, tenantName }: Props)
           <div className="flex items-center justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div>
         ) : (
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Valor mensal</Label>
-                <Input type="number" step="0.01" value={sub.monthly_amount} onChange={(e) => setSub({ ...sub, monthly_amount: e.target.value })} />
+            {/* Plano comercial — vendedores */}
+            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold">Plano comercial</h3>
+                <span className="text-xs text-muted-foreground">Vendedores ativos: <b>{activeSellers}</b></span>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Adesão (única)</Label>
+                  <Input type="number" step="0.01" value={sub.setup_fee} onChange={(e) => setSub({ ...sub, setup_fee: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Mensalidade base</Label>
+                  <Input type="number" step="0.01" value={sub.monthly_amount} onChange={(e) => setSub({ ...sub, monthly_amount: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Vendedores inclusos</Label>
+                  <Input type="number" min="0" value={sub.sellers_included} onChange={(e) => setSub({ ...sub, sellers_included: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Preço por vendedor extra</Label>
+                  <Input type="number" step="0.01" value={sub.extra_seller_price} onChange={(e) => setSub({ ...sub, extra_seller_price: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <Label>Vendedores liberados (limite total)</Label>
+                  <Input type="number" min="0" value={sub.sellers_allowed} onChange={(e) => setSub({ ...sub, sellers_allowed: e.target.value })} />
+                </div>
+              </div>
+              <div className="rounded-lg bg-card border border-border p-3 text-sm space-y-1">
+                {(() => {
+                  const incl = Number(sub.sellers_included || 0);
+                  const allowed = Number(sub.sellers_allowed || incl);
+                  const extras = Math.max(allowed - incl, 0);
+                  const extraTotal = extras * Number(sub.extra_seller_price || 0);
+                  const monthly = Number(sub.monthly_amount || 0) + extraTotal;
+                  return (
+                    <>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Mensalidade base</span><span>{fmtMoney(Number(sub.monthly_amount || 0))}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Vendedores extras ({extras} × {fmtMoney(Number(sub.extra_seller_price || 0))})</span><span>{fmtMoney(extraTotal)}</span></div>
+                      <div className="flex justify-between font-bold border-t border-border pt-1 mt-1"><span>Total mensal previsto</span><span className="text-cta">{fmtMoney(monthly)}</span></div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Moeda</Label>
                 <Select value={sub.currency} onValueChange={(v) => setSub({ ...sub, currency: v })}>
