@@ -3,6 +3,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag, User, Phone, Download } from "lucide-react";
 import { toPng } from "html-to-image";
 
@@ -14,6 +15,7 @@ const ConfirmationScreen = () => {
   } = useOrder();
   const { orderType } = useCart();
   const { settings } = useOperationsSettings();
+  const { settings: brand } = useBranding();
   const { t } = useLanguage();
 
   const isCounter = paymentMethod === "counter";
@@ -63,6 +65,13 @@ const ConfirmationScreen = () => {
   };
 
   const timeStr = savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const dateStr = savedAt.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const logoUrl = brand?.logo_main_url || brand?.logo_secondary_url || null;
+  const companyName = brand?.company_name || "";
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-background animate-fade-in flex flex-col">
@@ -72,6 +81,35 @@ const ConfirmationScreen = () => {
         className="flex-1 flex flex-col gap-2 px-3 pt-3 pb-2 min-h-0"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
       >
+        {/* Header marca: logo + nome + data/hora */}
+        <div className="flex items-center justify-between gap-3 px-1 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={companyName}
+                crossOrigin="anonymous"
+                className="h-9 w-auto object-contain"
+              />
+            ) : (
+              <div className="h-9 px-3 rounded-lg bg-primary text-primary-foreground flex items-center font-black text-sm">
+                {companyName || "BRAND"}
+              </div>
+            )}
+            {logoUrl && companyName && (
+              <span className="font-black text-foreground text-sm truncate">{companyName}</span>
+            )}
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[8px] uppercase tracking-[0.22em] text-muted-foreground font-bold leading-none">
+              {t("orderTime")}
+            </p>
+            <p className="text-[12px] font-black text-foreground tabular-nums leading-tight mt-0.5">
+              {dateStr} · {timeStr}
+            </p>
+          </div>
+        </div>
+
         {/* Header verde compacto */}
         <div className="relative rounded-[22px] bg-success text-success-foreground px-4 py-4 text-center shadow-card overflow-hidden shrink-0">
           <div className="pointer-events-none absolute -top-12 -right-8 w-36 h-36 rounded-full bg-white/15 blur-3xl" />
