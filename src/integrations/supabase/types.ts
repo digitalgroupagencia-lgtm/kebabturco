@@ -959,6 +959,14 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_tenant_monthly_usage: {
+        Args: { _tenant_id: string }
+        Returns: {
+          limit_max: number
+          pct: number
+          used: number
+        }[]
+      }
       get_top_products: {
         Args: { _limit?: number; _since: string; _store_id: string }
         Returns: {
@@ -976,6 +984,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin_master" | "restaurant_admin" | "operator" | "kitchen"

@@ -76,6 +76,23 @@
   }
 }
 
+/* Mobile-first hardening: kill horizontal scroll across the entire app */
+@layer base {
+  html, body, #root {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+  img, video, svg, canvas {
+    max-width: 100%;
+    height: auto;
+  }
+  /* Inputs/textarea/select must never overflow their container on mobile */
+  input, textarea, select {
+    max-width: 100%;
+  }
+}
+
 @layer utilities {
   .touch-action-manipulation {
     touch-action: manipulation;

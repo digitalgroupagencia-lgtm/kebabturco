@@ -56,13 +56,13 @@ const OperationsPage = () => {
   if (!s) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-4xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2"><Wallet className="h-6 w-6" /> Pagos</h2>
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Wallet className="h-5 w-5 sm:h-6 sm:w-6" /> Pagos</h2>
           <p className="text-sm text-muted-foreground mt-1">Define cómo cobrarás a tus clientes.</p>
         </div>
-        <Button onClick={save} disabled={saving}><Save className="w-4 h-4 mr-2" /> {saving ? "Guardando..." : "Guardar"}</Button>
+        <Button onClick={save} disabled={saving} className="w-full sm:w-auto"><Save className="w-4 h-4 mr-2" /> {saving ? "Guardando..." : "Guardar"}</Button>
       </div>
 
       <Card>
@@ -88,12 +88,12 @@ const OperationsPage = () => {
         <CardHeader><CardTitle className="text-lg">Métodos habilitados</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {PAY_FIELDS.map((f) => (
-            <div key={String(f.key)} className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
-              <div>
+            <div key={String(f.key)} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
+              <div className="min-w-0 flex-1">
                 <Label className="text-base">{f.label}</Label>
-                <p className="text-xs text-muted-foreground">{f.desc}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2">{f.desc}</p>
               </div>
-              <Switch checked={Boolean(s[f.key])} onCheckedChange={(v) => update(f.key, v)} />
+              <Switch checked={Boolean(s[f.key])} onCheckedChange={(v) => update(f.key, v)} className="shrink-0" />
             </div>
           ))}
         </CardContent>
