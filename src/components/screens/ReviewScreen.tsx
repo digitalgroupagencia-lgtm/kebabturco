@@ -4,15 +4,29 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Hash, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingCart, Hash, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, User, Phone } from "lucide-react";
 import { products } from "@/data/products";
 
 const ReviewScreen = () => {
-  const { setScreen, setSelectedProductId, setProductReturnScreen, tableNumber, setTableNumber } = useOrder();
+  const {
+    setScreen,
+    setSelectedProductId,
+    setProductReturnScreen,
+    tableNumber,
+    setTableNumber,
+    customerName,
+    setCustomerName,
+    customerPhone,
+    setCustomerPhone,
+  } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType } = useCart();
   const { tProduct } = useLanguage();
   const requiresTable = orderType === "here";
+  const requiresPhone = orderType === "takeaway";
+  const nameValid = customerName.trim().length >= 2;
   const tableValid = !requiresTable || tableNumber.trim().length > 0;
+  const phoneValid = !requiresPhone || customerPhone.trim().length >= 6;
+  const canCheckout = nameValid && tableValid && phoneValid;
 
   // Sugestões: bestsellers que ainda não estão no carrinho
   const suggestions = useMemo(() => {
@@ -75,6 +89,41 @@ const ReviewScreen = () => {
                   Indica tu mesa para que te llevemos el pedido.
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Nome do cliente — obrigatório sempre */}
+          <div className="px-4 py-4 border-t border-border">
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+              <User className="w-3.5 h-3.5 text-primary" />
+              Tu nombre <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value.slice(0, 40))}
+              placeholder="Ej: María"
+              className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
+            />
+          </div>
+
+          {requiresPhone && (
+            <div className="px-4 py-4 border-t border-border">
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                Teléfono <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
+                placeholder="+34 600 000 000"
+                className="w-full h-12 px-4 text-base font-bold text-foreground tabular-nums bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Te avisaremos cuando esté listo.
+              </p>
             </div>
           )}
         </div>
@@ -236,11 +285,19 @@ const ReviewScreen = () => {
             </span>
           </div>
           <button
-            onClick={() => tableValid && setScreen("payment")}
-            disabled={!tableValid}
+            onClick={() => canCheckout && setScreen("payment")}
+            disabled={!canCheckout}
             className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
-            <span>{tableValid ? "Ir al pago" : "Indica tu mesa"}</span>
+            <span>
+              {!nameValid
+                ? "Indica tu nombre"
+                : !tableValid
+                ? "Indica tu mesa"
+                : !phoneValid
+                ? "Indica tu teléfono"
+                : "Ir al pago"}
+            </span>
             <ChevronRight className="w-5 h-5" strokeWidth={3} />
           </button>
         </div>
