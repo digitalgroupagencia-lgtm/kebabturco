@@ -18,8 +18,7 @@ const BannerPage = () => {
   const [ops, setOps] = useState<Ops | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [videoUrl, setVideoUrl] = useState("");
-  const [videoAutoplay, setVideoAutoplay] = useState(true);
-  const [videoMuted, setVideoMuted] = useState(true);
+  const [videoStartMuted, setVideoStartMuted] = useState(true);
 
   const load = async () => {
     const [b, o] = await Promise.all([
@@ -68,8 +67,8 @@ const BannerPage = () => {
       store_id: STORE_ID,
       media_type: "video",
       video_url: url,
-      video_autoplay: videoAutoplay,
-      video_muted: videoMuted,
+      video_autoplay: true, // sempre autoplay (regra fixa: cliente não pode pausar)
+      video_muted: videoStartMuted,
       sort_order: banners.length,
       is_active: true,
     } as any);
@@ -166,16 +165,12 @@ const BannerPage = () => {
             </div>
             <div className="flex flex-wrap gap-4 pt-1">
               <label className="flex items-center gap-2 text-xs">
-                <Switch checked={videoAutoplay} onCheckedChange={setVideoAutoplay} />
-                Autoplay
-              </label>
-              <label className="flex items-center gap-2 text-xs">
-                <Switch checked={videoMuted} onCheckedChange={setVideoMuted} />
-                Iniciar sem áudio (recomendado p/ autoplay)
+                <Switch checked={videoStartMuted} onCheckedChange={setVideoStartMuted} />
+                Iniciar sem áudio (cliente pode ativar no totem)
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              ⚠️ Navegadores só permitem autoplay com áudio se o usuário já interagiu. Para autoplay funcionar sempre, mantenha "sem áudio" ligado — quando o cliente tocar no vídeo, o áudio liga.
+              ℹ️ O vídeo sempre toca em loop automaticamente, sem controles e sem possibilidade de pausar (apresentação publicitária). O cliente só pode ligar/desligar o áudio pelo botão do totem.
             </p>
           </div>
 

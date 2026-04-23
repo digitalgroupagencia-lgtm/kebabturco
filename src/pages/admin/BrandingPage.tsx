@@ -22,6 +22,10 @@ const BrandingPage = () => {
     banner_home_url: useRef<HTMLInputElement>(null),
     logo_language_url: useRef<HTMLInputElement>(null),
     logo_order_type_url: useRef<HTMLInputElement>(null),
+    logo_main_dark_url: useRef<HTMLInputElement>(null),
+    logo_secondary_dark_url: useRef<HTMLInputElement>(null),
+    logo_language_dark_url: useRef<HTMLInputElement>(null),
+    logo_order_type_dark_url: useRef<HTMLInputElement>(null),
   };
 
   useEffect(() => { load(); }, []);
@@ -55,6 +59,10 @@ const BrandingPage = () => {
       icon_takeaway_url: s.icon_takeaway_url,
       logo_language_url: (s as any).logo_language_url,
       logo_order_type_url: (s as any).logo_order_type_url,
+      logo_main_dark_url: (s as any).logo_main_dark_url,
+      logo_secondary_dark_url: (s as any).logo_secondary_dark_url,
+      logo_language_dark_url: (s as any).logo_language_dark_url,
+      logo_order_type_dark_url: (s as any).logo_order_type_dark_url,
       primary_color: s.primary_color,
       secondary_color: s.secondary_color,
       background_color: s.background_color,
@@ -150,7 +158,9 @@ const BrandingPage = () => {
             <CardHeader><CardTitle className="text-lg">Logos & Banner</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <ImageField label="Logo principal (splash)" field="logo_main_url" icon={ImageIcon} dimensions="512×512 px" />
+              <ImageField label="Logo principal — modo escuro" field={"logo_main_dark_url" as keyof Settings} icon={ImageIcon} dimensions="512×512 px" />
               <ImageField label="Logo horizontal (header)" field="logo_secondary_url" icon={ImageIcon} dimensions="600×160 px" />
+              <ImageField label="Logo horizontal — modo escuro" field={"logo_secondary_dark_url" as keyof Settings} icon={ImageIcon} dimensions="600×160 px" />
               <ImageField label="Banner home" field="banner_home_url" icon={ImageIcon} dimensions="1080×500 px" />
             </CardContent>
           </Card>
@@ -159,12 +169,14 @@ const BrandingPage = () => {
             <CardHeader>
               <CardTitle className="text-lg">Logos por tela (opcional)</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Se vazio, usa o logo principal. Permite ter logos diferentes na tela de idioma e na tela de tipo de pedido.
+                Se vazio, usa o logo principal. Permite ter logos diferentes na tela de idioma e na tela de tipo de pedido. Cada uma também tem variante para modo escuro.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <ImageField label="Logo na tela de idioma" field={"logo_language_url" as keyof Settings} icon={Languages} dimensions="512×512 px" />
+              <ImageField label="Logo tela idioma — modo escuro" field={"logo_language_dark_url" as keyof Settings} icon={Languages} dimensions="512×512 px" />
               <ImageField label="Logo na tela 'comer aqui / levar'" field={"logo_order_type_url" as keyof Settings} icon={ListOrdered} dimensions="512×512 px" />
+              <ImageField label="Logo tela 'comer aqui/levar' — modo escuro" field={"logo_order_type_dark_url" as keyof Settings} icon={ListOrdered} dimensions="512×512 px" />
             </CardContent>
           </Card>
 

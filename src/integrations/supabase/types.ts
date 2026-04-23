@@ -114,9 +114,13 @@ export type Database = {
           icon_takeaway_url: string | null
           id: string
           is_active: boolean
+          logo_language_dark_url: string | null
           logo_language_url: string | null
+          logo_main_dark_url: string | null
           logo_main_url: string | null
+          logo_order_type_dark_url: string | null
           logo_order_type_url: string | null
+          logo_secondary_dark_url: string | null
           logo_secondary_url: string | null
           primary_color: string
           secondary_color: string
@@ -138,9 +142,13 @@ export type Database = {
           icon_takeaway_url?: string | null
           id?: string
           is_active?: boolean
+          logo_language_dark_url?: string | null
           logo_language_url?: string | null
+          logo_main_dark_url?: string | null
           logo_main_url?: string | null
+          logo_order_type_dark_url?: string | null
           logo_order_type_url?: string | null
+          logo_secondary_dark_url?: string | null
           logo_secondary_url?: string | null
           primary_color?: string
           secondary_color?: string
@@ -162,9 +170,13 @@ export type Database = {
           icon_takeaway_url?: string | null
           id?: string
           is_active?: boolean
+          logo_language_dark_url?: string | null
           logo_language_url?: string | null
+          logo_main_dark_url?: string | null
           logo_main_url?: string | null
+          logo_order_type_dark_url?: string | null
           logo_order_type_url?: string | null
+          logo_secondary_dark_url?: string | null
           logo_secondary_url?: string | null
           primary_color?: string
           secondary_color?: string

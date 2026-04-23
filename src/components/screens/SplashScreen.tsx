@@ -3,16 +3,22 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useNavigate } from "react-router-dom";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import elreyLogo from "@/assets/elrey-logo.png";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
   const { settings } = useBranding();
   const { activeLangs, t } = useLanguage();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
 
-  const logo = settings?.logo_main_url || elreyLogo;
+  const isDark = theme === "dark";
+  const logo =
+    (isDark && (settings as any)?.logo_main_dark_url) ||
+    settings?.logo_main_url ||
+    elreyLogo;
   const brandName = settings?.company_name || "EL REY";
 
   useEffect(() => {
