@@ -23,7 +23,7 @@ const PaymentScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background animate-fade-in pb-[100px]">
+    <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[120px]">
       <div className="bg-primary text-primary-foreground px-4 py-4 flex items-center gap-3">
         <button onClick={() => setScreen("review")} className="active:scale-90 transition-transform">
           <ArrowLeft className="w-6 h-6" />
@@ -55,13 +55,16 @@ const PaymentScreen = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border p-4">
+      <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         <button
           onClick={handlePay}
           disabled={!selected}
-          className="w-full max-w-md mx-auto py-4 bg-success text-success-foreground rounded-2xl text-base font-black active:scale-[0.97] transition-transform touch-action-manipulation disabled:opacity-40"
+          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg active:scale-[0.97] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none"
         >
-          Pagar agora · R$ {totalPrice.toFixed(2)}
+          <span className="text-base font-black tracking-wide">Pagar agora</span>
+          <span className="text-base font-black bg-white/15 rounded-full px-3 py-1">
+            R$ {totalPrice.toFixed(2)}
+          </span>
         </button>
       </div>
     </div>
