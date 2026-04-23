@@ -87,12 +87,23 @@ const BannerPage = () => {
             <Switch checked={ops.banner_enabled} onCheckedChange={(v) => updateOps({ banner_enabled: v })} />
           </div>
           <div>
-            <Label>Intervalo entre imágenes (ms)</Label>
-            <Input type="number" value={ops.banner_interval_ms}
-              onChange={(e) => setOps({ ...ops, banner_interval_ms: Number(e.target.value) })}
-              onBlur={(e) => updateOps({ banner_interval_ms: Number(e.target.value) })}
-              min={1500} max={20000} step={500} />
-            <p className="text-xs text-muted-foreground mt-1">Recomendado: 4000–6000 ms</p>
+            <Label>Intervalo entre imágenes (segundos)</Label>
+            <Input
+              type="number"
+              value={Math.round((ops.banner_interval_ms ?? 5000) / 1000)}
+              onChange={(e) =>
+                setOps({ ...ops, banner_interval_ms: Math.max(1, Number(e.target.value)) * 1000 })
+              }
+              onBlur={(e) =>
+                updateOps({ banner_interval_ms: Math.max(1, Number(e.target.value)) * 1000 })
+              }
+              min={1}
+              max={20}
+              step={1}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Escribe solo el número de segundos (ej: 3 = cambia cada 3 segundos). Recomendado: 4–6.
+            </p>
           </div>
         </CardContent>
       </Card>
