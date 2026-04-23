@@ -68,7 +68,7 @@ const ReviewScreen = () => {
                     Sem: {item.removedIngredients.join(", ")}
                   </p>
                 )}
-                <p className="text-base font-black text-primary mt-1">{item.totalPrice.toFixed(2)}€</p>
+                <p className="text-base font-black text-price mt-1 tabular-nums">{item.totalPrice.toFixed(2)}€</p>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -98,13 +98,13 @@ const ReviewScreen = () => {
       {items.length > 0 && (
         <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-sm font-bold text-muted-foreground">Total</span>
-            <span className="text-xl font-black text-primary">{totalPrice.toFixed(2)}€</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</span>
+            <span className="text-2xl font-black text-price tabular-nums">{totalPrice.toFixed(2)}€</span>
           </div>
           <button
             onClick={() => tableValid && setScreen("payment")}
             disabled={!tableValid}
-            className="w-full flex items-center justify-center py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg text-base font-black tracking-wide active:scale-[0.97] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
+            className="w-full flex items-center justify-center py-4 px-5 bg-gradient-cta text-success-foreground rounded-2xl shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
             {tableValid ? "Ir al pago" : "Indica el número de mesa"}
           </button>

@@ -4,6 +4,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { products, categories } from "@/data/products";
+import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, selectedCategory, setSelectedCategory } = useOrder();
@@ -43,14 +44,19 @@ const HomeScreen = () => {
 
   return (
     <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
-      <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-lg font-black tracking-wide">{t("menu")}</h1>
-          <p className="text-[11px] opacity-80 mt-0.5">
+      {/* Header refinado com gradiente sutil */}
+      <header className="bg-gradient-header text-primary-foreground px-5 py-4 flex items-center justify-between shrink-0 shadow-header">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase tracking-[0.2em] opacity-75 font-semibold">
             {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
-          </p>
+          </span>
+          <h1 className="text-xl font-black tracking-tight leading-tight mt-0.5">{t("menu")}</h1>
         </div>
-      </div>
+        <div className="flex items-center gap-2 bg-white/10 rounded-full px-3 py-1.5 backdrop-blur-sm">
+          <div className="w-1.5 h-1.5 rounded-full bg-success-foreground animate-pulse" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider">Abierto</span>
+        </div>
+      </header>
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-[120px] min-w-[120px] bg-secondary/70 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
@@ -70,7 +76,7 @@ const HomeScreen = () => {
                   <img
                     src={category.image}
                     alt={tProduct(category.name)}
-                    className="w-20 h-20 object-cover rounded-2xl"
+                    className="w-20 h-20 object-cover rounded-2xl bg-card"
                     loading="lazy"
                   />
                   <span
@@ -87,8 +93,11 @@ const HomeScreen = () => {
         </aside>
 
         <main className="flex-1 overflow-y-auto bg-background no-scrollbar">
+          <PromoBannerCarousel />
+
           <div className="px-4 pt-4 pb-3 sticky top-0 bg-background/95 backdrop-blur z-10">
-            <h2 className="text-xl font-black text-foreground">{activeCategoryName}</h2>
+            <h2 className="text-xl font-black text-foreground tracking-tight">{activeCategoryName}</h2>
+            <div className="h-0.5 w-10 bg-primary rounded-full mt-1.5" />
           </div>
 
           <div className="px-3 pb-6 grid grid-cols-2 gap-3">
@@ -96,14 +105,14 @@ const HomeScreen = () => {
               <button
                 key={product.id}
                 onClick={() => openProduct(product.id)}
-                className="relative flex flex-col bg-card rounded-[24px] shadow-sm border border-border overflow-hidden active:scale-[0.97] transition-transform touch-action-manipulation"
+                className="group relative flex flex-col bg-card rounded-[22px] shadow-card border border-border/70 overflow-hidden active:scale-[0.98] transition-all hover:shadow-elevated touch-action-manipulation"
               >
                 {product.isPromo && (
-                  <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-bold px-2 py-1 rounded-full z-10">
+                  <span className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full z-10 shadow-sm">
                     Oferta
                   </span>
                 )}
-                <div className="bg-secondary/60 aspect-square p-2 flex items-center justify-center">
+                <div className="bg-gradient-to-br from-secondary/40 to-secondary/70 aspect-square p-3 flex items-center justify-center">
                   <img
                     src={product.image}
                     alt={tProduct(product.name)}
@@ -111,17 +120,17 @@ const HomeScreen = () => {
                     loading="lazy"
                   />
                 </div>
-                <div className="p-3 flex flex-col gap-1 flex-1">
-                  <span className="text-sm font-bold text-foreground text-center leading-tight line-clamp-2 min-h-[40px]">
+                <div className="px-3 pt-3 pb-2 flex flex-col gap-1.5 flex-1">
+                  <span className="text-[13px] font-bold text-foreground text-center leading-tight line-clamp-2 min-h-[34px]">
                     {tProduct(product.name)}
                   </span>
-                  <span className="text-base font-black text-primary text-center">
+                  <span className="text-[17px] font-black text-price text-center tabular-nums tracking-tight">
                     {product.price.toFixed(2)}€
                   </span>
                 </div>
-                <div className="px-3 pb-3">
-                  <div className="w-full flex items-center justify-center gap-1.5 bg-success text-success-foreground rounded-2xl py-3 text-sm font-bold">
-                    <Plus className="w-4 h-4" />
+                <div className="px-2.5 pb-2.5">
+                  <div className="w-full flex items-center justify-center gap-1.5 bg-gradient-cta text-success-foreground rounded-xl py-2.5 text-[12px] font-black tracking-wide shadow-cta uppercase">
+                    <Plus className="w-3.5 h-3.5" strokeWidth={3} />
                     {t("addToOrder")}
                   </div>
                 </div>

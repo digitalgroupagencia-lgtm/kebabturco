@@ -1,0 +1,131 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Printer, Save, Wifi, AlertTriangle } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
+
+type P = Tables<"printer_settings">;
+const STORE_ID = "b0000000-0000-0000-0000-000000000001";
+
+const PrinterPage = () => {
+  const [p, setP] = useState<P | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("printer_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
+      .then(({ data }) => { setP(data ?? null); setLoading(false); });
+  }, []);
+
+  const upd = (k: keyof P, v: any) => setP((x) => x ? { ...x, [k]: v } as P : x);
+
+  const save = async () => {
+    if (!p) {
+      const { data, error } = await supabase.from("printer_settings").insert({
+        store_id: STORE_ID, enabled: false, printer_name: "Cocina", port: 9100,
+      }).select().maybeSingle();
+      if (error) return toast.error(error.message);
+      setP(data); toast.success("Configuración creada");
+      return;
+    }
+    const { error } = await supabase.from("printer_settings").update({
+      enabled: p.enabled, printer_name: p.printer_name, ip_address: p.ip_address,
+      port: p.port, agent_endpoint: p.agent_endpoint,
+    }).eq("store_id", STORE_ID);
+    if (error) toast.error(error.message); else toast.success("Guardado");
+  };
+
+  const test = async () => {
+    if (!p?.agent_endpoint) return toast.error("Configura primero el endpoint del agente local");
+    setTesting(true);
+    try {
+      const r = await fetch(p.agent_endpoint + "/test", { method: "POST" });
+      if (r.ok) {
+        await supabase.from("printer_settings").update({ last_test_at: new Date().toISOString(), last_test_ok: true }).eq("store_id", STORE_ID);
+        toast.success("Impresora respondió OK");
+      } else throw new Error("HTTP " + r.status);
+    } catch (e: any) {
+      await supabase.from("printer_settings").update({ last_test_at: new Date().toISOString(), last_test_ok: false }).eq("store_id", STORE_ID);
+      toast.error("Falló la prueba: " + e.message);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2"><Printer className="h-6 w-6" /> Impresora ESC/POS</h2>
+          <p className="text-sm text-muted-foreground mt-1">Conecta la impresora del establecimiento vía red local.</p>
+        </div>
+        <Button onClick={save}><Save className="w-4 h-4 mr-2" /> Guardar</Button>
+      </div>
+
+      <Card className="border-accent/40 bg-accent/10">
+        <CardContent className="pt-4 flex gap-3">
+          <AlertTriangle className="w-5 h-5 text-accent-foreground shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold">Cómo funciona</p>
+            <p className="text-muted-foreground mt-1">
+              IPs locales (ej. 192.168.x.x) no son accesibles desde la nube. Necesitas un pequeño <b>agente local</b> corriendo
+              en la misma red de la impresora que reciba los pedidos por HTTPS y los reenvíe vía ESC/POS al IP configurado.
+              Aquí guardas <b>la URL pública del agente</b> + IP/puerto de la impresora.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Configuración</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base">Impresión automática</Label>
+              <p className="text-xs text-muted-foreground">Imprime cada pedido confirmado</p>
+            </div>
+            <Switch checked={p?.enabled ?? false} onCheckedChange={(v) => upd("enabled", v)} />
+          </div>
+          <div>
+            <Label>Nombre / Sector</Label>
+            <Input value={p?.printer_name ?? ""} onChange={(e) => upd("printer_name", e.target.value)} placeholder="Ej: Cocina" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>IP de la impresora</Label>
+              <Input value={p?.ip_address ?? ""} onChange={(e) => upd("ip_address", e.target.value)} placeholder="192.168.1.50" />
+            </div>
+            <div>
+              <Label>Puerto</Label>
+              <Input type="number" value={p?.port ?? 9100} onChange={(e) => upd("port", Number(e.target.value))} />
+            </div>
+          </div>
+          <div>
+            <Label>URL pública del agente local</Label>
+            <Input value={p?.agent_endpoint ?? ""} onChange={(e) => upd("agent_endpoint", e.target.value)} placeholder="https://printer-agent.tudominio.com" />
+            <p className="text-xs text-muted-foreground mt-1">Endpoint HTTPS expuesto del agente que está dentro del local.</p>
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <Button variant="outline" onClick={test} disabled={testing}>
+              <Wifi className="w-4 h-4 mr-2" /> {testing ? "Probando..." : "Probar conexión"}
+            </Button>
+            {p?.last_test_at && (
+              <span className="text-xs text-muted-foreground">
+                Última prueba: {new Date(p.last_test_at).toLocaleString()} — {p.last_test_ok ? "OK" : "Falló"}
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default PrinterPage;

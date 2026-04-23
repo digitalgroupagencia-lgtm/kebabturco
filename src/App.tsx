@@ -21,8 +21,12 @@ import TenantsPage from "./pages/admin/TenantsPage.tsx";
 import BillingPage from "./pages/admin/BillingPage.tsx";
 import MonitoringPage from "./pages/admin/MonitoringPage.tsx";
 import BrandingPage from "./pages/admin/BrandingPage.tsx";
+import BannerPage from "./pages/admin/BannerPage.tsx";
+import OperationsPage from "./pages/admin/OperationsPage.tsx";
+import PrinterPage from "./pages/admin/PrinterPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
+import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +36,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrandingProvider>
+      <OperationsSettingsProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -54,12 +59,16 @@ const App = () => (
             <Route path="billing" element={<BillingPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="branding" element={<BrandingPage />} />
+            <Route path="banner" element={<BannerPage />} />
+            <Route path="operations" element={<OperationsPage />} />
+            <Route path="printer" element={<PrinterPage />} />
             <Route path="users" element={<PlaceholderPage title="Usuários do Sistema" />} />
             <Route path="settings" element={<PlaceholderPage title="Configurações Globais" />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      </OperationsSettingsProvider>
       </BrandingProvider>
     </TooltipProvider>
   </QueryClientProvider>

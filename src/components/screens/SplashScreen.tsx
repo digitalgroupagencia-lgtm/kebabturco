@@ -1,30 +1,31 @@
 import { useEffect, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { useBranding } from "@/contexts/BrandingContext";
+import elreyLogo from "@/assets/elrey-logo.png";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
+  const { settings } = useBranding();
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
 
+  const logo = settings?.logo_main_url || elreyLogo;
+  const brandName = settings?.company_name || "EL REY";
+
   useEffect(() => {
-    const timer = setTimeout(() => setScreen("orderType"), 1600);
+    const timer = setTimeout(() => setScreen("orderType"), 1800);
     return () => clearTimeout(timer);
   }, [setScreen]);
 
-  // 5 toques rápidos no canto superior direito para abrir login admin
   useEffect(() => {
-    if (tapCount >= 5) {
-      navigate("/auth");
-    }
+    if (tapCount >= 5) navigate("/auth");
     const reset = setTimeout(() => setTapCount(0), 2000);
     return () => clearTimeout(reset);
   }, [tapCount, navigate]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background animate-fade-in px-6 relative">
-      {/* Área invisível no canto superior direito - 5 toques para acessar painel */}
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background animate-fade-in px-6 relative overflow-hidden">
       <button
         aria-hidden
         tabIndex={-1}
@@ -32,12 +33,24 @@ const SplashScreen = () => {
         onClick={() => setTapCount((c) => c + 1)}
         style={{ WebkitTapHighlightColor: "transparent", background: "transparent", border: "none" }}
       />
-      <div className="w-24 h-24 rounded-[28px] bg-primary flex items-center justify-center shadow-lg mb-6">
-        <span className="text-primary-foreground text-4xl font-black tracking-tight">ER</span>
+
+      <div className="absolute inset-0 -z-10 opacity-[0.04]" style={{
+        backgroundImage: `radial-gradient(circle at 20% 20%, hsl(var(--primary)) 0, transparent 40%), radial-gradient(circle at 80% 80%, hsl(var(--accent)) 0, transparent 40%)`,
+      }} />
+
+      <div className="flex flex-col items-center animate-scale-in">
+        <img
+          src={logo}
+          alt={brandName}
+          className="w-40 h-40 object-contain drop-shadow-xl mb-6"
+        />
+        <h1 className="text-3xl font-black text-foreground tracking-[0.15em]">{brandName}</h1>
+        <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">Kebab · Pizza · Burger</p>
       </div>
-      <h1 className="text-4xl font-black text-foreground tracking-tight">EL REY</h1>
-      <p className="text-muted-foreground mt-2 text-base">Kebab · Pizza · Burger</p>
-      <Loader2 className="w-8 h-8 text-primary animate-spin mt-8" />
+
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-32 h-1 rounded-full bg-secondary overflow-hidden">
+        <div className="splash-shimmer absolute inset-0" />
+      </div>
     </div>
   );
 };

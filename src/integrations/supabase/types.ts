@@ -173,6 +173,71 @@ export type Database = {
           },
         ]
       }
+      operations_settings: {
+        Row: {
+          banner_enabled: boolean
+          banner_interval_ms: number
+          created_at: string
+          id: string
+          msg_counter: string
+          msg_paid: string
+          pay_apple_enabled: boolean
+          pay_card_enabled: boolean
+          pay_cash_enabled: boolean
+          pay_counter_enabled: boolean
+          pay_google_enabled: boolean
+          pay_link_enabled: boolean
+          pay_pix_enabled: boolean
+          payment_mode: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          banner_enabled?: boolean
+          banner_interval_ms?: number
+          created_at?: string
+          id?: string
+          msg_counter?: string
+          msg_paid?: string
+          pay_apple_enabled?: boolean
+          pay_card_enabled?: boolean
+          pay_cash_enabled?: boolean
+          pay_counter_enabled?: boolean
+          pay_google_enabled?: boolean
+          pay_link_enabled?: boolean
+          pay_pix_enabled?: boolean
+          payment_mode?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          banner_enabled?: boolean
+          banner_interval_ms?: number
+          created_at?: string
+          id?: string
+          msg_counter?: string
+          msg_paid?: string
+          pay_apple_enabled?: boolean
+          pay_card_enabled?: boolean
+          pay_cash_enabled?: boolean
+          pay_counter_enabled?: boolean
+          pay_google_enabled?: boolean
+          pay_link_enabled?: boolean
+          pay_pix_enabled?: boolean
+          payment_mode?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operations_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           extras: Json | null
@@ -312,6 +377,56 @@ export type Database = {
             columns: ["printer_id"]
             isOneToOne: false
             referencedRelation: "printers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printer_settings: {
+        Row: {
+          agent_endpoint: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          ip_address: string | null
+          last_test_at: string | null
+          last_test_ok: boolean | null
+          port: number
+          printer_name: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_endpoint?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          ip_address?: string | null
+          last_test_at?: string | null
+          last_test_ok?: boolean | null
+          port?: number
+          printer_name?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          agent_endpoint?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          ip_address?: string | null
+          last_test_at?: string | null
+          last_test_ok?: boolean | null
+          port?: number
+          printer_name?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -549,6 +664,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      promo_banners: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          link_url: string | null
+          sort_order: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_banners_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_items: {
         Row: {
