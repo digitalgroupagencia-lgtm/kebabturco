@@ -264,13 +264,7 @@ const ReviewScreen = () => {
             className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
             <span>
-              {!nameValid
-                ? t("enterName")
-                : !tableValid
-                ? t("enterTable")
-                : !phoneValid
-                ? t("enterPhone")
-                : t("goToPayment")}
+              {t("goToPayment")}
             </span>
             <ChevronRight className="w-5 h-5" strokeWidth={3} />
           </button>
