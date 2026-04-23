@@ -65,12 +65,29 @@ const BrandingPage = () => {
 
   if (!s) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
-  const ImageField = ({ label, field, icon: Icon }: { label: string; field: keyof Settings; icon: any }) => {
+  const ImageField = ({
+    label,
+    field,
+    icon: Icon,
+    dimensions,
+  }: {
+    label: string;
+    field: keyof Settings;
+    icon: any;
+    dimensions?: string;
+  }) => {
     const ref = fileRefs[field as keyof typeof fileRefs];
     const url = (s as any)[field] as string | null;
     return (
       <div className="space-y-2">
-        <Label className="flex items-center gap-2"><Icon className="h-4 w-4" /> {label}</Label>
+        <Label className="flex items-center gap-2 flex-wrap">
+          <Icon className="h-4 w-4" /> {label}
+          {dimensions && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {dimensions}
+            </span>
+          )}
+        </Label>
         <div className="flex items-center gap-3 p-3 rounded-2xl border bg-muted/30">
           <div className="w-20 h-20 rounded-2xl bg-background overflow-hidden flex items-center justify-center border shrink-0">
             {url ? <img src={url} alt={label} className="w-full h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
@@ -81,6 +98,11 @@ const BrandingPage = () => {
             <Button type="button" variant="outline" size="sm" onClick={() => ref?.current?.click()}>
               <Upload className="w-4 h-4 mr-2" /> Subir imagen
             </Button>
+            {dimensions && (
+              <p className="text-[11px] text-muted-foreground">
+                Tamaño recomendado: <strong>{dimensions}</strong> · PNG / JPG / WEBP
+              </p>
+            )}
             <Input value={url || ""} onChange={(e) => update(field, e.target.value)} placeholder="https://..." className="text-xs" />
           </div>
         </div>
@@ -123,17 +145,17 @@ const BrandingPage = () => {
           <Card>
             <CardHeader><CardTitle className="text-lg">Logos & Banner</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <ImageField label="Logo principal" field="logo_main_url" icon={ImageIcon} />
-              <ImageField label="Logo secundario (header)" field="logo_secondary_url" icon={ImageIcon} />
-              <ImageField label="Banner home (opcional)" field="banner_home_url" icon={ImageIcon} />
+              <ImageField label="Logo principal (splash)" field="logo_main_url" icon={ImageIcon} dimensions="512×512 px" />
+              <ImageField label="Logo horizontal (header)" field="logo_secondary_url" icon={ImageIcon} dimensions="600×160 px" />
+              <ImageField label="Banner home" field="banner_home_url" icon={ImageIcon} dimensions="1080×500 px" />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader><CardTitle className="text-lg">Íconos del flujo de pedido</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <ImageField label="Comer en el local (PNG 500x500)" field="icon_dine_in_url" icon={UtensilsCrossed} />
-              <ImageField label="Para llevar (PNG 500x500)" field="icon_takeaway_url" icon={ShoppingBag} />
+              <ImageField label="Comer en el local" field="icon_dine_in_url" icon={UtensilsCrossed} dimensions="500×500 px" />
+              <ImageField label="Para llevar" field="icon_takeaway_url" icon={ShoppingBag} dimensions="500×500 px" />
             </CardContent>
           </Card>
 
