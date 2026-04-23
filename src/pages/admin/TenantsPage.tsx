@@ -228,6 +228,11 @@ const TenantsPage = () => {
                   <Badge variant="outline" className="gap-1">
                     <Store className="w-3 h-3" /> {storeCounts?.[t.id] ?? 0} {(storeCounts?.[t.id] ?? 0) === 1 ? "loja" : "lojas"}
                   </Badge>
+                  {(t as any).custom_domain && (
+                    <Badge variant="outline" className="gap-1 max-w-[200px] truncate">
+                      <Globe className="w-3 h-3 shrink-0" /> {(t as any).custom_domain}
+                    </Badge>
+                  )}
                   {overLimit && (
                     <Badge className="bg-destructive text-destructive-foreground gap-1">
                       <AlertTriangle className="w-3 h-3" /> Limite atingido
