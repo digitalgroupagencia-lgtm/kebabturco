@@ -97,6 +97,16 @@ export default {
           from: { transform: "translateY(100%)" },
           to: { transform: "translateY(0)" },
         },
+        "pulse-cta": {
+          "0%, 100%": {
+            transform: "scale(1)",
+            boxShadow: "0 10px 30px -8px hsl(var(--success) / 0.45)",
+          },
+          "50%": {
+            transform: "scale(1.025)",
+            boxShadow: "0 18px 40px -6px hsl(var(--success) / 0.65)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -104,6 +114,7 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
+        "pulse-cta": "pulse-cta 1.6s ease-in-out infinite",
       },
     },
   },
