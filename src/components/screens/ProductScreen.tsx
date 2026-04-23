@@ -269,12 +269,12 @@ const ProductScreen = () => {
           </div>
         )}
 
-        {product.extras && product.extras.length > 0 && (
+        {availableExtras.length > 0 && (
           <div>
             <h3 className="text-base font-bold text-foreground mb-1">Añadir ingredientes</h3>
             <p className="text-xs text-muted-foreground mb-3">Suplementos opcionales</p>
             <div className="space-y-2">
-              {product.extras.map((extra) => {
+              {availableExtras.map((extra) => {
                 const qty = extras.get(extra.id) || 0;
                 const selected = qty > 0;
                 return (
