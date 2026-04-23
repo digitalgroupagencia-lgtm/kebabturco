@@ -1,64 +1,71 @@
 /**
  * Mapa de emojis para ingredientes, extras e variantes.
- * Usado nos cards visuais da tela de produto.
  * Match por substring (case-insensitive) — funciona com nomes em es/en/pt/fr.
+ * "Mixto" retorna dois emojis combinados (frango + carne).
  */
 
 const RAW: Record<string, string> = {
-  // Proteínas / variantes
+  // Variante MIXTA — dois emojis combinados (frango + carne)
+  mixto: "🍗🥩", mixed: "🍗🥩", misto: "🍗🥩", mixte: "🍗🥩",
+
+  // Proteínas
   pollo: "🍗", chicken: "🍗", frango: "🍗", poulet: "🍗",
-  ternera: "🥩", beef: "🥩", carne: "🥩", boeuf: "🥩",
-  mixto: "🍢", mixed: "🍢", misto: "🍢", mixte: "🍢",
+  ternera: "🥩", beef: "🥩", carne: "🥩", boeuf: "🥩", bœuf: "🥩",
   vegetal: "🥗", vegetable: "🥗", vegan: "🌱",
   falafel: "🧆",
   cordero: "🐑", lamb: "🐑",
   pescado: "🐟", fish: "🐟", peixe: "🐟",
   gamba: "🦐", langostino: "🦐", shrimp: "🦐", camarao: "🦐",
 
-  // Vegetais
+  // Vegetais — cada um com emoji ÚNICO
   lechuga: "🥬", lettuce: "🥬", alface: "🥬", laitue: "🥬",
+  col: "🥗", cabbage: "🥗", repolho: "🥗", chou: "🥗", couve: "🥗",
   tomate: "🍅", tomato: "🍅",
   cebolla: "🧅", onion: "🧅", cebola: "🧅", oignon: "🧅",
   pepino: "🥒", cucumber: "🥒", concombre: "🥒",
   zanahoria: "🥕", carrot: "🥕", cenoura: "🥕", carotte: "🥕",
-  maiz: "🌽", maíz: "🌽", corn: "🌽", milho: "🌽", maïs: "🌽",
-  col: "🥬", cabbage: "🥬", repolho: "🥬", chou: "🥬",
+  maiz: "🌽", "maíz": "🌽", corn: "🌽", milho: "🌽", "maïs": "🌽",
   aceitunas: "🫒", olive: "🫒", azeitona: "🫒",
-  champinones: "🍄", champiñones: "🍄", mushroom: "🍄", cogumelo: "🍄", champignon: "🍄",
+  champinones: "🍄", "champiñones": "🍄", mushroom: "🍄", cogumelo: "🍄", champignon: "🍄",
   pimiento: "🫑", pepper: "🫑", pimento: "🫑", poivron: "🫑",
-  jalapeno: "🌶️", jalapeño: "🌶️", picante: "🌶️", spicy: "🌶️",
+  jalapeno: "🌶️", "jalapeño": "🌶️", picante: "🌶️", spicy: "🌶️",
 
-  // Queijos / lácteos
-  queso: "🧀", cheese: "🧀", queijo: "🧀", fromage: "🧀",
-  cabra: "🐐", goat: "🐐", chèvre: "🐐",
+  // Queijos / lácteos — TODOS com 🧀
+  mozzarella: "🧀", muzzarella: "🧀", mozarela: "🧀", "muçarela": "🧀", mucarela: "🧀",
+  feta: "🧀",
+  parmesano: "🧀", parmesan: "🧀",
+  cheddar: "🧀",
   camembert: "🧀",
   gouda: "🧀",
+  queso: "🧀", cheese: "🧀", queijo: "🧀", fromage: "🧀",
+  cabra: "🐐", goat: "🐐", "chèvre": "🐐",
 
   // Carnes processadas
   bacon: "🥓",
-  jamon: "🥓", jamón: "🥓", ham: "🥓", presunto: "🥓", jambon: "🥓",
+  jamon: "🥓", "jamón": "🥓", ham: "🥓", presunto: "🥓", jambon: "🥓",
   pepperoni: "🍕",
-  atun: "🐟", atún: "🐟", tuna: "🐟", atum: "🐟", thon: "🐟",
-  huevo: "🥚", egg: "🥚", ovo: "🥚", œuf: "🥚",
+  atun: "🐟", "atún": "🐟", tuna: "🐟", atum: "🐟", thon: "🐟",
+  huevo: "🥚", egg: "🥚", ovo: "🥚", "œuf": "🥚",
 
   // Acompanhamentos
-  patatas: "🍟", fries: "🍟", batata: "🍟", batatas: "🍟", frites: "🍟",
-  pan: "🥖", bread: "🥖", pao: "🥖", pão: "🥖", pain: "🥖",
+  patatas: "🍟", patata: "🍟", fries: "🍟", batata: "🍟", batatas: "🍟", frites: "🍟",
+  pan: "🥖", bread: "🥖", pao: "🥖", "pão": "🥖", pain: "🥖",
   pita: "🫓",
   arroz: "🍚", rice: "🍚",
 
   // Molhos / temperos
-  salsa: "🥫", sauce: "🥫", molho: "🥫",
-  oregano: "🌿", orégano: "🌿", oregan: "🌿",
+  salsas: "🥫", salsa: "🥫", sauces: "🥫", sauce: "🥫", molho: "🥫", molhos: "🥫",
+  oregano: "🌿", "orégano": "🌿",
   ajo: "🧄", garlic: "🧄", alho: "🧄", ail: "🧄",
   miel: "🍯", honey: "🍯", mel: "🍯",
+  crujiente: "🧅",
 
   // Bebidas
   cocacola: "🥤", coca: "🥤", cola: "🥤",
   agua: "💧", water: "💧", eau: "💧",
-  cerveza: "🍺", beer: "🍺", cerveja: "🍺", bière: "🍺",
+  cerveza: "🍺", beer: "🍺", cerveja: "🍺", "bière": "🍺",
   vino: "🍷", wine: "🍷", vinho: "🍷", vin: "🍷",
-  cafe: "☕", café: "☕", coffee: "☕",
+  cafe: "☕", "café": "☕", coffee: "☕",
 
   // Doces
   chocolate: "🍫",
@@ -66,14 +73,18 @@ const RAW: Record<string, string> = {
   vainilla: "🍦", vanilla: "🍦", baunilha: "🍦", vanille: "🍦",
 };
 
-const NORMALIZED = Object.entries(RAW).map(([k, v]) => [k.toLowerCase(), v] as const);
+// Ordenar por chave mais longa primeiro para que "mozzarella" tenha prioridade sobre "queso"
+// e "lechuga" não seja capturado por "col" etc.
+const NORMALIZED = Object.entries(RAW)
+  .map(([k, v]) => [k.toLowerCase(), v] as const)
+  .sort((a, b) => b[0].length - a[0].length);
 
-export function emojiFor(name: string, fallback: string = "🍴"): string {
+export function emojiFor(name: string, fallback: string = "🥄"): string {
   if (!name) return fallback;
   const n = name.toLowerCase().trim();
-  // exact match
+  // exact match primeiro
   for (const [k, v] of NORMALIZED) if (n === k) return v;
-  // substring match (palavra contida)
+  // substring match (chaves mais longas têm prioridade)
   for (const [k, v] of NORMALIZED) if (n.includes(k)) return v;
   return fallback;
 }
