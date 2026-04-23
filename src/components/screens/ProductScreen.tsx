@@ -84,6 +84,10 @@ const ProductScreen = () => {
     () => (product ? ingredientMap[product.category] || [] : []),
     [product],
   );
+  const availableExtras = useMemo(
+    () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
+    [product],
+  );
 
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
@@ -110,7 +114,7 @@ const ProductScreen = () => {
   };
 
   const extrasTotal = Array.from(extras.entries()).reduce((sum, [id, qty]) => {
-    const extra = product.extras?.find((item) => item.id === id);
+    const extra = availableExtras.find((item) => item.id === id);
     return sum + (extra ? extra.price * qty : 0);
   }, 0);
 
@@ -123,7 +127,7 @@ const ProductScreen = () => {
   const handleAdd = () => {
     const selectedExtras = Array.from(extras.entries())
       .map(([id, qty]) => {
-        const extra = product.extras?.find((item) => item.id === id);
+        const extra = availableExtras.find((item) => item.id === id);
         if (!extra) return null;
         return {
           id: extra.id,
