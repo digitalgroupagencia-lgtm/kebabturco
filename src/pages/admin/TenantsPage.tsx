@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe } from "lucide-react";
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
+import TenantQrDialog from "@/components/admin/TenantQrDialog";
 
 interface TenantForm {
   name: string;
@@ -211,9 +212,16 @@ const TenantsPage = () => {
                       <div className="text-xs text-muted-foreground truncate">/{t.slug}</div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(t)} className="shrink-0">
-                    <Pencil className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <TenantQrDialog
+                      tenantName={t.name}
+                      tenantSlug={t.slug}
+                      customDomain={(t as any).custom_domain}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
