@@ -20,7 +20,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import TenantsPage from "./pages/admin/TenantsPage.tsx";
 import BillingPage from "./pages/admin/BillingPage.tsx";
 import MonitoringPage from "./pages/admin/MonitoringPage.tsx";
+import BrandingPage from "./pages/admin/BrandingPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <BrandingProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -50,12 +53,14 @@ const App = () => (
             <Route path="tenants" element={<TenantsPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
+            <Route path="branding" element={<BrandingPage />} />
             <Route path="users" element={<PlaceholderPage title="Usuários do Sistema" />} />
             <Route path="settings" element={<PlaceholderPage title="Configurações Globais" />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      </BrandingProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -5,6 +5,7 @@ import {
   Activity,
   Users,
   Settings,
+  Palette,
   LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -26,6 +27,7 @@ import { Button } from "@/components/ui/button";
 const mainItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutGrid },
   { title: "Clientes", url: "/admin/tenants", icon: Building2 },
+  { title: "Identidad Visual", url: "/admin/branding", icon: Palette },
   { title: "Planos & Cobrança", url: "/admin/billing", icon: CreditCard },
   { title: "Monitoramento", url: "/admin/monitoring", icon: Activity },
 ];

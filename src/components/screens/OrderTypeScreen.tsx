@@ -1,11 +1,17 @@
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { UtensilsCrossed, ShoppingBag, ChevronRight } from "lucide-react";
-import logo from "@/assets/elrey-logo.png";
+import { useBranding } from "@/contexts/BrandingContext";
+import logoFallback from "@/assets/elrey-logo.png";
 
 const OrderTypeScreen = () => {
   const { setScreen, setTableNumber } = useOrder();
   const { setOrderType } = useCart();
+  const { settings } = useBranding();
+  const logo = settings?.logo_main_url || logoFallback;
+  const iconDineIn = settings?.icon_dine_in_url;
+  const iconTakeaway = settings?.icon_takeaway_url;
+  const brandName = settings?.company_name || "EL REY";
 
   const handleSelect = (type: "here" | "takeaway") => {
     setOrderType(type);
@@ -20,7 +26,7 @@ const OrderTypeScreen = () => {
         <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
           <img
             src={logo}
-            alt="EL REY · Pizza · Kebab"
+            alt={brandName}
             className="w-full h-full object-contain"
           />
         </div>
@@ -42,8 +48,12 @@ const OrderTypeScreen = () => {
           onClick={() => handleSelect("here")}
           className="group relative overflow-hidden flex items-center gap-4 p-5 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation"
         >
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-            <UtensilsCrossed className="w-8 h-8 text-primary" strokeWidth={2.2} />
+          <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+            {iconDineIn ? (
+              <img src={iconDineIn} alt="Comer en el local" className="w-full h-full object-cover rounded-3xl" />
+            ) : (
+              <UtensilsCrossed className="w-9 h-9 text-primary" strokeWidth={2.2} />
+            )}
           </div>
           <div className="text-left flex-1">
             <span className="text-lg font-black text-foreground block leading-tight">
@@ -60,8 +70,12 @@ const OrderTypeScreen = () => {
           onClick={() => handleSelect("takeaway")}
           className="group relative overflow-hidden flex items-center gap-4 p-5 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation"
         >
-          <div className="w-16 h-16 rounded-2xl bg-accent/20 flex items-center justify-center shrink-0">
-            <ShoppingBag className="w-8 h-8 text-accent-foreground" strokeWidth={2.2} />
+          <div className="w-20 h-20 rounded-3xl bg-accent/20 flex items-center justify-center shrink-0 overflow-hidden">
+            {iconTakeaway ? (
+              <img src={iconTakeaway} alt="Para llevar" className="w-full h-full object-cover rounded-3xl" />
+            ) : (
+              <ShoppingBag className="w-9 h-9 text-accent-foreground" strokeWidth={2.2} />
+            )}
           </div>
           <div className="text-left flex-1">
             <span className="text-lg font-black text-foreground block leading-tight">
