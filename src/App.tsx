@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
+import MobileFrame from "./components/MobileFrame.tsx";
 import PanelLayout from "./components/panel/PanelLayout.tsx";
 import Dashboard from "./pages/panel/Dashboard.tsx";
 import MenuPage from "./pages/panel/MenuPage.tsx";
@@ -42,7 +43,7 @@ const App = () => (
       <OperationsSettingsProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<MobileFrame><Index /></MobileFrame>} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/panel" element={<PanelLayout />}>
             <Route index element={<Dashboard />} />
