@@ -223,6 +223,61 @@ const PaymentScreen = () => {
           </div>
         </div>
 
+        {/* Dados do cliente — obrigatório aqui antes do método */}
+        <div className="mt-5 bg-card rounded-[24px] border border-border shadow-card overflow-hidden">
+          <div className={`px-4 py-4 ${showError === "name" ? "bg-destructive/5 animate-pulse" : ""}`}>
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+              <User className="w-3.5 h-3.5 text-primary" />
+              {t("yourName")} <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => { setCustomerName(e.target.value.slice(0, 40)); if (showError === "name") setShowError(null); }}
+              placeholder="—"
+              className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                showError === "name" ? "border-destructive/60" : "border-transparent"
+              }`}
+            />
+          </div>
+
+          {orderType === "here" ? (
+            <div className={`px-4 py-4 border-t border-border ${showError === "table" ? "bg-destructive/5 animate-pulse" : ""}`}>
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                <Hash className="w-3.5 h-3.5 text-primary" />
+                {t("tableNumber")} <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={tableNumber}
+                onChange={(e) => { setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4)); if (showError === "table") setShowError(null); }}
+                placeholder="—"
+                className={`w-full h-14 px-4 text-center text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                  showError === "table" ? "border-destructive/60" : "border-transparent"
+                }`}
+              />
+            </div>
+          ) : (
+            <div className={`px-4 py-4 border-t border-border ${showError === "phone" ? "bg-destructive/5 animate-pulse" : ""}`}>
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                {t("yourPhone")} <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={customerPhone}
+                onChange={(e) => { setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20)); if (showError === "phone") setShowError(null); }}
+                placeholder="+34 600 000 000"
+                className={`w-full h-12 px-4 text-base font-bold text-foreground tabular-nums bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                  showError === "phone" ? "border-destructive/60" : "border-transparent"
+                }`}
+              />
+            </div>
+          )}
+        </div>
+
         {counterOnly ? (
           <div className="mt-5 bg-card rounded-[24px] border-2 border-success/40 p-5 flex items-center gap-4 shadow-card">
             <div className="w-14 h-14 rounded-2xl bg-success text-success-foreground flex items-center justify-center shrink-0">
