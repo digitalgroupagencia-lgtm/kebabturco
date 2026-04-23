@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, X, Plus } from "lucide-react";
+import { Check, X, Plus } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { products, type Extra, type Size, type Variant } from "@/data/products";
 import QuantitySelector from "@/components/QuantitySelector";
+import ScreenHeader from "@/components/ScreenHeader";
 
 const ingredientMap: Record<string, string[]> = {
   "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
@@ -168,20 +169,12 @@ const ProductScreen = () => {
 
   return (
     <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[126px]">
-      <header className="sticky top-0 z-30 bg-gradient-header text-primary-foreground px-4 pt-4 pb-4 shadow-header rounded-b-[18px]">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={goBack}
-            className="w-11 h-11 rounded-full bg-white/90 text-foreground shadow-sm flex items-center justify-center active:scale-90 transition-transform"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="text-right">
-            <p className="text-[10px] uppercase tracking-[0.24em] font-bold opacity-80">{t("menu")}</p>
-            <p className="text-sm font-black tracking-tight line-clamp-1 max-w-[220px]">{tProduct(product.name)}</p>
-          </div>
-        </div>
-      </header>
+      <ScreenHeader
+        eyebrow={t("menu")}
+        title={tProduct(product.name)}
+        onBack={goBack}
+        sticky
+      />
 
       <div className="px-4 pt-4 space-y-5">
         <section className="rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
