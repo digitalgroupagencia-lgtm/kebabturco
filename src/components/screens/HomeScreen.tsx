@@ -11,7 +11,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 
 const HomeScreen = () => {
-  const { setScreen, setSelectedProductId, selectedCategory, setSelectedCategory } = useOrder();
+  const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
   const { t, tProduct } = useLanguage();
   const { totalItems, orderType } = useCart();
   const { settings } = useBranding();
@@ -44,6 +44,8 @@ const HomeScreen = () => {
       : tProduct(categories.find((category) => category.id === activeCategory)?.name || { pt: "" });
 
   const openProduct = (id: string) => {
+    setEditingCartItemId(null);
+    setProductReturnScreen("home");
     setSelectedProductId(id);
     setScreen("product");
   };
