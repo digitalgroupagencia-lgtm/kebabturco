@@ -61,7 +61,8 @@
     --gradient-cta: linear-gradient(180deg, hsl(145 63% 45%) 0%, hsl(145 65% 38%) 100%);
   }
 
-  .dark {
+  .dark,
+  [data-theme="dark"] {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 

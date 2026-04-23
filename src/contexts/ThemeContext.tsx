@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useLayoutEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
@@ -17,10 +17,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved === "dark" ? "dark" : "light";
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
+    const body = document.body;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      body.classList.add("dark");
+      root.style.colorScheme = "dark";
+    } else {
+      root.classList.remove("dark");
+      body.classList.remove("dark");
+      root.style.colorScheme = "light";
+    }
+    root.setAttribute("data-theme", theme);
     localStorage.setItem("kiosk-theme", theme);
   }, [theme]);
 

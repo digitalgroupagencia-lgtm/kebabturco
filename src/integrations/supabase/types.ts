@@ -771,32 +771,44 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          image_url: string
+          image_url: string | null
           is_active: boolean
           link_url: string | null
+          media_type: string
           sort_order: number
           store_id: string
           updated_at: string
+          video_autoplay: boolean
+          video_muted: boolean
+          video_url: string | null
         }
         Insert: {
           created_at?: string
           id?: string
-          image_url: string
+          image_url?: string | null
           is_active?: boolean
           link_url?: string | null
+          media_type?: string
           sort_order?: number
           store_id: string
           updated_at?: string
+          video_autoplay?: boolean
+          video_muted?: boolean
+          video_url?: string | null
         }
         Update: {
           created_at?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
           is_active?: boolean
           link_url?: string | null
+          media_type?: string
           sort_order?: number
           store_id?: string
           updated_at?: string
+          video_autoplay?: boolean
+          video_muted?: boolean
+          video_url?: string | null
         }
         Relationships: [
           {

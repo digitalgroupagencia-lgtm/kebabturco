@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Image as ImageIcon, Upload, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Image as ImageIcon, Upload, Trash2, ArrowUp, ArrowDown, Youtube, Plus } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Banner = Tables<"promo_banners">;
@@ -17,6 +17,9 @@ const BannerPage = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [ops, setOps] = useState<Ops | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoAutoplay, setVideoAutoplay] = useState(true);
+  const [videoMuted, setVideoMuted] = useState(true);
 
   const load = async () => {
     const [b, o] = await Promise.all([
@@ -45,9 +48,34 @@ const BannerPage = () => {
     if (error) return toast.error(error.message);
     const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
     await supabase.from("promo_banners").insert({
-      store_id: STORE_ID, image_url: pub.publicUrl, sort_order: banners.length, is_active: true,
-    });
+      store_id: STORE_ID, image_url: pub.publicUrl, media_type: "image", sort_order: banners.length, is_active: true,
+    } as any);
     toast.success("Imagen subida");
+    load();
+  };
+
+  const addVideo = async () => {
+    if (banners.length >= 5) return toast.error("Máximo 5 elementos");
+    const url = videoUrl.trim();
+    if (!url) return toast.error("Cole o link do vídeo");
+    // Aceita YouTube ou MP4
+    const isYoutube = /youtube\.com|youtu\.be/i.test(url);
+    const isMp4 = /\.(mp4|webm|mov)(\?|$)/i.test(url);
+    if (!isYoutube && !isMp4) {
+      return toast.error("Use link do YouTube ou .mp4/.webm");
+    }
+    const { error } = await supabase.from("promo_banners").insert({
+      store_id: STORE_ID,
+      media_type: "video",
+      video_url: url,
+      video_autoplay: videoAutoplay,
+      video_muted: videoMuted,
+      sort_order: banners.length,
+      is_active: true,
+    } as any);
+    if (error) return toast.error(error.message);
+    setVideoUrl("");
+    toast.success("Vídeo adicionado");
     load();
   };
 
@@ -112,7 +140,7 @@ const BannerPage = () => {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Imágenes ({banners.length}/5)</CardTitle>
+          <CardTitle className="text-lg">Banners ({banners.length}/5)</CardTitle>
           <Button onClick={() => fileRef.current?.click()} disabled={banners.length >= 5}>
             <Upload className="w-4 h-4 mr-2" /> Subir imagen
           </Button>
@@ -120,11 +148,57 @@ const BannerPage = () => {
             onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
         </CardHeader>
         <CardContent className="space-y-3">
-          {banners.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">No hay imágenes. Sube la primera.</p>}
+          {/* Bloco para adicionar vídeo (YouTube ou MP4) */}
+          <div className="p-3 rounded-2xl border-2 border-dashed bg-muted/20 space-y-2">
+            <Label className="flex items-center gap-2 text-sm">
+              <Youtube className="w-4 h-4 text-red-600" /> Adicionar vídeo (YouTube ou link .mp4)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://youtube.com/watch?v=... ou https://exemplo.com/video.mp4"
+                className="flex-1"
+              />
+              <Button onClick={addVideo} disabled={banners.length >= 5} size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Adicionar
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-4 pt-1">
+              <label className="flex items-center gap-2 text-xs">
+                <Switch checked={videoAutoplay} onCheckedChange={setVideoAutoplay} />
+                Autoplay
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <Switch checked={videoMuted} onCheckedChange={setVideoMuted} />
+                Iniciar sem áudio (recomendado p/ autoplay)
+              </label>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              ⚠️ Navegadores só permitem autoplay com áudio se o usuário já interagiu. Para autoplay funcionar sempre, mantenha "sem áudio" ligado — quando o cliente tocar no vídeo, o áudio liga.
+            </p>
+          </div>
+
+          {banners.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">Nenhum banner. Suba uma imagem ou adicione um vídeo.</p>}
           {banners.map((b, i) => (
             <div key={b.id} className="flex items-center gap-3 p-3 rounded-2xl border bg-muted/20">
-              <img src={b.image_url} alt="" className="w-32 h-16 object-cover rounded-xl border" />
-              <div className="flex-1 text-xs text-muted-foreground truncate">{b.image_url}</div>
+              {(b as any).media_type === "video" ? (
+                <div className="w-32 h-16 rounded-xl border bg-black flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                  <Youtube className="w-4 h-4 text-red-500" /> VÍDEO
+                </div>
+              ) : (
+                <img src={b.image_url ?? ""} alt="" className="w-32 h-16 object-cover rounded-xl border" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-muted-foreground truncate">
+                  {(b as any).media_type === "video" ? (b as any).video_url : b.image_url}
+                </div>
+                {(b as any).media_type === "video" && (
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    {(b as any).video_autoplay ? "▶ Autoplay" : "⏸ Manual"} · {(b as any).video_muted ? "🔇 Sem áudio" : "🔊 Com áudio"}
+                  </div>
+                )}
+              </div>
               <div className="flex gap-1">
                 <Button size="icon" variant="outline" onClick={() => move(b.id, -1)} disabled={i === 0}><ArrowUp className="w-4 h-4" /></Button>
                 <Button size="icon" variant="outline" onClick={() => move(b.id, 1)} disabled={i === banners.length - 1}><ArrowDown className="w-4 h-4" /></Button>
