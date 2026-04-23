@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Loader2, Shield, Building2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import CreateUserDialog from "@/components/admin/CreateUserDialog";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -148,9 +149,11 @@ const UsersPage = () => {
             Atribua papéis e vincule usuários aos clientes (tenants).
           </p>
         </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <CreateUserDialog />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Atribuir papel
             </Button>
           </DialogTrigger>
@@ -213,6 +216,7 @@ const UsersPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-3">

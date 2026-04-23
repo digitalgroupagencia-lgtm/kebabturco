@@ -10,6 +10,8 @@ import {
   Image,
   Wallet,
   Printer,
+  BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +42,8 @@ const mainItems = [
 
 const configItems = [
   { title: "Usuários", url: "/admin/users", icon: Users },
+  { title: "Guia", url: "/admin/guide", icon: BookOpen },
+  { title: "Conversas IA", url: "/admin/conversations", icon: MessageSquare },
   { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];
 
