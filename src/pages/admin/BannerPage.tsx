@@ -165,16 +165,12 @@ const BannerPage = () => {
             </div>
             <div className="flex flex-wrap gap-4 pt-1">
               <label className="flex items-center gap-2 text-xs">
-                <Switch checked={videoAutoplay} onCheckedChange={setVideoAutoplay} />
-                Autoplay
-              </label>
-              <label className="flex items-center gap-2 text-xs">
-                <Switch checked={videoMuted} onCheckedChange={setVideoMuted} />
-                Iniciar sem áudio (recomendado p/ autoplay)
+                <Switch checked={videoStartMuted} onCheckedChange={setVideoStartMuted} />
+                Iniciar sem áudio (cliente pode ativar no totem)
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              ⚠️ Navegadores só permitem autoplay com áudio se o usuário já interagiu. Para autoplay funcionar sempre, mantenha "sem áudio" ligado — quando o cliente tocar no vídeo, o áudio liga.
+              ℹ️ O vídeo sempre toca em loop automaticamente, sem controles e sem possibilidade de pausar (apresentação publicitária). O cliente só pode ligar/desligar o áudio pelo botão do totem.
             </p>
           </div>
 
