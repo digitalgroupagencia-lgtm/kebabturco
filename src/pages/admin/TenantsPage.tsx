@@ -15,6 +15,9 @@ import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, S
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
 import TenantQrDialog from "@/components/admin/TenantQrDialog";
 import TenantLanguagesDialog from "@/components/admin/TenantLanguagesDialog";
+import DuplicateTenantDialog from "@/components/admin/DuplicateTenantDialog";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Copy } from "lucide-react";
 
 interface TenantForm {
   name: string;
@@ -36,6 +39,7 @@ const planOptions = [
 
 const TenantsPage = () => {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<TenantForm>(emptyForm);
