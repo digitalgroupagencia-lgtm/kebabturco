@@ -23,7 +23,7 @@ const CartBar = () => {
           </div>
           <button
             onClick={() => setScreen("review")}
-            className="bg-success text-success-foreground px-5 py-2 rounded-xl text-sm font-black active:scale-95 transition-transform touch-action-manipulation"
+            className="bg-success text-success-foreground px-5 h-[44px] rounded-full text-sm font-black active:scale-95 transition-transform touch-action-manipulation shadow-md"
           >
             Finalizar
           </button>
