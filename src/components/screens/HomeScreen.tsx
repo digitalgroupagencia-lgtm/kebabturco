@@ -76,12 +76,21 @@ const HomeScreen = () => {
           </div>
 
           {/* Status "Abierto" — mantido à direita */}
-          <div className="flex items-center gap-2 shrink-0 self-start mt-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
-            </span>
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
+          <div className="flex flex-col items-end gap-1.5 shrink-0 self-start mt-1">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
+              </span>
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
+            </div>
+            <button
+              onClick={toggle}
+              aria-label={theme === "dark" ? "Modo claro" : "Modo escuro"}
+              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center active:scale-90 transition-all"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </header>
@@ -170,9 +179,15 @@ const HomeScreen = () => {
 
                 {/* Bloco inferior compacto: nome, preço e botão integrado */}
                 <div className="px-2.5 pt-1 pb-2.5 flex flex-col gap-1.5">
-                  <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] line-clamp-2 min-h-[34px] break-words hyphens-auto">
-                    {tProduct(product.name)}
-                  </span>
+                  {(() => {
+                    const [l1, l2] = splitProductName(tProduct(product.name));
+                    return (
+                      <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] min-h-[34px] flex flex-col">
+                        <span className="block">{l1}</span>
+                        {l2 && <span className="block">{l2}</span>}
+                      </span>
+                    );
+                  })()}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[16px] font-black text-price tabular-nums tracking-tight">
                       {product.price.toFixed(2)}€
