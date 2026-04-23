@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
+import TableNumberModal from "@/components/TableNumberModal";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
   { id: "card", icon: CreditCard },
@@ -45,6 +46,7 @@ const PaymentScreen = () => {
     setPaymentMethod,
     storeId,
     tableNumber,
+    setTableNumber,
     customerName,
     customerPhone,
   } = useOrder();
@@ -55,6 +57,7 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -78,6 +81,16 @@ const PaymentScreen = () => {
 
   const confirm = async () => {
     if (!selected || processing) return;
+    // Modal final: se for "Comer aqui" e ainda não há mesa, pede agora
+    if (orderType === "here" && !tableNumber.trim()) {
+      setShowTableModal(true);
+      return;
+    }
+    await persistAndPrint(tableNumber);
+  };
+
+  const persistAndPrint = async (finalTable: string) => {
+    if (!selected || processing) return;
     setProcessing(true);
     try {
       // Gera número e fixa o método
@@ -95,7 +108,7 @@ const PaymentScreen = () => {
             store_id: storeId,
             order_number: orderNumber,
             order_type: orderType === "here" ? "dine_in" : "takeaway",
-            table_number: tableNumber || null,
+            table_number: finalTable || null,
             customer_name: customerName || null,
             customer_phone: customerPhone || null,
             payment_method:
@@ -133,7 +146,7 @@ const PaymentScreen = () => {
           body: {
             storeId,
             orderNumber,
-            tableNumber: tableNumber || null,
+            tableNumber: finalTable || null,
             customerName: customerName || null,
             customerPhone: customerPhone || null,
             orderType,
@@ -270,6 +283,17 @@ const PaymentScreen = () => {
           </span>
         </button>
       </div>
+
+      <TableNumberModal
+        open={showTableModal}
+        onConfirm={(table) => {
+          setTableNumber(table);
+          setShowTableModal(false);
+          // Persiste com a mesa recém-informada
+          persistAndPrint(table);
+        }}
+        onCancel={() => setShowTableModal(false)}
+      />
     </div>
   );
 };

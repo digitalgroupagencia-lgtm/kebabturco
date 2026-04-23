@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag } from "lucide-react";
+import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag, Languages, ListOrdered } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Settings = Tables<"company_settings">;
@@ -20,6 +20,8 @@ const BrandingPage = () => {
     icon_dine_in_url: useRef<HTMLInputElement>(null),
     icon_takeaway_url: useRef<HTMLInputElement>(null),
     banner_home_url: useRef<HTMLInputElement>(null),
+    logo_language_url: useRef<HTMLInputElement>(null),
+    logo_order_type_url: useRef<HTMLInputElement>(null),
   };
 
   useEffect(() => { load(); }, []);
@@ -51,6 +53,8 @@ const BrandingPage = () => {
       banner_home_url: s.banner_home_url,
       icon_dine_in_url: s.icon_dine_in_url,
       icon_takeaway_url: s.icon_takeaway_url,
+      logo_language_url: (s as any).logo_language_url,
+      logo_order_type_url: (s as any).logo_order_type_url,
       primary_color: s.primary_color,
       secondary_color: s.secondary_color,
       background_color: s.background_color,
@@ -148,6 +152,19 @@ const BrandingPage = () => {
               <ImageField label="Logo principal (splash)" field="logo_main_url" icon={ImageIcon} dimensions="512×512 px" />
               <ImageField label="Logo horizontal (header)" field="logo_secondary_url" icon={ImageIcon} dimensions="600×160 px" />
               <ImageField label="Banner home" field="banner_home_url" icon={ImageIcon} dimensions="1080×500 px" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Logos por tela (opcional)</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Se vazio, usa o logo principal. Permite ter logos diferentes na tela de idioma e na tela de tipo de pedido.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ImageField label="Logo na tela de idioma" field={"logo_language_url" as keyof Settings} icon={Languages} dimensions="512×512 px" />
+              <ImageField label="Logo na tela 'comer aqui / levar'" field={"logo_order_type_url" as keyof Settings} icon={ListOrdered} dimensions="512×512 px" />
             </CardContent>
           </Card>
 
