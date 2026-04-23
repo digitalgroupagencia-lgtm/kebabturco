@@ -24,6 +24,7 @@ import BrandingPage from "./pages/admin/BrandingPage.tsx";
 import BannerPage from "./pages/admin/BannerPage.tsx";
 import OperationsPage from "./pages/admin/OperationsPage.tsx";
 import PrinterPage from "./pages/admin/PrinterPage.tsx";
+import UsersPage from "./pages/admin/UsersPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -62,7 +63,7 @@ const App = () => (
             <Route path="banner" element={<BannerPage />} />
             <Route path="operations" element={<OperationsPage />} />
             <Route path="printer" element={<PrinterPage />} />
-            <Route path="users" element={<PlaceholderPage title="Usuários do Sistema" />} />
+            <Route path="users" element={<UsersPage />} />
             <Route path="settings" element={<PlaceholderPage title="Configurações Globais" />} />
           </Route>
           <Route path="*" element={<NotFound />} />
