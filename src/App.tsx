@@ -31,6 +31,7 @@ import AdminSettingsPage from "./pages/admin/SettingsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
+import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ThemeProvider>
       <BrandingProvider>
       <OperationsSettingsProvider>
       <BrowserRouter>
@@ -74,6 +76,7 @@ const App = () => (
       </BrowserRouter>
       </OperationsSettingsProvider>
       </BrandingProvider>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
