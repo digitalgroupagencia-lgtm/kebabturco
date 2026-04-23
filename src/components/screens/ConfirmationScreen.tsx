@@ -241,14 +241,16 @@ const ConfirmationScreen = () => {
               {message}
             </p>
           </div>
-          <div className="text-right shrink-0">
-            <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-              {t("orderTime")}
-            </p>
-            <p className="font-black text-foreground text-[13px] tabular-nums leading-tight">
-              {timeStr}
-            </p>
-          </div>
+        </div>
+
+        {/* Rodapé recibo: marca/endereço */}
+        <div className="mt-auto pt-2 border-t border-dashed border-border text-center shrink-0">
+          <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em]">
+            {companyName || "—"}
+          </p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">
+            {t("thanksFooter") || "Gracias por su compra"}
+          </p>
         </div>
       </div>
 
