@@ -5,9 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { fmtMoney } from "@/hooks/useTenantBilling";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const SellerTables = () => {
   const { storeId } = useSellerContext();
+  const navigate = useNavigate();
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["open-tables", storeId],
     enabled: !!storeId,
@@ -32,7 +34,7 @@ const SellerTables = () => {
       ) : (
         <div className="space-y-2">
           {sessions?.map((s: any) => (
-            <Card key={s.id}>
+            <Card key={s.id} onClick={() => navigate(`/seller/tables/${s.id}`)} className="cursor-pointer active:scale-[0.99] transition">
               <CardContent className="p-3 flex items-center justify-between">
                 <div>
                   <p className="font-black text-lg">Mesa {s.table_number}</p>
