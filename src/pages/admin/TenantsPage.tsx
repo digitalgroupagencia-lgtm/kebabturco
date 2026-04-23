@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2, Building2 } from "lucide-react";
+import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface TenantForm {
   name: string;
@@ -55,6 +56,30 @@ const TenantsPage = () => {
     },
   });
 
+  // Uso mensal real por tenant (pedidos do mês corrente, não cancelados)
+  const { data: usageMap } = useQuery({
+    queryKey: ["admin-tenant-usage"],
+    queryFn: async () => {
+      const firstDay = new Date();
+      firstDay.setDate(1);
+      firstDay.setHours(0, 0, 0, 0);
+      const [{ data: stores }, { data: orders }] = await Promise.all([
+        supabase.from("stores").select("id, tenant_id"),
+        supabase.from("orders").select("store_id, status").gte("created_at", firstDay.toISOString()),
+      ]);
+      const storeToTenant: Record<string, string> = {};
+      (stores ?? []).forEach((s) => { storeToTenant[s.id] = s.tenant_id; });
+      const counts: Record<string, number> = {};
+      (orders ?? []).forEach((o) => {
+        if (o.status === "cancelled") return;
+        const tid = storeToTenant[o.store_id];
+        if (tid) counts[tid] = (counts[tid] || 0) + 1;
+      });
+      return counts;
+    },
+    refetchInterval: 60000,
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (tenant: TenantForm & { id?: string }) => {
       if (tenant.id) {
@@ -96,14 +121,14 @@ const TenantsPage = () => {
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Clientes (Tenants)</h2>
+    <div className="space-y-6 max-w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold">Clientes (Tenants)</h2>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Button>
+            <Button onClick={openNew} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>{editId ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
             </DialogHeader>
@@ -146,37 +171,71 @@ const TenantsPage = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {tenants?.map((t) => (
-          <Card key={t.id}>
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <div className="font-semibold">{t.name}</div>
-                  <div className="text-sm text-muted-foreground">/{t.slug}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-center">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Store className="w-3 h-3" /> {storeCounts?.[t.id] ?? 0} lojas
+      <div className="grid gap-3">
+        {tenants?.map((t) => {
+          const used = usageMap?.[t.id] ?? 0;
+          const limit = t.max_orders_month ?? 500;
+          const pct = Math.min((used / Math.max(limit, 1)) * 100, 100);
+          const overLimit = used >= limit;
+          const nearLimit = !overLimit && pct >= 80;
+          return (
+            <Card key={t.id} className="overflow-hidden">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                      t.is_active ? "bg-primary/10" : "bg-muted"
+                    }`}>
+                      <Building2 className={`w-5 h-5 ${t.is_active ? "text-primary" : "text-muted-foreground"}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{t.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">/{t.slug}</div>
+                    </div>
                   </div>
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(t)} className="shrink-0">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Badge variant={t.is_active ? "default" : "secondary"}>
-                  {t.is_active ? "Ativo" : "Inativo"}
-                </Badge>
-                <Badge variant="outline" className="capitalize">{t.plan || "free"}</Badge>
-                <div className="text-xs text-muted-foreground">{t.max_orders_month} ped/mês</div>
-                <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {t.is_active ? (
+                    <Badge className="bg-success text-success-foreground hover:bg-success gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Ativo
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="gap-1">Inativo</Badge>
+                  )}
+                  <Badge variant="outline" className="capitalize">{t.plan || "free"}</Badge>
+                  <Badge variant="outline" className="gap-1">
+                    <Store className="w-3 h-3" /> {storeCounts?.[t.id] ?? 0} {(storeCounts?.[t.id] ?? 0) === 1 ? "loja" : "lojas"}
+                  </Badge>
+                  {overLimit && (
+                    <Badge className="bg-destructive text-destructive-foreground gap-1">
+                      <AlertTriangle className="w-3 h-3" /> Limite atingido
+                    </Badge>
+                  )}
+                  {nearLimit && (
+                    <Badge variant="outline" className="border-accent text-accent-foreground bg-accent/10 gap-1">
+                      <AlertTriangle className="w-3 h-3" /> {Math.round(pct)}% do limite
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Uso mensal</span>
+                    <span className="font-medium tabular-nums">{used} / {limit} pedidos</span>
+                  </div>
+                  <Progress
+                    value={pct}
+                    className={overLimit ? "[&>div]:bg-destructive" : nearLimit ? "[&>div]:bg-accent" : ""}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

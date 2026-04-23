@@ -95,13 +95,13 @@ const PrinterPage = () => {
   if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-3xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2"><Printer className="h-6 w-6" /> Impresora ESC/POS</h2>
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Printer className="h-5 w-5 sm:h-6 sm:w-6" /> Impresora ESC/POS</h2>
           <p className="text-sm text-muted-foreground mt-1">Conecta la impresora del establecimiento vía red local.</p>
         </div>
-        <Button onClick={save}><Save className="w-4 h-4 mr-2" /> Guardar</Button>
+        <Button onClick={save} className="w-full sm:w-auto"><Save className="w-4 h-4 mr-2" /> Guardar</Button>
       </div>
 
       <Card className="border-accent/40 bg-accent/10">
@@ -132,30 +132,30 @@ const PrinterPage = () => {
             <Label>Nombre / Sector</Label>
             <Input value={p?.printer_name ?? ""} onChange={(e) => upd("printer_name", e.target.value)} placeholder="Ej: Cocina" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <Label>IP de la impresora</Label>
-              <Input value={p?.ip_address ?? ""} onChange={(e) => upd("ip_address", e.target.value)} placeholder="192.168.1.50" />
+              <Input value={p?.ip_address ?? ""} onChange={(e) => upd("ip_address", e.target.value)} placeholder="192.168.1.50" inputMode="numeric" />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label>Puerto</Label>
               <Input type="number" value={p?.port ?? 9100} onChange={(e) => upd("port", Number(e.target.value))} />
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <Label>URL pública del agente local</Label>
-            <Input value={p?.agent_endpoint ?? ""} onChange={(e) => upd("agent_endpoint", e.target.value)} placeholder="https://printer-agent.tudominio.com" />
+            <Input value={p?.agent_endpoint ?? ""} onChange={(e) => upd("agent_endpoint", e.target.value)} placeholder="https://printer-agent.tudominio.com" autoCapitalize="none" autoCorrect="off" spellCheck={false} className="font-mono text-sm" />
             <p className="text-xs text-muted-foreground mt-1">Endpoint HTTPS expuesto del agente que está dentro del local.</p>
           </div>
-          <div className="flex items-center gap-3 pt-2">
-            <Button variant="outline" onClick={test} disabled={testing}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2">
+            <Button variant="outline" onClick={test} disabled={testing} className="w-full sm:w-auto">
               <Wifi className="w-4 h-4 mr-2" /> {testing ? "Probando..." : "Probar conexión"}
             </Button>
-            <Button variant="outline" onClick={printTest} disabled={printingTest}>
+            <Button variant="outline" onClick={printTest} disabled={printingTest} className="w-full sm:w-auto">
               <FileText className="w-4 h-4 mr-2" /> {printingTest ? "Imprimiendo..." : "Imprimir prueba"}
             </Button>
             {p?.last_test_at && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground sm:ml-2">
                 Última prueba: {new Date(p.last_test_at).toLocaleString()} — {p.last_test_ok ? "OK" : "Falló"}
               </span>
             )}
