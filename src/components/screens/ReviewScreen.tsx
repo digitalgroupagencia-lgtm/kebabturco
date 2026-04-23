@@ -2,12 +2,14 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
-import { ArrowLeft, Trash2, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Trash2, ShoppingCart, Hash } from "lucide-react";
 
 const ReviewScreen = () => {
-  const { setScreen } = useOrder();
-  const { items, updateQuantity, removeItem, totalPrice } = useCart();
+  const { setScreen, tableNumber, setTableNumber } = useOrder();
+  const { items, updateQuantity, removeItem, totalPrice, orderType } = useCart();
   const { tProduct } = useLanguage();
+  const requiresTable = orderType === "here";
+  const tableValid = !requiresTable || tableNumber.trim().length > 0;
 
   return (
     <div className="relative min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[160px]">
@@ -19,6 +21,26 @@ const ReviewScreen = () => {
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-3">
+        {requiresTable && (
+          <div className="bg-card rounded-2xl shadow-sm p-4 border border-border">
+            <label className="flex items-center gap-2 text-sm font-bold text-foreground mb-2">
+              <Hash className="w-4 h-4 text-primary" />
+              Número de mesa <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="Ej: 12"
+              className="w-full h-12 px-4 text-lg font-bold text-foreground bg-secondary/60 rounded-xl border border-border focus:outline-none focus:border-primary focus:bg-card"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Indica el número de tu mesa para que te llevemos el pedido.
+            </p>
+          </div>
+        )}
+
         {items.map(item => (
           <div key={item.id} className="bg-card rounded-2xl shadow-sm p-4 border border-border">
             <div className="flex gap-3">
@@ -80,10 +102,11 @@ const ReviewScreen = () => {
             <span className="text-xl font-black text-primary">{totalPrice.toFixed(2)}€</span>
           </div>
           <button
-            onClick={() => setScreen("payment")}
-            className="w-full flex items-center justify-center py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg text-base font-black tracking-wide active:scale-[0.97] transition-transform touch-action-manipulation"
+            onClick={() => tableValid && setScreen("payment")}
+            disabled={!tableValid}
+            className="w-full flex items-center justify-center py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg text-base font-black tracking-wide active:scale-[0.97] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
-            Ir para pagamento
+            {tableValid ? "Ir al pago" : "Indica el número de mesa"}
           </button>
         </div>
       )}

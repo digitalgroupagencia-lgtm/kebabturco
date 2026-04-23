@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, X, Plus } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -100,15 +100,19 @@ const ProductScreen = () => {
 
   return (
     <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[110px]">
-      <div className="relative">
+      <div className="relative px-4 pt-4">
         <button
           onClick={() => setScreen("home")}
-          className="absolute top-4 left-4 z-10 w-11 h-11 bg-card/95 rounded-full shadow-sm flex items-center justify-center active:scale-90 transition-transform"
+          className="absolute top-6 left-6 z-10 w-11 h-11 bg-card/95 rounded-full shadow-md flex items-center justify-center active:scale-90 transition-transform"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <div className="bg-secondary/60 pt-14 pb-5 flex items-center justify-center">
-          <img src={product.image} alt={tProduct(product.name)} className="w-52 h-52 object-contain" />
+        <div className="bg-secondary/60 rounded-3xl overflow-hidden flex items-center justify-center aspect-square shadow-sm">
+          <img
+            src={product.image}
+            alt={tProduct(product.name)}
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
 
@@ -169,30 +173,10 @@ const ProductScreen = () => {
           </div>
         )}
 
-        {product.extras && product.extras.length > 0 && (
-          <div>
-            <h3 className="text-base font-bold text-foreground mb-3">{t("extras")}</h3>
-            <div className="space-y-2">
-              {product.extras.map((extra) => (
-                <div key={extra.id} className="bg-secondary/50 rounded-2xl p-3 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-foreground">{tProduct(extra.name)}</div>
-                    <div className="text-sm font-bold text-primary">+{extra.price.toFixed(2)}€</div>
-                  </div>
-                  <QuantitySelector
-                    value={extras.get(extra.id) || 0}
-                    onChange={(value) => toggleExtra(extra, value)}
-                    max={5}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {ingredientOptions.length > 0 && (
           <div>
-            <h3 className="text-base font-bold text-foreground mb-3">Personaliza tu pedido</h3>
+            <h3 className="text-base font-bold text-foreground mb-1">Personaliza tu pedido</h3>
+            <p className="text-xs text-muted-foreground mb-3">Toca para quitar un ingrediente</p>
             <div className="space-y-2">
               {ingredientOptions.map((ingredient) => {
                 const included = ingredients.get(ingredient) ?? true;
@@ -204,19 +188,59 @@ const ProductScreen = () => {
                       next.set(ingredient, !included);
                       setIngredients(next);
                     }}
-                    className="w-full bg-secondary/50 rounded-2xl p-3 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+                    className="w-full bg-secondary/50 rounded-full px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
                   >
                     <div
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center ${
-                        included ? "bg-primary border-primary" : "border-muted-foreground bg-background"
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                        included ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"
                       }`}
                     >
-                      {included && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                      {included ? <Check className="w-4 h-4" strokeWidth={3} /> : <X className="w-4 h-4" strokeWidth={3} />}
                     </div>
-                    <span className={`text-sm font-medium ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                    <span className={`text-sm font-semibold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>
                       {ingredient}
                     </span>
                   </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {product.extras && product.extras.length > 0 && (
+          <div>
+            <h3 className="text-base font-bold text-foreground mb-1">Añadir ingredientes</h3>
+            <p className="text-xs text-muted-foreground mb-3">Suplementos opcionales</p>
+            <div className="space-y-2">
+              {product.extras.map((extra) => {
+                const qty = extras.get(extra.id) || 0;
+                const selected = qty > 0;
+                return (
+                  <div
+                    key={extra.id}
+                    className={`rounded-2xl p-3 flex items-center justify-between gap-3 border transition-colors ${
+                      selected ? "bg-success/10 border-success/40" : "bg-secondary/50 border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                          selected ? "bg-success text-success-foreground" : "bg-card text-primary border border-border"
+                        }`}
+                      >
+                        {selected ? <Check className="w-4 h-4" strokeWidth={3} /> : <Plus className="w-4 h-4" strokeWidth={3} />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-foreground truncate">{tProduct(extra.name)}</div>
+                        <div className="text-xs font-bold text-primary">+{extra.price.toFixed(2)}€</div>
+                      </div>
+                    </div>
+                    <QuantitySelector
+                      value={qty}
+                      onChange={(value) => toggleExtra(extra, value)}
+                      max={5}
+                    />
+                  </div>
                 );
               })}
             </div>

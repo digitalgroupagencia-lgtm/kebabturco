@@ -9,7 +9,7 @@ const SplashScreen = () => {
   const [tapCount, setTapCount] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setScreen("language"), 1600);
+    const timer = setTimeout(() => setScreen("orderType"), 1600);
     return () => clearTimeout(timer);
   }, [setScreen]);
 
