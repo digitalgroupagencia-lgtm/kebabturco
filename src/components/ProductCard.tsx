@@ -1,4 +1,5 @@
 import { useLanguage } from "@/contexts/LanguageContext";
+import { splitProductName } from "@/lib/splitProductName";
 
 interface Props {
   name: Record<string, string>;
@@ -10,6 +11,8 @@ interface Props {
 
 const ProductCard = ({ name, image, price, onClick, badge }: Props) => {
   const { tProduct } = useLanguage();
+  const fullName = tProduct(name);
+  const [line1, line2] = splitProductName(fullName);
 
   return (
     <button
@@ -27,8 +30,9 @@ const ProductCard = ({ name, image, price, onClick, badge }: Props) => {
         className="w-32 h-32 object-contain mb-3"
         loading="lazy"
       />
-      <span className="text-[15px] font-bold text-foreground text-center leading-snug min-h-[2.75rem] flex items-center px-1 break-words hyphens-auto">
-        {tProduct(name)}
+      <span className="text-[15px] font-bold text-foreground text-center leading-tight min-h-[2.75rem] flex flex-col items-center justify-center px-1">
+        <span className="block w-full">{line1}</span>
+        {line2 && <span className="block w-full">{line2}</span>}
       </span>
       {price !== undefined && (
         <span className="text-base font-bold text-price mt-2 tabular-nums">

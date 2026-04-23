@@ -7,6 +7,19 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { Trash2, ShoppingCart, Hash, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, User, Phone } from "lucide-react";
 import { products } from "@/data/products";
 
+const CLEAR_LABEL: Record<string, string> = {
+  pt: "Limpar pedido",
+  en: "Clear order",
+  es: "Vaciar pedido",
+  fr: "Vider la commande",
+};
+const CONFIRM_CLEAR: Record<string, string> = {
+  pt: "Tem certeza que deseja limpar todo o pedido?",
+  en: "Are you sure you want to clear the entire order?",
+  es: "¿Seguro que quieres vaciar todo el pedido?",
+  fr: "Voulez-vous vraiment vider toute la commande ?",
+};
+
 const ReviewScreen = () => {
   const {
     setScreen,
@@ -20,8 +33,14 @@ const ReviewScreen = () => {
     customerPhone,
     setCustomerPhone,
   } = useOrder();
-  const { items, updateQuantity, removeItem, totalPrice, orderType } = useCart();
-  const { t, tProduct } = useLanguage();
+  const { items, updateQuantity, removeItem, totalPrice, orderType, clearCart } = useCart();
+  const { t, tProduct, lang } = useLanguage();
+  const clearLabel = CLEAR_LABEL[lang] || CLEAR_LABEL.es;
+  const confirmMsg = CONFIRM_CLEAR[lang] || CONFIRM_CLEAR.es;
+
+  const handleClearAll = () => {
+    if (window.confirm(confirmMsg)) clearCart();
+  };
   const requiresTable = orderType === "here";
   const requiresPhone = orderType === "takeaway";
   const nameValid = customerName.trim().length >= 2;
@@ -143,9 +162,19 @@ const ReviewScreen = () => {
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between px-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("yourProducts")}</p>
-            <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
-              {items.length} {items.length === 1 ? "ítem" : t("items")}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
+                {items.length} {items.length === 1 ? "ítem" : t("items")}
+              </span>
+              {items.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-destructive hover:bg-destructive/10 active:scale-95 px-2.5 py-1 rounded-full transition-all"
+                >
+                  <Trash2 className="w-3 h-3" /> {clearLabel}
+                </button>
+              )}
+            </div>
           </div>
 
           {items.map((item) => (
