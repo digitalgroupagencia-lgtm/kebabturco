@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     if (!email || !password || !role) {
       return new Response(JSON.stringify({ error: "email, password and role are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const allowedRoles = ["admin_master", "restaurant_admin", "operator", "kitchen"];
+    const allowedRoles = ["admin_master", "restaurant_admin", "operator", "kitchen", "seller"];
     if (!allowedRoles.includes(role)) {
       return new Response(JSON.stringify({ error: "Invalid role" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -46,8 +46,29 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "tenant_id required for this role" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Cliente admin para criar usuário
+    // Cliente admin (precisa antes para checagem de limite)
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // Se for VENDEDOR, validar limite do plano
+    if (role === "seller") {
+      const { data: sub } = await admin
+        .from("tenant_subscriptions")
+        .select("sellers_allowed, sellers_included")
+        .eq("tenant_id", tenant_id)
+        .maybeSingle();
+      const allowed = (sub as any)?.sellers_allowed ?? (sub as any)?.sellers_included ?? 1;
+      const { count } = await admin
+        .from("user_roles")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenant_id)
+        .eq("role", "seller");
+      if ((count ?? 0) >= allowed) {
+        return new Response(
+          JSON.stringify({ error: `Limite de vendedores atingido (${allowed}). Solicite um upgrade do plano.` }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,

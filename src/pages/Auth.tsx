@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,23 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/panel");
+        const userId = data.user?.id;
+        if (userId) {
+          const { data: roleRow } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userId)
+            .limit(1)
+            .maybeSingle();
+          const role = (roleRow as any)?.role as string | undefined;
+          if (role === "admin_master") navigate("/admin");
+          else if (role === "seller") navigate("/seller");
+          else navigate("/panel");
+        } else {
+          navigate("/panel");
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,
