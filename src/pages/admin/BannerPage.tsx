@@ -18,8 +18,7 @@ const BannerPage = () => {
   const [ops, setOps] = useState<Ops | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [videoUrl, setVideoUrl] = useState("");
-  const [videoAutoplay, setVideoAutoplay] = useState(true);
-  const [videoMuted, setVideoMuted] = useState(true);
+  const [videoStartMuted, setVideoStartMuted] = useState(true);
 
   const load = async () => {
     const [b, o] = await Promise.all([
@@ -68,8 +67,8 @@ const BannerPage = () => {
       store_id: STORE_ID,
       media_type: "video",
       video_url: url,
-      video_autoplay: videoAutoplay,
-      video_muted: videoMuted,
+      video_autoplay: true, // sempre autoplay (regra fixa: cliente não pode pausar)
+      video_muted: videoStartMuted,
       sort_order: banners.length,
       is_active: true,
     } as any);
