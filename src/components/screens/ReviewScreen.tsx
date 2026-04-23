@@ -90,61 +90,6 @@ const ReviewScreen = () => {
               </p>
             </div>
           </div>
-
-          {requiresTable && (
-            <div className={`px-4 py-4 ${!tableValid ? "animate-pulse bg-destructive/5" : ""}`}>
-              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                <Hash className="w-3.5 h-3.5 text-primary" />
-                {t("tableNumber")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                placeholder="Ej: 12"
-                className={`w-full h-14 px-4 text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
-                  !tableValid ? "border-destructive/60" : "border-transparent"
-                }`}
-              />
-              {!tableNumber && (
-                <p className="text-xs text-muted-foreground mt-2">{t("tableHint")}</p>
-              )}
-            </div>
-          )}
-
-          {/* Nome do cliente — obrigatório sempre */}
-          <div className="px-4 py-4 border-t border-border">
-            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-              <User className="w-3.5 h-3.5 text-primary" />
-              {t("yourName")} <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value.slice(0, 40))}
-              placeholder="—"
-              className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
-            />
-          </div>
-
-          {requiresPhone && (
-            <div className="px-4 py-4 border-t border-border">
-              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                <Phone className="w-3.5 h-3.5 text-primary" />
-                {t("yourPhone")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                type="tel"
-                inputMode="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
-                placeholder="+34 600 000 000"
-                className="w-full h-12 px-4 text-base font-bold text-foreground tabular-nums bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2">{t("phoneHint")}</p>
-            </div>
-          )}
         </div>
 
         {/* Items */}
