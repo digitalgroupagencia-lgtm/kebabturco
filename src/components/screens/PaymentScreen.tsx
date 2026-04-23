@@ -197,7 +197,7 @@ const PaymentScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in pb-[150px]">
+    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in flex flex-col">
       <ScreenHeader
         eyebrow={t("finalStep")}
         title={t("pay")}

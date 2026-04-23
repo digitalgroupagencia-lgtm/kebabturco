@@ -211,7 +211,7 @@ const ProductScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[126px]">
+    <div className="relative min-h-[100dvh] bg-background animate-fade-in flex flex-col">
       <ScreenHeader
         eyebrow={t("menu")}
         title={tProduct(product.name)}
