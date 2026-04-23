@@ -24,7 +24,7 @@ export const usePromoBanners = (storeId: string = DEFAULT_STORE_ID) => {
   useEffect(() => {
     load();
     const ch = supabase
-      .channel(`promo:${storeId}`)
+      .channel(`promo:${storeId}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "promo_banners", filter: `store_id=eq.${storeId}` }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
