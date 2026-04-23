@@ -11,13 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe } from "lucide-react";
+import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe, ArrowRight } from "lucide-react";
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
 import TenantQrDialog from "@/components/admin/TenantQrDialog";
 import TenantLanguagesDialog from "@/components/admin/TenantLanguagesDialog";
 import DuplicateTenantDialog from "@/components/admin/DuplicateTenantDialog";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Copy } from "lucide-react";
 
 interface TenantForm {
   name: string;
@@ -228,6 +227,17 @@ const TenantsPage = () => {
                       <Pencil className="w-4 h-4" />
                     </Button>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => navigate(`/admin/tenants/${t.slug}`)}
+                  >
+                    Acessar projeto <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                  <DuplicateTenantDialog sourceTenantId={t.id} sourceName={t.name} />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
