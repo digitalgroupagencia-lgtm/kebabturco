@@ -5,14 +5,17 @@ import { useCart } from "@/contexts/CartContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { products, categories } from "@/data/products";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { Plus } from "lucide-react";
+import { Plus, Sun, Moon } from "lucide-react";
 import elreyLogoFallback from "@/assets/elrey-logo-horizontal.png";
+import { useTheme } from "@/contexts/ThemeContext";
+import { splitProductName } from "@/lib/splitProductName";
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, selectedCategory, setSelectedCategory } = useOrder();
   const { t, tProduct } = useLanguage();
   const { totalItems, orderType } = useCart();
   const { settings } = useBranding();
+  const { theme, toggle } = useTheme();
   const headerLogo = settings?.logo_secondary_url || settings?.logo_main_url || elreyLogoFallback;
 
   useEffect(() => {
