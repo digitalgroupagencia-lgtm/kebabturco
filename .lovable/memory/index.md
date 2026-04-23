@@ -15,3 +15,4 @@ SEMPRE atualizar SYSTEM_PROMPT do admin-assistant ao mudar qualquer feature.
 - [Arquitetura SaaS](mem://features/architecture) — Estrutura tenant→store→totem, módulos planejados
 - [Schema do banco](mem://features/db-schema) — Todas as tabelas, enums, RLS policies
 - [Conhecimento do Assistente](mem://features/assistant-knowledge) — Regra: sincronizar prompt do admin-assistant a cada mudança
+- [Módulo Vendedor](mem://features/seller-module) — App /seller, mesas, fechamento individual/total, billing por vendedor

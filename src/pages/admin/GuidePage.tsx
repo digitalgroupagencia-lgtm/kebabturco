@@ -72,6 +72,21 @@ const SECTIONS: FaqSection[] = [
     ],
   },
   {
+    title: "Módulo Vendedor / Garçom (mobile)",
+    items: [
+      { q: "O que é o módulo Vendedor?", a: "É um app **100% mobile** em **/seller** para garçons/atendentes tirarem pedidos pelo celular. Cada pedido fica vinculado a **mesa + cliente + vendedor**, vai direto para a cozinha (impressão automática se ativada) e entra nos relatórios do restaurante." },
+      { q: "Como criar um vendedor?", a: "1. Painel do restaurante → aba **Vendedores** (/panel/sellers).\n2. Clique **Novo vendedor**, informe nome, e-mail e senha inicial.\n3. O sistema valida o limite do plano (vendedores inclusos + extras liberados).\n4. Compartilhe o e-mail e senha com o vendedor." },
+      { q: "Como o vendedor faz login?", a: "Acessa **/auth**, faz login com e-mail+senha. É redirecionado **automaticamente** para **/seller** — nunca vê o painel do restaurante nem o Admin Master." },
+      { q: "Como o vendedor cria um pedido?", a: "1. Toca em **Novo pedido**.\n2. Digita **mesa** e **nome do cliente**.\n3. Busca/escolhe categoria e adiciona produtos com **+/-**.\n4. Abre o resumo (botão verde flutuante), confere total, adiciona observações e toca **Enviar para cozinha**.\n5. Pedido é criado, impressora dispara, vendedor é levado para a tela da mesa." },
+      { q: "Como ver as mesas abertas?", a: "Aba **Mesas** lista todas as mesas com sessão aberta (número + horário + total). Toque para abrir o detalhe." },
+      { q: "Como fechar UM cliente da mesa (sem fechar a mesa toda)?", a: "Detalhe da mesa → no card do cliente, toque **Fechar** → escolha cartão/dinheiro/pix. O cliente sai como pago, os pedidos dele vão para 'entregue', os outros clientes da mesa continuam ativos." },
+      { q: "Como fechar a MESA INTEIRA?", a: "Detalhe da mesa → botão **Fechar mesa**. Escolha:\n- **Pagamento único**: a mesa toda paga com o mesmo método.\n- **Dividir por cliente**: cada cliente paga com o método dele (cartão/dinheiro/pix por linha).\n\nAo confirmar, todos os clientes ativos são fechados, todos os pedidos viram 'entregue' e a mesa some da lista de abertas." },
+      { q: "Como o admin define quantos vendedores o restaurante pode ter?", a: "Admin Master → **/admin/tenants** → abrir o tenant → **Assinatura**. Configure: adesão, mensalidade base, **vendedores inclusos**, **vendedores liberados** (allowed) e **preço por vendedor extra**. A mensalidade total é calculada automaticamente: **base + (extras × preço)**." },
+      { q: "Onde vejo o desempenho de cada vendedor?", a: "Painel do restaurante → **Relatórios** → seção **Desempenho por Vendedor**: pedidos, faturamento, ticket médio e cancelados por período (hoje, 7d, 30d, 90d)." },
+      { q: "O vendedor consegue mexer no cardápio/preços/identidade?", a: "Não. O vendedor só acessa **/seller**. Ele não tem acesso a cardápio, identidade visual, configurações, planos, clientes ou usuários." },
+    ],
+  },
+  {
     title: "Conversas IA e Reset",
     items: [
       { q: "Onde ficam minhas conversas com a IA?", a: "Aba **Conversas IA** no menu lateral. Toda conversa é salva automaticamente com título gerado pelo conteúdo, data/hora e cliente vinculado (se houver). Pode abrir, pesquisar e excluir." },
