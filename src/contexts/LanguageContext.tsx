@@ -46,6 +46,7 @@ const translations: Translations = {
   back: { pt: "Voltar", en: "Back", es: "Volver", fr: "Retour" },
   offers: { pt: "Ofertas", en: "Offers", es: "Ofertas", fr: "Offres" },
   startOrder: { pt: "Fazer pedido", en: "Start order", es: "Hacer pedido", fr: "Commander" },
+  choose: { pt: "Escolha", en: "Choose", es: "Elige", fr: "Choisir" },
 };
 
 interface LanguageContextType {

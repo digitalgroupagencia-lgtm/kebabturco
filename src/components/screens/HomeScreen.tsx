@@ -116,7 +116,7 @@ const HomeScreen = () => {
                     {tProduct(product.name)}
                   </span>
                   <span className="text-base font-black text-primary text-center">
-                    R$ {product.price.toFixed(2)}
+                    {product.price.toFixed(2)}€
                   </span>
                 </div>
                 <div className="px-3 pb-3">

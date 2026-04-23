@@ -3,14 +3,17 @@ import { ArrowLeft, Check } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { products, type Extra, type Size } from "@/data/products";
+import { products, type Extra, type Size, type Variant } from "@/data/products";
 import QuantitySelector from "@/components/QuantitySelector";
 
 const ingredientMap: Record<string, string[]> = {
-  burgers: ["Alface", "Tomate", "Cebola", "Picles", "Molho especial"],
-  chicken: ["Alface", "Tomate", "Cebola", "Maionese especial"],
-  veggie: ["Alface", "Tomate", "Cebola", "Molho especial"],
-  combos: ["Alface", "Tomate", "Cebola", "Molho especial"],
+  "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
+  "rollo-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
+  "rollo-casero": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
+  platos: ["Lechuga", "Cebolla", "Tomate", "Col", "Zanahoria", "Maíz", "Pepino", "Salsa"],
+  hamburguesas: ["Lechuga", "Tomate", "Cebolla", "Salsa"],
+  ensaladas: ["Lechuga", "Tomate", "Cebolla"],
+  box: ["Salsa"],
 };
 
 const ProductScreen = () => {
@@ -26,6 +29,7 @@ const ProductScreen = () => {
 
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(undefined);
   const [extras, setExtras] = useState<Map<string, number>>(new Map());
   const [ingredients, setIngredients] = useState<Map<string, boolean>>(new Map());
 
@@ -33,6 +37,7 @@ const ProductScreen = () => {
     if (!product) return;
     setQuantity(1);
     setSelectedSize(product.sizes?.[0]);
+    setSelectedVariant(product.variants?.[0]);
     setExtras(new Map());
     setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, true])));
   }, [product, ingredientOptions]);
@@ -71,9 +76,14 @@ const ProductScreen = () => {
       })
       .filter(Boolean) as { id: string; name: Record<string, string>; price: number; quantity: number }[];
 
+    const variantSuffix = selectedVariant ? ` (${selectedVariant.name.es || selectedVariant.name.en})` : "";
+    const finalName = selectedVariant
+      ? Object.fromEntries(Object.entries(product.name).map(([k, v]) => [k, v + variantSuffix])) as Record<string, string>
+      : product.name;
+
     addItem({
       productId: product.id,
-      productName: product.name,
+      productName: finalName,
       productImage: product.image,
       basePrice: product.price,
       quantity,
@@ -106,8 +116,31 @@ const ProductScreen = () => {
         <div>
           <h1 className="text-[30px] leading-tight font-black text-foreground">{tProduct(product.name)}</h1>
           <p className="text-muted-foreground mt-1 text-sm">{tProduct(product.description)}</p>
-          <p className="text-[32px] font-black text-primary mt-3">R$ {product.price.toFixed(2)}</p>
+          <p className="text-[32px] font-black text-primary mt-3">{product.price.toFixed(2)}€</p>
+          {product.note && (
+            <p className="text-xs text-muted-foreground italic mt-2">{tProduct(product.note)}</p>
+          )}
         </div>
+
+        {product.variants && product.variants.length > 0 && (
+          <div>
+            <h3 className="text-base font-bold text-foreground mb-3">{t("choose")}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {product.variants.map((v) => {
+                const sel = selectedVariant?.id === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => setSelectedVariant(v)}
+                    className={`rounded-2xl p-4 text-left border transition-all ${sel ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-secondary/50 text-foreground border-border"}`}
+                  >
+                    <div className="font-bold text-sm">{tProduct(v.name)}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {product.sizes && product.sizes.length > 0 && (
           <div>
@@ -127,7 +160,7 @@ const ProductScreen = () => {
                   >
                     <div className="font-bold text-sm">{tProduct(size.name)}</div>
                     <div className="text-xs mt-1 opacity-80">
-                      {size.priceAdd > 0 ? `+R$ ${size.priceAdd.toFixed(2)}` : "Sem acréscimo"}
+                      {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
                     </div>
                   </button>
                 );
@@ -144,7 +177,7 @@ const ProductScreen = () => {
                 <div key={extra.id} className="bg-secondary/50 rounded-2xl p-3 flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-foreground">{tProduct(extra.name)}</div>
-                    <div className="text-sm font-bold text-primary">+R$ {extra.price.toFixed(2)}</div>
+                    <div className="text-sm font-bold text-primary">+{extra.price.toFixed(2)}€</div>
                   </div>
                   <QuantitySelector
                     value={extras.get(extra.id) || 0}
@@ -159,7 +192,7 @@ const ProductScreen = () => {
 
         {ingredientOptions.length > 0 && (
           <div>
-            <h3 className="text-base font-bold text-foreground mb-3">Personalizar seu pedido</h3>
+            <h3 className="text-base font-bold text-foreground mb-3">Personaliza tu pedido</h3>
             <div className="space-y-2">
               {ingredientOptions.map((ingredient) => {
                 const included = ingredients.get(ingredient) ?? true;
@@ -191,7 +224,7 @@ const ProductScreen = () => {
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-foreground">Quantidade</span>
+          <span className="text-base font-bold text-foreground">Cantidad</span>
           <QuantitySelector value={quantity} onChange={setQuantity} min={1} />
         </div>
       </div>
@@ -203,7 +236,7 @@ const ProductScreen = () => {
         >
           <span className="text-base font-black tracking-wide">{t("addToOrder")}</span>
           <span className="text-base font-black bg-white/15 rounded-full px-3 py-1">
-            R$ {totalPrice.toFixed(2)}
+            {totalPrice.toFixed(2)}€
           </span>
         </button>
       </div>
