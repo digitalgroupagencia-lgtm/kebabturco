@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
+import AdminAssistant from "./AdminAssistant";
 import { Loader2 } from "lucide-react";
 
 const AdminLayout = () => {
@@ -46,6 +47,7 @@ const AdminLayout = () => {
             <Outlet />
           </main>
         </div>
+        <AdminAssistant />
       </div>
     </SidebarProvider>
   );

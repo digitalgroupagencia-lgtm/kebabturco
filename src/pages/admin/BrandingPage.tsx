@@ -57,6 +57,7 @@ const BrandingPage = () => {
       text_color: s.text_color,
       accent_color: s.accent_color,
       cta_color: s.cta_color,
+      header_color: (s as any).header_color,
     }).eq("store_id", STORE_ID);
     setSaving(false);
     if (error) toast.error("Error al guardar"); else toast.success("¡Identidad visual actualizada!");
@@ -145,6 +146,7 @@ const BrandingPage = () => {
               <ColorField label="CTA (botón pago)" field="cta_color" />
               <ColorField label="Fondo" field="background_color" />
               <ColorField label="Texto" field="text_color" />
+              <ColorField label="Barra superior (totem)" field={"header_color" as keyof Settings} />
             </CardContent>
           </Card>
         </div>
