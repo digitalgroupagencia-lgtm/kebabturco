@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, X, Plus } from "lucide-react";
+import { Check, X, Plus } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { products, type Extra, type Size, type Variant } from "@/data/products";
 import QuantitySelector from "@/components/QuantitySelector";
+import ScreenHeader from "@/components/ScreenHeader";
 
 const ingredientMap: Record<string, string[]> = {
   "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
