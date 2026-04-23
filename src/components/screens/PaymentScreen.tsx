@@ -21,7 +21,8 @@ const PaymentScreen = () => {
   const { setScreen, generateOrderNumber, setPaymentMethod, storeId, tableNumber } = useOrder();
   const { items, totalPrice, clearCart, orderType } = useCart();
   const { settings } = useOperationsSettings();
-  const branding = (() => { try { return useBranding(); } catch { return null as any; } })();
+  const brandingCtx = useBranding();
+  const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
 
@@ -111,8 +112,8 @@ const PaymentScreen = () => {
               </p>
               <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? "ítem" : "ítems"} · Impuestos incluidos</p>
             </div>
-            {branding?.branding?.logo_main_url && (
-              <img src={branding.branding.logo_main_url} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />
+            {logoUrl && (
+              <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />
             )}
           </div>
         </div>
