@@ -3,6 +3,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { products, categories } from "@/data/products";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus } from "lucide-react";
@@ -15,7 +16,13 @@ const HomeScreen = () => {
   const { t, tProduct } = useLanguage();
   const { totalItems, orderType } = useCart();
   const { settings } = useBranding();
-  const headerLogo = settings?.logo_secondary_url || settings?.logo_main_url || elreyLogoFallback;
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const headerLogo =
+    (isDark && ((settings as any)?.logo_secondary_dark_url || (settings as any)?.logo_main_dark_url)) ||
+    settings?.logo_secondary_url ||
+    settings?.logo_main_url ||
+    elreyLogoFallback;
 
   useEffect(() => {
     if (!selectedCategory) {
