@@ -274,10 +274,12 @@ const PaymentScreen = () => {
         <button
           onClick={confirm}
           disabled={!selected || processing}
-          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none"
+          className={`w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none ${
+            selected && !processing ? "animate-pulse-cta" : ""
+          }`}
         >
           <span className="text-[15px] font-black tracking-wide uppercase flex items-center gap-2">
-            {processing ? t("processing") : selected === "counter" ? t("confirmOrder") : t("confirmPayment")}
+            {processing ? t("processing") : t("finalizeOrder")}
             {!processing && <ChevronRight className="w-4 h-4" strokeWidth={3} />}
           </span>
           <span className="text-[15px] font-black bg-white/20 rounded-full px-3.5 py-1 tabular-nums">
