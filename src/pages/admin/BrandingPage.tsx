@@ -22,6 +22,10 @@ const BrandingPage = () => {
     banner_home_url: useRef<HTMLInputElement>(null),
     logo_language_url: useRef<HTMLInputElement>(null),
     logo_order_type_url: useRef<HTMLInputElement>(null),
+    logo_main_dark_url: useRef<HTMLInputElement>(null),
+    logo_secondary_dark_url: useRef<HTMLInputElement>(null),
+    logo_language_dark_url: useRef<HTMLInputElement>(null),
+    logo_order_type_dark_url: useRef<HTMLInputElement>(null),
   };
 
   useEffect(() => { load(); }, []);
@@ -55,6 +59,10 @@ const BrandingPage = () => {
       icon_takeaway_url: s.icon_takeaway_url,
       logo_language_url: (s as any).logo_language_url,
       logo_order_type_url: (s as any).logo_order_type_url,
+      logo_main_dark_url: (s as any).logo_main_dark_url,
+      logo_secondary_dark_url: (s as any).logo_secondary_dark_url,
+      logo_language_dark_url: (s as any).logo_language_dark_url,
+      logo_order_type_dark_url: (s as any).logo_order_type_dark_url,
       primary_color: s.primary_color,
       secondary_color: s.secondary_color,
       background_color: s.background_color,
