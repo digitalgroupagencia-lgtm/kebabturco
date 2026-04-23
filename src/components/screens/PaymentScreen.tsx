@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
-import TableNumberModal from "@/components/TableNumberModal";
+import FinalizeOrderModal from "@/components/FinalizeOrderModal";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
   { id: "card", icon: CreditCard },
@@ -48,7 +48,9 @@ const PaymentScreen = () => {
     tableNumber,
     setTableNumber,
     customerName,
+    setCustomerName,
     customerPhone,
+    setCustomerPhone,
   } = useOrder();
   const { items, totalPrice, clearCart, orderType } = useCart();
   const { settings } = useOperationsSettings();
@@ -57,7 +59,7 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showTableModal, setShowTableModal] = useState(false);
+  const [showFinalize, setShowFinalize] = useState(false);
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -81,15 +83,15 @@ const PaymentScreen = () => {
 
   const confirm = async () => {
     if (!selected || processing) return;
-    // Modal final: se for "Comer aqui" e ainda não há mesa, pede agora
-    if (orderType === "here" && !tableNumber.trim()) {
-      setShowTableModal(true);
-      return;
-    }
-    await persistAndPrint(tableNumber);
+    // Modal final: nome + (mesa | telefone) é OBRIGATÓRIO antes de enviar.
+    setShowFinalize(true);
   };
 
-  const persistAndPrint = async (finalTable: string) => {
+  const persistAndPrint = async (
+    finalName: string,
+    finalTable: string,
+    finalPhone: string,
+  ) => {
     if (!selected || processing) return;
     setProcessing(true);
     try {
@@ -109,8 +111,8 @@ const PaymentScreen = () => {
             order_number: orderNumber,
             order_type: orderType === "here" ? "dine_in" : "takeaway",
             table_number: finalTable || null,
-            customer_name: customerName || null,
-            customer_phone: customerPhone || null,
+            customer_name: finalName || null,
+            customer_phone: finalPhone || null,
             payment_method:
               ["card", "cash", "apple_pay", "google_pay", "pix"].includes(paymentMethodDb)
                 ? (paymentMethodDb as "card" | "cash" | "apple_pay" | "google_pay" | "pix")
@@ -147,8 +149,8 @@ const PaymentScreen = () => {
             storeId,
             orderNumber,
             tableNumber: finalTable || null,
-            customerName: customerName || null,
-            customerPhone: customerPhone || null,
+            customerName: finalName || null,
+            customerPhone: finalPhone || null,
             orderType,
             paymentMethod: selected,
             paymentPending: selected === "counter",
@@ -272,10 +274,12 @@ const PaymentScreen = () => {
         <button
           onClick={confirm}
           disabled={!selected || processing}
-          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none"
+          className={`w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none ${
+            selected && !processing ? "animate-pulse-cta" : ""
+          }`}
         >
           <span className="text-[15px] font-black tracking-wide uppercase flex items-center gap-2">
-            {processing ? t("processing") : selected === "counter" ? t("confirmOrder") : t("confirmPayment")}
+            {processing ? t("processing") : t("finalizeOrder")}
             {!processing && <ChevronRight className="w-4 h-4" strokeWidth={3} />}
           </span>
           <span className="text-[15px] font-black bg-white/20 rounded-full px-3.5 py-1 tabular-nums">
@@ -284,15 +288,20 @@ const PaymentScreen = () => {
         </button>
       </div>
 
-      <TableNumberModal
-        open={showTableModal}
-        onConfirm={(table) => {
+      <FinalizeOrderModal
+        open={showFinalize}
+        mode={orderType === "here" ? "here" : "takeaway"}
+        initialName={customerName}
+        initialTable={tableNumber}
+        initialPhone={customerPhone}
+        onConfirm={({ name, table, phone }) => {
+          setCustomerName(name);
           setTableNumber(table);
-          setShowTableModal(false);
-          // Persiste com a mesa recém-informada
-          persistAndPrint(table);
+          setCustomerPhone(phone);
+          setShowFinalize(false);
+          persistAndPrint(name, table, phone);
         }}
-        onCancel={() => setShowTableModal(false)}
+        onCancel={() => setShowFinalize(false)}
       />
     </div>
   );

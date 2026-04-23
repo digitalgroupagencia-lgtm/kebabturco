@@ -4,7 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Hash, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, User, Phone } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag } from "lucide-react";
 import { products } from "@/data/products";
 
 const CLEAR_LABEL: Record<string, string> = {
@@ -26,12 +26,6 @@ const ReviewScreen = () => {
     setSelectedProductId,
     setProductReturnScreen,
     setEditingCartItemId,
-    tableNumber,
-    setTableNumber,
-    customerName,
-    setCustomerName,
-    customerPhone,
-    setCustomerPhone,
   } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType, clearCart } = useCart();
   const { t, tProduct, lang } = useLanguage();
@@ -41,13 +35,7 @@ const ReviewScreen = () => {
   const handleClearAll = () => {
     if (window.confirm(confirmMsg)) clearCart();
   };
-  const requiresTable = orderType === "here";
-  const requiresPhone = orderType === "takeaway";
-  const nameValid = customerName.trim().length >= 2;
-  // Mesa pode ficar em branco aqui — vamos pedir num modal final no pagamento.
-  const tableValid = true;
-  const phoneValid = !requiresPhone || customerPhone.trim().length >= 6;
-  const canCheckout = nameValid && tableValid && phoneValid;
+  const canCheckout = items.length > 0;
 
   // Sugestões inteligentes: prioriza bebidas se cliente ainda não pediu
   const suggestions = useMemo(() => {
@@ -102,61 +90,6 @@ const ReviewScreen = () => {
               </p>
             </div>
           </div>
-
-          {requiresTable && (
-            <div className={`px-4 py-4 ${!tableValid ? "animate-pulse bg-destructive/5" : ""}`}>
-              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                <Hash className="w-3.5 h-3.5 text-primary" />
-                {t("tableNumber")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                placeholder="Ej: 12"
-                className={`w-full h-14 px-4 text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
-                  !tableValid ? "border-destructive/60" : "border-transparent"
-                }`}
-              />
-              {!tableNumber && (
-                <p className="text-xs text-muted-foreground mt-2">{t("tableHint")}</p>
-              )}
-            </div>
-          )}
-
-          {/* Nome do cliente — obrigatório sempre */}
-          <div className="px-4 py-4 border-t border-border">
-            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-              <User className="w-3.5 h-3.5 text-primary" />
-              {t("yourName")} <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value.slice(0, 40))}
-              placeholder="—"
-              className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
-            />
-          </div>
-
-          {requiresPhone && (
-            <div className="px-4 py-4 border-t border-border">
-              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                <Phone className="w-3.5 h-3.5 text-primary" />
-                {t("yourPhone")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                type="tel"
-                inputMode="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
-                placeholder="+34 600 000 000"
-                className="w-full h-12 px-4 text-base font-bold text-foreground tabular-nums bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
-              />
-              <p className="text-xs text-muted-foreground mt-2">{t("phoneHint")}</p>
-            </div>
-          )}
         </div>
 
         {/* Items */}
@@ -331,13 +264,7 @@ const ReviewScreen = () => {
             className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
             <span>
-              {!nameValid
-                ? t("enterName")
-                : !tableValid
-                ? t("enterTable")
-                : !phoneValid
-                ? t("enterPhone")
-                : t("goToPayment")}
+              {t("goToPayment")}
             </span>
             <ChevronRight className="w-5 h-5" strokeWidth={3} />
           </button>
