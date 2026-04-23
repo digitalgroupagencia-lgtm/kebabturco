@@ -4,7 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Hash, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, User, Phone } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag } from "lucide-react";
 import { products } from "@/data/products";
 
 const CLEAR_LABEL: Record<string, string> = {
@@ -26,12 +26,6 @@ const ReviewScreen = () => {
     setSelectedProductId,
     setProductReturnScreen,
     setEditingCartItemId,
-    tableNumber,
-    setTableNumber,
-    customerName,
-    setCustomerName,
-    customerPhone,
-    setCustomerPhone,
   } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType, clearCart } = useCart();
   const { t, tProduct, lang } = useLanguage();
@@ -41,13 +35,7 @@ const ReviewScreen = () => {
   const handleClearAll = () => {
     if (window.confirm(confirmMsg)) clearCart();
   };
-  const requiresTable = orderType === "here";
-  const requiresPhone = orderType === "takeaway";
-  const nameValid = customerName.trim().length >= 2;
-  // Mesa pode ficar em branco aqui — vamos pedir num modal final no pagamento.
-  const tableValid = true;
-  const phoneValid = !requiresPhone || customerPhone.trim().length >= 6;
-  const canCheckout = nameValid && tableValid && phoneValid;
+  const canCheckout = items.length > 0;
 
   // Sugestões inteligentes: prioriza bebidas se cliente ainda não pediu
   const suggestions = useMemo(() => {
