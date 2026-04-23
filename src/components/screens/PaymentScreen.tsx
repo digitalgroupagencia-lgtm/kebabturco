@@ -358,21 +358,6 @@ const PaymentScreen = () => {
         </button>
       </div>
 
-      <FinalizeOrderModal
-        open={showFinalize}
-        mode={orderType === "here" ? "here" : "takeaway"}
-        initialName={customerName}
-        initialTable={tableNumber}
-        initialPhone={customerPhone}
-        onConfirm={({ name, table, phone }) => {
-          setCustomerName(name);
-          setTableNumber(table);
-          setCustomerPhone(phone);
-          setShowFinalize(false);
-          persistAndPrint(name, table, phone);
-        }}
-        onCancel={() => setShowFinalize(false)}
-      />
     </div>
   );
 };
