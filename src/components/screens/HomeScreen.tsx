@@ -118,8 +118,8 @@ const HomeScreen = () => {
         </aside>
 
         <main className="flex-1 overflow-y-auto bg-background no-scrollbar">
-          {/* Banner integrado com padding lateral consistente */}
-          <div className="px-3 pt-3">
+          {/* Banner fixo dentro da área rolável; produtos passam por trás */}
+          <div className="sticky top-0 z-20 px-3 pt-3">
             <PromoBannerCarousel />
           </div>
 
