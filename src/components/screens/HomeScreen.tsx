@@ -5,9 +5,9 @@ import { useCart } from "@/contexts/CartContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { products, categories } from "@/data/products";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { Plus, Sun, Moon } from "lucide-react";
+import { Plus } from "lucide-react";
 import elreyLogoFallback from "@/assets/elrey-logo-horizontal.png";
-import { useTheme } from "@/contexts/ThemeContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 
 const HomeScreen = () => {
@@ -15,7 +15,6 @@ const HomeScreen = () => {
   const { t, tProduct } = useLanguage();
   const { totalItems, orderType } = useCart();
   const { settings } = useBranding();
-  const { theme, toggle } = useTheme();
   const headerLogo = settings?.logo_secondary_url || settings?.logo_main_url || elreyLogoFallback;
 
   useEffect(() => {
@@ -84,13 +83,7 @@ const HomeScreen = () => {
               </span>
               <span className="text-[11px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
             </div>
-            <button
-              onClick={toggle}
-              aria-label={theme === "dark" ? "Modo claro" : "Modo escuro"}
-              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center active:scale-90 transition-all"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            <ThemeToggle variant="onColor" className="w-8 h-8 shadow-none" />
           </div>
         </div>
       </header>

@@ -1,6 +1,7 @@
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
@@ -40,7 +41,12 @@ const LanguageScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-secondary/40 via-background to-background animate-fade-in">
+    <div className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative">
+      {/* Toggle tema — presente desde a primeira tela */}
+      <div className="absolute top-4 right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
+        <ThemeToggle />
+      </div>
+
       {/* Logo header — mesmo padrão da OrderTypeScreen */}
       <div className="flex flex-col items-center pt-12 pb-6 px-6">
         <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
