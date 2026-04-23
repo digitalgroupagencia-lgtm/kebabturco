@@ -52,7 +52,7 @@ interface LanguageContextType {
   lang: Lang;
   setLang: (l: Lang) => void;
   t: (key: string) => string;
-  tProduct: (obj: Record<string, string>) => string;
+  tProduct: (obj: Record<string, string> | string | null | undefined) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
