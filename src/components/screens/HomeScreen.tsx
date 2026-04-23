@@ -81,8 +81,8 @@ const HomeScreen = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[140px] min-w-[140px] bg-secondary/40 overflow-y-auto shrink-0 no-scrollbar">
-          <div className="flex flex-col gap-3 px-2 py-3">
+        <aside className="w-[108px] min-w-[108px] bg-secondary/40 overflow-y-auto shrink-0 no-scrollbar">
+          <div className="flex flex-col gap-2.5 px-1.5 py-3">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
               return (
@@ -98,18 +98,18 @@ const HomeScreen = () => {
                   <img
                     src={category.image}
                     alt={tProduct(category.name)}
-                    className="w-[124px] h-[94px] object-cover rounded-[16px] drop-shadow-[0_6px_8px_rgba(0,0,0,0.16)]"
+                    className="w-[96px] h-[72px] object-cover rounded-[14px] drop-shadow-[0_5px_8px_rgba(0,0,0,0.16)]"
                     loading="lazy"
                   />
                   <span
-                    className={`text-[12px] font-bold text-center leading-tight line-clamp-2 px-1 ${
+                    className={`text-[11px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
                       isActive ? "text-primary" : "text-foreground"
                     }`}
                   >
                     {tProduct(category.name)}
                   </span>
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-full" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-9 bg-primary rounded-r-full" />
                   )}
                 </button>
               );
