@@ -20,6 +20,7 @@ const SECTIONS: FaqSection[] = [
       { q: "Como eu (Admin Master) acesso meu painel global?", a: "Faça login em **/auth** com seu e-mail e senha. Como você tem o papel **admin_master**, será redirecionado para **/admin** automaticamente. Daí você vê: Dashboard, Clientes, Usuários, Conversas IA, Central de Ajuda, Monitoramento, Configurações globais, etc." },
       { q: "Como entro no painel de um cliente específico (sem misturar dados)?", a: "1. Em **/admin/tenants** localize o card do cliente.\n2. Clique no botão **Acessar projeto**.\n3. Você entra em **/admin/tenants/:slug** — um painel completo escopado SOMENTE naquele cliente (cardápio, produtos, pedidos, identidade, banners, impressora, pagamentos, configurações, duplicar estrutura, zerar dados, assinatura).\n4. Para voltar ao Admin Master, use o link **Voltar ao Admin Master** na barra lateral." },
       { q: "Como o dono do restaurante acessa o painel dele?", a: "1. Você (Admin Master) cria o usuário em **/admin/users** → **Novo usuário** → escolhe papel **Admin do Restaurante** + vincula ao cliente.\n2. Envia e-mail e senha temporária para o dono.\n3. O dono entra em **/auth**, faz login e é redirecionado para **/panel** (apenas o painel do restaurante dele — nunca vê outros clientes nem o Admin Master)." },
+      { q: "Como o VENDEDOR (garçom) acessa o app dele?", a: "1. O Admin do Restaurante (ou você como Admin Master) cria o vendedor em **/panel/sellers** (ou **/admin/users** com papel Vendedor).\n2. O vendedor entra em **/auth** com e-mail+senha e é redirecionado AUTOMATICAMENTE para **/seller** (interface 100% mobile com navegação inferior: Início, Mesas, Pedidos).\n3. Ele NÃO consegue acessar /admin nem /panel — só o app de vendedor.\n4. O limite de vendedores é controlado pela assinatura do tenant (vendedores inclusos + extras)." },
       { q: "Como o cliente final usa o totem?", a: "1. Em **/admin/tenants** clique no ícone de **QR Code** do cliente para baixar o QR/link público.\n2. Imprima/cole o QR no totem físico ou na mesa.\n3. Ao acessar, o totem abre direto na marca, idioma e cardápio daquele restaurante (resolvido por **domínio personalizado** ou **slug**)." },
       { q: "Operador ou cozinha — como dou acesso?", a: "Em **/admin/users** crie usuário com papel **Operator** (caixa/pedidos) ou **Kitchen** (somente visão de cozinha). Vincule ao cliente. Eles acessam **/panel** mas só veem as áreas permitidas pelo papel." },
     ],
@@ -68,6 +69,21 @@ const SECTIONS: FaqSection[] = [
     items: [
       { q: "Como criar o login do dono de um restaurante?", a: "Vá em **Usuários** → **Novo usuário**. Informe e-mail, senha temporária, nome, escolha o papel **Admin do Restaurante** e vincule ao cliente. O dono receberá acesso somente ao painel daquele restaurante." },
       { q: "Quem é Admin Master?", a: "Você. Tem acesso a todos os clientes, pode criar/editar/duplicar/desativar e ver relatórios globais. O dono do restaurante nunca vê outros clientes nem o Admin Master." },
+    ],
+  },
+  {
+    title: "Módulo Vendedor / Garçom (mobile)",
+    items: [
+      { q: "O que é o módulo Vendedor?", a: "É um app **100% mobile** em **/seller** para garçons/atendentes tirarem pedidos pelo celular. Cada pedido fica vinculado a **mesa + cliente + vendedor**, vai direto para a cozinha (impressão automática se ativada) e entra nos relatórios do restaurante." },
+      { q: "Como criar um vendedor?", a: "1. Painel do restaurante → aba **Vendedores** (/panel/sellers).\n2. Clique **Novo vendedor**, informe nome, e-mail e senha inicial.\n3. O sistema valida o limite do plano (vendedores inclusos + extras liberados).\n4. Compartilhe o e-mail e senha com o vendedor." },
+      { q: "Como o vendedor faz login?", a: "Acessa **/auth**, faz login com e-mail+senha. É redirecionado **automaticamente** para **/seller** — nunca vê o painel do restaurante nem o Admin Master." },
+      { q: "Como o vendedor cria um pedido?", a: "1. Toca em **Novo pedido**.\n2. Digita **mesa** e **nome do cliente**.\n3. Busca/escolhe categoria e adiciona produtos com **+/-**.\n4. Abre o resumo (botão verde flutuante), confere total, adiciona observações e toca **Enviar para cozinha**.\n5. Pedido é criado, impressora dispara, vendedor é levado para a tela da mesa." },
+      { q: "Como ver as mesas abertas?", a: "Aba **Mesas** lista todas as mesas com sessão aberta (número + horário + total). Toque para abrir o detalhe." },
+      { q: "Como fechar UM cliente da mesa (sem fechar a mesa toda)?", a: "Detalhe da mesa → no card do cliente, toque **Fechar** → escolha cartão/dinheiro/pix. O cliente sai como pago, os pedidos dele vão para 'entregue', os outros clientes da mesa continuam ativos." },
+      { q: "Como fechar a MESA INTEIRA?", a: "Detalhe da mesa → botão **Fechar mesa**. Escolha:\n- **Pagamento único**: a mesa toda paga com o mesmo método.\n- **Dividir por cliente**: cada cliente paga com o método dele (cartão/dinheiro/pix por linha).\n\nAo confirmar, todos os clientes ativos são fechados, todos os pedidos viram 'entregue' e a mesa some da lista de abertas." },
+      { q: "Como o admin define quantos vendedores o restaurante pode ter?", a: "Admin Master → **/admin/tenants** → abrir o tenant → **Assinatura**. Configure: adesão, mensalidade base, **vendedores inclusos**, **vendedores liberados** (allowed) e **preço por vendedor extra**. A mensalidade total é calculada automaticamente: **base + (extras × preço)**." },
+      { q: "Onde vejo o desempenho de cada vendedor?", a: "Painel do restaurante → **Relatórios** → seção **Desempenho por Vendedor**: pedidos, faturamento, ticket médio e cancelados por período (hoje, 7d, 30d, 90d)." },
+      { q: "O vendedor consegue mexer no cardápio/preços/identidade?", a: "Não. O vendedor só acessa **/seller**. Ele não tem acesso a cardápio, identidade visual, configurações, planos, clientes ou usuários." },
     ],
   },
   {

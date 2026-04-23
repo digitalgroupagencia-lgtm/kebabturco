@@ -1425,7 +1425,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_or_get_table_customer: {
+        Args: { _name: string; _session_id: string }
+        Returns: string
+      }
+      close_table_customer: {
+        Args: { _customer_id: string; _payment_method: string }
+        Returns: Json
+      }
+      close_table_session_unified: {
+        Args: { _payment_method: string; _session_id: string }
+        Returns: Json
+      }
       count_active_sellers: { Args: { _tenant_id: string }; Returns: number }
+      create_seller_order: {
+        Args: {
+          _customer_name: string
+          _items: Json
+          _notes?: string
+          _store_id: string
+          _table_number: string
+        }
+        Returns: Json
+      }
       duplicate_tenant: {
         Args: {
           _copy_banners?: boolean
@@ -1483,6 +1505,27 @@ export type Database = {
           total_cancelled: number
           total_orders: number
           total_revenue: number
+        }[]
+      }
+      get_seller_report: {
+        Args: { _since: string; _store_id: string }
+        Returns: {
+          avg_ticket: number
+          cancelled: number
+          order_count: number
+          revenue: number
+          seller_id: string
+          seller_name: string
+        }[]
+      }
+      get_table_session_detail: {
+        Args: { _session_id: string }
+        Returns: {
+          customer_id: string
+          customer_name: string
+          payment_method: string
+          status: string
+          total_amount: number
         }[]
       }
       get_tenant_billing: {
@@ -1551,6 +1594,11 @@ export type Database = {
       }
       is_seller: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
+      next_order_number: { Args: { _store_id: string }; Returns: string }
+      open_or_get_table_session: {
+        Args: { _store_id: string; _table_number: string }
+        Returns: string
+      }
       reset_tenant_data: {
         Args: {
           _reset_banners?: boolean

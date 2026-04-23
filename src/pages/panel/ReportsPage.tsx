@@ -25,6 +25,7 @@ const ReportsPage = () => {
   const [summary, setSummary] = useState({ total_orders: 0, total_revenue: 0, avg_ticket: 0, total_cancelled: 0 });
   const [topProducts, setTopProducts] = useState<{ product_id: string; product_name: string; total_qty: number; total_revenue: number }[]>([]);
   const [hourlyData, setHourlyData] = useState<{ hour: number; order_count: number; revenue: number }[]>([]);
+  const [sellerData, setSellerData] = useState<{ seller_id: string; seller_name: string; order_count: number; revenue: number; avg_ticket: number; cancelled: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getSince = (days: number) => {
@@ -43,10 +44,11 @@ const ReportsPage = () => {
     setLoading(true);
     const since = getSince(periods[period].days);
 
-    const [summaryRes, productsRes, hourlyRes] = await Promise.all([
+    const [summaryRes, productsRes, hourlyRes, sellerRes] = await Promise.all([
       supabase.rpc("get_sales_summary", { _store_id: storeId, _since: since }),
       supabase.rpc("get_top_products", { _store_id: storeId, _since: since, _limit: 10 }),
       supabase.rpc("get_hourly_sales", { _store_id: storeId, _since: since }),
+      supabase.rpc("get_seller_report", { _store_id: storeId, _since: since }),
     ]);
 
     if (summaryRes.data && Array.isArray(summaryRes.data) && summaryRes.data.length > 0) {
@@ -78,6 +80,17 @@ const ReportsPage = () => {
           revenue: Number(h.revenue),
         }))
       );
+    }
+
+    if (sellerRes.data) {
+      setSellerData((sellerRes.data as any[]).map((r) => ({
+        seller_id: r.seller_id,
+        seller_name: r.seller_name,
+        order_count: Number(r.order_count),
+        revenue: Number(r.revenue),
+        avg_ticket: Number(r.avg_ticket),
+        cancelled: Number(r.cancelled),
+      })));
     }
 
     setLoading(false);
@@ -214,6 +227,44 @@ const ReportsPage = () => {
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     Nenhum dado para o período selecionado.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Vendedores */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">👤 Desempenho por Vendedor</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vendedor</TableHead>
+                <TableHead className="text-right">Pedidos</TableHead>
+                <TableHead className="text-right">Faturamento</TableHead>
+                <TableHead className="text-right">Ticket Médio</TableHead>
+                <TableHead className="text-right">Cancelados</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sellerData.map((s) => (
+                <TableRow key={s.seller_id}>
+                  <TableCell className="font-medium">{s.seller_name}</TableCell>
+                  <TableCell className="text-right">{s.order_count}</TableCell>
+                  <TableCell className="text-right font-semibold">€ {s.revenue.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">€ {s.avg_ticket.toFixed(2)}</TableCell>
+                  <TableCell className="text-right text-destructive">{s.cancelled}</TableCell>
+                </TableRow>
+              ))}
+              {sellerData.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Nenhuma venda por vendedor no período.
                   </TableCell>
                 </TableRow>
               )}

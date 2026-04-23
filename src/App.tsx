@@ -23,6 +23,7 @@ import SellerHome from "./pages/seller/SellerHome.tsx";
 import SellerTables from "./pages/seller/SellerTables.tsx";
 import SellerMyOrders from "./pages/seller/SellerMyOrders.tsx";
 import SellerNewOrder from "./pages/seller/SellerNewOrder.tsx";
+import SellerTableDetail from "./pages/seller/SellerTableDetail.tsx";
 import AdminLayout from "./components/admin/AdminLayout.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import TenantsPage from "./pages/admin/TenantsPage.tsx";
@@ -73,6 +74,7 @@ const App = () => (
           <Route path="/seller" element={<SellerLayout />}>
             <Route index element={<SellerHome />} />
             <Route path="tables" element={<SellerTables />} />
+            <Route path="tables/:sessionId" element={<SellerTableDetail />} />
             <Route path="my-orders" element={<SellerMyOrders />} />
             <Route path="new" element={<SellerNewOrder />} />
           </Route>
