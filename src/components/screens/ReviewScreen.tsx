@@ -5,7 +5,7 @@ import QuantitySelector from "@/components/QuantitySelector";
 import { ArrowLeft, Trash2, ShoppingCart, Hash, Pencil } from "lucide-react";
 
 const ReviewScreen = () => {
-  const { setScreen, setSelectedProductId, tableNumber, setTableNumber } = useOrder();
+  const { setScreen, setSelectedProductId, setProductReturnScreen, tableNumber, setTableNumber } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType } = useCart();
   const { tProduct } = useLanguage();
   const requiresTable = orderType === "here";
@@ -15,6 +15,7 @@ const ReviewScreen = () => {
     // Remove o item atual e abre a tela do produto para reconfiguração
     removeItem(itemId);
     setSelectedProductId(productId);
+    setProductReturnScreen("review");
     setScreen("product");
   };
 
