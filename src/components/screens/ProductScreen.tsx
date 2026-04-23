@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { products, type Extra, type Size, type Variant } from "@/data/products";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
+import { emojiFor } from "@/lib/foodEmojis";
 
 const ingredientMap: Record<string, string[]> = {
   "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
