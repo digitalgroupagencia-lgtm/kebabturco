@@ -77,14 +77,19 @@ const extrasByCategory: Record<string, { id: string; name: Record<string, string
 };
 
 const ProductScreen = () => {
-  const { selectedProductId, setScreen, productReturnScreen, setProductReturnScreen } = useOrder();
+  const {
+    selectedProductId, setScreen,
+    productReturnScreen, setProductReturnScreen,
+    editingCartItemId, setEditingCartItemId,
+  } = useOrder();
 
   const goBack = () => {
     const target = productReturnScreen;
     setProductReturnScreen("home");
+    setEditingCartItemId(null);
     setScreen(target);
   };
-  const { addItem } = useCart();
+  const { addItem, updateItem, items } = useCart();
   const { t, tProduct } = useLanguage();
 
   const product = products.find((item) => item.id === selectedProductId);
@@ -96,6 +101,11 @@ const ProductScreen = () => {
     () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
     [product],
   );
+  // Quando estiver editando um item já no carrinho, recuperamos o estado inicial
+  const editingItem = useMemo(
+    () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
+    [editingCartItemId, items],
+  );
 
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
@@ -105,12 +115,38 @@ const ProductScreen = () => {
 
   useEffect(() => {
     if (!product) return;
-    setQuantity(1);
-    setSelectedSize(product.sizes?.[0]);
-    setSelectedVariant(product.variants?.[0]);
-    setExtras(new Map());
-    setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, true])));
-  }, [product, ingredientOptions]);
+    if (editingItem) {
+      // Preserva customizações ao editar
+      setQuantity(editingItem.quantity);
+
+      // Tenta casar tamanho pelo nome
+      const matchSize = product.sizes?.find(
+        (s) => editingItem.sizeName && tProduct(s.name) === tProduct(editingItem.sizeName),
+      );
+      setSelectedSize(matchSize ?? product.sizes?.[0]);
+
+      // Tenta casar variante: o nome final do produto incluía sufixo da variante
+      const editedName = tProduct(editingItem.productName);
+      const matchVariant = product.variants?.find((v) => editedName.includes(tProduct(v.name)));
+      setSelectedVariant(matchVariant ?? product.variants?.[0]);
+
+      // Extras
+      const extrasMap = new Map<string, number>();
+      editingItem.extras.forEach((e) => extrasMap.set(e.id, e.quantity));
+      setExtras(extrasMap);
+
+      // Ingredientes removidos
+      const removedSet = new Set(editingItem.removedIngredients);
+      setIngredients(new Map(ingredientOptions.map((i) => [i, !removedSet.has(i)])));
+    } else {
+      setQuantity(1);
+      setSelectedSize(product.sizes?.[0]);
+      setSelectedVariant(product.variants?.[0]);
+      setExtras(new Map());
+      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, true])));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, ingredientOptions, editingItem?.id]);
 
   if (!product) return null;
 
@@ -151,7 +187,7 @@ const ProductScreen = () => {
       ? Object.fromEntries(Object.entries(product.name).map(([k, v]) => [k, v + variantSuffix])) as Record<string, string>
       : product.name;
 
-    addItem({
+    const payload = {
       productId: product.id,
       productName: finalName,
       productImage: product.image,
@@ -163,7 +199,13 @@ const ProductScreen = () => {
       removedIngredients,
       unitPrice,
       totalPrice,
-    });
+    };
+
+    if (editingCartItemId) {
+      updateItem(editingCartItemId, payload);
+    } else {
+      addItem(payload);
+    }
 
     goBack();
   };
