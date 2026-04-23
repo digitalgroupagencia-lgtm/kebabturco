@@ -99,6 +99,80 @@ export type Database = {
           },
         ]
       }
+      company_settings: {
+        Row: {
+          accent_color: string
+          background_color: string
+          banner_home_url: string | null
+          button_style: string
+          company_name: string
+          created_at: string
+          cta_color: string
+          font_family: string | null
+          icon_dine_in_url: string | null
+          icon_takeaway_url: string | null
+          id: string
+          is_active: boolean
+          logo_main_url: string | null
+          logo_secondary_url: string | null
+          primary_color: string
+          secondary_color: string
+          store_id: string
+          text_color: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          background_color?: string
+          banner_home_url?: string | null
+          button_style?: string
+          company_name?: string
+          created_at?: string
+          cta_color?: string
+          font_family?: string | null
+          icon_dine_in_url?: string | null
+          icon_takeaway_url?: string | null
+          id?: string
+          is_active?: boolean
+          logo_main_url?: string | null
+          logo_secondary_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          store_id: string
+          text_color?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          banner_home_url?: string | null
+          button_style?: string
+          company_name?: string
+          created_at?: string
+          cta_color?: string
+          font_family?: string | null
+          icon_dine_in_url?: string | null
+          icon_takeaway_url?: string | null
+          id?: string
+          is_active?: boolean
+          logo_main_url?: string | null
+          logo_secondary_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          store_id?: string
+          text_color?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           extras: Json | null
