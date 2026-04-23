@@ -77,7 +77,10 @@ const LanguageScreen = () => {
 
       {/* Idiomas — sempre horizontal, sem moldura, ícone "solto" + label */}
       <div className="flex-1 flex items-center justify-center px-4 py-6 w-full">
-        <div className="flex flex-row items-start justify-center gap-4 sm:gap-6 w-full max-w-md flex-wrap">
+        <div
+          className="flex flex-row items-start justify-center w-full max-w-md flex-nowrap"
+          style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
+        >
           {langs.map((code) => {
             const icon = langIcons[code] || FALLBACK_FLAG[code];
             const label = LANG_LABELS[code];
@@ -85,9 +88,8 @@ const LanguageScreen = () => {
               <button
                 key={code}
                 onClick={() => handleSelect(code)}
-                className="flex flex-col items-center gap-2.5 active:scale-95 transition-transform touch-action-manipulation"
+                className="flex flex-col items-center gap-2 active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0"
                 aria-label={label}
-                style={{ flex: `1 1 0`, minWidth: "80px", maxWidth: "120px" }}
               >
                 <div className="w-full aspect-square flex items-center justify-center">
                   <img
@@ -97,7 +99,10 @@ const LanguageScreen = () => {
                     draggable={false}
                   />
                 </div>
-                <span className="text-center text-base font-black text-foreground leading-tight">
+                <span
+                  className="text-center font-black text-foreground leading-tight truncate w-full"
+                  style={{ fontSize: langs.length >= 4 ? "0.75rem" : langs.length === 3 ? "0.875rem" : "1rem" }}
+                >
                   {label}
                 </span>
               </button>
