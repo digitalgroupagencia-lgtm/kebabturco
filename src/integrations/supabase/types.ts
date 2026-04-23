@@ -1349,8 +1349,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin_master" | "restaurant_admin" | "operator" | "kitchen"
-      order_source: "totem" | "ifood" | "counter" | "delivery"
+      app_role:
+        | "admin_master"
+        | "restaurant_admin"
+        | "operator"
+        | "kitchen"
+        | "seller"
+      order_source: "totem" | "ifood" | "counter" | "delivery" | "waiter"
       order_status:
         | "pending"
         | "preparing"
@@ -1485,8 +1490,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin_master", "restaurant_admin", "operator", "kitchen"],
-      order_source: ["totem", "ifood", "counter", "delivery"],
+      app_role: [
+        "admin_master",
+        "restaurant_admin",
+        "operator",
+        "kitchen",
+        "seller",
+      ],
+      order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
       payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
     },
