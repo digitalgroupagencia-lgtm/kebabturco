@@ -182,7 +182,7 @@ const ProductScreen = () => {
         <div>
           <h1 className="text-[30px] leading-tight font-black text-foreground">{tProduct(product.name)}</h1>
           <p className="text-muted-foreground mt-1 text-sm">{tProduct(product.description)}</p>
-          <p className="text-[32px] font-black text-primary mt-3">{product.price.toFixed(2)}€</p>
+          <p className="text-[32px] font-black text-price mt-3 tabular-nums tracking-tight">{product.price.toFixed(2)}€</p>
           {product.note && (
             <p className="text-xs text-muted-foreground italic mt-2">{tProduct(product.note)}</p>
           )}
@@ -294,7 +294,7 @@ const ProductScreen = () => {
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-foreground truncate">{tProduct(extra.name)}</div>
-                        <div className="text-xs font-bold text-primary">+{extra.price.toFixed(2)}€</div>
+                        <div className="text-xs font-bold text-price-muted tabular-nums">+{extra.price.toFixed(2)}€</div>
                       </div>
                     </div>
                     <QuantitySelector
@@ -315,13 +315,13 @@ const ProductScreen = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+      <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
         <button
           onClick={handleAdd}
-          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg active:scale-[0.97] transition-transform touch-action-manipulation"
+          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-2xl shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation"
         >
-          <span className="text-base font-black tracking-wide">{t("addToOrder")}</span>
-          <span className="text-base font-black bg-white/15 rounded-full px-3 py-1">
+          <span className="text-[15px] font-black tracking-wide uppercase">{t("addToOrder")}</span>
+          <span className="text-[15px] font-black bg-white/15 rounded-xl px-3 py-1 tabular-nums">
             {totalPrice.toFixed(2)}€
           </span>
         </button>

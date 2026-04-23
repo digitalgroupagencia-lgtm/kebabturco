@@ -7,6 +7,9 @@ import {
   Settings,
   Palette,
   LogOut,
+  Image,
+  Wallet,
+  Printer,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +31,9 @@ const mainItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutGrid },
   { title: "Clientes", url: "/admin/tenants", icon: Building2 },
   { title: "Identidad Visual", url: "/admin/branding", icon: Palette },
+  { title: "Banner Promocional", url: "/admin/banner", icon: Image },
+  { title: "Pagos", url: "/admin/operations", icon: Wallet },
+  { title: "Impresora", url: "/admin/printer", icon: Printer },
   { title: "Planos & Cobrança", url: "/admin/billing", icon: CreditCard },
   { title: "Monitoramento", url: "/admin/monitoring", icon: Activity },
 ];

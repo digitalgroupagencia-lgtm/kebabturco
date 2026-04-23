@@ -24,7 +24,7 @@ const ProductCard = ({ name, image, price, onClick, badge }: Props) => {
       <img src={image} alt={tProduct(name)} className="w-28 h-28 object-contain mb-2" loading="lazy" />
       <span className="text-sm font-bold text-foreground text-center leading-tight">{tProduct(name)}</span>
       {price !== undefined && (
-        <span className="text-base font-black text-primary mt-1">€{price.toFixed(2)}</span>
+        <span className="text-base font-black text-price mt-1 tabular-nums">€{price.toFixed(2)}</span>
       )}
     </button>
   );
