@@ -2,12 +2,14 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { UtensilsCrossed, ShoppingBag, ChevronRight } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import logoFallback from "@/assets/elrey-logo.png";
 
 const OrderTypeScreen = () => {
   const { setScreen, setTableNumber } = useOrder();
   const { setOrderType } = useCart();
   const { settings } = useBranding();
+  const { t } = useLanguage();
   const logo = settings?.logo_main_url || logoFallback;
   const iconDineIn = settings?.icon_dine_in_url;
   const iconTakeaway = settings?.icon_takeaway_url;
@@ -35,10 +37,10 @@ const OrderTypeScreen = () => {
       {/* Title */}
       <div className="px-6 text-center">
         <h1 className="text-[26px] leading-tight font-black text-foreground tracking-tight">
-          ¿Cómo deseas hacer tu pedido?
+          {t("howOrder")}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Elige una opción para continuar
+          {t("pickOption")}
         </p>
       </div>
 
@@ -50,17 +52,17 @@ const OrderTypeScreen = () => {
         >
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
             {iconDineIn ? (
-              <img src={iconDineIn} alt="Comer en el local" className="w-full h-full object-cover rounded-3xl" />
+              <img src={iconDineIn} alt={t("eatHere")} className="w-full h-full object-cover rounded-3xl" />
             ) : (
               <UtensilsCrossed className="w-9 h-9 text-primary" strokeWidth={2.2} />
             )}
           </div>
           <div className="text-left flex-1">
             <span className="text-lg font-black text-foreground block leading-tight">
-              Comer en el local
+              {t("eatHere")}
             </span>
             <span className="text-xs text-muted-foreground mt-0.5 block">
-              Recoge en la mesa tras el pedido
+              {t("eatHereSub")}
             </span>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -72,17 +74,17 @@ const OrderTypeScreen = () => {
         >
           <div className="w-20 h-20 rounded-3xl bg-accent/20 flex items-center justify-center shrink-0 overflow-hidden">
             {iconTakeaway ? (
-              <img src={iconTakeaway} alt="Para llevar" className="w-full h-full object-cover rounded-3xl" />
+              <img src={iconTakeaway} alt={t("takeaway")} className="w-full h-full object-cover rounded-3xl" />
             ) : (
               <ShoppingBag className="w-9 h-9 text-accent-foreground" strokeWidth={2.2} />
             )}
           </div>
           <div className="text-left flex-1">
             <span className="text-lg font-black text-foreground block leading-tight">
-              Para llevar
+              {t("takeaway")}
             </span>
             <span className="text-xs text-muted-foreground mt-0.5 block">
-              Recoge en el mostrador
+              {t("takeawaySub")}
             </span>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />

@@ -167,7 +167,7 @@ const HomeScreen = () => {
 
                 {/* Bloco inferior compacto: nome, preço e botão integrado */}
                 <div className="px-2.5 pt-1 pb-2.5 flex flex-col gap-1.5">
-                  <span className="text-[12.5px] font-bold text-foreground text-left leading-[1.15] line-clamp-2 min-h-[30px]">
+                  <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] line-clamp-2 min-h-[34px] break-words hyphens-auto">
                     {tProduct(product.name)}
                   </span>
                   <div className="flex items-center justify-between gap-2">
