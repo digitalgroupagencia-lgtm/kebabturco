@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 
 type Screen = "splash" | "language" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
+export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
 
 interface OrderContextType {
   screen: Screen;
@@ -14,6 +15,8 @@ interface OrderContextType {
   storeId: string;
   tableNumber: string;
   setTableNumber: (n: string) => void;
+  paymentMethod: PaymentMethodId | null;
+  setPaymentMethod: (m: PaymentMethodId | null) => void;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -25,6 +28,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState("");
   const [tableNumber, setTableNumber] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
 
   const generateOrderNumber = () => {
     setOrderNumber(String(Math.floor(100 + Math.random() * 900)));
@@ -44,6 +48,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         storeId: DEFAULT_STORE_ID,
         tableNumber,
         setTableNumber,
+        paymentMethod,
+        setPaymentMethod,
       }}
     >
       {children}
