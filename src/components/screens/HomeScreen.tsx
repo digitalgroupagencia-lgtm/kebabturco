@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { products, categories } from "@/data/products";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
+import { Plus } from "lucide-react";
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, selectedCategory, setSelectedCategory } = useOrder();
@@ -43,17 +44,31 @@ const HomeScreen = () => {
 
   return (
     <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
-      {/* Header refinado com gradiente sutil */}
-      <header className="bg-gradient-header text-primary-foreground px-5 py-4 flex items-center justify-between shrink-0 shadow-header">
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-[0.2em] opacity-75 font-semibold">
-            {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
-          </span>
-          <h1 className="text-xl font-black tracking-tight leading-tight mt-0.5">{t("menu")}</h1>
-        </div>
-        <div className="flex items-center gap-2 bg-white/10 rounded-full px-3 py-1.5 backdrop-blur-sm">
-          <div className="w-1.5 h-1.5 rounded-full bg-success-foreground animate-pulse" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider">Abierto</span>
+      {/* Header premium: gradiente refinado + tipografia trabalhada */}
+      <header className="relative bg-gradient-header text-primary-foreground px-5 pt-4 pb-5 shrink-0 shadow-header overflow-hidden">
+        {/* Glow decorativo sutil */}
+        <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-[0.28em] opacity-80 font-bold">
+              {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
+            </span>
+            <h1 className="text-[22px] font-black tracking-tight leading-none mt-1">
+              {t("menu")}
+              <span className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle" />
+            </h1>
+          </div>
+
+          {/* Status pill premium */}
+          <div className="flex items-center gap-1.5 bg-black/15 ring-1 ring-white/15 rounded-full pl-2 pr-3 py-1 backdrop-blur-md">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-70" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Abierto</span>
+          </div>
         </div>
       </header>
 
@@ -95,40 +110,66 @@ const HomeScreen = () => {
         </aside>
 
         <main className="flex-1 overflow-y-auto bg-background no-scrollbar">
-          <PromoBannerCarousel />
-
-          <div className="px-4 pt-4 pb-3 sticky top-0 bg-background/95 backdrop-blur z-10">
-            <h2 className="text-xl font-black text-foreground tracking-tight">{activeCategoryName}</h2>
-            <div className="h-0.5 w-10 bg-primary rounded-full mt-1.5" />
+          {/* Banner integrado com padding lateral consistente */}
+          <div className="px-3 pt-3">
+            <PromoBannerCarousel />
           </div>
 
-          <div className="px-3 pb-6 grid grid-cols-2 gap-3">
+          {/* Título da categoria com selo de quantidade */}
+          <div className="px-4 pt-4 pb-3 sticky top-0 bg-background/95 backdrop-blur z-10 flex items-end justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                {t("menu")}
+              </span>
+              <h2 className="text-[20px] font-black text-foreground tracking-tight leading-tight mt-0.5">
+                {activeCategoryName}
+              </h2>
+              <div className="h-[3px] w-8 bg-primary rounded-full mt-1.5" />
+            </div>
+            <span className="text-[11px] font-bold text-muted-foreground tabular-nums pb-1">
+              {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
+            </span>
+          </div>
+
+          <div className="px-3 pb-6 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product) => (
               <button
                 key={product.id}
                 onClick={() => openProduct(product.id)}
-                className="group relative flex flex-col bg-card rounded-[22px] shadow-card border border-border/70 overflow-hidden active:scale-[0.98] transition-all hover:shadow-elevated touch-action-manipulation"
+                className="group relative flex flex-col bg-card rounded-2xl border border-border/60 overflow-hidden active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
               >
                 {product.isPromo && (
-                  <span className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full z-10 shadow-sm">
+                  <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md z-10 shadow-sm">
                     Oferta
                   </span>
                 )}
-                <div className="bg-gradient-to-br from-secondary/40 to-secondary/70 aspect-square p-3 flex items-center justify-center">
+
+                {/* Imagem protagonista, sem moldura pesada */}
+                <div className="aspect-[5/4] px-2 pt-2 pb-1 flex items-center justify-center">
                   <img
                     src={product.image}
                     alt={tProduct(product.name)}
-                    className="w-full h-full object-cover rounded-2xl"
+                    className="w-full h-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)] transition-transform group-hover:scale-[1.03]"
                     loading="lazy"
                   />
                 </div>
-                <div className="px-3 pt-3 pb-4 flex flex-col gap-2 flex-1">
-                  <span className="text-[13px] font-semibold text-foreground text-center leading-snug line-clamp-2 min-h-[34px]">
+
+                {/* Bloco inferior compacto: nome, preço e botão integrado */}
+                <div className="px-2.5 pt-1 pb-2.5 flex flex-col gap-1.5">
+                  <span className="text-[12.5px] font-bold text-foreground text-left leading-[1.15] line-clamp-2 min-h-[30px]">
                     {tProduct(product.name)}
                   </span>
-                  <span className="text-[17px] font-bold text-price text-center tabular-nums tracking-tight">
-                    {product.price.toFixed(2)}€
-                  </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[16px] font-black text-price tabular-nums tracking-tight">
+                      {product.price.toFixed(2)}€
+                    </span>
+                    <span
+                      aria-hidden
+                      className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground shadow-sm group-active:scale-90 transition-transform"
+                    >
+                      <Plus className="w-4 h-4" strokeWidth={3} />
+                    </span>
+                  </div>
                 </div>
               </button>
             ))}
