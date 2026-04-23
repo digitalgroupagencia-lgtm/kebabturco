@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Building2, Store, ShoppingBag, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock,
-  Loader2, Trophy, Calendar
+  Loader2, Trophy, Calendar, CreditCard
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -338,5 +338,4 @@ const AdminDashboard = () => {
   );
 };
 
-import { CreditCard } from "lucide-react";
 export default AdminDashboard;
