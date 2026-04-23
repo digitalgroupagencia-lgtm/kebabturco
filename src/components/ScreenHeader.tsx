@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { ReactNode } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface ScreenHeaderProps {
   eyebrow?: string;
@@ -49,7 +50,10 @@ const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenH
           </div>
         </div>
 
-        {right && <div className="relative shrink-0">{right}</div>}
+        <div className="relative shrink-0 flex items-center gap-2">
+          {right}
+          <ThemeToggle variant="onColor" className="w-9 h-9 shadow-none" />
+        </div>
       </div>
     </header>
   );

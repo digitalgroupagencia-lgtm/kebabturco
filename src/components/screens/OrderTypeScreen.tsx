@@ -3,6 +3,7 @@ import { useCart } from "@/contexts/CartContext";
 import { UtensilsCrossed, ShoppingBag, ChevronRight } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import logoFallback from "@/assets/elrey-logo.png";
 
 const OrderTypeScreen = () => {
@@ -22,7 +23,12 @@ const OrderTypeScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-secondary/40 via-background to-background animate-fade-in">
+    <div className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative">
+      {/* Toggle tema */}
+      <div className="absolute top-4 right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
+        <ThemeToggle />
+      </div>
+
       {/* Logo header */}
       <div className="flex flex-col items-center pt-12 pb-8 px-6">
         <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
