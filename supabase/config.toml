@@ -2,3 +2,6 @@ project_id = "wcbxxyeouzfoszfqowfd"
 
 [functions.print-order]
 verify_jwt = false
+
+[functions.admin-assistant]
+verify_jwt = false
