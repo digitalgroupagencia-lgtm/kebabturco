@@ -60,7 +60,7 @@ const HomeScreen = () => {
             <img
               src={headerLogo}
               alt={settings?.company_name || "EL REY"}
-              className="h-7 sm:h-8 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
+              className="h-9 sm:h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
               draggable={false}
             />
             {/* Título secundário — agora tipo de pedido em destaque */}
