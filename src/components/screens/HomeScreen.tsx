@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Plus } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
