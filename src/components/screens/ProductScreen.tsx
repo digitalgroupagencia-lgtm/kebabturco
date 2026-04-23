@@ -211,7 +211,7 @@ const ProductScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[126px]">
+    <div className="relative min-h-[100dvh] bg-background animate-fade-in flex flex-col">
       <ScreenHeader
         eyebrow={t("menu")}
         title={tProduct(product.name)}
@@ -380,7 +380,10 @@ const ProductScreen = () => {
         </section>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/92 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+      <div
+        className="sticky left-0 right-0 z-50 bg-background/92 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] -mx-0"
+        style={{ bottom: 0 }}
+      >
         <button
           onClick={handleAdd}
           className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation"

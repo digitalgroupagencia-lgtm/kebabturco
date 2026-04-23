@@ -68,7 +68,7 @@ const ReviewScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in pb-[170px]">
+    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in flex flex-col">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
@@ -244,9 +244,12 @@ const ReviewScreen = () => {
         )}
       </div>
 
-      {/* CTA fixo */}
+      {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}
       {items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+        <div
+          className="sticky left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]"
+          style={{ bottom: 0 }}
+        >
           <div className="flex items-end justify-between mb-2.5 px-1">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("total")}</p>

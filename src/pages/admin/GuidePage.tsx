@@ -15,6 +15,16 @@ interface FaqSection {
 
 const SECTIONS: FaqSection[] = [
   {
+    title: "Como acessar cada painel (passo a passo)",
+    items: [
+      { q: "Como eu (Admin Master) acesso meu painel global?", a: "Faça login em **/auth** com seu e-mail e senha. Como você tem o papel **admin_master**, será redirecionado para **/admin** automaticamente. Daí você vê: Dashboard, Clientes, Usuários, Conversas IA, Central de Ajuda, Monitoramento, Configurações globais, etc." },
+      { q: "Como entro no painel de um cliente específico (sem misturar dados)?", a: "1. Em **/admin/tenants** localize o card do cliente.\n2. Clique no botão **Acessar projeto**.\n3. Você entra em **/admin/tenants/:slug** — um painel completo escopado SOMENTE naquele cliente (cardápio, produtos, pedidos, identidade, banners, impressora, pagamentos, configurações, duplicar estrutura, zerar dados, assinatura).\n4. Para voltar ao Admin Master, use o link **Voltar ao Admin Master** na barra lateral." },
+      { q: "Como o dono do restaurante acessa o painel dele?", a: "1. Você (Admin Master) cria o usuário em **/admin/users** → **Novo usuário** → escolhe papel **Admin do Restaurante** + vincula ao cliente.\n2. Envia e-mail e senha temporária para o dono.\n3. O dono entra em **/auth**, faz login e é redirecionado para **/panel** (apenas o painel do restaurante dele — nunca vê outros clientes nem o Admin Master)." },
+      { q: "Como o cliente final usa o totem?", a: "1. Em **/admin/tenants** clique no ícone de **QR Code** do cliente para baixar o QR/link público.\n2. Imprima/cole o QR no totem físico ou na mesa.\n3. Ao acessar, o totem abre direto na marca, idioma e cardápio daquele restaurante (resolvido por **domínio personalizado** ou **slug**)." },
+      { q: "Operador ou cozinha — como dou acesso?", a: "Em **/admin/users** crie usuário com papel **Operator** (caixa/pedidos) ou **Kitchen** (somente visão de cozinha). Vincule ao cliente. Eles acessam **/panel** mas só veem as áreas permitidas pelo papel." },
+    ],
+  },
+  {
     title: "Clientes (Tenants)",
     items: [
       { q: "Como criar um novo cliente?", a: "Vá em **Clientes** no menu lateral e clique em **Novo cliente com IA** (recomendado, faz tudo guiado) ou em **Manual**. Preencha nome, slug, plano, limite de pedidos e domínio próprio (opcional). Ao salvar, o sistema cria o cliente, a loja inicial e as configurações padrão." },

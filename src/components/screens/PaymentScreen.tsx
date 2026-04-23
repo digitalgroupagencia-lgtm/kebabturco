@@ -197,7 +197,7 @@ const PaymentScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in pb-[150px]">
+    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in flex flex-col">
       <ScreenHeader
         eyebrow={t("finalStep")}
         title={t("pay")}
@@ -340,7 +340,10 @@ const PaymentScreen = () => {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+      <div
+        className="sticky left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]"
+        style={{ bottom: 0 }}
+      >
         <button
           onClick={confirm}
           disabled={processing}
