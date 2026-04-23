@@ -58,33 +58,36 @@ const HomeScreen = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[120px] min-w-[120px] bg-secondary/70 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
-          <div className="flex flex-col gap-3 p-2">
+        <aside className="w-[140px] min-w-[140px] bg-secondary/40 overflow-y-auto shrink-0 no-scrollbar">
+          <div className="flex flex-col gap-3 px-2 py-3">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
               return (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`flex flex-col items-center gap-2 p-2 rounded-3xl transition-all touch-action-manipulation min-h-[120px] justify-center border ${
+                  className={`group relative flex flex-col items-center gap-1.5 pt-2 pb-2.5 rounded-2xl transition-all touch-action-manipulation ${
                     isActive
-                      ? "bg-card border-primary shadow-sm"
-                      : "bg-transparent border-transparent active:scale-95"
+                      ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)]"
+                      : "bg-card/60 hover:bg-card shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.12)] active:scale-[0.97]"
                   }`}
                 >
                   <img
                     src={category.image}
                     alt={tProduct(category.name)}
-                    className="w-20 h-20 object-cover rounded-2xl bg-card"
+                    className="w-[120px] h-[88px] object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]"
                     loading="lazy"
                   />
                   <span
-                    className={`text-[10px] font-bold text-center leading-tight line-clamp-2 ${
+                    className={`text-[12px] font-bold text-center leading-tight line-clamp-2 px-1 ${
                       isActive ? "text-primary" : "text-foreground"
                     }`}
                   >
                     {tProduct(category.name)}
                   </span>
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-full" />
+                  )}
                 </button>
               );
             })}
