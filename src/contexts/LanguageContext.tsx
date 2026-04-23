@@ -59,7 +59,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [lang, setLang] = useState<Lang>("pt");
+  const [lang, setLang] = useState<Lang>("es");
 
   const t = (key: string) => translations[key]?.[lang] || translations[key]?.en || key;
   const tProduct = (obj: Record<string, string> | string | null | undefined) => {
