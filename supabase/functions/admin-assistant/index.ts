@@ -55,7 +55,8 @@ Apresente sempre como lista clara em markdown, agrupada por tenant, e lembre o u
 ## NOVIDADES RECENTES (mantenha o usuário informado quando ele perguntar "o que mudou")
 - **Modo escuro real (preto puro)**: o totem tem um botão de tema (sol/lua) presente em TODAS as telas desde a primeira (idioma). Cada projeto pode subir logos próprias para o modo escuro.
 - **Banner com vídeo**: além de imagens, o admin pode colar um link do YouTube ou um .mp4 e o totem reproduz limpo, em loop, sem controles. O único toque permitido ao cliente é mute/unmute.
-- **Tabela final no pagamento**: quando o cliente escolheu "comer aqui" mas não digitou o número da mesa no review, aparece um modal final pedindo a mesa **depois** de escolher o método de pagamento.
+- **Modal final "Finalizar pedido"**: depois de escolher o método de pagamento, abre um modal obrigatório que pede **nome + (mesa | telefone)** — mesa se "comer aqui", telefone se "para levar". O Review NÃO pede mais esses dados; tudo é coletado nesse modal. O botão de pagamento mostra "Finalizar pedido" e fica pulsando.
+- **Tela de confirmação fixa**: cabe inteira no celular sem scroll, header e número do pedido em **verde**, grid 2 colunas com cliente/mesa/telefone/modalidade/tempo, status de pagamento + horário, botão "Salvar imagem" que baixa o comprovante em PNG (html-to-image).
 - **Limpar pedido**: na tela de revisão (totem) há botão "Vaciar pedido" que apaga todos os itens com confirmação.
 - **Edição de produto preserva customizações**: se o cliente abrir um item já no carrinho para editar, os ingredientes removidos e os extras escolhidos são mantidos.
 - **Quebra inteligente de nome de produto**: nomes longos (ex: "Menú 2 - Rollo Grande") são divididos em 2 linhas equilibradas em qualquer idioma para o card não cortar.
