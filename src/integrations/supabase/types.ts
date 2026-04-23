@@ -175,6 +175,7 @@ export type Database = {
       }
       operations_settings: {
         Row: {
+          avg_prep_minutes: number
           banner_enabled: boolean
           banner_interval_ms: number
           created_at: string
@@ -193,6 +194,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avg_prep_minutes?: number
           banner_enabled?: boolean
           banner_interval_ms?: number
           created_at?: string
@@ -211,6 +213,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avg_prep_minutes?: number
           banner_enabled?: boolean
           banner_interval_ms?: number
           created_at?: string
@@ -296,6 +299,7 @@ export type Database = {
         Row: {
           created_at: string
           customer_name: string | null
+          customer_phone: string | null
           id: string
           notes: string | null
           order_number: string
@@ -305,12 +309,14 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal: number
+          table_number: string | null
           total: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           notes?: string | null
           order_number: string
@@ -320,12 +326,14 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal?: number
+          table_number?: string | null
           total?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
           customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           notes?: string | null
           order_number?: string
@@ -335,6 +343,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
           subtotal?: number
+          table_number?: string | null
           total?: number
           updated_at?: string
         }
