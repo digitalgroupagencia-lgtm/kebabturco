@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -22,11 +23,34 @@ export default function AdminAssistant() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  const ensureConversation = async (firstUserMsg: string): Promise<string | null> => {
+    if (conversationId) return conversationId;
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) return null;
+    const title = firstUserMsg.slice(0, 60) + (firstUserMsg.length > 60 ? "…" : "");
+    const { data, error } = await supabase
+      .from("ai_conversations")
+      .insert({ user_id: uid, title })
+      .select("id")
+      .single();
+    if (error || !data) return null;
+    setConversationId(data.id);
+    return data.id;
+  };
+
+  const persistMessage = async (convId: string, role: "user" | "assistant", content: string) => {
+    if (!convId || !content) return;
+    await supabase.from("ai_messages").insert({ conversation_id: convId, role, content });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+  };
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -34,6 +58,9 @@ export default function AdminAssistant() {
     setMessages(next);
     setInput("");
     setLoading(true);
+
+    const convId = await ensureConversation(text);
+    if (convId) await persistMessage(convId, "user", text);
 
     try {
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-assistant`, {
@@ -80,6 +107,8 @@ export default function AdminAssistant() {
           } catch {}
         }
       }
+
+      if (convId && acc) await persistMessage(convId, "assistant", acc);
     } catch (e: any) {
       toast.error(e.message || "Error");
       setMessages((m) => m.slice(0, -1));
