@@ -196,12 +196,15 @@ const ProductScreen = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border p-4">
+      <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         <button
           onClick={handleAdd}
-          className="w-full max-w-md mx-auto py-4 bg-success text-success-foreground rounded-2xl text-base font-black active:scale-[0.97] transition-transform touch-action-manipulation"
+          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg active:scale-[0.97] transition-transform touch-action-manipulation"
         >
-          {t("addToOrder")} • R$ {totalPrice.toFixed(2)}
+          <span className="text-base font-black tracking-wide">{t("addToOrder")}</span>
+          <span className="text-base font-black bg-white/15 rounded-full px-3 py-1">
+            R$ {totalPrice.toFixed(2)}
+          </span>
         </button>
       </div>
     </div>
