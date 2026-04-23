@@ -10,7 +10,7 @@ const OrderTypeScreen = () => {
   const { setOrderType } = useCart();
   const { settings } = useBranding();
   const { t } = useLanguage();
-  const logo = settings?.logo_main_url || logoFallback;
+  const logo = (settings as any)?.logo_order_type_url || settings?.logo_main_url || logoFallback;
   const iconDineIn = settings?.icon_dine_in_url;
   const iconTakeaway = settings?.icon_takeaway_url;
   const brandName = settings?.company_name || "EL REY";

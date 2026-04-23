@@ -25,7 +25,7 @@ const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
   const { settings } = useBranding();
-  const logo = settings?.logo_main_url || logoFallback;
+  const logo = (settings as any)?.logo_language_url || settings?.logo_main_url || logoFallback;
   const brandName = settings?.company_name || "EL REY";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
