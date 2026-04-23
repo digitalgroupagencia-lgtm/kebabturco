@@ -45,7 +45,7 @@ const HomeScreen = () => {
   return (
     <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
       {/* Header premium: gradiente refinado + cantinhos arredondados */}
-      <header className="relative bg-gradient-header text-primary-foreground px-5 pt-4 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-2xl">
+      <header className="relative bg-gradient-header text-primary-foreground px-5 pt-4 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px]">
         {/* Glow decorativo sutil */}
         <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
@@ -90,7 +90,7 @@ const HomeScreen = () => {
                   <img
                     src={category.image}
                     alt={tProduct(category.name)}
-                    className="w-[120px] h-[88px] object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]"
+                    className="w-[124px] h-[94px] object-cover rounded-[16px] drop-shadow-[0_6px_8px_rgba(0,0,0,0.16)]"
                     loading="lazy"
                   />
                   <span
@@ -149,7 +149,7 @@ const HomeScreen = () => {
                   <img
                     src={product.image}
                     alt={tProduct(product.name)}
-                    className="w-full h-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)] transition-transform group-hover:scale-[1.03]"
+                    className="w-full h-full object-cover rounded-[16px] drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)] transition-transform group-hover:scale-[1.03]"
                     loading="lazy"
                   />
                 </div>
