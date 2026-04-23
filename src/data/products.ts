@@ -206,6 +206,7 @@ export const categories: Category[] = [
   { id: "hamburguesas", name: { pt: "Hamburguesas", en: "Hamburguesas", es: "Hamburguesas", fr: "Hamburguesas" }, image: img_cat_hamburguesas, icon: "" },
   { id: "bowl", name: { pt: "Bowl", en: "Bowl", es: "Bowl", fr: "Bowl" }, image: img_cat_bowl, icon: "" },
   { id: "copas", name: { pt: "Copas", en: "Copas", es: "Copas", fr: "Copas" }, image: img_cat_copas, icon: "" },
+  { id: "bebidas", name: { pt: "Bebidas", en: "Drinks", es: "Bebidas", fr: "Boissons" }, image: img_cat_bebidas, icon: "" },
   { id: "baklava", name: { pt: "Baklava", en: "Baklava", es: "Baklava", fr: "Baklava" }, image: img_cat_baklava, icon: "" },
 ];
 
