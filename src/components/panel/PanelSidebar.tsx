@@ -45,10 +45,14 @@ const configItems = [
 ];
 
 export function PanelSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
   const location = useLocation();
+
+  const handleNav = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -65,6 +69,7 @@ export function PanelSidebar() {
                       end={item.url === "/panel"}
                       className="hover:bg-muted/50"
                       activeClassName="bg-primary/10 text-primary font-semibold"
+                      onClick={handleNav}
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -87,6 +92,7 @@ export function PanelSidebar() {
                       to={item.url}
                       className="hover:bg-muted/50"
                       activeClassName="bg-primary/10 text-primary font-semibold"
+                      onClick={handleNav}
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
