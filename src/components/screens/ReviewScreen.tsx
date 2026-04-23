@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Hash, Pencil } from "lucide-react";
+import { Trash2, ShoppingCart, Hash, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag } from "lucide-react";
+import { products } from "@/data/products";
 
 const ReviewScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, tableNumber, setTableNumber } = useOrder();
@@ -12,117 +14,234 @@ const ReviewScreen = () => {
   const requiresTable = orderType === "here";
   const tableValid = !requiresTable || tableNumber.trim().length > 0;
 
+  // Sugestões: bestsellers que ainda não estão no carrinho
+  const suggestions = useMemo(() => {
+    const inCart = new Set(items.map((i) => i.productId));
+    return products.filter((p) => p.isBestseller && !inCart.has(p.id)).slice(0, 3);
+  }, [items]);
+
   const handleEdit = (productId: string, itemId: string) => {
-    // Remove o item atual e abre a tela do produto para reconfiguração
     removeItem(itemId);
     setSelectedProductId(productId);
     setProductReturnScreen("review");
     setScreen("product");
   };
 
+  const handleAddSuggestion = (productId: string) => {
+    setSelectedProductId(productId);
+    setProductReturnScreen("review");
+    setScreen("product");
+  };
+
   return (
-    <div className="relative min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[160px]">
+    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in pb-[170px]">
       <ScreenHeader
         eyebrow="Tu pedido"
-        title="Revisão do pedido"
+        title="Revisión"
         onBack={() => setScreen("home")}
       />
 
-      <div className="px-4 py-4 flex flex-col gap-3">
-        {requiresTable && (
-          <div className="bg-card rounded-2xl shadow-sm p-4 border border-border">
-            <label className="flex items-center gap-2 text-sm font-bold text-foreground mb-2">
-              <Hash className="w-4 h-4 text-primary" />
-              Número de mesa <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={tableNumber}
-              onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="Ej: 12"
-              className="w-full h-12 px-4 text-lg font-bold text-foreground bg-secondary/60 rounded-xl border border-border focus:outline-none focus:border-primary focus:bg-card"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Indica el número de tu mesa para que te llevemos el pedido.
-            </p>
-          </div>
-        )}
-
-        {items.map(item => (
-          <div key={item.id} className="bg-card rounded-2xl shadow-sm p-4 border border-border">
-            <div className="flex gap-3">
-              {item.productImage ? (
-                <img src={item.productImage} alt={tProduct(item.productName)} className="w-16 h-16 object-contain rounded-xl" />
-              ) : (
-                <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <span className="text-xl font-bold text-muted-foreground">
-                    {tProduct(item.productName).charAt(0)}
-                  </span>
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-foreground text-sm">{tProduct(item.productName)}</h3>
-                {item.sizeName && (
-                  <p className="text-xs text-muted-foreground">{tProduct(item.sizeName)}</p>
-                )}
-                {item.extras.map(e => (
-                  <p key={e.id} className="text-xs text-muted-foreground">
-                    +{e.quantity}x {tProduct(e.name)}
-                  </p>
-                ))}
-                {item.removedIngredients.length > 0 && (
-                  <p className="text-xs text-destructive">
-                    Sem: {item.removedIngredients.join(", ")}
-                  </p>
-                )}
-                <p className="text-base font-black text-price mt-1 tabular-nums">{item.totalPrice.toFixed(2)}€</p>
-              </div>
+      <div className="px-4 pt-4 pb-2 flex flex-col gap-3">
+        {/* Tipo de pedido + Mesa */}
+        <div className="bg-card rounded-3xl border border-border shadow-card overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              {orderType === "here" ? <Utensils className="w-5 h-5" /> : <ShoppingBag className="w-5 h-5" />}
             </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border gap-2">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => removeItem(item.id)}
-                  className="flex items-center gap-1 text-destructive text-sm font-bold active:opacity-70"
-                >
-                  <Trash2 className="w-4 h-4" /> Remover
-                </button>
-                <button
-                  onClick={() => handleEdit(item.productId, item.id)}
-                  className="flex items-center gap-1 text-primary text-sm font-bold active:opacity-70"
-                >
-                  <Pencil className="w-4 h-4" /> Editar
-                </button>
-              </div>
-              <QuantitySelector
-                value={item.quantity}
-                onChange={(v) => updateQuantity(item.id, v)}
-                min={1}
+            <div className="flex-1">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Modalidad</p>
+              <p className="text-sm font-black text-foreground">
+                {orderType === "here" ? "Comer aquí" : "Para llevar"}
+              </p>
+            </div>
+          </div>
+
+          {requiresTable && (
+            <div className="px-4 py-4">
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                <Hash className="w-3.5 h-3.5 text-primary" />
+                Número de mesa <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="Ej: 12"
+                className="w-full h-14 px-4 text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
               />
+              {!tableNumber && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Indica tu mesa para que te llevemos el pedido.
+                </p>
+              )}
             </div>
-          </div>
-        ))}
+          )}
+        </div>
 
-        {items.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <ShoppingCart className="w-12 h-12 mb-3 opacity-40" />
-            <span className="text-base">Carrinho vazio</span>
+        {/* Items */}
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Tus productos</p>
+            <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
+              {items.length} {items.length === 1 ? "ítem" : "ítems"}
+            </span>
+          </div>
+
+          {items.map((item) => (
+            <article key={item.id} className="bg-card rounded-3xl border border-border shadow-card overflow-hidden">
+              <div className="flex gap-3 p-3">
+                {item.productImage ? (
+                  <img
+                    src={item.productImage}
+                    alt={tProduct(item.productName)}
+                    className="w-20 h-20 object-cover rounded-2xl shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center shrink-0">
+                    <span className="text-xl font-bold text-muted-foreground">
+                      {tProduct(item.productName).charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-black text-foreground text-[15px] leading-tight line-clamp-2">
+                      {tProduct(item.productName)}
+                    </h3>
+                    <span className="text-[16px] font-black text-price tabular-nums shrink-0">
+                      {item.totalPrice.toFixed(2)}€
+                    </span>
+                  </div>
+                  {item.sizeName && (
+                    <p className="text-xs text-muted-foreground font-semibold mt-0.5">
+                      Tamaño: {tProduct(item.sizeName)}
+                    </p>
+                  )}
+                  {item.extras.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {item.extras.map((e) => (
+                        <span
+                          key={e.id}
+                          className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full"
+                        >
+                          +{e.quantity}× {tProduct(e.name)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {item.removedIngredients.length > 0 && (
+                    <p className="text-[11px] text-destructive font-semibold mt-1">
+                      Sin: {item.removedIngredients.join(", ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-secondary/30 border-t border-border">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleEdit(item.productId, item.id)}
+                    className="flex items-center gap-1.5 text-primary text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Editar
+                  </button>
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="flex items-center gap-1.5 text-destructive text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-destructive/5 active:scale-95 transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Quitar
+                  </button>
+                </div>
+                <QuantitySelector
+                  value={item.quantity}
+                  onChange={(v) => updateQuantity(item.id, v)}
+                  min={1}
+                  variant="compact"
+                />
+              </div>
+            </article>
+          ))}
+
+          {items.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-card rounded-3xl border border-border">
+              <ShoppingCart className="w-12 h-12 mb-3 opacity-40" />
+              <span className="text-base font-semibold">Carrito vacío</span>
+              <button
+                onClick={() => setScreen("home")}
+                className="mt-4 text-sm font-black text-primary px-4 py-2 rounded-full bg-primary/10"
+              >
+                Ver menú
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Sugestões */}
+        {items.length > 0 && suggestions.length > 0 && (
+          <div className="mt-2">
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-accent" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                ¿Quieres añadir algo más?
+              </p>
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+              {suggestions.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleAddSuggestion(p.id)}
+                  className="shrink-0 w-[150px] bg-card border border-border rounded-2xl shadow-card overflow-hidden text-left active:scale-[0.97] transition-transform"
+                >
+                  <div className="aspect-[5/4] bg-secondary/40">
+                    <img
+                      src={p.image}
+                      alt={tProduct(p.name)}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-2.5 flex flex-col gap-1.5">
+                    <p className="text-[12px] font-bold text-foreground line-clamp-2 leading-tight min-h-[28px]">
+                      {tProduct(p.name)}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-black text-price tabular-nums">
+                        {p.price.toFixed(2)}€
+                      </span>
+                      <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
+                        <Plus className="w-4 h-4" strokeWidth={3} />
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
+      {/* CTA fixo */}
       {items.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</span>
-            <span className="text-2xl font-black text-price tabular-nums">{totalPrice.toFixed(2)}€</span>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+          <div className="flex items-end justify-between mb-2.5 px-1">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Total</p>
+              <p className="text-[28px] font-black text-price tabular-nums tracking-tight leading-none mt-0.5">
+                {totalPrice.toFixed(2)}€
+              </p>
+            </div>
+            <span className="text-[11px] font-semibold text-muted-foreground pb-1.5">
+              Impuestos incluidos
+            </span>
           </div>
           <button
             onClick={() => tableValid && setScreen("payment")}
             disabled={!tableValid}
-            className="w-full flex items-center justify-center py-4 px-5 bg-gradient-cta text-success-foreground rounded-2xl shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
+            className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
-            {tableValid ? "Ir al pago" : "Indica el número de mesa"}
+            <span>{tableValid ? "Ir al pago" : "Indica tu mesa"}</span>
+            <ChevronRight className="w-5 h-5" strokeWidth={3} />
           </button>
         </div>
       )}

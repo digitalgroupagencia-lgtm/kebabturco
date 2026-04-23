@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Printer, Save, Wifi, AlertTriangle } from "lucide-react";
+import { Printer, Save, Wifi, AlertTriangle, FileText } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type P = Tables<"printer_settings">;
@@ -16,6 +16,7 @@ const PrinterPage = () => {
   const [p, setP] = useState<P | null>(null);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
+  const [printingTest, setPrintingTest] = useState(false);
 
   useEffect(() => {
     supabase.from("printer_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
@@ -54,6 +55,40 @@ const PrinterPage = () => {
       toast.error("Falló la prueba: " + e.message);
     } finally {
       setTesting(false);
+    }
+  };
+
+  const printTest = async () => {
+    setPrintingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("print-order", {
+        body: {
+          storeId: STORE_ID,
+          orderNumber: "TEST",
+          tableNumber: "0",
+          orderType: "here",
+          paymentMethod: "card",
+          paymentPending: false,
+          items: [{
+            productName: "Ticket de prueba",
+            quantity: 1,
+            size: null,
+            unitPrice: 0,
+            totalPrice: 0,
+            extras: [],
+            removed: [],
+          }],
+          total: 0,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.ok) toast.success("Ticket de prueba enviado");
+      else if ((data as any)?.skipped) toast.warning("Impresión deshabilitada");
+      else toast.error("Falló: " + JSON.stringify(data));
+    } catch (e: any) {
+      toast.error("Error: " + (e.message || e));
+    } finally {
+      setPrintingTest(false);
     }
   };
 
@@ -115,6 +150,9 @@ const PrinterPage = () => {
           <div className="flex items-center gap-3 pt-2">
             <Button variant="outline" onClick={test} disabled={testing}>
               <Wifi className="w-4 h-4 mr-2" /> {testing ? "Probando..." : "Probar conexión"}
+            </Button>
+            <Button variant="outline" onClick={printTest} disabled={printingTest}>
+              <FileText className="w-4 h-4 mr-2" /> {printingTest ? "Imprimiendo..." : "Imprimir prueba"}
             </Button>
             {p?.last_test_at && (
               <span className="text-xs text-muted-foreground">
