@@ -75,7 +75,13 @@ const extrasByCategory: Record<string, { id: string; name: Record<string, string
 };
 
 const ProductScreen = () => {
-  const { selectedProductId, setScreen } = useOrder();
+  const { selectedProductId, setScreen, productReturnScreen, setProductReturnScreen } = useOrder();
+
+  const goBack = () => {
+    const target = productReturnScreen;
+    setProductReturnScreen("home");
+    setScreen(target);
+  };
   const { addItem } = useCart();
   const { t, tProduct } = useLanguage();
 
@@ -157,7 +163,7 @@ const ProductScreen = () => {
       totalPrice,
     });
 
-    setScreen("home");
+    goBack();
   };
 
   return (
@@ -165,7 +171,7 @@ const ProductScreen = () => {
       <header className="sticky top-0 z-30 bg-gradient-header text-primary-foreground px-4 pt-4 pb-4 shadow-header rounded-b-[18px]">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => setScreen("home")}
+            onClick={goBack}
             className="w-11 h-11 rounded-full bg-white/90 text-foreground shadow-sm flex items-center justify-center active:scale-90 transition-transform"
           >
             <ArrowLeft className="w-5 h-5" />

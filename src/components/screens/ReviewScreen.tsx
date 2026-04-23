@@ -2,14 +2,22 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
-import { ArrowLeft, Trash2, ShoppingCart, Hash } from "lucide-react";
+import { ArrowLeft, Trash2, ShoppingCart, Hash, Pencil } from "lucide-react";
 
 const ReviewScreen = () => {
-  const { setScreen, tableNumber, setTableNumber } = useOrder();
+  const { setScreen, setSelectedProductId, setProductReturnScreen, tableNumber, setTableNumber } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType } = useCart();
   const { tProduct } = useLanguage();
   const requiresTable = orderType === "here";
   const tableValid = !requiresTable || tableNumber.trim().length > 0;
+
+  const handleEdit = (productId: string, itemId: string) => {
+    // Remove o item atual e abre a tela do produto para reconfiguração
+    removeItem(itemId);
+    setSelectedProductId(productId);
+    setProductReturnScreen("review");
+    setScreen("product");
+  };
 
   return (
     <div className="relative min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[160px]">
@@ -71,13 +79,21 @@ const ReviewScreen = () => {
                 <p className="text-base font-black text-price mt-1 tabular-nums">{item.totalPrice.toFixed(2)}€</p>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-              <button
-                onClick={() => removeItem(item.id)}
-                className="flex items-center gap-1 text-destructive text-sm font-bold active:opacity-70"
-              >
-                <Trash2 className="w-4 h-4" /> Remover
-              </button>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border gap-2">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="flex items-center gap-1 text-destructive text-sm font-bold active:opacity-70"
+                >
+                  <Trash2 className="w-4 h-4" /> Remover
+                </button>
+                <button
+                  onClick={() => handleEdit(item.productId, item.id)}
+                  className="flex items-center gap-1 text-primary text-sm font-bold active:opacity-70"
+                >
+                  <Pencil className="w-4 h-4" /> Editar
+                </button>
+              </div>
               <QuantitySelector
                 value={item.quantity}
                 onChange={(v) => updateQuantity(item.id, v)}

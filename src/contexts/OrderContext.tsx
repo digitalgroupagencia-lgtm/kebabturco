@@ -17,6 +17,8 @@ interface OrderContextType {
   setTableNumber: (n: string) => void;
   paymentMethod: PaymentMethodId | null;
   setPaymentMethod: (m: PaymentMethodId | null) => void;
+  productReturnScreen: Screen;
+  setProductReturnScreen: (s: Screen) => void;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [orderNumber, setOrderNumber] = useState("");
   const [tableNumber, setTableNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
+  const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
 
   const generateOrderNumber = () => {
     setOrderNumber(String(Math.floor(100 + Math.random() * 900)));
@@ -50,6 +53,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTableNumber,
         paymentMethod,
         setPaymentMethod,
+        productReturnScreen,
+        setProductReturnScreen,
       }}
     >
       {children}
