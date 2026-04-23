@@ -2,7 +2,8 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
-import { ArrowLeft, Trash2, ShoppingCart, Hash, Pencil } from "lucide-react";
+import ScreenHeader from "@/components/ScreenHeader";
+import { Trash2, ShoppingCart, Hash, Pencil } from "lucide-react";
 
 const ReviewScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, tableNumber, setTableNumber } = useOrder();
@@ -21,12 +22,11 @@ const ReviewScreen = () => {
 
   return (
     <div className="relative min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[160px]">
-      <div className="bg-primary text-primary-foreground px-4 py-4 flex items-center gap-3">
-        <button onClick={() => setScreen("home")} className="active:scale-90 transition-transform">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-lg font-black">Revisão do pedido</h1>
-      </div>
+      <ScreenHeader
+        eyebrow="Tu pedido"
+        title="Revisão do pedido"
+        onBack={() => setScreen("home")}
+      />
 
       <div className="px-4 py-4 flex flex-col gap-3">
         {requiresTable && (
