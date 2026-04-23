@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings as SettingsIcon, Save, Globe, Bell, Shield, Database, Mail, Sparkles } from "lucide-react";
+import { Settings as SettingsIcon, Save, Globe, Bell, Shield, Database, Mail, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const SettingsPage = () => {
-  const [platformName, setPlatformName] = useState("Totem SaaS");
-  const [supportEmail, setSupportEmail] = useState("suporte@exemplo.com");
+  const { settings, isLoading, save, isSaving } = usePlatformSettings();
+
+  const [platformName, setPlatformName] = useState("");
+  const [supportEmail, setSupportEmail] = useState("");
   const [defaultLanguage, setDefaultLanguage] = useState("pt");
   const [defaultCurrency, setDefaultCurrency] = useState("BRL");
   const [defaultTimezone, setDefaultTimezone] = useState("America/Sao_Paulo");
@@ -35,13 +38,54 @@ const SettingsPage = () => {
   const [aiImageStyle, setAiImageStyle] = useState("realistic");
 
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState(
-    "Estamos em manutenção. Voltamos em breve.",
-  );
+  const [maintenanceMessage, setMaintenanceMessage] = useState("");
 
-  const save = (section: string) => {
-    toast.success(`${section} salvas (em memória)`);
+  useEffect(() => {
+    if (!settings) return;
+    setPlatformName(settings.platform_name);
+    setSupportEmail(settings.support_email);
+    setDefaultLanguage(settings.default_language);
+    setDefaultCurrency(settings.default_currency);
+    setDefaultTimezone(settings.default_timezone);
+    setAllowSignup(settings.allow_signup);
+    setDefaultPlan(settings.default_plan);
+    setDefaultMaxOrders(settings.default_max_orders);
+    setTrialDays(settings.trial_days);
+    setEmailNotifications(settings.email_notifications);
+    setOverLimitAlerts(settings.over_limit_alerts);
+    setDailySummary(settings.daily_summary);
+    setRequire2FA(settings.require_2fa);
+    setPasswordMinLength(settings.password_min_length);
+    setSessionHours(settings.session_hours);
+    setAiAutoMenu(settings.ai_auto_menu);
+    setAiAutoImages(settings.ai_auto_images);
+    setAiImageStyle(settings.ai_image_style);
+    setMaintenanceMode(settings.maintenance_mode);
+    setMaintenanceMessage(settings.maintenance_message);
+  }, [settings]);
+
+  const save = async (section: string, patch: Record<string, unknown>) => {
+    try {
+      await mutate(patch);
+      toast.success(`${section} salvas`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
+  const mutate = save as unknown as (p: Record<string, unknown>) => Promise<void>;
+  // Above: rename collision avoided by re-aliasing. Use directly:
+  const persist = async (section: string, patch: Record<string, unknown>) => {
+    try {
+      await (save as any)(patch);
+      toast.success(`${section} salvas`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-6 max-w-5xl">
