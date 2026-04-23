@@ -8,6 +8,9 @@ interface OrderContextType {
   setScreen: (s: Screen) => void;
   selectedProductId: string | null;
   setSelectedProductId: (id: string | null) => void;
+  /** ID do item do carrinho sendo editado (preserva customizações) */
+  editingCartItemId: string | null;
+  setEditingCartItemId: (id: string | null) => void;
   selectedCategory: string | null;
   setSelectedCategory: (id: string | null) => void;
   orderNumber: string;
@@ -31,6 +34,7 @@ const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [screen, setScreen] = useState<Screen>("splash");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState("");
   const [tableNumber, setTableNumber] = useState("");
@@ -50,6 +54,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setScreen,
         selectedProductId,
         setSelectedProductId,
+        editingCartItemId,
+        setEditingCartItemId,
         selectedCategory,
         setSelectedCategory,
         orderNumber,
