@@ -29,6 +29,7 @@ const roleLabels: Record<AppRole, { label: string; color: string }> = {
   restaurant_admin: { label: "Admin Restaurante", color: "bg-primary" },
   operator: { label: "Operador", color: "bg-accent text-accent-foreground" },
   kitchen: { label: "Cozinha", color: "bg-success" },
+  seller: { label: "Vendedor", color: "bg-cta text-cta-foreground" },
 };
 
 const TeamPage = () => {
