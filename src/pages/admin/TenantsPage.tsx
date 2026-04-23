@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe } from "lucide-react";
+import NewTenantWizard from "@/components/admin/NewTenantWizard";
 
 interface TenantForm {
   name: string;
@@ -19,9 +20,10 @@ interface TenantForm {
   plan: string;
   max_orders_month: number;
   is_active: boolean;
+  custom_domain: string;
 }
 
-const emptyForm: TenantForm = { name: "", slug: "", plan: "free", max_orders_month: 500, is_active: true };
+const emptyForm: TenantForm = { name: "", slug: "", plan: "free", max_orders_month: 500, is_active: true, custom_domain: "" };
 
 const planOptions = [
   { value: "free", label: "Free", limit: 500 },
@@ -86,12 +88,14 @@ const TenantsPage = () => {
         const { error } = await supabase.from("tenants").update({
           name: tenant.name, slug: tenant.slug, plan: tenant.plan,
           max_orders_month: tenant.max_orders_month, is_active: tenant.is_active,
+          custom_domain: tenant.custom_domain || null,
         }).eq("id", tenant.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("tenants").insert({
           name: tenant.name, slug: tenant.slug, plan: tenant.plan,
           max_orders_month: tenant.max_orders_month, is_active: tenant.is_active,
+          custom_domain: tenant.custom_domain || null,
         });
         if (error) throw error;
       }
@@ -108,7 +112,7 @@ const TenantsPage = () => {
 
   const openEdit = (t: any) => {
     setEditId(t.id);
-    setForm({ name: t.name, slug: t.slug, plan: t.plan || "free", max_orders_month: t.max_orders_month || 500, is_active: t.is_active });
+    setForm({ name: t.name, slug: t.slug, plan: t.plan || "free", max_orders_month: t.max_orders_month || 500, is_active: t.is_active, custom_domain: t.custom_domain || "" });
     setOpen(true);
   };
 
@@ -124,9 +128,17 @@ const TenantsPage = () => {
     <div className="space-y-6 max-w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Clientes (Tenants)</h2>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <NewTenantWizard
+            trigger={
+              <Button variant="default" className="w-full sm:w-auto bg-primary">
+                <Sparkles className="mr-2 h-4 w-4" /> Novo cliente com IA
+              </Button>
+            }
+          />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNew} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Button>
+            <Button onClick={openNew} variant="outline" className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" /> Manual</Button>
           </DialogTrigger>
           <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
             <DialogHeader>
@@ -140,6 +152,11 @@ const TenantsPage = () => {
               <div>
                 <Label>Slug</Label>
                 <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="meu-restaurante" />
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Domínio próprio</Label>
+                <Input value={form.custom_domain} onChange={(e) => setForm({ ...form, custom_domain: e.target.value })} placeholder="pedido.restaurante.com" />
+                <p className="text-xs text-muted-foreground mt-1">Aponte o DNS deste domínio para o sistema. Ao acessar, abrirá direto neste cliente.</p>
               </div>
               <div>
                 <Label>Plano</Label>
@@ -169,6 +186,7 @@ const TenantsPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-3">
