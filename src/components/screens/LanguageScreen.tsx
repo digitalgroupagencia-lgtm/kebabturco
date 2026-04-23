@@ -1,6 +1,7 @@
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
@@ -26,7 +27,13 @@ const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
   const { settings } = useBranding();
-  const logo = (settings as any)?.logo_language_url || settings?.logo_main_url || logoFallback;
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const logo =
+    (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
+    (settings as any)?.logo_language_url ||
+    settings?.logo_main_url ||
+    logoFallback;
   const brandName = settings?.company_name || "EL REY";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
