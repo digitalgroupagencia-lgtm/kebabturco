@@ -197,7 +197,7 @@ const ProductScreen = () => {
               <div>
                 <div className="mb-2.5 flex items-baseline justify-between">
                   <h3 className="text-[17px] font-black text-foreground">{t("choose")}</h3>
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Paso 1</span>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Escoge una opción</span>
                 </div>
                 <div className={`grid gap-2 ${product.variants.length === 3 ? "grid-cols-3" : product.variants.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
                   {product.variants.map((v) => {
@@ -209,12 +209,12 @@ const ProductScreen = () => {
                         onClick={() => setSelectedVariant(v)}
                         className={`rounded-2xl border px-2 py-3 flex flex-col items-center gap-1.5 transition-all active:scale-[0.97] ${
                           sel
-                            ? "border-primary bg-primary/5"
+                            ? "border-success bg-success/10"
                             : "border-border bg-card"
                         }`}
                       >
                         <span className="text-[26px] leading-none" aria-hidden>{emojiFor(variantLabel)}</span>
-                        <span className={`text-[13px] font-bold text-center leading-tight ${sel ? "text-primary" : "text-foreground"}`}>
+                        <span className={`text-[13px] font-bold text-center leading-tight ${sel ? "text-success" : "text-foreground"}`}>
                           {variantLabel}
                         </span>
                       </button>
