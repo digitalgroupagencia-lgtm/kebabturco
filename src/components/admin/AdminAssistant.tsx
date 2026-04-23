@@ -90,11 +90,14 @@ export default function AdminAssistant() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button — respeita safe-area do iOS */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 group"
+          className="fixed z-50 group right-4 sm:right-6"
+          style={{
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)",
+          }}
           aria-label="Abrir asistente"
         >
           <div className="relative">
@@ -108,7 +111,12 @@ export default function AdminAssistant() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-3rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden">
+        <div
+          className="fixed z-50 right-4 left-4 sm:left-auto sm:right-6 sm:w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100dvh-2rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
+          style={{
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
+          }}
+        >
           <header className="flex items-center justify-between gap-2 px-4 py-3 bg-gradient-to-br from-primary to-accent text-primary-foreground">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
