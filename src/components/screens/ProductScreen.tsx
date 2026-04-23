@@ -163,7 +163,7 @@ const ProductScreen = () => {
       totalPrice,
     });
 
-    setScreen("home");
+    goBack();
   };
 
   return (
