@@ -73,6 +73,23 @@ const translations: Translations = {
   enterName: { pt: "Indique seu nome", en: "Enter your name", es: "Indica tu nombre", fr: "Entrez votre prénom" },
   enterTable: { pt: "Indique sua mesa", en: "Enter your table", es: "Indica tu mesa", fr: "Entrez votre table" },
   enterPhone: { pt: "Indique seu telefone", en: "Enter your phone", es: "Indica tu teléfono", fr: "Entrez votre téléphone" },
+  // Finalize modal
+  finalizeOrder: { pt: "Finalizar pedido", en: "Finalize order", es: "Finalizar pedido", fr: "Finaliser la commande" },
+  send: { pt: "Enviar", en: "Send", es: "Enviar", fr: "Envoyer" },
+  finalizeHint: {
+    pt: "Informe os dados para concluir o pedido.",
+    en: "Please provide your details to complete the order.",
+    es: "Indica tus datos para completar el pedido.",
+    fr: "Indiquez vos données pour finaliser la commande.",
+  },
+  saveImage: { pt: "Salvar imagem", en: "Save image", es: "Guardar imagen", fr: "Enregistrer l'image" },
+  saveImageHint: {
+    pt: "Tire um print ou salve seu comprovante",
+    en: "Take a screenshot or save your receipt",
+    es: "Haz una captura o guarda tu comprobante",
+    fr: "Faites une capture ou enregistrez votre reçu",
+  },
+  orderTime: { pt: "Horário", en: "Time", es: "Hora", fr: "Heure" },
   // Item details
   size_label: { pt: "Tamanho", en: "Size", es: "Tamaño", fr: "Taille" },
   without: { pt: "Sem", en: "No", es: "Sin", fr: "Sans" },
