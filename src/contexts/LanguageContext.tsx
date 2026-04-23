@@ -1,6 +1,14 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Lang = "pt" | "en" | "es" | "fr";
+
+export const LANG_LABELS: Record<Lang, string> = {
+  pt: "Português",
+  en: "English",
+  es: "Español",
+  fr: "Français",
+};
 
 interface Translations {
   [key: string]: Record<Lang, string>;
@@ -54,12 +62,48 @@ interface LanguageContextType {
   setLang: (l: Lang) => void;
   t: (key: string) => string;
   tProduct: (obj: Record<string, string> | string | null | undefined) => string;
+  /** Idioma principal definido para o projeto (vindo do banco) */
+  primaryLang: Lang;
+  /** Idiomas ativos do projeto (subset de Lang) */
+  activeLangs: Lang[];
+  /** URL de ícone (bandeira) por idioma */
+  langIcons: Partial<Record<Lang, string>>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: string }> = ({
+  children,
+  storeId = DEFAULT_STORE_ID,
+}) => {
+  const [primaryLang, setPrimaryLang] = useState<Lang>("es");
+  const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
+  const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
   const [lang, setLang] = useState<Lang>("es");
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("totem_config")
+        .select("primary_language, active_languages, language_icons")
+        .eq("store_id", storeId)
+        .maybeSingle();
+      if (!alive || !data) return;
+      const valid: Lang[] = ["pt", "en", "es", "fr"];
+      const primary = (valid.includes((data.primary_language as Lang)) ? data.primary_language : "es") as Lang;
+      const actives = ((data.active_languages || []) as string[])
+        .filter((l): l is Lang => valid.includes(l as Lang));
+      setPrimaryLang(primary);
+      setActiveLangs(actives.length ? actives : [primary]);
+      setLangIcons((data.language_icons as Partial<Record<Lang, string>>) || {});
+      setLang(primary);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [storeId]);
 
   const t = (key: string) => translations[key]?.[lang] || translations[key]?.en || key;
   const tProduct = (obj: Record<string, string> | string | null | undefined) => {
@@ -69,7 +113,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, tProduct }}>
+    <LanguageContext.Provider
+      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langIcons }}
+    >
       {children}
     </LanguageContext.Provider>
   );
