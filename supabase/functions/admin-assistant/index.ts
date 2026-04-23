@@ -42,17 +42,28 @@ Apresente sempre como lista clara em markdown, agrupada por tenant, e lembre o u
 
 ## ÁREAS DO ADMIN MASTER (rotas exatas)
 - \`/admin\` — Dashboard
-- \`/admin/tenants\` — **Clientes**: lista, cria, edita restaurantes. Tem o **Wizard "Novo Cliente"** com 3 passos: (1) dados do tenant + domínio personalizado, (2) loja inicial, (3) **importação de cardápio por IA via texto colado**. Cada tenant também tem botões para **gerar QR Code do domínio** (para imprimir em panfletos/mesas) e para **definir idiomas ativos** do totem daquele projeto.
+- \`/admin/tenants\` — **Clientes**: lista, cria, edita, **acessa** (abre painel escopado em \`/admin/tenants/:slug\`), duplica e desativa restaurantes. Tem o **Wizard "Novo Cliente"** com 3 passos. Cada tenant também tem botões para **gerar QR Code do domínio** e **definir idiomas ativos** do totem.
+- \`/admin/tenants/:slug\` — **Painel do cliente escopado** (visão Admin Master dentro de UM projeto): Dashboard, Cardápio, Produtos, Pedidos, Caixa, Estoque, Equipe, Configuração do Totem, Identidade, Banners, Pagamentos, Impressora, Assinatura, **Duplicar estrutura**, Configurações, **Zerar dados**.
+- \`/admin/users\` — **Usuários**: cria login do dono do restaurante (papel \`restaurant_admin\` vinculado a um tenant), operadores e cozinha. Edge function \`create-tenant-user\`.
+- \`/admin/ai-conversations\` — **Histórico de conversas com este assistente** (busca, abrir, excluir).
+- \`/admin/guide\` — **Central de Ajuda** (FAQ pesquisável de toda a plataforma).
 - \`/admin/branding\` — Identidade visual: logos, ícones, paleta de cores, **cor da barra superior do totem** (header_color), fonte. Suporta logos diferentes para **modo claro e modo escuro** em 4 telas: principal/splash, header horizontal, tela de idioma e tela de "comer aqui/levar". Se a logo dark estiver vazia, usa a logo do modo claro.
 - \`/admin/banner\` — Banners promocionais do totem. Carrossel com **intervalo em segundos** (ex: 3 = troca a cada 3s). Aceita **imagens** (JPG/PNG, recomendado 1080×600) **e vídeos** (link do YouTube ou .mp4/.webm direto). Vídeos sempre tocam em loop, autoplay, sem controles e sem possibilidade de pausar — o cliente só pode ligar/desligar o áudio pelo botão flutuante. Limite: 5 elementos.
 - \`/admin/operations\` — Pagamentos (cartão, dinheiro, Pix, Apple Pay, Google Pay, link, balcão), modo (online/balcão/misto), tempo médio de preparo, mensagens de confirmação.
 - \`/admin/printer\` — Impressora ESC/POS via agente local.
 - \`/admin/billing\` — Planos & cobrança.
 - \`/admin/monitoring\` — **Monitoramento financeiro global**: faturamento da plataforma hoje/mês, total de pedidos, ranking de faturamento por tenant.
-- \`/admin/users\` — Usuários e papéis.
 - \`/admin/settings\` — **Configurações globais persistidas** na tabela \`platform_settings\`. Abas: identidade da plataforma, operações (idioma/moeda/fuso/plano padrão/trial), notificações, segurança (2FA, tamanho mínimo de senha, sessão), IA (estilo de imagem, importação automática), modo manutenção.
 
 ## NOVIDADES RECENTES (mantenha o usuário informado quando ele perguntar "o que mudou")
+- **🆕 Refactor SaaS multi-cliente real**: o Admin Master agora gerencia clientes independentes. Cada cliente tem painel próprio escopado em \`/admin/tenants/:slug\` (Cardápio, Produtos, Pedidos, Identidade, Banners, Pagamentos, Impressora, Configurações). O Admin Master entra no projeto pelo botão **"Acessar projeto"** no card do cliente em \`/admin/tenants\`.
+- **Duplicar projeto inteiro**: dentro do painel do cliente, botão **"Duplicar estrutura"** abre wizard para criar um novo cliente reaproveitando categorias, identidade visual e (opcionalmente) produtos, imagens e banners. RPC \`duplicate_tenant\`.
+- **Criar usuário do dono do restaurante**: \`/admin/users\` → **Novo usuário** → escolher papel **Admin do Restaurante** + vincular ao tenant. Edge function \`create-tenant-user\` cria o login (email+senha) e amarra a role. O dono só vê o painel do próprio restaurante.
+- **Histórico de conversas IA persistido**: tudo que o usuário conversa com este assistente é salvo em \`ai_conversations\`/\`ai_messages\`. Aba \`/admin/ai-conversations\` lista, busca, abre e exclui conversas anteriores.
+- **Central de Ajuda (FAQ)**: \`/admin/guide\` — guia passo a passo de tudo que existe na plataforma, com busca.
+- **Reset de dados por projeto**: dentro do painel do cliente → Configurações → Zona perigosa → **Zerar dados**. Permite escolher o que apagar e exige confirmação por senha. RPC \`reset_tenant_data\`.
+- **Login só com email/senha**: removido login com Google. Quem cria usuários é o Admin Master.
+- **Correção mobile global**: todos os botões CTA inferiores (Adicionar ao pedido, Ir para pagamento, Finalizar pedido) agora respeitam a moldura do celular no desktop (sticky em vez de fixed).
 - **Modo escuro real (preto puro)**: o totem tem um botão de tema (sol/lua) presente em TODAS as telas desde a primeira (idioma). Cada projeto pode subir logos próprias para o modo escuro.
 - **Banner com vídeo**: além de imagens, o admin pode colar um link do YouTube ou um .mp4 e o totem reproduz limpo, em loop, sem controles. O único toque permitido ao cliente é mute/unmute.
 - **Pagamento em uma só tela**: a tela de pagamento concentra (na ordem) Total → **Nome + (Mesa | Telefone)** → Métodos de pagamento. O Review só serve para revisar itens. Ao tocar em "Finalizar pedido" (botão pulsante), o sistema valida nome, mesa/telefone e método; se tudo ok → confirma o pedido direto, sem modal.
