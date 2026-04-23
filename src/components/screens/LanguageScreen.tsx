@@ -1,10 +1,11 @@
-import { Languages } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
 import flagFr from "@/assets/flag-fr.png";
+import logoFallback from "@/assets/elrey-logo.png";
 
 const FALLBACK_FLAG: Record<string, string> = {
   pt: flagBr,
@@ -23,10 +24,14 @@ const TITLE_BY_LANG: Record<string, string> = {
 const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
+  const { settings } = useBranding();
+  const logo = settings?.logo_main_url || logoFallback;
+  const brandName = settings?.company_name || "EL REY";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
   const title = TITLE_BY_LANG[primaryLang] || TITLE_BY_LANG.es;
-  const cols = Math.min(langs.length, 4);
+  // Mostra em coluna única (igual OrderType) quando 1-2 idiomas; em 2 colunas para 3-4
+  const cols = langs.length >= 3 ? 2 : 1;
 
   const handleSelect = (code: "pt" | "en" | "es" | "fr") => {
     setLang(code);
@@ -34,36 +39,58 @@ const LanguageScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-4 animate-fade-in">
-      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-        <Languages className="w-8 h-8 text-primary" />
+    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-secondary/40 via-background to-background animate-fade-in">
+      {/* Logo header — mesmo padrão da OrderTypeScreen */}
+      <div className="flex flex-col items-center pt-12 pb-6 px-6">
+        <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <img src={logo} alt={brandName} className="w-full h-full object-contain" />
+        </div>
       </div>
-      <h2 className="text-2xl sm:text-3xl font-black text-foreground text-center px-2">
-        {title}
-      </h2>
 
-      <div
-        className="mt-8 w-full max-w-sm grid gap-2.5"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
-        {langs.map((code) => {
-          const icon = langIcons[code] || FALLBACK_FLAG[code];
-          return (
-            <button
-              key={code}
-              onClick={() => handleSelect(code)}
-              className="aspect-square bg-card border border-border rounded-2xl shadow-sm active:scale-[0.95] transition-transform touch-action-manipulation flex items-center justify-center overflow-hidden p-2"
-              aria-label={LANG_LABELS[code]}
-            >
-              <img
-                src={icon}
-                alt={LANG_LABELS[code]}
-                className="w-full h-full object-contain"
-                draggable={false}
-              />
-            </button>
-          );
-        })}
+      {/* Título */}
+      <div className="px-6 text-center">
+        <h1 className="text-[26px] leading-tight font-black text-foreground tracking-tight">
+          {title}
+        </h1>
+      </div>
+
+      {/* Cards de idioma — mesmo visual dos cards de "comer aqui/levar" */}
+      <div className="flex-1 flex flex-col justify-center px-5 py-6 gap-3 max-w-md w-full mx-auto">
+        <div
+          className={`grid gap-3 ${cols === 2 ? "grid-cols-2" : "grid-cols-1"}`}
+        >
+          {langs.map((code) => {
+            const icon = langIcons[code] || FALLBACK_FLAG[code];
+            const label = LANG_LABELS[code];
+            return (
+              <button
+                key={code}
+                onClick={() => handleSelect(code)}
+                className={`group relative overflow-hidden flex ${cols === 1 ? "flex-row items-center gap-4 p-5" : "flex-col items-center gap-3 p-4"} bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation`}
+                aria-label={label}
+              >
+                <div className={`${cols === 1 ? "w-20 h-20" : "w-24 h-24"} rounded-3xl bg-secondary/40 flex items-center justify-center shrink-0 overflow-hidden p-2`}>
+                  <img
+                    src={icon}
+                    alt={label}
+                    className="w-full h-full object-contain"
+                    draggable={false}
+                  />
+                </div>
+                <span className={`${cols === 1 ? "text-left flex-1 text-lg" : "text-center text-base"} font-black text-foreground leading-tight`}>
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Footer brand */}
+      <div className="text-center pb-6 px-6">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
+          Pizza · Kebab · Burger
+        </p>
       </div>
     </div>
   );
