@@ -10,7 +10,7 @@ const ReviewScreen = () => {
   const { tProduct } = useLanguage();
 
   return (
-    <div className="min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[140px]">
+    <div className="relative min-h-[100dvh] bg-secondary/30 animate-fade-in pb-[160px]">
       <div className="bg-primary text-primary-foreground px-4 py-4 flex items-center gap-3">
         <button onClick={() => setScreen("home")} className="active:scale-90 transition-transform">
           <ArrowLeft className="w-6 h-6" />
@@ -74,19 +74,17 @@ const ReviewScreen = () => {
       </div>
 
       {items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border p-4">
-          <div className="max-w-md mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-base font-bold text-foreground">Total</span>
-              <span className="text-xl font-black text-primary">R$ {totalPrice.toFixed(2)}</span>
-            </div>
-            <button
-              onClick={() => setScreen("payment")}
-              className="w-full py-4 bg-success text-success-foreground rounded-2xl text-base font-black active:scale-[0.97] transition-transform touch-action-manipulation"
-            >
-              Ir para pagamento
-            </button>
+        <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <span className="text-sm font-bold text-muted-foreground">Total</span>
+            <span className="text-xl font-black text-primary">R$ {totalPrice.toFixed(2)}</span>
           </div>
+          <button
+            onClick={() => setScreen("payment")}
+            className="w-full flex items-center justify-center py-4 px-5 bg-success text-success-foreground rounded-full shadow-lg text-base font-black tracking-wide active:scale-[0.97] transition-transform touch-action-manipulation"
+          >
+            Ir para pagamento
+          </button>
         </div>
       )}
     </div>
