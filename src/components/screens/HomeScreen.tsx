@@ -53,15 +53,15 @@ const HomeScreen = () => {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[104px] min-w-[104px] bg-secondary/70 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
-          <div className="flex flex-col gap-2 p-2">
+        <aside className="w-[120px] min-w-[120px] bg-secondary/70 border-r border-border overflow-y-auto shrink-0 no-scrollbar">
+          <div className="flex flex-col gap-3 p-2">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
               return (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`flex flex-col items-center gap-2 p-2 rounded-2xl transition-all touch-action-manipulation min-h-[94px] justify-center border ${
+                  className={`flex flex-col items-center gap-2 p-2 rounded-3xl transition-all touch-action-manipulation min-h-[120px] justify-center border ${
                     isActive
                       ? "bg-card border-primary shadow-sm"
                       : "bg-transparent border-transparent active:scale-95"
@@ -70,7 +70,7 @@ const HomeScreen = () => {
                   <img
                     src={category.image}
                     alt={tProduct(category.name)}
-                    className="w-12 h-12 object-contain"
+                    className="w-20 h-20 object-cover rounded-2xl"
                     loading="lazy"
                   />
                   <span
@@ -103,11 +103,11 @@ const HomeScreen = () => {
                     Oferta
                   </span>
                 )}
-                <div className="bg-secondary/60 aspect-square p-4 flex items-center justify-center">
+                <div className="bg-secondary/60 aspect-square p-2 flex items-center justify-center">
                   <img
                     src={product.image}
                     alt={tProduct(product.name)}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover rounded-2xl"
                     loading="lazy"
                   />
                 </div>
