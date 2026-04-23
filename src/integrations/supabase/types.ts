@@ -384,6 +384,53 @@ export type Database = {
           },
         ]
       }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          method: string
+          notes: string | null
+          paid_at: string
+          reference: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          reference?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          reference?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           ai_auto_images: boolean
@@ -914,6 +961,56 @@ export type Database = {
           },
         ]
       }
+      tenant_subscriptions: {
+        Row: {
+          billing_day: number
+          created_at: string
+          currency: string
+          id: string
+          last_payment_date: string | null
+          monthly_amount: number
+          next_due_date: string
+          notes: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_day?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          last_payment_date?: string | null
+          monthly_amount?: number
+          next_due_date?: string
+          notes?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_day?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          last_payment_date?: string | null
+          monthly_amount?: number
+          next_due_date?: string
+          notes?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -1065,12 +1162,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_tenants: number
+          mrr: number
+          orders_today: number
+          overdue_count: number
+          paid_count: number
+          pending_count: number
+          revenue_month: number
+          revenue_today: number
+          total_tenants: number
+        }[]
+      }
       get_hourly_sales: {
         Args: { _since: string; _store_id: string }
         Returns: {
           hour: number
           order_count: number
           revenue: number
+        }[]
+      }
+      get_monthly_revenue_series: {
+        Args: never
+        Returns: {
+          month_date: string
+          month_label: string
+          order_count: number
+          revenue: number
+        }[]
+      }
+      get_orders_heatmap: {
+        Args: never
+        Returns: {
+          day_of_week: number
+          hour_of_day: number
+          order_count: number
         }[]
       }
       get_sales_summary: {
@@ -1099,6 +1227,27 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_top_tenants_by_revenue: {
+        Args: { _limit?: number }
+        Returns: {
+          order_count: number
+          tenant_id: string
+          tenant_name: string
+          total_revenue: number
+        }[]
+      }
+      get_upcoming_payments: {
+        Args: never
+        Returns: {
+          currency: string
+          days_until_due: number
+          monthly_amount: number
+          next_due_date: string
+          status: string
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1108,6 +1257,18 @@ export type Database = {
         Returns: boolean
       }
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
+      reset_tenant_data: {
+        Args: {
+          _reset_banners?: boolean
+          _reset_cash?: boolean
+          _reset_categories?: boolean
+          _reset_orders?: boolean
+          _reset_products?: boolean
+          _reset_stock?: boolean
+          _tenant_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin_master" | "restaurant_admin" | "operator" | "kitchen"
