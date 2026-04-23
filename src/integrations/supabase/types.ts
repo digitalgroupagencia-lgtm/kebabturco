@@ -109,6 +109,7 @@ export type Database = {
           created_at: string
           cta_color: string
           font_family: string | null
+          header_color: string
           icon_dine_in_url: string | null
           icon_takeaway_url: string | null
           id: string
@@ -130,6 +131,7 @@ export type Database = {
           created_at?: string
           cta_color?: string
           font_family?: string | null
+          header_color?: string
           icon_dine_in_url?: string | null
           icon_takeaway_url?: string | null
           id?: string
@@ -151,6 +153,7 @@ export type Database = {
           created_at?: string
           cta_color?: string
           font_family?: string | null
+          header_color?: string
           icon_dine_in_url?: string | null
           icon_takeaway_url?: string | null
           id?: string
