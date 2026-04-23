@@ -44,7 +44,8 @@ const ReviewScreen = () => {
   const requiresTable = orderType === "here";
   const requiresPhone = orderType === "takeaway";
   const nameValid = customerName.trim().length >= 2;
-  const tableValid = !requiresTable || tableNumber.trim().length > 0;
+  // Mesa pode ficar em branco aqui — vamos pedir num modal final no pagamento.
+  const tableValid = true;
   const phoneValid = !requiresPhone || customerPhone.trim().length >= 6;
   const canCheckout = nameValid && tableValid && phoneValid;
 
