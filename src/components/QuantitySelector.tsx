@@ -15,8 +15,12 @@ const QuantitySelector = ({ value, onChange, min = 0, max = 20, variant = "defau
         onClick={() => value > min && onChange(value - 1)}
         className={`flex items-center justify-center active:scale-90 transition-transform touch-action-manipulation disabled:opacity-30 ${
           isCompact
-            ? "w-9 h-9 rounded-full bg-background text-muted-foreground text-xl font-bold border border-border"
-            : "w-10 h-10 rounded-full bg-secondary text-foreground text-xl font-bold"
+            ? value > 1
+              ? "w-9 h-9 rounded-full bg-destructive text-destructive-foreground text-xl font-bold"
+              : "w-9 h-9 rounded-full bg-background text-muted-foreground text-xl font-bold border border-border"
+            : value > 1
+              ? "w-10 h-10 rounded-full bg-destructive text-destructive-foreground text-xl font-bold"
+              : "w-10 h-10 rounded-full bg-secondary text-foreground text-xl font-bold"
         }`}
         disabled={value <= min}
       >
@@ -29,8 +33,8 @@ const QuantitySelector = ({ value, onChange, min = 0, max = 20, variant = "defau
         onClick={() => value < max && onChange(value + 1)}
         className={`flex items-center justify-center active:scale-90 transition-transform touch-action-manipulation disabled:opacity-30 ${
           isCompact
-            ? "w-9 h-9 rounded-full bg-primary text-primary-foreground text-xl font-bold shadow-sm"
-            : "w-10 h-10 rounded-full bg-primary text-primary-foreground text-xl font-bold"
+            ? "w-9 h-9 rounded-full bg-success text-success-foreground text-xl font-bold shadow-sm"
+            : "w-10 h-10 rounded-full bg-success text-success-foreground text-xl font-bold"
         }`}
         disabled={value >= max}
       >
