@@ -45,7 +45,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem("kiosk-cart");
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Validate schema: productName must be an object (not a string from old version)
+      const valid = Array.isArray(parsed) && parsed.every(
+        (i) => i && typeof i.productName === "object" && i.productName !== null
+      );
+      if (!valid) {
+        localStorage.removeItem("kiosk-cart");
+        return [];
+      }
+      return parsed;
     } catch { return []; }
   });
   const [orderType, setOrderType] = useState<"here" | "takeaway" | null>(null);
