@@ -18,7 +18,15 @@ const ALL_METHODS: { id: PaymentMethodId; icon: any; label: string; subtitle: st
 ];
 
 const PaymentScreen = () => {
-  const { setScreen, generateOrderNumber, setPaymentMethod, storeId, tableNumber } = useOrder();
+  const {
+    setScreen,
+    generateOrderNumber,
+    setPaymentMethod,
+    storeId,
+    tableNumber,
+    customerName,
+    customerPhone,
+  } = useOrder();
   const { items, totalPrice, clearCart, orderType } = useCart();
   const { settings } = useOperationsSettings();
   const brandingCtx = useBranding();
@@ -55,6 +63,48 @@ const PaymentScreen = () => {
       setPaymentMethod(selected);
       generateOrderNumber();
 
+      // Salva pedido no banco (anon insert permitido)
+      const paymentMethodDb =
+        selected === "apple" ? "apple_pay" : selected === "google" ? "google_pay" : selected;
+      try {
+        const { data: order, error: orderErr } = await supabase
+          .from("orders")
+          .insert({
+            store_id: storeId,
+            order_number: orderNumber,
+            order_type: orderType === "here" ? "dine_in" : "takeaway",
+            table_number: tableNumber || null,
+            customer_name: customerName || null,
+            customer_phone: customerPhone || null,
+            payment_method:
+              ["card", "cash", "apple_pay", "google_pay", "pix"].includes(paymentMethodDb)
+                ? (paymentMethodDb as "card" | "cash" | "apple_pay" | "google_pay" | "pix")
+                : null,
+            source: "totem",
+            subtotal: totalPrice,
+            total: totalPrice,
+          })
+          .select("id")
+          .single();
+        if (!orderErr && order) {
+          await supabase.from("order_items").insert(
+            items.map((i) => ({
+              order_id: order.id,
+              product_id: i.productId,
+              product_name: (i.productName?.es || i.productName?.en || Object.values(i.productName)[0]) as string,
+              quantity: i.quantity,
+              size_name: i.sizeName ? (i.sizeName.es || i.sizeName.en || Object.values(i.sizeName)[0]) : null,
+              unit_price: i.unitPrice,
+              total_price: i.totalPrice,
+              extras: i.extras as unknown as import("@/integrations/supabase/types").Json,
+              removed: i.removedIngredients as unknown as import("@/integrations/supabase/types").Json,
+            }))
+          );
+        }
+      } catch (_persistErr) {
+        // não bloqueia o cliente se a persistência falhar
+      }
+
       // Dispara impressão (ignora erro pra não bloquear o cliente)
       try {
         await supabase.functions.invoke("print-order", {
@@ -62,6 +112,8 @@ const PaymentScreen = () => {
             storeId,
             orderNumber,
             tableNumber: tableNumber || null,
+            customerName: customerName || null,
+            customerPhone: customerPhone || null,
             orderType,
             paymentMethod: selected,
             paymentPending: selected === "counter",

@@ -17,9 +17,10 @@ interface ScreenHeaderProps {
 const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenHeaderProps) => {
   return (
     <header
-      className={`relative bg-gradient-header text-primary-foreground px-5 pt-4 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] ${
+      className={`relative bg-gradient-header text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] ${
         sticky ? "sticky top-0 z-30" : ""
       }`}
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
     >
       {/* Glows decorativos sutis (mesmo padrão da Home) */}
       <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />

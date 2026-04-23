@@ -15,6 +15,10 @@ interface OrderContextType {
   storeId: string;
   tableNumber: string;
   setTableNumber: (n: string) => void;
+  customerName: string;
+  setCustomerName: (n: string) => void;
+  customerPhone: string;
+  setCustomerPhone: (p: string) => void;
   paymentMethod: PaymentMethodId | null;
   setPaymentMethod: (m: PaymentMethodId | null) => void;
   productReturnScreen: Screen;
@@ -30,6 +34,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState("");
   const [tableNumber, setTableNumber] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
 
@@ -51,6 +57,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         storeId: DEFAULT_STORE_ID,
         tableNumber,
         setTableNumber,
+        customerName,
+        setCustomerName,
+        customerPhone,
+        setCustomerPhone,
         paymentMethod,
         setPaymentMethod,
         productReturnScreen,

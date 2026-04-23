@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useNavigate } from "react-router-dom";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import elreyLogo from "@/assets/elrey-logo.png";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
   const { settings } = useBranding();
+  const { activeLangs } = useLanguage();
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
 
@@ -14,9 +16,12 @@ const SplashScreen = () => {
   const brandName = settings?.company_name || "EL REY";
 
   useEffect(() => {
-    const timer = setTimeout(() => setScreen("orderType"), 1800);
+    const timer = setTimeout(() => {
+      // Se houver mais de 1 idioma ativo, abre seleção de idioma primeiro
+      setScreen(activeLangs.length > 1 ? "language" : "orderType");
+    }, 1800);
     return () => clearTimeout(timer);
-  }, [setScreen]);
+  }, [setScreen, activeLangs.length]);
 
   useEffect(() => {
     if (tapCount >= 5) navigate("/auth");

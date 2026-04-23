@@ -48,6 +48,7 @@ const OperationsPage = () => {
       msg_paid: s.msg_paid,
       msg_counter: s.msg_counter,
       avg_prep_minutes: (s as any).avg_prep_minutes ?? 12,
+      require_phone_takeaway: (s as any).require_phone_takeaway ?? true,
     }).eq("store_id", STORE_ID);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Configuración guardada");
@@ -96,6 +97,25 @@ const OperationsPage = () => {
               <Switch checked={Boolean(s[f.key])} onCheckedChange={(v) => update(f.key, v)} className="shrink-0" />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Datos del cliente</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
+            <div className="min-w-0 flex-1">
+              <Label className="text-base">Teléfono obligatorio en pedidos para llevar</Label>
+              <p className="text-xs text-muted-foreground">El nombre siempre es obligatorio. Activa esto para pedir también el teléfono.</p>
+            </div>
+            <Switch
+              checked={Boolean((s as any).require_phone_takeaway ?? true)}
+              onCheckedChange={(v) => update("require_phone_takeaway" as any, v)}
+              className="shrink-0"
+            />
+          </div>
         </CardContent>
       </Card>
 

@@ -193,6 +193,7 @@ export type Database = {
           pay_link_enabled: boolean
           pay_pix_enabled: boolean
           payment_mode: string
+          require_phone_takeaway: boolean
           store_id: string
           updated_at: string
         }
@@ -212,6 +213,7 @@ export type Database = {
           pay_link_enabled?: boolean
           pay_pix_enabled?: boolean
           payment_mode?: string
+          require_phone_takeaway?: boolean
           store_id: string
           updated_at?: string
         }
@@ -231,6 +233,7 @@ export type Database = {
           pay_link_enabled?: boolean
           pay_pix_enabled?: boolean
           payment_mode?: string
+          require_phone_takeaway?: boolean
           store_id?: string
           updated_at?: string
         }
@@ -253,6 +256,7 @@ export type Database = {
           product_id: string
           product_name: string
           quantity: number
+          removed: Json
           size_name: string | null
           total_price: number
           unit_price: number
@@ -265,6 +269,7 @@ export type Database = {
           product_id: string
           product_name: string
           quantity?: number
+          removed?: Json
           size_name?: string | null
           total_price: number
           unit_price: number
@@ -277,6 +282,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           quantity?: number
+          removed?: Json
           size_name?: string | null
           total_price?: number
           unit_price?: number
@@ -927,8 +933,10 @@ export type Database = {
           enable_dine_in: boolean | null
           enable_takeaway: boolean | null
           id: string
+          language_icons: Json
           logo_url: string | null
           primary_color: string | null
+          primary_language: string
           secondary_color: string | null
           store_id: string
           updated_at: string
@@ -943,8 +951,10 @@ export type Database = {
           enable_dine_in?: boolean | null
           enable_takeaway?: boolean | null
           id?: string
+          language_icons?: Json
           logo_url?: string | null
           primary_color?: string | null
+          primary_language?: string
           secondary_color?: string | null
           store_id: string
           updated_at?: string
@@ -959,8 +969,10 @@ export type Database = {
           enable_dine_in?: boolean | null
           enable_takeaway?: boolean | null
           id?: string
+          language_icons?: Json
           logo_url?: string | null
           primary_color?: string | null
+          primary_language?: string
           secondary_color?: string | null
           store_id?: string
           updated_at?: string

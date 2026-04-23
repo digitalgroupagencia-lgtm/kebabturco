@@ -10,8 +10,14 @@ const CartBar = () => {
   if (totalItems === 0 || screen === "review" || screen === "payment" || screen === "confirmation" || screen === "product") return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
-      <div className="max-w-md mx-auto px-3 pb-[max(12px,env(safe-area-inset-bottom))] pointer-events-auto">
+    <div
+      className="sticky left-0 right-0 z-50 pointer-events-none"
+      style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <div
+        className="max-w-md mx-auto px-3 pointer-events-auto"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
         <div className="flex items-center justify-between bg-foreground text-background rounded-full pl-5 pr-2 h-[60px] shadow-2xl">
           <div className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />

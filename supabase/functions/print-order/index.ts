@@ -35,44 +35,74 @@ const center = (s: string, w = 32) => {
   return " ".repeat(pad) + s;
 };
 
-const buildTicket = (p: Payload) => {
+const LOCALES: Record<string, string> = {
+  pt: "pt-BR",
+  en: "en-US",
+  es: "es-ES",
+  fr: "fr-FR",
+};
+
+const LABELS: Record<string, Record<string, string>> = {
+  order: { pt: "PEDIDO", en: "ORDER", es: "PEDIDO", fr: "COMMANDE" },
+  payCounter: {
+    pt: "** PAGAR NO BALCAO **",
+    en: "** PAY AT COUNTER **",
+    es: "** PAGAR EN MOSTRADOR **",
+    fr: "** PAYER AU COMPTOIR **",
+  },
+  type: { pt: "Tipo", en: "Type", es: "Tipo", fr: "Type" },
+  here: { pt: "Comer aqui", en: "Eat here", es: "Comer aqui", fr: "Sur place" },
+  takeaway: { pt: "Para levar", en: "Take away", es: "Para llevar", fr: "A emporter" },
+  table: { pt: "Mesa", en: "Table", es: "Mesa", fr: "Table" },
+  customer: { pt: "Cliente", en: "Customer", es: "Cliente", fr: "Client" },
+  phone: { pt: "Tel", en: "Tel", es: "Tel", fr: "Tel" },
+  payment: { pt: "Pago", en: "Pay", es: "Pago", fr: "Paie" },
+  time: { pt: "Hora", en: "Time", es: "Hora", fr: "Heure" },
+  total: { pt: "TOTAL", en: "TOTAL", es: "TOTAL", fr: "TOTAL" },
+  notes: { pt: "Obs", en: "Notes", es: "Obs", fr: "Notes" },
+  without: { pt: "sem", en: "no", es: "sin", fr: "sans" },
+};
+
+const buildTicket = (p: Payload, lang: string, brandName: string) => {
   const W = 32;
   const lines: string[] = [];
   const sep = "-".repeat(W);
   const dsep = "=".repeat(W);
+  const L = (k: string) => LABELS[k]?.[lang] || LABELS[k]?.es || k;
+  const locale = LOCALES[lang] || "es-ES";
 
-  lines.push(center("EL REY", W));
+  lines.push(center(brandName.toUpperCase(), W));
   lines.push(sep);
-  lines.push(center(`PEDIDO #${p.orderNumber}`, W));
+  lines.push(center(`${L("order")} #${p.orderNumber}`, W));
   lines.push(sep);
 
   if (p.paymentPending) {
-    lines.push(center("** PAGAR EN MOSTRADOR **", W));
+    lines.push(center(L("payCounter"), W));
     lines.push(sep);
   }
 
-  lines.push(`Tipo:  ${p.orderType === "here" ? "Comer aqui" : "Para llevar"}`);
-  if (p.tableNumber) lines.push(`Mesa:  ${p.tableNumber}`);
-  if (p.customerName) lines.push(`Cliente: ${p.customerName}`);
-  if (p.customerPhone) lines.push(`Tel: ${p.customerPhone}`);
-  lines.push(`Pago:  ${p.paymentMethod}`);
-  lines.push(`Hora:  ${new Date().toLocaleString("es-ES")}`);
+  lines.push(`${L("type")}:  ${p.orderType === "here" ? L("here") : L("takeaway")}`);
+  if (p.tableNumber) lines.push(`${L("table")}:  ${p.tableNumber}`);
+  if (p.customerName) lines.push(`${L("customer")}: ${p.customerName}`);
+  if (p.customerPhone) lines.push(`${L("phone")}: ${p.customerPhone}`);
+  lines.push(`${L("payment")}:  ${p.paymentMethod}`);
+  lines.push(`${L("time")}:  ${new Date().toLocaleString(locale)}`);
   lines.push(sep);
 
   for (const it of p.items) {
     lines.push(`${it.quantity}x ${it.productName}`);
     if (it.size) lines.push(`   Tam: ${it.size}`);
     for (const ex of it.extras) lines.push(`   + ${ex.quantity}x ${ex.name}`);
-    for (const rm of it.removed) lines.push(`   - sin ${rm}`);
+    for (const rm of it.removed) lines.push(`   - ${L("without")} ${rm}`);
     lines.push(`   ${it.totalPrice.toFixed(2)} EUR`);
   }
 
   lines.push(dsep);
-  lines.push(`TOTAL:  ${p.total.toFixed(2)} EUR`);
+  lines.push(`${L("total")}:  ${p.total.toFixed(2)} EUR`);
   lines.push(dsep);
 
   if (p.notes) {
-    lines.push("Obs:");
+    lines.push(`${L("notes")}:`);
     lines.push(p.notes);
     lines.push(sep);
   }
@@ -119,7 +149,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    const ticket = buildTicket(payload);
+    // Idioma principal e nome do projeto
+    const [{ data: totem }, { data: company }] = await Promise.all([
+      supabase
+        .from("totem_config")
+        .select("primary_language")
+        .eq("store_id", payload.storeId)
+        .maybeSingle(),
+      supabase
+        .from("company_settings")
+        .select("company_name")
+        .eq("store_id", payload.storeId)
+        .maybeSingle(),
+    ]);
+    const lang = totem?.primary_language || "es";
+    const brand = company?.company_name || "EL REY";
+
+    const ticket = buildTicket(payload, lang, brand);
 
     const agentResp = await fetch(`${printer.agent_endpoint.replace(/\/+$/, "")}/print`, {
       method: "POST",
