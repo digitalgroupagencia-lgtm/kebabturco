@@ -58,7 +58,7 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showFinalize, setShowFinalize] = useState(false);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "method">(null);
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -81,9 +81,25 @@ const PaymentScreen = () => {
   }, [counterOnly]);
 
   const confirm = async () => {
-    if (!selected || processing) return;
-    // Modal final: nome + (mesa | telefone) é OBRIGATÓRIO antes de enviar.
-    setShowFinalize(true);
+    if (processing) return;
+    if (!customerName.trim() || customerName.trim().length < 2) {
+      setShowError("name");
+      return;
+    }
+    if (orderType === "here" && !tableNumber.trim()) {
+      setShowError("table");
+      return;
+    }
+    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) {
+      setShowError("phone");
+      return;
+    }
+    if (!selected) {
+      setShowError("method");
+      return;
+    }
+    setShowError(null);
+    await persistAndPrint(customerName.trim(), tableNumber.trim(), customerPhone.trim());
   };
 
   const persistAndPrint = async (
