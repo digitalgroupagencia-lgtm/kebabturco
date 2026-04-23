@@ -6,10 +6,16 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings as SettingsIcon, Save, Store, Bell, Clock, Receipt, Volume2 } from "lucide-react";
+import { Settings as SettingsIcon, Save, Store, Bell, Clock, Receipt, Volume2, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import ResetDataDialog from "@/components/ResetDataDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const PanelSettingsPage = () => {
+  const { user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
+  const [resetOpen, setResetOpen] = useState(false);
   const [storeName, setStoreName] = useState("Minha Loja");
   const [storePhone, setStorePhone] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
@@ -219,6 +225,35 @@ const PanelSettingsPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-5 h-5" /> Zona perigosa
+          </CardTitle>
+          <CardDescription>
+            Apague pedidos, caixa e outros dados deste projeto. Requer confirmação com sua senha.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={() => setResetOpen(true)}
+            disabled={!roleData?.tenant_id}
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Zerar dados do projeto
+          </Button>
+        </CardContent>
+      </Card>
+
+      {roleData?.tenant_id && (
+        <ResetDataDialog
+          open={resetOpen}
+          onOpenChange={setResetOpen}
+          tenantId={roleData.tenant_id}
+          restrictDestructive
+        />
+      )}
     </div>
   );
 };
