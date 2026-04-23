@@ -3,19 +3,40 @@ import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
-const ALL_METHODS: { id: PaymentMethodId; icon: any; label: string; subtitle: string }[] = [
-  { id: "card", icon: CreditCard, label: "Tarjeta", subtitle: "Crédito o débito en el TPV" },
-  { id: "cash", icon: Banknote, label: "Efectivo", subtitle: "Pago en efectivo" },
-  { id: "pix", icon: QrCode, label: "Pix", subtitle: "Pago instantáneo" },
-  { id: "apple", icon: Smartphone, label: "Apple Pay", subtitle: "Pago con iPhone" },
-  { id: "google", icon: Smartphone, label: "Google Pay", subtitle: "Pago con Android" },
-  { id: "link", icon: Link2, label: "Link de pago", subtitle: "Recibe un enlace" },
-  { id: "counter", icon: Store, label: "Pagar en mostrador", subtitle: "Paga al recoger tu pedido" },
+const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
+  { id: "card", icon: CreditCard },
+  { id: "cash", icon: Banknote },
+  { id: "pix", icon: QrCode },
+  { id: "apple", icon: Smartphone },
+  { id: "google", icon: Smartphone },
+  { id: "link", icon: Link2 },
+  { id: "counter", icon: Store },
 ];
+
+const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
+  card: { pt: "Cartão", en: "Card", es: "Tarjeta", fr: "Carte" },
+  cash: { pt: "Dinheiro", en: "Cash", es: "Efectivo", fr: "Espèces" },
+  pix: { pt: "Pix", en: "Pix", es: "Pix", fr: "Pix" },
+  apple: { pt: "Apple Pay", en: "Apple Pay", es: "Apple Pay", fr: "Apple Pay" },
+  google: { pt: "Google Pay", en: "Google Pay", es: "Google Pay", fr: "Google Pay" },
+  link: { pt: "Link de pagamento", en: "Payment link", es: "Link de pago", fr: "Lien de paiement" },
+  counter: { pt: "Pagar no balcão", en: "Pay at counter", es: "Pago en mostrador", fr: "Payer au comptoir" },
+};
+
+const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
+  card: { pt: "Crédito ou débito no TPV", en: "Credit or debit at TPV", es: "Crédito o débito en el TPV", fr: "Carte au TPV" },
+  cash: { pt: "Pagamento em dinheiro", en: "Cash payment", es: "Pago en efectivo", fr: "Paiement en espèces" },
+  pix: { pt: "Pagamento instantâneo", en: "Instant payment", es: "Pago instantáneo", fr: "Paiement instantané" },
+  apple: { pt: "Pagar com iPhone", en: "Pay with iPhone", es: "Pago con iPhone", fr: "Payer avec iPhone" },
+  google: { pt: "Pagar com Android", en: "Pay with Android", es: "Pago con Android", fr: "Payer avec Android" },
+  link: { pt: "Receba um link", en: "Get a link", es: "Recibe un enlace", fr: "Recevoir un lien" },
+  counter: { pt: "Pague ao retirar", en: "Pay when picking up", es: "Paga al recoger tu pedido", fr: "Payer au retrait" },
+};
 
 const PaymentScreen = () => {
   const {
@@ -30,12 +51,13 @@ const PaymentScreen = () => {
   const { items, totalPrice, clearCart, orderType } = useCart();
   const { settings } = useOperationsSettings();
   const brandingCtx = useBranding();
+  const { t, lang, tProduct } = useLanguage();
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
 
   const enabledMethods = useMemo(() => {
-    if (!settings) return ALL_METHODS;
+    if (!settings) return METHOD_DEFS;
     const map: Record<PaymentMethodId, boolean> = {
       card: settings.pay_card_enabled,
       cash: settings.pay_cash_enabled,
@@ -45,7 +67,7 @@ const PaymentScreen = () => {
       counter: settings.pay_counter_enabled,
       link: settings.pay_link_enabled,
     };
-    return ALL_METHODS.filter((m) => map[m.id]);
+    return METHOD_DEFS.filter((m) => map[m.id]);
   }, [settings]);
 
   const counterOnly = settings?.payment_mode === "counter";
@@ -147,9 +169,10 @@ const PaymentScreen = () => {
   return (
     <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in pb-[150px]">
       <ScreenHeader
-        eyebrow="Paso final"
-        title="Pago"
+        eyebrow={t("finalStep")}
+        title={t("pay")}
         onBack={() => setScreen("review")}
+        sticky
       />
 
       <div className="px-4 pt-4">
@@ -158,11 +181,11 @@ const PaymentScreen = () => {
           <div className="pointer-events-none absolute -top-12 -right-10 w-40 h-40 rounded-full bg-price/5 blur-3xl" />
           <div className="relative flex items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-bold">Total a pagar</p>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-bold">{t("totalToPay")}</p>
               <p className="text-[44px] leading-none font-black text-price mt-1.5 tabular-nums tracking-tight">
                 {totalPrice.toFixed(2)}€
               </p>
-              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? "ítem" : "ítems"} · Impuestos incluidos</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? "ítem" : t("items")} · {t("taxesIncluded")}</p>
             </div>
             {logoUrl && (
               <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />
@@ -176,18 +199,20 @@ const PaymentScreen = () => {
               <Store className="w-7 h-7" />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-success font-black">Modo operativo</p>
-              <p className="font-black text-foreground text-[17px] mt-0.5">Pago en mostrador</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Realizarás el pago al recoger tu pedido.</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-success font-black">{t("modeLabel")}</p>
+              <p className="font-black text-foreground text-[17px] mt-0.5">{t("payAtCounterTitle")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("payAtCounterSub")}</p>
             </div>
           </div>
         ) : (
           <div className="mt-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground px-1 mb-2">Elige tu método</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground px-1 mb-2">{t("pickMethod")}</p>
             <div className="flex flex-col gap-2">
               {enabledMethods.map((pm) => {
                 const isSel = selected === pm.id;
                 const isCounter = pm.id === "counter";
+                const label = tProduct(METHOD_LABELS[pm.id]);
+                const subtitle = tProduct(METHOD_SUBS[pm.id]);
                 return (
                   <button
                     key={pm.id}
@@ -208,14 +233,14 @@ const PaymentScreen = () => {
                     </div>
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-black text-foreground text-[15px]">{pm.label}</p>
+                        <p className="font-black text-foreground text-[15px]">{label}</p>
                         {isCounter && (
                           <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/20 text-accent-foreground">
-                            Operativo
+                            {t("modeLabel")}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{pm.subtitle}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
                       isSel ? "bg-success border-success" : "border-border"
@@ -237,7 +262,7 @@ const PaymentScreen = () => {
           className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none"
         >
           <span className="text-[15px] font-black tracking-wide uppercase flex items-center gap-2">
-            {processing ? "Procesando..." : selected === "counter" ? "Confirmar pedido" : "Confirmar pago"}
+            {processing ? t("processing") : selected === "counter" ? t("confirmOrder") : t("confirmPayment")}
             {!processing && <ChevronRight className="w-4 h-4" strokeWidth={3} />}
           </span>
           <span className="text-[15px] font-black bg-white/20 rounded-full px-3.5 py-1 tabular-nums">

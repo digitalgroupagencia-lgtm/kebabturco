@@ -8,7 +8,7 @@ import elreyLogo from "@/assets/elrey-logo.png";
 const SplashScreen = () => {
   const { setScreen } = useOrder();
   const { settings } = useBranding();
-  const { activeLangs } = useLanguage();
+  const { activeLangs, t } = useLanguage();
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
 
@@ -50,7 +50,7 @@ const SplashScreen = () => {
           className="w-40 h-40 object-contain drop-shadow-xl mb-6"
         />
         <h1 className="text-3xl font-black text-foreground tracking-[0.15em]">{brandName}</h1>
-        <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">Kebab · Pizza · Burger</p>
+        <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">{t("splashTagline")}</p>
       </div>
 
       <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-32 h-1 rounded-full bg-secondary overflow-hidden">

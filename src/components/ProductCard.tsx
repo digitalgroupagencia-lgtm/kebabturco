@@ -27,7 +27,7 @@ const ProductCard = ({ name, image, price, onClick, badge }: Props) => {
         className="w-32 h-32 object-contain mb-3"
         loading="lazy"
       />
-      <span className="text-sm font-semibold text-foreground text-center leading-tight line-clamp-2 min-h-[2.5rem] flex items-center">
+      <span className="text-[15px] font-bold text-foreground text-center leading-snug min-h-[2.75rem] flex items-center px-1 break-words hyphens-auto">
         {tProduct(name)}
       </span>
       {price !== undefined && (

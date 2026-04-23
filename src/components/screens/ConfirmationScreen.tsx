@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag, User, Phone } from "lucide-react";
 
 const ConfirmationScreen = () => {
@@ -12,6 +13,7 @@ const ConfirmationScreen = () => {
   } = useOrder();
   const { orderType } = useCart();
   const { settings } = useOperationsSettings();
+  const { t } = useLanguage();
 
   const isCounter = paymentMethod === "counter";
   const isHere = orderType === "here";
@@ -45,9 +47,9 @@ const ConfirmationScreen = () => {
           <div className="w-20 h-20 mx-auto bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 ring-4 ring-white/10">
             <CheckCircle className="w-12 h-12 text-success-foreground" strokeWidth={2.2} />
           </div>
-          <p className="text-[10px] uppercase tracking-[0.28em] opacity-80 font-bold">Confirmado</p>
-          <h1 className="text-[26px] font-black tracking-tight mt-1">¡Pedido recibido!</h1>
-          <p className="opacity-85 mt-1 text-sm">Estamos preparando tu pedido</p>
+          <p className="text-[10px] uppercase tracking-[0.28em] opacity-80 font-bold">{t("confirmedEyebrow")}</p>
+          <h1 className="text-[26px] font-black tracking-tight mt-1">{t("orderReceived")}</h1>
+          <p className="opacity-85 mt-1 text-sm">{t("preparingOrder")}</p>
         </div>
       </header>
 
@@ -55,13 +57,11 @@ const ConfirmationScreen = () => {
         {/* Número protagonista */}
         <div className="relative bg-card border border-border rounded-[28px] p-6 text-center shadow-card overflow-hidden">
           <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl" />
-          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground font-bold">Tu número</p>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground font-bold">{t("yourNumber")}</p>
           <p className="text-[104px] leading-none font-black text-primary mt-2 tabular-nums tracking-tighter">
             #{orderNumber}
           </p>
-          <p className="text-xs text-muted-foreground mt-2 font-semibold">
-            Muestra este número al recoger tu pedido
-          </p>
+          <p className="text-xs text-muted-foreground mt-2 font-semibold">{t("showAtPickup")}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-2.5">
@@ -71,7 +71,7 @@ const ConfirmationScreen = () => {
                 <User className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Cliente</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t("customerLabel")}</p>
                 <p className="font-black text-foreground truncate">{customerName}</p>
               </div>
             </div>
@@ -83,7 +83,7 @@ const ConfirmationScreen = () => {
                 <Phone className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Telefone</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t("phoneLabel")}</p>
                 <p className="font-black text-foreground tabular-nums">{customerPhone}</p>
               </div>
             </div>
@@ -95,7 +95,7 @@ const ConfirmationScreen = () => {
                 <Hash className="w-5 h-5" strokeWidth={2.8} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Mesa</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t("tableLabel")}</p>
                 <p className="font-black text-foreground text-2xl tabular-nums leading-none mt-0.5">{tableNumber}</p>
               </div>
             </div>
@@ -106,8 +106,8 @@ const ConfirmationScreen = () => {
               {isHere ? <Utensils className="w-5 h-5" /> : <ShoppingBag className="w-5 h-5" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Modalidad</p>
-              <p className="font-black text-foreground">{isHere ? "Comer aquí" : "Para llevar"}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t("modeLabel")}</p>
+              <p className="font-black text-foreground">{isHere ? t("eatHere") : t("takeaway")}</p>
             </div>
           </div>
 
@@ -120,7 +120,7 @@ const ConfirmationScreen = () => {
               {isCounter ? <Store className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Estado de pago</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t("paymentStatus")}</p>
               <p className="font-black text-foreground text-[15px]">{message}</p>
             </div>
           </div>
@@ -130,8 +130,8 @@ const ConfirmationScreen = () => {
               <Clock className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Tiempo estimado</p>
-              <p className="font-black text-foreground tabular-nums">~ {prepMin} minutos</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t("estTime")}</p>
+              <p className="font-black text-foreground tabular-nums">~ {prepMin} {t("minutes")}</p>
             </div>
           </div>
         </div>
@@ -141,7 +141,7 @@ const ConfirmationScreen = () => {
           className="mt-auto flex items-center justify-center gap-2.5 px-6 py-5 bg-gradient-cta text-success-foreground rounded-[26px] text-[15px] font-black active:scale-[0.98] transition-transform touch-action-manipulation shadow-cta uppercase tracking-wide"
         >
           <RotateCcw className="w-5 h-5" strokeWidth={3} />
-          Nuevo pedido
+          {t("newOrder")}
         </button>
       </div>
     </div>

@@ -1,10 +1,12 @@
 import { useCart } from "@/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ShoppingCart } from "lucide-react";
 
 const CartBar = () => {
   const { totalItems, totalPrice } = useCart();
   const { setScreen, screen } = useOrder();
+  const { t } = useLanguage();
 
   // Hide on certain screens
   if (totalItems === 0 || screen === "review" || screen === "payment" || screen === "confirmation" || screen === "product") return null;
@@ -22,16 +24,16 @@ const CartBar = () => {
           <div className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
             <span className="font-bold text-sm">
-              {totalItems} {totalItems === 1 ? "item" : "itens"}
+              {totalItems} {totalItems === 1 ? "item" : t("items")}
             </span>
             <span className="text-sm opacity-70">|</span>
-            <span className="text-base font-black">R$ {totalPrice.toFixed(2)}</span>
+            <span className="text-base font-black tabular-nums">{totalPrice.toFixed(2)}€</span>
           </div>
           <button
             onClick={() => setScreen("review")}
             className="bg-success text-success-foreground px-5 h-[44px] rounded-full text-sm font-black active:scale-95 transition-transform touch-action-manipulation shadow-md"
           >
-            Finalizar
+            {t("finishOrder")}
           </button>
         </div>
       </div>

@@ -12,6 +12,7 @@ const ReviewScreen = () => {
     setScreen,
     setSelectedProductId,
     setProductReturnScreen,
+    setEditingCartItemId,
     tableNumber,
     setTableNumber,
     customerName,
@@ -20,7 +21,7 @@ const ReviewScreen = () => {
     setCustomerPhone,
   } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType } = useCart();
-  const { tProduct } = useLanguage();
+  const { t, tProduct } = useLanguage();
   const requiresTable = orderType === "here";
   const requiresPhone = orderType === "takeaway";
   const nameValid = customerName.trim().length >= 2;
@@ -28,20 +29,31 @@ const ReviewScreen = () => {
   const phoneValid = !requiresPhone || customerPhone.trim().length >= 6;
   const canCheckout = nameValid && tableValid && phoneValid;
 
-  // Sugestões: bestsellers que ainda não estão no carrinho
+  // Sugestões inteligentes: prioriza bebidas se cliente ainda não pediu
   const suggestions = useMemo(() => {
     const inCart = new Set(items.map((i) => i.productId));
-    return products.filter((p) => p.isBestseller && !inCart.has(p.id)).slice(0, 3);
+    const inCartCats = new Set(items.map((i) => {
+      const prod = products.find((p) => p.id === i.productId);
+      return prod?.category;
+    }));
+    const drinks = products.filter((p) => p.category === "bebidas" && !inCart.has(p.id));
+    if (!inCartCats.has("bebidas") && drinks.length > 0) {
+      return drinks.slice(0, 4);
+    }
+    return products.filter((p) => p.isBestseller && !inCart.has(p.id)).slice(0, 4);
   }, [items]);
+  const suggestingDrinks = !new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category)).has("bebidas");
 
   const handleEdit = (productId: string, itemId: string) => {
-    removeItem(itemId);
+    // Não remove o item — passa o ID para o ProductScreen recuperar customizações
+    setEditingCartItemId(itemId);
     setSelectedProductId(productId);
     setProductReturnScreen("review");
     setScreen("product");
   };
 
   const handleAddSuggestion = (productId: string) => {
+    setEditingCartItemId(null);
     setSelectedProductId(productId);
     setProductReturnScreen("review");
     setScreen("product");
@@ -50,9 +62,10 @@ const ReviewScreen = () => {
   return (
     <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in pb-[170px]">
       <ScreenHeader
-        eyebrow="Tu pedido"
-        title="Revisión"
+        eyebrow={t("yourOrder")}
+        title={t("review")}
         onBack={() => setScreen("home")}
+        sticky
       />
 
       <div className="px-4 pt-4 pb-2 flex flex-col gap-3">
@@ -63,18 +76,18 @@ const ReviewScreen = () => {
               {orderType === "here" ? <Utensils className="w-5 h-5" /> : <ShoppingBag className="w-5 h-5" />}
             </div>
             <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Modalidad</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">{t("modality")}</p>
               <p className="text-sm font-black text-foreground">
-                {orderType === "here" ? "Comer aquí" : "Para llevar"}
+                {orderType === "here" ? t("eatHere") : t("takeaway")}
               </p>
             </div>
           </div>
 
           {requiresTable && (
-            <div className="px-4 py-4">
+            <div className={`px-4 py-4 ${!tableValid ? "animate-pulse bg-destructive/5" : ""}`}>
               <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                 <Hash className="w-3.5 h-3.5 text-primary" />
-                Número de mesa <span className="text-destructive">*</span>
+                {t("tableNumber")} <span className="text-destructive">*</span>
               </label>
               <input
                 type="number"
@@ -82,12 +95,12 @@ const ReviewScreen = () => {
                 value={tableNumber}
                 onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
                 placeholder="Ej: 12"
-                className="w-full h-14 px-4 text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
+                className={`w-full h-14 px-4 text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                  !tableValid ? "border-destructive/60" : "border-transparent"
+                }`}
               />
               {!tableNumber && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Indica tu mesa para que te llevemos el pedido.
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">{t("tableHint")}</p>
               )}
             </div>
           )}
@@ -96,13 +109,13 @@ const ReviewScreen = () => {
           <div className="px-4 py-4 border-t border-border">
             <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
               <User className="w-3.5 h-3.5 text-primary" />
-              Tu nombre <span className="text-destructive">*</span>
+              {t("yourName")} <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value.slice(0, 40))}
-              placeholder="Ej: María"
+              placeholder="—"
               className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
             />
           </div>
@@ -111,7 +124,7 @@ const ReviewScreen = () => {
             <div className="px-4 py-4 border-t border-border">
               <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                 <Phone className="w-3.5 h-3.5 text-primary" />
-                Teléfono <span className="text-destructive">*</span>
+                {t("yourPhone")} <span className="text-destructive">*</span>
               </label>
               <input
                 type="tel"
@@ -121,9 +134,7 @@ const ReviewScreen = () => {
                 placeholder="+34 600 000 000"
                 className="w-full h-12 px-4 text-base font-bold text-foreground tabular-nums bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                Te avisaremos cuando esté listo.
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">{t("phoneHint")}</p>
             </div>
           )}
         </div>
@@ -131,9 +142,9 @@ const ReviewScreen = () => {
         {/* Items */}
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between px-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Tus productos</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("yourProducts")}</p>
             <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
-              {items.length} {items.length === 1 ? "ítem" : "ítems"}
+              {items.length} {items.length === 1 ? "ítem" : t("items")}
             </span>
           </div>
 
@@ -164,7 +175,7 @@ const ReviewScreen = () => {
                   </div>
                   {item.sizeName && (
                     <p className="text-xs text-muted-foreground font-semibold mt-0.5">
-                      Tamaño: {tProduct(item.sizeName)}
+                      {t("size_label")}: {tProduct(item.sizeName)}
                     </p>
                   )}
                   {item.extras.length > 0 && (
@@ -181,7 +192,7 @@ const ReviewScreen = () => {
                   )}
                   {item.removedIngredients.length > 0 && (
                     <p className="text-[11px] text-destructive font-semibold mt-1">
-                      Sin: {item.removedIngredients.join(", ")}
+                      {t("without")}: {item.removedIngredients.join(", ")}
                     </p>
                   )}
                 </div>
@@ -193,13 +204,13 @@ const ReviewScreen = () => {
                     onClick={() => handleEdit(item.productId, item.id)}
                     className="flex items-center gap-1.5 text-primary text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
                   >
-                    <Pencil className="w-3.5 h-3.5" /> Editar
+                    <Pencil className="w-3.5 h-3.5" /> {t("edit2")}
                   </button>
                   <button
                     onClick={() => removeItem(item.id)}
                     className="flex items-center gap-1.5 text-destructive text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-destructive/5 active:scale-95 transition-all"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Quitar
+                    <Trash2 className="w-3.5 h-3.5" /> {t("remove2")}
                   </button>
                 </div>
                 <QuantitySelector
@@ -215,12 +226,12 @@ const ReviewScreen = () => {
           {items.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-card rounded-3xl border border-border">
               <ShoppingCart className="w-12 h-12 mb-3 opacity-40" />
-              <span className="text-base font-semibold">Carrito vacío</span>
+              <span className="text-base font-semibold">{t("emptyCart")}</span>
               <button
                 onClick={() => setScreen("home")}
                 className="mt-4 text-sm font-black text-primary px-4 py-2 rounded-full bg-primary/10"
               >
-                Ver menú
+                {t("viewMenu")}
               </button>
             </div>
           )}
@@ -232,7 +243,7 @@ const ReviewScreen = () => {
             <div className="flex items-center gap-2 px-1 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                ¿Quieres añadir algo más?
+                {suggestingDrinks ? t("addDrink") : t("addMore")}
               </p>
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
@@ -251,7 +262,7 @@ const ReviewScreen = () => {
                     />
                   </div>
                   <div className="p-2.5 flex flex-col gap-1.5">
-                    <p className="text-[12px] font-bold text-foreground line-clamp-2 leading-tight min-h-[28px]">
+                    <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-tight min-h-[32px] break-words hyphens-auto">
                       {tProduct(p.name)}
                     </p>
                     <div className="flex items-center justify-between">
@@ -275,13 +286,13 @@ const ReviewScreen = () => {
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           <div className="flex items-end justify-between mb-2.5 px-1">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Total</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("total")}</p>
               <p className="text-[28px] font-black text-price tabular-nums tracking-tight leading-none mt-0.5">
                 {totalPrice.toFixed(2)}€
               </p>
             </div>
             <span className="text-[11px] font-semibold text-muted-foreground pb-1.5">
-              Impuestos incluidos
+              {t("taxesIncluded")}
             </span>
           </div>
           <button
@@ -291,12 +302,12 @@ const ReviewScreen = () => {
           >
             <span>
               {!nameValid
-                ? "Indica tu nombre"
+                ? t("enterName")
                 : !tableValid
-                ? "Indica tu mesa"
+                ? t("enterTable")
                 : !phoneValid
-                ? "Indica tu teléfono"
-                : "Ir al pago"}
+                ? t("enterPhone")
+                : t("goToPayment")}
             </span>
             <ChevronRight className="w-5 h-5" strokeWidth={3} />
           </button>
