@@ -8,10 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Monitor, Palette, Globe, Save } from "lucide-react";
+import { Monitor, Palette, Globe, Save, Upload } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type TotemConfig = Tables<"totem_config">;
+
+const ALL_LANGS = [
+  { code: "pt", label: "Português" },
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+] as const;
 
 const TotemConfigPage = () => {
   const { user } = useAuth();
@@ -33,6 +40,9 @@ const TotemConfigPage = () => {
   const [enableTakeaway, setEnableTakeaway] = useState(true);
   const [welcomePt, setWelcomePt] = useState("");
   const [welcomeEn, setWelcomeEn] = useState("");
+  const [primaryLang, setPrimaryLang] = useState<string>("es");
+  const [activeLangs, setActiveLangs] = useState<string[]>(["es"]);
+  const [langIcons, setLangIcons] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (storeId) fetchConfig();
@@ -59,8 +69,40 @@ const TotemConfigPage = () => {
       const welcome = data.welcome_message as Record<string, string> | null;
       setWelcomePt(welcome?.pt || "");
       setWelcomeEn(welcome?.en || "");
+      setPrimaryLang((data as any).primary_language || "es");
+      setActiveLangs((data.active_languages as string[]) || ["es"]);
+      setLangIcons(((data as any).language_icons as Record<string, string>) || {});
     }
     setLoading(false);
+  };
+
+  const uploadLangIcon = async (code: string, file: File) => {
+    if (!storeId) return;
+    const ext = file.name.split(".").pop();
+    const path = `${storeId}/lang-${code}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
+    if (error) {
+      toast.error("Error al subir ícono");
+      return;
+    }
+    const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
+    setLangIcons((prev) => ({ ...prev, [code]: pub.publicUrl }));
+    toast.success("Ícono cargado — recuerda guardar");
+  };
+
+  const toggleActiveLang = (code: string) => {
+    setActiveLangs((prev) => {
+      if (prev.includes(code)) {
+        // não remove o idioma principal
+        if (code === primaryLang) return prev;
+        return prev.filter((l) => l !== code);
+      }
+      if (prev.length >= 4) {
+        toast.error("Máximo 4 idiomas");
+        return prev;
+      }
+      return [...prev, code];
+    });
   };
 
   const saveConfig = async () => {
@@ -78,6 +120,9 @@ const TotemConfigPage = () => {
       enable_dine_in: enableDineIn,
       enable_takeaway: enableTakeaway,
       welcome_message: { pt: welcomePt, en: welcomeEn } as unknown as import("@/integrations/supabase/types").Json,
+      primary_language: primaryLang,
+      active_languages: Array.from(new Set([primaryLang, ...activeLangs])),
+      language_icons: langIcons as unknown as import("@/integrations/supabase/types").Json,
     };
 
     let error;
