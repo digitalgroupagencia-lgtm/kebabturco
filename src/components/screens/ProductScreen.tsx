@@ -237,9 +237,9 @@ const ProductScreen = () => {
                       <button
                         key={size.id}
                         onClick={() => setSelectedSize(size)}
-                        className={`rounded-2xl border px-3 py-2.5 text-left transition-all active:scale-[0.98] ${selected ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+                        className={`rounded-2xl border px-3 py-2.5 text-left transition-all active:scale-[0.98] ${selected ? "border-success bg-success/10" : "border-border bg-card"}`}
                       >
-                        <div className={`text-[15px] font-black ${selected ? "text-primary" : "text-foreground"}`}>{tProduct(size.name)}</div>
+                        <div className={`text-[15px] font-black ${selected ? "text-success" : "text-foreground"}`}>{tProduct(size.name)}</div>
                         <div className="text-[12px] text-muted-foreground tabular-nums mt-0.5">
                           {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
                         </div>
@@ -275,7 +275,7 @@ const ProductScreen = () => {
                       <span className={`text-[22px] leading-none shrink-0 ${included ? "" : "grayscale opacity-40"}`} aria-hidden>{emojiFor(ingredient)}</span>
                       <span className={`flex-1 text-[15px] font-semibold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>{ingredient}</span>
                       <span
-                        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${included ? "bg-primary" : "bg-muted"}`}
+                        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${included ? "bg-success" : "bg-destructive"}`}
                         aria-hidden
                       >
                         <span className={`inline-block h-5 w-5 transform rounded-full bg-background shadow-sm transition-transform ${included ? "translate-x-[18px]" : "translate-x-0.5"}`} />
@@ -310,7 +310,7 @@ const ProductScreen = () => {
                       <button
                         onClick={() => toggleExtra(extra, Math.max(0, qty - 1))}
                         disabled={qty <= 0}
-                        className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-foreground disabled:opacity-30 active:scale-90 transition-transform"
+                        className={`w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform ${qty > 0 ? "bg-destructive text-destructive-foreground" : "border border-border text-foreground"}`}
                         aria-label="Disminuir"
                       >
                         <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -319,7 +319,7 @@ const ProductScreen = () => {
                       <button
                         onClick={() => toggleExtra(extra, Math.min(5, qty + 1))}
                         disabled={qty >= 5}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 ${qty > 0 ? "bg-primary text-primary-foreground" : "border border-border text-foreground"}`}
+                        className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 bg-success text-success-foreground"
                         aria-label="Aumentar"
                       >
                         <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
