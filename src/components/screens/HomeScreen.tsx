@@ -44,8 +44,8 @@ const HomeScreen = () => {
 
   return (
     <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
-      {/* Header premium: gradiente refinado + tipografia trabalhada */}
-      <header className="relative bg-gradient-header text-primary-foreground px-5 pt-4 pb-5 shrink-0 shadow-header overflow-hidden">
+      {/* Header premium: gradiente refinado + cantinhos arredondados */}
+      <header className="relative bg-gradient-header text-primary-foreground px-5 pt-4 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-2xl">
         {/* Glow decorativo sutil */}
         <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
@@ -61,13 +61,13 @@ const HomeScreen = () => {
             </h1>
           </div>
 
-          {/* Status pill premium */}
-          <div className="flex items-center gap-1.5 bg-black/15 ring-1 ring-white/15 rounded-full pl-2 pr-3 py-1 backdrop-blur-md">
+          {/* Status minimalista: bolinha piscando + texto, sem fundo */}
+          <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-70" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Abierto</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
           </div>
         </div>
       </header>
