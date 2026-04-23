@@ -69,9 +69,9 @@ const PrinterPage = () => {
         <Button onClick={save}><Save className="w-4 h-4 mr-2" /> Guardar</Button>
       </div>
 
-      <Card className="border-amber-300/50 bg-amber-50 dark:bg-amber-950/20">
+      <Card className="border-accent/40 bg-accent/10">
         <CardContent className="pt-4 flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 text-accent-foreground shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold">Cómo funciona</p>
             <p className="text-muted-foreground mt-1">
