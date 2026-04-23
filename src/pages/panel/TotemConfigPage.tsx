@@ -176,11 +176,11 @@ const TotemConfigPage = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>URL do Logo</Label>
+              <Label>URL do Logo <span className="text-xs text-muted-foreground ml-1">(512×512 px)</span></Label>
               <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
             </div>
             <div>
-              <Label>Imagem de Fundo</Label>
+              <Label>Imagem de Fundo <span className="text-xs text-muted-foreground ml-1">(1080×1920 px)</span></Label>
               <Input value={bgImageUrl} onChange={(e) => setBgImageUrl(e.target.value)} placeholder="https://..." />
             </div>
           </div>
@@ -213,6 +213,94 @@ const TotemConfigPage = () => {
                 <input type="color" value={ctaColor} onChange={(e) => setCtaColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer border-0" />
                 <Input value={ctaColor} onChange={(e) => setCtaColor(e.target.value)} className="font-mono text-sm" />
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Idiomas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Globe className="h-5 w-5" /> Idiomas do projeto
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Idioma principal</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Define a língua padrão do totem e dos textos da impressora.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {ALL_LANGS.map((l) => {
+                const isPrim = primaryLang === l.code;
+                return (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => {
+                      setPrimaryLang(l.code);
+                      setActiveLangs((prev) => (prev.includes(l.code) ? prev : [...prev, l.code]));
+                    }}
+                    className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                      isPrim ? "border-primary bg-primary/10 text-primary" : "border-border"
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <Label>Idiomas disponíveis no totem (até 4)</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Aparecem como ícones na primeira tela. Faça upload da bandeira/ícone (recomendado 256×256 px).
+            </p>
+            <div className="space-y-2">
+              {ALL_LANGS.map((l) => {
+                const active = activeLangs.includes(l.code);
+                const icon = langIcons[l.code];
+                return (
+                  <div
+                    key={l.code}
+                    className={`flex items-center gap-3 p-3 rounded-xl border ${
+                      active ? "border-primary/40 bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <Switch
+                      checked={active}
+                      onCheckedChange={() => toggleActiveLang(l.code)}
+                      disabled={l.code === primaryLang}
+                    />
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                      {icon ? (
+                        <img src={icon} alt={l.label} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{l.code.toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold">{l.label}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {l.code === primaryLang ? "Idioma principal" : active ? "Disponível" : "Desativado"}
+                      </p>
+                    </div>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={(e) => e.target.files?.[0] && uploadLangIcon(l.code, e.target.files[0])}
+                      />
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <span><Upload className="w-3.5 h-3.5 mr-1" /> Ícone</span>
+                      </Button>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </CardContent>
