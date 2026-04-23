@@ -2,10 +2,14 @@ import { useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
-import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag } from "lucide-react";
+import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag, User, Phone } from "lucide-react";
 
 const ConfirmationScreen = () => {
-  const { setScreen, orderNumber, tableNumber, paymentMethod, setTableNumber, setPaymentMethod } = useOrder();
+  const {
+    setScreen, orderNumber, tableNumber, paymentMethod,
+    customerName, customerPhone, setTableNumber, setPaymentMethod,
+    setCustomerName, setCustomerPhone,
+  } = useOrder();
   const { orderType } = useCart();
   const { settings } = useOperationsSettings();
 
@@ -20,6 +24,8 @@ const ConfirmationScreen = () => {
   const handleNewOrder = () => {
     setTableNumber("");
     setPaymentMethod(null);
+    setCustomerName("");
+    setCustomerPhone("");
     setScreen("orderType");
   };
 
@@ -59,6 +65,30 @@ const ConfirmationScreen = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-2.5">
+          {customerName && (
+            <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 shadow-card">
+              <div className="w-12 h-12 rounded-2xl bg-secondary text-foreground flex items-center justify-center shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Cliente</p>
+                <p className="font-black text-foreground truncate">{customerName}</p>
+              </div>
+            </div>
+          )}
+
+          {!isHere && customerPhone && (
+            <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 shadow-card">
+              <div className="w-12 h-12 rounded-2xl bg-secondary text-foreground flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Telefone</p>
+                <p className="font-black text-foreground tabular-nums">{customerPhone}</p>
+              </div>
+            </div>
+          )}
+
           {isHere && tableNumber && (
             <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 shadow-card">
               <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">

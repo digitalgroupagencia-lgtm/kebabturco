@@ -73,7 +73,9 @@ const BannerPage = () => {
     <div className="space-y-6 max-w-5xl">
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6" /> Banner Promocional</h2>
-        <p className="text-sm text-muted-foreground mt-1">Sube hasta 5 imágenes. Si hay más de una, rotan automáticamente.</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Sube hasta 5 imágenes. Recomendado: <strong>1080×600 px</strong> (proporción 16:9), formato JPG ou PNG, máximo 500KB.
+        </p>
       </div>
 
       <Card>

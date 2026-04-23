@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe } from "lucide-react";
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
 import TenantQrDialog from "@/components/admin/TenantQrDialog";
+import TenantLanguagesDialog from "@/components/admin/TenantLanguagesDialog";
 
 interface TenantForm {
   name: string;
@@ -218,6 +219,7 @@ const TenantsPage = () => {
                       tenantSlug={t.slug}
                       customDomain={(t as any).custom_domain}
                     />
+                    <TenantLanguagesDialog tenantId={t.id} tenantName={t.name} />
                     <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
