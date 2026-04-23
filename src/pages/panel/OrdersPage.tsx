@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Clock, ChefHat, CheckCircle, Truck, XCircle, RefreshCw } from "lucide-react";
+import { Clock, ChefHat, CheckCircle, Truck, XCircle, RefreshCw, User, Phone, Hash } from "lucide-react";
 import type { Tables, Database } from "@/integrations/supabase/types";
 
 type Order = Tables<"orders">;
@@ -164,6 +164,29 @@ const OrdersPage = () => {
                           </Badge>
                         )}
                       </div>
+
+                      {(order.customer_name || order.customer_phone || order.table_number) && (
+                        <div className="space-y-0.5 text-xs border-t pt-1.5">
+                          {order.customer_name && (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <User className="w-3 h-3 shrink-0 text-muted-foreground" />
+                              <span className="font-semibold truncate">{order.customer_name}</span>
+                            </div>
+                          )}
+                          {order.customer_phone && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground tabular-nums">
+                              <Phone className="w-3 h-3 shrink-0" />
+                              <span>{order.customer_phone}</span>
+                            </div>
+                          )}
+                          {order.table_number && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Hash className="w-3 h-3 shrink-0" />
+                              <span>Mesa {order.table_number}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-primary">€ {Number(order.total).toFixed(2)}</span>

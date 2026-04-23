@@ -265,7 +265,7 @@ const MenuPage = () => {
                     <Input value={catNameEn} onChange={(e) => setCatNameEn(e.target.value)} placeholder="Ex: Burgers" />
                   </div>
                   <div>
-                    <Label>URL da Imagem</Label>
+                    <Label>URL da Imagem <span className="text-xs text-muted-foreground ml-1">(512×512 px, quadrada)</span></Label>
                     <Input value={catImageUrl} onChange={(e) => setCatImageUrl(e.target.value)} placeholder="https://..." />
                   </div>
                 </div>
@@ -346,7 +346,7 @@ const MenuPage = () => {
                       <Input type="number" step="0.01" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} placeholder="0.00" />
                     </div>
                     <div>
-                      <Label>URL da Imagem</Label>
+                      <Label>URL da Imagem <span className="text-xs text-muted-foreground ml-1">(800×800 px, fundo neutro)</span></Label>
                       <Input value={prodImageUrl} onChange={(e) => setProdImageUrl(e.target.value)} placeholder="https://..." />
                     </div>
                   </div>
