@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, GripVertical, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Category = Tables<"categories">;
@@ -21,6 +21,7 @@ const MenuPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [genImageId, setGenImageId] = useState<string | null>(null);
 
   // Category form
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -203,6 +204,23 @@ const MenuPage = () => {
     if (selectedCategoryId) fetchProducts(selectedCategoryId);
   };
 
+  const regenerateImage = async (prod: Product) => {
+    setGenImageId(prod.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-product-image", {
+        body: { product_id: prod.id, style: "realistic" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Imagem gerada!");
+      if (selectedCategoryId) fetchProducts(selectedCategoryId);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenImageId(null);
+    }
+  };
+
   if (!storeId) {
     return (
       <div className="space-y-4">
@@ -382,6 +400,14 @@ const MenuPage = () => {
                         <div className="flex gap-1">
                           <button onClick={() => openProdDialog(prod)} className="p-1.5 hover:bg-muted rounded">
                             <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => regenerateImage(prod)}
+                            disabled={genImageId === prod.id}
+                            className="p-1.5 hover:bg-primary/10 rounded text-primary disabled:opacity-50"
+                            title="Gerar imagem com IA"
+                          >
+                            {genImageId === prod.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                           </button>
                           <button onClick={() => toggleProductActive(prod)} className="p-1.5 hover:bg-muted rounded text-xs">
                             {prod.is_active ? "🟢" : "🔴"}
