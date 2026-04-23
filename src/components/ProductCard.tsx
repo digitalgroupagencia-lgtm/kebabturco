@@ -14,17 +14,26 @@ const ProductCard = ({ name, image, price, onClick, badge }: Props) => {
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-col items-center bg-card rounded-2xl shadow-card border border-border p-3 active:scale-95 transition-transform touch-action-manipulation overflow-hidden"
+      className="relative flex flex-col items-center bg-card rounded-2xl border border-border/60 p-4 active:scale-[0.97] hover:border-border transition-all touch-action-manipulation overflow-hidden"
     >
       {badge && (
-        <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+        <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full z-10">
           {badge}
         </span>
       )}
-      <img src={image} alt={tProduct(name)} className="w-28 h-28 object-contain mb-2" loading="lazy" />
-      <span className="text-sm font-bold text-foreground text-center leading-tight">{tProduct(name)}</span>
+      <img
+        src={image}
+        alt={tProduct(name)}
+        className="w-32 h-32 object-contain mb-3"
+        loading="lazy"
+      />
+      <span className="text-sm font-semibold text-foreground text-center leading-tight line-clamp-2 min-h-[2.5rem] flex items-center">
+        {tProduct(name)}
+      </span>
       {price !== undefined && (
-        <span className="text-base font-black text-price mt-1 tabular-nums">€{price.toFixed(2)}</span>
+        <span className="text-base font-bold text-price mt-2 tabular-nums">
+          {price.toFixed(2)}€
+        </span>
       )}
     </button>
   );
