@@ -286,15 +286,20 @@ const PaymentScreen = () => {
         </button>
       </div>
 
-      <TableNumberModal
-        open={showTableModal}
-        onConfirm={(table) => {
+      <FinalizeOrderModal
+        open={showFinalize}
+        mode={orderType === "here" ? "here" : "takeaway"}
+        initialName={customerName}
+        initialTable={tableNumber}
+        initialPhone={customerPhone}
+        onConfirm={({ name, table, phone }) => {
+          setCustomerName(name);
           setTableNumber(table);
-          setShowTableModal(false);
-          // Persiste com a mesa recém-informada
-          persistAndPrint(table);
+          setCustomerPhone(phone);
+          setShowFinalize(false);
+          persistAndPrint(name, table, phone);
         }}
-        onCancel={() => setShowTableModal(false)}
+        onCancel={() => setShowFinalize(false)}
       />
     </div>
   );
