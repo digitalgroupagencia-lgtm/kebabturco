@@ -248,8 +248,8 @@ const ConfirmationScreen = () => {
           <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em]">
             {companyName || "—"}
           </p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">
-            {t("thanksFooter") || "Gracias por su compra"}
+          <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">
+            #{orderNumber} · {dateStr} {timeStr}
           </p>
         </div>
       </div>
