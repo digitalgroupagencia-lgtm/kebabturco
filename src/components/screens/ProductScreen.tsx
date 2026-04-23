@@ -161,85 +161,115 @@ const ProductScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[110px]">
-      <div className="relative px-4 pt-4">
-        <button
-          onClick={() => setScreen("home")}
-          className="absolute top-6 left-6 z-10 w-11 h-11 bg-card/95 rounded-full shadow-md flex items-center justify-center active:scale-90 transition-transform"
-        >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
-        </button>
-        <div className="bg-secondary/60 rounded-3xl overflow-hidden flex items-center justify-center aspect-square shadow-sm">
-          <img
-            src={product.image}
-            alt={tProduct(product.name)}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-
-      <div className="px-4 py-4 space-y-6">
-        <div>
-          <h1 className="text-[30px] leading-tight font-black text-foreground">{tProduct(product.name)}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{tProduct(product.description)}</p>
-          <p className="text-[32px] font-black text-price mt-3 tabular-nums tracking-tight">{product.price.toFixed(2)}€</p>
-          {product.note && (
-            <p className="text-xs text-muted-foreground italic mt-2">{tProduct(product.note)}</p>
-          )}
-        </div>
-
-        {product.variants && product.variants.length > 0 && (
-          <div>
-            <h3 className="text-base font-bold text-foreground mb-3">{t("choose")}</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {product.variants.map((v) => {
-                const sel = selectedVariant?.id === v.id;
-                return (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVariant(v)}
-                    className={`rounded-2xl p-4 text-left border transition-all ${sel ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-secondary/50 text-foreground border-border"}`}
-                  >
-                    <div className="font-bold text-sm">{tProduct(v.name)}</div>
-                  </button>
-                );
-              })}
-            </div>
+    <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[126px]">
+      <header className="sticky top-0 z-30 bg-gradient-header text-primary-foreground px-4 pt-4 pb-4 shadow-header rounded-b-[18px]">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setScreen("home")}
+            className="w-11 h-11 rounded-full bg-white/90 text-foreground shadow-sm flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-[0.24em] font-bold opacity-80">{t("menu")}</p>
+            <p className="text-sm font-black tracking-tight line-clamp-1 max-w-[220px]">{tProduct(product.name)}</p>
           </div>
-        )}
+        </div>
+      </header>
 
-        {product.sizes && product.sizes.length > 0 && (
-          <div>
-            <h3 className="text-base font-bold text-foreground mb-3">{t("size")}</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {product.sizes.map((size) => {
-                const selected = selectedSize?.id === size.id;
-                return (
-                  <button
-                    key={size.id}
-                    onClick={() => setSelectedSize(size)}
-                    className={`rounded-2xl p-4 text-left border transition-all ${
-                      selected
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-secondary/50 text-foreground border-border"
-                    }`}
-                  >
-                    <div className="font-bold text-sm">{tProduct(size.name)}</div>
-                    <div className="text-xs mt-1 opacity-80">
-                      {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+      <div className="px-4 pt-4 space-y-5">
+        <section className="rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
+          <div className="aspect-square bg-secondary/40">
+            <img src={product.image} alt={tProduct(product.name)} className="w-full h-full object-cover rounded-[24px]" />
           </div>
+        </section>
+
+        <section className="space-y-2">
+          <h1 className="text-[30px] leading-[1.02] font-black text-foreground">{tProduct(product.name)}</h1>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">{tProduct(product.description)}</p>
+          <p className="text-[34px] font-black text-price pt-1 tabular-nums tracking-tight">{product.price.toFixed(2)}€</p>
+          {product.note && <p className="text-sm text-muted-foreground italic">{tProduct(product.note)}</p>}
+        </section>
+
+        {(product.variants?.length || product.sizes?.length) && (
+          <section className="space-y-4 rounded-[24px] border border-border bg-card p-4 shadow-card">
+            {product.variants && product.variants.length > 0 && (
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Paso 1</p>
+                    <h3 className="text-xl font-black text-foreground">{t("choose")}</h3>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {product.variants.map((v) => {
+                    const sel = selectedVariant?.id === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariant(v)}
+                        className={`rounded-[22px] border px-4 py-4 text-left transition-all active:scale-[0.99] ${
+                          sel
+                            ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                            : "border-border bg-secondary/30"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span className={`text-lg font-black ${sel ? "text-primary" : "text-foreground"}`}>{tProduct(v.name)}</span>
+                          <span className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center ${sel ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
+                            {sel && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {product.sizes && product.sizes.length > 0 && (
+              <div>
+                <div className="mb-3">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Paso 2</p>
+                  <h3 className="text-xl font-black text-foreground">{t("size")}</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {product.sizes.map((size) => {
+                    const selected = selectedSize?.id === size.id;
+                    return (
+                      <button
+                        key={size.id}
+                        onClick={() => setSelectedSize(size)}
+                        className={`rounded-[22px] border px-4 py-4 text-left transition-all ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-secondary/30"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className={`text-lg font-black ${selected ? "text-primary" : "text-foreground"}`}>{tProduct(size.name)}</div>
+                            <div className="text-sm text-muted-foreground mt-1 tabular-nums">
+                              {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
+                            </div>
+                          </div>
+                          <span className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
+                            {selected && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
         {ingredientOptions.length > 0 && (
-          <div>
-            <h3 className="text-base font-bold text-foreground mb-1">Personaliza tu pedido</h3>
-            <p className="text-xs text-muted-foreground mb-3">Toca para quitar un ingrediente</p>
-            <div className="space-y-2">
+          <section className="rounded-[24px] border border-border bg-card p-4 shadow-card">
+            <div className="mb-4">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Personalización</p>
+              <h3 className="text-[24px] font-black text-foreground">Personaliza tu pedido</h3>
+              <p className="text-sm text-muted-foreground mt-1">Toca para quitar un ingrediente</p>
+            </div>
+            <div className="space-y-2.5">
               {ingredientOptions.map((ingredient) => {
                 const included = ingredients.get(ingredient) ?? true;
                 return (
@@ -250,80 +280,70 @@ const ProductScreen = () => {
                       next.set(ingredient, !included);
                       setIngredients(next);
                     }}
-                    className="w-full bg-secondary/50 rounded-full px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+                    className={`w-full rounded-[18px] border px-3.5 py-3 flex items-center gap-3 text-left transition-all ${included ? "bg-secondary/30 border-border" : "bg-muted/40 border-border/60 opacity-80"}`}
                   >
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                        included ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"
-                      }`}
-                    >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${included ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
                       {included ? <Check className="w-4 h-4" strokeWidth={3} /> : <X className="w-4 h-4" strokeWidth={3} />}
                     </div>
-                    <span className={`text-sm font-semibold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>
-                      {ingredient}
-                    </span>
+                    <span className={`text-base font-bold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>{ingredient}</span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {availableExtras.length > 0 && (
-          <div>
-            <h3 className="text-base font-bold text-foreground mb-1">Añadir ingredientes</h3>
-            <p className="text-xs text-muted-foreground mb-3">Suplementos opcionales</p>
-            <div className="space-y-2">
+          <section className="rounded-[24px] border border-border bg-card p-4 shadow-card">
+            <div className="mb-4">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Extras</p>
+              <h3 className="text-[24px] font-black text-foreground">Añadir ingredientes</h3>
+              <p className="text-sm text-muted-foreground mt-1">Suplementos opcionales</p>
+            </div>
+            <div className="space-y-3">
               {availableExtras.map((extra) => {
                 const qty = extras.get(extra.id) || 0;
                 const selected = qty > 0;
                 return (
                   <div
                     key={extra.id}
-                    className={`rounded-2xl p-3 flex items-center justify-between gap-3 border transition-colors ${
-                      selected ? "bg-success/10 border-success/40" : "bg-secondary/50 border-transparent"
-                    }`}
+                    className={`rounded-[20px] border px-3.5 py-3 flex items-center justify-between gap-3 ${selected ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/20"}`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                          selected ? "bg-success text-success-foreground" : "bg-card text-primary border border-border"
-                        }`}
-                      >
+                      <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center shrink-0 ${selected ? "bg-primary text-primary-foreground" : "bg-background border border-border text-primary"}`}>
                         {selected ? <Check className="w-4 h-4" strokeWidth={3} /> : <Plus className="w-4 h-4" strokeWidth={3} />}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-foreground truncate">{tProduct(extra.name)}</div>
-                        <div className="text-xs font-bold text-price-muted tabular-nums">+{extra.price.toFixed(2)}€</div>
+                        <div className="text-base font-black text-foreground truncate">{tProduct(extra.name)}</div>
+                        <div className="text-sm font-bold text-price-muted tabular-nums">+{extra.price.toFixed(2)}€</div>
                       </div>
                     </div>
-                    <QuantitySelector
-                      value={qty}
-                      onChange={(value) => toggleExtra(extra, value)}
-                      max={5}
-                    />
+                    <QuantitySelector value={qty} onChange={(value) => toggleExtra(extra, value)} max={5} variant="compact" />
                   </div>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-foreground">Cantidad</span>
-          <QuantitySelector value={quantity} onChange={setQuantity} min={1} />
-        </div>
+        <section className="rounded-[24px] border border-border bg-card p-4 shadow-card mb-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-bold">Paso final</p>
+              <span className="text-[24px] font-black text-foreground">Cantidad</span>
+            </div>
+            <QuantitySelector value={quantity} onChange={setQuantity} min={1} variant="compact" />
+          </div>
+        </section>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/92 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
         <button
           onClick={handleAdd}
-          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-2xl shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation"
+          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation"
         >
-          <span className="text-[15px] font-black tracking-wide uppercase">{t("addToOrder")}</span>
-          <span className="text-[15px] font-black bg-white/15 rounded-xl px-3 py-1 tabular-nums">
-            {totalPrice.toFixed(2)}€
-          </span>
+          <span className="text-[16px] font-black tracking-wide uppercase">{t("addToOrder")}</span>
+          <span className="text-[16px] font-black bg-white/15 rounded-full px-4 py-1.5 tabular-nums">{totalPrice.toFixed(2)}€</span>
         </button>
       </div>
     </div>
