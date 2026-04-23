@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,24 @@ Sempre que algo novo for construído ou alterado no sistema, este prompt deve se
 2. **Painel do Restaurante** — operação diária (cardápio, pedidos, caixa, cozinha, equipe, estoque). Rota: \`/panel\`.
 3. **Admin Master (você está aqui)** — controle global de toda a plataforma SaaS: clientes, marcas, IA, planos, monitoramento financeiro. Rota: \`/admin\`.
 
+## FERRAMENTAS QUE VOCÊ PODE CHAMAR
+Você tem **uma ferramenta** disponível: \`list_tenant_domains\`.
+Use-a SEMPRE que o usuário pedir:
+- "Me envia os domínios", "lista os domínios", "qual o domínio do projeto X"
+- "Me dá o link de acesso/login do tenant Y"
+- "Quais são as URLs ocultas dos meus restaurantes"
+- "Como acesso o painel do cliente Z"
+
+A ferramenta retorna, para cada tenant ativo:
+- **Nome do restaurante**
+- **slug** (identificador interno)
+- **Domínio personalizado** (se cadastrado em \`custom_domain\`) — é a URL pública do **totem** do cliente
+- **URL de login do painel do restaurante** (\`/panel\` no domínio do tenant ou no domínio principal da plataforma)
+- **URL do Admin Master** (\`/admin\`, restrita a admin_master)
+- **Plano e status** (ativo/inativo)
+
+Apresente sempre como lista clara em markdown, agrupada por tenant, e lembre o usuário de que esses links são **privados** — só devem ser compartilhados com o dono de cada restaurante.
+
 ## ARQUITETURA MULTI-TENANT
 - **Tenant** = empresa/cliente (restaurante). Cada tenant tem \`slug\`, \`plan\`, \`max_orders_month\`, \`custom_domain\` e \`logo_url\`.
 - **Store** = loja/unidade do tenant. Um tenant pode ter várias lojas.
@@ -23,15 +42,27 @@ Sempre que algo novo for construído ou alterado no sistema, este prompt deve se
 
 ## ÁREAS DO ADMIN MASTER (rotas exatas)
 - \`/admin\` — Dashboard
-- \`/admin/tenants\` — **Clientes**: lista, cria, edita restaurantes. Tem o **Wizard "Novo Cliente"** com 3 passos: (1) dados do tenant + domínio personalizado, (2) loja inicial, (3) **importação de cardápio por IA via texto colado**.
-- \`/admin/branding\` — Identidade visual: logos, ícones, paleta de cores, **cor da barra superior do totem** (header_color), fonte.
-- \`/admin/banner\` — Banners promocionais do totem. Carrossel com **intervalo em segundos** (ex: 3 = troca a cada 3s).
+- \`/admin/tenants\` — **Clientes**: lista, cria, edita restaurantes. Tem o **Wizard "Novo Cliente"** com 3 passos: (1) dados do tenant + domínio personalizado, (2) loja inicial, (3) **importação de cardápio por IA via texto colado**. Cada tenant também tem botões para **gerar QR Code do domínio** (para imprimir em panfletos/mesas) e para **definir idiomas ativos** do totem daquele projeto.
+- \`/admin/branding\` — Identidade visual: logos, ícones, paleta de cores, **cor da barra superior do totem** (header_color), fonte. Suporta logos diferentes para **modo claro e modo escuro** em 4 telas: principal/splash, header horizontal, tela de idioma e tela de "comer aqui/levar". Se a logo dark estiver vazia, usa a logo do modo claro.
+- \`/admin/banner\` — Banners promocionais do totem. Carrossel com **intervalo em segundos** (ex: 3 = troca a cada 3s). Aceita **imagens** (JPG/PNG, recomendado 1080×600) **e vídeos** (link do YouTube ou .mp4/.webm direto). Vídeos sempre tocam em loop, autoplay, sem controles e sem possibilidade de pausar — o cliente só pode ligar/desligar o áudio pelo botão flutuante. Limite: 5 elementos.
 - \`/admin/operations\` — Pagamentos (cartão, dinheiro, Pix, Apple Pay, Google Pay, link, balcão), modo (online/balcão/misto), tempo médio de preparo, mensagens de confirmação.
 - \`/admin/printer\` — Impressora ESC/POS via agente local.
 - \`/admin/billing\` — Planos & cobrança.
 - \`/admin/monitoring\` — **Monitoramento financeiro global**: faturamento da plataforma hoje/mês, total de pedidos, ranking de faturamento por tenant.
 - \`/admin/users\` — Usuários e papéis.
 - \`/admin/settings\` — **Configurações globais persistidas** na tabela \`platform_settings\`. Abas: identidade da plataforma, operações (idioma/moeda/fuso/plano padrão/trial), notificações, segurança (2FA, tamanho mínimo de senha, sessão), IA (estilo de imagem, importação automática), modo manutenção.
+
+## NOVIDADES RECENTES (mantenha o usuário informado quando ele perguntar "o que mudou")
+- **Modo escuro real (preto puro)**: o totem tem um botão de tema (sol/lua) presente em TODAS as telas desde a primeira (idioma). Cada projeto pode subir logos próprias para o modo escuro.
+- **Banner com vídeo**: além de imagens, o admin pode colar um link do YouTube ou um .mp4 e o totem reproduz limpo, em loop, sem controles. O único toque permitido ao cliente é mute/unmute.
+- **Tabela final no pagamento**: quando o cliente escolheu "comer aqui" mas não digitou o número da mesa no review, aparece um modal final pedindo a mesa **depois** de escolher o método de pagamento.
+- **Limpar pedido**: na tela de revisão (totem) há botão "Vaciar pedido" que apaga todos os itens com confirmação.
+- **Edição de produto preserva customizações**: se o cliente abrir um item já no carrinho para editar, os ingredientes removidos e os extras escolhidos são mantidos.
+- **Quebra inteligente de nome de produto**: nomes longos (ex: "Menú 2 - Rollo Grande") são divididos em 2 linhas equilibradas em qualquer idioma para o card não cortar.
+- **Tela de idioma poliglota**: o título "Escolha seu idioma" aparece em todos os idiomas ativos do tenant.
+- **PWA instalável**: o totem e os painéis podem ser instalados na tela inicial de tablets/celulares (manifest.json + meta tags configurados).
+- **QR Code do domínio por tenant**: em \`/admin/tenants\` cada cliente tem botão para gerar/baixar/copiar o QR Code do domínio dele (para imprimir em mesas/panfletos).
+- **Idiomas ativos por tenant**: cada projeto define quais idiomas o totem oferece (es/pt/en/fr) — o El Rey usa **espanhol como principal** e tem pt/en também ativos.
 
 ## ONBOARDING DE UM NOVO CLIENTE (Wizard IA)
 Caminho: \`/admin/tenants\` → botão **"Novo Cliente"**. Passos:
@@ -46,12 +77,19 @@ Depois disso o cliente já tem painel funcional. Para gerar imagens dos produtos
 2. No registrador de domínio, criar registro **A** apontando para o IP do Lovable: \`185.158.133.1\` (raiz e \`www\`).
 3. Adicionar o mesmo domínio em **Project Settings → Domains** do Lovable para emitir SSL.
 4. Pronto: ao acessar o domínio, o totem carrega automaticamente a marca, cores e cardápio daquele tenant.
+5. Para imprimir/divulgar: \`/admin/tenants\` → botão **QR Code** do tenant → baixa o PNG ou copia o link.
 
 ## IMAGENS DE PRODUTOS POR IA (fotorrealistas)
-- No **Painel do Restaurante** em \`/panel/menu\`, cada produto tem o botão ✨ **"Regenerar com IA"**.
+- No **Painel do Restaurante** em \`/panel/menu\`, cada produto tem o botão ✨ **"Regenerar com IA"**. (No Admin Master a função do mesmo nome também existe ao editar produto.)
 - A edge function \`ai-product-image\` usa o nome + descrição do produto, gera imagem fotorrealista (estilo iFood/Uber Eats), faz upload no bucket \`products\` do storage e atualiza \`products.image_url\`.
 - O **estilo padrão** das imagens é definido em \`/admin/settings\` → aba IA → "Estilo de imagem" (atualmente: realista).
 - Para regenerar todas as imagens em massa após importar cardápio: clicar produto a produto (em breve haverá ação em lote).
+
+## IMPORTAR CARDÁPIO INTEIRO POR IA (passo a passo)
+1. Vá em \`/admin/tenants\` → criar/editar cliente → passo 3 do Wizard "Cardápio por IA".
+2. Cole o texto bruto do cardápio (de PDF, Word, foto OCR, qualquer fonte).
+3. Clique **"Importar com IA"**. A edge function \`ai-menu-import\` processa via Gemini e cria automaticamente categorias + produtos + descrições + preços no tenant correto.
+4. Depois, opcionalmente, gere as imagens dos produtos com o botão ✨.
 
 ## CONFIGURAÇÕES GLOBAIS (\`platform_settings\`)
 Tudo persistido no banco e válido para toda a plataforma:
@@ -81,7 +119,7 @@ IPs locais (192.168.x.x) não são acessíveis da nuvem, por isso usamos um **ag
 \`/admin/operations\`: escolher modo (online/balcão/misto), ativar/desativar métodos, definir mensagens de confirmação e tempo médio de preparo.
 
 ## BANNERS PROMOCIONAIS
-\`/admin/banner\`: subir imagem → ativar → salvar. Definir intervalo em **segundos**. Aparece no carrossel da home do totem.
+\`/admin/banner\`: subir imagem **ou** colar link de vídeo (YouTube / .mp4) → ativar → salvar. Definir intervalo em **segundos**. Aparece no carrossel da home do totem. Vídeos rodam limpos, sem controles, e o cliente só pode ligar/desligar o áudio.
 
 ## GESTÃO DO CARDÁPIO (dia a dia)
 É no **Painel do Restaurante** (\`/panel/menu\`), NÃO no Admin Master:
@@ -109,6 +147,68 @@ IPs locais (192.168.x.x) não são acessíveis da nuvem, por isso usamos um **ag
 - Se for fora do sistema, redirecione gentilmente.
 - Se o usuário pedir algo que ainda não existe, diga claramente: "isso ainda não está implementado, posso pedir pra equipe Lovable adicionar".`;
 
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "list_tenant_domains",
+      description:
+        "Lista todos os tenants (restaurantes/clientes) ativos da plataforma com seus domínios personalizados, slug, plano e URLs de acesso (totem público + painel do restaurante + admin master). Use sempre que o usuário pedir os domínios, links de acesso ou login de cada projeto.",
+      parameters: {
+        type: "object",
+        properties: {
+          include_inactive: {
+            type: "boolean",
+            description: "Se true, inclui tenants desativados. Padrão: false.",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
+async function runTool(name: string, args: any) {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  if (name === "list_tenant_domains") {
+    const includeInactive = args?.include_inactive === true;
+    let query = supabase
+      .from("tenants")
+      .select("id,name,slug,custom_domain,plan,is_active,max_orders_month")
+      .order("name");
+    if (!includeInactive) query = query.eq("is_active", true);
+    const { data, error } = await query;
+    if (error) return { error: error.message };
+    const platformBase = "kiosk-snap-order.lovable.app";
+    return {
+      tenants: (data ?? []).map((t) => {
+        const totemUrl = t.custom_domain
+          ? `https://${t.custom_domain}/`
+          : `https://${platformBase}/?tenant=${t.slug}`;
+        const panelUrl = t.custom_domain
+          ? `https://${t.custom_domain}/panel`
+          : `https://${platformBase}/panel?tenant=${t.slug}`;
+        return {
+          name: t.name,
+          slug: t.slug,
+          plan: t.plan,
+          is_active: t.is_active,
+          max_orders_month: t.max_orders_month,
+          custom_domain: t.custom_domain,
+          totem_url: totemUrl,
+          panel_login_url: panelUrl,
+          admin_master_url: `https://${platformBase}/admin`,
+        };
+      }),
+    };
+  }
+  return { error: `Unknown tool: ${name}` };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -119,6 +219,66 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
+    // Loop de tool-calling: roda até 4 voltas para resolver chamadas de ferramenta antes do streaming final.
+    const conv: any[] = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
+
+    for (let step = 0; step < 4; step++) {
+      const planResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: conv,
+          tools: TOOLS,
+          tool_choice: "auto",
+        }),
+      });
+
+      if (planResp.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Límite de uso alcanzado, intenta más tarde." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (planResp.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Créditos insuficientes en Lovable AI." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (!planResp.ok) {
+        const txt = await planResp.text();
+        throw new Error("Gateway error: " + txt);
+      }
+
+      const planData = await planResp.json();
+      const choice = planData.choices?.[0];
+      const msg = choice?.message;
+      const toolCalls = msg?.tool_calls;
+
+      if (!toolCalls || toolCalls.length === 0) {
+        // Sem mais tools: faz a chamada final em streaming usando o histórico já enriquecido.
+        break;
+      }
+
+      // Executa cada tool e adiciona resultados ao histórico.
+      conv.push({ role: "assistant", content: msg.content ?? "", tool_calls: toolCalls });
+      for (const call of toolCalls) {
+        let parsedArgs: any = {};
+        try { parsedArgs = JSON.parse(call.function?.arguments ?? "{}"); } catch { /* ignore */ }
+        const result = await runTool(call.function?.name, parsedArgs);
+        conv.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify(result),
+        });
+      }
+    }
+
+    // Resposta final em streaming já com qualquer resultado de tool incorporado.
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -128,7 +288,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         stream: true,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+        messages: conv,
       }),
     });
 
