@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
-import { ArrowLeft, CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check } from "lucide-react";
+import ScreenHeader from "@/components/ScreenHeader";
 
 const ALL_METHODS: { id: PaymentMethodId; icon: any; label: string; subtitle: string }[] = [
   { id: "card", icon: CreditCard, label: "Tarjeta", subtitle: "Crédito o débito en el TPV" },
@@ -50,15 +51,11 @@ const PaymentScreen = () => {
 
   return (
     <div className="relative min-h-[100dvh] bg-background animate-fade-in pb-[140px]">
-      <header className="bg-gradient-header text-primary-foreground px-5 py-4 flex items-center gap-3 shadow-header">
-        <button onClick={() => setScreen("review")} className="active:scale-90 transition-transform p-1 -ml-1">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-[0.2em] opacity-75 font-semibold">Paso final</span>
-          <h1 className="text-xl font-black tracking-tight">Pago</h1>
-        </div>
-      </header>
+      <ScreenHeader
+        eyebrow="Paso final"
+        title="Pago"
+        onBack={() => setScreen("review")}
+      />
 
       <div className="px-5 pt-6">
         <div className="bg-secondary/40 rounded-3xl p-5 text-center border border-border/60">
