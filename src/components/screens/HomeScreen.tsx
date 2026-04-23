@@ -124,7 +124,7 @@ const HomeScreen = () => {
           </div>
 
           {/* Título da categoria com selo de quantidade */}
-          <div className="px-4 pt-4 pb-3 sticky top-0 bg-background/95 backdrop-blur z-10 flex items-end justify-between">
+          <div className="px-4 pt-4 pb-3 flex items-end justify-between">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
                 {t("menu")}
