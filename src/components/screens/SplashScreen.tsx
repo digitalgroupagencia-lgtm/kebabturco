@@ -33,10 +33,10 @@ const SplashScreen = () => {
         style={{ WebkitTapHighlightColor: "transparent", background: "transparent", border: "none" }}
       />
       <div className="w-24 h-24 rounded-[28px] bg-primary flex items-center justify-center shadow-lg mb-6">
-        <span className="text-primary-foreground text-5xl font-black tracking-tight">K</span>
+        <span className="text-primary-foreground text-4xl font-black tracking-tight">ER</span>
       </div>
-      <h1 className="text-4xl font-black text-foreground tracking-tight">Kiosk</h1>
-      <p className="text-muted-foreground mt-2 text-base">Fast food self-service</p>
+      <h1 className="text-4xl font-black text-foreground tracking-tight">EL REY</h1>
+      <p className="text-muted-foreground mt-2 text-base">Kebab · Pizza · Burger</p>
       <Loader2 className="w-8 h-8 text-primary animate-spin mt-8" />
     </div>
   );

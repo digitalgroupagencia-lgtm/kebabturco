@@ -46,7 +46,7 @@ const ReviewScreen = () => {
                     Sem: {item.removedIngredients.join(", ")}
                   </p>
                 )}
-                <p className="text-base font-black text-primary mt-1">R$ {item.totalPrice.toFixed(2)}</p>
+                <p className="text-base font-black text-primary mt-1">{item.totalPrice.toFixed(2)}€</p>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -77,7 +77,7 @@ const ReviewScreen = () => {
         <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <div className="flex items-center justify-between mb-3 px-1">
             <span className="text-sm font-bold text-muted-foreground">Total</span>
-            <span className="text-xl font-black text-primary">R$ {totalPrice.toFixed(2)}</span>
+            <span className="text-xl font-black text-primary">{totalPrice.toFixed(2)}€</span>
           </div>
           <button
             onClick={() => setScreen("payment")}
