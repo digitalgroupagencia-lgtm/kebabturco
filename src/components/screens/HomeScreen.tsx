@@ -2,14 +2,18 @@ import { useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { products, categories } from "@/data/products";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus } from "lucide-react";
+import elreyLogoFallback from "@/assets/elrey-logo-horizontal.png";
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, selectedCategory, setSelectedCategory } = useOrder();
   const { t, tProduct } = useLanguage();
   const { totalItems, orderType } = useCart();
+  const { settings } = useBranding();
+  const headerLogo = settings?.logo_secondary_url || settings?.logo_main_url || elreyLogoFallback;
 
   useEffect(() => {
     if (!selectedCategory) {
@@ -50,19 +54,24 @@ const HomeScreen = () => {
         <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
 
-        <div className="relative flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-[0.28em] opacity-80 font-bold">
+        <div className="relative flex items-center justify-between gap-3">
+          <div className="flex flex-col min-w-0 flex-1">
+            {/* Logomarca horizontal — protagonista do header */}
+            <img
+              src={headerLogo}
+              alt={settings?.company_name || "EL REY"}
+              className="h-10 sm:h-12 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
+              draggable={false}
+            />
+            {/* Título secundário — agora tipo de pedido em destaque */}
+            <h1 className="text-[15px] sm:text-[16px] font-black tracking-[0.18em] uppercase leading-none mt-2 truncate">
               {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
-            </span>
-            <h1 className="text-[22px] font-black tracking-tight leading-none mt-1">
-              {t("menu")}
-              <span className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle" />
+              <span className="inline-block ml-2 w-1.5 h-1.5 rounded-full bg-accent align-middle" />
             </h1>
           </div>
 
-          {/* Status minimalista: bolinha piscando + texto, sem fundo */}
-          <div className="flex items-center gap-2">
+          {/* Status "Abierto" — mantido à direita */}
+          <div className="flex items-center gap-2 shrink-0 self-start mt-1">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
