@@ -1,6 +1,18 @@
 // Auto-generated El Rey menu
 import img_baklava from "@/assets/elrey/baklava.png";
+import img_beb_agua from "@/assets/elrey/beb-agua.png";
+import img_beb_agua_gas from "@/assets/elrey/beb-agua-gas.png";
+import img_beb_aquarius from "@/assets/elrey/beb-aquarius.png";
+import img_beb_cerveza from "@/assets/elrey/beb-cerveza.png";
+import img_beb_cerveza_sin from "@/assets/elrey/beb-cerveza-sin.png";
+import img_beb_cocacola from "@/assets/elrey/beb-cocacola.png";
+import img_beb_cocacola_zero from "@/assets/elrey/beb-cocacola-zero.png";
+import img_beb_fanta_limon from "@/assets/elrey/beb-fanta-limon.png";
+import img_beb_fanta_naranja from "@/assets/elrey/beb-fanta-naranja.png";
+import img_beb_nestea from "@/assets/elrey/beb-nestea.png";
+import img_beb_sprite from "@/assets/elrey/beb-sprite.png";
 import img_bowl_bacon from "@/assets/elrey/bowl-bacon.png";
+import img_cat_bebidas from "@/assets/elrey/cat-bebidas.png";
 import img_bowl_pollo from "@/assets/elrey/bowl-pollo.png";
 import img_box_casa from "@/assets/elrey/box-casa.png";
 import img_box_elrey from "@/assets/elrey/box-elrey.png";
@@ -194,6 +206,7 @@ export const categories: Category[] = [
   { id: "hamburguesas", name: { pt: "Hamburguesas", en: "Hamburguesas", es: "Hamburguesas", fr: "Hamburguesas" }, image: img_cat_hamburguesas, icon: "" },
   { id: "bowl", name: { pt: "Bowl", en: "Bowl", es: "Bowl", fr: "Bowl" }, image: img_cat_bowl, icon: "" },
   { id: "copas", name: { pt: "Copas", en: "Copas", es: "Copas", fr: "Copas" }, image: img_cat_copas, icon: "" },
+  { id: "bebidas", name: { pt: "Bebidas", en: "Drinks", es: "Bebidas", fr: "Boissons" }, image: img_cat_bebidas, icon: "" },
   { id: "baklava", name: { pt: "Baklava", en: "Baklava", es: "Baklava", fr: "Baklava" }, image: img_cat_baklava, icon: "" },
 ];
 
@@ -1339,6 +1352,95 @@ export const products: Product[] = [
     price: 4.0,
     image: img_copa_gintonic,
     category: "copas",
+  },
+  {
+    id: "beb-cocacola",
+    name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" },
+    description: { pt: "Lata 33cl", en: "Can 33cl", es: "Lata 33cl", fr: "Canette 33cl" },
+    price: 1.8,
+    image: img_beb_cocacola,
+    category: "bebidas",
+    isBestseller: true,
+  },
+  {
+    id: "beb-cocacola-zero",
+    name: { pt: "Coca-Cola Zero", en: "Coca-Cola Zero", es: "Coca-Cola Zero", fr: "Coca-Cola Zero" },
+    description: { pt: "Lata 33cl sin azúcar", en: "Can 33cl sugar free", es: "Lata 33cl sin azúcar", fr: "Canette 33cl sans sucre" },
+    price: 1.8,
+    image: img_beb_cocacola_zero,
+    category: "bebidas",
+  },
+  {
+    id: "beb-fanta-naranja",
+    name: { pt: "Fanta Naranja", en: "Fanta Orange", es: "Fanta Naranja", fr: "Fanta Orange" },
+    description: { pt: "Lata 33cl", en: "Can 33cl", es: "Lata 33cl", fr: "Canette 33cl" },
+    price: 1.8,
+    image: img_beb_fanta_naranja,
+    category: "bebidas",
+  },
+  {
+    id: "beb-fanta-limon",
+    name: { pt: "Fanta Limón", en: "Fanta Lemon", es: "Fanta Limón", fr: "Fanta Citron" },
+    description: { pt: "Lata 33cl", en: "Can 33cl", es: "Lata 33cl", fr: "Canette 33cl" },
+    price: 1.8,
+    image: img_beb_fanta_limon,
+    category: "bebidas",
+  },
+  {
+    id: "beb-sprite",
+    name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" },
+    description: { pt: "Lata 33cl", en: "Can 33cl", es: "Lata 33cl", fr: "Canette 33cl" },
+    price: 1.8,
+    image: img_beb_sprite,
+    category: "bebidas",
+  },
+  {
+    id: "beb-nestea",
+    name: { pt: "Nestea", en: "Nestea", es: "Nestea", fr: "Nestea" },
+    description: { pt: "Lata 33cl", en: "Can 33cl", es: "Lata 33cl", fr: "Canette 33cl" },
+    price: 1.8,
+    image: img_beb_nestea,
+    category: "bebidas",
+  },
+  {
+    id: "beb-aquarius",
+    name: { pt: "Aquarius", en: "Aquarius", es: "Aquarius", fr: "Aquarius" },
+    description: { pt: "Bebida isotónica", en: "Isotonic drink", es: "Bebida isotónica", fr: "Boisson isotonique" },
+    price: 2.0,
+    image: img_beb_aquarius,
+    category: "bebidas",
+  },
+  {
+    id: "beb-agua",
+    name: { pt: "Agua mineral", en: "Mineral water", es: "Agua mineral", fr: "Eau minérale" },
+    description: { pt: "Botella 500ml", en: "500ml bottle", es: "Botella 500ml", fr: "Bouteille 500ml" },
+    price: 1.2,
+    image: img_beb_agua,
+    category: "bebidas",
+  },
+  {
+    id: "beb-agua-gas",
+    name: { pt: "Agua con gas", en: "Sparkling water", es: "Agua con gas", fr: "Eau pétillante" },
+    description: { pt: "Botella 500ml", en: "500ml bottle", es: "Botella 500ml", fr: "Bouteille 500ml" },
+    price: 1.5,
+    image: img_beb_agua_gas,
+    category: "bebidas",
+  },
+  {
+    id: "beb-cerveza",
+    name: { pt: "Cerveza", en: "Beer", es: "Cerveza", fr: "Bière" },
+    description: { pt: "Mahou / Estrella Galicia", en: "Mahou / Estrella Galicia", es: "Mahou / Estrella Galicia", fr: "Mahou / Estrella Galicia" },
+    price: 2.5,
+    image: img_beb_cerveza,
+    category: "bebidas",
+  },
+  {
+    id: "beb-cerveza-sin",
+    name: { pt: "Cerveza sin alcohol", en: "Non-alcoholic beer", es: "Cerveza sin alcohol", fr: "Bière sans alcool" },
+    description: { pt: "0,0% alcohol", en: "0.0% alcohol", es: "0,0% alcohol", fr: "0,0% alcool" },
+    price: 2.5,
+    image: img_beb_cerveza_sin,
+    category: "bebidas",
   },
   {
     id: "baklava",
