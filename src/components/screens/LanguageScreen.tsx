@@ -39,8 +39,6 @@ const LanguageScreen = () => {
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
   // Mostra o título em TODOS os idiomas ativos (deduplicado, mantém ordem)
   const titles = Array.from(new Set(langs.map((l) => TITLE_BY_LANG[l] || TITLE_BY_LANG.es)));
-  // Mostra em coluna única (igual OrderType) quando 1-2 idiomas; em 2 colunas para 3-4
-  const cols = langs.length >= 3 ? 2 : 1;
 
   const handleSelect = (code: "pt" | "en" | "es" | "fr") => {
     setLang(code);
@@ -77,11 +75,9 @@ const LanguageScreen = () => {
         ))}
       </div>
 
-      {/* Cards de idioma — mesmo visual dos cards de "comer aqui/levar" */}
-      <div className="flex-1 flex flex-col justify-center px-5 py-6 gap-3 max-w-md w-full mx-auto">
-        <div
-          className={`grid gap-3 ${cols === 2 ? "grid-cols-2" : "grid-cols-1"}`}
-        >
+      {/* Idiomas — sempre horizontal, sem moldura, ícone "solto" + label */}
+      <div className="flex-1 flex items-center justify-center px-4 py-6 w-full">
+        <div className="flex flex-row items-start justify-center gap-4 sm:gap-6 w-full max-w-md flex-wrap">
           {langs.map((code) => {
             const icon = langIcons[code] || FALLBACK_FLAG[code];
             const label = LANG_LABELS[code];
@@ -89,18 +85,19 @@ const LanguageScreen = () => {
               <button
                 key={code}
                 onClick={() => handleSelect(code)}
-                className={`group relative overflow-hidden flex ${cols === 1 ? "flex-row items-center gap-4 p-5" : "flex-col items-center gap-3 p-4"} bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation`}
+                className="flex flex-col items-center gap-2.5 active:scale-95 transition-transform touch-action-manipulation"
                 aria-label={label}
+                style={{ flex: `1 1 0`, minWidth: "80px", maxWidth: "120px" }}
               >
-                <div className={`${cols === 1 ? "w-20 h-20" : "w-24 h-24"} rounded-3xl bg-secondary/40 flex items-center justify-center shrink-0 overflow-hidden p-2`}>
+                <div className="w-full aspect-square flex items-center justify-center">
                   <img
                     src={icon}
                     alt={label}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.25)]"
                     draggable={false}
                   />
                 </div>
-                <span className={`${cols === 1 ? "text-left flex-1 text-lg" : "text-center text-base"} font-black text-foreground leading-tight`}>
+                <span className="text-center text-base font-black text-foreground leading-tight">
                   {label}
                 </span>
               </button>

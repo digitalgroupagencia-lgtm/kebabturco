@@ -5,9 +5,8 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
-import FinalizeOrderModal from "@/components/FinalizeOrderModal";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
   { id: "card", icon: CreditCard },
@@ -59,7 +58,7 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showFinalize, setShowFinalize] = useState(false);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "method">(null);
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -82,9 +81,25 @@ const PaymentScreen = () => {
   }, [counterOnly]);
 
   const confirm = async () => {
-    if (!selected || processing) return;
-    // Modal final: nome + (mesa | telefone) é OBRIGATÓRIO antes de enviar.
-    setShowFinalize(true);
+    if (processing) return;
+    if (!customerName.trim() || customerName.trim().length < 2) {
+      setShowError("name");
+      return;
+    }
+    if (orderType === "here" && !tableNumber.trim()) {
+      setShowError("table");
+      return;
+    }
+    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) {
+      setShowError("phone");
+      return;
+    }
+    if (!selected) {
+      setShowError("method");
+      return;
+    }
+    setShowError(null);
+    await persistAndPrint(customerName.trim(), tableNumber.trim(), customerPhone.trim());
   };
 
   const persistAndPrint = async (
@@ -208,6 +223,61 @@ const PaymentScreen = () => {
           </div>
         </div>
 
+        {/* Dados do cliente — obrigatório aqui antes do método */}
+        <div className="mt-5 bg-card rounded-[24px] border border-border shadow-card overflow-hidden">
+          <div className={`px-4 py-4 ${showError === "name" ? "bg-destructive/5 animate-pulse" : ""}`}>
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+              <User className="w-3.5 h-3.5 text-primary" />
+              {t("yourName")} <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => { setCustomerName(e.target.value.slice(0, 40)); if (showError === "name") setShowError(null); }}
+              placeholder="—"
+              className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                showError === "name" ? "border-destructive/60" : "border-transparent"
+              }`}
+            />
+          </div>
+
+          {orderType === "here" ? (
+            <div className={`px-4 py-4 border-t border-border ${showError === "table" ? "bg-destructive/5 animate-pulse" : ""}`}>
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                <Hash className="w-3.5 h-3.5 text-primary" />
+                {t("tableNumber")} <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={tableNumber}
+                onChange={(e) => { setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4)); if (showError === "table") setShowError(null); }}
+                placeholder="—"
+                className={`w-full h-14 px-4 text-center text-2xl font-black text-foreground tabular-nums tracking-wider bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                  showError === "table" ? "border-destructive/60" : "border-transparent"
+                }`}
+              />
+            </div>
+          ) : (
+            <div className={`px-4 py-4 border-t border-border ${showError === "phone" ? "bg-destructive/5 animate-pulse" : ""}`}>
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                {t("yourPhone")} <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={customerPhone}
+                onChange={(e) => { setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20)); if (showError === "phone") setShowError(null); }}
+                placeholder="+34 600 000 000"
+                className={`w-full h-12 px-4 text-base font-bold text-foreground tabular-nums bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                  showError === "phone" ? "border-destructive/60" : "border-transparent"
+                }`}
+              />
+            </div>
+          )}
+        </div>
+
         {counterOnly ? (
           <div className="mt-5 bg-card rounded-[24px] border-2 border-success/40 p-5 flex items-center gap-4 shadow-card">
             <div className="w-14 h-14 rounded-2xl bg-success text-success-foreground flex items-center justify-center shrink-0">
@@ -273,9 +343,9 @@ const PaymentScreen = () => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
         <button
           onClick={confirm}
-          disabled={!selected || processing}
+          disabled={processing}
           className={`w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-40 disabled:shadow-none ${
-            selected && !processing ? "animate-pulse-cta" : ""
+            !processing ? "animate-pulse-cta" : ""
           }`}
         >
           <span className="text-[15px] font-black tracking-wide uppercase flex items-center gap-2">
@@ -288,21 +358,6 @@ const PaymentScreen = () => {
         </button>
       </div>
 
-      <FinalizeOrderModal
-        open={showFinalize}
-        mode={orderType === "here" ? "here" : "takeaway"}
-        initialName={customerName}
-        initialTable={tableNumber}
-        initialPhone={customerPhone}
-        onConfirm={({ name, table, phone }) => {
-          setCustomerName(name);
-          setTableNumber(table);
-          setCustomerPhone(phone);
-          setShowFinalize(false);
-          persistAndPrint(name, table, phone);
-        }}
-        onCancel={() => setShowFinalize(false)}
-      />
     </div>
   );
 };
