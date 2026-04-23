@@ -15,6 +15,7 @@ import ReportsPage from "./pages/panel/ReportsPage.tsx";
 import TeamPage from "./pages/panel/TeamPage.tsx";
 import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
+import PanelSettingsPage from "./pages/panel/SettingsPage.tsx";
 import AdminLayout from "./components/admin/AdminLayout.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import TenantsPage from "./pages/admin/TenantsPage.tsx";
@@ -25,6 +26,7 @@ import BannerPage from "./pages/admin/BannerPage.tsx";
 import OperationsPage from "./pages/admin/OperationsPage.tsx";
 import PrinterPage from "./pages/admin/PrinterPage.tsx";
 import UsersPage from "./pages/admin/UsersPage.tsx";
+import AdminSettingsPage from "./pages/admin/SettingsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -52,7 +54,7 @@ const App = () => (
             <Route path="team" element={<TeamPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
             <Route path="printers" element={<PlaceholderPage title="Impressoras" />} />
-            <Route path="settings" element={<PlaceholderPage title="Configurações" />} />
+            <Route path="settings" element={<PanelSettingsPage />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
@@ -64,7 +66,7 @@ const App = () => (
             <Route path="operations" element={<OperationsPage />} />
             <Route path="printer" element={<PrinterPage />} />
             <Route path="users" element={<UsersPage />} />
-            <Route path="settings" element={<PlaceholderPage title="Configurações Globais" />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
