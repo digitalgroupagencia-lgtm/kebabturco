@@ -60,13 +60,12 @@ const HomeScreen = () => {
             <img
               src={headerLogo}
               alt={settings?.company_name || "EL REY"}
-              className="h-10 sm:h-12 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
+              className="h-7 sm:h-8 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
               draggable={false}
             />
             {/* Título secundário — agora tipo de pedido em destaque */}
             <h1 className="text-[15px] sm:text-[16px] font-black tracking-[0.18em] uppercase leading-none mt-2 truncate">
               {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
-              <span className="inline-block ml-2 w-1.5 h-1.5 rounded-full bg-accent align-middle" />
             </h1>
           </div>
 
