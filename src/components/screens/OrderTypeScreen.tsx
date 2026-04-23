@@ -2,6 +2,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { UtensilsCrossed, ShoppingBag, ChevronRight } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import logoFallback from "@/assets/elrey-logo.png";
@@ -11,7 +12,13 @@ const OrderTypeScreen = () => {
   const { setOrderType } = useCart();
   const { settings } = useBranding();
   const { t } = useLanguage();
-  const logo = (settings as any)?.logo_order_type_url || settings?.logo_main_url || logoFallback;
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const logo =
+    (isDark && ((settings as any)?.logo_order_type_dark_url || (settings as any)?.logo_main_dark_url)) ||
+    (settings as any)?.logo_order_type_url ||
+    settings?.logo_main_url ||
+    logoFallback;
   const iconDineIn = settings?.icon_dine_in_url;
   const iconTakeaway = settings?.icon_takeaway_url;
   const brandName = settings?.company_name || "EL REY";
