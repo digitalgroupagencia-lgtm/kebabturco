@@ -206,7 +206,6 @@ export const products: Product[] = [
     image: img_menu_1,
     category: "menus",
     isBestseller: true,
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo solo carne +1€", en: "hazlo solo carne +1€", es: "hazlo solo carne +1€", fr: "hazlo solo carne +1€" },
   },
@@ -218,7 +217,6 @@ export const products: Product[] = [
     image: img_menu_2,
     category: "menus",
     isBestseller: true,
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo solo carne +1€", en: "hazlo solo carne +1€", es: "hazlo solo carne +1€", fr: "hazlo solo carne +1€" },
   },
@@ -229,7 +227,6 @@ export const products: Product[] = [
     price: 9.0,
     image: img_menu_3,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo solo carne +1€", en: "hazlo solo carne +1€", es: "hazlo solo carne +1€", fr: "hazlo solo carne +1€" },
   },
@@ -240,7 +237,6 @@ export const products: Product[] = [
     price: 9.5,
     image: img_menu_4,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo solo carne +1€", en: "hazlo solo carne +1€", es: "hazlo solo carne +1€", fr: "hazlo solo carne +1€" },
   },
@@ -251,7 +247,6 @@ export const products: Product[] = [
     price: 9.0,
     image: img_menu_5,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
   },
   {
@@ -261,7 +256,6 @@ export const products: Product[] = [
     price: 9.0,
     image: img_menu_6,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo solo carne +1€", en: "hazlo solo carne +1€", es: "hazlo solo carne +1€", fr: "hazlo solo carne +1€" },
   },
@@ -272,7 +266,6 @@ export const products: Product[] = [
     price: 6.5,
     image: img_menu_7,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo solo carne +1€", en: "hazlo solo carne +1€", es: "hazlo solo carne +1€", fr: "hazlo solo carne +1€" },
   },
@@ -283,7 +276,6 @@ export const products: Product[] = [
     price: 6.5,
     image: img_menu_8,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
   },
   {
@@ -294,7 +286,6 @@ export const products: Product[] = [
     image: img_menu_9,
     category: "menus",
     isBestseller: true,
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
     note: { pt: "hazlo doble por +2€", en: "hazlo doble por +2€", es: "hazlo doble por +2€", fr: "hazlo doble por +2€" },
   },
@@ -305,7 +296,6 @@ export const products: Product[] = [
     price: 18.0,
     image: img_menu_10,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     note: { pt: "Las pizzas no entran en el menú", en: "Las pizzas no entran en el menú", es: "Las pizzas no entran en el menú", fr: "Las pizzas no entran en el menú" },
   },
   {
@@ -315,7 +305,6 @@ export const products: Product[] = [
     price: 9.0,
     image: img_menu_11,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     note: { pt: "Las pizzas no entran en el menú", en: "Las pizzas no entran en el menú", es: "Las pizzas no entran en el menú", fr: "Las pizzas no entran en el menú" },
   },
   {
@@ -325,7 +314,6 @@ export const products: Product[] = [
     price: 6.5,
     image: img_menu_12,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "menu-13",
@@ -334,7 +322,6 @@ export const products: Product[] = [
     price: 6.5,
     image: img_menu_13,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "menu-14",
@@ -343,7 +330,6 @@ export const products: Product[] = [
     price: 8.5,
     image: img_menu_14,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
     variants: [{ id: "pollo", name: { pt: "Pollo", en: "Chicken", es: "Pollo", fr: "Poulet" } }, { id: "ternera", name: { pt: "Ternera", en: "Beef", es: "Ternera", fr: "Bœuf" } }, { id: "mixto", name: { pt: "Mixto", en: "Mixed", es: "Mixto", fr: "Mixte" } }],
   },
   {
@@ -353,7 +339,6 @@ export const products: Product[] = [
     price: 8.5,
     image: img_menu_15,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "menu-16",
@@ -362,7 +347,6 @@ export const products: Product[] = [
     price: 7.0,
     image: img_menu_16,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "menu-17",
@@ -371,7 +355,6 @@ export const products: Product[] = [
     price: 9.0,
     image: img_menu_17,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "menu-18",
@@ -380,7 +363,6 @@ export const products: Product[] = [
     price: 6.5,
     image: img_menu_18,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "medio-pollo",
@@ -389,7 +371,6 @@ export const products: Product[] = [
     price: 8.5,
     image: img_medio_pollo,
     category: "menus",
-    sizes: [{ id: "coca", name: { pt: "Coca-Cola", en: "Coca-Cola", es: "Coca-Cola", fr: "Coca-Cola" } }, { id: "sprite", name: { pt: "Sprite", en: "Sprite", es: "Sprite", fr: "Sprite" } }, { id: "fanta", name: { pt: "Fanta", en: "Fanta", es: "Fanta", fr: "Fanta" } }, { id: "agua", name: { pt: "Agua", en: "Water", es: "Agua", fr: "Eau" } }],
   },
   {
     id: "pita-vegetal-falafel",
