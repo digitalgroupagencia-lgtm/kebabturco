@@ -14,6 +14,64 @@ const ingredientMap: Record<string, string[]> = {
   hamburguesas: ["Lechuga", "Tomate", "Cebolla", "Salsa"],
   ensaladas: ["Lechuga", "Tomate", "Cebolla"],
   box: ["Salsa"],
+  pizzas: ["Orégano", "Queso", "Tomate"],
+  menus: ["Lechuga", "Tomate", "Cebolla", "Salsa"],
+  "taco-french": ["Lechuga", "Tomate", "Cebolla", "Salsa"],
+  bowl: ["Cebolla crujiente", "Salsa"],
+};
+
+const extrasByCategory: Record<string, { id: string; name: Record<string, string>; price: number }[]> = {
+  pizzas: [
+    { id: "queso", name: { es: "Queso extra", en: "Extra cheese", pt: "Queijo extra", fr: "Fromage extra" }, price: 1.5 },
+    { id: "bacon", name: { es: "Bacon", en: "Bacon", pt: "Bacon", fr: "Bacon" }, price: 1.5 },
+    { id: "champinones", name: { es: "Champiñones", en: "Mushrooms", pt: "Cogumelos", fr: "Champignons" }, price: 1.0 },
+    { id: "jamon", name: { es: "Jamón", en: "Ham", pt: "Presunto", fr: "Jambon" }, price: 1.5 },
+    { id: "pepperoni", name: { es: "Pepperoni", en: "Pepperoni", pt: "Pepperoni", fr: "Pepperoni" }, price: 1.5 },
+    { id: "atun", name: { es: "Atún", en: "Tuna", pt: "Atum", fr: "Thon" }, price: 1.5 },
+    { id: "aceitunas", name: { es: "Aceitunas", en: "Olives", pt: "Azeitonas", fr: "Olives" }, price: 1.0 },
+  ],
+  "pita-kebab": [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "carne-extra", name: { es: "Carne extra", en: "Extra meat", pt: "Carne extra", fr: "Viande extra" }, price: 2.0 },
+    { id: "patatas", name: { es: "Patatas dentro", en: "Fries inside", pt: "Batatas", fr: "Frites" }, price: 1.0 },
+  ],
+  "rollo-kebab": [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "carne-extra", name: { es: "Carne extra", en: "Extra meat", pt: "Carne extra", fr: "Viande extra" }, price: 2.0 },
+    { id: "patatas", name: { es: "Patatas dentro", en: "Fries inside", pt: "Batatas", fr: "Frites" }, price: 1.0 },
+  ],
+  "rollo-casero": [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "carne-extra", name: { es: "Carne extra", en: "Extra meat", pt: "Carne extra", fr: "Viande extra" }, price: 2.0 },
+  ],
+  platos: [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "carne-extra", name: { es: "Carne extra", en: "Extra meat", pt: "Carne extra", fr: "Viande extra" }, price: 2.0 },
+  ],
+  hamburguesas: [
+    { id: "queso", name: { es: "Queso extra", en: "Extra cheese", pt: "Queijo extra", fr: "Fromage extra" }, price: 1.0 },
+    { id: "bacon", name: { es: "Bacon", en: "Bacon", pt: "Bacon", fr: "Bacon" }, price: 1.0 },
+    { id: "huevo", name: { es: "Huevo", en: "Egg", pt: "Ovo", fr: "Œuf" }, price: 1.0 },
+  ],
+  menus: [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "carne-extra", name: { es: "Carne extra", en: "Extra meat", pt: "Carne extra", fr: "Viande extra" }, price: 2.0 },
+  ],
+  ensaladas: [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "pollo", name: { es: "Pollo", en: "Chicken", pt: "Frango", fr: "Poulet" }, price: 2.0 },
+  ],
+  box: [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+  ],
+  "taco-french": [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "bacon", name: { es: "Bacon", en: "Bacon", pt: "Bacon", fr: "Bacon" }, price: 1.0 },
+  ],
+  bowl: [
+    { id: "queso", name: { es: "Queso", en: "Cheese", pt: "Queijo", fr: "Fromage" }, price: 1.0 },
+    { id: "bacon", name: { es: "Bacon", en: "Bacon", pt: "Bacon", fr: "Bacon" }, price: 1.0 },
+  ],
 };
 
 const ProductScreen = () => {
