@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings as SettingsIcon, Save, Globe, Bell, Shield, Database, Mail, Sparkles } from "lucide-react";
+import { Settings as SettingsIcon, Save, Globe, Bell, Shield, Database, Mail, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const SettingsPage = () => {
-  const [platformName, setPlatformName] = useState("Totem SaaS");
-  const [supportEmail, setSupportEmail] = useState("suporte@exemplo.com");
+  const { settings, isLoading, save, isSaving } = usePlatformSettings();
+
+  const [platformName, setPlatformName] = useState("");
+  const [supportEmail, setSupportEmail] = useState("");
   const [defaultLanguage, setDefaultLanguage] = useState("pt");
   const [defaultCurrency, setDefaultCurrency] = useState("BRL");
   const [defaultTimezone, setDefaultTimezone] = useState("America/Sao_Paulo");
@@ -35,13 +38,44 @@ const SettingsPage = () => {
   const [aiImageStyle, setAiImageStyle] = useState("realistic");
 
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState(
-    "Estamos em manutenção. Voltamos em breve.",
-  );
+  const [maintenanceMessage, setMaintenanceMessage] = useState("");
 
-  const save = (section: string) => {
-    toast.success(`${section} salvas (em memória)`);
+  useEffect(() => {
+    if (!settings) return;
+    setPlatformName(settings.platform_name);
+    setSupportEmail(settings.support_email);
+    setDefaultLanguage(settings.default_language);
+    setDefaultCurrency(settings.default_currency);
+    setDefaultTimezone(settings.default_timezone);
+    setAllowSignup(settings.allow_signup);
+    setDefaultPlan(settings.default_plan);
+    setDefaultMaxOrders(settings.default_max_orders);
+    setTrialDays(settings.trial_days);
+    setEmailNotifications(settings.email_notifications);
+    setOverLimitAlerts(settings.over_limit_alerts);
+    setDailySummary(settings.daily_summary);
+    setRequire2FA(settings.require_2fa);
+    setPasswordMinLength(settings.password_min_length);
+    setSessionHours(settings.session_hours);
+    setAiAutoMenu(settings.ai_auto_menu);
+    setAiAutoImages(settings.ai_auto_images);
+    setAiImageStyle(settings.ai_image_style);
+    setMaintenanceMode(settings.maintenance_mode);
+    setMaintenanceMessage(settings.maintenance_message);
+  }, [settings]);
+
+  const persist = async (section: string, patch: Record<string, unknown>) => {
+    try {
+      await save(patch);
+      toast.success(`${section} salvas`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -50,7 +84,7 @@ const SettingsPage = () => {
           <SettingsIcon className="h-6 w-6" /> Configurações Globais
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Controle todos os parâmetros da plataforma a partir daqui.
+          Tudo aqui é persistido e aplicado em toda a plataforma.
         </p>
       </div>
 
@@ -71,14 +105,8 @@ const SettingsPage = () => {
               <CardDescription>Dados básicos exibidos para todos os clientes.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label>Nome da plataforma</Label>
-                <Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} />
-              </div>
-              <div>
-                <Label>E-mail de suporte</Label>
-                <Input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
-              </div>
+              <div><Label>Nome da plataforma</Label><Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} /></div>
+              <div><Label>E-mail de suporte</Label><Input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} /></div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <Label>Idioma padrão</Label>
@@ -117,7 +145,9 @@ const SettingsPage = () => {
                   </Select>
                 </div>
               </div>
-              <Button onClick={() => save("Plataforma")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button disabled={isSaving} onClick={() => persist("Plataforma", { platform_name: platformName, support_email: supportEmail, default_language: defaultLanguage, default_currency: defaultCurrency, default_timezone: defaultTimezone })}>
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -149,18 +179,12 @@ const SettingsPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>Pedidos/mês padrão</Label>
-                  <Input type="number" min={0} value={defaultMaxOrders}
-                    onChange={(e) => setDefaultMaxOrders(Number(e.target.value))} />
-                </div>
-                <div>
-                  <Label>Dias de teste grátis</Label>
-                  <Input type="number" min={0} max={90} value={trialDays}
-                    onChange={(e) => setTrialDays(Number(e.target.value))} />
-                </div>
+                <div><Label>Pedidos/mês padrão</Label><Input type="number" min={0} value={defaultMaxOrders} onChange={(e) => setDefaultMaxOrders(Number(e.target.value))} /></div>
+                <div><Label>Dias de teste grátis</Label><Input type="number" min={0} max={90} value={trialDays} onChange={(e) => setTrialDays(Number(e.target.value))} /></div>
               </div>
-              <Button onClick={() => save("Limites")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button disabled={isSaving} onClick={() => persist("Limites", { allow_signup: allowSignup, default_plan: defaultPlan, default_max_orders: defaultMaxOrders, trial_days: trialDays })}>
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -185,7 +209,9 @@ const SettingsPage = () => {
                   <Switch checked={n.val} onCheckedChange={n.set} />
                 </div>
               ))}
-              <Button onClick={() => save("Notificações")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button disabled={isSaving} onClick={() => persist("Notificações", { email_notifications: emailNotifications, over_limit_alerts: overLimitAlerts, daily_summary: dailySummary })}>
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -205,18 +231,12 @@ const SettingsPage = () => {
                 <Switch checked={require2FA} onCheckedChange={setRequire2FA} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label>Tamanho mínimo de senha</Label>
-                  <Input type="number" min={6} max={32} value={passwordMinLength}
-                    onChange={(e) => setPasswordMinLength(Number(e.target.value))} />
-                </div>
-                <div>
-                  <Label>Duração da sessão (horas)</Label>
-                  <Input type="number" min={1} max={720} value={sessionHours}
-                    onChange={(e) => setSessionHours(Number(e.target.value))} />
-                </div>
+                <div><Label>Tamanho mínimo de senha</Label><Input type="number" min={6} max={32} value={passwordMinLength} onChange={(e) => setPasswordMinLength(Number(e.target.value))} /></div>
+                <div><Label>Duração da sessão (horas)</Label><Input type="number" min={1} max={720} value={sessionHours} onChange={(e) => setSessionHours(Number(e.target.value))} /></div>
               </div>
-              <Button onClick={() => save("Segurança")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button disabled={isSaving} onClick={() => persist("Segurança", { require_2fa: require2FA, password_min_length: passwordMinLength, session_hours: sessionHours })}>
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -253,11 +273,11 @@ const SettingsPage = () => {
                     <SelectItem value="minimal">Minimalista (fundo neutro)</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Pode ser ajustado por cliente individualmente.
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Pode ser ajustado por cliente individualmente.</p>
               </div>
-              <Button onClick={() => save("IA")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button disabled={isSaving} onClick={() => persist("IA", { ai_auto_menu: aiAutoMenu, ai_auto_images: aiAutoImages, ai_image_style: aiImageStyle })}>
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -278,10 +298,11 @@ const SettingsPage = () => {
               </div>
               <div>
                 <Label>Mensagem exibida</Label>
-                <Textarea value={maintenanceMessage}
-                  onChange={(e) => setMaintenanceMessage(e.target.value)} rows={3} />
+                <Textarea value={maintenanceMessage} onChange={(e) => setMaintenanceMessage(e.target.value)} rows={3} />
               </div>
-              <Button onClick={() => save("Sistema")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button disabled={isSaving} onClick={() => persist("Sistema", { maintenance_mode: maintenanceMode, maintenance_message: maintenanceMessage })}>
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

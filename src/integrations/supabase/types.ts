@@ -360,6 +360,84 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          ai_auto_images: boolean
+          ai_auto_menu: boolean
+          ai_image_style: string
+          allow_signup: boolean
+          created_at: string
+          daily_summary: boolean
+          default_currency: string
+          default_language: string
+          default_max_orders: number
+          default_plan: string
+          default_timezone: string
+          email_notifications: boolean
+          id: string
+          maintenance_message: string
+          maintenance_mode: boolean
+          over_limit_alerts: boolean
+          password_min_length: number
+          platform_name: string
+          require_2fa: boolean
+          session_hours: number
+          support_email: string
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          ai_auto_images?: boolean
+          ai_auto_menu?: boolean
+          ai_image_style?: string
+          allow_signup?: boolean
+          created_at?: string
+          daily_summary?: boolean
+          default_currency?: string
+          default_language?: string
+          default_max_orders?: number
+          default_plan?: string
+          default_timezone?: string
+          email_notifications?: boolean
+          id?: string
+          maintenance_message?: string
+          maintenance_mode?: boolean
+          over_limit_alerts?: boolean
+          password_min_length?: number
+          platform_name?: string
+          require_2fa?: boolean
+          session_hours?: number
+          support_email?: string
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_auto_images?: boolean
+          ai_auto_menu?: boolean
+          ai_image_style?: string
+          allow_signup?: boolean
+          created_at?: string
+          daily_summary?: boolean
+          default_currency?: string
+          default_language?: string
+          default_max_orders?: number
+          default_plan?: string
+          default_timezone?: string
+          email_notifications?: boolean
+          id?: string
+          maintenance_message?: string
+          maintenance_mode?: boolean
+          over_limit_alerts?: boolean
+          password_min_length?: number
+          platform_name?: string
+          require_2fa?: boolean
+          session_hours?: number
+          support_email?: string
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       printer_category_map: {
         Row: {
           category_id: string
@@ -803,6 +881,7 @@ export type Database = {
       tenants: {
         Row: {
           created_at: string
+          custom_domain: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -814,6 +893,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_domain?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -825,6 +905,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_domain?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
