@@ -29,7 +29,8 @@ const LanguageScreen = () => {
   const brandName = settings?.company_name || "EL REY";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
-  const title = TITLE_BY_LANG[primaryLang] || TITLE_BY_LANG.es;
+  // Mostra o título em TODOS os idiomas ativos (deduplicado, mantém ordem)
+  const titles = Array.from(new Set(langs.map((l) => TITLE_BY_LANG[l] || TITLE_BY_LANG.es)));
   // Mostra em coluna única (igual OrderType) quando 1-2 idiomas; em 2 colunas para 3-4
   const cols = langs.length >= 3 ? 2 : 1;
 
@@ -48,10 +49,19 @@ const LanguageScreen = () => {
       </div>
 
       {/* Título */}
-      <div className="px-6 text-center">
-        <h1 className="text-[26px] leading-tight font-black text-foreground tracking-tight">
-          {title}
-        </h1>
+      <div className="px-6 text-center flex flex-col gap-1.5">
+        {titles.map((tt, idx) => (
+          <h1
+            key={idx}
+            className={`leading-tight font-black tracking-tight ${
+              idx === 0
+                ? "text-[24px] text-foreground"
+                : "text-[16px] text-muted-foreground"
+            }`}
+          >
+            {tt}
+          </h1>
+        ))}
       </div>
 
       {/* Cards de idioma — mesmo visual dos cards de "comer aqui/levar" */}
