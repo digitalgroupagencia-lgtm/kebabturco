@@ -1,7 +1,7 @@
 {
-  "name": "Kiosk Self-Service",
-  "short_name": "Kiosk",
-  "description": "Totem de autoatendimento para pedidos rápidos",
+  "name": "El Rey Pizzeria & Kebab",
+  "short_name": "El Rey",
+  "description": "Pizza, kebab, pita y rollos. Pide online desde tu mesa o para llevar.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
