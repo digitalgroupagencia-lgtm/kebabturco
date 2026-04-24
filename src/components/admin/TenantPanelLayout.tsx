@@ -5,7 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { TenantPanelSidebar } from "./TenantPanelSidebar";
 import AdminThemeToggle from "./AdminThemeToggle";
-import { Loader2, ArrowLeft, Building2, Crown } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, Crown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SelectedTenantProvider, useSelectedTenant } from "@/contexts/SelectedTenantContext";
@@ -13,6 +13,9 @@ import { SelectedTenantProvider, useSelectedTenant } from "@/contexts/SelectedTe
 function TenantHeaderInner() {
   const { tenant, loading } = useSelectedTenant();
   const navigate = useNavigate();
+  const totemUrl = tenant?.custom_domain
+    ? `https://${tenant.custom_domain}/`
+    : `${window.location.origin}/`;
   return (
     <header className="sticky top-0 z-30 h-14 flex items-center gap-2 border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <SidebarTrigger className="shrink-0" />
@@ -34,6 +37,18 @@ function TenantHeaderInner() {
           <Crown className="w-3 h-3 text-primary" /> Admin Master
         </Badge>
       </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1"
+        asChild
+        title="Abrir totem do cliente em nova aba"
+      >
+        <a href={totemUrl} target="_blank" rel="noreferrer">
+          <ExternalLink className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Ver totem</span>
+        </a>
+      </Button>
       <AdminThemeToggle />
     </header>
   );

@@ -39,6 +39,8 @@ import GuidePage from "./pages/admin/GuidePage.tsx";
 import AiConversationsPage from "./pages/admin/AiConversationsPage.tsx";
 import TenantPanelLayout from "./components/admin/TenantPanelLayout.tsx";
 import TenantDuplicatePage from "./pages/admin/tenant/TenantDuplicatePage.tsx";
+import TenantLinksPage from "./pages/admin/tenant/TenantLinksPage.tsx";
+import TenantLanguagesPage from "./pages/admin/tenant/TenantLanguagesPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -107,6 +109,8 @@ const App = () => (
             <Route path="printer" element={<PrinterPage />} />
             <Route path="settings" element={<PanelSettingsPage />} />
             <Route path="duplicate" element={<TenantDuplicatePage />} />
+            <Route path="links" element={<TenantLinksPage />} />
+            <Route path="languages" element={<TenantLanguagesPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

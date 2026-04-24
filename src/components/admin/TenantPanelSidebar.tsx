@@ -1,6 +1,7 @@
 import {
   LayoutGrid, ShoppingBag, UtensilsCrossed, Package, BarChart3, Settings,
   Users, LogOut, Monitor, DollarSign, Palette, Image, Wallet, Printer, Copy,
+  Link2, Globe,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams } from "react-router-dom";
@@ -31,10 +32,12 @@ export function TenantPanelSidebar() {
   ];
   const config = [
     { title: "Identidade", url: `${base}/branding`, icon: Palette },
+    { title: "Idiomas", url: `${base}/languages`, icon: Globe },
     { title: "Pagamentos", url: `${base}/payments`, icon: Wallet },
     { title: "Impressora", url: `${base}/printer`, icon: Printer },
     { title: "Totem", url: `${base}/totem`, icon: Monitor },
     { title: "Equipe", url: `${base}/team`, icon: Users },
+    { title: "Links de acesso", url: `${base}/links`, icon: Link2 },
     { title: "Configurações", url: `${base}/settings`, icon: Settings },
     { title: "Duplicar projeto", url: `${base}/duplicate`, icon: Copy },
   ];
