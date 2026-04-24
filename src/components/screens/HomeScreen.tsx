@@ -58,7 +58,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <div className={`h-[100dvh] flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
+    <div className={`h-[100dvh] md:h-full flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
       {/* Header premium: gradiente refinado + cantinhos arredondados (sticky) */}
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
