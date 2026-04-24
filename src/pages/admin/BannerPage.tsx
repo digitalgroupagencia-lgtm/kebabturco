@@ -85,12 +85,23 @@ const BannerPage = () => {
 
   const move = async (id: string, dir: -1 | 1) => {
     const idx = banners.findIndex((b) => b.id === id);
-    const swap = banners[idx + dir];
-    if (!swap) return;
-    await Promise.all([
-      supabase.from("promo_banners").update({ sort_order: swap.sort_order }).eq("id", id),
-      supabase.from("promo_banners").update({ sort_order: banners[idx].sort_order }).eq("id", swap.id),
-    ]);
+    const newIdx = idx + dir;
+    if (idx < 0 || newIdx < 0 || newIdx >= banners.length) return;
+    // Reordena o array localmente e regrava sort_order sequencial (0..n) para todos.
+    // Evita conflitos quando há sort_order duplicados no banco.
+    const reordered = [...banners];
+    const [moved] = reordered.splice(idx, 1);
+    reordered.splice(newIdx, 0, moved);
+    setBanners(reordered.map((b, i) => ({ ...b, sort_order: i })));
+    const updates = await Promise.all(
+      reordered.map((b, i) =>
+        supabase.from("promo_banners").update({ sort_order: i }).eq("id", b.id)
+      )
+    );
+    const err = updates.find((u) => u.error);
+    if (err?.error) {
+      toast.error(err.error.message);
+    }
     load();
   };
 
