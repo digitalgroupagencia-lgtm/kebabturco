@@ -34,7 +34,9 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
         >
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20" />
           <div className="relative w-full h-full overflow-hidden rounded-[2.3rem] bg-background">
-            <div className="w-full h-full overflow-y-auto overflow-x-hidden">
+            {/* Sem scroll externo: cada tela do totem gerencia o próprio scroll
+                interno, garantindo que headers sticky permaneçam fixos. */}
+            <div className="w-full h-full overflow-hidden">
               {children}
             </div>
           </div>

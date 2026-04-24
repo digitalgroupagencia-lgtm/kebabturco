@@ -41,7 +41,7 @@ const Index = () => (
   <LanguageProvider>
     <CartProvider>
       <OrderProvider>
-        <div className="max-w-md mx-auto min-h-[100dvh] bg-background relative overflow-hidden shadow-lg">
+        <div className="max-w-md mx-auto h-full min-h-[100dvh] md:min-h-0 bg-background relative overflow-hidden shadow-lg">
           <ScreenRouter />
           <CartBar />
         </div>
