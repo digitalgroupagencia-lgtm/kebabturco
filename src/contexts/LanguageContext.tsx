@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 
 type Lang = "pt" | "en" | "es" | "fr";
 
@@ -140,18 +141,20 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: string }> = ({
   children,
-  storeId = DEFAULT_STORE_ID,
+  storeId: storeIdProp,
 }) => {
+  const resolved = useResolvedStore();
+  const storeId = storeIdProp ?? resolved.storeId ?? "";
   const [primaryLang, setPrimaryLang] = useState<Lang>("es");
   const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
   const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
   const [lang, setLang] = useState<Lang>("es");
 
   useEffect(() => {
+    if (!storeId) return;
     let alive = true;
     (async () => {
       const { data } = await supabase
