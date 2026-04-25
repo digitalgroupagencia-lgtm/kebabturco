@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Wallet, Save } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 
 type Ops = Tables<"operations_settings">;
-const STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 const PAY_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
   { key: "pay_card_enabled", label: "Tarjeta", desc: "Crédito / débito en TPV" },
@@ -23,18 +23,20 @@ const PAY_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
 ];
 
 const OperationsPage = () => {
+  const { storeId: STORE_ID } = useAdminStoreId();
   const [s, setS] = useState<Ops | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!STORE_ID) return;
     supabase.from("operations_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
       .then(({ data }) => setS(data ?? null));
-  }, []);
+  }, [STORE_ID]);
 
   const update = (k: keyof Ops, v: any) => setS((p) => p ? { ...p, [k]: v } as Ops : p);
 
   const save = async () => {
-    if (!s) return;
+    if (!s || !STORE_ID) return;
     setSaving(true);
     const { error } = await supabase.from("operations_settings").update({
       payment_mode: s.payment_mode,

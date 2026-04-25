@@ -109,7 +109,7 @@ const BannerPage = () => {
     load();
   };
 
-  if (!ops) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+  if (loadingStore || !ops) return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Cargando...</div>;
 
   return (
     <div className="space-y-6 max-w-5xl">
