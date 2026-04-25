@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Image as ImageIcon, Upload, Trash2, ArrowUp, ArrowDown, Youtube, Plus } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { Loader2 } from "lucide-react";
 
 type Banner = Tables<"promo_banners">;
 type Ops = Tables<"operations_settings">;
-const STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 const BannerPage = () => {
+  const { storeId: STORE_ID, loading: loadingStore } = useAdminStoreId();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [ops, setOps] = useState<Ops | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -21,6 +23,7 @@ const BannerPage = () => {
   const [videoStartMuted, setVideoStartMuted] = useState(true);
 
   const load = async () => {
+    if (!STORE_ID) return;
     const [b, o] = await Promise.all([
       supabase.from("promo_banners").select("*").eq("store_id", STORE_ID).order("sort_order"),
       supabase.from("operations_settings").select("*").eq("store_id", STORE_ID).maybeSingle(),
@@ -29,10 +32,10 @@ const BannerPage = () => {
     setOps(o.data ?? null);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (STORE_ID) load(); }, [STORE_ID]);
 
   const updateOps = async (patch: Partial<Ops>) => {
-    if (!ops) return;
+    if (!ops || !STORE_ID) return;
     const { error } = await supabase.from("operations_settings").update(patch).eq("store_id", STORE_ID);
     if (error) return toast.error(error.message);
     setOps({ ...ops, ...patch } as Ops);
@@ -40,6 +43,7 @@ const BannerPage = () => {
   };
 
   const handleUpload = async (file: File) => {
+    if (!STORE_ID) return;
     if (banners.length >= 5) return toast.error("Máximo 5 imágenes");
     const ext = file.name.split(".").pop();
     const path = `${STORE_ID}/banner-${Date.now()}.${ext}`;
