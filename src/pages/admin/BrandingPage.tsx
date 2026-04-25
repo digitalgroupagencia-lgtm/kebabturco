@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag, Languages, ListOrdered } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { Loader2 } from "lucide-react";
 
 type Settings = Tables<"company_settings">;
-const STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 const BrandingPage = () => {
+  const { storeId: STORE_ID, loading: loadingStore } = useAdminStoreId();
   const [s, setS] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRefs = {
@@ -28,16 +30,24 @@ const BrandingPage = () => {
     logo_order_type_dark_url: useRef<HTMLInputElement>(null),
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (STORE_ID) load(); }, [STORE_ID]);
 
   const load = async () => {
+    if (!STORE_ID) return;
     const { data } = await supabase.from("company_settings").select("*").eq("store_id", STORE_ID).maybeSingle();
-    if (data) setS(data);
+    if (data) {
+      setS(data);
+    } else {
+      // Cria registro default se não existir
+      const { data: created } = await supabase.from("company_settings").insert({ store_id: STORE_ID, company_name: "" }).select().maybeSingle();
+      if (created) setS(created);
+    }
   };
 
   const update = (k: keyof Settings, v: any) => setS((p) => p ? { ...p, [k]: v } : p);
 
   const upload = async (field: keyof Settings, file: File) => {
+    if (!STORE_ID) return;
     const ext = file.name.split(".").pop();
     const path = `${STORE_ID}/${field}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
@@ -48,7 +58,7 @@ const BrandingPage = () => {
   };
 
   const save = async () => {
-    if (!s) return;
+    if (!s || !STORE_ID) return;
     setSaving(true);
     const { error } = await supabase.from("company_settings").update({
       company_name: s.company_name,
@@ -75,7 +85,7 @@ const BrandingPage = () => {
     if (error) toast.error("Error al guardar"); else toast.success("¡Identidad visual actualizada!");
   };
 
-  if (!s) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+  if (loadingStore || !s) return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Cargando...</div>;
 
   const ImageField = ({
     label,

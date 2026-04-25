@@ -8,24 +8,27 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Printer, Save, Wifi, AlertTriangle, FileText } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 
 type P = Tables<"printer_settings">;
-const STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 const PrinterPage = () => {
+  const { storeId: STORE_ID } = useAdminStoreId();
   const [p, setP] = useState<P | null>(null);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const [printingTest, setPrintingTest] = useState(false);
 
   useEffect(() => {
+    if (!STORE_ID) return;
     supabase.from("printer_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
       .then(({ data }) => { setP(data ?? null); setLoading(false); });
-  }, []);
+  }, [STORE_ID]);
 
   const upd = (k: keyof P, v: any) => setP((x) => x ? { ...x, [k]: v } as P : x);
 
   const save = async () => {
+    if (!STORE_ID) return;
     if (!p) {
       const { data, error } = await supabase.from("printer_settings").insert({
         store_id: STORE_ID, enabled: false, printer_name: "Cocina", port: 9100,

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 
 type Screen = "splash" | "language" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
@@ -29,9 +30,9 @@ interface OrderContextType {
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
-const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { storeId: resolvedStoreId } = useResolvedStore();
   const [screen, setScreen] = useState<Screen>("splash");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSelectedCategory,
         orderNumber,
         generateOrderNumber,
-        storeId: DEFAULT_STORE_ID,
+        storeId: resolvedStoreId ?? "",
         tableNumber,
         setTableNumber,
         customerName,

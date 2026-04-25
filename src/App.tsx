@@ -45,6 +45,7 @@ import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
+import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 
 const queryClient = new QueryClient();
 
@@ -54,11 +55,14 @@ const App = () => (
       <Toaster />
       <Sonner />
       <ThemeProvider>
+      <BrowserRouter>
+      <ResolvedStoreProvider>
       <BrandingProvider>
       <OperationsSettingsProvider>
-      <BrowserRouter>
         <Routes>
           <Route path="/" element={<MobileFrame><Index /></MobileFrame>} />
+          {/* Acesso via subpath do domínio mestre (ex.: dominio.com/kebabturco) */}
+          <Route path="/:tenantPath" element={<MobileFrame><Index /></MobileFrame>} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/panel" element={<PanelLayout />}>
             <Route index element={<Dashboard />} />
@@ -114,9 +118,10 @@ const App = () => (
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
       </OperationsSettingsProvider>
       </BrandingProvider>
+      </ResolvedStoreProvider>
+      </BrowserRouter>
       </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
