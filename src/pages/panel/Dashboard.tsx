@@ -2,15 +2,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShoppingBag, DollarSign, TrendingUp, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-const STORE_ID = "b0000000-0000-0000-0000-000000000001";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 
 const Dashboard = () => {
+  const { storeId: STORE_ID } = useAdminStoreId();
   const { data, isLoading } = useQuery({
     queryKey: ["panel-dashboard-financial", STORE_ID],
+    enabled: !!STORE_ID,
     queryFn: async () => {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -21,7 +22,7 @@ const Dashboard = () => {
       const { data: orders, error } = await supabase
         .from("orders")
         .select("total, status, created_at")
-        .eq("store_id", STORE_ID)
+        .eq("store_id", STORE_ID!)
         .gte("created_at", startOfMonth.toISOString())
         .neq("status", "cancelled");
       if (error) throw error;
