@@ -969,6 +969,42 @@ export type Database = {
           },
         ]
       }
+      splash_media: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          id: string
+          is_active: boolean
+          media_type: string
+          sort_order: number
+          store_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       stock_items: {
         Row: {
           created_at: string
@@ -1281,11 +1317,14 @@ export type Database = {
           id: string
           is_active: boolean
           logo_url: string | null
+          master_domain: string | null
           max_orders_month: number | null
           name: string
+          path_slug: string | null
           plan: string | null
           slug: string
           updated_at: string
+          use_master_domain: boolean
         }
         Insert: {
           created_at?: string
@@ -1293,11 +1332,14 @@ export type Database = {
           id?: string
           is_active?: boolean
           logo_url?: string | null
+          master_domain?: string | null
           max_orders_month?: number | null
           name: string
+          path_slug?: string | null
           plan?: string | null
           slug: string
           updated_at?: string
+          use_master_domain?: boolean
         }
         Update: {
           created_at?: string
@@ -1305,11 +1347,14 @@ export type Database = {
           id?: string
           is_active?: boolean
           logo_url?: string | null
+          master_domain?: string | null
           max_orders_month?: number | null
           name?: string
+          path_slug?: string | null
           plan?: string | null
           slug?: string
           updated_at?: string
+          use_master_domain?: boolean
         }
         Relationships: []
       }
@@ -1328,6 +1373,12 @@ export type Database = {
           primary_color: string | null
           primary_language: string
           secondary_color: string | null
+          splash_image_duration_ms: number
+          splash_logo_dark_url: string | null
+          splash_logo_url: string | null
+          splash_show_text: boolean
+          splash_subtitle: Json
+          splash_title: Json
           store_id: string
           updated_at: string
           welcome_message: Json | null
@@ -1346,6 +1397,12 @@ export type Database = {
           primary_color?: string | null
           primary_language?: string
           secondary_color?: string | null
+          splash_image_duration_ms?: number
+          splash_logo_dark_url?: string | null
+          splash_logo_url?: string | null
+          splash_show_text?: boolean
+          splash_subtitle?: Json
+          splash_title?: Json
           store_id: string
           updated_at?: string
           welcome_message?: Json | null
@@ -1364,6 +1421,12 @@ export type Database = {
           primary_color?: string | null
           primary_language?: string
           secondary_color?: string | null
+          splash_image_duration_ms?: number
+          splash_logo_dark_url?: string | null
+          splash_logo_url?: string | null
+          splash_show_text?: boolean
+          splash_subtitle?: Json
+          splash_title?: Json
           store_id?: string
           updated_at?: string
           welcome_message?: Json | null
