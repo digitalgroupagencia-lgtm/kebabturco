@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 
 export type CompanySettings = Tables<"company_settings">;
 
@@ -11,7 +12,6 @@ interface BrandingContextType {
 }
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
-const DEFAULT_STORE_ID = "b0000000-0000-0000-0000-000000000001";
 
 function hexToHsl(hex: string): string {
   const m = hex.replace("#", "");
@@ -62,12 +62,15 @@ function applyTheme(s: CompanySettings) {
 
 export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: string }> = ({
   children,
-  storeId = DEFAULT_STORE_ID,
+  storeId: storeIdProp,
 }) => {
+  const resolved = useResolvedStore();
+  const storeId = storeIdProp ?? resolved.storeId ?? "";
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    if (!storeId) { setLoading(false); return; }
     const { data } = await supabase
       .from("company_settings")
       .select("*")
@@ -81,6 +84,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
   }, [storeId]);
 
   useEffect(() => {
+    if (!storeId) return;
     load();
     const channel = supabase
       .channel(`company_settings:${storeId}`)
