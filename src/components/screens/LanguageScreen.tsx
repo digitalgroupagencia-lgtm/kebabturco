@@ -2,6 +2,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
 import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
@@ -27,6 +28,7 @@ const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
   const { settings } = useBranding();
+  const { stores } = useResolvedStore();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const logo =
@@ -42,7 +44,8 @@ const LanguageScreen = () => {
 
   const handleSelect = (code: "pt" | "en" | "es" | "fr") => {
     setLang(code);
-    setScreen("orderType");
+    // Se o tenant tem 2+ unidades, vai para a tela de escolha de unidade
+    setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 
   return (

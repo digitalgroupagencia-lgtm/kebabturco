@@ -14,5 +14,7 @@ SEMPRE atualizar SYSTEM_PROMPT do admin-assistant ao mudar qualquer feature.
 ## Memories
 - [Arquitetura SaaS](mem://features/architecture) — Estrutura tenant→store→totem, módulos planejados
 - [Schema do banco](mem://features/db-schema) — Todas as tabelas, enums, RLS policies
+- [Regras Kebab Turco](mem://features/kebab-rules) — Delivery, modificadores de preço, menus multi-item, impressão por unidade
+- [Conhecimento do Assistente IA](mem://features/assistant-knowledge) — Atualizar SYSTEM_PROMPT a cada feature
 - [Conhecimento do Assistente](mem://features/assistant-knowledge) — Regra: sincronizar prompt do admin-assistant a cada mudança
 - [Módulo Vendedor](mem://features/seller-module) — App /seller, mesas, fechamento individual/total, billing por vendedor

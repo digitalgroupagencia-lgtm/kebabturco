@@ -177,6 +177,7 @@ export type Database = {
           cta_color: string
           font_family: string | null
           header_color: string
+          icon_delivery_url: string | null
           icon_dine_in_url: string | null
           icon_takeaway_url: string | null
           id: string
@@ -205,6 +206,7 @@ export type Database = {
           cta_color?: string
           font_family?: string | null
           header_color?: string
+          icon_delivery_url?: string | null
           icon_dine_in_url?: string | null
           icon_takeaway_url?: string | null
           id?: string
@@ -233,6 +235,7 @@ export type Database = {
           cta_color?: string
           font_family?: string | null
           header_color?: string
+          icon_delivery_url?: string | null
           icon_dine_in_url?: string | null
           icon_takeaway_url?: string | null
           id?: string
@@ -260,6 +263,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      delivery_zones: {
+        Row: {
+          created_at: string
+          delivery_fee: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          min_order: number
+          name: string
+          postal_codes: string[] | null
+          sort_order: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_fee?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          min_order?: number
+          name: string
+          postal_codes?: string[] | null
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_fee?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          min_order?: number
+          name?: string
+          postal_codes?: string[] | null
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       operations_settings: {
         Row: {
@@ -1051,9 +1096,12 @@ export type Database = {
           address: string | null
           created_at: string
           id: string
+          image_url: string | null
           is_active: boolean
           name: string
           phone: string | null
+          short_description: string | null
+          sort_order: number
           tenant_id: string
           updated_at: string
         }
@@ -1061,9 +1109,12 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name: string
           phone?: string | null
+          short_description?: string | null
+          sort_order?: number
           tenant_id: string
           updated_at?: string
         }
@@ -1071,9 +1122,12 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name?: string
           phone?: string | null
+          short_description?: string | null
+          sort_order?: number
           tenant_id?: string
           updated_at?: string
         }
@@ -1365,6 +1419,7 @@ export type Database = {
           bg_image_url: string | null
           created_at: string
           cta_color: string | null
+          enable_delivery: boolean
           enable_dine_in: boolean | null
           enable_takeaway: boolean | null
           id: string
@@ -1389,6 +1444,7 @@ export type Database = {
           bg_image_url?: string | null
           created_at?: string
           cta_color?: string | null
+          enable_delivery?: boolean
           enable_dine_in?: boolean | null
           enable_takeaway?: boolean | null
           id?: string
@@ -1413,6 +1469,7 @@ export type Database = {
           bg_image_url?: string | null
           created_at?: string
           cta_color?: string | null
+          enable_delivery?: boolean
           enable_dine_in?: boolean | null
           enable_takeaway?: boolean | null
           id?: string
