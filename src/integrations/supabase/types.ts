@@ -883,6 +883,7 @@ export type Database = {
           is_promo: boolean | null
           name: Json
           price: number
+          price_modifiers: Json
           sort_order: number | null
           store_id: string
           updated_at: string
@@ -898,6 +899,7 @@ export type Database = {
           is_promo?: boolean | null
           name?: Json
           price?: number
+          price_modifiers?: Json
           sort_order?: number | null
           store_id: string
           updated_at?: string
@@ -913,6 +915,7 @@ export type Database = {
           is_promo?: boolean | null
           name?: Json
           price?: number
+          price_modifiers?: Json
           sort_order?: number | null
           store_id?: string
           updated_at?: string
@@ -1368,8 +1371,11 @@ export type Database = {
         Row: {
           created_at: string
           custom_domain: string | null
+          editing_locked_at: string | null
+          editing_locked_by: string | null
           id: string
           is_active: boolean
+          is_template: boolean
           logo_url: string | null
           master_domain: string | null
           max_orders_month: number | null
@@ -1383,8 +1389,11 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_domain?: string | null
+          editing_locked_at?: string | null
+          editing_locked_by?: string | null
           id?: string
           is_active?: boolean
+          is_template?: boolean
           logo_url?: string | null
           master_domain?: string | null
           max_orders_month?: number | null
@@ -1398,8 +1407,11 @@ export type Database = {
         Update: {
           created_at?: string
           custom_domain?: string | null
+          editing_locked_at?: string | null
+          editing_locked_by?: string | null
           id?: string
           is_active?: boolean
+          is_template?: boolean
           logo_url?: string | null
           master_domain?: string | null
           max_orders_month?: number | null
@@ -1427,9 +1439,11 @@ export type Database = {
           logo_url: string | null
           primary_color: string | null
           primary_language: string
+          screen_config: Json
           secondary_color: string | null
           splash_image_duration_ms: number
           splash_logo_dark_url: string | null
+          splash_logo_size: number
           splash_logo_url: string | null
           splash_show_text: boolean
           splash_subtitle: Json
@@ -1452,9 +1466,11 @@ export type Database = {
           logo_url?: string | null
           primary_color?: string | null
           primary_language?: string
+          screen_config?: Json
           secondary_color?: string | null
           splash_image_duration_ms?: number
           splash_logo_dark_url?: string | null
+          splash_logo_size?: number
           splash_logo_url?: string | null
           splash_show_text?: boolean
           splash_subtitle?: Json
@@ -1477,9 +1493,11 @@ export type Database = {
           logo_url?: string | null
           primary_color?: string | null
           primary_language?: string
+          screen_config?: Json
           secondary_color?: string | null
           splash_image_duration_ms?: number
           splash_logo_dark_url?: string | null
+          splash_logo_size?: number
           splash_logo_url?: string | null
           splash_show_text?: boolean
           splash_subtitle?: Json
@@ -1545,6 +1563,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_tenant_edit_lock: { Args: { _tenant_id: string }; Returns: Json }
       add_or_get_table_customer: {
         Args: { _name: string; _session_id: string }
         Returns: string
@@ -1718,6 +1737,10 @@ export type Database = {
       open_or_get_table_session: {
         Args: { _store_id: string; _table_number: string }
         Returns: string
+      }
+      release_tenant_edit_lock: {
+        Args: { _tenant_id: string }
+        Returns: undefined
       }
       reset_tenant_data: {
         Args: {
