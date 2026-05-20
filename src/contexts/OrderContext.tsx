@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 
-type Screen = "splash" | "language" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
+type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
 
 interface OrderContextType {
@@ -32,7 +32,7 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { storeId: resolvedStoreId } = useResolvedStore();
+  const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
   const [screen, setScreen] = useState<Screen>("splash");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
@@ -61,7 +61,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSelectedCategory,
         orderNumber,
         generateOrderNumber,
-        storeId: resolvedStoreId ?? "",
+        // Pedidos vão para a unidade escolhida pelo cliente (quando o tenant tem 2+ unidades).
+        // Branding/idiomas/totem_config continuam vindo do `resolvedStoreId` (store primária).
+        storeId: selectedStoreId ?? resolvedStoreId ?? "",
         tableNumber,
         setTableNumber,
         customerName,

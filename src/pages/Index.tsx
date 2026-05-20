@@ -4,6 +4,7 @@ import { OrderProvider, useOrder } from "@/contexts/OrderContext";
 import CartBar from "@/components/CartBar";
 import SplashScreen from "@/components/screens/SplashScreen";
 import LanguageScreen from "@/components/screens/LanguageScreen";
+import StoreSelectionScreen from "@/components/screens/StoreSelectionScreen";
 import OrderTypeScreen from "@/components/screens/OrderTypeScreen";
 import HomeScreen from "@/components/screens/HomeScreen";
 import ProductScreen from "@/components/screens/ProductScreen";
@@ -19,6 +20,8 @@ const ScreenRouter = () => {
       return <SplashScreen />;
     case "language":
       return <LanguageScreen />;
+    case "storeSelect":
+      return <StoreSelectionScreen />;
     case "orderType":
       return <OrderTypeScreen />;
     case "home":
