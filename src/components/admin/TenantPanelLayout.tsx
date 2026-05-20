@@ -9,14 +9,18 @@ import { Loader2, ArrowLeft, Building2, Crown, ExternalLink } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SelectedTenantProvider, useSelectedTenant } from "@/contexts/SelectedTenantContext";
+import { useTenantEditLock } from "@/hooks/useTenantEditLock";
+import { Pencil, Lock } from "lucide-react";
 
 function TenantHeaderInner() {
   const { tenant, loading } = useSelectedTenant();
   const navigate = useNavigate();
+  const { locked, lockedByOther, message } = useTenantEditLock(tenant?.id);
   const totemUrl = tenant?.custom_domain
     ? `https://${tenant.custom_domain}/`
     : `${window.location.origin}/`;
   return (
+    <>
     <header className="sticky top-0 z-30 h-14 flex items-center gap-2 border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <SidebarTrigger className="shrink-0" />
       <Button
@@ -33,6 +37,16 @@ function TenantHeaderInner() {
         <h1 className="text-sm sm:text-base font-bold truncate">
           {loading ? "Carregando…" : tenant?.name ?? "Cliente não encontrado"}
         </h1>
+        {locked && (
+          <Badge className="bg-amber-500 text-white hover:bg-amber-500 gap-1 text-[10px]">
+            <Pencil className="w-3 h-3" /> Editando
+          </Badge>
+        )}
+        {lockedByOther && (
+          <Badge variant="destructive" className="gap-1 text-[10px]">
+            <Lock className="w-3 h-3" /> Bloqueado
+          </Badge>
+        )}
         <Badge variant="outline" className="hidden sm:inline-flex gap-1 text-[10px]">
           <Crown className="w-3 h-3 text-primary" /> Admin Master
         </Badge>
@@ -51,6 +65,12 @@ function TenantHeaderInner() {
       </Button>
       <AdminThemeToggle />
     </header>
+    {lockedByOther && (
+      <div className="bg-destructive/10 border-b border-destructive/30 px-4 py-2 text-xs text-destructive">
+        {message ?? "Outro admin está editando este projeto. Mudanças podem entrar em conflito."}
+      </div>
+    )}
+    </>
   );
 }
 
