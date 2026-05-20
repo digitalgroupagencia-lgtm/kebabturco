@@ -1,7 +1,7 @@
 import {
   LayoutGrid, ShoppingBag, UtensilsCrossed, Package, BarChart3, Settings,
   Users, LogOut, Monitor, DollarSign, Palette, Image, Wallet, Printer, Copy,
-  Link2, Globe, Store,
+  Link2, Globe, Store, Layout, Truck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams } from "react-router-dom";
@@ -29,10 +29,12 @@ export function TenantPanelSidebar() {
   const cardapio = [
     { title: "Cardápio", url: `${base}/menu`, icon: UtensilsCrossed },
     { title: "Banners", url: `${base}/banners`, icon: Image },
+    { title: "Zonas de entrega", url: `${base}/delivery-zones`, icon: Truck },
   ];
   const config = [
     { title: "Identidade", url: `${base}/branding`, icon: Palette },
     { title: "Unidades", url: `${base}/stores`, icon: Store },
+    { title: "Telas do totem", url: `${base}/screens`, icon: Layout },
     { title: "Idiomas", url: `${base}/languages`, icon: Globe },
     { title: "Pagamentos", url: `${base}/payments`, icon: Wallet },
     { title: "Impressora", url: `${base}/printer`, icon: Printer },

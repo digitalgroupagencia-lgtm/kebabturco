@@ -42,6 +42,8 @@ import TenantDuplicatePage from "./pages/admin/tenant/TenantDuplicatePage.tsx";
 import TenantLinksPage from "./pages/admin/tenant/TenantLinksPage.tsx";
 import TenantLanguagesPage from "./pages/admin/tenant/TenantLanguagesPage.tsx";
 import TenantStoresPage from "./pages/admin/tenant/TenantStoresPage.tsx";
+import TenantDeliveryZonesPage from "./pages/admin/tenant/TenantDeliveryZonesPage.tsx";
+import TenantScreensPage from "./pages/admin/tenant/TenantScreensPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -117,6 +119,8 @@ const App = () => (
             <Route path="links" element={<TenantLinksPage />} />
             <Route path="languages" element={<TenantLanguagesPage />} />
             <Route path="stores" element={<TenantStoresPage />} />
+            <Route path="delivery-zones" element={<TenantDeliveryZonesPage />} />
+            <Route path="screens" element={<TenantScreensPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

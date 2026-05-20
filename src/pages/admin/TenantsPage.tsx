@@ -46,7 +46,7 @@ const TenantsPage = () => {
   const { data: tenants, isLoading } = useQuery({
     queryKey: ["admin-tenants"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("tenants").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("tenants").select("*").eq("is_template", false).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
