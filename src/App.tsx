@@ -41,6 +41,7 @@ import TenantPanelLayout from "./components/admin/TenantPanelLayout.tsx";
 import TenantDuplicatePage from "./pages/admin/tenant/TenantDuplicatePage.tsx";
 import TenantLinksPage from "./pages/admin/tenant/TenantLinksPage.tsx";
 import TenantLanguagesPage from "./pages/admin/tenant/TenantLanguagesPage.tsx";
+import TenantStoresPage from "./pages/admin/tenant/TenantStoresPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -115,6 +116,7 @@ const App = () => (
             <Route path="duplicate" element={<TenantDuplicatePage />} />
             <Route path="links" element={<TenantLinksPage />} />
             <Route path="languages" element={<TenantLanguagesPage />} />
+            <Route path="stores" element={<TenantStoresPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
