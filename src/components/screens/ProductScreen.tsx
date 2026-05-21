@@ -300,7 +300,7 @@ const ProductScreen = () => {
                       >
                         <div className={`text-[15px] font-black ${selected ? "text-success" : "text-foreground"}`}>{tProduct(size.name)}</div>
                         <div className="text-[12px] text-muted-foreground tabular-nums mt-0.5">
-                          {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : "Sin suplemento"}
+                          {size.priceAdd > 0 ? `+${size.priceAdd.toFixed(2)}€` : t("noExtra")}
                         </div>
                       </button>
                     );
