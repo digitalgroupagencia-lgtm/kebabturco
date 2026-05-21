@@ -77,9 +77,15 @@ const TenantDeliveryZonesPage = () => {
     const { error } = await supabase.from("delivery_zones").update({
       name: z.name, min_order: z.min_order, delivery_fee: z.delivery_fee,
       is_default: z.is_default, is_active: z.is_active,
+      postal_codes: z.postal_codes || [],
+      city_names: z.city_names || [],
     }).eq("id", z.id);
     if (error) toast.error(error.message); else toast.success("Salvo");
   };
+
+  const parseList = (s: string): string[] =>
+    s.split(",").map((x) => x.trim()).filter(Boolean);
+
 
   const remove = async (id: string) => {
     if (!confirm("Remover zona?")) return;
