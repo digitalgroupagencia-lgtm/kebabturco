@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
