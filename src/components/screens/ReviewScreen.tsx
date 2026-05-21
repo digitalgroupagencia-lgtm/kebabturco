@@ -167,6 +167,11 @@ const ReviewScreen = () => {
                       {t("without")}: {item.removedIngredients.join(", ")}
                     </p>
                   )}
+                  {item.note && (
+                    <p className="text-[11px] text-foreground/80 italic mt-1 bg-warning/10 px-2 py-1 rounded-md border-l-2 border-warning">
+                      📝 {item.note}
+                    </p>
+                  )}
                 </div>
               </div>
 
