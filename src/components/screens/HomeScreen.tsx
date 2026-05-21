@@ -13,7 +13,7 @@ import { splitProductName } from "@/lib/splitProductName";
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
   const { t, tProduct } = useLanguage();
-  const { totalItems, orderType } = useCart();
+  const { totalItems } = useCart();
   const { settings } = useBranding();
   const { theme } = useTheme();
   const { categories, products, loading } = useMenuData();
