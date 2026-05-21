@@ -14,7 +14,7 @@ const OrderTypeScreen = () => {
   const { setScreen, setTableNumber } = useOrder();
   const { setOrderType } = useCart();
   const { settings, loading: brandingLoading } = useBranding();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { theme } = useTheme();
   const { storeId } = useResolvedStore();
   const isDark = theme === "dark";
