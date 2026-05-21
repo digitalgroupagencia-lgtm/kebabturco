@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,22 +25,29 @@ interface Store { id: string; name: string }
 
 const TenantDeliveryZonesPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { tenant: ctxTenant } = useSelectedTenant();
   const [stores, setStores] = useState<Store[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [storeId, setStoreId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    if (!slug) return;
     setLoading(true);
-    const { data: t } = await supabase.from("tenants").select("id").eq("slug", slug).maybeSingle();
-    if (!t) { setLoading(false); return; }
-    const { data: s } = await supabase.from("stores").select("id,name").eq("tenant_id", t.id).order("sort_order");
+    let tid: string | null = null;
+    if (slug) {
+      const { data: t } = await supabase.from("tenants").select("id").eq("slug", slug).maybeSingle();
+      tid = t?.id ?? null;
+    } else if (ctxTenant?.id) {
+      tid = ctxTenant.id;
+    }
+    if (!tid) { setLoading(false); return; }
+    const { data: s } = await supabase.from("stores").select("id,name").eq("tenant_id", tid).order("sort_order");
     setStores((s as any) || []);
     const first = (s as any)?.[0]?.id ?? "";
     setStoreId((prev) => prev || first);
     setLoading(false);
   };
+
 
   const loadZones = async (sid: string) => {
     if (!sid) return;
@@ -47,7 +55,7 @@ const TenantDeliveryZonesPage = () => {
     setZones((data as any) || []);
   };
 
-  useEffect(() => { load(); }, [slug]);
+  useEffect(() => { load(); }, [slug, ctxTenant?.id]);
   useEffect(() => { if (storeId) loadZones(storeId); }, [storeId]);
 
   const addZone = async () => {
