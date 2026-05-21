@@ -513,7 +513,8 @@ const PaymentScreen = () => {
             {!processing && <ChevronRight className="w-4 h-4" strokeWidth={3} />}
           </span>
           <span className="text-[15px] font-black bg-white/20 rounded-full px-3.5 py-1 tabular-nums">
-            {totalPrice.toFixed(2)}€
+            {grandTotal.toFixed(2)}€
+
           </span>
         </button>
       </div>
