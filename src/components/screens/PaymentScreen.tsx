@@ -329,13 +329,13 @@ const PaymentScreen = () => {
                 </div>
                 <div>
                   <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                    Piso/Puerta
+                    {t("addressFloor")}
                   </label>
                   <input
                     type="text"
                     value={deliveryComplement}
                     onChange={(e) => setDeliveryComplement(e.target.value.slice(0, 30))}
-                    placeholder="3º B"
+                    placeholder={t("addressFloorPh")}
                     className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
                   />
                 </div>
