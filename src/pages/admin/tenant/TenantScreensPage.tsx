@@ -144,7 +144,7 @@ const TenantScreensPage = () => {
                 <p className="text-muted-foreground">
                   O cardápio é gerado a partir das categorias e produtos cadastrados.
                 </p>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/panel/menu`)}>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tenants/${slug}/menu`)}>
                   Editar cardápio →
                 </Button>
               </div>
