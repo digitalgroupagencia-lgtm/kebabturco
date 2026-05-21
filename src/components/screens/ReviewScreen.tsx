@@ -202,6 +202,7 @@ const ReviewScreen = () => {
                 >
                   <Plus className="w-3.5 h-3.5" /> Duplicar
                 </button>
+              </div>
             </article>
           ))}
 
