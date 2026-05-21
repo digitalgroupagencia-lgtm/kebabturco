@@ -35,6 +35,11 @@ const HomeScreen = () => {
     }
   }, [categories, loading, products, selectedCategory, setSelectedCategory]);
 
+  const scrollRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
+  }, [selectedCategory]);
+
   const allCategories = [
     ...(products.some((product) => product.isBestseller) ? [{
       id: "bestsellers",
