@@ -217,7 +217,7 @@ const ProductScreen = () => {
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
 
   return (
-    <div className="relative min-h-[100dvh] bg-background animate-fade-in flex flex-col">
+    <div className="relative h-[100dvh] md:h-full min-h-0 bg-background animate-fade-in flex flex-col overflow-hidden">
       <ScreenHeader
         eyebrow={t("menu")}
         title={productCleanName}
@@ -225,7 +225,7 @@ const ProductScreen = () => {
         sticky
       />
 
-      <div className="px-4 pt-4 space-y-5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-4 space-y-5 pb-5">
         <section className="relative rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
           {productCode && (
             <span className="absolute top-3 right-3 z-10 flex items-center justify-center min-w-[36px] h-[28px] px-2 rounded-full bg-foreground/85 text-background text-xs font-black tabular-nums shadow-md backdrop-blur-sm">
@@ -392,10 +392,7 @@ const ProductScreen = () => {
         </section>
       </div>
 
-      <div
-        className="sticky left-0 right-0 z-50 bg-background/92 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] -mx-0"
-        style={{ bottom: 0 }}
-      >
+      <div className="shrink-0 z-50 bg-background/92 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
         <button
           onClick={handleAdd}
           className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation"
