@@ -18,8 +18,9 @@ const SplashScreen = () => {
   const logo =
     (isDark && (settings as any)?.logo_main_dark_url) ||
     settings?.logo_main_url ||
-    elreyLogo;
-  const brandName = settings?.company_name || "EL REY";
+    null;
+  const brandName = settings?.company_name || "";
+
 
   useEffect(() => {
     const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
