@@ -266,6 +266,7 @@ export type Database = {
       }
       delivery_zones: {
         Row: {
+          city_names: string[] | null
           created_at: string
           delivery_fee: number
           id: string
@@ -279,6 +280,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city_names?: string[] | null
           created_at?: string
           delivery_fee?: number
           id?: string
@@ -292,6 +294,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city_names?: string[] | null
           created_at?: string
           delivery_fee?: number
           id?: string

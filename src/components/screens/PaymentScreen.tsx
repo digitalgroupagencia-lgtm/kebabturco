@@ -4,9 +4,11 @@ import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDeliveryFee } from "@/hooks/useDeliveryFee";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
+
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
   { id: "card", icon: CreditCard },
@@ -70,7 +72,18 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder">(null);
+
+  // Calcula taxa de entrega automaticamente quando for delivery
+  const { quote: deliveryQuote } = useDeliveryFee(
+    orderType === "delivery" ? storeId : null,
+    deliveryPostalCode,
+    deliveryCity,
+    totalPrice,
+  );
+  const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
+  const grandTotal = totalPrice + deliveryFee;
+
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -103,11 +116,13 @@ const PaymentScreen = () => {
       if (!deliveryNumber.trim()) { setShowError("number"); return; }
       if (!deliveryPostalCode.trim()) { setShowError("postal"); return; }
       if (!deliveryCity.trim()) { setShowError("city"); return; }
+      if (deliveryQuote.belowMinimum) { setShowError("minOrder"); return; }
     }
     if (!selected) { setShowError("method"); return; }
     setShowError(null);
     await persistAndPrint(customerName.trim(), tableNumber.trim(), customerPhone.trim());
   };
+
 
   const persistAndPrint = async (
     finalName: string,
@@ -141,7 +156,11 @@ const PaymentScreen = () => {
                 : null,
             source: "totem",
             subtotal: totalPrice,
-            total: totalPrice,
+            total: grandTotal,
+            notes: orderType === "delivery" && deliveryFee > 0
+              ? `Taxa entrega: ${deliveryFee.toFixed(2)}€${deliveryQuote.zone ? ` (${deliveryQuote.zone.name})` : ""}`
+              : null,
+
           })
           .select("id")
           .single();
@@ -197,7 +216,10 @@ const PaymentScreen = () => {
               })),
               removed: i.removedIngredients,
             })),
-            total: totalPrice,
+            deliveryFee: orderType === "delivery" ? deliveryFee : 0,
+            subtotal: totalPrice,
+            total: grandTotal,
+
           },
         });
       } catch (_e) {
@@ -228,7 +250,7 @@ const PaymentScreen = () => {
             <div>
               <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-bold">{t("totalToPay")}</p>
               <p className="text-[44px] leading-none font-black text-price mt-1.5 tabular-nums tracking-tight">
-                {totalPrice.toFixed(2)}€
+                {grandTotal.toFixed(2)}€
               </p>
               <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? t("oneItem") : t("items")} · {t("taxesIncluded")}</p>
             </div>
@@ -236,6 +258,30 @@ const PaymentScreen = () => {
               <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />
             )}
           </div>
+          {orderType === "delivery" && (deliveryFee > 0 || deliveryQuote.zone) && (
+            <div className="relative mt-4 pt-3 border-t border-border space-y-1 text-[13px]">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span className="font-bold tabular-nums">{totalPrice.toFixed(2)}€</span>
+              </div>
+              <div className="flex items-center justify-between text-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Bike className="w-3.5 h-3.5 text-primary" />
+                  Taxa de entrega
+                  {deliveryQuote.zone && <span className="text-muted-foreground">· {deliveryQuote.zone.name}</span>}
+                </span>
+                <span className="font-black tabular-nums">
+                  {deliveryFee > 0 ? `${deliveryFee.toFixed(2)}€` : "Grátis"}
+                </span>
+              </div>
+              {deliveryQuote.belowMinimum && (
+                <p className="mt-2 text-[12px] font-bold text-destructive">
+                  Pedido mínimo para esta zona: {deliveryQuote.minOrder.toFixed(2)}€
+                </p>
+              )}
+            </div>
+          )}
+
         </div>
 
         {/* Dados do cliente — obrigatório aqui antes do método */}
@@ -467,7 +513,8 @@ const PaymentScreen = () => {
             {!processing && <ChevronRight className="w-4 h-4" strokeWidth={3} />}
           </span>
           <span className="text-[15px] font-black bg-white/20 rounded-full px-3.5 py-1 tabular-nums">
-            {totalPrice.toFixed(2)}€
+            {grandTotal.toFixed(2)}€
+
           </span>
         </button>
       </div>
