@@ -90,9 +90,9 @@ const OrderTypeScreen = () => {
               onClick={() => handleSelect(key)}
               className="flex-1 min-w-0 flex flex-col items-center gap-2 p-3 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation"
             >
-              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 overflow-hidden ${tint}`}>
+              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 ${icon ? "" : tint}`}>
                 {icon ? (
-                  <img src={icon} alt={label} className="w-full h-full object-cover rounded-3xl" />
+                  <img src={icon} alt={label} className="w-full h-full object-contain" />
                 ) : (
                   <Fallback className="w-9 h-9" strokeWidth={2.2} />
                 )}
