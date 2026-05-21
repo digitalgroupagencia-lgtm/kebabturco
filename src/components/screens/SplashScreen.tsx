@@ -73,6 +73,10 @@ const SplashScreen = () => {
       <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-32 h-1 rounded-full bg-secondary overflow-hidden">
         <div className="splash-shimmer absolute inset-0" />
       </div>
+
+      <div className="absolute bottom-4 left-0 right-0 px-6">
+        <InstallAppButton lang={lang} />
+      </div>
     </div>
   );
 };
