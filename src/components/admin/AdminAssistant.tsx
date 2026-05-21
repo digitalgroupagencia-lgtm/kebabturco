@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, Loader2 } from "lucide-react";
+import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type ContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+type Msg = { role: "user" | "assistant"; content: string | ContentPart[] };
 
 const SUGGESTIONS = [
   "Liste meus restaurantes e domínios",
@@ -17,14 +21,41 @@ const SUGGESTIONS = [
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
+// Web Speech API types (browser-only)
+type SpeechRecognitionLike = any;
+
+function getRecognition(): SpeechRecognitionLike | null {
+  const w: any = window as any;
+  const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+  if (!Ctor) return null;
+  const rec = new Ctor();
+  rec.lang = "pt-BR";
+  rec.interimResults = true;
+  rec.continuous = false;
+  return rec;
+}
+
+function extractText(content: Msg["content"]): string {
+  if (typeof content === "string") return content;
+  return content.filter((p): p is { type: "text"; text: string } => p.type === "text").map((p) => p.text).join(" ");
+}
+
+function extractImages(content: Msg["content"]): string[] {
+  if (typeof content === "string") return [];
+  return content.filter((p): p is { type: "image_url"; image_url: { url: string } } => p.type === "image_url").map((p) => p.image_url.url);
+}
 
 export default function AdminAssistant() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const recRef = useRef<SpeechRecognitionLike>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -52,15 +83,70 @@ export default function AdminAssistant() {
     await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
   };
 
-  const send = async (text: string) => {
-    if (!text.trim() || loading) return;
-    const next: Msg[] = [...messages, { role: "user", content: text }];
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    for (const f of files) {
+      if (!f.type.startsWith("image/")) continue;
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result as string);
+        r.onerror = rej;
+        r.readAsDataURL(f);
+      });
+      setPendingImages((p) => [...p, dataUrl]);
+    }
+  };
+
+  const toggleRecord = () => {
+    if (recording) {
+      recRef.current?.stop();
+      setRecording(false);
+      return;
+    }
+    const rec = getRecognition();
+    if (!rec) {
+      toast.error("Seu navegador não suporta ditado por voz. Use Chrome ou Safari.");
+      return;
+    }
+    let finalText = "";
+    rec.onresult = (ev: any) => {
+      let interim = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      setInput((finalText + interim).trim());
+    };
+    rec.onerror = () => setRecording(false);
+    rec.onend = () => setRecording(false);
+    recRef.current = rec;
+    rec.start();
+    setRecording(true);
+  };
+
+  const send = async (text: string, imagesOverride?: string[]) => {
+    const images = imagesOverride ?? pendingImages;
+    if ((!text.trim() && images.length === 0) || loading) return;
+
+    const userContent: Msg["content"] =
+      images.length === 0
+        ? text
+        : [
+            ...(text.trim() ? [{ type: "text" as const, text }] : [{ type: "text" as const, text: "(imagem)" }]),
+            ...images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+          ];
+
+    const next: Msg[] = [...messages, { role: "user", content: userContent }];
     setMessages(next);
     setInput("");
+    setPendingImages([]);
     setLoading(true);
 
-    const convId = await ensureConversation(text);
-    if (convId) await persistMessage(convId, "user", text);
+    const summary = text || `[${images.length} imagem(ns) enviada(s)]`;
+    const convId = await ensureConversation(summary);
+    if (convId) await persistMessage(convId, "user", summary);
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -76,10 +162,9 @@ export default function AdminAssistant() {
         body: JSON.stringify({ messages: next }),
       });
 
-
       if (!resp.ok || !resp.body) {
         const j = await resp.json().catch(() => ({}));
-        throw new Error(j.error || "Error en el asistente");
+        throw new Error(j.error || "Erro no assistente");
       }
 
       const reader = resp.body.getReader();
@@ -115,7 +200,7 @@ export default function AdminAssistant() {
 
       if (convId && acc) await persistMessage(convId, "assistant", acc);
     } catch (e: any) {
-      toast.error(e.message || "Error");
+      toast.error(e.message || "Erro");
       setMessages((m) => m.slice(0, -1));
     } finally {
       setLoading(false);
@@ -124,15 +209,12 @@ export default function AdminAssistant() {
 
   return (
     <>
-      {/* Floating button — respeita safe-area do iOS */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
           className="fixed z-50 group right-4 sm:right-6"
-          style={{
-            bottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)",
-          }}
-          aria-label="Abrir asistente"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)" }}
+          aria-label="Abrir assistente"
         >
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-accent blur-md opacity-60 group-hover:opacity-90 transition-opacity" />
@@ -143,13 +225,10 @@ export default function AdminAssistant() {
         </button>
       )}
 
-      {/* Panel */}
       {open && (
         <div
           className="fixed z-50 right-4 left-4 sm:left-auto sm:right-6 sm:w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100dvh-2rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
-          style={{
-            bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
-          }}
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
         >
           <header className="flex items-center justify-between gap-2 px-4 py-3 bg-gradient-to-br from-primary to-accent text-primary-foreground">
             <div className="flex items-center gap-2 min-w-0">
@@ -160,7 +239,6 @@ export default function AdminAssistant() {
                 <p className="font-bold text-sm leading-tight truncate">Assistente Admin Master</p>
                 <p className="text-[11px] opacity-80 leading-tight">Edita e configura o sistema por você</p>
               </div>
-
             </div>
             <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0">
               <X className="w-4 h-4" />
@@ -171,9 +249,8 @@ export default function AdminAssistant() {
             {messages.length === 0 && (
               <div className="space-y-3">
                 <div className="bg-card border rounded-2xl p-3 text-sm text-muted-foreground">
-                  Sou seu co-piloto. Posso **executar mudanças** no sistema: cores do totem, métodos de pagamento, idiomas, banners, planos. Se for algo de código ou layout, gero um pedido pronto pra você colar no Lovable.
+                  Sou seu co-piloto. Posso **executar mudanças** no sistema: cores do totem, métodos de pagamento, idiomas, banners, planos. Pode mandar **imagem** (anexa pelo clipe) ou **falar** (toca no microfone). Se for algo de código ou layout, gero um pedido pronto pra você colar no Lovable.
                 </div>
-
                 <div className="space-y-2">
                   {SUGGESTIONS.map((s) => (
                     <button
@@ -188,25 +265,36 @@ export default function AdminAssistant() {
               </div>
             )}
 
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-card border rounded-bl-sm"
-                  }`}
-                >
-                  {m.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none prose-p:my-1 prose-ol:my-1 prose-ul:my-1 prose-strong:text-foreground prose-headings:text-foreground prose-headings:font-bold prose-headings:text-sm">
-                      <ReactMarkdown>{m.content || "…"}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p>{m.content}</p>
-                  )}
+            {messages.map((m, i) => {
+              const text = extractText(m.content);
+              const imgs = extractImages(m.content);
+              return (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm space-y-2 ${
+                      m.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-br-sm"
+                        : "bg-card border rounded-bl-sm"
+                    }`}
+                  >
+                    {imgs.length > 0 && (
+                      <div className="grid grid-cols-2 gap-1">
+                        {imgs.map((url, k) => (
+                          <img key={k} src={url} alt="" className="w-full h-24 object-cover rounded-lg" />
+                        ))}
+                      </div>
+                    )}
+                    {m.role === "assistant" ? (
+                      <div className="prose prose-sm max-w-none prose-p:my-1 prose-ol:my-1 prose-ul:my-1 prose-strong:text-foreground prose-headings:text-foreground prose-headings:font-bold prose-headings:text-sm">
+                        <ReactMarkdown>{text || "…"}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      text && <p>{text}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {loading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start">
@@ -217,6 +305,23 @@ export default function AdminAssistant() {
             )}
           </div>
 
+          {pendingImages.length > 0 && (
+            <div className="px-3 py-2 border-t bg-muted/30 flex gap-2 overflow-x-auto">
+              {pendingImages.map((url, i) => (
+                <div key={i} className="relative shrink-0">
+                  <img src={url} alt="" className="w-14 h-14 object-cover rounded-lg border" />
+                  <button
+                    onClick={() => setPendingImages((p) => p.filter((_, k) => k !== i))}
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-background border flex items-center justify-center"
+                    aria-label="Remover"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -224,14 +329,29 @@ export default function AdminAssistant() {
             }}
             className="p-3 border-t bg-card flex items-center gap-2"
           >
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickImage} />
+            <Button type="button" size="icon" variant="ghost" onClick={() => fileRef.current?.click()} disabled={loading} aria-label="Anexar imagem">
+              <ImagePlus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant={recording ? "default" : "ghost"}
+              onClick={toggleRecord}
+              disabled={loading}
+              aria-label={recording ? "Parar gravação" : "Falar"}
+              className={recording ? "animate-pulse" : ""}
+            >
+              {recording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Peça qualquer coisa… (ex: muda a cor da barra)"
+              placeholder={recording ? "Ouvindo…" : "Peça qualquer coisa…"}
               disabled={loading}
               className="flex-1"
             />
-            <Button type="submit" size="icon" disabled={loading || !input.trim()}>
+            <Button type="submit" size="icon" disabled={loading || (!input.trim() && pendingImages.length === 0)}>
               <Send className="w-4 h-4" />
             </Button>
           </form>
