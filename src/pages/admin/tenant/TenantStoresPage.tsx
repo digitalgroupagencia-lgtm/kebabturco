@@ -117,19 +117,24 @@ const TenantStoresPage = () => {
         {stores.map((s) => (
           <Card key={s.id} className="p-5 space-y-4">
             <div className="flex items-start gap-4">
-              <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:bg-muted/50 transition">
-                {s.image_url ? (
-                  <img src={s.image_url} alt={s.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground text-xs">
-                    <Upload className="h-5 w-5" /> Foto
-                  </div>
-                )}
-                <input
-                  type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(s.id, f); }}
-                />
-              </label>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-muted/50 transition">
+                  {s.image_url ? (
+                    <img src={s.image_url} alt={s.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground text-xs">
+                      <Upload className="h-5 w-5" /> Ícone
+                    </div>
+                  )}
+                  <input
+                    type="file" accept="image/png,image/webp,image/svg+xml" className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(s.id, f); }}
+                  />
+                </label>
+                <p className="text-[10px] text-muted-foreground text-center leading-tight max-w-[96px]">
+                  PNG/SVG quadrado<br />512×512px · fundo transparente
+                </p>
+              </div>
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label>Nome da unidade</Label>
