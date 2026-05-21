@@ -131,7 +131,7 @@ const PaymentScreen = () => {
           .insert({
             store_id: storeId,
             order_number: orderNumber,
-            order_type: orderType === "here" ? "dine_in" : "takeaway",
+            order_type: orderType === "here" ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway",
             table_number: finalTable || null,
             customer_name: finalName || null,
             customer_phone: finalPhone || null,
@@ -174,6 +174,14 @@ const PaymentScreen = () => {
             customerName: finalName || null,
             customerPhone: finalPhone || null,
             orderType,
+            deliveryAddress: orderType === "delivery" ? {
+              street: deliveryAddress,
+              number: deliveryNumber,
+              complement: deliveryComplement || null,
+              postalCode: deliveryPostalCode,
+              city: deliveryCity,
+              notes: deliveryNotes || null,
+            } : null,
             paymentMethod: selected,
             paymentPending: selected === "counter",
             items: items.map((i) => ({
