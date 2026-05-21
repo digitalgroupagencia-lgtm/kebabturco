@@ -375,12 +375,12 @@ const PaymentScreen = () => {
               <div className="px-4 py-4 border-t border-border">
                 <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                   <FileText className="w-3.5 h-3.5 text-primary" />
-                  Notas para el repartidor
+                  {t("addressNotes")}
                 </label>
                 <textarea
                   value={deliveryNotes}
                   onChange={(e) => setDeliveryNotes(e.target.value.slice(0, 200))}
-                  placeholder="Ej: Portal azul, llamar al timbre 2"
+                  placeholder={t("addressNotesPh")}
                   rows={2}
                   className="w-full px-4 py-3 text-sm font-medium text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors resize-none"
                 />
