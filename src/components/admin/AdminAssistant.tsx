@@ -9,14 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "¿Cómo configuro la impresora?",
-  "¿Cómo cambio la cor de la barra superior?",
-  "¿Cómo activo Apple Pay?",
-  "¿Cómo subo un banner promocional?",
+  "Liste meus restaurantes e domínios",
+  "Muda a cor da barra superior do Kebab Turco pra #8B1A1A",
+  "Desativa o Apple Pay do Kebab Turco",
+  "Ativa só español e english no totem do Kebab Turco",
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 
 export default function AdminAssistant() {
   const [open, setOpen] = useState(false);
