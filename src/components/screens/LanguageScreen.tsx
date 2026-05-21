@@ -65,7 +65,7 @@ const LanguageScreen = () => {
       </div>
 
       {/* Bloco central: logo + títulos */}
-      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-8 pb-2 gap-4">
+      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-4 pb-8 gap-1">
         {logo && (
           <div className="w-full max-w-[280px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <img
