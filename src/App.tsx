@@ -18,6 +18,7 @@ import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
 import PanelSettingsPage from "./pages/panel/SettingsPage.tsx";
 import SellersPage from "./pages/panel/SellersPage.tsx";
+import PanelGuidePage from "./pages/panel/GuidePage.tsx";
 import SellerLayout from "./components/seller/SellerLayout.tsx";
 import SellerHome from "./pages/seller/SellerHome.tsx";
 import SellerTables from "./pages/seller/SellerTables.tsx";
@@ -86,6 +87,7 @@ const App = () => (
             <Route path="languages" element={<TenantLanguagesPage />} />
             <Route path="delivery-zones" element={<TenantDeliveryZonesPage />} />
             <Route path="payments" element={<OperationsPage />} />
+            <Route path="guide" element={<PanelGuidePage />} />
           </Route>
           <Route path="/seller" element={<SellerLayout />}>
             <Route index element={<SellerHome />} />
