@@ -8,12 +8,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { supabase } from "@/integrations/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const OrderTypeScreen = () => {
   const { setScreen, setTableNumber } = useOrder();
   const { setOrderType } = useCart();
   const { settings, loading: brandingLoading } = useBranding();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { theme } = useTheme();
   const { storeId } = useResolvedStore();
   const isDark = theme === "dark";
@@ -108,8 +109,9 @@ const OrderTypeScreen = () => {
         </div>
       </div>
 
-      <div className="text-center pb-6 px-6">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
+      <div className="pb-6 px-6 space-y-3">
+        <InstallAppButton lang={lang} />
+        <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           {brandName || "\u00A0"}
         </p>
       </div>

@@ -4,6 +4,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
+import InstallAppButton from "@/components/InstallAppButton";
 import { MapPin, ChevronRight, Store as StoreIcon } from "lucide-react";
 
 
@@ -95,8 +96,9 @@ const StoreSelectionScreen = () => {
         ))}
       </div>
 
-      <div className="text-center pb-6 px-6">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
+      <div className="pb-6 px-6 space-y-3">
+        <InstallAppButton lang={lang} />
+        <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           {brandName}
         </p>
       </div>
