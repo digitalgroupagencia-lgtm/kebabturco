@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { TenantPanelSidebar } from "./TenantPanelSidebar";
+import AdminAssistant from "./AdminAssistant";
 import AdminThemeToggle from "./AdminThemeToggle";
 import { Loader2, ArrowLeft, Building2, Crown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,7 @@ const TenantPanelLayout = () => {
               <Outlet />
             </main>
           </div>
+          <AdminAssistant />
         </div>
       </SidebarProvider>
     </SelectedTenantProvider>
