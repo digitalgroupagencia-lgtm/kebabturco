@@ -5,8 +5,9 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
+import { useCustomerGeocode } from "@/hooks/useCustomerGeocode";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike, Loader2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
 
@@ -74,12 +75,23 @@ const PaymentScreen = () => {
   const [processing, setProcessing] = useState(false);
   const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder">(null);
 
-  // Calcula taxa de entrega automaticamente quando for delivery
+  // Geocoding automático via Google Maps → distância em km até a loja
+  const geo = useCustomerGeocode(
+    orderType === "delivery" ? storeId : null,
+    deliveryAddress,
+    deliveryNumber,
+    deliveryPostalCode,
+    deliveryCity,
+    orderType === "delivery",
+  );
+
+  // Calcula taxa de entrega automaticamente: prioriza distância (km), depois CEP/cidade
   const { quote: deliveryQuote } = useDeliveryFee(
     orderType === "delivery" ? storeId : null,
     deliveryPostalCode,
     deliveryCity,
     totalPrice,
+    geo.distanceKm,
   );
   const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
   const grandTotal = totalPrice + deliveryFee;
