@@ -21,6 +21,8 @@ const BrandingPage = () => {
     logo_secondary_url: useRef<HTMLInputElement>(null),
     icon_dine_in_url: useRef<HTMLInputElement>(null),
     icon_takeaway_url: useRef<HTMLInputElement>(null),
+    icon_delivery_url: useRef<HTMLInputElement>(null),
+
     banner_home_url: useRef<HTMLInputElement>(null),
     logo_language_url: useRef<HTMLInputElement>(null),
     logo_order_type_url: useRef<HTMLInputElement>(null),
