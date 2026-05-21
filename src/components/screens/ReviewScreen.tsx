@@ -156,7 +156,7 @@ const ReviewScreen = () => {
             <div className="flex-1">
               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">{t("modality")}</p>
               <p className="text-sm font-black text-foreground">
-                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? "A domicilio" : t("takeaway")}
+                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway")}
               </p>
             </div>
           </div>
@@ -168,7 +168,7 @@ const ReviewScreen = () => {
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("yourProducts")}</p>
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
-                {items.length} {items.length === 1 ? "ítem" : t("items")}
+                {items.length} {items.length === 1 ? t("oneItem") : t("items")}
               </span>
               {items.length > 0 && (
                 <button

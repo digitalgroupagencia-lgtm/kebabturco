@@ -230,7 +230,7 @@ const PaymentScreen = () => {
               <p className="text-[44px] leading-none font-black text-price mt-1.5 tabular-nums tracking-tight">
                 {totalPrice.toFixed(2)}€
               </p>
-              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? "ítem" : t("items")} · {t("taxesIncluded")}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? t("oneItem") : t("items")} · {t("taxesIncluded")}</p>
             </div>
             {logoUrl && (
               <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />
@@ -299,13 +299,13 @@ const PaymentScreen = () => {
               <div className={`px-4 py-4 border-t border-border ${showError === "address" ? "bg-destructive/5 animate-pulse" : ""}`}>
                 <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
-                  Dirección (calle) <span className="text-destructive">*</span>
+                  {t("addressStreet")} <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
                   value={deliveryAddress}
                   onChange={(e) => { setDeliveryAddress(e.target.value.slice(0, 120)); if (showError === "address") setShowError(null); }}
-                  placeholder="Ej: Calle Mayor"
+                  placeholder={t("addressStreetPh")}
                   className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
                     showError === "address" ? "border-destructive/60" : "border-transparent"
                   }`}
@@ -315,7 +315,7 @@ const PaymentScreen = () => {
                 <div className={showError === "number" ? "animate-pulse" : ""}>
                   <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                     <Home className="w-3.5 h-3.5 text-primary" />
-                    Número <span className="text-destructive">*</span>
+                    {t("addressNumber")} <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
@@ -329,13 +329,13 @@ const PaymentScreen = () => {
                 </div>
                 <div>
                   <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                    Piso/Puerta
+                    {t("addressFloor")}
                   </label>
                   <input
                     type="text"
                     value={deliveryComplement}
                     onChange={(e) => setDeliveryComplement(e.target.value.slice(0, 30))}
-                    placeholder="3º B"
+                    placeholder={t("addressFloorPh")}
                     className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
                   />
                 </div>
@@ -344,7 +344,7 @@ const PaymentScreen = () => {
                 <div className={showError === "postal" ? "animate-pulse" : ""}>
                   <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                     <Mailbox className="w-3.5 h-3.5 text-primary" />
-                    CP <span className="text-destructive">*</span>
+                    {t("addressPostal")} <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
@@ -359,7 +359,7 @@ const PaymentScreen = () => {
                 </div>
                 <div className={showError === "city" ? "animate-pulse" : ""}>
                   <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                    Ciudad <span className="text-destructive">*</span>
+                    {t("addressCity")} <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
@@ -375,12 +375,12 @@ const PaymentScreen = () => {
               <div className="px-4 py-4 border-t border-border">
                 <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                   <FileText className="w-3.5 h-3.5 text-primary" />
-                  Notas para el repartidor
+                  {t("addressNotes")}
                 </label>
                 <textarea
                   value={deliveryNotes}
                   onChange={(e) => setDeliveryNotes(e.target.value.slice(0, 200))}
-                  placeholder="Ej: Portal azul, llamar al timbre 2"
+                  placeholder={t("addressNotesPh")}
                   rows={2}
                   className="w-full px-4 py-3 text-sm font-medium text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors resize-none"
                 />

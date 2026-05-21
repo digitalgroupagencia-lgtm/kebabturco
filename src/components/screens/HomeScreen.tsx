@@ -159,7 +159,7 @@ const HomeScreen = () => {
                 <div className="h-[3px] w-8 bg-primary rounded-full mt-1.5" />
               </div>
               <span className="text-[11px] font-bold text-muted-foreground tabular-nums pb-1">
-                {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
+                {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
               </span>
             </div>
           </div>

@@ -200,7 +200,7 @@ const ConfirmationScreen = () => {
                 {t("modeLabel")}
               </p>
               <p className="font-black text-foreground text-[13px] leading-tight truncate">
-                {isHere ? t("eatHere") : t("takeaway")}
+                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway")}
               </p>
             </div>
           </div>
