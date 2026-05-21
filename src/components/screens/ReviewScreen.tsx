@@ -27,7 +27,12 @@ const ReviewScreen = () => {
     setProductReturnScreen,
     setEditingCartItemId,
   } = useOrder();
-  const { items, updateQuantity, removeItem, totalPrice, orderType, clearCart } = useCart();
+  const { items, addItem, removeItem, totalPrice, orderType, clearCart } = useCart();
+
+  const handleDuplicate = (item: typeof items[number]) => {
+    const { id: _omit, ...rest } = item;
+    addItem({ ...rest, quantity: 1, totalPrice: item.unitPrice });
+  };
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
   const clearLabel = CLEAR_LABEL[lang] || CLEAR_LABEL.es;
