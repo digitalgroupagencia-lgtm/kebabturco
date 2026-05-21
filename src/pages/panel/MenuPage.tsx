@@ -284,16 +284,23 @@ const MenuPage = () => {
             return (
               <div
                 key={cat.id}
-                className={`p-3 rounded-lg border cursor-pointer transition-colors group ${
+                className={`p-2 rounded-lg border cursor-pointer transition-colors group ${
                   selectedCategoryId === cat.id
                     ? "border-primary bg-primary/5"
                     : "hover:border-primary/50"
                 }`}
                 onClick={() => setSelectedCategoryId(cat.id)}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{name?.pt || "Sem nome"}</span>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex items-center justify-center shrink-0 border">
+                    {cat.image_url ? (
+                      <img src={cat.image_url} alt={name?.pt || ""} className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <span className="font-medium text-sm flex-1 min-w-0 truncate">{name?.pt || name?.es || "Sem nome"}</span>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={(e) => { e.stopPropagation(); openCatDialog(cat); }} className="p-1 hover:bg-muted rounded">
                       <Pencil className="h-3 w-3" />
                     </button>
