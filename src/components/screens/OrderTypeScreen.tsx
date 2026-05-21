@@ -83,7 +83,7 @@ const OrderTypeScreen = () => {
       </div>
 
       {/* Layout horizontal — todos os tipos ativos lado a lado */}
-      <div className="flex-1 flex items-center justify-center px-4 py-6 w-full">
+      <div className="flex items-center justify-center px-4 pb-4 w-full">
         <div
           className="flex flex-row items-stretch justify-center w-full max-w-md flex-nowrap"
           style={{ gap: enabled.length >= 3 ? "0.75rem" : "1rem" }}
