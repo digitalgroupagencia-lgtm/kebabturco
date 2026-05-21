@@ -269,12 +269,12 @@ const ReviewScreen = () => {
         </div>
 
         {/* Sugestões */}
-        {items.length > 0 && suggestions.length > 0 && (
+        {items.length > 0 && (suggestions.length > 0 || showButton) && (
           <div className="mt-2">
             <div className="flex items-center gap-2 px-1 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                {suggestingDrinks ? t("addDrink") : t("addMore")}
+                {sectionTitle}
               </p>
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
@@ -308,9 +308,24 @@ const ReviewScreen = () => {
                   </div>
                 </button>
               ))}
+
+              {showButton && (
+                <button
+                  onClick={handleOpenCategory}
+                  className="shrink-0 w-[150px] bg-primary/10 border-2 border-dashed border-primary/40 rounded-2xl text-left active:scale-[0.97] transition-transform flex flex-col items-center justify-center gap-2 p-3"
+                >
+                  <span className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
+                    <ArrowRight className="w-5 h-5" strokeWidth={3} />
+                  </span>
+                  <span className="text-[13px] font-black text-primary text-center leading-tight">
+                    {buttonLabel}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         )}
+
       </div>
 
       {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}
