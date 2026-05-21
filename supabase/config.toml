@@ -1,13 +1,1 @@
-project_id = "wcbxxyeouzfoszfqowfd"
-
-[functions.print-order]
-verify_jwt = false
-
-[functions.admin-assistant]
-verify_jwt = false
-
-[functions.ai-menu-import]
-verify_jwt = false
-
-[functions.ai-product-image]
-verify_jwt = false
+project_id = "kvpssbhclafoymhecmuk"
