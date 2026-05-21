@@ -43,6 +43,21 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const splitIntoSingleItems = (item: Omit<CartItem, "id">, firstId?: string): CartItem[] => {
+  const quantity = Math.max(1, Math.trunc(Number(item.quantity) || 1));
+  const unitPrice = Number.isFinite(item.unitPrice)
+    ? item.unitPrice
+    : (Number(item.totalPrice) || 0) / quantity;
+
+  return Array.from({ length: quantity }, (_, index) => ({
+    ...item,
+    id: index === 0 && firstId ? firstId : crypto.randomUUID(),
+    quantity: 1,
+    unitPrice,
+    totalPrice: unitPrice,
+  }));
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
@@ -57,7 +72,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem("kiosk-cart");
         return [];
       }
-      return parsed;
+      return parsed.flatMap((item: CartItem) => splitIntoSingleItems(item, item.id));
     } catch { return []; }
   });
   const [orderType, setOrderType] = useState<"here" | "takeaway" | "delivery" | null>(null);
@@ -67,23 +82,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const addItem = (item: Omit<CartItem, "id">) => {
-    const id = crypto.randomUUID();
-    setItems(prev => [...prev, { ...item, id }]);
+    setItems(prev => [...prev, ...splitIntoSingleItems(item)]);
   };
 
   const updateItem = (id: string, item: Omit<CartItem, "id">) => {
-    setItems(prev => prev.map(i => (i.id === id ? { ...item, id } : i)));
+    setItems(prev => prev.flatMap(i => (i.id === id ? splitIntoSingleItems(item, id) : [i])));
   };
 
   const removeItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
 
   const updateQuantity = (id: string, qty: number) => {
     if (qty <= 0) return removeItem(id);
-    setItems(prev => prev.map(i => i.id === id ? {
-      ...i,
-      quantity: qty,
-      totalPrice: i.unitPrice * qty
-    } : i));
+    setItems(prev => prev.flatMap(i => i.id === id ? splitIntoSingleItems({ ...i, quantity: qty }, id) : [i]));
   };
 
   const clearCart = () => {
