@@ -7,7 +7,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus } from "lucide-react";
-import elreyLogoFallback from "@/assets/elrey-logo-horizontal.png";
 import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 
@@ -23,7 +22,7 @@ const HomeScreen = () => {
     (isDark && ((settings as any)?.logo_secondary_dark_url || (settings as any)?.logo_main_dark_url)) ||
     settings?.logo_secondary_url ||
     settings?.logo_main_url ||
-    elreyLogoFallback;
+    "";
 
   useEffect(() => {
     if (loading) return;
@@ -76,12 +75,18 @@ const HomeScreen = () => {
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex flex-col min-w-0 flex-1">
             {/* Logomarca horizontal — protagonista do header */}
-            <img
-              src={headerLogo}
-              alt={settings?.company_name || "EL REY"}
-              className="h-9 sm:h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
-              draggable={false}
-            />
+            {headerLogo ? (
+              <img
+                src={headerLogo}
+                alt={settings?.company_name || "Restaurante"}
+                className="h-9 sm:h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
+                draggable={false}
+              />
+            ) : (
+              <span className="text-lg font-black uppercase leading-none truncate">
+                {settings?.company_name || "Restaurante"}
+              </span>
+            )}
             {/* Título secundário — agora tipo de pedido em destaque */}
             <h1 className="text-[15px] sm:text-[16px] font-black tracking-[0.18em] uppercase leading-none mt-2 truncate">
               {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
