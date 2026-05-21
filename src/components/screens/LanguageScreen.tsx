@@ -50,35 +50,42 @@ const LanguageScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative">
+    <div
+      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       {/* Toggle tema — presente desde a primeira tela */}
-      <div className="absolute top-4 right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
+      <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />
       </div>
 
-      {/* Logo header — mesmo padrão da OrderTypeScreen */}
-      <div className="flex flex-col items-center pt-12 pb-6 px-6 min-h-[220px]">
+      {/* Bloco central: logo + títulos */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-4 gap-6">
         {logo && (
-          <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-            <img src={logo} alt={brandName} className="w-full h-full object-contain" />
+          <div className="w-full max-w-[320px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+            <img
+              src={logo}
+              alt={brandName}
+              className="w-full h-full object-contain"
+              draggable={false}
+            />
           </div>
         )}
-      </div>
 
-      {/* Título */}
-      <div className="px-6 text-center flex flex-col gap-1.5">
-        {titles.map((tt, idx) => (
-          <h1
-            key={idx}
-            className={`leading-tight font-black tracking-tight ${
-              idx === 0
-                ? "text-[24px] text-foreground"
-                : "text-[16px] text-muted-foreground"
-            }`}
-          >
-            {tt}
-          </h1>
-        ))}
+        <div className="text-center flex flex-col gap-1.5 w-full">
+          {titles.map((tt, idx) => (
+            <h1
+              key={idx}
+              className={`leading-tight font-black tracking-tight ${
+                idx === 0
+                  ? "text-[24px] text-foreground"
+                  : "text-[16px] text-muted-foreground"
+              }`}
+            >
+              {tt}
+            </h1>
+          ))}
+        </div>
       </div>
 
       {/* Idiomas — sempre horizontal, sem moldura, ícone "solto" + label */}
