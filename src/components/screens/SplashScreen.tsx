@@ -9,7 +9,7 @@ import InstallAppButton from "@/components/InstallAppButton";
 const SplashScreen = () => {
   const { setScreen } = useOrder();
   const { settings, loading: brandingLoading } = useBranding();
-  const { activeLangs, t } = useLanguage();
+  const { activeLangs, t, lang } = useLanguage();
   const { theme } = useTheme();
 
   const navigate = useNavigate();
