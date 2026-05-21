@@ -20,7 +20,10 @@ interface Zone {
   is_default: boolean;
   is_active: boolean;
   sort_order: number;
+  postal_codes: string[] | null;
+  city_names: string[] | null;
 }
+
 interface Store { id: string; name: string }
 
 const TenantDeliveryZonesPage = () => {
