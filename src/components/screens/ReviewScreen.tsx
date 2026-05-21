@@ -27,7 +27,12 @@ const ReviewScreen = () => {
     setProductReturnScreen,
     setEditingCartItemId,
   } = useOrder();
-  const { items, updateQuantity, removeItem, totalPrice, orderType, clearCart } = useCart();
+  const { items, addItem, removeItem, totalPrice, orderType, clearCart } = useCart();
+
+  const handleDuplicate = (item: typeof items[number]) => {
+    const { id: _omit, ...rest } = item;
+    addItem({ ...rest, quantity: 1, totalPrice: item.unitPrice });
+  };
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
   const clearLabel = CLEAR_LABEL[lang] || CLEAR_LABEL.es;
@@ -190,12 +195,13 @@ const ReviewScreen = () => {
                     <Trash2 className="w-3.5 h-3.5" /> {t("remove2")}
                   </button>
                 </div>
-                <QuantitySelector
-                  value={item.quantity}
-                  onChange={(v) => updateQuantity(item.id, v)}
-                  min={1}
-                  variant="compact"
-                />
+                <button
+                  onClick={() => handleDuplicate(item)}
+                  className="flex items-center gap-1.5 text-success text-[13px] font-black px-3 py-1.5 rounded-full bg-success/10 hover:bg-success/20 active:scale-95 transition-all"
+                  title="Duplicar para personalizar separadamente"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Duplicar
+                </button>
               </div>
             </article>
           ))}
