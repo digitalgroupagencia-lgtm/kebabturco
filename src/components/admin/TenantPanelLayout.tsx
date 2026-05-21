@@ -18,7 +18,7 @@ function TenantHeaderInner() {
   const { locked, lockedByOther, message } = useTenantEditLock(tenant?.id);
   const totemUrl = tenant?.custom_domain
     ? `https://${tenant.custom_domain}/`
-    : `${window.location.origin}/`;
+    : `${window.location.origin}/${tenant?.slug ?? ""}`;
   return (
     <>
     <header className="sticky top-0 z-30 h-14 flex items-center gap-2 border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
