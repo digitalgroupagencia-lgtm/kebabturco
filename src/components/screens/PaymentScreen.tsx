@@ -156,7 +156,11 @@ const PaymentScreen = () => {
                 : null,
             source: "totem",
             subtotal: totalPrice,
-            total: totalPrice,
+            total: grandTotal,
+            notes: orderType === "delivery" && deliveryFee > 0
+              ? `Taxa entrega: ${deliveryFee.toFixed(2)}€${deliveryQuote.zone ? ` (${deliveryQuote.zone.name})` : ""}`
+              : null,
+
           })
           .select("id")
           .single();
