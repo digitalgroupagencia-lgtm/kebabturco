@@ -225,6 +225,7 @@ const TeamPage = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Papel</TableHead>
+                <TableHead>Idioma</TableHead>
                 {canManage && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
@@ -240,9 +241,7 @@ const TeamPage = () => {
                   <TableCell>
                     {canManage && m.user_id !== user?.id ? (
                       <Select value={m.role} onValueChange={(v) => updateRole(m.id, v as AppRole)}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="restaurant_admin">Admin Restaurante</SelectItem>
                           <SelectItem value="operator">Operador</SelectItem>
@@ -251,6 +250,18 @@ const TeamPage = () => {
                       </Select>
                     ) : (
                       <Badge className={roleLabels[m.role].color}>{roleLabels[m.role].label}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {canManage ? (
+                      <Select value={m.preferred_language || "pt"} onValueChange={(v) => updateLanguage(m.user_id, v)}>
+                        <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{LANGUAGES.find((l) => l.value === m.preferred_language)?.label || "🇧🇷 Português"}</span>
                     )}
                   </TableCell>
                   {canManage && (
@@ -266,7 +277,7 @@ const TeamPage = () => {
               ))}
               {members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     Nenhum membro cadastrado.
                   </TableCell>
                 </TableRow>
@@ -300,15 +311,23 @@ const TeamPage = () => {
             <div>
               <Label>Papel</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="restaurant_admin">Admin Restaurante</SelectItem>
                   <SelectItem value="operator">Operador</SelectItem>
                   <SelectItem value="kitchen">Cozinha</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Idioma do sistema *</Label>
+              <Select value={newLanguage} onValueChange={setNewLanguage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Idioma em que este membro verá o painel.</p>
             </div>
           </div>
           <DialogFooter>
