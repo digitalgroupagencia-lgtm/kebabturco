@@ -28,10 +28,11 @@ const TITLE_BY_LANG: Record<string, string> = {
 const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
-  const { settings } = useBranding();
-  const { stores } = useResolvedStore();
+  const { settings, loading: brandingLoading } = useBranding();
+  const { stores, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
   const logo =
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
     (settings as any)?.logo_language_url ||
