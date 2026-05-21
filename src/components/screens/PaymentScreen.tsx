@@ -305,7 +305,7 @@ const PaymentScreen = () => {
                   type="text"
                   value={deliveryAddress}
                   onChange={(e) => { setDeliveryAddress(e.target.value.slice(0, 120)); if (showError === "address") setShowError(null); }}
-                  placeholder="Ej: Calle Mayor"
+                  placeholder={t("addressStreetPh")}
                   className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
                     showError === "address" ? "border-destructive/60" : "border-transparent"
                   }`}
