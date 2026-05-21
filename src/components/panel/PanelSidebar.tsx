@@ -1,46 +1,36 @@
 import {
-  LayoutGrid,
-  ShoppingBag,
-  UtensilsCrossed,
-  Printer,
-  Package,
-  BarChart3,
-  Settings,
-  Users,
-  LogOut,
-  Monitor,
-  DollarSign,
-  UserCog,
+  LayoutGrid, ShoppingBag, UtensilsCrossed, Package, BarChart3, Settings,
+  Users, LogOut, Monitor, DollarSign, Palette, Image as ImageIcon, Wallet,
+  Printer, Globe, Store, Layout, Truck, UserCog,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 
-const menuItems = [
-  { title: "Dashboard", url: "/panel", icon: LayoutGrid },
-  { title: "Cardápio", url: "/panel/menu", icon: UtensilsCrossed },
+const operacao = [
+  { title: "Dashboard", url: "/panel", icon: LayoutGrid, end: true },
   { title: "Pedidos", url: "/panel/orders", icon: ShoppingBag },
   { title: "Caixa", url: "/panel/cashier", icon: DollarSign },
   { title: "Estoque", url: "/panel/stock", icon: Package },
   { title: "Relatórios", url: "/panel/reports", icon: BarChart3 },
 ];
-
-const configItems = [
-  { title: "Totem", url: "/panel/totem", icon: Monitor },
+const cardapio = [
+  { title: "Cardápio", url: "/panel/menu", icon: UtensilsCrossed },
+  { title: "Banners", url: "/panel/banners", icon: ImageIcon },
+  { title: "Zonas de entrega", url: "/panel/delivery-zones", icon: Truck },
+];
+const config = [
+  { title: "Identidade", url: "/panel/branding", icon: Palette },
+  { title: "Unidades", url: "/panel/stores", icon: Store },
+  { title: "Telas do totem", url: "/panel/screens", icon: Layout },
+  { title: "Idiomas", url: "/panel/languages", icon: Globe },
+  { title: "Pagamentos", url: "/panel/payments", icon: Wallet },
   { title: "Impressoras", url: "/panel/printers", icon: Printer },
+  { title: "Totem", url: "/panel/totem", icon: Monitor },
   { title: "Equipe", url: "/panel/team", icon: Users },
   { title: "Vendedores", url: "/panel/sellers", icon: UserCog },
   { title: "Configurações", url: "/panel/settings", icon: Settings },
@@ -50,69 +40,47 @@ export function PanelSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
-  const location = useLocation();
+  const handleNav = () => { if (isMobile) setOpenMobile(false); };
 
-  const handleNav = () => {
-    if (isMobile) setOpenMobile(false);
-  };
+  const renderItems = (items: typeof operacao) => (
+    <SidebarMenu>
+      {items.map((item) => (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton asChild>
+            <NavLink
+              to={item.url}
+              end={(item as any).end}
+              className="hover:bg-muted/50"
+              activeClassName="bg-primary/10 text-primary font-semibold"
+              onClick={handleNav}
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              {!collapsed && <span>{item.title}</span>}
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Operação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/panel"}
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-semibold"
-                      onClick={handleNav}
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
+          <SidebarGroupContent>{renderItems(operacao)}</SidebarGroupContent>
         </SidebarGroup>
-
+        <SidebarGroup>
+          <SidebarGroupLabel>Cardápio</SidebarGroupLabel>
+          <SidebarGroupContent>{renderItems(cardapio)}</SidebarGroupContent>
+        </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Configuração</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {configItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-semibold"
-                      onClick={handleNav}
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
+          <SidebarGroupContent>{renderItems(config)}</SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter>
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-muted-foreground"
-          onClick={signOut}
-        >
+        <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={signOut}>
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && "Sair"}
         </Button>
