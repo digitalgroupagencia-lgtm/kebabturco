@@ -117,24 +117,47 @@ const TenantDeliveryZonesPage = () => {
 
       <div className="space-y-3">
         {zones.map((z) => (
-          <Card key={z.id} className="p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-            <div className="md:col-span-2">
-              <Label>Nome</Label>
-              <Input value={z.name} onChange={(e) => update(z.id, { name: e.target.value })} />
+          <Card key={z.id} className="p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+              <div className="md:col-span-2">
+                <Label>Nome</Label>
+                <Input value={z.name} onChange={(e) => update(z.id, { name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Mínimo (€)</Label>
+                <Input type="number" step="0.5" value={z.min_order} onChange={(e) => update(z.id, { min_order: Number(e.target.value) })} />
+              </div>
+              <div>
+                <Label>Taxa entrega (€)</Label>
+                <Input type="number" step="0.5" value={z.delivery_fee} onChange={(e) => update(z.id, { delivery_fee: Number(e.target.value) })} />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={z.is_active} onCheckedChange={(v) => update(z.id, { is_active: v })} /> Ativa
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={z.is_default} onCheckedChange={(v) => update(z.id, { is_default: v })} /> Padrão
+              </label>
             </div>
-            <div>
-              <Label>Mínimo (€)</Label>
-              <Input type="number" step="0.5" value={z.min_order} onChange={(e) => update(z.id, { min_order: Number(e.target.value) })} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label>Cidades (separadas por vírgula)</Label>
+                <Input
+                  placeholder="Gandia, Grau de Gandia"
+                  value={(z.city_names || []).join(", ")}
+                  onChange={(e) => update(z.id, { city_names: parseList(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label>Códigos postais (separados por vírgula)</Label>
+                <Input
+                  placeholder="46700, 46701, 46702"
+                  value={(z.postal_codes || []).join(", ")}
+                  onChange={(e) => update(z.id, { postal_codes: parseList(e.target.value) })}
+                />
+              </div>
             </div>
-            <div>
-              <Label>Taxa entrega (€)</Label>
-              <Input type="number" step="0.5" value={z.delivery_fee} onChange={(e) => update(z.id, { delivery_fee: Number(e.target.value) })} />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <Switch checked={z.is_active} onCheckedChange={(v) => update(z.id, { is_active: v })} /> Ativa
-            </label>
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => remove(z.id)}><Trash2 className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="sm" onClick={() => remove(z.id)}><Trash2 className="h-4 w-4 mr-1" /> Remover</Button>
               <Button size="sm" onClick={() => save(z)}>Salvar</Button>
             </div>
           </Card>
@@ -143,6 +166,7 @@ const TenantDeliveryZonesPage = () => {
       </div>
     </div>
   );
+
 };
 
 export default TenantDeliveryZonesPage;
