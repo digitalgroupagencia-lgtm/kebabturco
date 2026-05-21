@@ -9,6 +9,8 @@ import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
+import { parseProductCode } from "@/lib/parseProductCode";
+
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
@@ -137,7 +139,7 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto bg-background no-scrollbar">
+        <main className="flex-1 overflow-y-auto bg-background md:scrollbar-thin">
           {/* Banner fixo dentro da área rolável; produtos passam por trás */}
           <div className="sticky top-0 z-20 px-3 pt-3">
             <PromoBannerCarousel />
@@ -160,7 +162,10 @@ const HomeScreen = () => {
           </div>
 
           <div className="px-3 pb-6 grid grid-cols-2 gap-2.5">
-            {filteredProducts.map((product) => (
+            {filteredProducts.map((product) => {
+              const { code, name: cleanName } = parseProductCode(tProduct(product.name));
+              const [l1, l2] = splitProductName(cleanName);
+              return (
               <button
                 key={product.id}
                 onClick={() => openProduct(product.id)}
@@ -171,12 +176,17 @@ const HomeScreen = () => {
                     Oferta
                   </span>
                 )}
+                {code && (
+                  <span className="absolute top-2 right-2 z-10 flex items-center justify-center min-w-[26px] h-[22px] px-1.5 rounded-full bg-foreground/85 text-background text-[10px] font-black tabular-nums shadow-sm backdrop-blur-sm">
+                    {code}
+                  </span>
+                )}
 
                 {/* Imagem protagonista, sem moldura pesada */}
                 <div className="aspect-[5/4] px-2 pt-2 pb-1 flex items-center justify-center">
                   <img
                     src={product.image}
-                    alt={tProduct(product.name)}
+                    alt={cleanName}
                     className="w-full h-full object-cover rounded-[16px] drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)] transition-transform group-hover:scale-[1.03]"
                     loading="lazy"
                   />
@@ -184,15 +194,11 @@ const HomeScreen = () => {
 
                 {/* Bloco inferior compacto: nome, preço e botão integrado */}
                 <div className="px-2.5 pt-1 pb-2.5 flex flex-col gap-1.5">
-                  {(() => {
-                    const [l1, l2] = splitProductName(tProduct(product.name));
-                    return (
-                      <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] min-h-[34px] flex flex-col">
-                        <span className="block">{l1}</span>
-                        {l2 && <span className="block">{l2}</span>}
-                      </span>
-                    );
-                  })()}
+                  <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] min-h-[34px] flex flex-col">
+                    <span className="block">{l1}</span>
+                    {l2 && <span className="block">{l2}</span>}
+                  </span>
+
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[16px] font-black text-price tabular-nums tracking-tight">
                       {product.price.toFixed(2)}€
