@@ -4,6 +4,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
+import InstallAppButton from "@/components/InstallAppButton";
 import { MapPin, ChevronRight, Store as StoreIcon } from "lucide-react";
 
 
