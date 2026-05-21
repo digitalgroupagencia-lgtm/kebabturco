@@ -110,7 +110,7 @@ const OrderTypeScreen = () => {
       </div>
 
       <div className="pb-6 px-6 space-y-3">
-        <InstallAppButton lang={(useLanguage() as any).lang} />
+        <InstallAppButton lang={lang} />
         <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           {brandName || "\u00A0"}
         </p>
