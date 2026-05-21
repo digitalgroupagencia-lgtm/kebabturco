@@ -115,39 +115,50 @@ const ProductScreen = () => {
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
   const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(undefined);
   const [extras, setExtras] = useState<Map<string, number>>(new Map());
-  const [ingredients, setIngredients] = useState<Map<string, boolean>>(new Map());
+  // Mapa de ingredientes base: 0 = removido, 1 = normal (default), 2+ = porções extras (+0,50€ cada)
+  const [ingredients, setIngredients] = useState<Map<string, number>>(new Map());
+  const [note, setNote] = useState("");
+  const BASE_INGREDIENT_EXTRA_PRICE = 0.5;
 
   useEffect(() => {
     if (!product) return;
     if (editingItem) {
-      // Preserva customizações ao editar
       setQuantity(editingItem.quantity);
 
-      // Tenta casar tamanho pelo nome
       const matchSize = product.sizes?.find(
         (s) => editingItem.sizeName && tProduct(s.name) === tProduct(editingItem.sizeName),
       );
       setSelectedSize(matchSize ?? product.sizes?.[0]);
 
-      // Tenta casar variante: o nome final do produto incluía sufixo da variante
       const editedName = tProduct(editingItem.productName);
       const matchVariant = product.variants?.find((v) => editedName.includes(tProduct(v.name)));
       setSelectedVariant(matchVariant ?? product.variants?.[0]);
 
-      // Extras
       const extrasMap = new Map<string, number>();
-      editingItem.extras.forEach((e) => extrasMap.set(e.id, e.quantity));
+      const baseIngExtraMap = new Map<string, number>();
+      editingItem.extras.forEach((e) => {
+        if (e.id.startsWith("base-ing:")) {
+          baseIngExtraMap.set(e.id.slice("base-ing:".length), e.quantity);
+        } else {
+          extrasMap.set(e.id, e.quantity);
+        }
+      });
       setExtras(extrasMap);
 
-      // Ingredientes removidos
       const removedSet = new Set(editingItem.removedIngredients);
-      setIngredients(new Map(ingredientOptions.map((i) => [i, !removedSet.has(i)])));
+      setIngredients(
+        new Map(
+          ingredientOptions.map((i) => [i, removedSet.has(i) ? 0 : 1 + (baseIngExtraMap.get(i) || 0)]),
+        ),
+      );
+      setNote(editingItem.note ?? "");
     } else {
       setQuantity(1);
       setSelectedSize(product.sizes?.[0]);
       setSelectedVariant(product.variants?.[0]);
       setExtras(new Map());
-      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, true])));
+      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, 1])));
+      setNote("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, ingredientOptions, editingItem?.id]);
