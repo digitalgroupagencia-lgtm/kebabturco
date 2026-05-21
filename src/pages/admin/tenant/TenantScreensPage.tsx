@@ -103,62 +103,76 @@ const TenantScreensPage = () => {
           </div>
 
           <Card className="p-4 space-y-3">
-            {active === "splash" && (
-              <div className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  A tela <strong>Splash</strong> mostra o logo principal e o nome do cliente. Para alterá-los, use:
-                </p>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tenants/${slug}/branding`)}>
-                  Editar logo e nome em Marca →
-                </Button>
-              </div>
-            )}
-            {active === "language" && (
-              <div className="space-y-2 text-sm">
-                <p className="text-muted-foreground">Idiomas, bandeiras e textos são configurados em Idiomas.</p>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tenants/${slug}/languages`)}>
-                  Editar idiomas →
-                </Button>
-              </div>
-            )}
-            {active === "storeSelect" && (
-              <div className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  Esta tela aparece automaticamente quando o cliente tem 2+ unidades. Edite nome, endereço e foto de cada unidade.
-                </p>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tenants/${slug}/stores`)}>
-                  Editar unidades →
-                </Button>
-              </div>
-            )}
-            {active === "orderType" && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Quais opções de pedido o cliente pode escolher?</p>
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch checked={config.enable_dine_in ?? true} onCheckedChange={(v) => setField("enable_dine_in", v)} /> Comer no local
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch checked={config.enable_takeaway ?? true} onCheckedChange={(v) => setField("enable_takeaway", v)} /> Para levar
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch checked={config.enable_delivery ?? false} onCheckedChange={(v) => setField("enable_delivery", v)} /> A domicílio
-                </label>
-                <Button onClick={save} disabled={saving} className="w-full mt-2">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
-                </Button>
-              </div>
-            )}
-            {active === "home" && (
-              <div className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  O cardápio é gerado a partir das categorias e produtos cadastrados.
-                </p>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tenants/${slug}/menu`)}>
-                  Editar cardápio →
-                </Button>
-              </div>
-            )}
+            {(() => {
+              const base = slug ? `/admin/tenants/${slug}` : "/panel";
+              return (
+                <>
+                  {active === "splash" && (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-muted-foreground">
+                        A tela <strong>Splash</strong> mostra o logo principal e o nome do cliente. Para alterá-los, use:
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`${base}/branding`)}>
+                        Editar logo e nome em Marca →
+                      </Button>
+                    </div>
+                  )}
+                  {active === "language" && (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-muted-foreground">Idiomas, bandeiras e textos são configurados em Idiomas.</p>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`${base}/languages`)}>
+                        Editar idiomas →
+                      </Button>
+                    </div>
+                  )}
+                  {active === "storeSelect" && (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-muted-foreground">
+                        Esta tela aparece automaticamente quando o cliente tem 2+ unidades. Edite nome, endereço e foto de cada unidade.
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`${base}/stores`)}>
+                        Editar unidades →
+                      </Button>
+                    </div>
+                  )}
+                  {active === "orderType" && (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">Quais opções de pedido o cliente pode escolher?</p>
+                      <label className="flex items-center gap-2 text-sm">
+                        <Switch checked={config.enable_dine_in ?? true} onCheckedChange={(v) => setField("enable_dine_in", v)} /> Comer no local
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <Switch checked={config.enable_takeaway ?? true} onCheckedChange={(v) => setField("enable_takeaway", v)} /> Para levar
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <Switch checked={config.enable_delivery ?? false} onCheckedChange={(v) => setField("enable_delivery", v)} /> A domicílio
+                      </label>
+                      <p className="text-xs text-muted-foreground pt-2">
+                        Para editar os ícones (Comer aqui / Para levar / A domicílio), use a aba <strong>Marca</strong>:
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`${base}/branding`)}>
+                        Editar ícones do tipo de pedido →
+                      </Button>
+                      <Button onClick={save} disabled={saving} className="w-full mt-2">
+                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+                      </Button>
+                    </div>
+                  )}
+                  {active === "home" && (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-muted-foreground">
+                        O cardápio é gerado a partir das categorias e produtos cadastrados.
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`${base}/menu`)}>
+                        Editar cardápio →
+                      </Button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </Card>
+
         </div>
 
         {/* Painel direito: preview ao vivo (iframe do totem real) */}
