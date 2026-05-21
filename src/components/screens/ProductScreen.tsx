@@ -343,29 +343,54 @@ const ProductScreen = () => {
               <h3 className="text-[17px] font-black text-foreground">Personaliza tu pedido</h3>
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Ingredientes</span>
             </div>
-            <p className="text-[12px] text-muted-foreground mb-2">Toca para quitar</p>
+            <p className="text-[12px] text-muted-foreground mb-2">Quita o añade más (+{BASE_INGREDIENT_EXTRA_PRICE.toFixed(2)}€ cada extra)</p>
             <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card overflow-hidden">
               {ingredientOptions.map((ingredient) => {
-                const included = ingredients.get(ingredient) ?? true;
+                const qty = ingredients.get(ingredient) ?? 1;
+                const removed = qty <= 0;
+                const extra = qty > 1 ? qty - 1 : 0;
                 return (
-                  <li key={ingredient}>
-                    <button
-                      onClick={() => {
-                        const next = new Map(ingredients);
-                        next.set(ingredient, !included);
-                        setIngredients(next);
-                      }}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-muted/40 transition-colors"
-                    >
-                      <span className={`text-[22px] leading-none shrink-0 ${included ? "" : "grayscale opacity-40"}`} aria-hidden>{emojiFor(ingredient)}</span>
-                      <span className={`flex-1 text-[15px] font-semibold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>{ingredient}</span>
-                      <span
-                        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${included ? "bg-success" : "bg-destructive"}`}
-                        aria-hidden
+                  <li key={ingredient} className="flex items-center gap-3 px-3.5 py-2.5">
+                    <span className={`text-[22px] leading-none shrink-0 ${removed ? "grayscale opacity-40" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-[15px] font-semibold ${removed ? "text-muted-foreground line-through" : "text-foreground"}`}>{ingredient}</div>
+                      <div className="text-[11px] tabular-nums mt-0.5">
+                        {removed ? (
+                          <span className="text-destructive font-bold">Sin {ingredient.toLowerCase()}</span>
+                        ) : extra > 0 ? (
+                          <span className="text-success font-bold">+{(extra * BASE_INGREDIENT_EXTRA_PRICE).toFixed(2)}€ ({extra} extra)</span>
+                        ) : (
+                          <span className="text-muted-foreground">Incluido</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          const next = new Map(ingredients);
+                          next.set(ingredient, Math.max(0, qty - 1));
+                          setIngredients(next);
+                        }}
+                        disabled={qty <= 0}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform ${qty > 0 ? "bg-destructive text-destructive-foreground" : "border border-border text-foreground"}`}
+                        aria-label="Quitar"
                       >
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-background shadow-sm transition-transform ${included ? "translate-x-[18px]" : "translate-x-0.5"}`} />
-                      </span>
-                    </button>
+                        <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                      <span className="text-[14px] font-bold tabular-nums w-4 text-center text-foreground">{qty}</span>
+                      <button
+                        onClick={() => {
+                          const next = new Map(ingredients);
+                          next.set(ingredient, Math.min(4, qty + 1));
+                          setIngredients(next);
+                        }}
+                        disabled={qty >= 4}
+                        className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 bg-success text-success-foreground"
+                        aria-label="Añadir"
+                      >
+                        <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                    </div>
                   </li>
                 );
               })}
