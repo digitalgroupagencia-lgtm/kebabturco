@@ -3,9 +3,13 @@
  * Prioriza quebrar no separador (-, –, |, /, ·) ou na palavra do meio.
  * Funciona em qualquer idioma.
  */
+import { parseProductCode } from "./parseProductCode";
+
 export function splitProductName(name: string): [string, string] {
   if (!name) return ["", ""];
-  const trimmed = name.trim();
+  // Remove o código (ex: "54. ") antes de dividir
+  const trimmed = parseProductCode(name).name;
+
 
   // 1) Tenta quebrar em separador comum
   const sepMatch = trimmed.match(/^(.+?)\s*[-–—|/·]\s*(.+)$/);
