@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PanelSidebar } from "./PanelSidebar";
+import AdminAssistant from "@/components/admin/AdminAssistant";
 import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import { Loader2 } from "lucide-react";
 import TenantLimitBanner from "./TenantLimitBanner";
@@ -46,6 +47,7 @@ const PanelLayout = () => {
               <Outlet />
             </main>
           </div>
+          {roleData?.role === "admin_master" && <AdminAssistant />}
         </div>
       </SidebarProvider>
     </SelectedTenantProvider>
