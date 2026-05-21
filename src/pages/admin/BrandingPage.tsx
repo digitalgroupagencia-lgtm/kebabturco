@@ -69,6 +69,8 @@ const BrandingPage = () => {
       banner_home_url: s.banner_home_url,
       icon_dine_in_url: s.icon_dine_in_url,
       icon_takeaway_url: s.icon_takeaway_url,
+      icon_delivery_url: (s as any).icon_delivery_url,
+
       logo_language_url: (s as any).logo_language_url,
       logo_order_type_url: (s as any).logo_order_type_url,
       logo_main_dark_url: (s as any).logo_main_dark_url,
