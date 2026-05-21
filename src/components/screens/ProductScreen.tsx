@@ -8,6 +8,8 @@ import { useMenuData } from "@/hooks/useMenuData";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
+import { parseProductCode } from "@/lib/parseProductCode";
+
 
 const ingredientMap: Record<string, string[]> = {
   "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
@@ -212,28 +214,36 @@ const ProductScreen = () => {
     goBack();
   };
 
+  const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
+
   return (
     <div className="relative min-h-[100dvh] bg-background animate-fade-in flex flex-col">
       <ScreenHeader
         eyebrow={t("menu")}
-        title={tProduct(product.name)}
+        title={productCleanName}
         onBack={goBack}
         sticky
       />
 
       <div className="px-4 pt-4 space-y-5">
-        <section className="rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
+        <section className="relative rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
+          {productCode && (
+            <span className="absolute top-3 right-3 z-10 flex items-center justify-center min-w-[36px] h-[28px] px-2 rounded-full bg-foreground/85 text-background text-xs font-black tabular-nums shadow-md backdrop-blur-sm">
+              {productCode}
+            </span>
+          )}
           <div className="aspect-square bg-secondary/40">
-            <img src={product.image} alt={tProduct(product.name)} className="w-full h-full object-cover rounded-[24px]" />
+            <img src={product.image} alt={productCleanName} className="w-full h-full object-cover rounded-[24px]" />
           </div>
         </section>
 
         <section className="space-y-2">
-          <h1 className="text-[30px] leading-[1.02] font-black text-foreground">{tProduct(product.name)}</h1>
+          <h1 className="text-[30px] leading-[1.02] font-black text-foreground">{productCleanName}</h1>
           <p className="text-[15px] leading-relaxed text-muted-foreground">{tProduct(product.description)}</p>
           <p className="text-[34px] font-black text-price pt-1 tabular-nums tracking-tight">{product.price.toFixed(2)}€</p>
           {product.note && <p className="text-sm text-muted-foreground italic">{tProduct(product.note)}</p>}
         </section>
+
 
         {(product.variants?.length || product.sizes?.length) && (
           <section className="space-y-5">

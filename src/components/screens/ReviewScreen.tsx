@@ -234,8 +234,9 @@ const ReviewScreen = () => {
                   </div>
                   <div className="p-2.5 flex flex-col gap-1.5">
                     <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-tight min-h-[32px] break-words hyphens-auto">
-                      {tProduct(p.name)}
+                      {tProduct(p.name).replace(/^\d{1,3}[A-Za-z]?\s*[.\-–—:)]\s*/, "")}
                     </p>
+
                     <div className="flex items-center justify-between">
                       <span className="text-[14px] font-black text-price tabular-nums">
                         {p.price.toFixed(2)}€
