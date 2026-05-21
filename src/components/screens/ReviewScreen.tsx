@@ -138,8 +138,9 @@ const ReviewScreen = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-black text-foreground text-[15px] leading-tight line-clamp-2">
-                      {tProduct(item.productName)}
+                      {tProduct(item.productName).replace(/^\d{1,3}[A-Za-z]?\s*[.\-–—:)]\s*/, "")}
                     </h3>
+
                     <span className="text-[16px] font-black text-price tabular-nums shrink-0">
                       {item.totalPrice.toFixed(2)}€
                     </span>
