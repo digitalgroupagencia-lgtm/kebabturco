@@ -72,7 +72,18 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder">(null);
+
+  // Calcula taxa de entrega automaticamente quando for delivery
+  const { quote: deliveryQuote } = useDeliveryFee(
+    orderType === "delivery" ? storeId : null,
+    deliveryPostalCode,
+    deliveryCity,
+    totalPrice,
+  );
+  const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
+  const grandTotal = totalPrice + deliveryFee;
+
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
