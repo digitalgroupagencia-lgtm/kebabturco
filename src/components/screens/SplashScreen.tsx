@@ -22,6 +22,8 @@ const SplashScreen = () => {
   const brandName = settings?.company_name || "EL REY";
 
   useEffect(() => {
+    const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
+    if (isPreview) return;
     const timer = setTimeout(() => {
       // Se houver mais de 1 idioma ativo, abre seleção de idioma primeiro
       setScreen(activeLangs.length > 1 ? "language" : "orderType");
