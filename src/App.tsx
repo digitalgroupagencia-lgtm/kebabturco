@@ -77,8 +77,15 @@ const App = () => (
             <Route path="team" element={<TeamPage />} />
             <Route path="sellers" element={<SellersPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
-            <Route path="printers" element={<PlaceholderPage title="Impressoras" />} />
+            <Route path="printers" element={<PrinterPage />} />
             <Route path="settings" element={<PanelSettingsPage />} />
+            <Route path="branding" element={<BrandingPage />} />
+            <Route path="banners" element={<BannerPage />} />
+            <Route path="stores" element={<TenantStoresPage />} />
+            <Route path="screens" element={<TenantScreensPage />} />
+            <Route path="languages" element={<TenantLanguagesPage />} />
+            <Route path="delivery-zones" element={<TenantDeliveryZonesPage />} />
+            <Route path="payments" element={<OperationsPage />} />
           </Route>
           <Route path="/seller" element={<SellerLayout />}>
             <Route index element={<SellerHome />} />
