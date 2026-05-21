@@ -177,10 +177,19 @@ const ProductScreen = () => {
     return sum + (extra ? extra.price * qty : 0);
   }, 0);
 
-  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal;
+  // Porções extras de ingredientes base (qty > 1)
+  const baseIngredientExtras = Array.from(ingredients.entries())
+    .filter(([, qty]) => qty > 1)
+    .map(([name, qty]) => ({ name, extraQty: qty - 1 }));
+  const baseIngredientsTotal = baseIngredientExtras.reduce(
+    (sum, b) => sum + b.extraQty * BASE_INGREDIENT_EXTRA_PRICE,
+    0,
+  );
+
+  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal + baseIngredientsTotal;
   const totalPrice = unitPrice * quantity;
   const removedIngredients = Array.from(ingredients.entries())
-    .filter(([, included]) => !included)
+    .filter(([, qty]) => qty <= 0)
     .map(([name]) => name);
 
   const handleAdd = () => {
@@ -197,6 +206,16 @@ const ProductScreen = () => {
       })
       .filter(Boolean) as { id: string; name: Record<string, string>; price: number; quantity: number }[];
 
+    // Adiciona porções extras de ingredientes base como linhas de extras
+    baseIngredientExtras.forEach(({ name, extraQty }) => {
+      selectedExtras.push({
+        id: `base-ing:${name}`,
+        name: { es: `+ ${name}`, en: `+ ${name}`, pt: `+ ${name}`, fr: `+ ${name}` },
+        price: BASE_INGREDIENT_EXTRA_PRICE,
+        quantity: extraQty,
+      });
+    });
+
     const variantSuffix = selectedVariant ? ` (${selectedVariant.name.es || selectedVariant.name.en})` : "";
     const finalName = selectedVariant
       ? Object.fromEntries(Object.entries(product.name).map(([k, v]) => [k, v + variantSuffix])) as Record<string, string>
@@ -212,6 +231,7 @@ const ProductScreen = () => {
       sizeAdd: selectedSize?.priceAdd || 0,
       extras: selectedExtras,
       removedIngredients,
+      note: note.trim() || undefined,
       unitPrice,
       totalPrice,
     };
