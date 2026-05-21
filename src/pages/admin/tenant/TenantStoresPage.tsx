@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,25 +24,32 @@ interface Store {
 
 const TenantStoresPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { tenant: ctxTenant } = useSelectedTenant();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
   const load = async () => {
-    if (!slug) return;
     setLoading(true);
-    const { data: tenant } = await supabase.from("tenants").select("id").eq("slug", slug).maybeSingle();
-    if (!tenant) { setLoading(false); return; }
-    setTenantId(tenant.id);
+    let tid: string | null = null;
+    if (slug) {
+      const { data: tenant } = await supabase.from("tenants").select("id").eq("slug", slug).maybeSingle();
+      tid = tenant?.id ?? null;
+    } else if (ctxTenant?.id) {
+      tid = ctxTenant.id;
+    }
+    if (!tid) { setLoading(false); return; }
+    setTenantId(tid);
     const { data } = await supabase
-      .from("stores").select("*").eq("tenant_id", tenant.id)
+      .from("stores").select("*").eq("tenant_id", tid)
       .order("sort_order").order("created_at");
     setStores((data as any) || []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [slug]);
+  useEffect(() => { load(); }, [slug, ctxTenant?.id]);
+
 
   const addStore = async () => {
     if (!tenantId) return;

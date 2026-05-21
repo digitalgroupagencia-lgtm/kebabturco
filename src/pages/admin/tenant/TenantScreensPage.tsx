@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,6 +20,7 @@ const screens: { key: ScreenKey; label: string; icon: any }[] = [
 
 const TenantScreensPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { tenant: ctxTenant } = useSelectedTenant();
   const navigate = useNavigate();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [tenant, setTenant] = useState<{ id: string; slug: string; custom_domain: string | null } | null>(null);
@@ -30,9 +32,15 @@ const TenantScreensPage = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (!slug) return;
       setLoading(true);
-      const { data: t } = await supabase.from("tenants").select("id, slug, custom_domain").eq("slug", slug).maybeSingle();
+      let t: any = null;
+      if (slug) {
+        const r = await supabase.from("tenants").select("id, slug, custom_domain").eq("slug", slug).maybeSingle();
+        t = r.data;
+      } else if (ctxTenant?.id) {
+        const r = await supabase.from("tenants").select("id, slug, custom_domain").eq("id", ctxTenant.id).maybeSingle();
+        t = r.data;
+      }
       if (!t) { setLoading(false); return; }
       setTenant(t as any);
       const { data: s } = await supabase.from("stores").select("id").eq("tenant_id", t.id).order("sort_order").limit(1).maybeSingle();
@@ -43,7 +51,8 @@ const TenantScreensPage = () => {
       setLoading(false);
     };
     load();
-  }, [slug]);
+  }, [slug, ctxTenant?.id]);
+
 
   const save = async () => {
     if (!storeId || !config) return;
