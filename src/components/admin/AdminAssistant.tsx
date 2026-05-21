@@ -9,14 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "¿Cómo configuro la impresora?",
-  "¿Cómo cambio la cor de la barra superior?",
-  "¿Cómo activo Apple Pay?",
-  "¿Cómo subo un banner promocional?",
+  "Liste meus restaurantes e domínios",
+  "Muda a cor da barra superior do Kebab Turco pra #8B1A1A",
+  "Desativa o Apple Pay do Kebab Turco",
+  "Ativa só español e english no totem do Kebab Turco",
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 
 export default function AdminAssistant() {
   const [open, setOpen] = useState(false);
@@ -63,14 +63,19 @@ export default function AdminAssistant() {
     if (convId) await persistMessage(convId, "user", text);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_ANON}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ messages: next }),
       });
+
 
       if (!resp.ok || !resp.body) {
         const j = await resp.json().catch(() => ({}));
@@ -152,9 +157,10 @@ export default function AdminAssistant() {
                 <Sparkles className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-sm leading-tight truncate">Asistente EL REY</p>
-                <p className="text-[11px] opacity-80 leading-tight">Especialista en tu sistema</p>
+                <p className="font-bold text-sm leading-tight truncate">Assistente Admin Master</p>
+                <p className="text-[11px] opacity-80 leading-tight">Edita e configura o sistema por você</p>
               </div>
+
             </div>
             <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0">
               <X className="w-4 h-4" />
@@ -165,8 +171,9 @@ export default function AdminAssistant() {
             {messages.length === 0 && (
               <div className="space-y-3">
                 <div className="bg-card border rounded-2xl p-3 text-sm text-muted-foreground">
-                  Soy tu guía experto. Pregúntame cómo configurar la impresora, los pagos, los banners, los colores o cualquier función del sistema.
+                  Sou seu co-piloto. Posso **executar mudanças** no sistema: cores do totem, métodos de pagamento, idiomas, banners, planos. Se for algo de código ou layout, gero um pedido pronto pra você colar no Lovable.
                 </div>
+
                 <div className="space-y-2">
                   {SUGGESTIONS.map((s) => (
                     <button
@@ -220,7 +227,7 @@ export default function AdminAssistant() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pregunta cualquier cosa…"
+              placeholder="Peça qualquer coisa… (ex: muda a cor da barra)"
               disabled={loading}
               className="flex-1"
             />
