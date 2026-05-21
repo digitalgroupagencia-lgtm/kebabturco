@@ -55,7 +55,7 @@ const OrderTypeScreen = () => {
   const enabled: Array<{ key: "here" | "takeaway" | "delivery"; label: string; sub: string; icon: string | null | undefined; Fallback: any; tint: string }> = [];
   if (opts.dine_in) enabled.push({ key: "here", label: t("eatHere"), sub: t("eatHereSub"), icon: iconDineIn, Fallback: UtensilsCrossed, tint: "bg-primary/10 text-primary" });
   if (opts.takeaway) enabled.push({ key: "takeaway", label: t("takeaway"), sub: t("takeawaySub"), icon: iconTakeaway, Fallback: ShoppingBag, tint: "bg-accent/20 text-accent-foreground" });
-  if (opts.delivery) enabled.push({ key: "delivery", label: "A domicilio", sub: "Entrega en tu dirección", icon: iconDelivery, Fallback: Bike, tint: "bg-success/15 text-success" });
+  if (opts.delivery) enabled.push({ key: "delivery", label: t("delivery"), sub: t("deliverySub"), icon: iconDelivery, Fallback: Bike, tint: "bg-success/15 text-success" });
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative">
