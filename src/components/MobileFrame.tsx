@@ -27,16 +27,16 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
       </div>
 
       {/* Desktop: moldura de celular */}
-      <div className="hidden md:flex min-h-screen w-full items-center justify-center bg-neutral-900 p-6">
+      <div className="hidden md:flex h-[100dvh] w-full items-center justify-center bg-neutral-900 p-6 overflow-hidden">
         <div
           className="relative bg-black rounded-[3rem] shadow-2xl"
-          style={{ width: "420px", height: "880px", padding: "14px" }}
+          style={{ width: "420px", height: "min(880px, calc(100dvh - 3rem))", padding: "14px" }}
         >
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20" />
           <div className="relative w-full h-full overflow-hidden rounded-[2.3rem] bg-background">
-            {/* Sem scroll externo: cada tela do totem gerencia o próprio scroll
-                interno, garantindo que headers sticky permaneçam fixos. */}
-            <div className="w-full h-full overflow-hidden">
+            {/* Scroll externo de segurança no desktop: garante acesso a qualquer tela
+                mesmo quando uma tela interna não possui seu próprio container rolável. */}
+            <div className="w-full h-full overflow-y-auto overscroll-contain">
               {children}
             </div>
           </div>
