@@ -5,7 +5,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
 import { MapPin, ChevronRight, Store as StoreIcon } from "lucide-react";
-import logoFallback from "@/assets/elrey-logo.png";
+
 
 const TITLE: Record<string, string> = {
   pt: "Escolha a unidade",
@@ -32,7 +32,7 @@ const StoreSelectionScreen = () => {
     (isDark && ((settings as any)?.logo_order_type_dark_url || (settings as any)?.logo_main_dark_url)) ||
     (settings as any)?.logo_order_type_url ||
     settings?.logo_main_url ||
-    logoFallback;
+    null;
   const brandName = settings?.company_name || "EL REY";
 
   const handleSelect = (id: string) => {
@@ -46,10 +46,12 @@ const StoreSelectionScreen = () => {
         <ThemeToggle />
       </div>
 
-      <div className="flex flex-col items-center pt-12 pb-6 px-6">
-        <div className="w-full max-w-[240px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-          <img src={logo} alt={brandName} className="w-full h-full object-contain" />
-        </div>
+      <div className="flex flex-col items-center pt-12 pb-6 px-6 min-h-[200px]">
+        {logo && (
+          <div className="w-full max-w-[240px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+            <img src={logo} alt={brandName} className="w-full h-full object-contain" />
+          </div>
+        )}
       </div>
 
       <div className="px-6 text-center">

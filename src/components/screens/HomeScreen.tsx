@@ -63,44 +63,37 @@ const HomeScreen = () => {
 
   return (
     <div className={`h-[100dvh] md:h-full flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
-      {/* Header premium: gradiente refinado + cantinhos arredondados (sticky) */}
+      {/* Header premium: somente a logomarca horizontal */}
       <header
-        className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+        className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-4 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
       >
-        {/* Glow decorativo sutil */}
         <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
 
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="flex flex-col min-w-0 flex-1">
-            {/* Logomarca horizontal — protagonista do header */}
+        <div className="relative flex items-center justify-between gap-3 min-h-[48px]">
+          <div className="flex items-center min-w-0 flex-1">
             {headerLogo ? (
               <img
                 src={headerLogo}
-                alt={settings?.company_name || "Restaurante"}
-                className="h-9 sm:h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
+                alt={settings?.company_name || ""}
+                className="h-11 sm:h-12 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
                 draggable={false}
               />
             ) : (
               <span className="text-lg font-black uppercase leading-none truncate">
-                {settings?.company_name || "Restaurante"}
+                {settings?.company_name || ""}
               </span>
             )}
-            {/* Título secundário — agora tipo de pedido em destaque */}
-            <h1 className="text-[15px] sm:text-[16px] font-black tracking-[0.18em] uppercase leading-none mt-2 truncate">
-              {orderType === "takeaway" ? t("takeaway") : t("eatHere")}
-            </h1>
           </div>
 
-          {/* Status "Abierto" — mantido à direita */}
-          <div className="flex flex-col items-end gap-1.5 shrink-0 self-start mt-1">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
               </span>
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
             </div>
             <ThemeToggle variant="onColor" className="w-8 h-8 shadow-none" />
           </div>
