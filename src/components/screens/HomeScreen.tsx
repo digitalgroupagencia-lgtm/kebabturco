@@ -212,7 +212,9 @@ const HomeScreen = () => {
                   </div>
                 </div>
               </button>
-            ))}
+              );
+            })}
+
           </div>
         </main>
       </div>
