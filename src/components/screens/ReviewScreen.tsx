@@ -1,11 +1,21 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
+import { supabase } from "@/integrations/supabase/client";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
+
+type LangMap = Record<string, string>;
+type SuggestionConfig = {
+  enabled: boolean;
+  title: LangMap;
+  product_ids: string[];
+  button: { enabled: boolean; label: LangMap; category_id: string | null };
+};
 
 const CLEAR_LABEL: Record<string, string> = {
   pt: "Limpar pedido",
