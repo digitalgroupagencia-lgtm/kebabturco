@@ -1,7 +1,7 @@
 import {
   LayoutGrid, ShoppingBag, UtensilsCrossed, Package, BarChart3, Settings,
   Users, LogOut, Monitor, DollarSign, Palette, Image as ImageIcon, Wallet,
-  Printer, Globe, Store, Layout, Truck, UserCog,
+  Printer, Globe, Store, Layout, Truck, UserCog, BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,7 @@ const config = [
   { title: "Totem", url: "/panel/totem", icon: Monitor },
   { title: "Equipe", url: "/panel/team", icon: Users },
   { title: "Vendedores", url: "/panel/sellers", icon: UserCog },
+  { title: "Guia", url: "/panel/guide", icon: BookOpen },
   { title: "Configurações", url: "/panel/settings", icon: Settings },
 ];
 

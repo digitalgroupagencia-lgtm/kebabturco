@@ -22,7 +22,15 @@ interface TeamMember {
   role: AppRole;
   email?: string;
   full_name?: string;
+  preferred_language?: string;
 }
+
+const LANGUAGES = [
+  { value: "pt", label: "🇧🇷 Português" },
+  { value: "es", label: "🇪🇸 Español" },
+  { value: "en", label: "🇬🇧 English" },
+  { value: "fr", label: "🇫🇷 Français" },
+];
 
 const roleLabels: Record<AppRole, { label: string; color: string }> = {
   admin_master: { label: "Admin Master", color: "bg-destructive" },
@@ -45,6 +53,7 @@ const TeamPage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
+  const [newLanguage, setNewLanguage] = useState<string>("pt");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -65,7 +74,7 @@ const TeamPage = () => {
     const userIds = roles.map((r) => r.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, full_name")
+      .select("user_id, full_name, preferred_language")
       .in("user_id", userIds);
 
     const membersData: TeamMember[] = roles.map((r) => {
@@ -75,6 +84,7 @@ const TeamPage = () => {
         user_id: r.user_id,
         role: r.role,
         full_name: profile?.full_name || undefined,
+        preferred_language: (profile as any)?.preferred_language || "pt",
       };
     });
 
@@ -127,17 +137,33 @@ const TeamPage = () => {
         return;
       }
 
+      // Save preferred language on profile
+      await supabase.from("profiles").upsert(
+        { user_id: userId, full_name: newName.trim() || null, preferred_language: newLanguage } as any,
+        { onConflict: "user_id" }
+      );
+
       toast.success(`Membro adicionado como ${roleLabels[newRole].label}!`);
       setDialogOpen(false);
       setNewEmail("");
       setNewPassword("");
       setNewName("");
       setNewRole("operator");
+      setNewLanguage("pt");
       fetchMembers();
     } catch (e: any) {
       toast.error(e.message || "Erro inesperado");
     }
     setSaving(false);
+  };
+
+  const updateLanguage = async (userId: string, lang: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ user_id: userId, preferred_language: lang } as any, { onConflict: "user_id" });
+    if (error) { toast.error("Erro ao atualizar idioma"); return; }
+    toast.success("Idioma atualizado!");
+    fetchMembers();
   };
 
   const removeMember = async (member: TeamMember) => {
@@ -199,6 +225,7 @@ const TeamPage = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Papel</TableHead>
+                <TableHead>Idioma</TableHead>
                 {canManage && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
@@ -214,9 +241,7 @@ const TeamPage = () => {
                   <TableCell>
                     {canManage && m.user_id !== user?.id ? (
                       <Select value={m.role} onValueChange={(v) => updateRole(m.id, v as AppRole)}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="restaurant_admin">Admin Restaurante</SelectItem>
                           <SelectItem value="operator">Operador</SelectItem>
@@ -225,6 +250,18 @@ const TeamPage = () => {
                       </Select>
                     ) : (
                       <Badge className={roleLabels[m.role].color}>{roleLabels[m.role].label}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {canManage ? (
+                      <Select value={m.preferred_language || "pt"} onValueChange={(v) => updateLanguage(m.user_id, v)}>
+                        <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm">{LANGUAGES.find((l) => l.value === m.preferred_language)?.label || "🇧🇷 Português"}</span>
                     )}
                   </TableCell>
                   {canManage && (
@@ -240,7 +277,7 @@ const TeamPage = () => {
               ))}
               {members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     Nenhum membro cadastrado.
                   </TableCell>
                 </TableRow>
@@ -274,15 +311,23 @@ const TeamPage = () => {
             <div>
               <Label>Papel</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="restaurant_admin">Admin Restaurante</SelectItem>
                   <SelectItem value="operator">Operador</SelectItem>
                   <SelectItem value="kitchen">Cozinha</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Idioma do sistema *</Label>
+              <Select value={newLanguage} onValueChange={setNewLanguage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Idioma em que este membro verá o painel.</p>
             </div>
           </div>
           <DialogFooter>
