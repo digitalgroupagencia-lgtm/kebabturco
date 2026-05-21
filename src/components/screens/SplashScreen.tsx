@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import elreyLogo from "@/assets/elrey-logo.png";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
-  const { settings } = useBranding();
+  const { settings, loading: brandingLoading } = useBranding();
   const { activeLangs, t } = useLanguage();
   const { theme } = useTheme();
+
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
 
@@ -18,8 +18,9 @@ const SplashScreen = () => {
   const logo =
     (isDark && (settings as any)?.logo_main_dark_url) ||
     settings?.logo_main_url ||
-    elreyLogo;
-  const brandName = settings?.company_name || "EL REY";
+    null;
+  const brandName = settings?.company_name || "";
+
 
   useEffect(() => {
     const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
@@ -51,15 +52,22 @@ const SplashScreen = () => {
         backgroundImage: `radial-gradient(circle at 20% 20%, hsl(var(--primary)) 0, transparent 40%), radial-gradient(circle at 80% 80%, hsl(var(--accent)) 0, transparent 40%)`,
       }} />
 
-      <div className="flex flex-col items-center animate-scale-in">
-        <img
-          src={logo}
-          alt={brandName}
-          className="w-40 h-40 object-contain drop-shadow-xl mb-6"
-        />
-        <h1 className="text-3xl font-black text-foreground tracking-[0.15em]">{brandName}</h1>
-        <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">{t("splashTagline")}</p>
+      <div className="flex flex-col items-center animate-scale-in min-h-[14rem]">
+        {!brandingLoading && logo && (
+          <img
+            src={logo}
+            alt={brandName}
+            className="w-40 h-40 object-contain drop-shadow-xl mb-6"
+          />
+        )}
+        {!brandingLoading && brandName && (
+          <h1 className="text-3xl font-black text-foreground tracking-[0.15em]">{brandName}</h1>
+        )}
+        {!brandingLoading && (
+          <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">{t("splashTagline")}</p>
+        )}
       </div>
+
 
       <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-32 h-1 rounded-full bg-secondary overflow-hidden">
         <div className="splash-shimmer absolute inset-0" />

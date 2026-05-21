@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag, Languages, ListOrdered } from "lucide-react";
+import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag, Bike, Languages, ListOrdered } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Loader2 } from "lucide-react";
@@ -21,6 +21,8 @@ const BrandingPage = () => {
     logo_secondary_url: useRef<HTMLInputElement>(null),
     icon_dine_in_url: useRef<HTMLInputElement>(null),
     icon_takeaway_url: useRef<HTMLInputElement>(null),
+    icon_delivery_url: useRef<HTMLInputElement>(null),
+
     banner_home_url: useRef<HTMLInputElement>(null),
     logo_language_url: useRef<HTMLInputElement>(null),
     logo_order_type_url: useRef<HTMLInputElement>(null),
@@ -67,6 +69,8 @@ const BrandingPage = () => {
       banner_home_url: s.banner_home_url,
       icon_dine_in_url: s.icon_dine_in_url,
       icon_takeaway_url: s.icon_takeaway_url,
+      icon_delivery_url: (s as any).icon_delivery_url,
+
       logo_language_url: (s as any).logo_language_url,
       logo_order_type_url: (s as any).logo_order_type_url,
       logo_main_dark_url: (s as any).logo_main_dark_url,
@@ -195,8 +199,10 @@ const BrandingPage = () => {
             <CardContent className="space-y-4">
               <ImageField label="Comer en el local" field="icon_dine_in_url" icon={UtensilsCrossed} dimensions="500×500 px" />
               <ImageField label="Para llevar" field="icon_takeaway_url" icon={ShoppingBag} dimensions="500×500 px" />
+              <ImageField label="A domicilio" field={"icon_delivery_url" as keyof Settings} icon={Bike} dimensions="500×500 px" />
             </CardContent>
           </Card>
+
 
           <Card>
             <CardHeader><CardTitle className="text-lg">Paleta de colores</CardTitle></CardHeader>
