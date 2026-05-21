@@ -299,7 +299,7 @@ const PaymentScreen = () => {
               <div className={`px-4 py-4 border-t border-border ${showError === "address" ? "bg-destructive/5 animate-pulse" : ""}`}>
                 <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
-                  Dirección (calle) <span className="text-destructive">*</span>
+                  {t("addressStreet")} <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
