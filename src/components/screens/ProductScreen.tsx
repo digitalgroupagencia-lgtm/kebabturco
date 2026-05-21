@@ -442,6 +442,22 @@ const ProductScreen = () => {
           </section>
         )}
 
+        <section>
+          <div className="mb-2.5 flex items-baseline justify-between">
+            <h3 className="text-[17px] font-black text-foreground">Observación</h3>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Opcional</span>
+          </div>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, 200))}
+            placeholder="Ej: sin gelo, bien hecho, sin sal…"
+            rows={2}
+            maxLength={200}
+            className="w-full rounded-2xl border border-border bg-card px-3.5 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          <div className="text-right text-[10px] text-muted-foreground mt-1 tabular-nums">{note.length}/200</div>
+        </section>
+
         <section className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 mb-2">
           <span className="text-[15px] font-black text-foreground">Cantidad</span>
           <QuantitySelector value={quantity} onChange={setQuantity} min={1} variant="compact" />
