@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Copy, ExternalLink, Link2, Monitor, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
 
-const linkBlocks = (origin: string) => [
+const linkBlocks = (origin: string, tenantParam: string) => [
   {
     icon: Monitor,
     color: "text-primary",
     title: "Totem / App do cliente",
     desc: "Link público que o cliente acessa para fazer pedidos (cardápio, totem, mesas).",
-    url: `${origin}/`,
+    url: `${origin}/${tenantParam}`,
   },
   {
     icon: ShieldCheck,
@@ -39,11 +39,13 @@ const linkBlocks = (origin: string) => [
 export default function TenantLinksPage() {
   const { tenant } = useSelectedTenant();
 
-  // Prefere domínio próprio se configurado
+  // Prefere domínio próprio se configurado. Sem domínio próprio, o app precisa do caminho do tenant
+  // para não cair no projeto base/demo.
   const origin =
     (tenant?.custom_domain ? `https://${tenant.custom_domain}` : window.location.origin).replace(/\/$/, "");
+  const tenantPath = tenant?.custom_domain ? "" : (tenant?.slug || "");
 
-  const links = linkBlocks(origin);
+  const links = linkBlocks(origin, tenantPath);
 
   const copy = (url: string) => {
     navigator.clipboard.writeText(url);

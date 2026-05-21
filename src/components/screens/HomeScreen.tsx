@@ -4,10 +4,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { products, categories } from "@/data/products";
+import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus } from "lucide-react";
-import elreyLogoFallback from "@/assets/elrey-logo-horizontal.png";
 import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 
@@ -17,29 +16,34 @@ const HomeScreen = () => {
   const { totalItems, orderType } = useCart();
   const { settings } = useBranding();
   const { theme } = useTheme();
+  const { categories, products, loading } = useMenuData();
   const isDark = theme === "dark";
   const headerLogo =
-    (isDark && ((settings as any)?.logo_secondary_dark_url || (settings as any)?.logo_main_dark_url)) ||
-    settings?.logo_secondary_url ||
+    (isDark && ((settings as any)?.logo_main_dark_url || (settings as any)?.logo_secondary_dark_url)) ||
     settings?.logo_main_url ||
-    elreyLogoFallback;
+    settings?.logo_secondary_url ||
+    "";
 
   useEffect(() => {
-    if (!selectedCategory) {
-      setSelectedCategory("bestsellers");
+    if (loading) return;
+    const hasBestsellers = products.some((product) => product.isBestseller);
+    const availableIds = new Set([...(hasBestsellers ? ["bestsellers"] : []), ...categories.map((category) => category.id)]);
+    if (!selectedCategory || !availableIds.has(selectedCategory)) {
+      setSelectedCategory(hasBestsellers ? "bestsellers" : categories[0]?.id ?? null);
     }
-  }, [selectedCategory, setSelectedCategory]);
+  }, [categories, loading, products, selectedCategory, setSelectedCategory]);
 
   const allCategories = [
-    {
+    ...(products.some((product) => product.isBestseller) ? [{
       id: "bestsellers",
       name: { pt: "Mais vendidos", en: "Bestsellers", es: "Más vendidos", fr: "Meilleures ventes" },
       image: products.find((p) => p.isBestseller)?.image || categories[0]?.image || "",
-    },
+      icon: "",
+    }] : []),
     ...categories,
   ];
 
-  const activeCategory = selectedCategory || "bestsellers";
+  const activeCategory = selectedCategory || allCategories[0]?.id || "";
   const filteredProducts =
     activeCategory === "bestsellers"
       ? products.filter((product) => product.isBestseller)
@@ -71,12 +75,18 @@ const HomeScreen = () => {
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex flex-col min-w-0 flex-1">
             {/* Logomarca horizontal — protagonista do header */}
-            <img
-              src={headerLogo}
-              alt={settings?.company_name || "EL REY"}
-              className="h-9 sm:h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
-              draggable={false}
-            />
+            {headerLogo ? (
+              <img
+                src={headerLogo}
+                alt={settings?.company_name || "Restaurante"}
+                className="h-9 sm:h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] select-none"
+                draggable={false}
+              />
+            ) : (
+              <span className="text-lg font-black uppercase leading-none truncate">
+                {settings?.company_name || "Restaurante"}
+              </span>
+            )}
             {/* Título secundário — agora tipo de pedido em destaque */}
             <h1 className="text-[15px] sm:text-[16px] font-black tracking-[0.18em] uppercase leading-none mt-2 truncate">
               {orderType === "takeaway" ? t("takeaway") : t("eatHere")}

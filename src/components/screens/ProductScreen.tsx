@@ -3,7 +3,8 @@ import { Check, Minus, Plus } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { products, type Extra, type Size, type Variant } from "@/data/products";
+import { type Extra, type Size, type Variant } from "@/data/products";
+import { useMenuData } from "@/hooks/useMenuData";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
@@ -91,10 +92,11 @@ const ProductScreen = () => {
   };
   const { addItem, updateItem, items } = useCart();
   const { t, tProduct } = useLanguage();
+  const { products } = useMenuData();
 
   const product = products.find((item) => item.id === selectedProductId);
   const ingredientOptions = useMemo(
-    () => (product ? ingredientMap[product.category] || [] : []),
+    () => (product ? product.ingredients?.length ? product.ingredients : ingredientMap[product.category] || [] : []),
     [product],
   );
   const availableExtras = useMemo(

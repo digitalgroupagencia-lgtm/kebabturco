@@ -94,7 +94,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
         const { data } = await supabase
           .from("tenants")
           .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
-          .eq("path_slug", firstSeg)
+          .or(`path_slug.eq.${firstSeg},slug.eq.${firstSeg}`)
           .eq("use_master_domain", true)
           .eq("is_active", true)
           .maybeSingle();

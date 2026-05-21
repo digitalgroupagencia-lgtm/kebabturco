@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag } from "lucide-react";
-import { products } from "@/data/products";
+import { useMenuData } from "@/hooks/useMenuData";
 
 const CLEAR_LABEL: Record<string, string> = {
   pt: "Limpar pedido",
@@ -29,6 +29,7 @@ const ReviewScreen = () => {
   } = useOrder();
   const { items, updateQuantity, removeItem, totalPrice, orderType, clearCart } = useCart();
   const { t, tProduct, lang } = useLanguage();
+  const { products, categories } = useMenuData();
   const clearLabel = CLEAR_LABEL[lang] || CLEAR_LABEL.es;
   const confirmMsg = CONFIRM_CLEAR[lang] || CONFIRM_CLEAR.es;
 
@@ -44,13 +45,20 @@ const ReviewScreen = () => {
       const prod = products.find((p) => p.id === i.productId);
       return prod?.category;
     }));
-    const drinks = products.filter((p) => p.category === "bebidas" && !inCart.has(p.id));
-    if (!inCartCats.has("bebidas") && drinks.length > 0) {
+    const drinkCategoryIds = categories
+      .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
+      .map((category) => category.id);
+    const drinks = products.filter((p) => drinkCategoryIds.includes(p.category) && !inCart.has(p.id));
+    if (!drinkCategoryIds.some((id) => inCartCats.has(id)) && drinks.length > 0) {
       return drinks.slice(0, 4);
     }
     return products.filter((p) => p.isBestseller && !inCart.has(p.id)).slice(0, 4);
-  }, [items]);
-  const suggestingDrinks = !new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category)).has("bebidas");
+  }, [categories, items, products]);
+  const drinkCategoryIds = categories
+    .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
+    .map((category) => category.id);
+  const cartCategoryIds = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category).filter(Boolean));
+  const suggestingDrinks = !drinkCategoryIds.some((id) => cartCategoryIds.has(id));
 
   const handleEdit = (productId: string, itemId: string) => {
     // Não remove o item — passa o ID para o ProductScreen recuperar customizações
