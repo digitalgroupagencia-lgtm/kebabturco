@@ -101,6 +101,8 @@ const translations: Translations = {
   pickOption: { pt: "Escolha uma opção para continuar", en: "Pick an option to continue", es: "Elige una opción para continuar", fr: "Choisissez une option" },
   eatHereSub: { pt: "Receba na mesa após o pedido", en: "Pick up at table after order", es: "Recoge en la mesa tras el pedido", fr: "Récupérez à table" },
   takeawaySub: { pt: "Retire no balcão", en: "Pick up at counter", es: "Recoge en el mostrador", fr: "Retrait au comptoir" },
+  delivery: { pt: "A domicílio", en: "Delivery", es: "A domicilio", fr: "À domicile" },
+  deliverySub: { pt: "Entrega no seu endereço", en: "Delivered to your address", es: "Entrega en tu dirección", fr: "Livré à votre adresse" },
   // Payment
   finalStep: { pt: "Última etapa", en: "Final step", es: "Paso final", fr: "Dernière étape" },
   pay: { pt: "Pagamento", en: "Payment", es: "Pago", fr: "Paiement" },
