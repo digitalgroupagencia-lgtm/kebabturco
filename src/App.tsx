@@ -46,6 +46,7 @@ import TenantStoresPage from "./pages/admin/tenant/TenantStoresPage.tsx";
 import TenantDeliveryZonesPage from "./pages/admin/tenant/TenantDeliveryZonesPage.tsx";
 import TenantScreensPage from "./pages/admin/tenant/TenantScreensPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Install from "./pages/Install.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
@@ -68,6 +69,7 @@ const App = () => (
           {/* Acesso via subpath do domínio mestre (ex.: dominio.com/kebabturco) */}
           <Route path="/:tenantPath" element={<MobileFrame><Index /></MobileFrame>} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/install" element={<Install />} />
           <Route path="/panel" element={<PanelLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="menu" element={<MenuPage />} />
