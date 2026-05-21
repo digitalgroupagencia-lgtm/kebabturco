@@ -644,6 +644,48 @@ export type Database = {
         }
         Relationships: []
       }
+      print_jobs: {
+        Row: {
+          copies: number
+          created_at: string
+          error_message: string | null
+          id: string
+          order_id: string | null
+          printer_ip: string
+          printer_port: number
+          status: Database["public"]["Enums"]["print_job_status"]
+          store_id: string | null
+          ticket_data: string
+          updated_at: string
+        }
+        Insert: {
+          copies?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          printer_ip?: string
+          printer_port?: number
+          status?: Database["public"]["Enums"]["print_job_status"]
+          store_id?: string | null
+          ticket_data: string
+          updated_at?: string
+        }
+        Update: {
+          copies?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          printer_ip?: string
+          printer_port?: number
+          status?: Database["public"]["Enums"]["print_job_status"]
+          store_id?: string | null
+          ticket_data?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       printer_category_map: {
         Row: {
           category_id: string
@@ -687,6 +729,7 @@ export type Database = {
           last_test_at: string | null
           last_test_ok: boolean | null
           port: number
+          printer_copies: number
           printer_name: string
           store_id: string
           updated_at: string
@@ -700,6 +743,7 @@ export type Database = {
           last_test_at?: string | null
           last_test_ok?: boolean | null
           port?: number
+          printer_copies?: number
           printer_name?: string
           store_id: string
           updated_at?: string
@@ -713,6 +757,7 @@ export type Database = {
           last_test_at?: string | null
           last_test_ok?: boolean | null
           port?: number
+          printer_copies?: number
           printer_name?: string
           store_id?: string
           updated_at?: string
@@ -1601,6 +1646,15 @@ export type Database = {
         }
         Returns: Json
       }
+      enqueue_print_job: {
+        Args: {
+          _copies_override?: number
+          _order_id?: string
+          _store_id: string
+          _ticket_data: string
+        }
+        Returns: string
+      }
       get_admin_dashboard_stats: {
         Args: never
         Returns: {
@@ -1773,6 +1827,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
+      print_job_status: "pending" | "printing" | "printed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1910,6 +1965,7 @@ export const Constants = {
       order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
       payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
+      print_job_status: ["pending", "printing", "printed", "failed"],
     },
   },
 } as const
