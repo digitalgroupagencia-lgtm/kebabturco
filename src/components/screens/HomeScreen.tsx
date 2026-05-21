@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { products, categories } from "@/data/products";
+import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus } from "lucide-react";
 import elreyLogoFallback from "@/assets/elrey-logo-horizontal.png";
@@ -17,6 +17,7 @@ const HomeScreen = () => {
   const { totalItems, orderType } = useCart();
   const { settings } = useBranding();
   const { theme } = useTheme();
+  const { categories, products, loading } = useMenuData();
   const isDark = theme === "dark";
   const headerLogo =
     (isDark && ((settings as any)?.logo_secondary_dark_url || (settings as any)?.logo_main_dark_url)) ||
@@ -25,21 +26,25 @@ const HomeScreen = () => {
     elreyLogoFallback;
 
   useEffect(() => {
-    if (!selectedCategory) {
-      setSelectedCategory("bestsellers");
+    if (loading) return;
+    const hasBestsellers = products.some((product) => product.isBestseller);
+    const availableIds = new Set([...(hasBestsellers ? ["bestsellers"] : []), ...categories.map((category) => category.id)]);
+    if (!selectedCategory || !availableIds.has(selectedCategory)) {
+      setSelectedCategory(hasBestsellers ? "bestsellers" : categories[0]?.id ?? null);
     }
-  }, [selectedCategory, setSelectedCategory]);
+  }, [categories, loading, products, selectedCategory, setSelectedCategory]);
 
   const allCategories = [
-    {
+    ...(products.some((product) => product.isBestseller) ? [{
       id: "bestsellers",
       name: { pt: "Mais vendidos", en: "Bestsellers", es: "Más vendidos", fr: "Meilleures ventes" },
       image: products.find((p) => p.isBestseller)?.image || categories[0]?.image || "",
-    },
+      icon: "",
+    }] : []),
     ...categories,
   ];
 
-  const activeCategory = selectedCategory || "bestsellers";
+  const activeCategory = selectedCategory || allCategories[0]?.id || "";
   const filteredProducts =
     activeCategory === "bestsellers"
       ? products.filter((product) => product.isBestseller)
