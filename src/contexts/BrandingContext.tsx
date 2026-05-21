@@ -112,8 +112,10 @@ function applyDynamicManifest(s: CompanySettings) {
       document.head.appendChild(m);
     }
 
-    const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeMeta) themeMeta.content = themeColor;
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
+      m.content = themeColor;
+    });
+
   } catch (_e) {
     // ignore
   }
