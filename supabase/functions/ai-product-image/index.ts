@@ -63,23 +63,44 @@ Deno.serve(async (req) => {
 
     const prompt = `${name}. ${description}. ${stylePrompt}. The dish must clearly show the ingredients mentioned. High detail, sharp focus, no text, no watermark.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-      }),
-    });
+    let imgB64: string | undefined;
+    let lastErrText = "";
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const variantPrompt =
+        attempt === 0
+          ? prompt
+          : `${prompt} IMPORTANT: respond ONLY with the generated image, no text.`;
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [{ role: "user", content: variantPrompt }],
+          modalities: ["image", "text"],
+        }),
+      });
 
-    if (aiResp.status === 429) return new Response(JSON.stringify({ error: "Limite de uso atingido." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (aiResp.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados em Lovable AI." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!aiResp.ok) throw new Error("Image AI error: " + (await aiResp.text()));
+      if (aiResp.status === 429) return new Response(JSON.stringify({ error: "Limite de uso atingido. Tente novamente em alguns segundos." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (aiResp.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados em Lovable AI." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!aiResp.ok) {
+        lastErrText = await aiResp.text();
+        console.error("AI gateway error", aiResp.status, lastErrText);
+        continue;
+      }
 
-    const aiJson = await aiResp.json();
-    const imgB64: string | undefined = aiJson.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!imgB64) throw new Error("Sem imagem na resposta");
+      const aiJson = await aiResp.json();
+      imgB64 = aiJson.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (imgB64) break;
+      console.warn(`Tentativa ${attempt + 1}: sem imagem na resposta, retrying...`);
+    }
+
+    if (!imgB64) {
+      return new Response(
+        JSON.stringify({ error: "A IA não conseguiu gerar a imagem agora. Tente novamente em alguns segundos." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
 
     const base64 = imgB64.split(",")[1] ?? imgB64;
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
