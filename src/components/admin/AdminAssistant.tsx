@@ -63,14 +63,19 @@ export default function AdminAssistant() {
     if (convId) await persistMessage(convId, "user", text);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_ANON}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ messages: next }),
       });
+
 
       if (!resp.ok || !resp.body) {
         const j = await resp.json().catch(() => ({}));
