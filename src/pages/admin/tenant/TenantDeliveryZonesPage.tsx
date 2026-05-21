@@ -55,7 +55,7 @@ const TenantDeliveryZonesPage = () => {
     setZones((data as any) || []);
   };
 
-  useEffect(() => { load(); }, [slug]);
+  useEffect(() => { load(); }, [slug, ctxTenant?.id]);
   useEffect(() => { if (storeId) loadZones(storeId); }, [storeId]);
 
   const addZone = async () => {
