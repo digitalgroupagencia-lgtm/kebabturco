@@ -64,7 +64,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <div className={`h-[100dvh] md:h-full flex flex-col bg-background ${totalItems > 0 ? "pb-[72px]" : ""}`}>
+    <div className={`h-[100dvh] md:h-full flex flex-col bg-background overflow-hidden ${totalItems > 0 ? "pb-[72px]" : ""}`}>
       {/* Header premium: somente a logomarca horizontal */}
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-4 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
@@ -102,7 +102,7 @@ const HomeScreen = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <aside className="w-[108px] min-w-[108px] bg-secondary/40 overflow-y-auto shrink-0 md:[&::-webkit-scrollbar]:hidden">
           <div className="flex flex-col gap-2.5 px-1.5 py-3">
             {allCategories.map((category) => {
@@ -139,7 +139,7 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto bg-background md:scrollbar-thin">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
           {/* Banner fixo dentro da área rolável; produtos passam por trás */}
           <div className="sticky top-0 z-20 px-3 pt-3">
             <PromoBannerCarousel />

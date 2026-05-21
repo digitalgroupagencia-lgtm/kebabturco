@@ -76,7 +76,7 @@ const ReviewScreen = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in flex flex-col">
+    <div className="relative h-[100dvh] md:h-full min-h-0 bg-secondary/20 animate-fade-in flex flex-col overflow-hidden">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
@@ -84,7 +84,7 @@ const ReviewScreen = () => {
         sticky
       />
 
-      <div className="px-4 pt-4 pb-2 flex flex-col gap-3">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-4 pb-4 flex flex-col gap-3">
         {/* Tipo de pedido + Mesa */}
         <div className="bg-card rounded-3xl border border-border shadow-card overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border">
@@ -256,10 +256,7 @@ const ReviewScreen = () => {
 
       {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}
       {items.length > 0 && (
-        <div
-          className="sticky left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]"
-          style={{ bottom: 0 }}
-        >
+        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           <div className="flex items-end justify-between mb-2.5 px-1">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("total")}</p>
