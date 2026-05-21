@@ -216,7 +216,10 @@ const PaymentScreen = () => {
               })),
               removed: i.removedIngredients,
             })),
-            total: totalPrice,
+            deliveryFee: orderType === "delivery" ? deliveryFee : 0,
+            subtotal: totalPrice,
+            total: grandTotal,
+
           },
         });
       } catch (_e) {
