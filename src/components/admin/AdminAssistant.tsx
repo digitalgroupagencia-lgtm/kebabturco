@@ -171,8 +171,9 @@ export default function AdminAssistant() {
             {messages.length === 0 && (
               <div className="space-y-3">
                 <div className="bg-card border rounded-2xl p-3 text-sm text-muted-foreground">
-                  Soy tu guía experto. Pregúntame cómo configurar la impresora, los pagos, los banners, los colores o cualquier función del sistema.
+                  Sou seu co-piloto. Posso **executar mudanças** no sistema: cores do totem, métodos de pagamento, idiomas, banners, planos. Se for algo de código ou layout, gero um pedido pronto pra você colar no Lovable.
                 </div>
+
                 <div className="space-y-2">
                   {SUGGESTIONS.map((s) => (
                     <button
