@@ -317,54 +317,35 @@ const ProductScreen = () => {
               <h3 className="text-[17px] font-black text-foreground">Personaliza tu pedido</h3>
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Ingredientes</span>
             </div>
-            <p className="text-[12px] text-muted-foreground mb-2">Quita o añade más (+{BASE_INGREDIENT_EXTRA_PRICE.toFixed(2)}€ cada extra)</p>
-            <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card overflow-hidden">
+            <p className="text-[12px] text-muted-foreground mb-2">Toca para quitar lo que no quieras</p>
+            <ul className="grid grid-cols-2 gap-2">
               {ingredientOptions.map((ingredient) => {
-                const qty = ingredients.get(ingredient) ?? 1;
-                const removed = qty <= 0;
-                const extra = qty > 1 ? qty - 1 : 0;
+                const isRemoved = removed.has(ingredient);
                 return (
-                  <li key={ingredient} className="flex items-center gap-3 px-3.5 py-2.5">
-                    <span className={`text-[22px] leading-none shrink-0 ${removed ? "grayscale opacity-40" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-[15px] font-semibold ${removed ? "text-muted-foreground line-through" : "text-foreground"}`}>{ingredient}</div>
-                      <div className="text-[11px] tabular-nums mt-0.5">
-                        {removed ? (
-                          <span className="text-destructive font-bold">Sin {ingredient.toLowerCase()}</span>
-                        ) : extra > 0 ? (
-                          <span className="text-success font-bold">+{(extra * BASE_INGREDIENT_EXTRA_PRICE).toFixed(2)}€ ({extra} extra)</span>
-                        ) : (
-                          <span className="text-muted-foreground">Incluido</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          const next = new Map(ingredients);
-                          next.set(ingredient, Math.max(0, qty - 1));
-                          setIngredients(next);
-                        }}
-                        disabled={qty <= 0}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform ${qty > 0 ? "bg-destructive text-destructive-foreground" : "border border-border text-foreground"}`}
-                        aria-label="Quitar"
-                      >
-                        <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      </button>
-                      <span className="text-[14px] font-bold tabular-nums w-4 text-center text-foreground">{qty}</span>
-                      <button
-                        onClick={() => {
-                          const next = new Map(ingredients);
-                          next.set(ingredient, Math.min(4, qty + 1));
-                          setIngredients(next);
-                        }}
-                        disabled={qty >= 4}
-                        className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 bg-success text-success-foreground"
-                        aria-label="Añadir"
-                      >
-                        <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      </button>
-                    </div>
+                  <li key={ingredient}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new Set(removed);
+                        if (isRemoved) next.delete(ingredient);
+                        else next.add(ingredient);
+                        setRemoved(next);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 transition-all active:scale-[0.97] ${
+                        isRemoved
+                          ? "border-destructive bg-destructive/10"
+                          : "border-success bg-success/10"
+                      }`}
+                      aria-pressed={!isRemoved}
+                    >
+                      <span className={`text-[20px] leading-none shrink-0 ${isRemoved ? "grayscale opacity-50" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
+                      <span className={`flex-1 text-left text-[13px] font-bold leading-tight ${isRemoved ? "text-destructive line-through" : "text-success"}`}>
+                        {ingredient}
+                      </span>
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isRemoved ? "bg-destructive text-destructive-foreground" : "bg-success text-success-foreground"}`}>
+                        {isRemoved ? <X className="w-3.5 h-3.5" strokeWidth={3} /> : <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                      </span>
+                    </button>
                   </li>
                 );
               })}
