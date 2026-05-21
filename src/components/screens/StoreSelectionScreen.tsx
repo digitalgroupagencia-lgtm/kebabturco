@@ -66,9 +66,15 @@ const StoreSelectionScreen = () => {
             onClick={() => handleSelect(s.id)}
             className="group relative overflow-hidden flex items-center gap-4 p-4 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation text-left"
           >
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-20 h-20 flex items-center justify-center shrink-0">
               {s.image_url ? (
-                <img src={s.image_url} alt={s.name} className="w-full h-full object-cover" loading="lazy" />
+                <img
+                  src={s.image_url}
+                  alt={s.name}
+                  className="w-full h-full object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.25)]"
+                  loading="lazy"
+                  draggable={false}
+                />
               ) : (
                 <StoreIcon className="w-9 h-9 text-primary" strokeWidth={2.2} />
               )}
