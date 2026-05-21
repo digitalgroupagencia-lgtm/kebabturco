@@ -103,7 +103,7 @@ const HomeScreen = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[108px] min-w-[108px] bg-secondary/40 overflow-y-auto shrink-0 no-scrollbar">
+        <aside className="w-[108px] min-w-[108px] bg-secondary/40 overflow-y-auto shrink-0 md:[&::-webkit-scrollbar]:hidden">
           <div className="flex flex-col gap-2.5 px-1.5 py-3">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
