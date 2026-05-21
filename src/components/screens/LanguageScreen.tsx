@@ -54,6 +54,11 @@ const LanguageScreen = () => {
       className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
+      {/* Faixa de status bar na cor da marca */}
+      <div
+        className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
+        style={{ height: "env(safe-area-inset-top)" }}
+      />
       {/* Toggle tema — presente desde a primeira tela */}
       <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />
