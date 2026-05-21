@@ -315,7 +315,7 @@ const PaymentScreen = () => {
                 <div className={showError === "number" ? "animate-pulse" : ""}>
                   <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                     <Home className="w-3.5 h-3.5 text-primary" />
-                    Número <span className="text-destructive">*</span>
+                    {t("addressNumber")} <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
