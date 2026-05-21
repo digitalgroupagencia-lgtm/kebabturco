@@ -4,7 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 
 const CLEAR_LABEL: Record<string, string> = {
@@ -89,12 +89,12 @@ const ReviewScreen = () => {
         <div className="bg-card rounded-3xl border border-border shadow-card overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              {orderType === "here" ? <Utensils className="w-5 h-5" /> : <ShoppingBag className="w-5 h-5" />}
+              {orderType === "here" ? <Utensils className="w-5 h-5" /> : orderType === "delivery" ? <Bike className="w-5 h-5" /> : <ShoppingBag className="w-5 h-5" />}
             </div>
             <div className="flex-1">
               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">{t("modality")}</p>
               <p className="text-sm font-black text-foreground">
-                {orderType === "here" ? t("eatHere") : t("takeaway")}
+                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? "A domicilio" : t("takeaway")}
               </p>
             </div>
           </div>
