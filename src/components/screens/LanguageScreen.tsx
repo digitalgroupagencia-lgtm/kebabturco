@@ -88,8 +88,8 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      {/* Idiomas — sempre horizontal, sem moldura, ícone "solto" + label */}
-      <div className="flex-1 flex items-center justify-center px-4 py-6 w-full">
+      {/* Idiomas — horizontal, alinhado ao centro */}
+      <div className="flex items-center justify-center px-4 pb-4 w-full">
         <div
           className="flex flex-row items-start justify-center w-full max-w-md flex-nowrap"
           style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
