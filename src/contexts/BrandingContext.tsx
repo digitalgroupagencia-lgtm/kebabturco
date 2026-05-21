@@ -141,6 +141,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
     if (data) {
       setSettings(data);
       applyTheme(data);
+      applyDynamicManifest(data);
     }
     setLoading(false);
   }, [storeId]);
