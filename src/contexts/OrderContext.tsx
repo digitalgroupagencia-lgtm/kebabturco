@@ -46,10 +46,10 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
   const initialScreen: Screen = (() => {
-    if (typeof window === "undefined") return "splash";
+    if (typeof window === "undefined") return "language";
     const p = new URLSearchParams(window.location.search).get("screen");
     const valid: Screen[] = ["splash","language","storeSelect","orderType","home","product","review","payment","confirmation"];
-    return (valid.includes(p as Screen) ? (p as Screen) : "splash");
+    return (valid.includes(p as Screen) ? (p as Screen) : "language");
   })();
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
