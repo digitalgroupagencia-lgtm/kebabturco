@@ -22,7 +22,15 @@ interface TeamMember {
   role: AppRole;
   email?: string;
   full_name?: string;
+  preferred_language?: string;
 }
+
+const LANGUAGES = [
+  { value: "pt", label: "🇧🇷 Português" },
+  { value: "es", label: "🇪🇸 Español" },
+  { value: "en", label: "🇬🇧 English" },
+  { value: "fr", label: "🇫🇷 Français" },
+];
 
 const roleLabels: Record<AppRole, { label: string; color: string }> = {
   admin_master: { label: "Admin Master", color: "bg-destructive" },
@@ -45,6 +53,7 @@ const TeamPage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
+  const [newLanguage, setNewLanguage] = useState<string>("pt");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -65,7 +74,7 @@ const TeamPage = () => {
     const userIds = roles.map((r) => r.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, full_name")
+      .select("user_id, full_name, preferred_language")
       .in("user_id", userIds);
 
     const membersData: TeamMember[] = roles.map((r) => {
@@ -75,6 +84,7 @@ const TeamPage = () => {
         user_id: r.user_id,
         role: r.role,
         full_name: profile?.full_name || undefined,
+        preferred_language: (profile as any)?.preferred_language || "pt",
       };
     });
 
@@ -127,17 +137,33 @@ const TeamPage = () => {
         return;
       }
 
+      // Save preferred language on profile
+      await supabase.from("profiles").upsert(
+        { user_id: userId, full_name: newName.trim() || null, preferred_language: newLanguage } as any,
+        { onConflict: "user_id" }
+      );
+
       toast.success(`Membro adicionado como ${roleLabels[newRole].label}!`);
       setDialogOpen(false);
       setNewEmail("");
       setNewPassword("");
       setNewName("");
       setNewRole("operator");
+      setNewLanguage("pt");
       fetchMembers();
     } catch (e: any) {
       toast.error(e.message || "Erro inesperado");
     }
     setSaving(false);
+  };
+
+  const updateLanguage = async (userId: string, lang: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ user_id: userId, preferred_language: lang } as any, { onConflict: "user_id" });
+    if (error) { toast.error("Erro ao atualizar idioma"); return; }
+    toast.success("Idioma atualizado!");
+    fetchMembers();
   };
 
   const removeMember = async (member: TeamMember) => {
