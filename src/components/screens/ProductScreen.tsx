@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus, X } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,6 +9,7 @@ import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";
+import { parseIngredients } from "@/lib/parseIngredients";
 
 
 const ingredientMap: Record<string, string[]> = {
@@ -97,10 +98,14 @@ const ProductScreen = () => {
   const { products } = useMenuData();
 
   const product = products.find((item) => item.id === selectedProductId);
-  const ingredientOptions = useMemo(
-    () => (product ? product.ingredients?.length ? product.ingredients : ingredientMap[product.category] || [] : []),
-    [product],
-  );
+  const ingredientOptions = useMemo(() => {
+    if (!product) return [];
+    if (product.ingredients?.length) return product.ingredients;
+    if (ingredientMap[product.category]) return ingredientMap[product.category];
+    // Fallback: extrai da descrição
+    const desc = tProduct(product.description);
+    return parseIngredients(desc);
+  }, [product, tProduct]);
   const availableExtras = useMemo(
     () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
     [product],
@@ -115,10 +120,9 @@ const ProductScreen = () => {
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
   const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(undefined);
   const [extras, setExtras] = useState<Map<string, number>>(new Map());
-  // Mapa de ingredientes base: 0 = removido, 1 = normal (default), 2+ = porções extras (+0,50€ cada)
-  const [ingredients, setIngredients] = useState<Map<string, number>>(new Map());
+  // Set de ingredientes REMOVIDOS pelo cliente
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
-  const BASE_INGREDIENT_EXTRA_PRICE = 0.5;
 
   useEffect(() => {
     if (!product) return;
@@ -135,33 +139,23 @@ const ProductScreen = () => {
       setSelectedVariant(matchVariant ?? product.variants?.[0]);
 
       const extrasMap = new Map<string, number>();
-      const baseIngExtraMap = new Map<string, number>();
       editingItem.extras.forEach((e) => {
-        if (e.id.startsWith("base-ing:")) {
-          baseIngExtraMap.set(e.id.slice("base-ing:".length), e.quantity);
-        } else {
-          extrasMap.set(e.id, e.quantity);
-        }
+        if (!e.id.startsWith("base-ing:")) extrasMap.set(e.id, e.quantity);
       });
       setExtras(extrasMap);
 
-      const removedSet = new Set(editingItem.removedIngredients);
-      setIngredients(
-        new Map(
-          ingredientOptions.map((i) => [i, removedSet.has(i) ? 0 : 1 + (baseIngExtraMap.get(i) || 0)]),
-        ),
-      );
+      setRemoved(new Set(editingItem.removedIngredients));
       setNote(editingItem.note ?? "");
     } else {
       setQuantity(1);
       setSelectedSize(product.sizes?.[0]);
       setSelectedVariant(product.variants?.[0]);
       setExtras(new Map());
-      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, 1])));
+      setRemoved(new Set());
       setNote("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, ingredientOptions, editingItem?.id]);
+  }, [product, editingItem?.id]);
 
   if (!product) return null;
 
@@ -177,20 +171,9 @@ const ProductScreen = () => {
     return sum + (extra ? extra.price * qty : 0);
   }, 0);
 
-  // Porções extras de ingredientes base (qty > 1)
-  const baseIngredientExtras = Array.from(ingredients.entries())
-    .filter(([, qty]) => qty > 1)
-    .map(([name, qty]) => ({ name, extraQty: qty - 1 }));
-  const baseIngredientsTotal = baseIngredientExtras.reduce(
-    (sum, b) => sum + b.extraQty * BASE_INGREDIENT_EXTRA_PRICE,
-    0,
-  );
-
-  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal + baseIngredientsTotal;
+  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal;
   const totalPrice = unitPrice * quantity;
-  const removedIngredients = Array.from(ingredients.entries())
-    .filter(([, qty]) => qty <= 0)
-    .map(([name]) => name);
+  const removedIngredients = Array.from(removed);
 
   const handleAdd = () => {
     const selectedExtras = Array.from(extras.entries())
@@ -206,40 +189,31 @@ const ProductScreen = () => {
       })
       .filter(Boolean) as { id: string; name: Record<string, string>; price: number; quantity: number }[];
 
-    // Adiciona porções extras de ingredientes base como linhas de extras
-    baseIngredientExtras.forEach(({ name, extraQty }) => {
-      selectedExtras.push({
-        id: `base-ing:${name}`,
-        name: { es: `+ ${name}`, en: `+ ${name}`, pt: `+ ${name}`, fr: `+ ${name}` },
-        price: BASE_INGREDIENT_EXTRA_PRICE,
-        quantity: extraQty,
-      });
-    });
-
     const variantSuffix = selectedVariant ? ` (${selectedVariant.name.es || selectedVariant.name.en})` : "";
     const finalName = selectedVariant
       ? Object.fromEntries(Object.entries(product.name).map(([k, v]) => [k, v + variantSuffix])) as Record<string, string>
       : product.name;
 
-    const payload = {
+    const basePayload = {
       productId: product.id,
       productName: finalName,
       productImage: product.image,
       basePrice: product.price,
-      quantity,
       sizeName: selectedSize?.name || null,
       sizeAdd: selectedSize?.priceAdd || 0,
       extras: selectedExtras,
       removedIngredients,
       note: note.trim() || undefined,
       unitPrice,
-      totalPrice,
     };
 
     if (editingCartItemId) {
-      updateItem(editingCartItemId, payload);
+      updateItem(editingCartItemId, { ...basePayload, quantity, totalPrice });
     } else {
-      addItem(payload);
+      // Adiciona N itens separados (qty=1 cada) para permitir customização individual
+      for (let i = 0; i < quantity; i++) {
+        addItem({ ...basePayload, quantity: 1, totalPrice: unitPrice });
+      }
     }
 
     goBack();
@@ -343,54 +317,35 @@ const ProductScreen = () => {
               <h3 className="text-[17px] font-black text-foreground">Personaliza tu pedido</h3>
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Ingredientes</span>
             </div>
-            <p className="text-[12px] text-muted-foreground mb-2">Quita o añade más (+{BASE_INGREDIENT_EXTRA_PRICE.toFixed(2)}€ cada extra)</p>
-            <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card overflow-hidden">
+            <p className="text-[12px] text-muted-foreground mb-2">Toca para quitar lo que no quieras</p>
+            <ul className="grid grid-cols-2 gap-2">
               {ingredientOptions.map((ingredient) => {
-                const qty = ingredients.get(ingredient) ?? 1;
-                const removed = qty <= 0;
-                const extra = qty > 1 ? qty - 1 : 0;
+                const isRemoved = removed.has(ingredient);
                 return (
-                  <li key={ingredient} className="flex items-center gap-3 px-3.5 py-2.5">
-                    <span className={`text-[22px] leading-none shrink-0 ${removed ? "grayscale opacity-40" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-[15px] font-semibold ${removed ? "text-muted-foreground line-through" : "text-foreground"}`}>{ingredient}</div>
-                      <div className="text-[11px] tabular-nums mt-0.5">
-                        {removed ? (
-                          <span className="text-destructive font-bold">Sin {ingredient.toLowerCase()}</span>
-                        ) : extra > 0 ? (
-                          <span className="text-success font-bold">+{(extra * BASE_INGREDIENT_EXTRA_PRICE).toFixed(2)}€ ({extra} extra)</span>
-                        ) : (
-                          <span className="text-muted-foreground">Incluido</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          const next = new Map(ingredients);
-                          next.set(ingredient, Math.max(0, qty - 1));
-                          setIngredients(next);
-                        }}
-                        disabled={qty <= 0}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform ${qty > 0 ? "bg-destructive text-destructive-foreground" : "border border-border text-foreground"}`}
-                        aria-label="Quitar"
-                      >
-                        <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      </button>
-                      <span className="text-[14px] font-bold tabular-nums w-4 text-center text-foreground">{qty}</span>
-                      <button
-                        onClick={() => {
-                          const next = new Map(ingredients);
-                          next.set(ingredient, Math.min(4, qty + 1));
-                          setIngredients(next);
-                        }}
-                        disabled={qty >= 4}
-                        className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 bg-success text-success-foreground"
-                        aria-label="Añadir"
-                      >
-                        <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      </button>
-                    </div>
+                  <li key={ingredient}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new Set(removed);
+                        if (isRemoved) next.delete(ingredient);
+                        else next.add(ingredient);
+                        setRemoved(next);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl border-2 transition-all active:scale-[0.97] ${
+                        isRemoved
+                          ? "border-destructive bg-destructive/10"
+                          : "border-success bg-success/10"
+                      }`}
+                      aria-pressed={!isRemoved}
+                    >
+                      <span className={`text-[20px] leading-none shrink-0 ${isRemoved ? "grayscale opacity-50" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
+                      <span className={`flex-1 text-left text-[13px] font-bold leading-tight ${isRemoved ? "text-destructive line-through" : "text-success"}`}>
+                        {ingredient}
+                      </span>
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isRemoved ? "bg-destructive text-destructive-foreground" : "bg-success text-success-foreground"}`}>
+                        {isRemoved ? <X className="w-3.5 h-3.5" strokeWidth={3} /> : <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                      </span>
+                    </button>
                   </li>
                 );
               })}
