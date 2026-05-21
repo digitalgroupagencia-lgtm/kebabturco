@@ -78,6 +78,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [orderType, setOrderType] = useState<"here" | "takeaway" | "delivery" | null>(null);
 
   useEffect(() => {
+    const needsSplit = items.some((item) => item.quantity !== 1 || item.totalPrice !== item.unitPrice);
+    if (needsSplit) {
+      setItems(prev => prev.flatMap((item) => splitIntoSingleItems(item, item.id)));
+      return;
+    }
+
     localStorage.setItem("kiosk-cart", JSON.stringify(items));
   }, [items]);
 
