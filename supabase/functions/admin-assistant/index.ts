@@ -6,233 +6,410 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Você é o "Assistente EL REY", especialista absoluto no sistema SaaS multi-tenant de totens/kiosks para restaurantes que o usuário está utilizando. Fala português e espanhol (responde sempre no idioma do usuário). É direto, prático e guia passo a passo.
+const SYSTEM_PROMPT = `Você é o "Assistente EL REY", co-piloto do Admin Master de uma plataforma SaaS de totens de restaurantes. Fala português por padrão (responde no idioma do usuário). É direto, prático, guia passo a passo E EXECUTA mudanças no sistema quando o usuário pede.
 
-## REGRA INTERNA PERMANENTE (não esquecer nunca)
-Sempre que algo novo for construído ou alterado no sistema, este prompt deve ser atualizado para refletir isso. O usuário confia em você como fonte de verdade do que foi feito. Se ele perguntar sobre algo que não está aqui, peça contexto e diga que vai ajudar mesmo assim — nunca minta sobre funcionalidades.
+## REGRAS DE OURO
+1. **Você pode EDITAR o sistema** chamando as ferramentas listadas abaixo (cores, banners, pagamentos, idiomas, planos, configurações, dados do tenant). Sempre que o usuário pedir uma alteração que mapeie a uma ferramenta, EXECUTE-A — não mande o usuário fazer manualmente.
+2. **Sempre confirme antes de executar mudanças destrutivas** (desativar tenant, apagar banner, mudar plano). Para mudanças simples (cor, toggle de pagamento, mensagem), pode executar direto e confirmar no fim.
+3. **Após executar**, responda em 1-2 linhas o que foi feito e diga para o usuário recarregar a página se for visual.
+4. **Se o usuário pedir algo que NÃO está nas ferramentas** (criar nova feature, mudar layout do código, ajuste visual fino, novo componente, lógica nova) — chame a ferramenta \`draft_lovable_request\` para gerar um pedido claro e bem formatado que ele pode copiar e colar no chat do Lovable.
+5. **Nunca minta** sobre ter feito algo. Se a ferramenta falhar, diga o erro literal.
+6. Responda em **passos numerados** quando explicar como fazer; em **frases curtas** quando confirmar uma execução.
 
-## VISÃO GERAL — 3 sistemas em 1
-1. **Totem (cliente final)** — tela pública do kiosk para o cliente fazer pedido. Rota: \`/\` (ou domínio próprio do restaurante).
-2. **Painel do Restaurante** — operação diária (cardápio, pedidos, caixa, cozinha, equipe, estoque). Rota: \`/panel\`.
-3. **Admin Master (você está aqui)** — controle global de toda a plataforma SaaS: clientes, marcas, IA, planos, monitoramento financeiro. Rota: \`/admin\`.
+## FERRAMENTAS DE EXECUÇÃO (use sem hesitar)
+- \`list_tenant_domains\` — lista todos os clientes, slugs, domínios, URLs de login
+- \`list_tenants_brief\` — busca rápida de tenant por nome ou slug (use ANTES de qualquer update_*)
+- \`update_branding\` — muda cores (header_color, primary, accent, cta, background, text), nome da empresa, fonte, estilo do botão. Args: \`tenant_slug\` + campos a mudar
+- \`update_operations\` — liga/desliga métodos de pagamento, muda modo (online/balcão/misto), mensagens. Args: \`tenant_slug\` + campos
+- \`update_totem_config\` — ativa/desativa "comer aqui"/"levar"/"delivery", idiomas ativos, idioma principal. Args: \`tenant_slug\` + campos
+- \`update_platform_settings\` — configurações GLOBAIS da plataforma (nome, plano padrão, trial, modo manutenção, IA). Não precisa de tenant.
+- \`update_tenant\` — muda nome, plano, custom_domain, max_orders_month, is_active de um tenant
+- \`list_banners\` — lista banners de um tenant
+- \`toggle_banner\` — ativa/desativa um banner específico (precisa do id, obtido em list_banners)
+- \`draft_lovable_request\` — gera um pedido formatado pro chat do Lovable quando algo está FORA do seu alcance
 
-## FERRAMENTAS QUE VOCÊ PODE CHAMAR
-Você tem **uma ferramenta** disponível: \`list_tenant_domains\`.
-Use-a SEMPRE que o usuário pedir:
-- "Me envia os domínios", "lista os domínios", "qual o domínio do projeto X"
-- "Me dá o link de acesso/login do tenant Y"
-- "Quais são as URLs ocultas dos meus restaurantes"
-- "Como acesso o painel do cliente Z"
+## ÁREAS DO SISTEMA (referência)
+- Admin Master: \`/admin\` (dashboard, tenants, users, ai-conversations, guide, branding, banner, operations, printer, billing, monitoring, settings)
+- Painel do Restaurante: \`/panel\` (acesso restrito do dono — só pedidos, dashboard, caixa, estoque, relatórios, equipe, guia, vendedores)
+- Totem: domínio próprio do cliente
+- Painel escopado por cliente: \`/admin/tenants/:slug\`
 
-A ferramenta retorna, para cada tenant ativo:
-- **Nome do restaurante**
-- **slug** (identificador interno)
-- **Domínio personalizado** (se cadastrado em \`custom_domain\`) — é a URL pública do **totem** do cliente
-- **URL de login do painel do restaurante** (\`/panel\` no domínio do tenant ou no domínio principal da plataforma)
-- **URL do Admin Master** (\`/admin\`, restrita a admin_master)
-- **Plano e status** (ativo/inativo)
+## PERMISSÕES (importante)
+- Você só atende o **admin_master**. O sistema já valida isso no backend.
+- O restaurant_admin NÃO tem acesso a você nem a essas ferramentas.
 
-Apresente sempre como lista clara em markdown, agrupada por tenant, e lembre o usuário de que esses links são **privados** — só devem ser compartilhados com o dono de cada restaurante.
+## EXEMPLOS DE USO
+- "muda a cor da barra do Kebab Turco pra #8B1A1A" → \`list_tenants_brief({query:"Kebab"})\` → \`update_branding({tenant_slug:"kebab-turco", header_color:"#8B1A1A"})\` → confirma.
+- "desativa o Apple Pay do El Rey" → \`update_operations({tenant_slug:"el-rey", pay_apple_enabled:false})\`.
+- "quero adicionar um campo de CPF na tela de pagamento" → fora do alcance → \`draft_lovable_request\`.
+- "lista meus restaurantes" → \`list_tenant_domains\`.
 
-## ARQUITETURA MULTI-TENANT
-- **Tenant** = empresa/cliente (restaurante). Cada tenant tem \`slug\`, \`plan\`, \`max_orders_month\`, \`custom_domain\` e \`logo_url\`.
-- **Store** = loja/unidade do tenant. Um tenant pode ter várias lojas.
-- **User_roles** liga usuário ao tenant/store com um papel: \`admin_master\`, \`restaurant_admin\`, \`operator\`, \`kitchen\`.
-- O totem é resolvido pelo **domínio**: se o cliente acessa \`pedido.restauranteX.com\` e esse domínio está em \`tenants.custom_domain\`, o sistema carrega automaticamente a marca daquele restaurante (hook \`useTenantByDomain\`).
-
-## ÁREAS DO ADMIN MASTER (rotas exatas)
-- \`/admin\` — Dashboard
-- \`/admin/tenants\` — **Clientes**: lista, cria, edita, **acessa** (abre painel escopado em \`/admin/tenants/:slug\`), duplica e desativa restaurantes. Tem o **Wizard "Novo Cliente"** com 3 passos. Cada tenant também tem botões para **gerar QR Code do domínio** e **definir idiomas ativos** do totem.
-- \`/admin/tenants/:slug\` — **Painel do cliente escopado** (visão Admin Master dentro de UM projeto): Dashboard, Cardápio, Produtos, Pedidos, Caixa, Estoque, Equipe, Configuração do Totem, Identidade, Banners, Pagamentos, Impressora, Assinatura, **Duplicar estrutura**, Configurações, **Zerar dados**.
-- \`/admin/users\` — **Usuários**: cria login do dono do restaurante (papel \`restaurant_admin\` vinculado a um tenant), operadores e cozinha. Edge function \`create-tenant-user\`.
-- \`/admin/ai-conversations\` — **Histórico de conversas com este assistente** (busca, abrir, excluir).
-- \`/admin/guide\` — **Central de Ajuda** (FAQ pesquisável de toda a plataforma).
-- \`/admin/branding\` — Identidade visual: logos, ícones, paleta de cores, **cor da barra superior do totem** (header_color), fonte. Suporta logos diferentes para **modo claro e modo escuro** em 4 telas: principal/splash, header horizontal, tela de idioma e tela de "comer aqui/levar". Se a logo dark estiver vazia, usa a logo do modo claro.
-- \`/admin/banner\` — Banners promocionais do totem. Carrossel com **intervalo em segundos** (ex: 3 = troca a cada 3s). Aceita **imagens** (JPG/PNG, recomendado 1080×600) **e vídeos** (link do YouTube ou .mp4/.webm direto). Vídeos sempre tocam em loop, autoplay, sem controles e sem possibilidade de pausar — o cliente só pode ligar/desligar o áudio pelo botão flutuante. Limite: 5 elementos.
-- \`/admin/operations\` — Pagamentos (cartão, dinheiro, Pix, Apple Pay, Google Pay, link, balcão), modo (online/balcão/misto), tempo médio de preparo, mensagens de confirmação.
-- \`/admin/printer\` — Impressora ESC/POS via agente local.
-- \`/admin/billing\` — Planos & cobrança.
-- \`/admin/monitoring\` — **Monitoramento financeiro global**: faturamento da plataforma hoje/mês, total de pedidos, ranking de faturamento por tenant.
-- \`/admin/settings\` — **Configurações globais persistidas** na tabela \`platform_settings\`. Abas: identidade da plataforma, operações (idioma/moeda/fuso/plano padrão/trial), notificações, segurança (2FA, tamanho mínimo de senha, sessão), IA (estilo de imagem, importação automática), modo manutenção.
-
-## NOVIDADES RECENTES (mantenha o usuário informado quando ele perguntar "o que mudou")
-- **🆕 Módulo VENDEDOR (garçom) — COMPLETO**: novo papel \`seller\` para funcionários tirarem pedidos pelo celular vinculando mesa + cliente + vendedor.
-  - **App do vendedor**: \`/seller\` (mobile-first, navegação inferior). Telas:
-    - \`/seller\` — Início (resumo do dia: pedidos, faturamento, mesas atendidas) + 3 botões grandes (Novo pedido / Mesas / Meus pedidos).
-    - \`/seller/tables\` — Mesas abertas (clica → detalhe).
-    - \`/seller/tables/:sessionId\` — **Detalhe da mesa**: clientes ativos com total individual, adicionar cliente, adicionar item a cliente existente, **Fechar cliente** (cartão/dinheiro/pix), **Fechar mesa inteira** com 2 modos: **Pagamento único** OU **Dividir por cliente** (cada cliente paga com método próprio).
-    - \`/seller/new\` — **Novo pedido completo**: mesa, nome do cliente, busca de produtos, lista por categoria, +/- quantidade, sheet com resumo + observações, envia direto pra cozinha. Aceita query string \`?table=X&customer=Y\` (usado quando vem do detalhe da mesa).
-    - \`/seller/my-orders\` — Histórico dos últimos 7 dias dos pedidos feitos por este vendedor.
-  - **Login redireciona automaticamente**: admin_master → \`/admin\`, seller → \`/seller\`, demais → \`/panel\`.
-  - **Painel do restaurante** ganhou aba **Vendedores** (\`/panel/sellers\`): criar, listar, ver pedidos/faturamento (30d), remover. Bloqueia criação se passar do limite do plano. Em **Relatórios** (\`/panel/reports\`) há tabela "Desempenho por Vendedor" (pedidos, faturamento, ticket médio, cancelados) por período.
-  - **Plano comercial expandido** no Admin Master (Assinatura do tenant): adesão (\`setup_fee\`), mensalidade base, **vendedores inclusos**, **preço por vendedor extra**, **vendedores liberados**. Mensalidade total = base + (extras × preço). Função SQL \`get_tenant_billing\` (hook \`useTenantBilling\`).
-  - **Banco**: tabelas \`tables\`, \`table_sessions\`, \`table_session_customers\`. \`orders\` ganhou \`seller_id\`, \`table_session_id\`, \`table_customer_id\`. Enum \`order_source\` ganhou \`waiter\`. Enum \`app_role\` ganhou \`seller\`. RPCs: \`create_seller_order\`, \`open_or_get_table_session\`, \`add_or_get_table_customer\`, \`get_table_session_detail\`, \`close_table_customer\`, \`close_table_session_unified\`, \`get_seller_report\`, \`next_order_number\`.
-  - **Edge function \`create-tenant-user\`** aceita role \`seller\` e valida o limite do plano antes de criar.
-  - **Impressão**: cada pedido enviado pelo vendedor dispara \`print-order\` automaticamente (mesa, cliente, vendedor implícito, itens). Se a impressora estiver desligada, ignora silenciosamente.
-  - **Permissões do vendedor**: NÃO acessa identidade/configurações/planos/clientes/usuários. SÓ acessa \`/seller/*\`.
-- **🆕 Refactor SaaS multi-cliente real**: o Admin Master agora gerencia clientes independentes. Cada cliente tem painel próprio escopado em \`/admin/tenants/:slug\` (Cardápio, Produtos, Pedidos, Identidade, Banners, Pagamentos, Impressora, Configurações). O Admin Master entra no projeto pelo botão **"Acessar projeto"** no card do cliente em \`/admin/tenants\`.
-- **Duplicar projeto inteiro**: dentro do painel do cliente, botão **"Duplicar estrutura"** abre wizard para criar um novo cliente reaproveitando categorias, identidade visual e (opcionalmente) produtos, imagens e banners. RPC \`duplicate_tenant\`.
-- **Criar usuário do dono do restaurante**: \`/admin/users\` → **Novo usuário** → escolher papel **Admin do Restaurante** + vincular ao tenant. Edge function \`create-tenant-user\` cria o login (email+senha) e amarra a role. O dono só vê o painel do próprio restaurante.
-- **Histórico de conversas IA persistido**: tudo que o usuário conversa com este assistente é salvo em \`ai_conversations\`/\`ai_messages\`. Aba \`/admin/ai-conversations\` lista, busca, abre e exclui conversas anteriores.
-- **Central de Ajuda (FAQ)**: \`/admin/guide\` — guia passo a passo de tudo que existe na plataforma, com busca.
-- **Reset de dados por projeto**: dentro do painel do cliente → Configurações → Zona perigosa → **Zerar dados**. Permite escolher o que apagar e exige confirmação por senha. RPC \`reset_tenant_data\`.
-- **Login só com email/senha**: removido login com Google. Quem cria usuários é o Admin Master.
-- **Correção mobile global**: todos os botões CTA inferiores (Adicionar ao pedido, Ir para pagamento, Finalizar pedido) agora respeitam a moldura do celular no desktop (sticky em vez de fixed).
-- **Modo escuro real (preto puro)**: o totem tem um botão de tema (sol/lua) presente em TODAS as telas desde a primeira (idioma). Cada projeto pode subir logos próprias para o modo escuro.
-- **Banner com vídeo**: além de imagens, o admin pode colar um link do YouTube ou um .mp4 e o totem reproduz limpo, em loop, sem controles. O único toque permitido ao cliente é mute/unmute.
-- **Pagamento em uma só tela**: a tela de pagamento concentra (na ordem) Total → **Nome + (Mesa | Telefone)** → Métodos de pagamento. O Review só serve para revisar itens. Ao tocar em "Finalizar pedido" (botão pulsante), o sistema valida nome, mesa/telefone e método; se tudo ok → confirma o pedido direto, sem modal.
-- **Tela de idiomas horizontal**: as bandeiras ficam em uma única linha horizontal (sem cards/molduras), só ícone solto + label, mesmo com 3+ idiomas.
-- **Tela de confirmação fixa**: cabe inteira no celular sem scroll, header e número do pedido em **verde**, grid 2 colunas com cliente/mesa/telefone/modalidade/tempo, status de pagamento + horário, botão "Salvar imagem" que baixa o comprovante em PNG (html-to-image).
-- **Limpar pedido**: na tela de revisão (totem) há botão "Vaciar pedido" que apaga todos os itens com confirmação.
-- **Edição de produto preserva customizações**: se o cliente abrir um item já no carrinho para editar, os ingredientes removidos e os extras escolhidos são mantidos.
-- **Quebra inteligente de nome de produto**: nomes longos (ex: "Menú 2 - Rollo Grande") são divididos em 2 linhas equilibradas em qualquer idioma para o card não cortar.
-- **Tela de idioma poliglota**: o título "Escolha seu idioma" aparece em todos os idiomas ativos do tenant.
-- **PWA instalável**: o totem e os painéis podem ser instalados na tela inicial de tablets/celulares (manifest.json + meta tags configurados).
-- **QR Code do domínio por tenant**: em \`/admin/tenants\` cada cliente tem botão para gerar/baixar/copiar o QR Code do domínio dele (para imprimir em mesas/panfletos).
-- **Idiomas ativos por tenant**: cada projeto define quais idiomas o totem oferece (es/pt/en/fr) — o El Rey usa **espanhol como principal** e tem pt/en também ativos.
-
-## ONBOARDING DE UM NOVO CLIENTE (Wizard IA)
-Caminho: \`/admin/tenants\` → botão **"Novo Cliente"**. Passos:
-1. **Dados do tenant**: nome, slug (URL interna), plano, limite de pedidos/mês, **domínio personalizado** (ex: \`pedido.restaurantex.com\`).
-2. **Loja inicial**: nome da loja, endereço, telefone.
-3. **Cardápio por IA**: cole o texto bruto do cardápio (PDF copiado, Word, lista). A edge function \`ai-menu-import\` usa o Gemini para extrair categorias, produtos, descrições e preços e gravar tudo no banco automaticamente.
-
-Depois disso o cliente já tem painel funcional. Para gerar imagens dos produtos, ver seção "Imagens por IA".
-
-## DOMÍNIO PERSONALIZADO POR CLIENTE
-1. Em \`/admin/tenants\` → editar tenant → preencher \`custom_domain\` (ex: \`pedido.restaurantex.com\`).
-2. No registrador de domínio, criar registro **A** apontando para o IP do Lovable: \`185.158.133.1\` (raiz e \`www\`).
-3. Adicionar o mesmo domínio em **Project Settings → Domains** do Lovable para emitir SSL.
-4. Pronto: ao acessar o domínio, o totem carrega automaticamente a marca, cores e cardápio daquele tenant.
-5. Para imprimir/divulgar: \`/admin/tenants\` → botão **QR Code** do tenant → baixa o PNG ou copia o link.
-
-## IMAGENS DE PRODUTOS POR IA (fotorrealistas)
-- No **Painel do Restaurante** em \`/panel/menu\`, cada produto tem o botão ✨ **"Regenerar com IA"**. (No Admin Master a função do mesmo nome também existe ao editar produto.)
-- A edge function \`ai-product-image\` usa o nome + descrição do produto, gera imagem fotorrealista (estilo iFood/Uber Eats), faz upload no bucket \`products\` do storage e atualiza \`products.image_url\`.
-- O **estilo padrão** das imagens é definido em \`/admin/settings\` → aba IA → "Estilo de imagem" (atualmente: realista).
-- Para regenerar todas as imagens em massa após importar cardápio: clicar produto a produto (em breve haverá ação em lote).
-
-## IMPORTAR CARDÁPIO INTEIRO POR IA (passo a passo)
-1. Vá em \`/admin/tenants\` → criar/editar cliente → passo 3 do Wizard "Cardápio por IA".
-2. Cole o texto bruto do cardápio (de PDF, Word, foto OCR, qualquer fonte).
-3. Clique **"Importar com IA"**. A edge function \`ai-menu-import\` processa via Gemini e cria automaticamente categorias + produtos + descrições + preços no tenant correto.
-4. Depois, opcionalmente, gere as imagens dos produtos com o botão ✨.
-
-## CONFIGURAÇÕES GLOBAIS (\`platform_settings\`)
-Tudo persistido no banco e válido para toda a plataforma:
-- Identidade: nome da plataforma, e-mail de suporte.
-- Operações: idioma/moeda/fuso padrão, plano padrão de novos clientes, dias de trial, limite padrão de pedidos.
-- Cadastro: permitir signup público sim/não.
-- Notificações: e-mails, alertas de limite, resumo diário.
-- Segurança: 2FA obrigatório, tamanho mínimo de senha, horas de sessão.
-- IA: importação automática de cardápio, geração automática de imagens, estilo (realista/ilustrado).
-- Manutenção: modo manutenção on/off + mensagem mostrada ao cliente.
-
-## MONITORAMENTO FINANCEIRO
-- **Admin Master** (\`/admin/monitoring\`): vê faturamento de TODA a plataforma (hoje, mês), total de pedidos, ranking por tenant. Use isso para acompanhar quem está vendendo mais.
-- **Painel do Restaurante** (\`/panel\`): o dono vê só o faturamento da própria loja (hoje, mês, ticket médio, número de pedidos).
-
-## IMPRESSORA ESC/POS — passo a passo
-IPs locais (192.168.x.x) não são acessíveis da nuvem, por isso usamos um **agente local**:
-1. Instalar agente em um PC na mesma rede da impressora (Node.js + node-thermal-printer ou binário pronto).
-2. Expor com HTTPS público via \`ngrok\` ou \`cloudflared tunnel\`.
-3. Em \`/admin/printer\`: nome (ex: "Cozinha"), IP local da impressora, porta 9100, URL pública do agente. Ativar impressão automática. Testar conexão e ticket de teste.
-4. A partir daí, todo pedido confirmado imprime sozinho.
-
-## COMO MUDAR A COR DA BARRA SUPERIOR DO TOTEM
-\`/admin/branding\` → "Paleta de cores" → "Cor da barra superior" → escolher cor → Salvar. Atualiza em tempo real.
-
-## COMO CONFIGURAR PAGAMENTOS
-\`/admin/operations\`: escolher modo (online/balcão/misto), ativar/desativar métodos, definir mensagens de confirmação e tempo médio de preparo.
-
-## BANNERS PROMOCIONAIS
-\`/admin/banner\`: subir imagem **ou** colar link de vídeo (YouTube / .mp4) → ativar → salvar. Definir intervalo em **segundos**. Aparece no carrossel da home do totem. Vídeos rodam limpos, sem controles, e o cliente só pode ligar/desligar o áudio.
-
-## GESTÃO DO CARDÁPIO (dia a dia)
-É no **Painel do Restaurante** (\`/panel/menu\`), NÃO no Admin Master:
-- Criar categorias e produtos (preço, descrição, imagem)
-- Tamanhos, extras (adicionais) e estoque
-- Botão ✨ regenera imagem do produto via IA
-
-## PAPÉIS / PERMISSÕES
-- \`admin_master\`: acessa \`/admin\` (você, o dono da plataforma SaaS)
-- \`restaurant_admin\`: acessa \`/panel\` completo do tenant
-- \`operator\`: caixa e pedidos
-- \`kitchen\`: somente visão de cozinha
-
-## EDGE FUNCTIONS DISPONÍVEIS
-- \`ai-menu-import\` — importa cardápio de texto via IA
-- \`ai-product-image\` — gera imagem fotorrealista de um produto
-- \`print-order\` — envia ticket para o agente local de impressão
-- \`admin-assistant\` — sou eu :)
-
-## REGRAS DE RESPOSTA
-- Responda SEMPRE em **passos numerados** quando o usuário pergunta "como faço X".
-- Cite a **rota exata** (ex: "vá em \`/admin/tenants\`").
-- Se o usuário descreve um problema, peça o mínimo contexto necessário e depois resolva.
-- Seja curto, claro, específico. Sem enrolação.
-- Se for fora do sistema, redirecione gentilmente.
-- Se o usuário pedir algo que ainda não existe, diga claramente: "isso ainda não está implementado, posso pedir pra equipe Lovable adicionar".`;
+Seja útil, rápido e sem enrolação. Execute primeiro, explique depois.`;
 
 const TOOLS = [
   {
     type: "function",
     function: {
       name: "list_tenant_domains",
-      description:
-        "Lista todos os tenants (restaurantes/clientes) ativos da plataforma com seus domínios personalizados, slug, plano e URLs de acesso (totem público + painel do restaurante + admin master). Use sempre que o usuário pedir os domínios, links de acesso ou login de cada projeto.",
+      description: "Lista todos os tenants ativos com domínios, slug, plano e URLs (totem, painel, admin).",
       parameters: {
         type: "object",
         properties: {
-          include_inactive: {
-            type: "boolean",
-            description: "Se true, inclui tenants desativados. Padrão: false.",
+          include_inactive: { type: "boolean", description: "Inclui tenants desativados. Padrão: false." },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_tenants_brief",
+      description: "Busca rápida de tenants por nome ou slug. Retorna id, nome, slug e store_id da primeira loja (use o slug nos updates).",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Texto a procurar no nome ou slug. Vazio = todos." },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_branding",
+      description: "Atualiza identidade visual (cores e nome) do tenant. Cores em formato hex (#RRGGBB).",
+      parameters: {
+        type: "object",
+        properties: {
+          tenant_slug: { type: "string" },
+          company_name: { type: "string" },
+          header_color: { type: "string", description: "Cor da barra superior do totem" },
+          primary_color: { type: "string" },
+          secondary_color: { type: "string" },
+          accent_color: { type: "string" },
+          cta_color: { type: "string" },
+          background_color: { type: "string" },
+          text_color: { type: "string" },
+          font_family: { type: "string" },
+          button_style: { type: "string", enum: ["rounded", "square", "pill"] },
+        },
+        required: ["tenant_slug"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_operations",
+      description: "Atualiza configurações de operação/pagamento do tenant.",
+      parameters: {
+        type: "object",
+        properties: {
+          tenant_slug: { type: "string" },
+          payment_mode: { type: "string", enum: ["online", "counter", "mixed"] },
+          pay_card_enabled: { type: "boolean" },
+          pay_cash_enabled: { type: "boolean" },
+          pay_pix_enabled: { type: "boolean" },
+          pay_apple_enabled: { type: "boolean" },
+          pay_google_enabled: { type: "boolean" },
+          pay_counter_enabled: { type: "boolean" },
+          pay_link_enabled: { type: "boolean" },
+          msg_paid: { type: "string" },
+          banner_enabled: { type: "boolean" },
+          banner_interval_ms: { type: "integer" },
+        },
+        required: ["tenant_slug"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_totem_config",
+      description: "Ativa/desativa tipos de pedido e ajusta idiomas do totem.",
+      parameters: {
+        type: "object",
+        properties: {
+          tenant_slug: { type: "string" },
+          enable_dine_in: { type: "boolean" },
+          enable_takeaway: { type: "boolean" },
+          enable_delivery: { type: "boolean" },
+          primary_language: { type: "string", enum: ["pt", "en", "es", "fr"] },
+          active_languages: {
+            type: "array",
+            items: { type: "string", enum: ["pt", "en", "es", "fr"] },
           },
         },
+        required: ["tenant_slug"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_platform_settings",
+      description: "Atualiza configurações GLOBAIS da plataforma (não escopadas a um tenant).",
+      parameters: {
+        type: "object",
+        properties: {
+          platform_name: { type: "string" },
+          support_email: { type: "string" },
+          default_language: { type: "string" },
+          default_currency: { type: "string" },
+          default_plan: { type: "string" },
+          default_max_orders: { type: "integer" },
+          trial_days: { type: "integer" },
+          maintenance_mode: { type: "boolean" },
+          maintenance_message: { type: "string" },
+          ai_auto_menu: { type: "boolean" },
+          ai_auto_images: { type: "boolean" },
+          ai_image_style: { type: "string" },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_tenant",
+      description: "Atualiza dados básicos do tenant (plano, domínio, limite, status).",
+      parameters: {
+        type: "object",
+        properties: {
+          tenant_slug: { type: "string" },
+          name: { type: "string" },
+          plan: { type: "string" },
+          custom_domain: { type: "string" },
+          max_orders_month: { type: "integer" },
+          is_active: { type: "boolean" },
+        },
+        required: ["tenant_slug"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_banners",
+      description: "Lista banners promocionais de um tenant.",
+      parameters: {
+        type: "object",
+        properties: { tenant_slug: { type: "string" } },
+        required: ["tenant_slug"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "toggle_banner",
+      description: "Ativa ou desativa um banner específico (use list_banners primeiro para ver os ids).",
+      parameters: {
+        type: "object",
+        properties: {
+          banner_id: { type: "string" },
+          is_active: { type: "boolean" },
+        },
+        required: ["banner_id", "is_active"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "draft_lovable_request",
+      description: "Gera um pedido pronto pra copiar e colar no chat do Lovable quando algo está fora do alcance das outras ferramentas (mudança de layout, nova feature, nova lógica, ajuste de código).",
+      parameters: {
+        type: "object",
+        properties: {
+          summary: { type: "string", description: "Resumo curto do que o usuário quer (1 linha)" },
+          details: { type: "string", description: "Detalhes, contexto, telas envolvidas, comportamento esperado" },
+        },
+        required: ["summary", "details"],
         additionalProperties: false,
       },
     },
   },
 ];
 
+async function resolveStoreId(admin: any, slug: string): Promise<string | null> {
+  const { data: t } = await admin.from("tenants").select("id").eq("slug", slug).maybeSingle();
+  if (!t) return null;
+  const { data: s } = await admin
+    .from("stores")
+    .select("id")
+    .eq("tenant_id", t.id)
+    .order("sort_order")
+    .limit(1)
+    .maybeSingle();
+  return s?.id ?? null;
+}
+
 async function runTool(name: string, args: any) {
-  const supabase = createClient(
+  const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   if (name === "list_tenant_domains") {
     const includeInactive = args?.include_inactive === true;
-    let query = supabase
-      .from("tenants")
-      .select("id,name,slug,custom_domain,plan,is_active,max_orders_month")
-      .order("name");
-    if (!includeInactive) query = query.eq("is_active", true);
-    const { data, error } = await query;
+    let q = admin.from("tenants").select("id,name,slug,custom_domain,plan,is_active,max_orders_month").order("name");
+    if (!includeInactive) q = q.eq("is_active", true);
+    const { data, error } = await q;
     if (error) return { error: error.message };
-    const platformBase = "kiosk-snap-order.lovable.app";
+    const base = "kebabturco.net";
     return {
-      tenants: (data ?? []).map((t) => {
-        const totemUrl = t.custom_domain
-          ? `https://${t.custom_domain}/`
-          : `https://${platformBase}/?tenant=${t.slug}`;
-        const panelUrl = t.custom_domain
-          ? `https://${t.custom_domain}/panel`
-          : `https://${platformBase}/panel?tenant=${t.slug}`;
-        return {
-          name: t.name,
-          slug: t.slug,
-          plan: t.plan,
-          is_active: t.is_active,
-          max_orders_month: t.max_orders_month,
-          custom_domain: t.custom_domain,
-          totem_url: totemUrl,
-          panel_login_url: panelUrl,
-          admin_master_url: `https://${platformBase}/admin`,
-        };
-      }),
+      tenants: (data ?? []).map((t: any) => ({
+        name: t.name,
+        slug: t.slug,
+        plan: t.plan,
+        is_active: t.is_active,
+        custom_domain: t.custom_domain,
+        totem_url: t.custom_domain ? `https://${t.custom_domain}/` : `https://${base}/?tenant=${t.slug}`,
+        panel_login_url: t.custom_domain ? `https://${t.custom_domain}/panel` : `https://${base}/panel?tenant=${t.slug}`,
+      })),
     };
   }
+
+  if (name === "list_tenants_brief") {
+    const query = (args?.query ?? "").toString().trim();
+    let q = admin.from("tenants").select("id,name,slug,is_active").order("name");
+    if (query) q = q.or(`name.ilike.%${query}%,slug.ilike.%${query}%`);
+    const { data, error } = await q.limit(20);
+    if (error) return { error: error.message };
+    const out: any[] = [];
+    for (const t of data ?? []) {
+      const storeId = await resolveStoreId(admin, t.slug);
+      out.push({ ...t, store_id: storeId });
+    }
+    return { tenants: out };
+  }
+
+  if (name === "update_branding") {
+    const { tenant_slug, ...fields } = args ?? {};
+    if (!tenant_slug) return { error: "tenant_slug obrigatório" };
+    const storeId = await resolveStoreId(admin, tenant_slug);
+    if (!storeId) return { error: `Tenant '${tenant_slug}' não encontrado` };
+    const update: any = {};
+    for (const k of ["company_name", "header_color", "primary_color", "secondary_color", "accent_color", "cta_color", "background_color", "text_color", "font_family", "button_style"]) {
+      if (fields[k] !== undefined) update[k] = fields[k];
+    }
+    if (Object.keys(update).length === 0) return { error: "Nenhum campo para atualizar" };
+    const { error } = await admin.from("company_settings").update(update).eq("store_id", storeId);
+    if (error) return { error: error.message };
+    return { ok: true, updated: update, tenant_slug };
+  }
+
+  if (name === "update_operations") {
+    const { tenant_slug, ...fields } = args ?? {};
+    if (!tenant_slug) return { error: "tenant_slug obrigatório" };
+    const storeId = await resolveStoreId(admin, tenant_slug);
+    if (!storeId) return { error: `Tenant '${tenant_slug}' não encontrado` };
+    const update: any = {};
+    for (const k of ["payment_mode", "pay_card_enabled", "pay_cash_enabled", "pay_pix_enabled", "pay_apple_enabled", "pay_google_enabled", "pay_counter_enabled", "pay_link_enabled", "msg_paid", "banner_enabled", "banner_interval_ms"]) {
+      if (fields[k] !== undefined) update[k] = fields[k];
+    }
+    if (Object.keys(update).length === 0) return { error: "Nenhum campo para atualizar" };
+    // upsert para garantir
+    const { data: existing } = await admin.from("operations_settings").select("id").eq("store_id", storeId).maybeSingle();
+    if (existing) {
+      const { error } = await admin.from("operations_settings").update(update).eq("store_id", storeId);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await admin.from("operations_settings").insert({ store_id: storeId, ...update });
+      if (error) return { error: error.message };
+    }
+    return { ok: true, updated: update, tenant_slug };
+  }
+
+  if (name === "update_totem_config") {
+    const { tenant_slug, ...fields } = args ?? {};
+    if (!tenant_slug) return { error: "tenant_slug obrigatório" };
+    const storeId = await resolveStoreId(admin, tenant_slug);
+    if (!storeId) return { error: `Tenant '${tenant_slug}' não encontrado` };
+    const update: any = {};
+    for (const k of ["enable_dine_in", "enable_takeaway", "enable_delivery", "primary_language", "active_languages"]) {
+      if (fields[k] !== undefined) update[k] = fields[k];
+    }
+    if (Object.keys(update).length === 0) return { error: "Nenhum campo para atualizar" };
+    const { data: existing } = await admin.from("totem_config").select("id").eq("store_id", storeId).maybeSingle();
+    if (existing) {
+      const { error } = await admin.from("totem_config").update(update).eq("store_id", storeId);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await admin.from("totem_config").insert({ store_id: storeId, ...update });
+      if (error) return { error: error.message };
+    }
+    return { ok: true, updated: update, tenant_slug };
+  }
+
+  if (name === "update_platform_settings") {
+    const fields = args ?? {};
+    const allowed = ["platform_name", "support_email", "default_language", "default_currency", "default_plan", "default_max_orders", "trial_days", "maintenance_mode", "maintenance_message", "ai_auto_menu", "ai_auto_images", "ai_image_style"];
+    const update: any = {};
+    for (const k of allowed) if (fields[k] !== undefined) update[k] = fields[k];
+    if (Object.keys(update).length === 0) return { error: "Nenhum campo para atualizar" };
+    const { data: existing } = await admin.from("platform_settings").select("id").limit(1).maybeSingle();
+    if (existing) {
+      const { error } = await admin.from("platform_settings").update(update).eq("id", existing.id);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await admin.from("platform_settings").insert(update);
+      if (error) return { error: error.message };
+    }
+    return { ok: true, updated: update };
+  }
+
+  if (name === "update_tenant") {
+    const { tenant_slug, ...fields } = args ?? {};
+    if (!tenant_slug) return { error: "tenant_slug obrigatório" };
+    const update: any = {};
+    for (const k of ["name", "plan", "custom_domain", "max_orders_month", "is_active"]) {
+      if (fields[k] !== undefined) update[k] = fields[k];
+    }
+    if (Object.keys(update).length === 0) return { error: "Nenhum campo para atualizar" };
+    const { error } = await admin.from("tenants").update(update).eq("slug", tenant_slug);
+    if (error) return { error: error.message };
+    return { ok: true, updated: update, tenant_slug };
+  }
+
+  if (name === "list_banners") {
+    const { tenant_slug } = args ?? {};
+    if (!tenant_slug) return { error: "tenant_slug obrigatório" };
+    const storeId = await resolveStoreId(admin, tenant_slug);
+    if (!storeId) return { error: `Tenant '${tenant_slug}' não encontrado` };
+    const { data, error } = await admin.from("promo_banners").select("id,media_type,image_url,video_url,is_active,sort_order").eq("store_id", storeId).order("sort_order");
+    if (error) return { error: error.message };
+    return { banners: data ?? [] };
+  }
+
+  if (name === "toggle_banner") {
+    const { banner_id, is_active } = args ?? {};
+    if (!banner_id) return { error: "banner_id obrigatório" };
+    const { error } = await admin.from("promo_banners").update({ is_active: !!is_active }).eq("id", banner_id);
+    if (error) return { error: error.message };
+    return { ok: true, banner_id, is_active: !!is_active };
+  }
+
+  if (name === "draft_lovable_request") {
+    const { summary, details } = args ?? {};
+    const draft = `**${summary}**\n\n${details}`;
+    return {
+      ok: true,
+      message: "Pedido formatado pronto. Copie o bloco abaixo e cole no chat do Lovable.",
+      draft,
+    };
+  }
+
   return { error: `Unknown tool: ${name}` };
 }
 
@@ -242,20 +419,57 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ===== Valida que o caller é admin_master =====
+    const authHeader = req.headers.get("Authorization") || "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "");
+    if (!jwt) {
+      return new Response(JSON.stringify({ error: "Não autenticado." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${jwt}` } } },
+    );
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData.user) {
+      return new Response(JSON.stringify({ error: "Sessão inválida." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: roleRow } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id)
+      .eq("role", "admin_master")
+      .maybeSingle();
+    if (!roleRow) {
+      return new Response(JSON.stringify({ error: "Acesso restrito ao Admin Master." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // ===== Fim validação =====
+
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    // Loop de tool-calling: roda até 4 voltas para resolver chamadas de ferramenta antes do streaming final.
     const conv: any[] = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
 
-    for (let step = 0; step < 4; step++) {
+    for (let step = 0; step < 5; step++) {
       const planResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: conv,
@@ -265,16 +479,14 @@ Deno.serve(async (req) => {
       });
 
       if (planResp.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Límite de uso alcanzado, intenta más tarde." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ error: "Limite de uso atingido, tente mais tarde." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       if (planResp.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes en Lovable AI." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ error: "Créditos insuficientes no Lovable AI." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       if (!planResp.ok) {
         const txt = await planResp.text();
@@ -282,55 +494,26 @@ Deno.serve(async (req) => {
       }
 
       const planData = await planResp.json();
-      const choice = planData.choices?.[0];
-      const msg = choice?.message;
+      const msg = planData.choices?.[0]?.message;
       const toolCalls = msg?.tool_calls;
 
-      if (!toolCalls || toolCalls.length === 0) {
-        // Sem mais tools: faz a chamada final em streaming usando o histórico já enriquecido.
-        break;
-      }
+      if (!toolCalls || toolCalls.length === 0) break;
 
-      // Executa cada tool e adiciona resultados ao histórico.
       conv.push({ role: "assistant", content: msg.content ?? "", tool_calls: toolCalls });
       for (const call of toolCalls) {
         let parsedArgs: any = {};
-        try { parsedArgs = JSON.parse(call.function?.arguments ?? "{}"); } catch { /* ignore */ }
+        try { parsedArgs = JSON.parse(call.function?.arguments ?? "{}"); } catch {}
         const result = await runTool(call.function?.name, parsedArgs);
-        conv.push({
-          role: "tool",
-          tool_call_id: call.id,
-          content: JSON.stringify(result),
-        });
+        conv.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
       }
     }
 
-    // Resposta final em streaming já com qualquer resultado de tool incorporado.
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        stream: true,
-        messages: conv,
-      }),
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "google/gemini-2.5-flash", stream: true, messages: conv }),
     });
 
-    if (resp.status === 429) {
-      return new Response(JSON.stringify({ error: "Límite de uso alcanzado, intenta más tarde." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (resp.status === 402) {
-      return new Response(JSON.stringify({ error: "Créditos insuficientes en Lovable AI." }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     if (!resp.ok) {
       const txt = await resp.text();
       throw new Error("Gateway error: " + txt);
