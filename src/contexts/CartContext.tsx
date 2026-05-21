@@ -36,8 +36,8 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
-  orderType: "here" | "takeaway" | null;
-  setOrderType: (t: "here" | "takeaway") => void;
+  orderType: "here" | "takeaway" | "delivery" | null;
+  setOrderType: (t: "here" | "takeaway" | "delivery") => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -59,7 +59,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return parsed;
     } catch { return []; }
   });
-  const [orderType, setOrderType] = useState<"here" | "takeaway" | null>(null);
+  const [orderType, setOrderType] = useState<"here" | "takeaway" | "delivery" | null>(null);
 
   useEffect(() => {
     localStorage.setItem("kiosk-cart", JSON.stringify(items));

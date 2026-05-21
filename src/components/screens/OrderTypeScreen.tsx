@@ -46,7 +46,7 @@ const OrderTypeScreen = () => {
   }, [storeId]);
 
   const handleSelect = (type: "here" | "takeaway" | "delivery") => {
-    setOrderType(type === "delivery" ? "takeaway" : type);
+    setOrderType(type);
     if (type !== "here") setTableNumber("");
     setScreen("home");
   };
