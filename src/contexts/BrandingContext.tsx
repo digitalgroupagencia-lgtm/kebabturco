@@ -61,7 +61,7 @@ function applyDynamicManifest(s: CompanySettings) {
   try {
     const name = s.company_name || "App";
     const icon = (s as any).logo_main_url || "/icon-512.png";
-    const themeColor = s.primary_color || "#000000";
+    const themeColor = (s as any).header_color || s.primary_color || "#000000";
     const bgColor = s.background_color || "#FFFFFF";
 
     const manifest = {
