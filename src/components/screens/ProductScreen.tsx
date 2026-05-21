@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus, X } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,6 +9,7 @@ import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";
+import { parseIngredients } from "@/lib/parseIngredients";
 
 
 const ingredientMap: Record<string, string[]> = {
