@@ -156,7 +156,7 @@ const ReviewScreen = () => {
             <div className="flex-1">
               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">{t("modality")}</p>
               <p className="text-sm font-black text-foreground">
-                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? "A domicilio" : t("takeaway")}
+                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway")}
               </p>
             </div>
           </div>
