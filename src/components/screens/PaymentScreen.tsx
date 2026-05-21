@@ -116,11 +116,13 @@ const PaymentScreen = () => {
       if (!deliveryNumber.trim()) { setShowError("number"); return; }
       if (!deliveryPostalCode.trim()) { setShowError("postal"); return; }
       if (!deliveryCity.trim()) { setShowError("city"); return; }
+      if (deliveryQuote.belowMinimum) { setShowError("minOrder"); return; }
     }
     if (!selected) { setShowError("method"); return; }
     setShowError(null);
     await persistAndPrint(customerName.trim(), tableNumber.trim(), customerPhone.trim());
   };
+
 
   const persistAndPrint = async (
     finalName: string,
