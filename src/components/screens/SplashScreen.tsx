@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import elreyLogo from "@/assets/elrey-logo.png";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
-  const { settings } = useBranding();
+  const { settings, loading: brandingLoading } = useBranding();
   const { activeLangs, t } = useLanguage();
   const { theme } = useTheme();
+
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
 
