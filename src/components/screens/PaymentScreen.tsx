@@ -5,7 +5,7 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
@@ -50,6 +50,18 @@ const PaymentScreen = () => {
     setCustomerName,
     customerPhone,
     setCustomerPhone,
+    deliveryAddress,
+    setDeliveryAddress,
+    deliveryNumber,
+    setDeliveryNumber,
+    deliveryComplement,
+    setDeliveryComplement,
+    deliveryPostalCode,
+    setDeliveryPostalCode,
+    deliveryCity,
+    setDeliveryCity,
+    deliveryNotes,
+    setDeliveryNotes,
   } = useOrder();
   const { items, totalPrice, clearCart, orderType } = useCart();
   const { settings } = useOperationsSettings();
@@ -58,7 +70,7 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "method">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method">(null);
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -82,22 +94,17 @@ const PaymentScreen = () => {
 
   const confirm = async () => {
     if (processing) return;
-    if (!customerName.trim() || customerName.trim().length < 2) {
-      setShowError("name");
-      return;
+    if (!customerName.trim() || customerName.trim().length < 2) { setShowError("name"); return; }
+    if (orderType === "here" && !tableNumber.trim()) { setShowError("table"); return; }
+    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) { setShowError("phone"); return; }
+    if (orderType === "delivery") {
+      if (!customerPhone.trim() || customerPhone.trim().length < 6) { setShowError("phone"); return; }
+      if (!deliveryAddress.trim()) { setShowError("address"); return; }
+      if (!deliveryNumber.trim()) { setShowError("number"); return; }
+      if (!deliveryPostalCode.trim()) { setShowError("postal"); return; }
+      if (!deliveryCity.trim()) { setShowError("city"); return; }
     }
-    if (orderType === "here" && !tableNumber.trim()) {
-      setShowError("table");
-      return;
-    }
-    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) {
-      setShowError("phone");
-      return;
-    }
-    if (!selected) {
-      setShowError("method");
-      return;
-    }
+    if (!selected) { setShowError("method"); return; }
     setShowError(null);
     await persistAndPrint(customerName.trim(), tableNumber.trim(), customerPhone.trim());
   };
