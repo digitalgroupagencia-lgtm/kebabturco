@@ -4,9 +4,11 @@ import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDeliveryFee } from "@/hooks/useDeliveryFee";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
+
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
   { id: "card", icon: CreditCard },
