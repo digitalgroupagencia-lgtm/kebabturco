@@ -1,11 +1,21 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
+import { supabase } from "@/integrations/supabase/client";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
+
+type LangMap = Record<string, string>;
+type SuggestionConfig = {
+  enabled: boolean;
+  title: LangMap;
+  product_ids: string[];
+  button: { enabled: boolean; label: LangMap; category_id: string | null };
+};
 
 const CLEAR_LABEL: Record<string, string> = {
   pt: "Limpar pedido",
@@ -26,43 +36,87 @@ const ReviewScreen = () => {
     setSelectedProductId,
     setProductReturnScreen,
     setEditingCartItemId,
+    setSelectedCategory,
   } = useOrder();
   const { items, addItem, removeItem, totalPrice, orderType, clearCart } = useCart();
 
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
+  const { storeId, selectedStoreId } = useResolvedStore();
+  const effectiveStoreId = selectedStoreId ?? storeId;
   const clearLabel = CLEAR_LABEL[lang] || CLEAR_LABEL.es;
   const confirmMsg = CONFIRM_CLEAR[lang] || CONFIRM_CLEAR.es;
+
+  const [suggestionConfig, setSuggestionConfig] = useState<SuggestionConfig | null>(null);
+
+  useEffect(() => {
+    if (!effectiveStoreId) return;
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from("totem_config")
+        .select("screen_config")
+        .eq("store_id", effectiveStoreId)
+        .maybeSingle();
+      if (!active) return;
+      const sc = ((data as any)?.screen_config || {}) as any;
+      const rs = sc.review_suggestion;
+      if (rs) setSuggestionConfig(rs as SuggestionConfig);
+      else setSuggestionConfig(null);
+    })();
+    return () => { active = false; };
+  }, [effectiveStoreId]);
 
   const handleClearAll = () => {
     if (window.confirm(confirmMsg)) clearCart();
   };
   const canCheckout = items.length > 0;
 
-  // Sugestões inteligentes: prioriza bebidas se cliente ainda não pediu
+  const pickLang = (m?: LangMap) => (m && (m[lang] || m.es || m.pt || m.en || m.fr)) || "";
+
+  // Sugestões configuráveis no painel admin (fallback: heurística antiga de bebidas)
+  const inCartIds = useMemo(() => new Set(items.map((i) => i.productId)), [items]);
+
+  const configuredEnabled = suggestionConfig?.enabled !== false;
+  const configuredIds = suggestionConfig?.product_ids || [];
+
   const suggestions = useMemo(() => {
-    const inCart = new Set(items.map((i) => i.productId));
-    const inCartCats = new Set(items.map((i) => {
-      const prod = products.find((p) => p.id === i.productId);
-      return prod?.category;
-    }));
+    if (suggestionConfig && configuredEnabled && configuredIds.length > 0) {
+      const byId = new Map(products.map((p) => [p.id, p]));
+      return configuredIds
+        .map((id) => byId.get(id))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p) && !inCartIds.has(p!.id));
+    }
+    // Fallback antigo
     const drinkCategoryIds = categories
       .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
       .map((category) => category.id);
-    const drinks = products.filter((p) => drinkCategoryIds.includes(p.category) && !inCart.has(p.id));
-    if (!drinkCategoryIds.some((id) => inCartCats.has(id)) && drinks.length > 0) {
+    const cartCats = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category));
+    const drinks = products.filter((p) => drinkCategoryIds.includes(p.category) && !inCartIds.has(p.id));
+    if (!drinkCategoryIds.some((id) => cartCats.has(id)) && drinks.length > 0) {
       return drinks.slice(0, 4);
     }
-    return products.filter((p) => p.isBestseller && !inCart.has(p.id)).slice(0, 4);
-  }, [categories, items, products]);
-  const drinkCategoryIds = categories
-    .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
-    .map((category) => category.id);
-  const cartCategoryIds = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category).filter(Boolean));
-  const suggestingDrinks = !drinkCategoryIds.some((id) => cartCategoryIds.has(id));
+    return products.filter((p) => p.isBestseller && !inCartIds.has(p.id)).slice(0, 4);
+  }, [suggestionConfig, configuredEnabled, configuredIds, products, categories, items, inCartIds]);
+
+  const customTitle = pickLang(suggestionConfig?.title);
+  const fallbackTitle = (() => {
+    const drinkCategoryIds = categories
+      .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
+      .map((category) => category.id);
+    const cartCats = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category).filter(Boolean));
+    const suggestingDrinks = !drinkCategoryIds.some((id) => cartCats.has(id));
+    return suggestingDrinks ? t("addDrink") : t("addMore");
+  })();
+  const sectionTitle = customTitle || fallbackTitle;
+
+  const buttonCfg = suggestionConfig?.button;
+  const buttonLabel = pickLang(buttonCfg?.label);
+  const showButton = Boolean(
+    configuredEnabled && buttonCfg?.enabled && buttonCfg?.category_id && buttonLabel
+  );
 
   const handleEdit = (productId: string, itemId: string) => {
-    // Não remove o item — passa o ID para o ProductScreen recuperar customizações
     setEditingCartItemId(itemId);
     setSelectedProductId(productId);
     setProductReturnScreen("review");
@@ -75,6 +129,13 @@ const ReviewScreen = () => {
     setProductReturnScreen("review");
     setScreen("product");
   };
+
+  const handleOpenCategory = () => {
+    if (!buttonCfg?.category_id) return;
+    setSelectedCategory(buttonCfg.category_id);
+    setScreen("home");
+  };
+
 
   return (
     <div className="relative h-[100dvh] md:h-full min-h-0 bg-secondary/20 animate-fade-in flex flex-col overflow-hidden">
@@ -208,12 +269,12 @@ const ReviewScreen = () => {
         </div>
 
         {/* Sugestões */}
-        {items.length > 0 && suggestions.length > 0 && (
+        {items.length > 0 && (suggestions.length > 0 || showButton) && (
           <div className="mt-2">
             <div className="flex items-center gap-2 px-1 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                {suggestingDrinks ? t("addDrink") : t("addMore")}
+                {sectionTitle}
               </p>
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
@@ -247,9 +308,24 @@ const ReviewScreen = () => {
                   </div>
                 </button>
               ))}
+
+              {showButton && (
+                <button
+                  onClick={handleOpenCategory}
+                  className="shrink-0 w-[150px] bg-primary/10 border-2 border-dashed border-primary/40 rounded-2xl text-left active:scale-[0.97] transition-transform flex flex-col items-center justify-center gap-2 p-3"
+                >
+                  <span className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
+                    <ArrowRight className="w-5 h-5" strokeWidth={3} />
+                  </span>
+                  <span className="text-[13px] font-black text-primary text-center leading-tight">
+                    {buttonLabel}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         )}
+
       </div>
 
       {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Monitor, Palette, Globe, Save, Upload } from "lucide-react";
+import { Monitor, Palette, Globe, Save, Upload, Sparkles } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type TotemConfig = Tables<"totem_config">;
@@ -19,6 +19,15 @@ const ALL_LANGS = [
   { code: "es", label: "Español" },
   { code: "fr", label: "Français" },
 ] as const;
+
+type LangMap = { pt: string; en: string; es: string; fr: string };
+
+const emptyLangMap = (): LangMap => ({ pt: "", en: "", es: "", fr: "" });
+
+const asLangMap = (value: unknown): LangMap => {
+  const v = (value && typeof value === "object" ? value : {}) as Record<string, string>;
+  return { pt: v.pt || "", en: v.en || "", es: v.es || "", fr: v.fr || "" };
+};
 
 const TotemConfigPage = () => {
   const { user } = useAuth();
@@ -44,9 +53,40 @@ const TotemConfigPage = () => {
   const [activeLangs, setActiveLangs] = useState<string[]>(["es"]);
   const [langIcons, setLangIcons] = useState<Record<string, string>>({});
 
+  // Suggestion section (cart) state
+  const [suggEnabled, setSuggEnabled] = useState(true);
+  const [suggTitle, setSuggTitle] = useState<LangMap>(emptyLangMap());
+  const [suggProductIds, setSuggProductIds] = useState<string[]>([]);
+  const [suggBtnEnabled, setSuggBtnEnabled] = useState(false);
+  const [suggBtnLabel, setSuggBtnLabel] = useState<LangMap>(emptyLangMap());
+  const [suggBtnCategoryId, setSuggBtnCategoryId] = useState<string>("");
+
+  // Menu data for selectors
+  const [menuCategories, setMenuCategories] = useState<{ id: string; name: string }[]>([]);
+  const [menuProducts, setMenuProducts] = useState<{ id: string; name: string; category_id: string }[]>([]);
+  const [productFilter, setProductFilter] = useState("");
+
   useEffect(() => {
-    if (storeId) fetchConfig();
+    if (storeId) {
+      fetchConfig();
+      fetchMenu();
+    }
   }, [storeId]);
+
+  const pickName = (n: any): string => {
+    if (n && typeof n === "object") return n.es || n.pt || n.en || n.fr || "";
+    return String(n || "");
+  };
+
+  const fetchMenu = async () => {
+    if (!storeId) return;
+    const [{ data: cats }, { data: prods }] = await Promise.all([
+      supabase.from("categories").select("id, name, sort_order").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
+      supabase.from("products").select("id, name, category_id, sort_order").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
+    ]);
+    setMenuCategories((cats || []).map((c: any) => ({ id: c.id, name: pickName(c.name) })));
+    setMenuProducts((prods || []).map((p: any) => ({ id: p.id, name: pickName(p.name), category_id: p.category_id })));
+  };
 
   const fetchConfig = async () => {
     if (!storeId) return;
@@ -72,6 +112,16 @@ const TotemConfigPage = () => {
       setPrimaryLang((data as any).primary_language || "es");
       setActiveLangs((data.active_languages as string[]) || ["es"]);
       setLangIcons(((data as any).language_icons as Record<string, string>) || {});
+
+      // Suggestion config
+      const sc = ((data as any).screen_config || {}) as any;
+      const rs = sc.review_suggestion || {};
+      setSuggEnabled(rs.enabled !== false);
+      setSuggTitle(asLangMap(rs.title));
+      setSuggProductIds(Array.isArray(rs.product_ids) ? rs.product_ids : []);
+      setSuggBtnEnabled(Boolean(rs.button?.enabled));
+      setSuggBtnLabel(asLangMap(rs.button?.label));
+      setSuggBtnCategoryId(rs.button?.category_id || "");
     }
     setLoading(false);
   };
@@ -93,7 +143,6 @@ const TotemConfigPage = () => {
   const toggleActiveLang = (code: string) => {
     setActiveLangs((prev) => {
       if (prev.includes(code)) {
-        // não remove o idioma principal
         if (code === primaryLang) return prev;
         return prev.filter((l) => l !== code);
       }
@@ -105,9 +154,28 @@ const TotemConfigPage = () => {
     });
   };
 
+  const toggleSuggProduct = (id: string) => {
+    setSuggProductIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+  };
+
   const saveConfig = async () => {
     if (!storeId) return;
     setSaving(true);
+
+    const prevScreenConfig = ((config as any)?.screen_config || {}) as Record<string, unknown>;
+    const screenConfig = {
+      ...prevScreenConfig,
+      review_suggestion: {
+        enabled: suggEnabled,
+        title: suggTitle,
+        product_ids: suggProductIds,
+        button: {
+          enabled: suggBtnEnabled,
+          label: suggBtnLabel,
+          category_id: suggBtnCategoryId || null,
+        },
+      },
+    };
 
     const payload = {
       store_id: storeId,
@@ -123,6 +191,7 @@ const TotemConfigPage = () => {
       primary_language: primaryLang,
       active_languages: Array.from(new Set([primaryLang, ...activeLangs])),
       language_icons: langIcons as unknown as import("@/integrations/supabase/types").Json,
+      screen_config: screenConfig as unknown as import("@/integrations/supabase/types").Json,
     };
 
     let error;
@@ -153,6 +222,10 @@ const TotemConfigPage = () => {
       </div>
     );
   }
+
+  const filteredProducts = menuProducts.filter((p) =>
+    productFilter.trim() === "" ? true : p.name.toLowerCase().includes(productFilter.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -338,6 +411,119 @@ const TotemConfigPage = () => {
           <div>
             <Label>English</Label>
             <Input value={welcomeEn} onChange={(e) => setWelcomeEn(e.target.value)} placeholder="Welcome! Place your order" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sugestão no Carrinho */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5" /> Sugestão no Carrinho
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Define quais produtos aparecem como sugestão na tela de revisão do pedido (ex.: bebidas, sobremesas, combos). Você pode escolher os produtos, o título da seção e um botão opcional que leva a uma categoria do cardápio.
+          </p>
+
+          <div className="flex items-center justify-between">
+            <Label>Mostrar seção de sugestão</Label>
+            <Switch checked={suggEnabled} onCheckedChange={setSuggEnabled} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {ALL_LANGS.map((l) => (
+              <div key={l.code}>
+                <Label className="text-xs">Título — {l.label}</Label>
+                <Input
+                  value={(suggTitle as any)[l.code] || ""}
+                  onChange={(e) => setSuggTitle((prev) => ({ ...prev, [l.code]: e.target.value }))}
+                  placeholder={l.code === "es" ? "¿Y una bebida?" : l.code === "pt" ? "Que tal uma bebida?" : l.code === "en" ? "How about a drink?" : "Une boisson ?"}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <Label>Produtos sugeridos</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">
+              Selecione um ou mais produtos. Eles aparecerão como cards na tela de revisão.
+            </p>
+            <Input
+              placeholder="Buscar produto..."
+              value={productFilter}
+              onChange={(e) => setProductFilter(e.target.value)}
+              className="mb-2"
+            />
+            <div className="border border-border rounded-xl max-h-64 overflow-y-auto divide-y divide-border">
+              {filteredProducts.length === 0 && (
+                <p className="p-3 text-xs text-muted-foreground">Nenhum produto encontrado.</p>
+              )}
+              {filteredProducts.map((p) => {
+                const checked = suggProductIds.includes(p.id);
+                const catName = menuCategories.find((c) => c.id === p.category_id)?.name || "";
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/40 ${checked ? "bg-primary/5" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSuggProduct(p.id)}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{p.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{catName}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {suggProductIds.length} produto(s) selecionado(s)
+            </p>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Botão "ver mais" do lado dos produtos</Label>
+              <Switch checked={suggBtnEnabled} onCheckedChange={setSuggBtnEnabled} />
+            </div>
+            {suggBtnEnabled && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {ALL_LANGS.map((l) => (
+                    <div key={l.code}>
+                      <Label className="text-xs">Texto do botão — {l.label}</Label>
+                      <Input
+                        value={(suggBtnLabel as any)[l.code] || ""}
+                        onChange={(e) => setSuggBtnLabel((prev) => ({ ...prev, [l.code]: e.target.value }))}
+                        placeholder={l.code === "es" ? "Ver bebidas" : l.code === "pt" ? "Ver bebidas" : l.code === "en" ? "See drinks" : "Voir boissons"}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <Label>Categoria de destino</Label>
+                  <p className="text-[11px] text-muted-foreground mb-2">
+                    Ao clicar no botão, o cliente é levado para esta categoria do cardápio.
+                  </p>
+                  <select
+                    value={suggBtnCategoryId}
+                    onChange={(e) => setSuggBtnCategoryId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  >
+                    <option value="">— Selecione uma categoria —</option>
+                    {menuCategories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
