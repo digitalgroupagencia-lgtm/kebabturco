@@ -57,7 +57,8 @@ const ReviewScreen = () => {
   const drinkCategoryIds = categories
     .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
     .map((category) => category.id);
-  const suggestingDrinks = !new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category)).has(drinkCategoryIds[0]);
+  const cartCategoryIds = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category).filter(Boolean));
+  const suggestingDrinks = !drinkCategoryIds.some((id) => cartCategoryIds.has(id));
 
   const handleEdit = (productId: string, itemId: string) => {
     // Não remove o item — passa o ID para o ProductScreen recuperar customizações
