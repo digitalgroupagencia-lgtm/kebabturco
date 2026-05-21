@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { supabase } from "@/integrations/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const OrderTypeScreen = () => {
   const { setScreen, setTableNumber } = useOrder();
