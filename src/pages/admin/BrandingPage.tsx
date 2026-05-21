@@ -199,8 +199,10 @@ const BrandingPage = () => {
             <CardContent className="space-y-4">
               <ImageField label="Comer en el local" field="icon_dine_in_url" icon={UtensilsCrossed} dimensions="500×500 px" />
               <ImageField label="Para llevar" field="icon_takeaway_url" icon={ShoppingBag} dimensions="500×500 px" />
+              <ImageField label="A domicilio" field={"icon_delivery_url" as keyof Settings} icon={Bike} dimensions="500×500 px" />
             </CardContent>
           </Card>
+
 
           <Card>
             <CardHeader><CardTitle className="text-lg">Paleta de colores</CardTitle></CardHeader>
