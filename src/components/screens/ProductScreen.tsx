@@ -98,10 +98,14 @@ const ProductScreen = () => {
   const { products } = useMenuData();
 
   const product = products.find((item) => item.id === selectedProductId);
-  const ingredientOptions = useMemo(
-    () => (product ? product.ingredients?.length ? product.ingredients : ingredientMap[product.category] || [] : []),
-    [product],
-  );
+  const ingredientOptions = useMemo(() => {
+    if (!product) return [];
+    if (product.ingredients?.length) return product.ingredients;
+    if (ingredientMap[product.category]) return ingredientMap[product.category];
+    // Fallback: extrai da descrição
+    const desc = tProduct(product.description);
+    return parseIngredients(desc);
+  }, [product, tProduct]);
   const availableExtras = useMemo(
     () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
     [product],
@@ -116,10 +120,9 @@ const ProductScreen = () => {
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
   const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(undefined);
   const [extras, setExtras] = useState<Map<string, number>>(new Map());
-  // Mapa de ingredientes base: 0 = removido, 1 = normal (default), 2+ = porções extras (+0,50€ cada)
-  const [ingredients, setIngredients] = useState<Map<string, number>>(new Map());
+  // Set de ingredientes REMOVIDOS pelo cliente
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
-  const BASE_INGREDIENT_EXTRA_PRICE = 0.5;
 
   useEffect(() => {
     if (!product) return;
@@ -136,33 +139,23 @@ const ProductScreen = () => {
       setSelectedVariant(matchVariant ?? product.variants?.[0]);
 
       const extrasMap = new Map<string, number>();
-      const baseIngExtraMap = new Map<string, number>();
       editingItem.extras.forEach((e) => {
-        if (e.id.startsWith("base-ing:")) {
-          baseIngExtraMap.set(e.id.slice("base-ing:".length), e.quantity);
-        } else {
-          extrasMap.set(e.id, e.quantity);
-        }
+        if (!e.id.startsWith("base-ing:")) extrasMap.set(e.id, e.quantity);
       });
       setExtras(extrasMap);
 
-      const removedSet = new Set(editingItem.removedIngredients);
-      setIngredients(
-        new Map(
-          ingredientOptions.map((i) => [i, removedSet.has(i) ? 0 : 1 + (baseIngExtraMap.get(i) || 0)]),
-        ),
-      );
+      setRemoved(new Set(editingItem.removedIngredients));
       setNote(editingItem.note ?? "");
     } else {
       setQuantity(1);
       setSelectedSize(product.sizes?.[0]);
       setSelectedVariant(product.variants?.[0]);
       setExtras(new Map());
-      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, 1])));
+      setRemoved(new Set());
       setNote("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, ingredientOptions, editingItem?.id]);
+  }, [product, editingItem?.id]);
 
   if (!product) return null;
 
