@@ -61,11 +61,24 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     const host = window.location.hostname;
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const firstSeg = pathSegments[0] || null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const tenantParam = urlParams.get("tenant");
 
     (async () => {
-      // 1) Match por custom_domain exato
+      // 0) Preview: ?tenant=<slug> força o tenant (usado pelo painel admin)
       let tenant: any = null;
+      if (tenantParam) {
+        const { data } = await supabase
+          .from("tenants")
+          .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
+          .eq("slug", tenantParam)
+          .maybeSingle();
+        if (data) tenant = data;
+      }
+
+      // 1) Match por custom_domain exato
       if (host) {
+        if (!tenant) {
         const { data } = await supabase
           .from("tenants")
           .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
@@ -73,6 +86,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           .eq("is_active", true)
           .maybeSingle();
         if (data) tenant = data;
+        }
       }
 
       // 2) Match por master_domain + path_slug
