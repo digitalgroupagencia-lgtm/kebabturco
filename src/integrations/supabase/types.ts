@@ -272,6 +272,8 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          max_distance_km: number | null
+          min_distance_km: number | null
           min_order: number
           name: string
           postal_codes: string[] | null
@@ -286,6 +288,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          max_distance_km?: number | null
+          min_distance_km?: number | null
           min_order?: number
           name: string
           postal_codes?: string[] | null
@@ -300,6 +304,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          max_distance_km?: number | null
+          min_distance_km?: number | null
           min_order?: number
           name?: string
           postal_codes?: string[] | null
@@ -1149,9 +1155,12 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          geocoded_address: string | null
           id: string
           image_url: string | null
           is_active: boolean
+          latitude: number | null
+          longitude: number | null
           name: string
           phone: string | null
           short_description: string | null
@@ -1162,9 +1171,12 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          geocoded_address?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name: string
           phone?: string | null
           short_description?: string | null
@@ -1175,9 +1187,12 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          geocoded_address?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           phone?: string | null
           short_description?: string | null

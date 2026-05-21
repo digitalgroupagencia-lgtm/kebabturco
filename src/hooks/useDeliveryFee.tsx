@@ -10,6 +10,8 @@ export interface DeliveryZone {
   is_active: boolean;
   postal_codes: string[] | null;
   city_names: string[] | null;
+  min_distance_km: number | null;
+  max_distance_km: number | null;
   sort_order: number;
 }
 
@@ -19,23 +21,25 @@ interface DeliveryQuote {
   minOrder: number;
   belowMinimum: boolean;
   zoneMatched: boolean;
+  distanceKm: number | null;
 }
 
 const norm = (v: string) =>
   v.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 /**
- * Carrega as zonas de entrega da loja e calcula a taxa baseada
- * no CEP e/ou cidade do cliente.
- *  - Match 1: CEP/postal_code está em postal_codes da zona
- *  - Match 2: cidade do cliente está em city_names da zona
- *  - Fallback: zona marcada como is_default
+ * Calcula a taxa de entrega da loja baseada em (em ordem de prioridade):
+ *  1. Distância em km até a loja (zona com min_distance_km..max_distance_km)
+ *  2. CEP do cliente em postal_codes
+ *  3. Cidade do cliente em city_names
+ *  4. Zona is_default
  */
 export function useDeliveryFee(
   storeId: string | null | undefined,
   customerPostal: string,
   customerCity: string,
   subtotal: number,
+  distanceKm: number | null = null,
 ) {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,7 +73,22 @@ export function useDeliveryFee(
 
     let matched: DeliveryZone | null = null;
 
-    if (postal) {
+    // 1. Match por distância (km)
+    if (distanceKm != null) {
+      const candidates = zones
+        .filter((z) => z.max_distance_km != null)
+        .sort(
+          (a, b) => (a.max_distance_km ?? 0) - (b.max_distance_km ?? 0),
+        );
+      matched =
+        candidates.find((z) => {
+          const min = Number(z.min_distance_km ?? 0);
+          const max = Number(z.max_distance_km ?? 0);
+          return distanceKm >= min && distanceKm <= max;
+        }) || null;
+    }
+
+    if (!matched && postal) {
       matched =
         zones.find((z) =>
           (z.postal_codes || []).some((c) => c.trim() === postal),
@@ -93,8 +112,9 @@ export function useDeliveryFee(
       minOrder,
       belowMinimum: minOrder > 0 && subtotal < minOrder,
       zoneMatched: Boolean(matched),
+      distanceKm,
     };
-  }, [zones, customerPostal, customerCity, subtotal]);
+  }, [zones, customerPostal, customerCity, subtotal, distanceKm]);
 
   return { quote, zones, loading };
 }
