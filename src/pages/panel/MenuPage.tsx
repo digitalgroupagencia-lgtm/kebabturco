@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,8 +14,7 @@ type Category = Tables<"categories">;
 type Product = Tables<"products">;
 
 const MenuPage = () => {
-  const { user } = useAuth();
-  const { roleData } = useUserRole(user?.id);
+  const { storeId, loading: loadingStore } = useAdminStoreId();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -38,8 +36,6 @@ const MenuPage = () => {
   const [prodDescPt, setProdDescPt] = useState("");
   const [prodPrice, setProdPrice] = useState("");
   const [prodImageUrl, setProdImageUrl] = useState("");
-
-  const storeId = roleData?.store_id;
 
   useEffect(() => {
     if (storeId) {
@@ -220,6 +216,10 @@ const MenuPage = () => {
       setGenImageId(null);
     }
   };
+
+  if (loadingStore) {
+    return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Carregando cardápio...</div>;
+  }
 
   if (!storeId) {
     return (
