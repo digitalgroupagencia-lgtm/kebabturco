@@ -19,9 +19,9 @@ const HomeScreen = () => {
   const { categories, products, loading } = useMenuData();
   const isDark = theme === "dark";
   const headerLogo =
-    (isDark && ((settings as any)?.logo_secondary_dark_url || (settings as any)?.logo_main_dark_url)) ||
-    settings?.logo_secondary_url ||
+    (isDark && ((settings as any)?.logo_main_dark_url || (settings as any)?.logo_secondary_dark_url)) ||
     settings?.logo_main_url ||
+    settings?.logo_secondary_url ||
     "";
 
   useEffect(() => {
