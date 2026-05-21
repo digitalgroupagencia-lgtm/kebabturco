@@ -227,7 +227,7 @@ export default function AdminAssistant() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pregunta cualquier cosa…"
+              placeholder="Peça qualquer coisa… (ex: muda a cor da barra)"
               disabled={loading}
               className="flex-1"
             />
