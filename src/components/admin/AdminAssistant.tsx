@@ -157,9 +157,10 @@ export default function AdminAssistant() {
                 <Sparkles className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-sm leading-tight truncate">Asistente EL REY</p>
-                <p className="text-[11px] opacity-80 leading-tight">Especialista en tu sistema</p>
+                <p className="font-bold text-sm leading-tight truncate">Assistente Admin Master</p>
+                <p className="text-[11px] opacity-80 leading-tight">Edita e configura o sistema por você</p>
               </div>
+
             </div>
             <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0">
               <X className="w-4 h-4" />
