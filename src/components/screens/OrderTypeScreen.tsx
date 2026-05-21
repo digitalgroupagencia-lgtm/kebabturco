@@ -58,28 +58,32 @@ const OrderTypeScreen = () => {
   if (opts.delivery) enabled.push({ key: "delivery", label: t("delivery"), sub: t("deliverySub"), icon: iconDelivery, Fallback: Bike, tint: "bg-success/15 text-success" });
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative">
-      <div className="absolute top-4 right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
+    <div
+      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />
       </div>
 
-      <div className="flex flex-col items-center pt-10 pb-6 px-6 min-h-[200px]">
+      {/* Bloco central: logo + título */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-4 gap-6">
         {!brandingLoading && logo && (
-          <div className="w-full max-w-[240px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div className="w-full max-w-[280px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <img src={logo} alt={brandName} className="w-full h-full object-contain" />
           </div>
         )}
-      </div>
 
-      <div className="px-6 text-center">
-        <h1 className="text-[24px] leading-tight font-black text-foreground tracking-tight">
-          {t("howOrder")}
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm">{t("pickOption")}</p>
+        <div className="text-center">
+          <h1 className="text-[24px] leading-tight font-black text-foreground tracking-tight">
+            {t("howOrder")}
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm">{t("pickOption")}</p>
+        </div>
       </div>
 
       {/* Layout horizontal — todos os tipos ativos lado a lado */}
-      <div className="flex-1 flex items-center justify-center px-4 py-6 w-full">
+      <div className="flex items-center justify-center px-4 pb-4 w-full">
         <div
           className="flex flex-row items-stretch justify-center w-full max-w-md flex-nowrap"
           style={{ gap: enabled.length >= 3 ? "0.75rem" : "1rem" }}
