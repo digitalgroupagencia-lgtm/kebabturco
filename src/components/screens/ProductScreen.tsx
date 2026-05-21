@@ -115,39 +115,50 @@ const ProductScreen = () => {
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
   const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(undefined);
   const [extras, setExtras] = useState<Map<string, number>>(new Map());
-  const [ingredients, setIngredients] = useState<Map<string, boolean>>(new Map());
+  // Mapa de ingredientes base: 0 = removido, 1 = normal (default), 2+ = porções extras (+0,50€ cada)
+  const [ingredients, setIngredients] = useState<Map<string, number>>(new Map());
+  const [note, setNote] = useState("");
+  const BASE_INGREDIENT_EXTRA_PRICE = 0.5;
 
   useEffect(() => {
     if (!product) return;
     if (editingItem) {
-      // Preserva customizações ao editar
       setQuantity(editingItem.quantity);
 
-      // Tenta casar tamanho pelo nome
       const matchSize = product.sizes?.find(
         (s) => editingItem.sizeName && tProduct(s.name) === tProduct(editingItem.sizeName),
       );
       setSelectedSize(matchSize ?? product.sizes?.[0]);
 
-      // Tenta casar variante: o nome final do produto incluía sufixo da variante
       const editedName = tProduct(editingItem.productName);
       const matchVariant = product.variants?.find((v) => editedName.includes(tProduct(v.name)));
       setSelectedVariant(matchVariant ?? product.variants?.[0]);
 
-      // Extras
       const extrasMap = new Map<string, number>();
-      editingItem.extras.forEach((e) => extrasMap.set(e.id, e.quantity));
+      const baseIngExtraMap = new Map<string, number>();
+      editingItem.extras.forEach((e) => {
+        if (e.id.startsWith("base-ing:")) {
+          baseIngExtraMap.set(e.id.slice("base-ing:".length), e.quantity);
+        } else {
+          extrasMap.set(e.id, e.quantity);
+        }
+      });
       setExtras(extrasMap);
 
-      // Ingredientes removidos
       const removedSet = new Set(editingItem.removedIngredients);
-      setIngredients(new Map(ingredientOptions.map((i) => [i, !removedSet.has(i)])));
+      setIngredients(
+        new Map(
+          ingredientOptions.map((i) => [i, removedSet.has(i) ? 0 : 1 + (baseIngExtraMap.get(i) || 0)]),
+        ),
+      );
+      setNote(editingItem.note ?? "");
     } else {
       setQuantity(1);
       setSelectedSize(product.sizes?.[0]);
       setSelectedVariant(product.variants?.[0]);
       setExtras(new Map());
-      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, true])));
+      setIngredients(new Map(ingredientOptions.map((ingredient) => [ingredient, 1])));
+      setNote("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, ingredientOptions, editingItem?.id]);
@@ -166,10 +177,19 @@ const ProductScreen = () => {
     return sum + (extra ? extra.price * qty : 0);
   }, 0);
 
-  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal;
+  // Porções extras de ingredientes base (qty > 1)
+  const baseIngredientExtras = Array.from(ingredients.entries())
+    .filter(([, qty]) => qty > 1)
+    .map(([name, qty]) => ({ name, extraQty: qty - 1 }));
+  const baseIngredientsTotal = baseIngredientExtras.reduce(
+    (sum, b) => sum + b.extraQty * BASE_INGREDIENT_EXTRA_PRICE,
+    0,
+  );
+
+  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal + baseIngredientsTotal;
   const totalPrice = unitPrice * quantity;
   const removedIngredients = Array.from(ingredients.entries())
-    .filter(([, included]) => !included)
+    .filter(([, qty]) => qty <= 0)
     .map(([name]) => name);
 
   const handleAdd = () => {
@@ -186,6 +206,16 @@ const ProductScreen = () => {
       })
       .filter(Boolean) as { id: string; name: Record<string, string>; price: number; quantity: number }[];
 
+    // Adiciona porções extras de ingredientes base como linhas de extras
+    baseIngredientExtras.forEach(({ name, extraQty }) => {
+      selectedExtras.push({
+        id: `base-ing:${name}`,
+        name: { es: `+ ${name}`, en: `+ ${name}`, pt: `+ ${name}`, fr: `+ ${name}` },
+        price: BASE_INGREDIENT_EXTRA_PRICE,
+        quantity: extraQty,
+      });
+    });
+
     const variantSuffix = selectedVariant ? ` (${selectedVariant.name.es || selectedVariant.name.en})` : "";
     const finalName = selectedVariant
       ? Object.fromEntries(Object.entries(product.name).map(([k, v]) => [k, v + variantSuffix])) as Record<string, string>
@@ -201,6 +231,7 @@ const ProductScreen = () => {
       sizeAdd: selectedSize?.priceAdd || 0,
       extras: selectedExtras,
       removedIngredients,
+      note: note.trim() || undefined,
       unitPrice,
       totalPrice,
     };
@@ -312,29 +343,54 @@ const ProductScreen = () => {
               <h3 className="text-[17px] font-black text-foreground">Personaliza tu pedido</h3>
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Ingredientes</span>
             </div>
-            <p className="text-[12px] text-muted-foreground mb-2">Toca para quitar</p>
+            <p className="text-[12px] text-muted-foreground mb-2">Quita o añade más (+{BASE_INGREDIENT_EXTRA_PRICE.toFixed(2)}€ cada extra)</p>
             <ul className="divide-y divide-border/70 rounded-2xl border border-border bg-card overflow-hidden">
               {ingredientOptions.map((ingredient) => {
-                const included = ingredients.get(ingredient) ?? true;
+                const qty = ingredients.get(ingredient) ?? 1;
+                const removed = qty <= 0;
+                const extra = qty > 1 ? qty - 1 : 0;
                 return (
-                  <li key={ingredient}>
-                    <button
-                      onClick={() => {
-                        const next = new Map(ingredients);
-                        next.set(ingredient, !included);
-                        setIngredients(next);
-                      }}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-muted/40 transition-colors"
-                    >
-                      <span className={`text-[22px] leading-none shrink-0 ${included ? "" : "grayscale opacity-40"}`} aria-hidden>{emojiFor(ingredient)}</span>
-                      <span className={`flex-1 text-[15px] font-semibold ${included ? "text-foreground" : "text-muted-foreground line-through"}`}>{ingredient}</span>
-                      <span
-                        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${included ? "bg-success" : "bg-destructive"}`}
-                        aria-hidden
+                  <li key={ingredient} className="flex items-center gap-3 px-3.5 py-2.5">
+                    <span className={`text-[22px] leading-none shrink-0 ${removed ? "grayscale opacity-40" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-[15px] font-semibold ${removed ? "text-muted-foreground line-through" : "text-foreground"}`}>{ingredient}</div>
+                      <div className="text-[11px] tabular-nums mt-0.5">
+                        {removed ? (
+                          <span className="text-destructive font-bold">Sin {ingredient.toLowerCase()}</span>
+                        ) : extra > 0 ? (
+                          <span className="text-success font-bold">+{(extra * BASE_INGREDIENT_EXTRA_PRICE).toFixed(2)}€ ({extra} extra)</span>
+                        ) : (
+                          <span className="text-muted-foreground">Incluido</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          const next = new Map(ingredients);
+                          next.set(ingredient, Math.max(0, qty - 1));
+                          setIngredients(next);
+                        }}
+                        disabled={qty <= 0}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform ${qty > 0 ? "bg-destructive text-destructive-foreground" : "border border-border text-foreground"}`}
+                        aria-label="Quitar"
                       >
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-background shadow-sm transition-transform ${included ? "translate-x-[18px]" : "translate-x-0.5"}`} />
-                      </span>
-                    </button>
+                        <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                      <span className="text-[14px] font-bold tabular-nums w-4 text-center text-foreground">{qty}</span>
+                      <button
+                        onClick={() => {
+                          const next = new Map(ingredients);
+                          next.set(ingredient, Math.min(4, qty + 1));
+                          setIngredients(next);
+                        }}
+                        disabled={qty >= 4}
+                        className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 bg-success text-success-foreground"
+                        aria-label="Añadir"
+                      >
+                        <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                    </div>
                   </li>
                 );
               })}
@@ -385,6 +441,22 @@ const ProductScreen = () => {
             </ul>
           </section>
         )}
+
+        <section>
+          <div className="mb-2.5 flex items-baseline justify-between">
+            <h3 className="text-[17px] font-black text-foreground">Observación</h3>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Opcional</span>
+          </div>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, 200))}
+            placeholder="Ej: sin gelo, bien hecho, sin sal…"
+            rows={2}
+            maxLength={200}
+            className="w-full rounded-2xl border border-border bg-card px-3.5 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          <div className="text-right text-[10px] text-muted-foreground mt-1 tabular-nums">{note.length}/200</div>
+        </section>
 
         <section className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 mb-2">
           <span className="text-[15px] font-black text-foreground">Cantidad</span>

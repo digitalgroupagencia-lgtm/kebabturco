@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
@@ -34,6 +34,11 @@ const HomeScreen = () => {
       setSelectedCategory(hasBestsellers ? "bestsellers" : categories[0]?.id ?? null);
     }
   }, [categories, loading, products, selectedCategory, setSelectedCategory]);
+
+  const scrollRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
+  }, [selectedCategory]);
 
   const allCategories = [
     ...(products.some((product) => product.isBestseller) ? [{
@@ -139,27 +144,26 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
-          {/* Banner fixo dentro da área rolável; produtos passam por trás */}
-          <div className="sticky top-0 z-20 px-3 pt-3">
+        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
+          {/* Banner + título da categoria fixos no topo; produtos rolam por baixo */}
+          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md px-3 pt-3">
             <PromoBannerCarousel />
+            <div className="px-1 pt-3 pb-2 flex items-end justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                  {t("menu")}
+                </span>
+                <h2 className="text-[20px] font-black text-foreground tracking-tight leading-tight mt-0.5">
+                  {activeCategoryName}
+                </h2>
+                <div className="h-[3px] w-8 bg-primary rounded-full mt-1.5" />
+              </div>
+              <span className="text-[11px] font-bold text-muted-foreground tabular-nums pb-1">
+                {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
+              </span>
+            </div>
           </div>
 
-          {/* Título da categoria com selo de quantidade */}
-          <div className="px-4 pt-4 pb-3 flex items-end justify-between">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                {t("menu")}
-              </span>
-              <h2 className="text-[20px] font-black text-foreground tracking-tight leading-tight mt-0.5">
-                {activeCategoryName}
-              </h2>
-              <div className="h-[3px] w-8 bg-primary rounded-full mt-1.5" />
-            </div>
-            <span className="text-[11px] font-bold text-muted-foreground tabular-nums pb-1">
-              {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
-            </span>
-          </div>
 
           <div className="px-3 pb-6 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product) => {

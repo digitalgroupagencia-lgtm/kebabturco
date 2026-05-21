@@ -23,6 +23,7 @@ export interface CartItem {
   sizeAdd: number;
   extras: CartItemExtra[];
   removedIngredients: string[];
+  note?: string;
   unitPrice: number;
   totalPrice: number;
 }
