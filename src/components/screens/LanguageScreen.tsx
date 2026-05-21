@@ -50,7 +50,22 @@ const LanguageScreen = () => {
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 
+  if (brandingLoading || storeLoading) {
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col bg-background relative"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div
+          className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
+          style={{ height: "env(safe-area-inset-top)" }}
+        />
+      </div>
+    );
+  }
+
   return (
+
     <div
       className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
