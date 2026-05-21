@@ -46,18 +46,15 @@ function applyTheme(s: CompanySettings) {
   root.style.setProperty("--card", hexToHsl(s.background_color));
   root.style.setProperty("--card-foreground", hexToHsl(s.text_color));
 
-  // Cor personalizada da barra superior (header) do totem
+  // Cor personalizada da barra superior (header) — sólida, sem degradê
   const headerHex = (s as any).header_color || s.primary_color;
   const headerHsl = hexToHsl(headerHex);
-  // gradiente sutil baseado na mesma cor (variação de luminosidade)
-  const [h, sat, l] = headerHsl.split(" ");
-  const lNum = parseInt(l);
-  const darker = `${h} ${sat} ${Math.max(lNum - 6, 5)}%`;
   root.style.setProperty(
     "--gradient-header",
-    `linear-gradient(135deg, hsl(${headerHsl}) 0%, hsl(${darker}) 100%)`
+    `linear-gradient(180deg, hsl(${headerHsl}) 0%, hsl(${headerHsl}) 100%)`
   );
-  root.style.setProperty("--shadow-header", `0 4px 18px -8px hsla(${headerHsl.replace(/%/g, "%")} / 0.4)`);
+  root.style.setProperty("--shadow-header", `0 4px 18px -8px hsla(${headerHsl} / 0.4)`);
+
 }
 
 function applyDynamicManifest(s: CompanySettings) {
