@@ -281,6 +281,10 @@ const PaymentScreen = () => {
                   <Bike className="w-3.5 h-3.5 text-primary" />
                   Taxa de entrega
                   {deliveryQuote.zone && <span className="text-muted-foreground">· {deliveryQuote.zone.name}</span>}
+                  {geo.distanceKm != null && (
+                    <span className="text-muted-foreground">· {geo.distanceKm.toFixed(1)} km</span>
+                  )}
+                  {geo.loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                 </span>
                 <span className="font-black tabular-nums">
                   {deliveryFee > 0 ? `${deliveryFee.toFixed(2)}€` : "Grátis"}
