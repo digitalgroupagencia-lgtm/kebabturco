@@ -195,13 +195,13 @@ const ReviewScreen = () => {
                     <Trash2 className="w-3.5 h-3.5" /> {t("remove2")}
                   </button>
                 </div>
-                <QuantitySelector
-                  value={item.quantity}
-                  onChange={(v) => updateQuantity(item.id, v)}
-                  min={1}
-                  variant="compact"
-                />
-              </div>
+                <button
+                  onClick={() => handleDuplicate(item)}
+                  className="flex items-center gap-1.5 text-success text-[13px] font-black px-3 py-1.5 rounded-full bg-success/10 hover:bg-success/20 active:scale-95 transition-all"
+                  title="Duplicar para personalizar separadamente"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Duplicar
+                </button>
             </article>
           ))}
 
