@@ -8,7 +8,7 @@ import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
 import flagFr from "@/assets/flag-fr.png";
-import logoFallback from "@/assets/elrey-logo.png";
+
 
 const FALLBACK_FLAG: Record<string, string> = {
   pt: flagBr,
@@ -35,7 +35,7 @@ const LanguageScreen = () => {
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
     (settings as any)?.logo_language_url ||
     settings?.logo_main_url ||
-    logoFallback;
+    null;
   const brandName = settings?.company_name || "EL REY";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
@@ -56,10 +56,12 @@ const LanguageScreen = () => {
       </div>
 
       {/* Logo header — mesmo padrão da OrderTypeScreen */}
-      <div className="flex flex-col items-center pt-12 pb-6 px-6">
-        <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-          <img src={logo} alt={brandName} className="w-full h-full object-contain" />
-        </div>
+      <div className="flex flex-col items-center pt-12 pb-6 px-6 min-h-[220px]">
+        {logo && (
+          <div className="w-full max-w-[280px] aspect-[4/3] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+            <img src={logo} alt={brandName} className="w-full h-full object-contain" />
+          </div>
+        )}
       </div>
 
       {/* Título */}

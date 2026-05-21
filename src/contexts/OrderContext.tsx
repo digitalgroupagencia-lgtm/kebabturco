@@ -23,6 +23,18 @@ interface OrderContextType {
   setCustomerName: (n: string) => void;
   customerPhone: string;
   setCustomerPhone: (p: string) => void;
+  deliveryAddress: string;
+  setDeliveryAddress: (v: string) => void;
+  deliveryNumber: string;
+  setDeliveryNumber: (v: string) => void;
+  deliveryComplement: string;
+  setDeliveryComplement: (v: string) => void;
+  deliveryPostalCode: string;
+  setDeliveryPostalCode: (v: string) => void;
+  deliveryCity: string;
+  setDeliveryCity: (v: string) => void;
+  deliveryNotes: string;
+  setDeliveryNotes: (v: string) => void;
   paymentMethod: PaymentMethodId | null;
   setPaymentMethod: (m: PaymentMethodId | null) => void;
   productReturnScreen: Screen;
@@ -47,6 +59,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tableNumber, setTableNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryNumber, setDeliveryNumber] = useState("");
+  const [deliveryComplement, setDeliveryComplement] = useState("");
+  const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
 
@@ -76,6 +94,18 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCustomerName,
         customerPhone,
         setCustomerPhone,
+        deliveryAddress,
+        setDeliveryAddress,
+        deliveryNumber,
+        setDeliveryNumber,
+        deliveryComplement,
+        setDeliveryComplement,
+        deliveryPostalCode,
+        setDeliveryPostalCode,
+        deliveryCity,
+        setDeliveryCity,
+        deliveryNotes,
+        setDeliveryNotes,
         paymentMethod,
         setPaymentMethod,
         productReturnScreen,

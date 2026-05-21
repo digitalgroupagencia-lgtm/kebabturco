@@ -5,7 +5,7 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: any }[] = [
@@ -50,6 +50,18 @@ const PaymentScreen = () => {
     setCustomerName,
     customerPhone,
     setCustomerPhone,
+    deliveryAddress,
+    setDeliveryAddress,
+    deliveryNumber,
+    setDeliveryNumber,
+    deliveryComplement,
+    setDeliveryComplement,
+    deliveryPostalCode,
+    setDeliveryPostalCode,
+    deliveryCity,
+    setDeliveryCity,
+    deliveryNotes,
+    setDeliveryNotes,
   } = useOrder();
   const { items, totalPrice, clearCart, orderType } = useCart();
   const { settings } = useOperationsSettings();
@@ -58,7 +70,7 @@ const PaymentScreen = () => {
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "method">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method">(null);
 
   const enabledMethods = useMemo(() => {
     if (!settings) return METHOD_DEFS;
@@ -82,22 +94,17 @@ const PaymentScreen = () => {
 
   const confirm = async () => {
     if (processing) return;
-    if (!customerName.trim() || customerName.trim().length < 2) {
-      setShowError("name");
-      return;
+    if (!customerName.trim() || customerName.trim().length < 2) { setShowError("name"); return; }
+    if (orderType === "here" && !tableNumber.trim()) { setShowError("table"); return; }
+    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) { setShowError("phone"); return; }
+    if (orderType === "delivery") {
+      if (!customerPhone.trim() || customerPhone.trim().length < 6) { setShowError("phone"); return; }
+      if (!deliveryAddress.trim()) { setShowError("address"); return; }
+      if (!deliveryNumber.trim()) { setShowError("number"); return; }
+      if (!deliveryPostalCode.trim()) { setShowError("postal"); return; }
+      if (!deliveryCity.trim()) { setShowError("city"); return; }
     }
-    if (orderType === "here" && !tableNumber.trim()) {
-      setShowError("table");
-      return;
-    }
-    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) {
-      setShowError("phone");
-      return;
-    }
-    if (!selected) {
-      setShowError("method");
-      return;
-    }
+    if (!selected) { setShowError("method"); return; }
     setShowError(null);
     await persistAndPrint(customerName.trim(), tableNumber.trim(), customerPhone.trim());
   };
@@ -124,7 +131,7 @@ const PaymentScreen = () => {
           .insert({
             store_id: storeId,
             order_number: orderNumber,
-            order_type: orderType === "here" ? "dine_in" : "takeaway",
+            order_type: orderType === "here" ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway",
             table_number: finalTable || null,
             customer_name: finalName || null,
             customer_phone: finalPhone || null,
@@ -167,6 +174,14 @@ const PaymentScreen = () => {
             customerName: finalName || null,
             customerPhone: finalPhone || null,
             orderType,
+            deliveryAddress: orderType === "delivery" ? {
+              street: deliveryAddress,
+              number: deliveryNumber,
+              complement: deliveryComplement || null,
+              postalCode: deliveryPostalCode,
+              city: deliveryCity,
+              notes: deliveryNotes || null,
+            } : null,
             paymentMethod: selected,
             paymentPending: selected === "counter",
             items: items.map((i) => ({
@@ -241,7 +256,7 @@ const PaymentScreen = () => {
             />
           </div>
 
-          {orderType === "here" ? (
+          {orderType === "here" && (
             <div className={`px-4 py-4 border-t border-border ${showError === "table" ? "bg-destructive/5 animate-pulse" : ""}`}>
               <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                 <Hash className="w-3.5 h-3.5 text-primary" />
@@ -258,7 +273,9 @@ const PaymentScreen = () => {
                 }`}
               />
             </div>
-          ) : (
+          )}
+
+          {(orderType === "takeaway" || orderType === "delivery") && (
             <div className={`px-4 py-4 border-t border-border ${showError === "phone" ? "bg-destructive/5 animate-pulse" : ""}`}>
               <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
                 <Phone className="w-3.5 h-3.5 text-primary" />
@@ -275,6 +292,100 @@ const PaymentScreen = () => {
                 }`}
               />
             </div>
+          )}
+
+          {orderType === "delivery" && (
+            <>
+              <div className={`px-4 py-4 border-t border-border ${showError === "address" ? "bg-destructive/5 animate-pulse" : ""}`}>
+                <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  Dirección (calle) <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress}
+                  onChange={(e) => { setDeliveryAddress(e.target.value.slice(0, 120)); if (showError === "address") setShowError(null); }}
+                  placeholder="Ej: Calle Mayor"
+                  className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                    showError === "address" ? "border-destructive/60" : "border-transparent"
+                  }`}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 px-4 py-4 border-t border-border">
+                <div className={showError === "number" ? "animate-pulse" : ""}>
+                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                    <Home className="w-3.5 h-3.5 text-primary" />
+                    Número <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={deliveryNumber}
+                    onChange={(e) => { setDeliveryNumber(e.target.value.slice(0, 10)); if (showError === "number") setShowError(null); }}
+                    placeholder="12"
+                    className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                      showError === "number" ? "border-destructive/60" : "border-transparent"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                    Piso/Puerta
+                  </label>
+                  <input
+                    type="text"
+                    value={deliveryComplement}
+                    onChange={(e) => setDeliveryComplement(e.target.value.slice(0, 30))}
+                    placeholder="3º B"
+                    className="w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 px-4 py-4 border-t border-border">
+                <div className={showError === "postal" ? "animate-pulse" : ""}>
+                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                    <Mailbox className="w-3.5 h-3.5 text-primary" />
+                    CP <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={deliveryPostalCode}
+                    onChange={(e) => { setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8)); if (showError === "postal") setShowError(null); }}
+                    placeholder="46700"
+                    className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                      showError === "postal" ? "border-destructive/60" : "border-transparent"
+                    }`}
+                  />
+                </div>
+                <div className={showError === "city" ? "animate-pulse" : ""}>
+                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                    Ciudad <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={deliveryCity}
+                    onChange={(e) => { setDeliveryCity(e.target.value.slice(0, 60)); if (showError === "city") setShowError(null); }}
+                    placeholder="Gandia"
+                    className={`w-full h-12 px-4 text-base font-bold text-foreground bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary focus:bg-card transition-colors ${
+                      showError === "city" ? "border-destructive/60" : "border-transparent"
+                    }`}
+                  />
+                </div>
+              </div>
+              <div className="px-4 py-4 border-t border-border">
+                <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
+                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  Notas para el repartidor
+                </label>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value.slice(0, 200))}
+                  placeholder="Ej: Portal azul, llamar al timbre 2"
+                  rows={2}
+                  className="w-full px-4 py-3 text-sm font-medium text-foreground bg-secondary/60 rounded-2xl border-2 border-transparent focus:outline-none focus:border-primary focus:bg-card transition-colors resize-none"
+                />
+              </div>
+            </>
           )}
         </div>
 
