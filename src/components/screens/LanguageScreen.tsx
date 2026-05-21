@@ -65,9 +65,9 @@ const LanguageScreen = () => {
       </div>
 
       {/* Bloco central: logo + títulos */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-4 gap-6">
+      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-8 pb-2 gap-4">
         {logo && (
-          <div className="w-full max-w-[320px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div className="w-full max-w-[280px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <img
               src={logo}
               alt={brandName}
@@ -77,7 +77,7 @@ const LanguageScreen = () => {
           </div>
         )}
 
-        <div className="text-center flex flex-col gap-1.5 w-full">
+        <div className="text-center flex flex-col gap-1 w-full">
           {titles.map((tt, idx) => (
             <h1
               key={idx}
@@ -94,7 +94,8 @@ const LanguageScreen = () => {
       </div>
 
       {/* Idiomas — horizontal, alinhado ao centro */}
-      <div className="flex items-center justify-center px-4 pb-4 w-full">
+      <div className="flex items-center justify-center px-4 pb-2 w-full">
+
         <div
           className="flex flex-row items-start justify-center w-full max-w-md flex-nowrap"
           style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
