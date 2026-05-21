@@ -230,7 +230,7 @@ const PaymentScreen = () => {
               <p className="text-[44px] leading-none font-black text-price mt-1.5 tabular-nums tracking-tight">
                 {totalPrice.toFixed(2)}€
               </p>
-              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? "ítem" : t("items")} · {t("taxesIncluded")}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? t("oneItem") : t("items")} · {t("taxesIncluded")}</p>
             </div>
             {logoUrl && (
               <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />
