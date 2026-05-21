@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag, Languages, ListOrdered } from "lucide-react";
+import { Palette, Image as ImageIcon, Save, Upload, UtensilsCrossed, ShoppingBag, Bike, Languages, ListOrdered } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Loader2 } from "lucide-react";
