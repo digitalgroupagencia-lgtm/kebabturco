@@ -28,10 +28,11 @@ const TITLE_BY_LANG: Record<string, string> = {
 const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
-  const { settings } = useBranding();
-  const { stores } = useResolvedStore();
+  const { settings, loading: brandingLoading } = useBranding();
+  const { stores, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
   const logo =
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
     (settings as any)?.logo_language_url ||
@@ -49,7 +50,22 @@ const LanguageScreen = () => {
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 
+  if (brandingLoading || storeLoading) {
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col bg-background relative"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div
+          className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
+          style={{ height: "env(safe-area-inset-top)" }}
+        />
+      </div>
+    );
+  }
+
   return (
+
     <div
       className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
