@@ -1192,8 +1192,8 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
-          stripe_connect_account_id?: string | null
           stripe_charges_enabled?: boolean
+          stripe_connect_account_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -1210,8 +1210,8 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
-          stripe_connect_account_id?: string | null
           stripe_charges_enabled?: boolean
+          stripe_connect_account_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1744,6 +1744,18 @@ export type Database = {
           month_label: string
           order_count: number
           revenue: number
+        }[]
+      }
+      get_order_public: {
+        Args: { _order_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          order_number: string
+          order_type: string
+          payment_status: string
+          status: string
+          total: number
         }[]
       }
       get_orders_heatmap: {

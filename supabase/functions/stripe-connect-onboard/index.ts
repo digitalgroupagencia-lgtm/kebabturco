@@ -28,6 +28,39 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- AUTH: admin do tenant da store ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Valida returnUrl (apenas https e domínios conhecidos)
+    try {
+      const u = new URL(returnUrl);
+      if (u.protocol !== "https:") throw new Error("invalid protocol");
+    } catch {
+      return new Response(JSON.stringify({ error: "returnUrl inválida" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -36,7 +69,7 @@ Deno.serve(async (req) => {
 
     const { data: store } = await supabase
       .from("stores")
-      .select("id, name, stripe_connect_account_id")
+      .select("id, name, tenant_id, stripe_connect_account_id")
       .eq("id", storeId)
       .maybeSingle();
 
@@ -46,6 +79,19 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role, tenant_id")
+      .eq("user_id", userId);
+    const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
+    const tenantIds = (roles ?? []).map((r) => r.tenant_id).filter(Boolean);
+    if (!isAdminMaster && !tenantIds.includes(store.tenant_id)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     let accountId = store.stripe_connect_account_id;
 

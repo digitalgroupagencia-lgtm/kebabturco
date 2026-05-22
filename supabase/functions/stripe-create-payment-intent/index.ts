@@ -25,12 +25,24 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const { storeId, amountCents, orderType, metadata = {} } = await req.json();
 
-    if (!storeId || !amountCents || amountCents < 50) {
+    if (!storeId || !amountCents || amountCents < 50 || amountCents > 1_000_00 * 10) {
       return new Response(JSON.stringify({ error: "Parâmetros inválidos" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Whitelist de chaves de metadata permitidas (evita injeção)
+    const ALLOWED_META_KEYS = new Set(["order_id", "order_number", "table_number", "customer_name"]);
+    const safeMeta: Record<string, string> = {};
+    if (metadata && typeof metadata === "object") {
+      for (const [k, v] of Object.entries(metadata)) {
+        if (ALLOWED_META_KEYS.has(k) && typeof v === "string" && v.length <= 200) {
+          safeMeta[k] = v;
+        }
+      }
+    }
+
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -57,10 +69,11 @@ Deno.serve(async (req) => {
       transfer_data: { destination: store.stripe_connect_account_id },
       automatic_payment_methods: { enabled: true },
       metadata: {
+        ...safeMeta,
         store_id: storeId,
         order_type: orderType || "dine_in",
-        ...metadata,
       },
+
     });
 
     return new Response(
