@@ -1746,6 +1746,18 @@ export type Database = {
           revenue: number
         }[]
       }
+      get_order_public: {
+        Args: { _order_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          order_number: string
+          order_type: string
+          payment_status: string
+          status: string
+          total: number
+        }[]
+      }
       get_orders_heatmap: {
         Args: never
         Returns: {
