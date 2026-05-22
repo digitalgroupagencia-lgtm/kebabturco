@@ -66,8 +66,40 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Se for geocoding da loja → grava lat/lng
+    // Se for geocoding da loja → grava lat/lng (REQUER autenticação de admin da store)
     if (mode === "store") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(
+        authHeader.replace("Bearer ", ""),
+      );
+      if (claimsErr || !claimsData?.claims?.sub) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userId = claimsData.claims.sub as string;
+      const [{ data: roles }, { data: targetStore }] = await Promise.all([
+        supabase.from("user_roles").select("role, tenant_id").eq("user_id", userId),
+        supabase.from("stores").select("tenant_id").eq("id", storeId).maybeSingle(),
+      ]);
+      const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
+      const tenantIds = (roles ?? []).map((r) => r.tenant_id).filter(Boolean);
+      if (!isAdminMaster && !(targetStore && tenantIds.includes(targetStore.tenant_id))) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       await supabase
         .from("stores")
         .update({ latitude: geo.lat, longitude: geo.lng, geocoded_address: geo.formatted })
@@ -77,6 +109,7 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     // Cliente: calcula distância até a loja
     const { data: store } = await supabase
