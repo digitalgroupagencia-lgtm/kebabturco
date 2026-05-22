@@ -2,6 +2,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { OrderProvider, useOrder } from "@/contexts/OrderContext";
 import CartBar from "@/components/CartBar";
+import AppFooter from "@/components/AppFooter";
 import SplashScreen from "@/components/screens/SplashScreen";
 import LanguageScreen from "@/components/screens/LanguageScreen";
 import StoreSelectionScreen from "@/components/screens/StoreSelectionScreen";
@@ -47,6 +48,7 @@ const Index = () => (
         <div className="max-w-md mx-auto h-[100dvh] md:h-full min-h-[100dvh] md:min-h-0 bg-background relative shadow-lg">
           <ScreenRouter />
           <CartBar />
+          <AppFooter />
         </div>
       </OrderProvider>
     </CartProvider>

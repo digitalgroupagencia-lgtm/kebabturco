@@ -110,7 +110,7 @@ export interface TicketOrder {
   subtotal?: number;
   created_at?: string;
   payment_method?: string | null;
-  // Branding (vem da loja)
+  paid_via_app?: boolean;
   company_name: string;
   company_phone?: string;
   company_address?: string;
@@ -205,7 +205,9 @@ function buildBytes(order: TicketOrder): Uint8Array {
 
   w.line();
   w.cmd(ALIGN_CENTER, BOLD_ON);
-  if (order.payment_method) {
+  if (order.paid_via_app) {
+    w.cmd(DOUBLE_HEIGHT); w.line("*** PAGO VIA APP ***"); w.cmd(NORMAL);
+  } else if (order.payment_method) {
     w.cmd(DOUBLE_HEIGHT); w.line("*** PAGADO ***"); w.cmd(NORMAL);
   } else {
     w.line("*** COMANDA PENDIENTE DE COBRO ***");

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 const operacao = [
   { title: "Dashboard", url: "/panel", icon: LayoutGrid, end: true },
   { title: "Pedidos", url: "/panel/orders", icon: ShoppingBag },
+  { title: "Mapa de mesas", url: "/panel/table-map", icon: LayoutGrid },
   { title: "Caixa", url: "/panel/cashier", icon: DollarSign },
   { title: "Estoque", url: "/panel/stock", icon: Package },
   { title: "Relatórios", url: "/panel/reports", icon: BarChart3 },
@@ -31,6 +32,7 @@ const config = [
   { title: "Pagamentos", url: "/panel/payments", icon: Wallet },
   { title: "Impressoras", url: "/panel/printers", icon: Printer },
   { title: "Totem", url: "/panel/totem", icon: Monitor },
+  { title: "Mesas & QR", url: "/panel/tables", icon: LayoutGrid },
   { title: "Equipe", url: "/panel/team", icon: Users },
   { title: "Vendedores", url: "/panel/sellers", icon: UserCog },
   { title: "Guia", url: "/panel/guide", icon: BookOpen },

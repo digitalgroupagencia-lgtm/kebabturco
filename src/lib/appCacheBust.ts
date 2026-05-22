@@ -1,0 +1,66 @@
+export const APP_BUILD_ID: string = __APP_BUILD_ID__;
+export const APP_REFRESH_STORAGE_KEY = "kebabturco:app-refresh";
+export const APP_CACHE_BUST_EVENT = "kebabturco:cache-bust";
+
+/** Invalida cache local e força remount dos providers/rotas (ex.: após mudança no admin). */
+export function bumpAppCache() {
+  const stamp = String(Date.now());
+  try {
+    localStorage.setItem(APP_REFRESH_STORAGE_KEY, stamp);
+  } catch {
+    // ignore (modo privado / quota)
+  }
+  window.dispatchEvent(new CustomEvent(APP_CACHE_BUST_EVENT, { detail: stamp }));
+}
+
+export function subscribeAppCacheBust(onBump: () => void) {
+  const handler = () => onBump();
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === APP_REFRESH_STORAGE_KEY) onBump();
+  };
+
+  window.addEventListener(APP_CACHE_BUST_EVENT, handler);
+  window.addEventListener("storage", onStorage);
+
+  return () => {
+    window.removeEventListener(APP_CACHE_BUST_EVENT, handler);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+async function fetchRemoteBuildId(): Promise<string | null> {
+  try {
+    const response = await fetch(`${window.location.origin}/?_cb=${Date.now()}`, {
+      cache: "no-store",
+      headers: { Accept: "text/html" },
+    });
+    if (!response.ok) return null;
+    const html = await response.text();
+    const match = html.match(/<meta\s+name="app-build-id"\s+content="([^"]+)"/i);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Recarrega a app se o deploy no Lovable/publicado tiver versão mais recente que a em cache. */
+export async function checkForDeployedUpdate() {
+  if (import.meta.env.DEV) return;
+
+  const remoteBuildId = await fetchRemoteBuildId();
+  if (!remoteBuildId || remoteBuildId === APP_BUILD_ID) return;
+
+  const reloadKey = "kebabturco:last-reload-build";
+  const lastReload = sessionStorage.getItem(reloadKey);
+  if (lastReload === remoteBuildId) return;
+
+  sessionStorage.setItem(reloadKey, remoteBuildId);
+  window.location.reload();
+}
+
+/** Query param para URLs de preview (iframe admin / Lovable). */
+export function withCacheBust(url: string, token?: string | number) {
+  const bust = token ?? Date.now();
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}_cb=${bust}`;
+}

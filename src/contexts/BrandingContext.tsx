@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { bumpAppCache } from "@/lib/appCacheBust";
 
 export type CompanySettings = Tables<"company_settings">;
 
@@ -153,7 +154,9 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "company_settings", filter: `store_id=eq.${storeId}` },
-        () => load()
+        () => {
+          void load().then(() => bumpAppCache());
+        }
       )
       .subscribe();
     return () => {

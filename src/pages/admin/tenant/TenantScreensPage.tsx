@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, Layout, Smartphone, Image as ImageIcon, Languages, Store, UtensilsCrossed, ExternalLink, RefreshCw } from "lucide-react";
+import { bumpAppCache, withCacheBust } from "@/lib/appCacheBust";
 
 type ScreenKey = "splash" | "language" | "storeSelect" | "orderType" | "home";
 
@@ -66,7 +67,7 @@ const TenantScreensPage = () => {
     const { error } = await supabase.from("totem_config").upsert(payload, { onConflict: "store_id" });
     setSaving(false);
     if (error) toast.error(error.message);
-    else { toast.success("Telas atualizadas"); setIframeKey((k) => k + 1); }
+    else { toast.success("Telas atualizadas"); setIframeKey((k) => k + 1); bumpAppCache(); }
   };
 
   const setField = (k: string, v: any) => setConfig((p: any) => ({ ...p, [k]: v }));
@@ -75,7 +76,10 @@ const TenantScreensPage = () => {
   if (!config) return <div className="p-8">Crie uma unidade primeiro.</div>;
 
   const baseUrl = tenant?.custom_domain ? `https://${tenant.custom_domain}` : window.location.origin;
-  const previewUrl = `${baseUrl}/?tenant=${tenant?.slug}&screen=${active}&preview=1`;
+  const previewUrl = withCacheBust(
+    `${baseUrl}/?tenant=${tenant?.slug}&screen=${active}&preview=1`,
+    iframeKey,
+  );
 
   return (
     <div className="p-4 sm:p-6">
@@ -181,7 +185,7 @@ const TenantScreensPage = () => {
             <div className="text-xs text-muted-foreground mb-3 flex items-center justify-between">
               <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5" /> Preview ao vivo (totem real)</span>
               <div className="flex gap-1">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setIframeKey((k) => k + 1)} title="Recarregar">
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setIframeKey((k) => k + 1); bumpAppCache(); }} title="Recarregar">
                   <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
                 <Button size="icon" variant="ghost" className="h-7 w-7" asChild title="Abrir em nova aba">

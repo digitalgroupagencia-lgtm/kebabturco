@@ -12,7 +12,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 
 const OrderTypeScreen = () => {
-  const { setScreen, setTableNumber } = useOrder();
+  const { setScreen, setTableNumber, mesaLocked, tableNumber, clearMesaLock } = useOrder();
   const { setOrderType } = useCart();
   const { settings, loading: brandingLoading } = useBranding();
   const { t, lang } = useLanguage();
@@ -56,7 +56,10 @@ const OrderTypeScreen = () => {
 
   const handleSelect = (type: "here" | "takeaway" | "delivery") => {
     setOrderType(type);
-    if (type !== "here") setTableNumber("");
+    if (type !== "here") {
+      setTableNumber("");
+      clearMesaLock();
+    }
     setScreen("home");
   };
 
@@ -88,6 +91,12 @@ const OrderTypeScreen = () => {
         )}
 
         <div className="text-center">
+          {mesaLocked && tableNumber && (
+            <div className="mb-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg">
+              <UtensilsCrossed className="w-5 h-5" />
+              <span className="text-lg font-black">Mesa {tableNumber}</span>
+            </div>
+          )}
           <h1 className="text-[24px] leading-tight font-black text-foreground tracking-tight">
             {t("howOrder")}
           </h1>
@@ -105,7 +114,9 @@ const OrderTypeScreen = () => {
             <button
               key={key}
               onClick={() => handleSelect(key)}
-              className="flex-1 min-w-0 flex flex-col items-center gap-2 p-3 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border border-border/60 active:scale-[0.97] transition-all touch-action-manipulation"
+              className={`flex-1 min-w-0 flex flex-col items-center gap-2 p-3 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
+                mesaLocked && key === "here" ? "border-primary ring-2 ring-primary/40" : "border-border/60"
+              }`}
             >
               <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 ${icon ? "" : tint}`}>
                 {icon ? (

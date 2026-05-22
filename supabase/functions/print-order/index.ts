@@ -22,9 +22,10 @@ interface Payload {
   customerName?: string | null;
   customerPhone?: string | null;
   tableNumber?: string | null;
-  orderType: "here" | "takeaway";
+  orderType: "here" | "takeaway" | "delivery";
   paymentMethod: string;
   paymentPending: boolean;
+  paidViaApp?: boolean;
   notes?: string | null;
   items: ItemLine[];
   total: number;
@@ -73,16 +74,26 @@ const buildTicket = (p: Payload, lang: string, brandName: string) => {
 
   lines.push(center(brandName.toUpperCase(), W));
   lines.push(sep);
+
+  if (p.tableNumber) {
+    lines.push(dsep);
+    lines.push(center(`MESA ${p.tableNumber}`, W));
+    lines.push(dsep);
+  }
+
   lines.push(center(`${L("order")} #${p.orderNumber}`, W));
+  lines.push(center(new Date().toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }), W));
   lines.push(sep);
 
-  if (p.paymentPending) {
+  if (p.paidViaApp) {
+    lines.push(center("*** PAGO VIA APP ***", W));
+    lines.push(sep);
+  } else if (p.paymentPending) {
     lines.push(center(L("payCounter"), W));
     lines.push(sep);
   }
 
-  lines.push(`${L("type")}:  ${p.orderType === "here" ? L("here") : L("takeaway")}`);
-  if (p.tableNumber) lines.push(`${L("table")}:  ${p.tableNumber}`);
+  lines.push(`${L("type")}:  ${p.orderType === "here" ? L("here") : p.orderType === "delivery" ? "DOMICILIO" : L("takeaway")}`);
   if (p.customerName) lines.push(`${L("customer")}: ${p.customerName}`);
   if (p.customerPhone) lines.push(`${L("phone")}: ${p.customerPhone}`);
   lines.push(`${L("payment")}:  ${p.paymentMethod}`);
