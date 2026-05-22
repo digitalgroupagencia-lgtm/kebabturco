@@ -1,12 +1,12 @@
 {
-  "name": "Kebab Turco",
+  "name": "Kebab Turco Gandia",
   "short_name": "Kebab Turco",
-  "description": "Pide online tu kebab, pizza y más.",
+  "description": "Pide tu kebab favorito en Gandia",
+  "lang": "es",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#D62300",
-  "orientation": "portrait",
+  "background_color": "#CC0000",
+  "theme_color": "#CC0000",
   "icons": [
     {
       "src": "/icon-192.png",
