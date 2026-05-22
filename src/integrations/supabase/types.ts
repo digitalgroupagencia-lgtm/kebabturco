@@ -445,6 +445,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          application_fee_cents: number
           created_at: string
           customer_name: string | null
           customer_phone: string | null
@@ -453,10 +454,12 @@ export type Database = {
           order_number: string
           order_type: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           seller_id: string | null
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
+          stripe_payment_intent_id: string | null
           subtotal: number
           table_customer_id: string | null
           table_number: string | null
@@ -465,6 +468,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          application_fee_cents?: number
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
@@ -473,10 +477,12 @@ export type Database = {
           order_number: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
+          stripe_payment_intent_id?: string | null
           subtotal?: number
           table_customer_id?: string | null
           table_number?: string | null
@@ -485,6 +491,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          application_fee_cents?: number
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
@@ -493,10 +500,12 @@ export type Database = {
           order_number?: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
+          stripe_payment_intent_id?: string | null
           subtotal?: number
           table_customer_id?: string | null
           table_number?: string | null
@@ -1165,6 +1174,8 @@ export type Database = {
           phone: string | null
           short_description: string | null
           sort_order: number
+          stripe_charges_enabled: boolean
+          stripe_connect_account_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -1181,6 +1192,8 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
+          stripe_charges_enabled?: boolean
+          stripe_connect_account_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -1197,6 +1210,8 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
+          stripe_charges_enabled?: boolean
+          stripe_connect_account_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1634,6 +1649,10 @@ export type Database = {
         Args: { _name: string; _session_id: string }
         Returns: string
       }
+      add_or_get_table_customer_public: {
+        Args: { _name?: string; _session_id: string }
+        Returns: string
+      }
       close_table_customer: {
         Args: { _customer_id: string; _payment_method: string }
         Returns: Json
@@ -1642,7 +1661,30 @@ export type Database = {
         Args: { _payment_method: string; _session_id: string }
         Returns: Json
       }
+      confirm_order_payment: {
+        Args: { _payment_status?: string; _stripe_payment_intent_id: string }
+        Returns: Json
+      }
       count_active_sellers: { Args: { _tenant_id: string }; Returns: number }
+      create_customer_order: {
+        Args: {
+          _application_fee_cents?: number
+          _customer_name?: string
+          _customer_phone?: string
+          _items: Json
+          _notes?: string
+          _order_type: string
+          _payment_method?: string
+          _payment_status?: string
+          _store_id: string
+          _stripe_payment_intent_id?: string
+          _subtotal?: number
+          _table_id?: string
+          _table_number?: string
+          _total: number
+        }
+        Returns: Json
+      }
       create_seller_order: {
         Args: {
           _customer_name: string
@@ -1813,6 +1855,10 @@ export type Database = {
         Args: { _store_id: string; _table_number: string }
         Returns: string
       }
+      open_or_get_table_session_public: {
+        Args: { _store_id: string; _table_id?: string; _table_number: string }
+        Returns: string
+      }
       release_tenant_edit_lock: {
         Args: { _tenant_id: string }
         Returns: undefined
@@ -1845,6 +1891,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
       print_job_status: "pending" | "printing" | "printed" | "failed"
     }
     CompositeTypes: {
@@ -1983,6 +2030,7 @@ export const Constants = {
       order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
       payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
       print_job_status: ["pending", "printing", "printed", "failed"],
     },
   },
