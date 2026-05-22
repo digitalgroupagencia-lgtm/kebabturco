@@ -7,6 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { supabase } from "@/integrations/supabase/client";
+import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 
@@ -32,6 +33,13 @@ const OrderTypeScreen = () => {
   const [opts, setOpts] = useState<{ dine_in: boolean; takeaway: boolean; delivery: boolean }>({
     dine_in: true, takeaway: true, delivery: false,
   });
+
+  useEffect(() => {
+    if (!shouldForceDeliveryOnly()) return;
+    setOrderType("delivery");
+    setTableNumber("");
+    setScreen("home");
+  }, [setOrderType, setScreen, setTableNumber]);
 
   useEffect(() => {
     if (!storeId) return;

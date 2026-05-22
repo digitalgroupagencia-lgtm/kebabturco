@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import { getEmbedScreen, isEmbedded } from "@/lib/embed-mode";
+import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
@@ -48,6 +48,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
   const initialScreen: Screen = (() => {
     if (typeof window === "undefined") return "language";
+    if (isGandiaFoodSource()) return "home";
     if (isEmbedded()) return "home";
     const embedScreen = getEmbedScreen();
     if (embedScreen) return embedScreen;

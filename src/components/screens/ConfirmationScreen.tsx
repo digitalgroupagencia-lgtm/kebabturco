@@ -7,6 +7,8 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag, User, Phone, Download } from "lucide-react";
 import { toPng } from "html-to-image";
 
+import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
+
 const ConfirmationScreen = () => {
   const {
     setScreen, orderNumber, tableNumber, paymentMethod,
@@ -34,7 +36,7 @@ const ConfirmationScreen = () => {
     setPaymentMethod(null);
     setCustomerName("");
     setCustomerPhone("");
-    setScreen("orderType");
+    setScreen(shouldForceDeliveryOnly() ? "home" : "orderType");
   };
 
   // Auto reset após 30s
