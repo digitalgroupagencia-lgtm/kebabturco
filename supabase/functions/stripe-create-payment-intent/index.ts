@@ -69,10 +69,11 @@ Deno.serve(async (req) => {
       transfer_data: { destination: store.stripe_connect_account_id },
       automatic_payment_methods: { enabled: true },
       metadata: {
+        ...safeMeta,
         store_id: storeId,
         order_type: orderType || "dine_in",
-        ...metadata,
       },
+
     });
 
     return new Response(
