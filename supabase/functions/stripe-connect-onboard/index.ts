@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
     const { data: store } = await supabase
       .from("stores")
-      .select("id, name, stripe_connect_account_id")
+      .select("id, name, tenant_id, stripe_connect_account_id")
       .eq("id", storeId)
       .maybeSingle();
 
@@ -79,6 +79,19 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role, tenant_id")
+      .eq("user_id", userId);
+    const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
+    const tenantIds = (roles ?? []).map((r) => r.tenant_id).filter(Boolean);
+    if (!isAdminMaster && !tenantIds.includes(store.tenant_id)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     let accountId = store.stripe_connect_account_id;
 
