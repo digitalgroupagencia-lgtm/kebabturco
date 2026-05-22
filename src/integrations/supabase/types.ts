@@ -1192,8 +1192,8 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
-          stripe_connect_account_id?: string | null
           stripe_charges_enabled?: boolean
+          stripe_connect_account_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -1210,8 +1210,8 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
-          stripe_connect_account_id?: string | null
           stripe_charges_enabled?: boolean
+          stripe_connect_account_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
