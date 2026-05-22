@@ -34,6 +34,28 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // --- AUTH: exige usuário autenticado com acesso à store ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
     const { menu_text, store_id, image_style = "realistic", generate_images = true } = await req.json();
     if (!menu_text || !store_id) {
       return new Response(JSON.stringify({ error: "menu_text e store_id são obrigatórios" }), {
@@ -41,10 +63,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Verifica permissão: admin_master OU pertence ao tenant da store
+    const [{ data: roles }, { data: store }] = await Promise.all([
+      supabase.from("user_roles").select("role, tenant_id").eq("user_id", userId),
+      supabase.from("stores").select("tenant_id").eq("id", store_id).maybeSingle(),
+    ]);
+    const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
+    const userTenantIds = (roles ?? []).map((r) => r.tenant_id).filter(Boolean);
+    const allowed = isAdminMaster || (store && userTenantIds.includes(store.tenant_id));
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    // 1. Extrair estrutura via Gemini
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -66,12 +106,6 @@ Deno.serve(async (req) => {
     const raw = aiJson.choices?.[0]?.message?.content ?? "{}";
     let parsed: { categories: Array<{ name: string; products: Array<{ name: string; description?: string; price: number }> }> };
     try { parsed = JSON.parse(raw); } catch { throw new Error("IA retornou JSON inválido"); }
-
-    // 2. Inserir no banco usando service role
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     const result = { categories_created: 0, products_created: 0, image_jobs: [] as string[] };
 
