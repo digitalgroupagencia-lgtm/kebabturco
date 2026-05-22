@@ -6,13 +6,13 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
 import { useCustomerGeocode } from "@/hooks/useCustomerGeocode";
-import { supabase } from "@/integrations/supabase/client";
 import StripePaymentForm from "@/components/StripePaymentForm";
 import {
   createCustomerOrder,
   createStripePaymentIntent,
   buildPrintPayload,
   invokePrintOrder,
+  fetchStoreStripeSettings,
 } from "@/services/orderService";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike, Loader2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -107,12 +107,9 @@ const PaymentScreen = () => {
 
   useEffect(() => {
     if (!storeId) return;
-    supabase
-      .from("stores")
-      .select("stripe_charges_enabled")
-      .eq("id", storeId)
-      .maybeSingle()
-      .then(({ data }) => setStripeEnabled(!!data?.stripe_charges_enabled));
+    fetchStoreStripeSettings(storeId)
+      .then((data) => setStripeEnabled(!!data?.stripe_charges_enabled))
+      .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
   const enabledMethods = useMemo(() => {

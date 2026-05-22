@@ -1,7 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import type { CartItem } from "@/contexts/CartContext";
 
 export const APPLICATION_FEE_CENTS = 100; // €1
+
+export type StoreStripeSettings = {
+  stripe_connect_account_id: string | null;
+  stripe_charges_enabled: boolean;
+};
+
+export type CreateCustomerOrderResult = {
+  success: boolean;
+  order_id: string;
+  order_number: string;
+};
+
+type CreateCustomerOrderArgs = Database["public"]["Functions"]["create_customer_order"]["Args"];
 
 export function cartItemsToRpcPayload(items: CartItem[]) {
   return items.map((i) => ({
@@ -37,28 +51,46 @@ export interface CreateCustomerOrderParams {
   stripePaymentIntentId?: string | null;
 }
 
+export async function fetchStoreStripeSettings(storeId: string): Promise<StoreStripeSettings | null> {
+  const { data, error } = await supabase
+    .from("stores")
+    .select("stripe_connect_account_id, stripe_charges_enabled")
+    .eq("id", storeId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    stripe_connect_account_id: data.stripe_connect_account_id,
+    stripe_charges_enabled: data.stripe_charges_enabled,
+  };
+}
+
 export async function createCustomerOrder(params: CreateCustomerOrderParams) {
-  const { data, error } = await supabase.rpc("create_customer_order", {
+  const args: CreateCustomerOrderArgs = {
     _store_id: params.storeId,
     _order_type: params.orderType,
     _items: cartItemsToRpcPayload(params.items),
     _total: params.total,
     _subtotal: params.subtotal,
-    _table_number: params.tableNumber || null,
-    _table_id: params.tableId || null,
-    _customer_name: params.customerName || null,
-    _customer_phone: params.customerPhone || null,
-    _notes: params.notes || null,
-    _payment_method: params.paymentMethod || null,
+    _table_number: params.tableNumber || undefined,
+    _table_id: params.tableId || undefined,
+    _customer_name: params.customerName || undefined,
+    _customer_phone: params.customerPhone || undefined,
+    _notes: params.notes || undefined,
+    _payment_method: params.paymentMethod || undefined,
     _payment_status: params.paymentStatus || "pending",
-    _stripe_payment_intent_id: params.stripePaymentIntentId || null,
+    _stripe_payment_intent_id: params.stripePaymentIntentId || undefined,
     _application_fee_cents: params.paymentStatus === "paid" && params.paymentMethod === "card"
       ? APPLICATION_FEE_CENTS
       : 0,
-  });
+  };
+
+  const { data, error } = await supabase.rpc("create_customer_order", args);
 
   if (error) throw error;
-  return data as { success: boolean; order_id: string; order_number: string };
+  return data as CreateCustomerOrderResult;
 }
 
 export async function invokePrintOrder(body: Record<string, unknown>) {

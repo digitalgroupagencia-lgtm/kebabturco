@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Wallet, Save, CreditCard, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { createStripeConnectLink } from "@/services/orderService";
+import { createStripeConnectLink, fetchStoreStripeSettings } from "@/services/orderService";
 
 type Ops = Tables<"operations_settings">;
 
@@ -34,12 +34,13 @@ const OperationsPage = () => {
     if (!STORE_ID) return;
     supabase.from("operations_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
       .then(({ data }) => setS(data ?? null));
-    supabase.from("stores").select("stripe_connect_account_id, stripe_charges_enabled")
-      .eq("id", STORE_ID).maybeSingle()
-      .then(({ data }) => setStripeStatus({
-        connected: !!data?.stripe_charges_enabled,
-        accountId: data?.stripe_connect_account_id ?? null,
-      }));
+    fetchStoreStripeSettings(STORE_ID).then((data) => {
+      if (!data) return;
+      setStripeStatus({
+        connected: data.stripe_charges_enabled,
+        accountId: data.stripe_connect_account_id,
+      });
+    });
   }, [STORE_ID]);
 
   const connectStripe = async () => {
