@@ -453,6 +453,9 @@ export type Database = {
           order_number: string
           order_type: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          stripe_payment_intent_id: string | null
+          application_fee_cents: number | null
           seller_id: string | null
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
@@ -473,6 +476,9 @@ export type Database = {
           order_number: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          stripe_payment_intent_id?: string | null
+          application_fee_cents?: number | null
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -493,6 +499,9 @@ export type Database = {
           order_number?: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          stripe_payment_intent_id?: string | null
+          application_fee_cents?: number | null
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -1165,6 +1174,8 @@ export type Database = {
           phone: string | null
           short_description: string | null
           sort_order: number
+          stripe_connect_account_id: string | null
+          stripe_charges_enabled: boolean
           tenant_id: string
           updated_at: string
         }
@@ -1653,6 +1664,29 @@ export type Database = {
         }
         Returns: Json
       }
+      create_customer_order: {
+        Args: {
+          _store_id: string
+          _order_type: string
+          _items: Json
+          _total: number
+          _subtotal?: number
+          _table_number?: string
+          _table_id?: string
+          _customer_name?: string
+          _customer_phone?: string
+          _notes?: string
+          _payment_method?: string
+          _payment_status?: string
+          _stripe_payment_intent_id?: string
+          _application_fee_cents?: number
+        }
+        Returns: Json
+      }
+      confirm_order_payment: {
+        Args: { _stripe_payment_intent_id: string; _payment_status?: string }
+        Returns: Json
+      }
       duplicate_tenant: {
         Args: {
           _copy_banners?: boolean
@@ -1845,6 +1879,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
       print_job_status: "pending" | "printing" | "printed" | "failed"
     }
     CompositeTypes: {

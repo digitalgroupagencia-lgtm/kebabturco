@@ -22,6 +22,7 @@ export function TenantPanelSidebar() {
   const operacao = [
     { title: "Dashboard", url: `${base}`, icon: LayoutGrid, end: true },
     { title: "Pedidos", url: `${base}/orders`, icon: ShoppingBag },
+    { title: "Mapa de mesas", url: `${base}/table-map`, icon: LayoutGrid },
     { title: "Caixa", url: `${base}/cashier`, icon: DollarSign },
     { title: "Estoque", url: `${base}/stock`, icon: Package },
     { title: "Relatórios", url: `${base}/reports`, icon: BarChart3 },
@@ -39,6 +40,7 @@ export function TenantPanelSidebar() {
     { title: "Pagamentos", url: `${base}/payments`, icon: Wallet },
     { title: "Impressora", url: `${base}/printer`, icon: Printer },
     { title: "Totem", url: `${base}/totem`, icon: Monitor },
+    { title: "Mesas & QR", url: `${base}/tables`, icon: LayoutGrid },
     { title: "Equipe", url: `${base}/team`, icon: Users },
     { title: "Links de acesso", url: `${base}/links`, icon: Link2 },
     { title: "Configurações", url: `${base}/settings`, icon: Settings },

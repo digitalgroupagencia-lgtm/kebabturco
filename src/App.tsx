@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,8 @@ import TotemConfigPage from "./pages/panel/TotemConfigPage.tsx";
 import PlaceholderPage from "./pages/panel/PlaceholderPage.tsx";
 import PanelSettingsPage from "./pages/panel/SettingsPage.tsx";
 import SellersPage from "./pages/panel/SellersPage.tsx";
+import TablesPage from "./pages/panel/TablesPage.tsx";
+import TableMapPage from "./pages/panel/TableMapPage.tsx";
 import PanelGuidePage from "./pages/panel/GuidePage.tsx";
 import SellerLayout from "./components/seller/SellerLayout.tsx";
 import SellerHome from "./pages/seller/SellerHome.tsx";
@@ -61,6 +64,7 @@ const App = () => (
       <Sonner />
       <ThemeProvider>
       <BrowserRouter>
+      <AppCacheBustRouter>
       <ResolvedStoreProvider>
       <BrandingProvider>
       <OperationsSettingsProvider>
@@ -74,12 +78,14 @@ const App = () => (
             <Route index element={<Dashboard />} />
             <Route path="menu" element={<MenuPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="table-map" element={<TableMapPage />} />
             <Route path="cashier" element={<CashierPage />} />
             <Route path="stock" element={<StockPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="team" element={<TeamPage />} />
             <Route path="sellers" element={<SellersPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
+            <Route path="tables" element={<TablesPage />} />
             <Route path="printers" element={<PrinterPage />} />
             <Route path="settings" element={<PanelSettingsPage />} />
             <Route path="branding" element={<BrandingPage />} />
@@ -116,11 +122,13 @@ const App = () => (
             <Route index element={<Dashboard />} />
             <Route path="menu" element={<MenuPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="table-map" element={<TableMapPage />} />
             <Route path="cashier" element={<CashierPage />} />
             <Route path="stock" element={<StockPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="team" element={<TeamPage />} />
             <Route path="totem" element={<TotemConfigPage />} />
+            <Route path="tables" element={<TablesPage />} />
             <Route path="branding" element={<BrandingPage />} />
             <Route path="banners" element={<BannerPage />} />
             <Route path="payments" element={<OperationsPage />} />
@@ -138,6 +146,7 @@ const App = () => (
       </OperationsSettingsProvider>
       </BrandingProvider>
       </ResolvedStoreProvider>
+      </AppCacheBustRouter>
       </BrowserRouter>
       </ThemeProvider>
     </TooltipProvider>

@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useCart } from "@/contexts/CartContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
+import { useMesaFromUrl } from "@/hooks/useMesaFromUrl";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
@@ -10,16 +12,19 @@ interface OrderContextType {
   setScreen: (s: Screen) => void;
   selectedProductId: string | null;
   setSelectedProductId: (id: string | null) => void;
-  /** ID do item do carrinho sendo editado (preserva customizações) */
   editingCartItemId: string | null;
   setEditingCartItemId: (id: string | null) => void;
   selectedCategory: string | null;
   setSelectedCategory: (id: string | null) => void;
   orderNumber: string;
+  setOrderNumber: (n: string) => void;
   generateOrderNumber: () => void;
   storeId: string;
   tableNumber: string;
   setTableNumber: (n: string) => void;
+  mesaLocked: boolean;
+  mesaTableId: string | null;
+  clearMesaLock: () => void;
   customerName: string;
   setCustomerName: (n: string) => void;
   customerPhone: string;
@@ -46,6 +51,10 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
+  const effectiveStoreId = selectedStoreId ?? resolvedStoreId ?? "";
+  const { mesa, loading: mesaLoading } = useMesaFromUrl(effectiveStoreId || null);
+  const { setOrderType } = useCart();
+
   const initialScreen: Screen = (() => {
     if (typeof window === "undefined") return "language";
     if (isGandiaFoodSource()) return "home";
@@ -53,15 +62,18 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const embedScreen = getEmbedScreen();
     if (embedScreen) return embedScreen;
     const p = new URLSearchParams(window.location.search).get("screen");
-    const valid: Screen[] = ["splash","language","storeSelect","orderType","home","product","review","payment","confirmation"];
-    return (valid.includes(p as Screen) ? (p as Screen) : "language");
+    const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation"];
+    return valid.includes(p as Screen) ? (p as Screen) : "language";
   })();
+
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState("");
   const [tableNumber, setTableNumber] = useState("");
+  const [mesaLocked, setMesaLocked] = useState(false);
+  const [mesaTableId, setMesaTableId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -72,6 +84,20 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
+
+  useEffect(() => {
+    if (mesaLoading || !mesa?.locked) return;
+    setTableNumber(mesa.mesaNumber);
+    setMesaTableId(mesa.tableId);
+    setMesaLocked(true);
+    setOrderType("here");
+  }, [mesa, mesaLoading, setOrderType]);
+
+  const clearMesaLock = () => {
+    setMesaLocked(false);
+    setMesaTableId(null);
+    setTableNumber("");
+  };
 
   const generateOrderNumber = () => {
     setOrderNumber(String(Math.floor(100 + Math.random() * 900)));
@@ -89,12 +115,14 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         selectedCategory,
         setSelectedCategory,
         orderNumber,
+        setOrderNumber,
         generateOrderNumber,
-        // Pedidos vão para a unidade escolhida pelo cliente (quando o tenant tem 2+ unidades).
-        // Branding/idiomas/totem_config continuam vindo do `resolvedStoreId` (store primária).
-        storeId: selectedStoreId ?? resolvedStoreId ?? "",
+        storeId: effectiveStoreId,
         tableNumber,
         setTableNumber,
+        mesaLocked,
+        mesaTableId,
+        clearMesaLock,
         customerName,
         setCustomerName,
         customerPhone,
