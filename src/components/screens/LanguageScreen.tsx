@@ -123,7 +123,7 @@ const LanguageScreen = () => {
               <button
                 key={code}
                 onClick={() => handleSelect(code)}
-                className="flex flex-col items-center gap-2 active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0"
+                className="active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0"
                 aria-label={label}
               >
                 <div className="w-full aspect-square flex items-center justify-center">
@@ -134,12 +134,6 @@ const LanguageScreen = () => {
                     draggable={false}
                   />
                 </div>
-                <span
-                  className="text-center font-black text-foreground leading-tight truncate w-full"
-                  style={{ fontSize: langs.length >= 4 ? "0.75rem" : langs.length === 3 ? "0.875rem" : "1rem" }}
-                >
-                  {label}
-                </span>
               </button>
             );
           })}
