@@ -141,6 +141,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // SEGURANÇA: só imprime se houver um pedido real recente com este número/store.
+    // Bloqueia abuso anónimo (SSRF, spam de impressão).
+    const { data: recentOrder } = await supabase
+      .from("orders")
+      .select("id, created_at")
+      .eq("store_id", payload.storeId)
+      .eq("order_number", payload.orderNumber)
+      .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .maybeSingle();
+
+    if (!recentOrder) {
+      return new Response(JSON.stringify({ error: "Pedido não encontrado ou expirado" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: printer } = await supabase
       .from("printer_settings")
       .select("*")
@@ -152,6 +169,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     if (!printer.agent_endpoint) {
       return new Response(
