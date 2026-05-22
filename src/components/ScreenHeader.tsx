@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { ReactNode } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { shouldHideHeader } from "@/lib/embed-mode";
 
 interface ScreenHeaderProps {
   eyebrow?: string;
@@ -16,6 +17,21 @@ interface ScreenHeaderProps {
  * e cantos inferiores arredondados.
  */
 const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenHeaderProps) => {
+  if (shouldHideHeader()) {
+    if (!onBack) return null;
+    return (
+      <div className="absolute top-3 left-3 z-40">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/15 flex items-center justify-center active:scale-90 transition-transform"
+          aria-label="Voltar"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <header
       className={`relative bg-gradient-header text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] ${

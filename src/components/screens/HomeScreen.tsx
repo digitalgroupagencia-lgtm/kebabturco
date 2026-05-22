@@ -10,6 +10,7 @@ import { Plus } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
+import { shouldHideHeader } from "@/lib/embed-mode";
 
 
 const HomeScreen = () => {
@@ -70,7 +71,7 @@ const HomeScreen = () => {
 
   return (
     <div className={`h-[100dvh] md:h-full flex flex-col bg-background overflow-hidden ${totalItems > 0 ? "pb-[72px]" : ""}`}>
-      {/* Header premium: somente a logomarca horizontal */}
+      {!shouldHideHeader() && (
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-4 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
@@ -106,6 +107,7 @@ const HomeScreen = () => {
           </div>
         </div>
       </header>
+      )}
 
       <div className="flex flex-1 overflow-hidden min-h-0">
         <aside className="w-[108px] min-w-[108px] bg-secondary/40 overflow-y-auto shrink-0 md:[&::-webkit-scrollbar]:hidden">

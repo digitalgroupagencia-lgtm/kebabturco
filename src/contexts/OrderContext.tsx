@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { getEmbedScreen, isEmbedded } from "@/lib/embed-mode";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
@@ -47,6 +48,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
   const initialScreen: Screen = (() => {
     if (typeof window === "undefined") return "language";
+    if (isEmbedded()) return "home";
+    const embedScreen = getEmbedScreen();
+    if (embedScreen) return embedScreen;
     const p = new URLSearchParams(window.location.search).get("screen");
     const valid: Screen[] = ["splash","language","storeSelect","orderType","home","product","review","payment","confirmation"];
     return (valid.includes(p as Screen) ? (p as Screen) : "language");
