@@ -35,6 +35,28 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // --- AUTH ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
     const { product_id, style = "realistic" } = await req.json();
     if (!product_id) {
       return new Response(JSON.stringify({ error: "product_id é obrigatório" }), {
@@ -56,6 +78,20 @@ Deno.serve(async (req) => {
       .eq("id", product_id)
       .single();
     if (pErr || !product) throw new Error("Produto não encontrado");
+
+    // Verifica permissão sobre a store do produto
+    const [{ data: roles }, { data: store }] = await Promise.all([
+      supabase.from("user_roles").select("role, tenant_id").eq("user_id", userId),
+      supabase.from("stores").select("tenant_id").eq("id", product.store_id).maybeSingle(),
+    ]);
+    const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
+    const userTenantIds = (roles ?? []).map((r) => r.tenant_id).filter(Boolean);
+    if (!isAdminMaster && !(store && userTenantIds.includes(store.tenant_id))) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const name = pickName(product.name);
     const description = pickDesc(product.description);
