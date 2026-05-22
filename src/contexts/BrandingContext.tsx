@@ -58,52 +58,13 @@ function applyTheme(s: CompanySettings) {
 
 }
 
-function applyDynamicManifest(s: CompanySettings) {
+function applyInstallMeta(s: CompanySettings) {
   try {
-    const name = s.company_name || "App";
-    const icon = (s as any).logo_main_url || "/icon-512.png";
-    const themeColor = (s as any).header_color || s.primary_color || "#000000";
-    const bgColor = s.background_color || "#FFFFFF";
+    const name = s.company_name || "Kebab Turco";
+    const themeColor = (s as any).header_color || s.primary_color || "#CC0000";
 
-    const manifest = {
-      name,
-      short_name: name.length > 12 ? name.slice(0, 12) : name,
-      start_url: "/",
-      display: "standalone",
-      background_color: bgColor,
-      theme_color: themeColor,
-      orientation: "portrait",
-      icons: [
-        { src: icon, sizes: "192x192", type: "image/png", purpose: "any" },
-        { src: icon, sizes: "512x512", type: "image/png", purpose: "any" },
-        { src: icon, sizes: "512x512", type: "image/png", purpose: "maskable" },
-      ],
-    };
-
-    const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
-    const url = URL.createObjectURL(blob);
-    let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "manifest";
-      document.head.appendChild(link);
-    }
-    if (link.dataset.blobUrl) URL.revokeObjectURL(link.dataset.blobUrl);
-    link.href = url;
-    link.dataset.blobUrl = url;
-
-    // Apple touch icon (iOS usa essa tag para o ícone da tela de início)
-    if (icon) {
-      let apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
-      if (!apple) {
-        apple = document.createElement("link");
-        apple.rel = "apple-touch-icon";
-        document.head.appendChild(apple);
-      }
-      apple.href = icon;
-    }
-
-    // Título da janela (usado por alguns navegadores como sugestão de nome)
+    // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.
+    // Só actualiza meta tags dinâmicas (título e cor da barra).
     const appleTitle = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.content = name;
     else {
@@ -116,7 +77,6 @@ function applyDynamicManifest(s: CompanySettings) {
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
       m.content = themeColor;
     });
-
   } catch (_e) {
     // ignore
   }
@@ -141,7 +101,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
     if (data) {
       setSettings(data);
       applyTheme(data);
-      applyDynamicManifest(data);
+      applyInstallMeta(data);
     }
     setLoading(false);
   }, [storeId]);
