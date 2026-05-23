@@ -1,14 +1,13 @@
 import { useEffect, useRef } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useCart } from "@/contexts/CartContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import ActiveOrderBar from "@/features/customer/ActiveOrderBar";
 import { Plus, History, Loader2, RefreshCw } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
@@ -17,7 +16,7 @@ import { shouldHideHeader } from "@/lib/embed-mode";
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
   const { t, tProduct } = useLanguage();
-  const { totalItems } = useCart();
+  const bottomInset = useCustomerBottomInset();
   const { settings } = useBranding();
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
@@ -104,7 +103,10 @@ const HomeScreen = () => {
   }
 
   return (
-    <div className={`h-[100dvh] md:h-full flex flex-col bg-background overflow-hidden ${totalItems > 0 ? "pb-[72px]" : ""}`}>
+    <div
+      className="h-[100dvh] md:h-full flex flex-col bg-background overflow-hidden"
+      style={{ paddingBottom: bottomInset }}
+    >
       {!shouldHideHeader() && (
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-4 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
@@ -191,7 +193,6 @@ const HomeScreen = () => {
         <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
           {/* Banner + título da categoria fixos no topo; produtos rolam por baixo */}
           <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md px-3 pt-3">
-            <ActiveOrderBar />
             <PromoBannerCarousel />
             <div className="px-1 pt-3 pb-2 flex items-end justify-between">
               <div>

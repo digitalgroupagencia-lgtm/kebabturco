@@ -11,6 +11,7 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
+export type { Screen };
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
 
 interface OrderContextType {

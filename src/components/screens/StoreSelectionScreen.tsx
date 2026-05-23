@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 import { MapPin, ChevronRight, Store as StoreIcon } from "lucide-react";
@@ -25,6 +26,7 @@ const SUBTITLE: Record<string, string> = {
 const StoreSelectionScreen = () => {
   const { setScreen } = useOrder();
   const { stores, setSelectedStoreId } = useResolvedStore();
+  const bottomInset = useCustomerBottomInset();
   const { lang } = useLanguage();
   const { settings } = useBranding();
   const { theme } = useTheme();
@@ -42,7 +44,10 @@ const StoreSelectionScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative">
+    <div
+      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
+      style={{ paddingBottom: bottomInset }}
+    >
       <div className="absolute top-4 right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />
       </div>

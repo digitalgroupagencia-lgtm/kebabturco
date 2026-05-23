@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { supabase } from "@/integrations/supabase/client";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
+import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 
@@ -18,6 +19,7 @@ const OrderTypeScreen = () => {
   const { t, lang } = useLanguage();
   const { theme } = useTheme();
   const { storeId } = useResolvedStore();
+  const bottomInset = useCustomerBottomInset();
   const isDark = theme === "dark";
 
   const logo =
@@ -71,7 +73,10 @@ const OrderTypeScreen = () => {
   return (
     <div
       className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: bottomInset,
+      }}
     >
       {/* Faixa de status bar na cor da marca */}
       <div
