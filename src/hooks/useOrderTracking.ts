@@ -13,7 +13,7 @@ export type PublicOrderTrack = {
   delivery_city: string | null;
 };
 
-const POLL_MS = 3000;
+const POLL_MS = 1_000;
 
 /** Acompanhamento público: polling + broadcast (após SQL fase 8). */
 export function useOrderTracking(

@@ -4,10 +4,11 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
 import { useMesaFromUrl } from "@/hooks/useMesaFromUrl";
 import {
-  loadStoredActiveOrder,
+  loadAnyStoredActiveOrder,
   saveStoredActiveOrder,
   clearStoredActiveOrder,
 } from "@/features/customer/useActiveOrderStorage";
+import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
@@ -72,10 +73,19 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (isEmbedded()) return "home";
     const embedScreen = getEmbedScreen();
     if (embedScreen) return embedScreen;
-    const p = new URLSearchParams(window.location.search).get("screen");
-    const orderParam = new URLSearchParams(window.location.search).get("order");
+
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("screen");
+    const orderParam = params.get("order");
+    const stored = loadAnyStoredActiveOrder();
     const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation", "tracking", "account"];
-    if (p === "tracking" && orderParam) return "tracking";
+
+    if (orderParam || stored?.orderId) {
+      const urlScreen = readCustomerScreenFromUrl();
+      if (urlScreen === "tracking" || p === "tracking") return "tracking";
+      if (urlScreen === "confirmation" || stored?.screen === "confirmation" || p === "confirmation") return "confirmation";
+      return "confirmation";
+    }
     return valid.includes(p as Screen) ? (p as Screen) : "language";
   })();
 
@@ -85,24 +95,17 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState(() => {
     if (typeof window === "undefined") return "";
-    const urlOrder = new URLSearchParams(window.location.search).get("order");
+    const urlOrder = readOrderIdFromUrl();
     if (urlOrder) return "";
-    const stored = loadStoredActiveOrder(effectiveStoreId);
-    return stored?.orderNumber || "";
+    return loadAnyStoredActiveOrder()?.orderNumber || "";
   });
   const [activeOrderId, setActiveOrderIdState] = useState(() => {
     if (typeof window === "undefined") return "";
-    const urlOrder = new URLSearchParams(window.location.search).get("order");
-    if (urlOrder) return urlOrder;
-    const stored = loadStoredActiveOrder(effectiveStoreId);
-    return stored?.orderId || "";
+    return readOrderIdFromUrl() || loadAnyStoredActiveOrder()?.orderId || "";
   });
   const [trackingOrderId, setTrackingOrderId] = useState(() => {
     if (typeof window === "undefined") return "";
-    const urlOrder = new URLSearchParams(window.location.search).get("order");
-    if (urlOrder) return urlOrder;
-    const stored = loadStoredActiveOrder(effectiveStoreId);
-    return stored?.orderId || "";
+    return readOrderIdFromUrl() || loadAnyStoredActiveOrder()?.orderId || "";
   });
 
   const setActiveOrderId = (id: string) => {
@@ -111,9 +114,17 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
-    if (!effectiveStoreId || activeOrderId) return;
-    const stored = loadStoredActiveOrder(effectiveStoreId);
-    if (stored) {
+    if (!effectiveStoreId) return;
+    const stored = loadAnyStoredActiveOrder();
+    if (stored && stored.storeId !== effectiveStoreId) {
+      clearStoredActiveOrder();
+      setActiveOrderIdState("");
+      setTrackingOrderId("");
+      setOrderNumber("");
+      syncActiveOrderUrl(null);
+      return;
+    }
+    if (stored && !activeOrderId) {
       setActiveOrderIdState(stored.orderId);
       setTrackingOrderId(stored.orderId);
       setOrderNumber(stored.orderNumber);
@@ -122,9 +133,26 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     if (activeOrderId && orderNumber && effectiveStoreId) {
-      saveStoredActiveOrder({ orderId: activeOrderId, orderNumber, storeId: effectiveStoreId });
+      saveStoredActiveOrder({
+        orderId: activeOrderId,
+        orderNumber,
+        storeId: effectiveStoreId,
+        screen: screen === "confirmation" || screen === "tracking" ? screen : undefined,
+      });
     }
-  }, [activeOrderId, orderNumber, effectiveStoreId]);
+  }, [activeOrderId, orderNumber, effectiveStoreId, screen]);
+
+  useEffect(() => {
+    if (!activeOrderId) {
+      syncActiveOrderUrl(null);
+      return;
+    }
+    if (screen === "confirmation" || screen === "tracking") {
+      syncActiveOrderUrl(activeOrderId, screen);
+    } else {
+      syncActiveOrderUrl(activeOrderId);
+    }
+  }, [activeOrderId, screen]);
   const [tableNumber, setTableNumber] = useState("");
   const [mesaLocked, setMesaLocked] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);

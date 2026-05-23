@@ -7,6 +7,7 @@ import { clearStoredActiveOrder } from "./useActiveOrderStorage";
 export {
   ACTIVE_ORDER_STORAGE_KEY,
   loadStoredActiveOrder,
+  loadAnyStoredActiveOrder,
   saveStoredActiveOrder,
   clearStoredActiveOrder,
   type StoredActiveOrder,
@@ -44,11 +45,13 @@ export function useActiveOrder() {
     setOrder(null);
   };
 
-  const hasActiveOrder = !!activeOrderId && !!order && !TERMINAL_STATUSES.has(order.status);
+  const hasActiveOrder = !!activeOrderId && (!order || !TERMINAL_STATUSES.has(order.status));
+  const isLoadingOrder = !!activeOrderId && loading && !order;
 
   return {
     order,
     loading: loading && !!activeOrderId,
+    isLoadingOrder,
     hasActiveOrder,
     displayNumber: order?.order_number || orderNumber,
     statusLabel: order ? getStatusLabel(order.status, order.order_type) : "",

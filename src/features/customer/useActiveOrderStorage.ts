@@ -4,18 +4,26 @@ export interface StoredActiveOrder {
   orderId: string;
   orderNumber: string;
   storeId: string;
+  screen?: "confirmation" | "tracking";
 }
 
-export function loadStoredActiveOrder(storeId: string): StoredActiveOrder | null {
+export function loadAnyStoredActiveOrder(): StoredActiveOrder | null {
   try {
     const raw = localStorage.getItem(ACTIVE_ORDER_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredActiveOrder;
-    if (parsed.storeId === storeId && parsed.orderId) return parsed;
+    if (parsed.orderId) return parsed;
   } catch {
     /* ignore */
   }
   return null;
+}
+
+export function loadStoredActiveOrder(storeId: string): StoredActiveOrder | null {
+  const parsed = loadAnyStoredActiveOrder();
+  if (!parsed) return null;
+  if (storeId && parsed.storeId !== storeId) return null;
+  return parsed;
 }
 
 export function saveStoredActiveOrder(data: StoredActiveOrder) {

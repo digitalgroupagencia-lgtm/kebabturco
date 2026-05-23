@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, ChefHat, CheckCircle, Truck, Bike } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, ChefHat, CheckCircle, Truck, Bike, RefreshCw } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
 import type { PanelOrder } from "./usePanelOrders";
 
@@ -16,16 +17,33 @@ interface OpsOrdersLayoutProps {
   columns: OrderStatus[];
   orders: PanelOrder[];
   children: ReactNode;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
-const OpsOrdersLayout = ({ columns, orders, children }: OpsOrdersLayoutProps) => {
+const OpsOrdersLayout = ({ columns, orders, children, onRefresh, refreshing }: OpsOrdersLayoutProps) => {
   const countByStatus = (status: OrderStatus) => orders.filter((o) => o.status === status).length;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Pedidos activos</h2>
-        <p className="text-xs text-muted-foreground hidden sm:block">Actualização automática</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground hidden sm:block">Actualização automática</p>
+          {onRefresh && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 touch-action-manipulation"
+              onClick={onRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="hidden md:grid md:grid-cols-5 gap-3">

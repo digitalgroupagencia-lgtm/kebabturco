@@ -32,12 +32,60 @@ export function getNextAction(status: string, orderType?: string | null): { next
   if (idx < 0 || idx >= flow.length - 1) return null;
   const next = flow[idx + 1];
   const labels: Record<string, string> = {
-    preparing: status === "pending" ? "Aceitar — em preparação" : "OK — Em preparação",
+    preparing: "Aceitar → Em preparação",
     ready: "Marcar pronto",
     out_for_delivery: "Saiu para entrega",
     delivered: orderType === "delivery" ? "Entregue" : orderType === "takeaway" ? "Recolhido" : "Entregue na mesa",
   };
   return { next, label: labels[next] || "Avançar" };
+}
+
+export function getOrderModalityBanner(order: {
+  order_type?: string | null;
+  table_number?: string | null;
+  delivery_street?: string | null;
+  source?: string | null;
+}) {
+  const resolvedType =
+    order.order_type ||
+    (order.delivery_street ? "delivery" : order.table_number ? "dine_in" : "takeaway");
+
+  if (resolvedType === "delivery") {
+    return { label: "ENTREGA", detail: "Delivery a domicílio", tone: "delivery" as const };
+  }
+  if (resolvedType === "takeaway") {
+    if (order.source === "counter") {
+      return { label: "BALCÃO", detail: "Pedido no balcão", tone: "takeaway" as const };
+    }
+    return { label: "PARA LEVAR", detail: "Recolha no balcão", tone: "takeaway" as const };
+  }
+  if (resolvedType === "dine_in") {
+    if (order.table_number) {
+      return { label: `MESA ${order.table_number}`, detail: "Comer no local", tone: "dine_in" as const };
+    }
+    return { label: "MESA", detail: "Comer no restaurante", tone: "dine_in" as const };
+  }
+  return { label: "PEDIDO", detail: order.order_type || "—", tone: "unknown" as const };
+}
+
+export function getPanelPaymentBadge(order: {
+  payment_status?: string | null;
+  payment_method?: string | null;
+  source?: string | null;
+}) {
+  if (order.payment_status === "paid") {
+    return { label: "PAGO", tone: "paid" as const };
+  }
+  if (order.source === "counter") {
+    return { label: "BALCÃO", tone: "counter" as const };
+  }
+  if (order.payment_method === "cash") {
+    return { label: "DINHEIRO", tone: "pending" as const };
+  }
+  if (order.payment_method === "card") {
+    return { label: "CARTÃO PEND.", tone: "pending" as const };
+  }
+  return { label: "PAG. PENDENTE", tone: "pending" as const };
 }
 
 export function getCustomerTrackingSteps(orderType: string | null | undefined) {
@@ -64,4 +112,17 @@ export function getCustomerTrackingSteps(orderType: string | null | undefined) {
     { key: "ready", label: "Pronto", icon: "✅" },
     { key: "delivered", label: "Servido", icon: "🎉" },
   ];
+}
+
+/** Cliente pode confirmar recepção quando o restaurante avançou o pedido o suficiente. */
+export function canCustomerConfirmReceipt(status: string, orderType?: string | null): boolean {
+  if (status === "delivered") return true;
+  if (orderType === "delivery" && status === "out_for_delivery") return true;
+  if (orderType === "takeaway" && status === "ready") return true;
+  if (orderType === "dine_in" && status === "ready") return true;
+  return false;
+}
+
+export function getLiveStatusHeadline(status: string, orderType?: string | null): string {
+  return getStatusLabel(status, orderType);
 }

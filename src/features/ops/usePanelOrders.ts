@@ -32,6 +32,9 @@ async function fetchItemsForOrders(orderIds: string[]) {
   return map;
 }
 
+/** Polling lento só como rede de segurança para pedidos novos; cliques actualizam na hora. */
+const PANEL_POLL_BACKUP_MS = 30_000;
+
 export function usePanelOrders(storeId: string | undefined) {
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
@@ -64,8 +67,13 @@ export function usePanelOrders(storeId: string | undefined) {
       knownPendingRef.current = new Set(data.filter((o) => o.status === "pending").map((o) => o.id));
       initializedRef.current = true;
 
-      setOrders(data as PanelOrder[]);
-      const ids = data.map((o) => o.id);
+      const rows = data as PanelOrder[];
+      setOrders((prev) => {
+        if (updatingRef.current.size === 0) return rows;
+        const prevById = new Map(prev.map((o) => [o.id, o]));
+        return rows.map((row) => (updatingRef.current.has(row.id) ? prevById.get(row.id) ?? row : row));
+      });
+      const ids = rows.map((o) => o.id);
       setItemsByOrder(ids.length ? await fetchItemsForOrders(ids) : {});
     }
     setLoading(false);
@@ -75,6 +83,15 @@ export function usePanelOrders(storeId: string | undefined) {
     if (!storeId) return;
     setLoading(true);
     fetchOrders();
+
+    const pollId = window.setInterval(() => {
+      void fetchOrders();
+    }, PANEL_POLL_BACKUP_MS);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void fetchOrders();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     const channel = supabase
       .channel(`panel-orders-${storeId}`)
@@ -107,7 +124,6 @@ export function usePanelOrders(storeId: string | undefined) {
         { event: "UPDATE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
         (payload) => {
           const row = payload.new as PanelOrder;
-          if (updatingRef.current.has(row.id)) return;
           setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
         },
       )
@@ -124,15 +140,21 @@ export function usePanelOrders(storeId: string | undefined) {
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          void fetchOrders();
+        }
+      });
 
     return () => {
+      window.clearInterval(pollId);
+      document.removeEventListener("visibilitychange", onVisibility);
       supabase.removeChannel(channel);
     };
   }, [storeId, fetchOrders]);
 
-  const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number) => {
-    if (updatingRef.current.has(order.id)) return;
+  const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number): Promise<boolean> => {
+    if (updatingRef.current.has(order.id)) return false;
     updatingRef.current.add(order.id);
     const prevStatus = order.status;
 
@@ -143,26 +165,36 @@ export function usePanelOrders(storeId: string | undefined) {
       patch.estimated_ready_at = eta.toISOString();
     }
 
+    const optimisticPatch = {
+      status: newStatus as PanelOrder["status"],
+      estimated_ready_at: (patch.estimated_ready_at as string) ?? order.estimated_ready_at,
+    };
+
     setOrders((prev) =>
-      prev.map((o) =>
-        o.id === order.id
-          ? { ...o, status: newStatus as PanelOrder["status"], estimated_ready_at: (patch.estimated_ready_at as string) ?? o.estimated_ready_at }
-          : o,
-      ),
+      prev.map((o) => (o.id === order.id ? { ...o, ...optimisticPatch } : o)),
     );
 
-    const { error } = await supabase.from("orders").update(patch).eq("id", order.id);
+    try {
+      const { data: updated, error } = await supabase
+        .from("orders")
+        .update(patch)
+        .eq("id", order.id)
+        .select()
+        .single();
 
-    updatingRef.current.delete(order.id);
+      if (error || !updated) {
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
+        toast.error("Erro ao actualizar");
+        return false;
+      }
 
-    if (error) {
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-      toast.error("Erro ao actualizar");
-      return;
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...(updated as PanelOrder) } : o)));
+      toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
+      void notifyOrderStatusChange(order.id, newStatus, order.order_number);
+      return true;
+    } finally {
+      updatingRef.current.delete(order.id);
     }
-
-    toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
-    await notifyOrderStatusChange(order.id, newStatus, order.order_number);
   }, []);
 
   const cancelOrder = useCallback(async (orderId: string) => {

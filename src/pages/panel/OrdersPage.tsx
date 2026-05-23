@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, ChefHat, CheckCircle, Truck, Bike } from "lucide-react";
@@ -20,8 +20,26 @@ const columns: OrderStatus[] = ["pending", "preparing", "ready", "out_for_delive
 
 const OrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
-  const { orders, itemsByOrder, loading, updateStatus, cancelOrder, setPrepMinutes } = usePanelOrders(storeId);
+  const { orders, itemsByOrder, loading, updateStatus, cancelOrder, setPrepMinutes, refresh } = usePanelOrders(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleAdvance = useCallback(
+    async (order: Parameters<typeof updateStatus>[0], status: OrderStatus, prepMinutes?: number) => {
+      const ok = await updateStatus(order, status, prepMinutes);
+      if (ok) setMobileTab(status);
+    },
+    [updateStatus],
+  );
 
   const visibleColumns = useMemo(
     () =>
@@ -50,7 +68,7 @@ const OrdersPage = () => {
   const mobileOrders = getOrdersByStatus(mobileTab);
 
   return (
-    <OpsOrdersLayout columns={visibleColumns} orders={orders}>
+    <OpsOrdersLayout columns={visibleColumns} orders={orders} onRefresh={handleRefresh} refreshing={refreshing}>
       <OpsStatusTabs
         columns={visibleColumns}
         orders={orders}
@@ -65,7 +83,7 @@ const OrdersPage = () => {
             key={order.id}
             order={order}
             items={itemsByOrder[order.id] || []}
-            onAdvance={updateStatus}
+            onAdvance={handleAdvance}
             onCancel={cancelOrder}
             onSetPrepMinutes={setPrepMinutes}
           />
@@ -96,7 +114,7 @@ const OrdersPage = () => {
                     key={order.id}
                     order={order}
                     items={itemsByOrder[order.id] || []}
-                    onAdvance={updateStatus}
+                    onAdvance={handleAdvance}
                     onCancel={cancelOrder}
                     onSetPrepMinutes={setPrepMinutes}
                   />

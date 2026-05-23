@@ -16,6 +16,7 @@ import {
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { filterImplementedPaymentMethods } from "@/lib/paymentMethods";
+import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike, Loader2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
@@ -246,6 +247,7 @@ const PaymentScreen = () => {
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
+    syncActiveOrderUrl(result.order_id, "confirmation");
 
     await subscribePush({
       storeId,

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { User, Phone, MapPin, XCircle, Clock } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { getNextAction } from "@/lib/orderStatusLabels";
+import { getNextAction, getOrderModalityBanner, getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 
 type OrderItem = Tables<"order_items">;
@@ -17,6 +17,19 @@ const statusCardClass: Record<string, string> = {
   delivered: "bg-muted/80 border-muted-foreground/20 opacity-75",
   cancelled: "bg-destructive/10 border-destructive/30",
 };
+
+const modalityBannerClass = {
+  delivery: "bg-blue-600 text-white",
+  takeaway: "bg-amber-600 text-white",
+  dine_in: "bg-primary text-primary-foreground",
+  unknown: "bg-muted text-foreground",
+} as const;
+
+const paymentBadgeClass = {
+  paid: "bg-green-600 text-white",
+  counter: "bg-orange-600 text-white",
+  pending: "bg-yellow-500 text-black",
+} as const;
 
 const PREP_OPTIONS = [10, 12, 15, 20, 25, 30];
 
@@ -34,16 +47,18 @@ function getSourceLabel(source: string) {
 interface OpsOrderCardProps {
   order: PanelOrder;
   items: OrderItem[];
-  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void;
+  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void>;
   onCancel: (orderId: string) => void;
   onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
 }
 
 const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: OpsOrderCardProps) => {
-  const isTable = order.order_type === "dine_in" && order.table_number;
+  const modality = getOrderModalityBanner(order);
+  const payment = getPanelPaymentBadge(order);
   const next = getNextAction(order.status, order.order_type);
   const cardClass = statusCardClass[order.status] || "border-border";
   const [prepMin, setPrepMin] = useState(12);
+  const [advancing, setAdvancing] = useState(false);
 
   const etaLabel = order.estimated_ready_at
     ? new Date(order.estimated_ready_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
@@ -51,13 +66,12 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: O
 
   return (
     <Card className={`overflow-hidden border-2 ${cardClass}`}>
+      <div className={`px-4 py-2.5 text-center ${modalityBannerClass[modality.tone]}`}>
+        <p className="text-lg font-black tracking-wide leading-none">{modality.label}</p>
+        <p className="text-[11px] font-semibold opacity-90 mt-0.5">{modality.detail}</p>
+      </div>
       <CardContent className="p-4 space-y-3">
-        {isTable && (
-          <p className="text-3xl font-black text-primary leading-none text-center py-1">
-            Mesa {order.table_number}
-          </p>
-        )}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="font-black text-xl">#{order.order_number}</span>
           <span className="text-xs text-muted-foreground">
             {new Date(order.created_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
@@ -65,12 +79,7 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: O
         </div>
         <div className="flex gap-2 text-xs flex-wrap">
           <Badge variant="outline">{getSourceLabel(order.source || "totem")}</Badge>
-          <Badge variant="outline">
-            {order.order_type === "delivery" ? "Delivery" : order.order_type === "takeaway" ? "Takeaway" : "Mesa"}
-          </Badge>
-          {(order as PanelOrder & { payment_status?: string }).payment_status === "paid" && (
-            <Badge className="bg-green-600">Pago</Badge>
-          )}
+          <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
         </div>
         {order.customer_name && (
           <div className="flex items-center gap-1.5 text-sm">
@@ -139,15 +148,21 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: O
           <Button
             size="lg"
             className="w-full h-14 font-black text-base touch-action-manipulation"
-            onClick={() =>
-              onAdvance(
-                order,
-                next.next,
-                order.status === "pending" && next.next === "preparing" ? prepMin : undefined,
-              )
-            }
+            disabled={advancing}
+            onClick={async () => {
+              setAdvancing(true);
+              try {
+                await onAdvance(
+                  order,
+                  next.next,
+                  order.status === "pending" && next.next === "preparing" ? prepMin : undefined,
+                );
+              } finally {
+                setAdvancing(false);
+              }
+            }}
           >
-            {next.label}
+            {advancing ? "A actualizar…" : next.label}
           </Button>
         )}
         {order.status === "pending" && (
