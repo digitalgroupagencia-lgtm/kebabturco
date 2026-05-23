@@ -12,6 +12,7 @@ import {
   Printer,
   BookOpen,
   MessageSquare,
+  Globe,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ import { Button } from "@/components/ui/button";
 const mainItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutGrid },
   { title: "Clientes", url: "/admin/tenants", icon: Building2 },
+  { title: "Domínios & Links", url: "/admin/domains", icon: Globe },
   { title: "Identidad Visual", url: "/admin/branding", icon: Palette },
   { title: "Banner Promocional", url: "/admin/banner", icon: Image },
   { title: "Pagos", url: "/admin/operations", icon: Wallet },

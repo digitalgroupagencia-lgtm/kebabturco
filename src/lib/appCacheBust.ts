@@ -1,6 +1,7 @@
 export const APP_BUILD_ID: string = __APP_BUILD_ID__;
-export const APP_REFRESH_STORAGE_KEY = "kebabturco:app-refresh";
-export const APP_CACHE_BUST_EVENT = "kebabturco:cache-bust";
+export const APP_REFRESH_STORAGE_KEY = "snaporder:app-refresh";
+export const APP_CACHE_BUST_EVENT = "snaporder:cache-bust";
+const LEGACY_REFRESH_KEY = "kebabturco:app-refresh";
 
 /** Invalida cache local e força remount dos providers/rotas (ex.: após mudança no admin). */
 export function bumpAppCache() {
@@ -50,7 +51,7 @@ export async function checkForDeployedUpdate() {
   const remoteBuildId = await fetchRemoteBuildId();
   if (!remoteBuildId || remoteBuildId === APP_BUILD_ID) return;
 
-  const reloadKey = "kebabturco:last-reload-build";
+  const reloadKey = "snaporder:last-reload-build";
   const lastReload = sessionStorage.getItem(reloadKey);
   if (lastReload === remoteBuildId) return;
 

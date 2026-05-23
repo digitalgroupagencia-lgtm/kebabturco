@@ -281,13 +281,3 @@ export function buildPrintPayload(opts: {
     notes: opts.notes || null,
   };
 }
-
-export function getTableQrUrl(domain: string, mesaNumber: string, tenantSlug?: string | null) {
-  const base = domain.startsWith("http") ? domain : `https://${domain}`;
-  const url = new URL(base);
-  if (tenantSlug && !domain.includes(tenantSlug)) {
-    url.searchParams.set("tenant", tenantSlug);
-  }
-  url.searchParams.set("mesa", mesaNumber);
-  return url.toString();
-}

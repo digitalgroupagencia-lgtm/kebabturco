@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Loader2, QrCode, Printer, LayoutGrid } from "lucide-react";
-import { getTableQrUrl } from "@/services/orderService";
+import { getTableQrUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 
 type TableRow = {
   id: string;
@@ -29,26 +29,44 @@ const TablesPage = () => {
   const [newNumber, setNewNumber] = useState("");
   const [newCapacity, setNewCapacity] = useState("4");
   const [qrTable, setQrTable] = useState<TableRow | null>(null);
-  const [tenantMeta, setTenantMeta] = useState<{ slug: string | null; custom_domain: string | null }>({ slug: null, custom_domain: null });
+  const [tenantMeta, setTenantMeta] = useState<TenantUrlConfig>({
+    slug: "",
+    custom_domain: null,
+    path_slug: null,
+    master_domain: null,
+    use_master_domain: false,
+  });
 
   useEffect(() => {
     if (ctxTenant) {
-      setTenantMeta({ slug: ctxTenant.slug, custom_domain: ctxTenant.custom_domain });
+      setTenantMeta({
+        slug: ctxTenant.slug,
+        custom_domain: ctxTenant.custom_domain,
+        path_slug: ctxTenant.path_slug,
+        master_domain: ctxTenant.master_domain,
+        use_master_domain: ctxTenant.use_master_domain,
+      });
       return;
     }
     if (!storeId) return;
     supabase.from("stores").select("tenant_id").eq("id", storeId).maybeSingle().then(async ({ data }) => {
       if (!data?.tenant_id) return;
-      const { data: t } = await supabase.from("tenants").select("slug, custom_domain").eq("id", data.tenant_id).maybeSingle();
-      if (t) setTenantMeta({ slug: t.slug, custom_domain: t.custom_domain });
+      const { data: t } = await supabase
+        .from("tenants")
+        .select("slug, custom_domain, path_slug, master_domain, use_master_domain")
+        .eq("id", data.tenant_id)
+        .maybeSingle();
+      if (t) {
+        setTenantMeta({
+          slug: t.slug,
+          custom_domain: t.custom_domain,
+          path_slug: t.path_slug,
+          master_domain: t.master_domain,
+          use_master_domain: t.use_master_domain ?? false,
+        });
+      }
     });
   }, [storeId, ctxTenant]);
-
-  const baseDomain = useMemo(() => {
-    if (tenantMeta.custom_domain) return tenantMeta.custom_domain;
-    if (typeof window !== "undefined") return window.location.host;
-    return "kebabturco.net";
-  }, [tenantMeta.custom_domain]);
 
   const load = async () => {
     if (!storeId) return;
@@ -91,7 +109,7 @@ const TablesPage = () => {
 
   const printQr = () => {
     if (!qrTable) return;
-    const url = getTableQrUrl(baseDomain, qrTable.number, tenantMeta.slug);
+    const url = getTableQrUrl(tenantMeta, qrTable.number);
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(`<html><head><title>Mesa ${qrTable.number}</title></head><body style="text-align:center;font-family:sans-serif;padding:40px"><h1>Mesa ${qrTable.number}</h1><div id="q"></div><p style="word-break:break-all;font-size:12px;margin-top:16px">${url}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("q"),{text:${JSON.stringify(url)},width:256,height:256});setTimeout(()=>window.print(),500);<\/script></body></html>`);
@@ -135,7 +153,7 @@ const TablesPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tables.map((t) => {
-          const qrUrl = getTableQrUrl(baseDomain, t.number, tenantMeta.slug);
+          const qrUrl = getTableQrUrl(tenantMeta, t.number);
           return (
             <Card key={t.id} className={`p-4 space-y-3 ${!t.is_active ? "opacity-60" : ""}`}>
               <div className="flex items-center justify-between">
@@ -165,9 +183,9 @@ const TablesPage = () => {
           </DialogHeader>
           {qrTable && (
             <div className="flex flex-col items-center gap-4">
-              <QRCodeSVG value={getTableQrUrl(baseDomain, qrTable.number, tenantMeta.slug)} size={220} />
+              <QRCodeSVG value={getTableQrUrl(tenantMeta, qrTable.number)} size={220} />
               <p className="text-xs text-muted-foreground text-center break-all">
-                {getTableQrUrl(baseDomain, qrTable.number, tenantMeta.slug)}
+                {getTableQrUrl(tenantMeta, qrTable.number)}
               </p>
               <Button onClick={printQr} className="w-full gap-2"><Printer className="h-4 w-4" /> Imprimir QR</Button>
             </div>

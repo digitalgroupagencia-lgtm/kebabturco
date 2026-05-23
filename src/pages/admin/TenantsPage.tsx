@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe, ArrowRight } from "lucide-react";
+import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe, ArrowRight, Link2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
 import TenantQrDialog from "@/components/admin/TenantQrDialog";
 import TenantLanguagesDialog from "@/components/admin/TenantLanguagesDialog";
@@ -134,6 +135,11 @@ const TenantsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Clientes (Tenants)</h2>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Link to="/admin/domains">
+              <Link2 className="mr-2 h-4 w-4" /> Domínios & Links
+            </Link>
+          </Button>
           <NewTenantWizard
             trigger={
               <Button variant="default" className="w-full sm:w-auto bg-primary">
@@ -221,6 +227,9 @@ const TenantsPage = () => {
                       tenantName={t.name}
                       tenantSlug={t.slug}
                       customDomain={(t as any).custom_domain}
+                      pathSlug={(t as any).path_slug}
+                      masterDomain={(t as any).master_domain}
+                      useMasterDomain={(t as any).use_master_domain}
                     />
                     <TenantLanguagesDialog tenantId={t.id} tenantName={t.name} />
                     <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>

@@ -51,7 +51,9 @@ import TenantLanguagesPage from "./pages/admin/tenant/TenantLanguagesPage.tsx";
 import TenantStoresPage from "./pages/admin/tenant/TenantStoresPage.tsx";
 import TenantDeliveryZonesPage from "./pages/admin/tenant/TenantDeliveryZonesPage.tsx";
 import TenantScreensPage from "./pages/admin/tenant/TenantScreensPage.tsx";
+import AdminDomainsPage from "./pages/admin/AdminDomainsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import PlatformHostGate from "./components/PlatformHostGate.tsx";
 import Install from "./pages/Install.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -68,6 +70,7 @@ const App = () => (
       <ThemeProvider>
       <BrowserRouter>
       <AppCacheBustRouter>
+      <PlatformHostGate />
       <ResolvedStoreProvider>
       <BrandingProvider>
       <OperationsSettingsProvider>
@@ -113,6 +116,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tenants" element={<TenantsPage />} />
+            <Route path="domains" element={<AdminDomainsPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="branding" element={<BrandingPage />} />

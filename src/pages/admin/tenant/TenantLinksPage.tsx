@@ -4,48 +4,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, ExternalLink, Link2, Monitor, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
+import { buildTenantUrl, getTenantTotemUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 
-const linkBlocks = (origin: string, tenantParam: string) => [
+const linkBlocks = (tenant: TenantUrlConfig, origin: string) => [
   {
     icon: Monitor,
     color: "text-primary",
     title: "Totem / App do cliente",
     desc: "Link público que o cliente acessa para fazer pedidos (cardápio, totem, mesas).",
-    url: `${origin}/${tenantParam}`,
+    url: getTenantTotemUrl(tenant, origin),
   },
   {
     icon: ShieldCheck,
     color: "text-emerald-500",
     title: "Painel do dono do restaurante",
     desc: "Acesso para o restaurant_admin gerenciar pedidos, cardápio, equipe e configurações.",
-    url: `${origin}/panel`,
+    url: buildTenantUrl(tenant, "/panel", origin),
   },
   {
     icon: Store,
     color: "text-amber-500",
     title: "App do vendedor / garçom",
     desc: "Acesso dos vendedores para abrir mesas e lançar pedidos pelo celular.",
-    url: `${origin}/seller`,
+    url: buildTenantUrl(tenant, "/seller", origin),
   },
   {
     icon: ShieldCheck,
     color: "text-fuchsia-500",
     title: "Login (todos os papéis)",
     desc: "URL única de login. O sistema redireciona automaticamente conforme o papel.",
-    url: `${origin}/auth`,
+    url: buildTenantUrl(tenant, "/auth", origin),
   },
 ];
 
 export default function TenantLinksPage() {
   const { tenant } = useSelectedTenant();
 
-  // Prefere domínio próprio se configurado. Sem domínio próprio, o app precisa do caminho do tenant
-  // para não cair no projeto base/demo.
-  const origin =
-    (tenant?.custom_domain ? `https://${tenant.custom_domain}` : window.location.origin).replace(/\/$/, "");
-  const tenantPath = tenant?.custom_domain ? "" : (tenant?.slug || "");
+  const tenantConfig: TenantUrlConfig = {
+    slug: tenant?.slug || "",
+    custom_domain: tenant?.custom_domain,
+    path_slug: tenant?.path_slug,
+    master_domain: tenant?.master_domain,
+    use_master_domain: tenant?.use_master_domain,
+  };
 
-  const links = linkBlocks(origin, tenantPath);
+  const origin = window.location.origin.replace(/\/$/, "");
+  const links = linkBlocks(tenantConfig, origin);
 
   const copy = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -67,28 +71,32 @@ export default function TenantLinksPage() {
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
           ✅ Domínio próprio ativo: <strong>{tenant.custom_domain}</strong>
         </div>
+      ) : tenant?.use_master_domain && tenant.path_slug ? (
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 text-xs">
+          Subcaminho activo: <strong>{tenant.master_domain}/{tenant.path_slug}</strong>
+        </div>
       ) : (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
-          ⚠️ Sem domínio próprio. Os links usam o domínio padrão da plataforma.
+          ⚠️ Sem domínio próprio. Os links usam o domínio actual + parâmetro <code>?tenant=</code>.
         </div>
       )}
 
       <div className="grid gap-4">
         {links.map((l) => (
-          <Card key={l.url}>
+          <Card key={l.title}>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <l.icon className={`w-5 h-5 ${l.color}`} /> {l.title}
+                <l.icon className={`w-4 h-4 ${l.color}`} /> {l.title}
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground">{l.desc}</p>
-              <div className="flex gap-2">
-                <Input value={l.url} readOnly className="font-mono text-xs" />
-                <Button variant="outline" size="icon" onClick={() => copy(l.url)} title="Copiar">
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-2">
+              <Input readOnly value={l.url} className="font-mono text-xs" />
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="icon" onClick={() => copy(l.url)}>
                   <Copy className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" asChild title="Abrir em nova aba">
+                <Button variant="outline" size="icon" asChild>
                   <a href={l.url} target="_blank" rel="noreferrer">
                     <ExternalLink className="w-4 h-4" />
                   </a>

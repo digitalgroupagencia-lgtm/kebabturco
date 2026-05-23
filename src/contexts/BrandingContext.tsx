@@ -60,7 +60,7 @@ function applyTheme(s: CompanySettings) {
 
 function applyInstallMeta(s: CompanySettings) {
   try {
-    const name = s.company_name || "Kebab Turco";
+    const name = s.company_name || "Restaurante";
     const themeColor = (s as any).header_color || s.primary_color || "#CC0000";
 
     // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.

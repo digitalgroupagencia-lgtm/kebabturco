@@ -262,21 +262,37 @@ async function runTool(name: string, args: any) {
 
   if (name === "list_tenant_domains") {
     const includeInactive = args?.include_inactive === true;
-    let q = admin.from("tenants").select("id,name,slug,custom_domain,plan,is_active,max_orders_month").order("name");
+    let q = admin.from("tenants").select("id,name,slug,custom_domain,path_slug,master_domain,use_master_domain,plan,is_active,max_orders_month").order("name");
     if (!includeInactive) q = q.eq("is_active", true);
     const { data, error } = await q;
     if (error) return { error: error.message };
-    const base = "kebabturco.net";
+    const buildTotemUrl = (t: {
+      custom_domain?: string | null;
+      slug: string;
+      path_slug?: string | null;
+      master_domain?: string | null;
+      use_master_domain?: boolean | null;
+    }) => {
+      if (t.custom_domain) return `https://${t.custom_domain.replace(/^https?:\/\//, "")}/`;
+      if (t.use_master_domain && t.master_domain && t.path_slug) {
+        return `https://${t.master_domain.replace(/^https?:\/\//, "")}/${t.path_slug}`;
+      }
+      return null;
+    };
     return {
-      tenants: (data ?? []).map((t: any) => ({
-        name: t.name,
-        slug: t.slug,
-        plan: t.plan,
-        is_active: t.is_active,
-        custom_domain: t.custom_domain,
-        totem_url: t.custom_domain ? `https://${t.custom_domain}/` : `https://${base}/?tenant=${t.slug}`,
-        panel_login_url: t.custom_domain ? `https://${t.custom_domain}/panel` : `https://${base}/panel?tenant=${t.slug}`,
-      })),
+      tenants: (data ?? []).map((t: any) => {
+        const totem = buildTotemUrl(t);
+        const origin = t.custom_domain ? `https://${t.custom_domain}` : totem?.replace(/\/[^/]*$/, "") || null;
+        return {
+          name: t.name,
+          slug: t.slug,
+          plan: t.plan,
+          is_active: t.is_active,
+          custom_domain: t.custom_domain,
+          totem_url: totem ?? `(configurar domínio — slug: ${t.slug})`,
+          panel_login_url: origin ? `${origin}/panel` : `(configurar domínio)/panel`,
+        };
+      }),
     };
   }
 

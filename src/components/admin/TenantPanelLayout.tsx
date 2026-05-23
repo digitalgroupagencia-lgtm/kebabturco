@@ -11,15 +11,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SelectedTenantProvider, useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { useTenantEditLock } from "@/hooks/useTenantEditLock";
+import { getTenantTotemUrl } from "@/lib/tenantUrls";
 import { Pencil, Lock } from "lucide-react";
 
 function TenantHeaderInner() {
   const { tenant, loading } = useSelectedTenant();
   const navigate = useNavigate();
   const { locked, lockedByOther, message } = useTenantEditLock(tenant?.id);
-  const totemUrl = tenant?.custom_domain
-    ? `https://${tenant.custom_domain}/`
-    : `${window.location.origin}/${tenant?.slug ?? ""}`;
+  const totemUrl = tenant
+    ? getTenantTotemUrl({
+        slug: tenant.slug,
+        custom_domain: tenant.custom_domain,
+        path_slug: tenant.path_slug,
+        master_domain: tenant.master_domain,
+        use_master_domain: tenant.use_master_domain,
+      })
+    : window.location.origin;
   return (
     <>
     <header className="sticky top-0 z-30 h-14 flex items-center gap-2 border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">

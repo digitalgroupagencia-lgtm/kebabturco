@@ -11,6 +11,9 @@ interface SelectedTenant {
   plan: string | null;
   is_active: boolean;
   custom_domain: string | null;
+  path_slug: string | null;
+  master_domain: string | null;
+  use_master_domain: boolean;
   max_orders_month: number | null;
   store_id: string | null;
 }
@@ -58,7 +61,7 @@ export function SelectedTenantProvider({ children }: { children: ReactNode }) {
 
       const { data: t } = await supabase
         .from("tenants")
-        .select("id, name, slug, plan, is_active, custom_domain, max_orders_month")
+        .select("id, name, slug, plan, is_active, custom_domain, path_slug, master_domain, use_master_domain, max_orders_month")
         .eq("id", tenantId).maybeSingle();
       if (!t) return null;
 
