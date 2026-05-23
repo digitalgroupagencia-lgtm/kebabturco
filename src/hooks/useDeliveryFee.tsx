@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { matchDeliveryZone } from "@/lib/matchDeliveryZone";
 
 export interface DeliveryZone {
   id: string;
@@ -24,15 +25,8 @@ interface DeliveryQuote {
   distanceKm: number | null;
 }
 
-const norm = (v: string) =>
-  v.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
 /**
- * Calcula a taxa de entrega da loja baseada em (em ordem de prioridade):
- *  1. Distância em km até a loja (zona com min_distance_km..max_distance_km)
- *  2. CEP do cliente em postal_codes
- *  3. Cidade do cliente em city_names
- *  4. Zona is_default
+ * Taxa de entrega: código postal → cidade → faixa km (só se configurada) → zona padrão.
  */
 export function useDeliveryFee(
   storeId: string | null | undefined,
@@ -59,7 +53,7 @@ export function useDeliveryFee(
         .eq("is_active", true)
         .order("sort_order");
       if (!active) return;
-      setZones((data as any) || []);
+      setZones((data as DeliveryZone[]) || []);
       setLoading(false);
     })();
     return () => {
@@ -68,42 +62,7 @@ export function useDeliveryFee(
   }, [storeId]);
 
   const quote: DeliveryQuote = useMemo(() => {
-    const postal = customerPostal.trim();
-    const city = norm(customerCity);
-
-    let matched: DeliveryZone | null = null;
-
-    // 1. Match por distância (km)
-    if (distanceKm != null) {
-      const candidates = zones
-        .filter((z) => z.max_distance_km != null)
-        .sort(
-          (a, b) => (a.max_distance_km ?? 0) - (b.max_distance_km ?? 0),
-        );
-      matched =
-        candidates.find((z) => {
-          const min = Number(z.min_distance_km ?? 0);
-          const max = Number(z.max_distance_km ?? 0);
-          return distanceKm >= min && distanceKm <= max;
-        }) || null;
-    }
-
-    if (!matched && postal) {
-      matched =
-        zones.find((z) =>
-          (z.postal_codes || []).some((c) => c.trim() === postal),
-        ) || null;
-    }
-    if (!matched && city) {
-      matched =
-        zones.find((z) =>
-          (z.city_names || []).some((c) => norm(c) === city),
-        ) || null;
-    }
-    if (!matched) {
-      matched = zones.find((z) => z.is_default) || null;
-    }
-
+    const matched = matchDeliveryZone(zones, customerPostal, customerCity, distanceKm) as DeliveryZone | null;
     const fee = matched ? Number(matched.delivery_fee || 0) : 0;
     const minOrder = matched ? Number(matched.min_order || 0) : 0;
     return {

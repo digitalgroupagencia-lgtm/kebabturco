@@ -164,7 +164,7 @@ const TenantDeliveryZonesPage = () => {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Truck className="h-6 w-6" /> Zonas de entrega</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Configure faixas de distância em km. Quando o cliente digita o endereço, o sistema calcula automaticamente a distância até a loja via Google Maps e aplica a faixa correta.
+          A zona é escolhida por código postal e cidade. Se nada coincidir, aplica-se a zona marcada como padrão (fallback).
         </p>
       </div>
 
@@ -188,17 +188,16 @@ const TenantDeliveryZonesPage = () => {
           <div className="flex items-start gap-3">
             <MapPin className="h-5 w-5 text-primary mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">Localização da loja (origem do cálculo)</p>
+              <p className="text-sm font-semibold">Localização da loja</p>
               <p className="text-xs text-muted-foreground mt-1 break-words">
                 Endereço: {currentStore.address || <span className="text-destructive">não cadastrado</span>}
               </p>
               {currentStore.latitude != null ? (
                 <p className="text-xs text-green-600 mt-1">
-                  ✓ Geocodificado: {currentStore.geocoded_address}<br />
-                  ({Number(currentStore.latitude).toFixed(5)}, {Number(currentStore.longitude).toFixed(5)})
+                  ✓ Geocodificada: {currentStore.geocoded_address}
                 </p>
               ) : (
-                <p className="text-xs text-amber-600 mt-1">⚠ Loja ainda não geocodificada — sem isso, o cálculo por km não funciona.</p>
+                <p className="text-xs text-muted-foreground mt-1">Opcional: localizar no mapa (útil no futuro para zonas por distância).</p>
               )}
             </div>
             <Button size="sm" variant="outline" onClick={geocodeStore} disabled={geocoding || !currentStore.address}>
@@ -234,47 +233,52 @@ const TenantDeliveryZonesPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
               <div>
-                <Label className="text-xs font-bold uppercase tracking-wide text-primary">Distância mínima (km)</Label>
+                <Label className="text-xs font-bold uppercase tracking-wide text-primary">Códigos postais</Label>
                 <Input
-                  type="number" step="0.5" min="0"
-                  placeholder="0"
-                  value={z.min_distance_km ?? ""}
-                  onChange={(e) => update(z.id, { min_distance_km: e.target.value === "" ? null : Number(e.target.value) })}
+                  placeholder="46700, 46701, 46702, 46728"
+                  value={(z.postal_codes || []).join(", ")}
+                  onChange={(e) => update(z.id, { postal_codes: parseList(e.target.value) })}
                 />
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-wide text-primary">Distância máxima (km)</Label>
+                <Label className="text-xs font-bold uppercase tracking-wide text-primary">Cidades</Label>
                 <Input
-                  type="number" step="0.5" min="0"
-                  placeholder="Ex: 3"
-                  value={z.max_distance_km ?? ""}
-                  onChange={(e) => update(z.id, { max_distance_km: e.target.value === "" ? null : Number(e.target.value) })}
+                  placeholder="Gandia, Grau de Gandia"
+                  value={(z.city_names || []).join(", ")}
+                  onChange={(e) => update(z.id, { city_names: parseList(e.target.value) })}
                 />
               </div>
               <p className="md:col-span-2 text-[11px] text-muted-foreground">
-                Sistema aplica esta zona automaticamente quando a distância do cliente até a loja estiver entre o mínimo e o máximo.
+                {z.is_default
+                  ? "Zona padrão: usada quando o código postal e a cidade não coincidem com outra zona."
+                  : "Prioridade: código postal, depois cidade. Deixe vazio na zona padrão (fallback)."}
               </p>
             </div>
 
             <details className="rounded-lg border border-border">
-              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground">Fallback manual (opcional) — cidade ou CEP</summary>
+              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground">Avançado — faixas por distância (km, opcional)</summary>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
                 <div>
-                  <Label className="text-xs">Cidades (separadas por vírgula)</Label>
+                  <Label className="text-xs">Distância mínima (km)</Label>
                   <Input
-                    placeholder="Gandia, Grau de Gandia"
-                    value={(z.city_names || []).join(", ")}
-                    onChange={(e) => update(z.id, { city_names: parseList(e.target.value) })}
+                    type="number" step="0.5" min="0"
+                    placeholder="Vazio = desactivado"
+                    value={z.min_distance_km ?? ""}
+                    onChange={(e) => update(z.id, { min_distance_km: e.target.value === "" ? null : Number(e.target.value) })}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Códigos postais (separados por vírgula)</Label>
+                  <Label className="text-xs">Distância máxima (km)</Label>
                   <Input
-                    placeholder="46700, 46701, 46702"
-                    value={(z.postal_codes || []).join(", ")}
-                    onChange={(e) => update(z.id, { postal_codes: parseList(e.target.value) })}
+                    type="number" step="0.5" min="0"
+                    placeholder="Vazio = desactivado"
+                    value={z.max_distance_km ?? ""}
+                    onChange={(e) => update(z.id, { max_distance_km: e.target.value === "" ? null : Number(e.target.value) })}
                   />
                 </div>
+                <p className="md:col-span-2 text-[11px] text-muted-foreground">
+                  Só se aplica se a distância máxima estiver preenchida. Por agora, use código postal e cidade.
+                </p>
               </div>
             </details>
 

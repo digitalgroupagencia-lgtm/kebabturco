@@ -5,7 +5,6 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
-import { useCustomerGeocode } from "@/hooks/useCustomerGeocode";
 import StripePaymentForm from "@/components/StripePaymentForm";
 import {
   createCustomerOrder,
@@ -95,21 +94,11 @@ const PaymentScreen = () => {
   const [couponError, setCouponError] = useState<string | null>(null);
   const { subscribe: subscribePush } = usePushNotifications();
 
-  const geo = useCustomerGeocode(
-    orderType === "delivery" ? storeId : null,
-    deliveryAddress,
-    deliveryNumber,
-    deliveryPostalCode,
-    deliveryCity,
-    orderType === "delivery",
-  );
-
   const { quote: deliveryQuote } = useDeliveryFee(
     orderType === "delivery" ? storeId : null,
     deliveryPostalCode,
     deliveryCity,
     totalPrice,
-    geo.distanceKm,
   );
   const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
   const grandTotal = Math.max(0, totalPrice + deliveryFee - couponDiscount);
@@ -412,8 +401,30 @@ const PaymentScreen = () => {
                     <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={t("addressNumber")} className="h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 border-transparent" />
                     <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={t("addressPostal")} className="h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 border-transparent" />
                   </div>
-                  <div className="px-4 py-4 border-t border-border">
-                    <input type="text" value={deliveryCity} onChange={(e) => setDeliveryCity(e.target.value.slice(0, 60))} placeholder={t("addressCity")} className="w-full h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 border-transparent" />
+                  <div className={`px-4 py-4 border-t border-border ${showError === "city" || showError === "minOrder" ? "bg-destructive/5" : ""}`}>
+                    <input
+                      type="text"
+                      value={deliveryCity}
+                      onChange={(e) => { setDeliveryCity(e.target.value.slice(0, 60)); if (showError === "city" || showError === "minOrder") setShowError(null); }}
+                      placeholder={t("addressCity")}
+                      className={`w-full h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
+                    />
+                    {deliveryQuote.zone && deliveryPostalCode.trim() && deliveryCity.trim() && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        <span className="font-bold text-foreground">{deliveryQuote.zone.name}</span>
+                        {" · "}
+                        {deliveryQuote.fee > 0
+                          ? `+${deliveryQuote.fee.toFixed(2)}€ entrega`
+                          : "Entrega grátis"}
+                        {" · "}
+                        Mín. {deliveryQuote.minOrder.toFixed(0)}€
+                      </p>
+                    )}
+                    {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
+                      <p className="text-xs text-destructive font-bold mt-1">
+                        Pedido mínimo para esta zona: {deliveryQuote.minOrder.toFixed(2)}€
+                      </p>
+                    )}
                   </div>
                 </>
               )}
