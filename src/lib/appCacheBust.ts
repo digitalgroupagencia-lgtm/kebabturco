@@ -43,8 +43,12 @@ function extractMeta(html: string, name: string): string | null {
 }
 
 function extractMainScript(html: string): string | null {
-  const match = html.match(/<script type="module"[^>]*src="([^"]+)"/i);
-  return match?.[1] ?? null;
+  const moduleMatch = html.match(/<script type="module"[^>]*src="([^"]+)"/i);
+  if (moduleMatch) return moduleMatch[1];
+  // Boot diferido (produção): var src="/assets/index-….js"
+  const deferMatch = html.match(/var src=(["'])(\/assets\/index-[^"']+\.js)\1/);
+  if (deferMatch) return deferMatch[2];
+  return null;
 }
 
 function getLocalMainScript(): string | null {
@@ -97,6 +101,7 @@ export async function checkForDeployedUpdate() {
 
   const localMain = getLocalMainScript();
   const remote = await fetchRemoteDeployInfo();
+  const versionJson = await fetchPublishedVersion();
   const swCount =
     "serviceWorker" in navigator ? (await navigator.serviceWorker.getRegistrations()).length : 0;
 
@@ -107,6 +112,7 @@ export async function checkForDeployedUpdate() {
     data: {
       localBuildId: APP_BUILD_ID,
       remoteBuildId: remote.buildId,
+      remoteVersionJsonBuildId: versionJson?.buildId ?? null,
       localMain,
       remoteMain: remote.mainScript,
       localGitSha: GIT_SHA,
@@ -114,9 +120,11 @@ export async function checkForDeployedUpdate() {
       swRegistrations: swCount,
       path: window.location.pathname,
     },
+    runId: "post-fix",
   });
 
-  const buildMismatch = Boolean(remote.buildId && remote.buildId !== APP_BUILD_ID);
+  const remoteBuildId = versionJson?.buildId ?? remote.buildId;
+  const buildMismatch = Boolean(remoteBuildId && remoteBuildId !== APP_BUILD_ID);
   const scriptMismatch = Boolean(
     remote.mainScript && localMain && remote.mainScript !== localMain,
   );
@@ -124,7 +132,7 @@ export async function checkForDeployedUpdate() {
   if (!buildMismatch && !scriptMismatch) return;
 
   const reloadKey = "snaporder:last-reload-build";
-  const reloadToken = `${remote.buildId ?? "x"}:${remote.mainScript ?? "x"}`;
+  const reloadToken = `${remoteBuildId ?? "x"}:${remote.mainScript ?? "x"}`;
   const lastReload = sessionStorage.getItem(reloadKey);
   if (lastReload === reloadToken) {
     deployDebugLog({
@@ -132,6 +140,7 @@ export async function checkForDeployedUpdate() {
       location: "appCacheBust.ts:checkForDeployedUpdate",
       message: "reload skipped — already reloaded this deploy",
       data: { reloadToken },
+      runId: "post-fix",
     });
     return;
   }
@@ -143,6 +152,7 @@ export async function checkForDeployedUpdate() {
     location: "appCacheBust.ts:checkForDeployedUpdate",
     message: "forcing reload — deploy mismatch",
     data: { buildMismatch, scriptMismatch, reloadToken },
+    runId: "post-fix",
   });
 
   await purgeClientCaches();
@@ -174,6 +184,11 @@ export async function fetchPublishedVersion(): Promise<DeployVersionInfo | null>
   }
 }
 
+function gitShaMatches(local: string, remote: string): boolean {
+  if (!local || !remote || local === "unknown" || remote === "unknown") return true;
+  return local === remote;
+}
+
 /** true se o browser corre a mesma versão que /version.json no servidor. */
 export async function isRunningLatestPublishedVersion(): Promise<{
   ok: boolean;
@@ -182,6 +197,8 @@ export async function isRunningLatestPublishedVersion(): Promise<{
 }> {
   const local: DeployVersionInfo = { buildId: APP_BUILD_ID, gitSha: GIT_SHA };
   const remote = await fetchPublishedVersion();
-  const ok = Boolean(remote && remote.buildId === APP_BUILD_ID && remote.gitSha === GIT_SHA);
+  const ok = Boolean(
+    remote && remote.buildId === APP_BUILD_ID && gitShaMatches(GIT_SHA, remote.gitSha),
+  );
   return { ok, local, remote };
 }

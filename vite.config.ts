@@ -7,11 +7,17 @@ import { componentTagger } from "lovable-tagger";
 
 const APP_BUILD_ID = process.env.VITE_APP_BUILD_ID || String(Date.now());
 
-let GIT_SHA = "unknown";
-try {
-  GIT_SHA = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
-} catch {
-  /* repo sem git */
+let GIT_SHA =
+  process.env.VITE_GIT_SHA ||
+  process.env.GITHUB_SHA?.slice(0, 7) ||
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+  "unknown";
+if (GIT_SHA === "unknown") {
+  try {
+    GIT_SHA = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    /* build remoto sem git */
+  }
 }
 
 const injectAppBuildId = () => ({
