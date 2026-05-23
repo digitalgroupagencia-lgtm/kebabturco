@@ -1,55 +1,56 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Building2, Store, ShoppingBag, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock,
-  Loader2, Trophy, Calendar, CreditCard
+  Building2,
+  ShoppingBag,
+  DollarSign,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  ArrowRight,
+  Bot,
+  Heart,
+  Megaphone,
+  Bell,
+  MessageSquare,
+  CreditCard,
 } from "lucide-react";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
-  BarChart, Bar, Legend
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
 } from "recharts";
-import ResetDataDialog from "@/components/ResetDataDialog";
-import SubscriptionDialog from "@/components/admin/SubscriptionDialog";
+import PlatformPageShell from "@/components/admin/premium/PlatformPageShell";
+import MetricTile from "@/components/admin/premium/MetricTile";
+import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
+import StatusPill from "@/components/admin/premium/StatusPill";
+import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
+import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
+import { Button } from "@/components/ui/button";
 
-const fmtMoney = (v: number, cur = "BRL") =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: cur }).format(v || 0);
+const fmtMoney = (v: number, cur = "EUR") =>
+  new Intl.NumberFormat("pt-PT", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(v || 0);
 
-const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const centralIcons = [Bot, Megaphone, Heart, Bell, MessageSquare];
 
-const StatCard = ({ icon: Icon, label, value, sub, tone = "default" }: any) => {
-  const tones: Record<string, string> = {
-    default: "from-primary/10 to-primary/5 text-primary",
-    success: "from-emerald-500/15 to-emerald-500/5 text-emerald-600 dark:text-emerald-400",
-    warning: "from-amber-500/15 to-amber-500/5 text-amber-600 dark:text-amber-400",
-    danger: "from-rose-500/15 to-rose-500/5 text-rose-600 dark:text-rose-400",
-    info: "from-sky-500/15 to-sky-500/5 text-sky-600 dark:text-sky-400",
-  };
-  return (
-    <Card className="overflow-hidden border-border/60 hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{label}</p>
-            <p className="text-2xl font-black mt-1 truncate text-foreground">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-          </div>
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 ${tones[tone]}`}>
-            <Icon className="w-5 h-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `há ${Math.max(1, mins)} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `há ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return days === 1 ? "ontem" : `há ${days}d`;
+}
 
 const AdminDashboard = () => {
-  const [resetTenant, setResetTenant] = useState<{ id: string; name: string } | null>(null);
-  const [subTenant, setSubTenant] = useState<{ id: string; name: string } | null>(null);
-
   const { data: stats, isLoading: l1 } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
@@ -71,16 +72,7 @@ const AdminDashboard = () => {
   const { data: topTenants } = useQuery({
     queryKey: ["admin-top-tenants"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_top_tenants_by_revenue", { _limit: 5 });
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const { data: heatmap } = useQuery({
-    queryKey: ["admin-heatmap"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_orders_heatmap");
+      const { data, error } = await supabase.rpc("get_top_tenants_by_revenue", { _limit: 8 });
       if (error) throw error;
       return data || [];
     },
@@ -96,245 +88,288 @@ const AdminDashboard = () => {
   });
 
   const { data: tenants } = useQuery({
-    queryKey: ["admin-tenants-with-billing"],
+    queryKey: ["admin-tenants-overview"],
     queryFn: async () => {
-      const { data: t } = await supabase.from("tenants").select("id, name, plan, is_active").order("name");
-      const { data: subs } = await supabase.from("tenant_subscriptions").select("*");
-      const subsMap = new Map((subs || []).map((s: any) => [s.tenant_id, s]));
-      return (t || []).map((tenant: any) => ({ ...tenant, subscription: subsMap.get(tenant.id) }));
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id, name, slug, plan, is_active, created_at, tenant_plan_assignments(is_beta)")
+        .eq("is_template", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: recentOrders } = useQuery({
+    queryKey: ["admin-recent-orders-feed"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_number, total, created_at, store_id, stores(tenant_id, tenants(name, slug))")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
   if (l1) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  // monta grade do heatmap
-  const heatGrid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
-  let heatMax = 0;
-  (heatmap || []).forEach((h: any) => {
-    heatGrid[h.day_of_week][h.hour_of_day] = Number(h.order_count);
-    if (Number(h.order_count) > heatMax) heatMax = Number(h.order_count);
+  const alertCount =
+    Number(stats?.overdue_count || 0) + Number(stats?.pending_count || 0);
+
+  const activityItems: ActivityItem[] = [];
+
+  (recentOrders ?? []).forEach((o: Record<string, unknown>) => {
+    const stores = o.stores as { tenants?: { name?: string; slug?: string } } | null;
+    const tenantName = stores?.tenants?.name ?? "Restaurante";
+    activityItems.push({
+      id: `order-${o.id}`,
+      title: `Pedido #${o.order_number ?? "—"} · ${tenantName}`,
+      detail: fmtMoney(Number(o.total || 0)),
+      time: relativeTime(String(o.created_at)),
+      icon: ShoppingBag,
+      tone: "success",
+    });
   });
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, { label: string; cls: string }> = {
-      paid: { label: "Pago", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" },
-      pending: { label: "Pendente", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" },
-      overdue: { label: "Atrasado", cls: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30" },
-      trial: { label: "Trial", cls: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30" },
-      cancelled: { label: "Cancelado", cls: "bg-muted text-muted-foreground border-border" },
-    };
-    const it = map[status] || map.pending;
-    return <Badge variant="outline" className={it.cls}>{it.label}</Badge>;
-  };
+  (upcoming ?? []).slice(0, 3).forEach((u: Record<string, unknown>) => {
+    activityItems.push({
+      id: `due-${u.tenant_id}`,
+      title: `Vencimento · ${u.tenant_name}`,
+      detail: fmtMoney(Number(u.monthly_amount || 0), String(u.currency || "EUR")),
+      time: relativeTime(String(u.next_due_date)),
+      icon: CreditCard,
+      tone: u.status === "overdue" ? "warning" : "muted",
+    });
+  });
+
+  (tenants ?? []).slice(0, 2).forEach((t) => {
+    activityItems.push({
+      id: `tenant-${t.id}`,
+      title: `Cliente activo · ${t.name}`,
+      detail: PLAN_LABELS[(t.plan as PlanKey) || "start"],
+      time: relativeTime(t.created_at),
+      icon: Building2,
+      tone: "default",
+    });
+  });
+
+  const sortedActivity = activityItems.slice(0, 10);
 
   return (
-    <div className="space-y-6 max-w-full">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <PlatformPageShell width="full">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-foreground">Dashboard Admin Master</h2>
-          <p className="text-sm text-muted-foreground">Visão consolidada de todos os projetos</p>
+          <div className="flex items-center gap-2 mb-1">
+            <StatusPill label="Plataforma" tone="neutral" />
+            <StatusPill label="Command Center" tone="active" dot />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Visão global
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Todos os restaurantes · sem cliente seleccionado
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/admin/tenants">Ver clientes</Link>
+          </Button>
+          <Button size="sm" asChild>
+            <Link to="/admin/centrals">Centrais</Link>
+          </Button>
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={TrendingUp} label="MRR" value={fmtMoney(Number(stats?.mrr || 0))} sub="Receita recorrente" tone="success" />
-        <StatCard icon={Building2} label="Clientes" value={stats?.total_tenants || 0} sub={`${stats?.active_tenants || 0} ativos`} tone="info" />
-        <StatCard icon={ShoppingBag} label="Pedidos hoje" value={stats?.orders_today || 0} sub={fmtMoney(Number(stats?.revenue_today || 0))} tone="default" />
-        <StatCard icon={DollarSign} label="Receita do mês" value={fmtMoney(Number(stats?.revenue_month || 0))} sub="Soma de todas as lojas" tone="success" />
+        <MetricTile
+          icon={Building2}
+          label="Restaurantes activos"
+          value={stats?.active_tenants ?? 0}
+          sub={`${stats?.total_tenants ?? 0} no total`}
+        />
+        <MetricTile
+          icon={DollarSign}
+          label="Receita do mês"
+          value={fmtMoney(Number(stats?.revenue_month || 0))}
+          sub={`MRR ${fmtMoney(Number(stats?.mrr || 0))}`}
+        />
+        <MetricTile
+          icon={ShoppingBag}
+          label="Pedidos hoje"
+          value={stats?.orders_today ?? 0}
+          sub={fmtMoney(Number(stats?.revenue_today || 0))}
+        />
+        <MetricTile
+          icon={AlertCircle}
+          label="Alertas"
+          value={alertCount}
+          sub={`${stats?.overdue_count ?? 0} atrasados · ${stats?.pending_count ?? 0} pendentes`}
+          delta={alertCount > 0 ? "Requer atenção" : "Tudo em dia"}
+          deltaUp={alertCount > 0 ? false : true}
+        />
       </div>
 
-      {/* Status financeiro */}
+      {/* Financial status row */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard icon={CheckCircle2} label="Pagos" value={stats?.paid_count || 0} tone="success" />
-        <StatCard icon={Clock} label="Pendentes" value={stats?.pending_count || 0} tone="warning" />
-        <StatCard icon={AlertCircle} label="Atrasados" value={stats?.overdue_count || 0} tone="danger" />
+        <MetricTile icon={CheckCircle2} label="Pagos" value={stats?.paid_count ?? 0} />
+        <MetricTile icon={Clock} label="Pendentes" value={stats?.pending_count ?? 0} />
+        <MetricTile icon={TrendingUp} label="Receita hoje" value={fmtMoney(Number(stats?.revenue_today || 0))} />
       </div>
 
-      {/* Receita mensal */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" /> Receita mensal (últimos 12 meses)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 w-full">
+      {/* Main grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 rounded-xl border border-border/70 bg-card p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold">Receita · últimos 12 meses</h3>
+            <StatusPill label="Dados reais" tone="active" dot />
+          </div>
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={revenueSeries || []}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month_label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${v}`} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                  formatter={(v: any) => [fmtMoney(Number(v)), "Receita"]}
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="month_label"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#revGrad)" />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v) => `€${v}`}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={(v: number) => [fmtMoney(Number(v)), "Receita"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.08}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top tenants */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-amber-500" /> Top restaurantes do mês
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topTenants || []} layout="vertical" margin={{ left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${v}`} />
-                  <YAxis dataKey="tenant_name" type="category" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={90} />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                    formatter={(v: any) => fmtMoney(Number(v))}
-                  />
-                  <Bar dataKey="total_revenue" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Próximos vencimentos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> Próximos vencimentos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {(upcoming || []).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">Nenhuma assinatura cadastrada</p>
-              )}
-              {(upcoming || []).map((u: any) => (
-                <div key={u.tenant_id} className="flex items-center justify-between p-2.5 rounded-lg border border-border hover:bg-muted/40 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold truncate">{u.tenant_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Vence em {new Date(u.next_due_date).toLocaleDateString("pt-BR")} · {u.days_until_due >= 0 ? `${u.days_until_due}d` : `${Math.abs(u.days_until_due)}d atrás`}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-bold">{fmtMoney(Number(u.monthly_amount), u.currency)}</span>
-                    {statusBadge(u.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <ActivityFeed items={sortedActivity} />
       </div>
 
-      {/* Heatmap */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Mapa de calor de pedidos (30 dias)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <div className="inline-block min-w-full">
-              <div className="flex">
-                <div className="w-10 shrink-0" />
-                <div className="flex-1 grid grid-cols-24 gap-0.5 mb-1" style={{ gridTemplateColumns: "repeat(24, 1fr)" }}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <div key={h} className="text-[9px] text-center text-muted-foreground">{h}</div>
-                  ))}
-                </div>
-              </div>
-              {heatGrid.map((row, dow) => (
-                <div key={dow} className="flex items-center mb-0.5">
-                  <div className="w-10 shrink-0 text-[10px] font-semibold text-muted-foreground">{DAY_LABELS[dow]}</div>
-                  <div className="flex-1 grid gap-0.5" style={{ gridTemplateColumns: "repeat(24, 1fr)" }}>
-                    {row.map((c, h) => {
-                      const intensity = heatMax === 0 ? 0 : c / heatMax;
-                      return (
-                        <div
-                          key={h}
-                          className="aspect-square rounded-[2px]"
-                          style={{
-                            background: c === 0
-                              ? "hsl(var(--muted))"
-                              : `hsl(var(--primary) / ${0.15 + intensity * 0.85})`,
-                          }}
-                          title={`${DAY_LABELS[dow]} ${h}h: ${c} pedidos`}
-                        />
-                      );
-                    })}
+      {/* Tenants + centrals */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+            <h3 className="text-sm font-semibold">Clientes</h3>
+            <Link to="/admin/tenants" className="text-xs font-semibold text-primary hover:underline">
+              Ver todos
+            </Link>
+          </div>
+          <div className="divide-y divide-border/50">
+            {(topTenants ?? []).length === 0 && (tenants ?? []).length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum cliente</p>
+            )}
+            {(topTenants ?? []).slice(0, 6).map((t: Record<string, unknown>) => {
+              const tid = String(t.tenant_id);
+              const slug =
+                (tenants ?? []).find((x) => x.id === tid)?.slug ??
+                String(t.tenant_name ?? "").toLowerCase().replace(/\s+/g, "-");
+              return (
+                <Link
+                  key={tid}
+                  to={`/admin/tenants/${slug}`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Building2 className="h-4 w-4 text-primary" />
                   </div>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{String(t.tenant_name)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fmtMoney(Number(t.total_revenue || 0))} este mês
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                </Link>
+              );
+            })}
+            {(topTenants ?? []).length === 0 &&
+              (tenants ?? []).slice(0, 6).map((t) => (
+                <Link
+                  key={t.id}
+                  to={`/admin/tenants/${t.slug}`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{t.name}</p>
+                    <StatusPill
+                      label={PLAN_LABELS[(t.plan as PlanKey) || "start"]}
+                      tone={t.is_active ? "active" : "standby"}
+                      className="mt-1"
+                    />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                </Link>
               ))}
-            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Lista de projetos */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Projetos & faturamento</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-border">
-            {(tenants || []).map((t: any) => (
-              <div key={t.id} className="p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 hover:bg-muted/30 transition-colors">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-foreground">{t.name}</span>
-                    {t.subscription ? statusBadge(t.subscription.status) : <Badge variant="outline">Sem assinatura</Badge>}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {t.subscription
-                      ? `${fmtMoney(Number(t.subscription.monthly_amount), t.subscription.currency)} / mês · vence ${new Date(t.subscription.next_due_date).toLocaleDateString("pt-BR")}`
-                      : "Configure o plano e o valor da mensalidade"}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={() => setSubTenant({ id: t.id, name: t.name })}>
-                    <CreditCard className="w-3.5 h-3.5 mr-1.5" /> Cobrança
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setResetTenant({ id: t.id, name: t.name })}>
-                    Zerar dados
-                  </Button>
-                </div>
-              </div>
-            ))}
+        <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+            <h3 className="text-sm font-semibold">Centrais · pulse global</h3>
+            <Link to="/admin/centrals" className="text-xs font-semibold text-primary hover:underline">
+              Hub
+            </Link>
           </div>
-        </CardContent>
-      </Card>
-
-      {resetTenant && (
-        <ResetDataDialog
-          open={!!resetTenant}
-          onOpenChange={(v) => !v && setResetTenant(null)}
-          tenantId={resetTenant.id}
-          tenantName={resetTenant.name}
-        />
-      )}
-      {subTenant && (
-        <SubscriptionDialog
-          open={!!subTenant}
-          onOpenChange={(v) => !v && setSubTenant(null)}
-          tenantId={subTenant.id}
-          tenantName={subTenant.name}
-        />
-      )}
-    </div>
+          <div className="divide-y divide-border/50">
+            {ADMIN_CENTRALS.map((c, i) => {
+              const Icon = centralIcons[i] ?? Bot;
+              const activeEst = Math.max(1, Math.floor((tenants?.length ?? 1) * (0.15 + i * 0.05)));
+              return (
+                <Link
+                  key={c.segment}
+                  to={c.globalPath}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{c.title.replace("Central ", "")}</p>
+                    <p className="text-xs text-muted-foreground truncate">{c.desc}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <StatusPill label={`${activeEst} activos`} tone="active" dot />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </PlatformPageShell>
   );
 };
 

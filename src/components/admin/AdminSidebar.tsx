@@ -6,11 +6,7 @@ import {
   Activity,
   Users,
   Settings,
-  Palette,
   LogOut,
-  Image,
-  Wallet,
-  Printer,
   BookOpen,
   MessageSquare,
   Layers,
@@ -44,7 +40,7 @@ import { cn } from "@/lib/utils";
 import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
 
 const overviewItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutGrid, end: true },
+  { title: "Command Center", url: "/admin", icon: LayoutGrid, end: true },
 ];
 
 const clientsItems = [
@@ -54,19 +50,12 @@ const clientsItems = [
   { title: "Planos & Cobrança", url: "/admin/billing", icon: CreditCard },
 ];
 
-const opsItems = [
-  { title: "Identidad Visual", url: "/admin/branding", icon: Palette },
-  { title: "Banner Promocional", url: "/admin/banner", icon: Image },
-  { title: "Pagos", url: "/admin/operations", icon: Wallet },
-  { title: "Impresora", url: "/admin/printer", icon: Printer },
-  { title: "Monitoramento", url: "/admin/monitoring", icon: Activity },
-];
-
 const systemItems = [
-  { title: "Usuários", url: "/admin/users", icon: Users },
+  { title: "Utilizadores", url: "/admin/users", icon: Users },
+  { title: "Monitorização", url: "/admin/monitoring", icon: Activity },
   { title: "Guia", url: "/admin/guide", icon: BookOpen },
   { title: "Conversas IA", url: "/admin/conversations", icon: MessageSquare },
-  { title: "Configurações", url: "/admin/settings", icon: Settings },
+  { title: "Definições", url: "/admin/settings", icon: Settings },
 ];
 
 const centralIcons: Record<string, typeof Bot> = {
@@ -216,17 +205,6 @@ export function AdminSidebar() {
                   );
                 })
               )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Operação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {opsItems.map((item) => (
-                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
-              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -3,7 +3,11 @@ import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AdminPageHeader, { type Breadcrumb } from "./AdminPageHeader";
 import AdminTenantContextBar from "./AdminTenantContextBar";
+import GlobalCentralOverview from "./GlobalCentralOverview";
+import PlatformPageShell from "./PlatformPageShell";
 import { useAdminCentralsTenants } from "@/hooks/usePlatformFeatures";
+
+type TenantRow = NonNullable<ReturnType<typeof useAdminCentralsTenants>["data"]>[number];
 
 type Props = {
   title: string;
@@ -16,7 +20,7 @@ type Props = {
   stats?: React.ReactNode;
   children: (ctx: {
     tenantId: string;
-    tenant: ReturnType<typeof useAdminCentralsTenants>["data"] extends (infer T)[] | undefined ? T : never;
+    tenant: TenantRow;
     isScoped: boolean;
   }) => React.ReactNode;
 };
@@ -41,21 +45,22 @@ export default function AdminCentralLayout({
   const tenantId = scopedTenant?.id ?? selectedId;
   const tenant = scopedTenant ?? tenants?.find((t) => t.id === tenantId);
 
+  // Global mode: nunca auto-seleccionar o primeiro restaurante
   useEffect(() => {
-    if (!isScoped && !selectedId && tenants?.[0]?.id) {
-      setSelectedId(tenants[0].id);
+    if (isScoped && scopedTenant) {
+      setSelectedId(scopedTenant.id);
     }
-  }, [tenants, selectedId, isScoped]);
+  }, [isScoped, scopedTenant?.id]);
 
   const defaultCrumbs: Breadcrumb[] = isScoped && scopedTenant
     ? [
-        { label: "Admin", to: "/admin" },
+        { label: "Plataforma", to: "/admin" },
         { label: "Clientes", to: "/admin/tenants" },
-        { label: scopedTenant.name, to: `/admin/tenants/${scopedTenant.slug}/centrals` },
+        { label: scopedTenant.name, to: `/admin/tenants/${scopedTenant.slug}` },
         { label: title },
       ]
     : [
-        { label: "Admin", to: "/admin" },
+        { label: "Plataforma", to: "/admin" },
         { label: "Centrais", to: "/admin/centrals" },
         { label: title },
       ];
@@ -68,8 +73,10 @@ export default function AdminCentralLayout({
     );
   }
 
+  const showGlobalOverview = !isScoped && !tenantId && tenants && tenants.length > 0;
+
   return (
-    <div className="mx-auto max-w-lg space-y-4 pb-10">
+    <PlatformPageShell width="default">
       <AdminPageHeader
         title={title}
         description={description}
@@ -87,13 +94,22 @@ export default function AdminCentralLayout({
           isScoped={isScoped}
           scopedSlug={slug}
           centralsPath="/admin/centrals"
+          allowEmpty={!isScoped}
         />
       )}
 
       {showTenantList && !isScoped && tenantList}
 
+      {showGlobalOverview && (
+        <GlobalCentralOverview
+          centralTitle={title}
+          tenants={tenants}
+          centralSegment={centralSegment}
+        />
+      )}
+
       {tenantId && tenant ? children({ tenantId, tenant, isScoped }) : null}
-    </div>
+    </PlatformPageShell>
   );
 }
 

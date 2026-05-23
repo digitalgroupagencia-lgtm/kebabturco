@@ -21,6 +21,7 @@ type Props = {
   scopedSlug?: string;
   centralsPath?: string;
   className?: string;
+  allowEmpty?: boolean;
 };
 
 function isBeta(t: Tenant): boolean {
@@ -38,8 +39,9 @@ export default function AdminTenantContextBar({
   scopedSlug,
   centralsPath = "/admin/centrals",
   className,
+  allowEmpty,
 }: Props) {
-  const current = tenants.find((t) => t.id === tenantId);
+  const current = tenantId ? tenants.find((t) => t.id === tenantId) : undefined;
   const plan = (current?.plan as PlanKey) || "start";
 
   return (
@@ -75,9 +77,9 @@ export default function AdminTenantContextBar({
           </Link>
         </div>
       ) : (
-        <Select value={tenantId} onValueChange={onChange}>
-          <SelectTrigger className="h-11 rounded-xl bg-card border-border/80 shadow-sm">
-            <SelectValue placeholder="Seleccionar restaurante" />
+        <Select value={tenantId || undefined} onValueChange={onChange}>
+          <SelectTrigger className="h-11 rounded-xl bg-card border-border/80">
+            <SelectValue placeholder={allowEmpty ? "Seleccionar restaurante (opcional)" : "Seleccionar restaurante"} />
           </SelectTrigger>
           <SelectContent>
             {tenants.map((t) => (

@@ -133,7 +133,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
 
       if (tenant) {
         const { data: list } = await supabase
-          .from("stores")
+          .from("stores_public")
           .select("id, name, address, image_url, short_description, sort_order, created_at")
           .eq("tenant_id", tenant.id)
           .eq("is_active", true)
@@ -155,7 +155,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
         }
       } else {
         const { data: store } = await supabase
-          .from("stores")
+          .from("stores_public")
           .select("id, name, address, image_url, short_description, tenant_id")
           .eq("is_active", true)
           .order("created_at")

@@ -3,6 +3,8 @@ import { Loader2, Layers } from "lucide-react";
 import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
 import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
 import AdminStatStrip from "@/components/admin/premium/AdminStatStrip";
+import PlatformPageShell from "@/components/admin/premium/PlatformPageShell";
+import StatusPill from "@/components/admin/premium/StatusPill";
 import { useAdminCentralsTenants, usePlatformPlans } from "@/hooks/usePlatformFeatures";
 import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
 import { ChevronRight, Building2 } from "lucide-react";
@@ -22,15 +24,17 @@ export default function AdminCentralsHubPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-4 pb-10">
+    <PlatformPageShell width="default">
       <AdminPageHeader
         title="Centrais operacionais"
-        description="Visão global da plataforma. Escolhe uma central ou entra directamente num restaurante."
+        description="Visão global da plataforma. Escolhe uma central ou entra num restaurante — nenhum cliente pré-seleccionado."
         breadcrumbs={[
-          { label: "Admin", to: "/admin" },
+          { label: "Plataforma", to: "/admin" },
           { label: "Centrais" },
         ]}
       />
+
+      <StatusPill label="Modo plataforma" tone="neutral" />
 
       <AdminStatStrip
         stats={[
@@ -93,6 +97,6 @@ export default function AdminCentralsHubPage() {
           ))}
         </div>
       </div>
-    </div>
+    </PlatformPageShell>
   );
 }
