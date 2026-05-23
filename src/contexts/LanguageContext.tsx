@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedLang, isEmbedded } from "@/lib/embed-mode";
+import { loadSavedLang, saveSavedLang } from "@/lib/customerSession";
 
 type Lang = "pt" | "en" | "es" | "fr";
 
@@ -167,7 +168,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const [primaryLang, setPrimaryLang] = useState<Lang>("es");
   const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
   const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
-  const [lang, setLang] = useState<Lang>(() => getEmbedLang() ?? "es");
+  const [lang, setLangState] = useState<Lang>(() => getEmbedLang() ?? loadSavedLang() ?? "es");
+
+  const setLang = (next: Lang) => {
+    setLangState(next);
+    saveSavedLang(next);
+  };
 
   useEffect(() => {
     const fromUrl = getEmbedLang();
@@ -192,7 +198,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
       setActiveLangs(actives.length ? actives : [primary]);
       setLangIcons((data.language_icons as Partial<Record<Lang, string>>) || {});
       const fromEmbed = isEmbedded() ? getEmbedLang() : null;
-      setLang(fromEmbed ?? primary);
+      const remembered = loadSavedLang();
+      setLang(fromEmbed ?? remembered ?? primary);
     })();
     return () => {
       alive = false;

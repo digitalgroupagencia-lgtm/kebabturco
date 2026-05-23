@@ -9,6 +9,10 @@ import {
   clearStoredActiveOrder,
 } from "@/features/customer/useActiveOrderStorage";
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import {
+  resolveScreenAfterLanguageSkip,
+  shouldSkipLanguageScreen,
+} from "@/lib/customerSession";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
 export type { Screen };
@@ -87,6 +91,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (urlScreen === "confirmation" || stored?.screen === "confirmation" || p === "confirmation") return "confirmation";
       return "confirmation";
     }
+
+    if (shouldSkipLanguageScreen()) {
+      if (valid.includes(p as Screen)) return p as Screen;
+      return resolveScreenAfterLanguageSkip();
+    }
+
     return valid.includes(p as Screen) ? (p as Screen) : "language";
   })();
 

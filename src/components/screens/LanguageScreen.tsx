@@ -66,7 +66,7 @@ const LanguageScreen = () => {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative overflow-x-hidden"
+      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: bottomInset,
@@ -76,23 +76,24 @@ const LanguageScreen = () => {
         className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
         style={{ height: "env(safe-area-inset-top)" }}
       />
-      <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
+      <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />
       </div>
 
-      <div className="flex flex-col items-center px-5 pt-3 pb-2 gap-2 shrink-0">
+      {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
+      <div className="flex flex-col items-center px-6 pt-4 shrink-0">
         {logo && (
-          <div className="w-[min(42vw,160px)] h-[min(42vw,160px)] flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div className="w-full max-w-[280px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <img src={logo} alt={brandName} className="w-full h-full object-contain" draggable={false} />
           </div>
         )}
 
-        <div className="text-center flex flex-col gap-0.5 w-full">
+        <div className="text-center flex flex-col gap-1 w-full">
           {titles.map((tt, idx) => (
             <h1
               key={idx}
               className={`leading-tight font-black tracking-tight ${
-                idx === 0 ? "text-[22px] text-foreground" : "text-[15px] text-muted-foreground"
+                idx === 0 ? "text-[24px] text-foreground" : "text-[16px] text-muted-foreground"
               }`}
             >
               {tt}
@@ -101,12 +102,11 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-2 min-h-[120px]">
+      {/* Bandeiras logo abaixo do título — tamanho original */}
+      <div className="flex items-center justify-center px-4 pt-3 pb-2 w-full shrink-0">
         <div
-          className="grid w-full max-w-sm gap-3"
-          style={{
-            gridTemplateColumns: `repeat(${Math.min(langs.length, 4)}, minmax(0, 1fr))`,
-          }}
+          className="flex flex-row items-start justify-center w-full max-w-md flex-nowrap"
+          style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
         >
           {langs.map((code) => {
             const icon = langIcons[code] || FALLBACK_FLAG[code];
@@ -116,10 +116,10 @@ const LanguageScreen = () => {
                 key={code}
                 type="button"
                 onClick={() => handleSelect(code)}
-                className="active:scale-95 transition-transform touch-action-manipulation flex flex-col items-center gap-1"
+                className="active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0"
                 aria-label={label}
               >
-                <div className="w-full max-w-[88px] mx-auto aspect-square flex items-center justify-center">
+                <div className="w-full aspect-square flex items-center justify-center">
                   <img
                     src={icon}
                     alt={label}
@@ -133,7 +133,9 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      <div className="shrink-0 pt-2 pb-3 px-6 space-y-2">
+      <div className="flex-1 min-h-0" aria-hidden />
+
+      <div className="shrink-0 pt-4 pb-6 px-6 space-y-3">
         <InstallAppButton lang={primaryLang} />
         <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           Pizza · Kebab · Burger

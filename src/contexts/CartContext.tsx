@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
+import { loadSavedOrderType, saveSavedOrderType } from "@/lib/customerSession";
 
 export interface CartItemExtra {
   id: string;
@@ -76,13 +77,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return parsed.flatMap((item: CartItem) => splitIntoSingleItems(item, item.id));
     } catch { return []; }
   });
-  const [orderType, setOrderType] = useState<"here" | "takeaway" | "delivery" | null>(() =>
-    shouldForceDeliveryOnly() ? "delivery" : null,
-  );
+  const [orderType, setOrderTypeState] = useState<"here" | "takeaway" | "delivery" | null>(() => {
+    if (shouldForceDeliveryOnly()) return "delivery";
+    return loadSavedOrderType();
+  });
 
-  useEffect(() => {
-    if (shouldForceDeliveryOnly()) setOrderType("delivery");
-  }, []);
+  const setOrderType = (t: "here" | "takeaway" | "delivery") => {
+    setOrderTypeState(t);
+    saveSavedOrderType(t);
+  };
 
   useEffect(() => {
     const needsSplit = items.some((item) => item.quantity !== 1 || item.totalPrice !== item.unitPrice);
