@@ -9,7 +9,7 @@ import {
   type Product,
   type Variant,
 } from "@/data/products";
-import { inferVariantsFromText } from "@/lib/parseProductCustomization";
+import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
 
 type JsonName = Record<string, string>;
 
@@ -95,7 +95,13 @@ export function useMenuData() {
         const description = asName(prod.description);
         const descText = description.es || description.pt || description.en || "";
         const nameText = name.es || name.pt || name.en || "";
-        const inferredVariants = inferVariantsFromText(descText) || inferVariantsFromText(nameText);
+        const inferredMeat = inferVariantsFromText(descText) || inferVariantsFromText(nameText);
+        const inferredChoice =
+          inferredMeat.length >= 2
+            ? []
+            : inferChoiceVariantsFromDescription(descText) ||
+              inferChoiceVariantsFromDescription(nameText);
+        const inferredVariants = inferredMeat.length >= 2 ? inferredMeat : inferredChoice;
         const variants: Variant[] | undefined =
           inferredVariants.length >= 2 ? inferredVariants : undefined;
 

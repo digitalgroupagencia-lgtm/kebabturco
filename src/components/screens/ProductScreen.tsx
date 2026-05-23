@@ -10,8 +10,10 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";
 import {
+  inferChoiceVariantsFromDescription,
   inferVariantsFromText,
   isMeatChoiceLabel,
+  isMeatVariantSet,
   mergeRemovableIngredients,
   parseRemovableIngredients,
 } from "@/lib/parseProductCustomization";
@@ -111,20 +113,31 @@ const ProductScreen = () => {
   const effectiveVariants = useMemo(() => {
     if (!product) return [];
     if (product.variants?.length) return product.variants;
-    return inferVariantsFromText(descriptionText) || inferVariantsFromText(nameText);
+    const meat = inferVariantsFromText(descriptionText) || inferVariantsFromText(nameText);
+    if (meat.length >= 2) return meat;
+    return (
+      inferChoiceVariantsFromDescription(descriptionText) ||
+      inferChoiceVariantsFromDescription(nameText)
+    );
   }, [product, descriptionText, nameText]);
 
   const requiresVariant = effectiveVariants.length >= 2;
+  const isMeatChoice = isMeatVariantSet(effectiveVariants);
 
   const ingredientOptions = useMemo(() => {
     if (!product) return [];
-    const fromModifiers = (product.ingredients || []).filter(
-      (ing) => !isMeatChoiceLabel(ing),
+    const variantLabelKeys = new Set(
+      effectiveVariants.map((v) => tProduct(v.name).toLowerCase()),
     );
-    const fromDescription = parseRemovableIngredients(descriptionText, requiresVariant);
+    const fromModifiers = (product.ingredients || []).filter(
+      (ing) => !isMeatChoiceLabel(ing) && !variantLabelKeys.has(ing.toLowerCase()),
+    );
+    const fromDescription = parseRemovableIngredients(descriptionText, requiresVariant).filter(
+      (ing) => !variantLabelKeys.has(ing.toLowerCase()),
+    );
     const fromCategory = ingredientMap[product.category] || [];
     return mergeRemovableIngredients(fromModifiers, fromDescription, fromCategory);
-  }, [product, descriptionText, requiresVariant]);
+  }, [product, descriptionText, requiresVariant, effectiveVariants, tProduct]);
 
   const availableExtras = useMemo(
     () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
@@ -197,7 +210,11 @@ const ProductScreen = () => {
 
   const handleAdd = () => {
     if (requiresVariant && !selectedVariant) {
-      toast.error("Elige pollo, ternera o mixto antes de añadir al pedido");
+      toast.error(
+        isMeatChoice
+          ? "Elige pollo, ternera o mixto antes de añadir al pedido"
+          : "Elige tu refresco antes de añadir al pedido",
+      );
       return;
     }
 
@@ -281,7 +298,11 @@ const ProductScreen = () => {
               <div>
                 <div className="mb-2.5 flex items-baseline justify-between">
                   <h3 className="text-[17px] font-black text-foreground">
-                    {requiresVariant ? "Elige la carne" : t("choose")}
+                    {requiresVariant
+                      ? isMeatChoice
+                        ? "Elige la carne"
+                        : "Elige tu refresco"
+                      : t("choose")}
                   </h3>
                   <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
                     {requiresVariant ? "Obligatorio" : "Escoge una opción"}
@@ -295,7 +316,7 @@ const ProductScreen = () => {
                       <button
                         key={v.id}
                         onClick={() => setSelectedVariant(v)}
-                        className={`rounded-2xl border px-2 py-3 flex flex-col items-center gap-1.5 transition-all active:scale-[0.97] ${
+                        className={`rounded-2xl border px-2 py-3 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.97] min-h-[52px] ${
                           sel
                             ? "border-success bg-success/10"
                             : requiresVariant
@@ -303,7 +324,6 @@ const ProductScreen = () => {
                               : "border-border bg-card"
                         }`}
                       >
-                        <span className="text-[26px] leading-none" aria-hidden>{emojiFor(variantLabel)}</span>
                         <span className={`text-[13px] font-bold text-center leading-tight ${sel ? "text-success" : "text-foreground"}`}>
                           {variantLabel}
                         </span>
@@ -369,7 +389,6 @@ const ProductScreen = () => {
                       }`}
                       aria-pressed={!isRemoved}
                     >
-                      <span className={`text-[20px] leading-none shrink-0 ${isRemoved ? "grayscale opacity-50" : ""}`} aria-hidden>{emojiFor(ingredient)}</span>
                       <span className={`flex-1 text-left text-[13px] font-bold leading-tight ${isRemoved ? "text-destructive line-through" : "text-success"}`}>
                         {ingredient}
                       </span>

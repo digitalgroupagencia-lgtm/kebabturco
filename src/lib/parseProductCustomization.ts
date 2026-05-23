@@ -83,3 +83,45 @@ export function mergeRemovableIngredients(...lists: string[][]): string[] {
   }
   return out;
 }
+
+const TYPICAL_REMOVABLE =
+  /lechuga|col\b|tomate|pepino|cebolla|ma[ií]z|zanahoria|salsa|queso|or[eé]gano|aceituna|bacon|huevo|pan\b|patata|arroz|ajo|miel|champi/i;
+
+const MEAT_VARIANT_IDS = new Set(["pollo", "ternera", "mixto"]);
+
+function slugifyChoiceId(label: string): string {
+  return (
+    label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "choice"
+  );
+}
+
+/** Detecta escolha única obrigatória tipo "Coca-Cola, Fanta, Sprite, Nestea" na descrição. */
+export function inferChoiceVariantsFromDescription(text: string): Variant[] {
+  if (!text || /\s+o\s+/i.test(text)) return [];
+
+  const segments = text
+    .replace(/\s*\.\s*$/, "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (segments.length < 2) return [];
+  if (segments.some((s) => isMeatChoiceSegment(s) || TYPICAL_REMOVABLE.test(s))) return [];
+
+  return segments.map((label) => {
+    const normalized = label.charAt(0).toUpperCase() + label.slice(1);
+    return {
+      id: slugifyChoiceId(normalized),
+      name: { es: normalized, en: normalized, pt: normalized, fr: normalized },
+    };
+  });
+}
+
+export function isMeatVariantSet(variants: Variant[]): boolean {
+  return variants.length >= 2 && variants.every((v) => MEAT_VARIANT_IDS.has(v.id));
+}
