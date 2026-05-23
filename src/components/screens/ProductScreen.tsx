@@ -9,7 +9,13 @@ import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";
-import { parseIngredients } from "@/lib/parseIngredients";
+import {
+  inferVariantsFromText,
+  isMeatChoiceLabel,
+  mergeRemovableIngredients,
+  parseRemovableIngredients,
+} from "@/lib/parseProductCustomization";
+import { toast } from "sonner";
 
 
 const ingredientMap: Record<string, string[]> = {
@@ -98,14 +104,28 @@ const ProductScreen = () => {
   const { products } = useMenuData();
 
   const product = products.find((item) => item.id === selectedProductId);
+
+  const descriptionText = product ? tProduct(product.description) : "";
+  const nameText = product ? tProduct(product.name) : "";
+
+  const effectiveVariants = useMemo(() => {
+    if (!product) return [];
+    if (product.variants?.length) return product.variants;
+    return inferVariantsFromText(descriptionText) || inferVariantsFromText(nameText);
+  }, [product, descriptionText, nameText]);
+
+  const requiresVariant = effectiveVariants.length >= 2;
+
   const ingredientOptions = useMemo(() => {
     if (!product) return [];
-    if (product.ingredients?.length) return product.ingredients;
-    if (ingredientMap[product.category]) return ingredientMap[product.category];
-    // Fallback: extrai da descrição
-    const desc = tProduct(product.description);
-    return parseIngredients(desc);
-  }, [product, tProduct]);
+    const fromModifiers = (product.ingredients || []).filter(
+      (ing) => !isMeatChoiceLabel(ing),
+    );
+    const fromDescription = parseRemovableIngredients(descriptionText, requiresVariant);
+    const fromCategory = ingredientMap[product.category] || [];
+    return mergeRemovableIngredients(fromModifiers, fromDescription, fromCategory);
+  }, [product, descriptionText, requiresVariant]);
+
   const availableExtras = useMemo(
     () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
     [product],
@@ -135,8 +155,8 @@ const ProductScreen = () => {
       setSelectedSize(matchSize ?? product.sizes?.[0]);
 
       const editedName = tProduct(editingItem.productName);
-      const matchVariant = product.variants?.find((v) => editedName.includes(tProduct(v.name)));
-      setSelectedVariant(matchVariant ?? product.variants?.[0]);
+      const matchVariant = effectiveVariants.find((v) => editedName.includes(tProduct(v.name)));
+      setSelectedVariant(matchVariant ?? effectiveVariants[0]);
 
       const extrasMap = new Map<string, number>();
       editingItem.extras.forEach((e) => {
@@ -149,13 +169,13 @@ const ProductScreen = () => {
     } else {
       setQuantity(1);
       setSelectedSize(product.sizes?.[0]);
-      setSelectedVariant(product.variants?.[0]);
+      setSelectedVariant(requiresVariant ? undefined : effectiveVariants[0]);
       setExtras(new Map());
       setRemoved(new Set());
       setNote("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, editingItem?.id]);
+  }, [product, editingItem?.id, requiresVariant, effectiveVariants]);
 
   if (!product) return null;
 
@@ -176,6 +196,11 @@ const ProductScreen = () => {
   const removedIngredients = Array.from(removed);
 
   const handleAdd = () => {
+    if (requiresVariant && !selectedVariant) {
+      toast.error("Elige pollo, ternera o mixto antes de añadir al pedido");
+      return;
+    }
+
     const selectedExtras = Array.from(extras.entries())
       .map(([id, qty]) => {
         const extra = availableExtras.find((item) => item.id === id);
@@ -250,16 +275,20 @@ const ProductScreen = () => {
         </section>
 
 
-        {(product.variants?.length || product.sizes?.length) && (
+        {(effectiveVariants.length > 0 || product.sizes?.length) && (
           <section className="space-y-5">
-            {product.variants && product.variants.length > 0 && (
+            {effectiveVariants.length > 0 && (
               <div>
                 <div className="mb-2.5 flex items-baseline justify-between">
-                  <h3 className="text-[17px] font-black text-foreground">{t("choose")}</h3>
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Escoge una opción</span>
+                  <h3 className="text-[17px] font-black text-foreground">
+                    {requiresVariant ? "Elige la carne" : t("choose")}
+                  </h3>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                    {requiresVariant ? "Obligatorio" : "Escoge una opción"}
+                  </span>
                 </div>
-                <div className={`grid gap-2 ${product.variants.length === 3 ? "grid-cols-3" : product.variants.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
-                  {product.variants.map((v) => {
+                <div className={`grid gap-2 ${effectiveVariants.length === 3 ? "grid-cols-3" : effectiveVariants.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
+                  {effectiveVariants.map((v) => {
                     const sel = selectedVariant?.id === v.id;
                     const variantLabel = tProduct(v.name);
                     return (
@@ -269,7 +298,9 @@ const ProductScreen = () => {
                         className={`rounded-2xl border px-2 py-3 flex flex-col items-center gap-1.5 transition-all active:scale-[0.97] ${
                           sel
                             ? "border-success bg-success/10"
-                            : "border-border bg-card"
+                            : requiresVariant
+                              ? "border-border bg-card ring-1 ring-inset ring-border/60"
+                              : "border-border bg-card"
                         }`}
                       >
                         <span className="text-[26px] leading-none" aria-hidden>{emojiFor(variantLabel)}</span>
@@ -423,7 +454,8 @@ const ProductScreen = () => {
       <div className="shrink-0 z-50 bg-background/92 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
         <button
           onClick={handleAdd}
-          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation"
+          disabled={requiresVariant && !selectedVariant}
+          className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:pointer-events-none"
         >
           <span className="text-[16px] font-black tracking-wide uppercase">{t("addToOrder")}</span>
           <span className="text-[16px] font-black bg-white/15 rounded-full px-4 py-1.5 tabular-nums">{totalPrice.toFixed(2)}€</span>

@@ -7,7 +7,9 @@ import {
   type Category,
   type Extra,
   type Product,
+  type Variant,
 } from "@/data/products";
+import { inferVariantsFromText } from "@/lib/parseProductCustomization";
 
 type JsonName = Record<string, string>;
 
@@ -89,10 +91,18 @@ export function useMenuData() {
         const ingredients = allExtras.filter(isRemovalModifier).map(ingredientFromModifier).filter(Boolean);
         const extras = allExtras.filter((extra) => !isRemovalModifier(extra));
 
+        const name = asName(prod.name);
+        const description = asName(prod.description);
+        const descText = description.es || description.pt || description.en || "";
+        const nameText = name.es || name.pt || name.en || "";
+        const inferredVariants = inferVariantsFromText(descText) || inferVariantsFromText(nameText);
+        const variants: Variant[] | undefined =
+          inferredVariants.length >= 2 ? inferredVariants : undefined;
+
         return {
           id: prod.id,
-          name: asName(prod.name),
-          description: asName(prod.description),
+          name,
+          description,
           price: Number(prod.price || 0),
           image: prod.image_url || categoryImage.get(prod.category_id) || "",
           category: prod.category_id,
@@ -100,6 +110,7 @@ export function useMenuData() {
           isPromo: Boolean(prod.is_promo),
           extras,
           ingredients,
+          variants,
         } satisfies MenuProduct;
       });
 

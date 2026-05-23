@@ -82,15 +82,15 @@ const OrderTypeScreen = () => {
         <ThemeToggle />
       </div>
 
-      {/* Bloco central: logo + título */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-4 gap-6">
+      {/* Logo, título e modos de pedido agrupados — ícones mais acima */}
+      <div className="flex-1 flex flex-col items-center px-6 pt-6 pb-4 gap-5 min-h-0 overflow-y-auto">
         {!brandingLoading && logo && (
-          <div className="w-full max-w-[280px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div className="w-full max-w-[240px] aspect-square flex items-center justify-center shrink-0 drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <img src={logo} alt={brandName} className="w-full h-full object-contain" />
           </div>
         )}
 
-        <div className="text-center">
+        <div className="text-center shrink-0">
           {mesaLocked && tableNumber && (
             <div className="mb-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg">
               <UtensilsCrossed className="w-5 h-5" />
@@ -102,42 +102,41 @@ const OrderTypeScreen = () => {
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">{t("pickOption")}</p>
         </div>
-      </div>
 
-      {/* Layout horizontal — todos os tipos ativos lado a lado */}
-      <div className="flex items-center justify-center px-4 pb-4 w-full">
-        <div
-          className="flex flex-row items-stretch justify-center w-full max-w-md flex-nowrap"
-          style={{ gap: enabled.length >= 3 ? "0.75rem" : "1rem" }}
-        >
-          {enabled.map(({ key, label, sub, icon, Fallback, tint }) => (
-            <button
-              key={key}
-              onClick={() => handleSelect(key)}
-              className={`flex-1 min-w-0 flex flex-col items-center gap-2 p-3 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
-                mesaLocked && key === "here" ? "border-primary ring-2 ring-primary/40" : "border-border/60"
-              }`}
-            >
-              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 ${icon ? "" : tint}`}>
-                {icon ? (
-                  <img src={icon} alt={label} className="w-full h-full object-contain" />
-                ) : (
-                  <Fallback className="w-9 h-9" strokeWidth={2.2} />
-                )}
-              </div>
-              <div className="text-center w-full">
-                <span className="text-sm font-black text-foreground block leading-tight truncate">{label}</span>
-                <span className="text-[10px] text-muted-foreground mt-0.5 block line-clamp-2">{sub}</span>
-              </div>
-            </button>
-          ))}
-          {enabled.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center">Nenhuma opção de pedido ativa.</p>
-          )}
+        <div className="flex items-center justify-center w-full max-w-md shrink-0 mt-1">
+          <div
+            className="flex flex-row items-stretch justify-center w-full flex-nowrap"
+            style={{ gap: enabled.length >= 3 ? "0.75rem" : "1rem" }}
+          >
+            {enabled.map(({ key, label, sub, icon, Fallback, tint }) => (
+              <button
+                key={key}
+                onClick={() => handleSelect(key)}
+                className={`flex-1 min-w-0 flex flex-col items-center gap-2 p-3 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
+                  mesaLocked && key === "here" ? "border-primary ring-2 ring-primary/40" : "border-border/60"
+                }`}
+              >
+                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 ${icon ? "" : tint}`}>
+                  {icon ? (
+                    <img src={icon} alt={label} className="w-full h-full object-contain" />
+                  ) : (
+                    <Fallback className="w-9 h-9" strokeWidth={2.2} />
+                  )}
+                </div>
+                <div className="text-center w-full">
+                  <span className="text-sm font-black text-foreground block leading-tight truncate">{label}</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block line-clamp-2">{sub}</span>
+                </div>
+              </button>
+            ))}
+            {enabled.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center">Nenhuma opção de pedido ativa.</p>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="pb-6 px-6 space-y-3">
+      <div className="shrink-0 pb-6 px-6 space-y-3 mt-auto">
         <InstallAppButton lang={lang} />
         <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           {brandName || "\u00A0"}
