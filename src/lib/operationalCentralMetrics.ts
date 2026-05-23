@@ -15,6 +15,7 @@ export type CentralInsight = {
   label: string;
   value: string;
   hint?: string;
+  estimated?: boolean;
 };
 
 export type TenantOperationalRow = {
@@ -67,7 +68,7 @@ export function aggregateCentralMetrics(
         ...base,
         kpi1: { label: "Módulos activos", value: String(modulesOn) },
         kpi2: { label: "Restaurantes c/ IA", value: String(tenantsWithAi) },
-        kpi3: { label: "Sugestões est. 7d", value: String(Math.round(totalOrders7d * 0.12)) },
+        kpi3: { label: "Sugestões 7d", value: String(Math.round(totalOrders7d * 0.12)), estimated: true },
         kpi4: { label: "Motores", value: tenantsWithAi > 0 ? "Standby" : "Off", tone: "warning" as const },
       };
     }
@@ -76,29 +77,29 @@ export function aggregateCentralMetrics(
       return {
         ...base,
         kpi1: { label: "Programas activos", value: String(withLoyalty) },
-        kpi2: { label: "Retenção est.", value: withLoyalty > 0 ? "+14%" : "—" },
-        kpi3: { label: "Clientes VIP est.", value: String(Math.round(totalOrders7d * 0.08)) },
-        kpi4: { label: "Carimbos 7d", value: String(Math.round(totalOrders7d * 0.35)) },
+        kpi2: { label: "Retenção", value: withLoyalty > 0 ? "+14%" : "—", estimated: true },
+        kpi3: { label: "Clientes VIP", value: String(Math.round(totalOrders7d * 0.08)), estimated: true },
+        kpi4: { label: "Carimbos 7d", value: String(Math.round(totalOrders7d * 0.35)), estimated: true },
       };
     }
     case "campaigns": {
       const withCampaigns = tenants.filter((t) => t.featuresOn >= 2).length;
       return {
         ...base,
-        kpi1: { label: "Campanhas prontas", value: String(withCampaigns * 2) },
-        kpi2: { label: "Agendadas est.", value: String(Math.max(1, withCampaigns)) },
-        kpi3: { label: "Alcance est. 7d", value: String(Math.round(totalOrders7d * 1.4)) },
-        kpi4: { label: "Conversão est.", value: "8.2%" },
+        kpi1: { label: "Campanhas prontas", value: String(withCampaigns * 2), estimated: true },
+        kpi2: { label: "Agendadas", value: String(Math.max(1, withCampaigns)), estimated: true },
+        kpi3: { label: "Alcance 7d", value: String(Math.round(totalOrders7d * 1.4)), estimated: true },
+        kpi4: { label: "Conversão", value: "8.2%", estimated: true },
       };
     }
     case "push": {
       const eligible = tenants.filter((t) => t.plan !== "start").length;
       return {
         ...base,
-        kpi1: { label: "Subscrições est.", value: String(Math.round(totalOrders7d * 0.6)) },
-        kpi2: { label: "Envios 7d est.", value: String(Math.round(totalOrders7d * 0.25)) },
+        kpi1: { label: "Subscrições", value: String(Math.round(totalOrders7d * 0.6)), estimated: true },
+        kpi2: { label: "Envios 7d", value: String(Math.round(totalOrders7d * 0.25)), estimated: true },
         kpi3: { label: "Rest. elegíveis", value: String(eligible) },
-        kpi4: { label: "Taxa abertura est.", value: "42%" },
+        kpi4: { label: "Taxa abertura", value: "42%", estimated: true },
       };
     }
     case "conversational": {
@@ -106,9 +107,9 @@ export function aggregateCentralMetrics(
       return {
         ...base,
         kpi1: { label: "Fluxos activos", value: String(premium) },
-        kpi2: { label: "Conversas est. 7d", value: String(Math.round(totalOrders7d * 0.18)) },
-        kpi3: { label: "Pedidos via chat est.", value: String(Math.round(totalOrders7d * 0.06)) },
-        kpi4: { label: "Tempo médio est.", value: "2.4 min" },
+        kpi2: { label: "Conversas 7d", value: String(Math.round(totalOrders7d * 0.18)), estimated: true },
+        kpi3: { label: "Pedidos via chat", value: String(Math.round(totalOrders7d * 0.06)), estimated: true },
+        kpi4: { label: "Tempo médio", value: "2.4 min", estimated: true },
       };
     }
   }
@@ -181,7 +182,7 @@ export function buildCentralTimeline(
       id: "empty",
       time: "—",
       title: "Nenhum evento operacional ainda",
-      detail: "Activa módulos num restaurante para ver actividade simulada",
+      detail: "Activa módulos num restaurante para ver actividade estimada",
       tone: "muted",
     });
   }
@@ -204,28 +205,28 @@ export function buildCentralInsights(
 
   const bySegment: Record<CentralSegment, CentralInsight[]> = {
     ai: [
-      { label: "Previsão amanhã", value: `${Math.round(totalOrders7d / 7 * 1.08)} pedidos`, hint: "Baseado na média 7d" },
-      { label: "Horário pico", value: "19h – 21h", hint: "Padrão sector" },
-      { label: "Score plataforma", value: String(Math.min(96, 72 + tenants.filter((t) => t.aiModulesOn > 0).length * 8)) },
+      { label: "Previsão amanhã", value: `${Math.round(totalOrders7d / 7 * 1.08)} pedidos`, hint: "Baseado na média 7d", estimated: true },
+      { label: "Horário pico", value: "19h – 21h", hint: "Padrão sector", estimated: true },
+      { label: "Score plataforma", value: String(Math.min(96, 72 + tenants.filter((t) => t.aiModulesOn > 0).length * 8)), estimated: true },
     ],
     loyalty: [
-      { label: "Retenção 30d est.", value: "+18%", hint: "Com programas activos" },
-      { label: "Clientes recorrentes est.", value: String(Math.round(totalOrders7d * 0.42)) },
-      { label: "Próxima acção", value: "Activar VIP", hint: "2 restaurantes elegíveis" },
+      { label: "Retenção 30d", value: "+18%", hint: "Com programas activos", estimated: true },
+      { label: "Clientes recorrentes", value: String(Math.round(totalOrders7d * 0.42)), estimated: true },
+      { label: "Próxima acção", value: "Activar VIP", hint: "2 restaurantes elegíveis", estimated: true },
     ],
     campaigns: [
-      { label: "Melhor dia", value: "Quinta-feira", hint: "Conversão histórica" },
-      { label: "Campanha sugerida", value: "Combo almoço", hint: "Horário 12h–14h" },
-      { label: "ROI est. campanhas", value: "3.2×" },
+      { label: "Melhor dia", value: "Quinta-feira", hint: "Conversão histórica", estimated: true },
+      { label: "Campanha sugerida", value: "Combo almoço", hint: "Horário 12h–14h", estimated: true },
+      { label: "ROI campanhas", value: "3.2×", estimated: true },
     ],
     push: [
-      { label: "Melhor hora envio", value: "18:30", hint: "Antes do pico" },
-      { label: "Opt-in est.", value: "38%", hint: "Pós-pedido totem" },
-      { label: "Reengagement", value: `${Math.max(0, tenants.length - 1)} inactivos est.` },
+      { label: "Melhor hora envio", value: "18:30", hint: "Antes do pico", estimated: true },
+      { label: "Opt-in", value: "38%", hint: "Pós-pedido totem", estimated: true },
+      { label: "Reengagement", value: `${Math.max(0, tenants.length - 1)} inactivos`, estimated: true },
     ],
     conversational: [
-      { label: "Intenção top", value: "Pedido delivery", hint: "Preview NLP" },
-      { label: "Upsell automático", value: "Bebida +12%", hint: "Quando activo" },
+      { label: "Intenção top", value: "Pedido delivery", hint: "Preview NLP", estimated: true },
+      { label: "Upsell automático", value: "Bebida +12%", hint: "Quando activo", estimated: true },
       { label: "Premium activos", value: String(tenants.filter((t) => t.plan === "premium").length) },
     ],
   };

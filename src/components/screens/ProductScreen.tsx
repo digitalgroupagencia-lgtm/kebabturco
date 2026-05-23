@@ -280,7 +280,7 @@ const ProductScreen = () => {
             </span>
           )}
           <div className="aspect-square bg-secondary/40">
-            <img src={product.image} alt={productCleanName} className="w-full h-full object-cover rounded-[24px]" />
+            <img src={product.image} alt={productCleanName} className="w-full h-full object-cover rounded-[24px]" loading="lazy" />
           </div>
         </section>
 

@@ -18,6 +18,9 @@ export default function InsightPanel({ insights, title = "Insights", className }
           <div key={ins.label} className="px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               {ins.label}
+              {ins.estimated && (
+                <span className="ml-1.5 normal-case font-medium text-amber-600 dark:text-amber-400">· est.</span>
+              )}
             </p>
             <p className="text-lg font-bold tabular-nums text-foreground mt-0.5">{ins.value}</p>
             {ins.hint && (

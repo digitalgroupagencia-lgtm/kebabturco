@@ -9,9 +9,11 @@ type Props = {
   deltaUp?: boolean;
   icon?: LucideIcon;
   className?: string;
+  /** KPI derivado / simulado — não usar para decisões comerciais */
+  estimated?: boolean;
 };
 
-export default function MetricTile({ label, value, sub, delta, deltaUp, icon: Icon, className }: Props) {
+export default function MetricTile({ label, value, sub, delta, deltaUp, icon: Icon, className, estimated }: Props) {
   return (
     <div
       className={cn(
@@ -23,6 +25,9 @@ export default function MetricTile({ label, value, sub, delta, deltaUp, icon: Ic
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground truncate">
             {label}
+            {estimated && (
+              <span className="ml-1.5 normal-case font-medium text-amber-600 dark:text-amber-400">· est.</span>
+            )}
           </p>
           <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground mt-1 truncate">
             {value}

@@ -45,12 +45,13 @@ export default function GlobalCentralOperations({ centralTitle, centralSegment, 
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricTile label={metrics.kpi1.label} value={metrics.kpi1.value} />
-        <MetricTile label={metrics.kpi2.label} value={metrics.kpi2.value} />
-        <MetricTile label={metrics.kpi3.label} value={metrics.kpi3.value} />
+        <MetricTile label={metrics.kpi1.label} value={metrics.kpi1.value} estimated={"estimated" in metrics.kpi1 && metrics.kpi1.estimated} />
+        <MetricTile label={metrics.kpi2.label} value={metrics.kpi2.value} estimated={"estimated" in metrics.kpi2 && metrics.kpi2.estimated} />
+        <MetricTile label={metrics.kpi3.label} value={metrics.kpi3.value} estimated={"estimated" in metrics.kpi3 && metrics.kpi3.estimated} />
         <MetricTile
           label={metrics.kpi4.label}
           value={metrics.kpi4.value}
+          estimated={"estimated" in metrics.kpi4 && metrics.kpi4.estimated}
           sub={"tone" in metrics.kpi4 && metrics.kpi4.tone === "warning" ? "Motores automáticos em breve" : undefined}
         />
       </div>
@@ -58,10 +59,10 @@ export default function GlobalCentralOperations({ centralTitle, centralSegment, 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <OperationalTimeline
           events={timeline}
-          title="Actividade operacional"
+          title="Actividade (real + estimada)"
           className="lg:col-span-2"
         />
-        <InsightPanel insights={insights} title="Previsões & insights" />
+        <InsightPanel insights={insights} title="Previsões estimadas" />
       </div>
 
       <div>

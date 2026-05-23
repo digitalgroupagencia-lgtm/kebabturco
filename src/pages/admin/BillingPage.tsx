@@ -48,12 +48,17 @@ const BillingPage = () => {
 
   return (
     <div className="space-y-6 max-w-full">
-      <h2 className="text-xl sm:text-2xl font-bold">Planos & Cobrança</h2>
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold">Planos & Cobrança</h2>
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+          MRR e preços por plano são valores de referência interna — não usar para facturação real.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">MRR Total</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">MRR Total (ref.)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R$ {totalMRR.toFixed(2)}</div>
@@ -95,7 +100,7 @@ const BillingPage = () => {
                     <span className="font-semibold truncate">{t.name}</span>
                     <Badge variant="outline" className="uppercase">{t.plan || "start"}</Badge>
                     <span className="text-xs text-muted-foreground">
-                      R$ {planPrices[t.plan || "start"] || 0}/mês
+                      ref. R$ {planPrices[t.plan || "start"] || 0}/mês
                     </span>
                   </div>
                   <span className="text-xs sm:text-sm tabular-nums shrink-0 text-muted-foreground">
