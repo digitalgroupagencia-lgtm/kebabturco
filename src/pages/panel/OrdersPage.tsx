@@ -7,6 +7,10 @@ import { usePanelOrders } from "@/features/ops/usePanelOrders";
 import OpsOrdersLayout from "@/features/ops/OpsOrdersLayout";
 import OpsStatusTabs from "@/features/ops/OpsStatusTabs";
 import OpsOrderCard from "@/features/ops/OpsOrderCard";
+import OpsModeFilter, { filterOrdersByMode, type OpsViewMode } from "@/features/ops/OpsModeFilter";
+import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
+import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
+import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
@@ -20,8 +24,11 @@ const columns: OrderStatus[] = ["pending", "preparing", "ready", "out_for_delive
 
 const OrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
-  const { orders, itemsByOrder, loading, updateStatus, cancelOrder, setPrepMinutes, refresh } = usePanelOrders(storeId);
+  const { orders, itemsByOrder, loading, connectionStatus, updateStatus, cancelOrder, setPrepMinutes, refresh } =
+    usePanelOrders(storeId);
+  const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
+  const [viewMode, setViewMode] = useState<OpsViewMode>("all");
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -41,17 +48,21 @@ const OrdersPage = () => {
     [updateStatus],
   );
 
+  const filteredOrders = useMemo(() => filterOrdersByMode(orders, viewMode), [orders, viewMode]);
+
   const visibleColumns = useMemo(
     () =>
       columns.filter(
         (col) =>
           col !== "out_for_delivery" ||
-          orders.some((o) => o.status === "out_for_delivery" || (o.order_type === "delivery" && o.status === "ready")),
+          filteredOrders.some(
+            (o) => o.status === "out_for_delivery" || (o.order_type === "delivery" && o.status === "ready"),
+          ),
       ),
-    [orders],
+    [filteredOrders],
   );
 
-  const getOrdersByStatus = (status: OrderStatus) => orders.filter((o) => o.status === status);
+  const getOrdersByStatus = (status: OrderStatus) => filteredOrders.filter((o) => o.status === status);
 
   if (!storeId) {
     return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
@@ -68,15 +79,27 @@ const OrdersPage = () => {
   const mobileOrders = getOrdersByStatus(mobileTab);
 
   return (
-    <OpsOrdersLayout columns={visibleColumns} orders={orders} onRefresh={handleRefresh} refreshing={refreshing}>
+    <OpsOrdersLayout
+      columns={visibleColumns}
+      orders={filteredOrders}
+      onRefresh={handleRefresh}
+      refreshing={refreshing}
+      connectionStatus={connectionStatus}
+      headerExtra={
+        <div className="space-y-2">
+          <PanelAlertsBar />
+          <PanelPrintStatusBar summary={printSummary} loading={printLoading} />
+          <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={orders} />
+        </div>
+      }
+    >
       <OpsStatusTabs
         columns={visibleColumns}
-        orders={orders}
+        orders={filteredOrders}
         selected={mobileTab}
         onSelect={setMobileTab}
       />
 
-      {/* Mobile: single column filtered by tab */}
       <div className="md:hidden space-y-3">
         {mobileOrders.map((order) => (
           <OpsOrderCard
@@ -91,11 +114,11 @@ const OrdersPage = () => {
         {mobileOrders.length === 0 && (
           <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-xl">
             Nenhum pedido em {getStatusLabel(mobileTab)}
+            {viewMode !== "all" ? " neste modo" : ""}
           </div>
         )}
       </div>
 
-      {/* Desktop: kanban columns without broken inline grid */}
       <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-5 gap-4">
         {visibleColumns.map((status) => {
           const Icon = statusIcons[status] || Clock;

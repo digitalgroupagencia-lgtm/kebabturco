@@ -137,9 +137,9 @@ async function main() {
   console.log('╚══════════════════════════════════════╝');
   console.log(`[CFG] Store: ${CONFIG.STORE_ID || '(todos)'}`);
   console.log(`[CFG] Impressora padrão: ${CONFIG.DEFAULT_PRINTER_IP}:${CONFIG.DEFAULT_PRINTER_PORT}`);
+  console.log('[CFG] Modo: polling (sem realtime — mais estável)');
   await testConnection();
   await processPending();
-  startRealtime();
   setInterval(processPending, CONFIG.POLL_INTERVAL);
   console.log('\n[BRIDGE] ✅ Aguardando jobs... (Ctrl+C para sair)\n');
 }

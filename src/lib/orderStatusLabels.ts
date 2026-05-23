@@ -54,10 +54,7 @@ export function getOrderModalityBanner(order: {
     return { label: "ENTREGA", detail: "Delivery a domicílio", tone: "delivery" as const };
   }
   if (resolvedType === "takeaway") {
-    if (order.source === "counter") {
-      return { label: "BALCÃO", detail: "Pedido no balcão", tone: "takeaway" as const };
-    }
-    return { label: "PARA LEVAR", detail: "Recolha no balcão", tone: "takeaway" as const };
+    return { label: "BALCÃO", detail: "Para levar — recolha no balcão", tone: "takeaway" as const };
   }
   if (resolvedType === "dine_in") {
     if (order.table_number) {
@@ -75,9 +72,6 @@ export function getPanelPaymentBadge(order: {
 }) {
   if (order.payment_status === "paid") {
     return { label: "PAGO", tone: "paid" as const };
-  }
-  if (order.source === "counter") {
-    return { label: "BALCÃO", tone: "counter" as const };
   }
   if (order.payment_method === "cash") {
     return { label: "DINHEIRO", tone: "pending" as const };

@@ -27,7 +27,6 @@ const modalityBannerClass = {
 
 const paymentBadgeClass = {
   paid: "bg-green-600 text-white",
-  counter: "bg-orange-600 text-white",
   pending: "bg-yellow-500 text-black",
 } as const;
 

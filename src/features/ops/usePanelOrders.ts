@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, Database } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
-import { playNewOrderAlert } from "@/lib/panelAlerts";
+import { isPanelAlertsEnabled, playNewOrderAlert } from "@/lib/panelAlerts";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 
@@ -14,6 +14,7 @@ export type PanelOrder = Tables<"orders"> & {
 };
 type OrderItem = Tables<"order_items">;
 export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
+export type PanelConnectionStatus = "connecting" | "live" | "backup";
 
 function isToday(iso: string) {
   const d = new Date(iso);
@@ -32,16 +33,35 @@ async function fetchItemsForOrders(orderIds: string[]) {
   return map;
 }
 
-/** Polling lento só como rede de segurança para pedidos novos; cliques actualizam na hora. */
-const PANEL_POLL_BACKUP_MS = 30_000;
+const POLL_LIVE_MS = 30_000;
+const POLL_BACKUP_MS = 8_000;
+const RECONNECT_BASE_MS = 2_000;
+const RECONNECT_MAX_MS = 30_000;
 
 export function usePanelOrders(storeId: string | undefined) {
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<PanelConnectionStatus>("connecting");
   const knownPendingRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
   const updatingRef = useRef<Set<string>>(new Set());
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const notifyNewPending = useCallback(
+    async (row: PanelOrder, items: OrderItem[]) => {
+      if (!storeId) return;
+      const sound = playNewOrderAlert();
+      toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
+      if (!sound && !isPanelAlertsEnabled()) {
+        toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
+      }
+      void tryPrintPanelOrder(storeId, row, items);
+    },
+    [storeId],
+  );
 
   const fetchOrders = useCallback(async () => {
     if (!storeId) return;
@@ -59,8 +79,10 @@ export function usePanelOrders(storeId: string | undefined) {
       if (initializedRef.current) {
         for (const o of data) {
           if (o.status === "pending" && !knownPendingRef.current.has(o.id)) {
-            playNewOrderAlert();
-            toast.info(`Novo pedido #${o.order_number}`, { duration: 5000 });
+            knownPendingRef.current.add(o.id);
+            const items = await fetchItemsForOrders([o.id]);
+            setItemsByOrder((prev) => ({ ...prev, ...items }));
+            void notifyNewPending(o as PanelOrder, items[o.id] || []);
           }
         }
       }
@@ -77,81 +99,118 @@ export function usePanelOrders(storeId: string | undefined) {
       setItemsByOrder(ids.length ? await fetchItemsForOrders(ids) : {});
     }
     setLoading(false);
-  }, [storeId]);
+  }, [storeId, notifyNewPending]);
 
   useEffect(() => {
     if (!storeId) return;
-    setLoading(true);
-    fetchOrders();
 
-    const pollId = window.setInterval(() => {
-      void fetchOrders();
-    }, PANEL_POLL_BACKUP_MS);
+    setLoading(true);
+    setConnectionStatus("connecting");
+    void fetchOrders();
+
+    let pollId: number | null = null;
+    const startPoll = (ms: number) => {
+      if (pollId) window.clearInterval(pollId);
+      pollId = window.setInterval(() => void fetchOrders(), ms);
+    };
+    startPoll(POLL_LIVE_MS);
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") void fetchOrders();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    const channel = supabase
-      .channel(`panel-orders-${storeId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
-        async (payload) => {
-          const row = payload.new as PanelOrder;
-          if (!isToday(row.created_at)) return;
-          if (updatingRef.current.has(row.id)) return;
+    const clearReconnect = () => {
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
 
-          setOrders((prev) => {
-            if (prev.some((o) => o.id === row.id)) return prev;
-            return [row, ...prev];
-          });
+    const scheduleReconnect = () => {
+      clearReconnect();
+      reconnectAttemptRef.current += 1;
+      const delay = Math.min(RECONNECT_BASE_MS * 2 ** (reconnectAttemptRef.current - 1), RECONNECT_MAX_MS);
+      reconnectTimerRef.current = window.setTimeout(() => {
+        if (channelRef.current) supabase.removeChannel(channelRef.current);
+        subscribe();
+      }, delay);
+    };
 
-          const items = await fetchItemsForOrders([row.id]);
-          setItemsByOrder((prev) => ({ ...prev, ...items }));
+    const subscribe = () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
 
-          if (initializedRef.current && row.status === "pending" && !knownPendingRef.current.has(row.id)) {
-            knownPendingRef.current.add(row.id);
-            playNewOrderAlert();
-            toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
-            void tryPrintPanelOrder(storeId, row, items[row.id] || []);
+      const channel = supabase
+        .channel(`panel-orders-${storeId}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
+          async (payload) => {
+            const row = payload.new as PanelOrder;
+            if (!isToday(row.created_at)) return;
+            if (updatingRef.current.has(row.id)) return;
+
+            setOrders((prev) => {
+              if (prev.some((o) => o.id === row.id)) return prev;
+              return [row, ...prev];
+            });
+
+            const items = await fetchItemsForOrders([row.id]);
+            setItemsByOrder((prev) => ({ ...prev, ...items }));
+
+            if (initializedRef.current && row.status === "pending" && !knownPendingRef.current.has(row.id)) {
+              knownPendingRef.current.add(row.id);
+              void notifyNewPending(row, items[row.id] || []);
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
+          (payload) => {
+            const row = payload.new as PanelOrder;
+            setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
+          (payload) => {
+            const row = payload.old as { id: string };
+            setOrders((prev) => prev.filter((o) => o.id !== row.id));
+            setItemsByOrder((prev) => {
+              const next = { ...prev };
+              delete next[row.id];
+              return next;
+            });
+          },
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            reconnectAttemptRef.current = 0;
+            setConnectionStatus("live");
+            startPoll(POLL_LIVE_MS);
+            void fetchOrders();
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            setConnectionStatus("backup");
+            startPoll(POLL_BACKUP_MS);
+            void fetchOrders();
+            scheduleReconnect();
           }
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
-        (payload) => {
-          const row = payload.new as PanelOrder;
-          setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
-        (payload) => {
-          const row = payload.old as { id: string };
-          setOrders((prev) => prev.filter((o) => o.id !== row.id));
-          setItemsByOrder((prev) => {
-            const next = { ...prev };
-            delete next[row.id];
-            return next;
-          });
-        },
-      )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-          void fetchOrders();
-        }
-      });
+        });
+
+      channelRef.current = channel;
+    };
+
+    subscribe();
 
     return () => {
-      window.clearInterval(pollId);
+      if (pollId) window.clearInterval(pollId);
+      clearReconnect();
       document.removeEventListener("visibilitychange", onVisibility);
-      supabase.removeChannel(channel);
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
-  }, [storeId, fetchOrders]);
+  }, [storeId, fetchOrders, notifyNewPending]);
 
   const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number): Promise<boolean> => {
     if (updatingRef.current.has(order.id)) return false;
@@ -226,5 +285,14 @@ export function usePanelOrders(storeId: string | undefined) {
     await supabase.from("orders").update({ estimated_ready_at: iso }).eq("id", order.id);
   }, []);
 
-  return { orders, itemsByOrder, loading, updateStatus, cancelOrder, setPrepMinutes, refresh: fetchOrders };
+  return {
+    orders,
+    itemsByOrder,
+    loading,
+    connectionStatus,
+    updateStatus,
+    cancelOrder,
+    setPrepMinutes,
+    refresh: fetchOrders,
+  };
 }

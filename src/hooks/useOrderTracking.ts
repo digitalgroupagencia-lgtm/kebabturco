@@ -14,8 +14,11 @@ export type PublicOrderTrack = {
 };
 
 const POLL_MS = 1_000;
+const POLL_BACKUP_MS = 3_000;
+const RECONNECT_BASE_MS = 2_000;
+const RECONNECT_MAX_MS = 20_000;
 
-/** Acompanhamento público: polling + broadcast (após SQL fase 8). */
+/** Acompanhamento público: broadcast (fase 8 SQL) + polling de reserva. */
 export function useOrderTracking(
   orderId: string | null | undefined,
   onOrder: (order: PublicOrderTrack | null) => void,
@@ -23,6 +26,10 @@ export function useOrderTracking(
 ) {
   const onOrderRef = useRef(onOrder);
   onOrderRef.current = onOrder;
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollIdRef = useRef<number | null>(null);
 
   const fetchOrder = useCallback(async () => {
     if (!orderId) {
@@ -46,20 +53,56 @@ export function useOrderTracking(
     }
 
     onLoading?.(true);
-    fetchOrder();
+    void fetchOrder();
 
-    const poll = window.setInterval(fetchOrder, POLL_MS);
+    const startPoll = (ms: number) => {
+      if (pollIdRef.current) window.clearInterval(pollIdRef.current);
+      pollIdRef.current = window.setInterval(() => void fetchOrder(), ms);
+    };
+    startPoll(POLL_MS);
 
-    const channel = supabase
-      .channel(`order:${orderId}`, { config: { broadcast: { ack: false, self: false } } })
-      .on("broadcast", { event: "status_update" }, () => {
-        void fetchOrder();
-      })
-      .subscribe();
+    const clearReconnect = () => {
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
+
+    const subscribe = () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+
+      const channel = supabase
+        .channel(`order:${orderId}:${Date.now()}`, { config: { broadcast: { ack: false, self: false } } })
+        .on("broadcast", { event: "status_update" }, () => {
+          reconnectAttemptRef.current = 0;
+          startPoll(POLL_MS);
+          void fetchOrder();
+        })
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            reconnectAttemptRef.current = 0;
+            startPoll(POLL_MS);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            startPoll(POLL_BACKUP_MS);
+            clearReconnect();
+            reconnectAttemptRef.current += 1;
+            const delay = Math.min(
+              RECONNECT_BASE_MS * 2 ** (reconnectAttemptRef.current - 1),
+              RECONNECT_MAX_MS,
+            );
+            reconnectTimerRef.current = window.setTimeout(subscribe, delay);
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    subscribe();
 
     return () => {
-      window.clearInterval(poll);
-      supabase.removeChannel(channel);
+      if (pollIdRef.current) window.clearInterval(pollIdRef.current);
+      clearReconnect();
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
   }, [orderId, fetchOrder, onLoading]);
 }

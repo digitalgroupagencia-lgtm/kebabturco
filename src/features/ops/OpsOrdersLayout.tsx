@@ -1,9 +1,9 @@
 import { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ChefHat, CheckCircle, Truck, Bike, RefreshCw } from "lucide-react";
+import { Clock, ChefHat, CheckCircle, Truck, Bike, RefreshCw, Radio } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
-import type { PanelOrder } from "./usePanelOrders";
+import type { PanelOrder, PanelConnectionStatus } from "./usePanelOrders";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
@@ -19,17 +19,39 @@ interface OpsOrdersLayoutProps {
   children: ReactNode;
   onRefresh?: () => void;
   refreshing?: boolean;
+  connectionStatus?: PanelConnectionStatus;
+  headerExtra?: ReactNode;
 }
 
-const OpsOrdersLayout = ({ columns, orders, children, onRefresh, refreshing }: OpsOrdersLayoutProps) => {
+const connectionLabel: Record<PanelConnectionStatus, { text: string; className: string }> = {
+  connecting: { text: "A ligar…", className: "text-muted-foreground" },
+  live: { text: "Tempo real", className: "text-success" },
+  backup: { text: "Modo reserva", className: "text-amber-600" },
+};
+
+const OpsOrdersLayout = ({
+  columns,
+  orders,
+  children,
+  onRefresh,
+  refreshing,
+  connectionStatus = "connecting",
+  headerExtra,
+}: OpsOrdersLayoutProps) => {
   const countByStatus = (status: OrderStatus) => orders.filter((o) => o.status === status).length;
 
   return (
     <div className="space-y-4">
+      {headerExtra}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Pedidos activos</h2>
         <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground hidden sm:block">Actualização automática</p>
+          <span
+            className={`hidden sm:flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${connectionLabel[connectionStatus].className}`}
+          >
+            <Radio className={`h-3 w-3 ${connectionStatus === "live" ? "animate-pulse" : ""}`} />
+            {connectionLabel[connectionStatus].text}
+          </span>
           {onRefresh && (
             <Button
               type="button"
