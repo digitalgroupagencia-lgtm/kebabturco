@@ -112,16 +112,21 @@ export async function enablePanelAlerts(): Promise<boolean> {
   try {
     const heard = await playHtmlBeep(true);
     if (isIOSLike()) {
-      iosAudioUnlocked = heard;
-      if (heard) setPanelAlertsEnabled(true);
+      // O toque no botão desbloqueia o áudio; no Safari o som pode falhar sem bloquear alertas.
+      iosAudioUnlocked = true;
+      setPanelAlertsEnabled(true);
+      flashVisualAlert();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(heard ? [200, 80, 200] : [400, 100, 400, 100, 400]);
+      }
       deployDebugLog({
         hypothesisId: "H-iOS-A",
         location: "panelAlerts.ts:enablePanelAlerts",
-        message: "ios html unlock",
+        message: "ios alerts enabled on tap",
         data: { heard, iosAudioUnlocked, source: STATIC_BEEP_URL },
-        runId: "alert-ios-v2",
+        runId: "alert-ios-v3",
       });
-      return heard;
+      return true;
     }
 
     const webOk = await ensureAudioReady();
@@ -133,11 +138,20 @@ export async function enablePanelAlerts(): Promise<boolean> {
       location: "panelAlerts.ts:enablePanelAlerts",
       message: "alerts enabled",
       data: { webAudioState: audioCtx?.state ?? "none", webOk, heard },
-      runId: "alert-ios-v2",
+      runId: "alert-ios-v3",
     });
 
     return webOk || heard;
   } catch {
+    if (isIOSLike()) {
+      iosAudioUnlocked = true;
+      setPanelAlertsEnabled(true);
+      flashVisualAlert();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([400, 100, 400, 100, 400]);
+      }
+      return true;
+    }
     setPanelAlertsEnabled(false);
     return false;
   }
@@ -241,9 +255,10 @@ async function playHtmlBeep(isUnlock = false): Promise<boolean> {
       audio.load();
 
       await audio.play();
-      const playing = await waitForPlaying(audio);
+      const playing = await waitForPlaying(audio, isIOSLike() ? 1200 : 800);
 
-      if (playing) {
+      // Safari/iPhone: play() sem erro conta como sucesso — o evento "playing" falha muitas vezes.
+      if (playing || (isIOSLike() && !audio.paused)) {
         if (isUnlock && isIOSLike()) iosAudioUnlocked = true;
         saveAlertDiagnostic({
           ok: true,
@@ -256,7 +271,7 @@ async function playHtmlBeep(isUnlock = false): Promise<boolean> {
           location: "panelAlerts.ts:playHtmlBeep",
           message: "html beep playing",
           data: { src, isUnlock, currentTime: audio.currentTime, paused: audio.paused },
-          runId: "alert-ios-v2",
+          runId: "alert-ios-v3",
         });
         return true;
       }

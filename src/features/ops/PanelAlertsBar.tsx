@@ -33,20 +33,20 @@ const PanelAlertsBar = () => {
     setBusy(true);
     try {
       const ok = await enablePanelAlerts();
-      setEnabled(isPanelAlertsEnabled());
+      const nowEnabled = isPanelAlertsEnabled();
+      setEnabled(nowEnabled);
       refreshDiag();
-      if (ok) {
+      const lastDiag = getLastAlertDiagnostic();
+      if (nowEnabled && ok) {
         toast.success(
           isIOSPanelDevice()
-            ? "Ouve o bip agora? Se não, desactiva o modo silencioso (interruptor lateral)."
+            ? lastDiag?.ok
+              ? "Alertas activos — bip, vibração e flash a cada pedido novo."
+              : "Alertas activos — o ecrã pisca e o telemóvel vibra. O som pode não sair no Safari."
             : "Alertas activos — bip a cada 2s enquanto houver pedido por aceitar",
         );
       } else {
-        toast.warning(
-          isIOSPanelDevice()
-            ? "Sem som — desactiva o interruptor silencioso do iPhone e tenta outra vez"
-            : "Não foi possível activar o som. Toca outra vez.",
-        );
+        toast.warning("Não foi possível activar. Toca outra vez.");
       }
     } finally {
       setBusy(false);
@@ -69,23 +69,21 @@ const PanelAlertsBar = () => {
     if (heard) {
       toast.success(
         isIOSPanelDevice()
-          ? "Bip enviado — ouviu? Também deve sentir vibração e flash no ecrã."
+          ? "Teste OK — bip, vibração e flash."
           : "Som de teste OK",
       );
+    } else if (isIOSPanelDevice()) {
+      toast.success("Teste enviado — flash e vibração activos. Som pode não sair no iPhone.");
     } else {
-      toast.warning(
-        isIOSPanelDevice()
-          ? "Sem som — modo silencioso desligado? Volume alto? Tente no Safari (não atalho antigo)."
-          : "Sem som — verifica volume",
-      );
+      toast.warning("Sem som — verifica volume");
     }
   };
 
   const diagLine =
     diag && isIOSPanelDevice()
       ? diag.ok
-        ? "Último bip: enviado ao altifalante"
-        : `Último bip: falhou (${diag.error || "erro"})`
+        ? "Último aviso: som enviado"
+        : "Último aviso: flash + vibração (sem som confirmado)"
       : null;
 
   if (!enabled) {
@@ -98,7 +96,7 @@ const PanelAlertsBar = () => {
           <div className="min-w-0">
             <p className="text-sm font-black text-foreground">Activar alertas de pedidos</p>
             <p className="text-xs text-muted-foreground">
-              No iPhone toca aqui. Desactiva o modo silencioso (interruptor lateral). Bip + vibração + flash no ecrã.
+              Toca uma vez para activar. Quando chegar pedido: ecrã pisca + vibração (e bip se o iPhone permitir som).
             </p>
             {diagLine && <p className="text-[10px] text-muted-foreground mt-1">{diagLine}</p>}
           </div>
