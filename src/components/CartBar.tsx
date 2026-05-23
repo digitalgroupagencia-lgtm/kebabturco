@@ -9,7 +9,7 @@ const CartBar = () => {
   const { t } = useLanguage();
 
   // Hide on certain screens
-  if (totalItems === 0 || screen === "review" || screen === "payment" || screen === "confirmation" || screen === "product") return null;
+  if (totalItems === 0 || screen === "review" || screen === "payment" || screen === "confirmation" || screen === "product" || screen === "tracking" || screen === "account") return null;
 
   return (
     <div

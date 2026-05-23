@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -36,6 +37,9 @@ const MenuPage = () => {
   const [prodDescPt, setProdDescPt] = useState("");
   const [prodPrice, setProdPrice] = useState("");
   const [prodImageUrl, setProdImageUrl] = useState("");
+  const [prodBestseller, setProdBestseller] = useState(false);
+  const [prodPromo, setProdPromo] = useState(false);
+  const [modifierLines, setModifierLines] = useState("");
 
   useEffect(() => {
     if (storeId) {
@@ -145,6 +149,15 @@ const MenuPage = () => {
       setProdDescPt(desc?.pt || "");
       setProdPrice(String(prod.price));
       setProdImageUrl(prod.image_url || "");
+      setProdBestseller(Boolean(prod.is_bestseller));
+      setProdPromo(Boolean(prod.is_promo));
+      const mods = Array.isArray(prod.price_modifiers) ? prod.price_modifiers : [];
+      setModifierLines(
+        mods.map((m: { name?: Record<string, string>; price?: number }, i: number) => {
+          const label = m.name?.es || m.name?.pt || `Extra ${i + 1}`;
+          return `${label}|${m.price ?? 0}`;
+        }).join("\n"),
+      );
     } else {
       setEditingProduct(null);
       setProdNamePt("");
@@ -152,6 +165,9 @@ const MenuPage = () => {
       setProdDescPt("");
       setProdPrice("");
       setProdImageUrl("");
+      setProdBestseller(false);
+      setProdPromo(false);
+      setModifierLines("");
     }
     setProdDialogOpen(true);
   };
@@ -162,13 +178,30 @@ const MenuPage = () => {
       return;
     }
 
+    const priceModifiers = modifierLines
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const [namePart, pricePart] = line.split("|");
+        const label = (namePart || "").trim();
+        return {
+          id: `mod-${index}`,
+          name: { es: label, pt: label, en: label, fr: label },
+          price: parseFloat(pricePart || "0") || 0,
+        };
+      });
+
     const payload = {
       store_id: storeId,
       category_id: selectedCategoryId,
-      name: { pt: prodNamePt.trim(), en: prodNameEn.trim() } as unknown as import("@/integrations/supabase/types").Json,
-      description: { pt: prodDescPt.trim() } as unknown as import("@/integrations/supabase/types").Json,
+      name: { pt: prodNamePt.trim(), en: prodNameEn.trim(), es: prodNamePt.trim() } as unknown as import("@/integrations/supabase/types").Json,
+      description: { pt: prodDescPt.trim(), es: prodDescPt.trim() } as unknown as import("@/integrations/supabase/types").Json,
       price: parseFloat(prodPrice) || 0,
       image_url: prodImageUrl || null,
+      is_bestseller: prodBestseller,
+      is_promo: prodPromo,
+      price_modifiers: priceModifiers as unknown as import("@/integrations/supabase/types").Json,
     };
 
     if (editingProduct) {
@@ -356,6 +389,25 @@ const MenuPage = () => {
                       <Label>URL da Imagem <span className="text-xs text-muted-foreground ml-1">(800×800 px, fundo neutro)</span></Label>
                       <Input value={prodImageUrl} onChange={(e) => setProdImageUrl(e.target.value)} placeholder="https://..." />
                     </div>
+                    <div className="flex items-center justify-between">
+                      <Label>⭐ Mais vendido</Label>
+                      <Switch checked={prodBestseller} onCheckedChange={setProdBestseller} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>🏷️ Em promoção</Label>
+                      <Switch checked={prodPromo} onCheckedChange={setProdPromo} />
+                    </div>
+                    <div>
+                      <Label>Extras / Modificadores (1 por linha: Nome|preço)</Label>
+                      <textarea
+                        value={modifierLines}
+                        onChange={(e) => setModifierLines(e.target.value)}
+                        placeholder={"Sin lechuga|0\nExtra queso|1\nCarne extra|2"}
+                        rows={4}
+                        className="w-full rounded-md border px-3 py-2 text-sm font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Use &quot;Sin X&quot; ou &quot;Sem X&quot; para ingredientes removíveis</p>
+                    </div>
                   </div>
                   <DialogFooter>
                     <DialogClose asChild>
@@ -395,6 +447,11 @@ const MenuPage = () => {
                       {prod.is_bestseller && (
                         <span className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs font-bold px-2 py-0.5 rounded">
                           ⭐ Best
+                        </span>
+                      )}
+                      {prod.is_promo && (
+                        <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded">
+                          Oferta
                         </span>
                       )}
                     </div>

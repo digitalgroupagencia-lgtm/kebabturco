@@ -4,7 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
-import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag, User, Phone, Download } from "lucide-react";
+import { CheckCircle, Clock, RotateCcw, Hash, Store, Utensils, ShoppingBag, User, Phone, Download, MapPin } from "lucide-react";
 import { toPng } from "html-to-image";
 
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
@@ -13,7 +13,7 @@ const ConfirmationScreen = () => {
   const {
     setScreen, orderNumber, tableNumber, paymentMethod,
     customerName, customerPhone, setTableNumber, setPaymentMethod,
-    setCustomerName, setCustomerPhone,
+    setCustomerName, setCustomerPhone, activeOrderId, setTrackingOrderId,
   } = useOrder();
   const { orderType } = useCart();
   const { settings } = useOperationsSettings();
@@ -258,6 +258,15 @@ const ConfirmationScreen = () => {
 
       {/* Ações fixas no rodapé */}
       <div className="shrink-0 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1 flex flex-col gap-2">
+        {activeOrderId && (
+          <button
+            onClick={() => { setTrackingOrderId(activeOrderId); setScreen("tracking"); }}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl text-[14px] font-black active:scale-[0.98] transition-transform touch-action-manipulation uppercase tracking-wide"
+          >
+            <MapPin className="w-4 h-4" />
+            Acompanhar pedido
+          </button>
+        )}
         <button
           onClick={handleDownload}
           disabled={downloading}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -6,22 +6,39 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Clock, ChefHat, CheckCircle, Truck, XCircle, RefreshCw, User, Phone, Hash, Loader2 } from "lucide-react";
+import { Clock, ChefHat, CheckCircle, Truck, XCircle, RefreshCw, User, Phone, Hash, Loader2, MapPin, Bike } from "lucide-react";
 import type { Tables, Database } from "@/integrations/supabase/types";
+import { getNextAction, getStatusLabel } from "@/lib/orderStatusLabels";
+import { playNewOrderAlert } from "@/lib/panelAlerts";
+import { notifyOrderStatusChange } from "@/services/pushService";
 
-type Order = Tables<"orders">;
+type Order = Tables<"orders"> & {
+  delivery_street?: string | null;
+  delivery_city?: string | null;
+  delivery_number?: string | null;
+};
 type OrderItem = Tables<"order_items">;
-type OrderStatus = Database["public"]["Enums"]["order_status"];
+type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
 
-const statusConfig: Record<OrderStatus, { label: string; cardClass: string; icon: React.ElementType; next?: OrderStatus; action?: string }> = {
-  pending: { label: "Novo", cardClass: "bg-red-500/15 border-red-500 ring-1 ring-red-500/30 animate-pulse", icon: Clock, next: "preparing", action: "OK / Em preparação" },
-  preparing: { label: "Em preparação", cardClass: "bg-yellow-500/15 border-yellow-400", icon: ChefHat, next: "ready", action: "Pronto para servir" },
-  ready: { label: "Pronto para servir", cardClass: "bg-green-500/15 border-green-500", icon: CheckCircle, next: "delivered", action: "Entregue na mesa" },
-  delivered: { label: "Entregue na mesa", cardClass: "bg-muted/80 border-muted-foreground/20 opacity-75", icon: Truck },
-  cancelled: { label: "Cancelado", cardClass: "bg-destructive/10 border-destructive/30", icon: XCircle },
+const statusIcons: Record<string, React.ElementType> = {
+  pending: Clock,
+  preparing: ChefHat,
+  ready: CheckCircle,
+  out_for_delivery: Bike,
+  delivered: Truck,
+  cancelled: XCircle,
 };
 
-const columns: OrderStatus[] = ["pending", "preparing", "ready", "delivered"];
+const statusCardClass: Record<string, string> = {
+  pending: "bg-red-500/15 border-red-500 ring-1 ring-red-500/30 animate-pulse",
+  preparing: "bg-yellow-500/15 border-yellow-400",
+  ready: "bg-green-500/15 border-green-500",
+  out_for_delivery: "bg-blue-500/15 border-blue-500",
+  delivered: "bg-muted/80 border-muted-foreground/20 opacity-75",
+  cancelled: "bg-destructive/10 border-destructive/30",
+};
+
+const columns: OrderStatus[] = ["pending", "preparing", "ready", "out_for_delivery", "delivered"];
 
 const OrdersPage = () => {
   const { user } = useAuth();
@@ -30,6 +47,8 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
+  const knownPendingRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   const fetchOrders = async () => {
     if (!storeId) return;
@@ -44,7 +63,18 @@ const OrdersPage = () => {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setOrders(data);
+      if (initializedRef.current) {
+        for (const o of data) {
+          if (o.status === "pending" && !knownPendingRef.current.has(o.id)) {
+            playNewOrderAlert();
+            toast.info(`Novo pedido #${o.order_number}`, { duration: 5000 });
+          }
+        }
+      }
+      knownPendingRef.current = new Set(data.filter((o) => o.status === "pending").map((o) => o.id));
+      initializedRef.current = true;
+
+      setOrders(data as Order[]);
       const ids = data.map((o) => o.id);
       if (ids.length) {
         const { data: items } = await supabase.from("order_items").select("*").in("order_id", ids);
@@ -72,22 +102,34 @@ const OrdersPage = () => {
     }
   }, [storeId]);
 
-  const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
-    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
-    if (error) toast.error("Erro ao actualizar");
-    else toast.success(`Pedido → ${statusConfig[newStatus].label}`);
+  const updateStatus = async (order: Order, newStatus: OrderStatus) => {
+    const { error } = await supabase.from("orders").update({ status: newStatus as Database["public"]["Enums"]["order_status"] }).eq("id", order.id);
+    if (error) {
+      toast.error("Erro ao actualizar");
+      return;
+    }
+    toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
+    await notifyOrderStatusChange(order.id, newStatus, order.order_number);
   };
 
   const cancelOrder = async (orderId: string) => {
+    const order = orders.find((o) => o.id === orderId);
     const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", orderId);
     if (error) toast.error("Erro ao cancelar");
-    else toast.success("Pedido cancelado");
+    else {
+      toast.success("Pedido cancelado");
+      if (order) await notifyOrderStatusChange(orderId, "cancelled", order.order_number);
+    }
   };
 
   const getSourceLabel = (source: string) => {
     const map: Record<string, string> = { totem: "App", ifood: "iFood", counter: "Balcão", delivery: "Delivery", waiter: "Garçon" };
     return map[source] || source;
   };
+
+  const visibleColumns = columns.filter((col) =>
+    col !== "out_for_delivery" || orders.some((o) => o.status === "out_for_delivery" || (o.order_type === "delivery" && o.status === "ready")),
+  );
 
   const getOrdersByStatus = (status: OrderStatus) => orders.filter((o) => o.status === status);
 
@@ -106,33 +148,38 @@ const OrdersPage = () => {
         <Button variant="outline" size="sm" onClick={fetchOrders}><RefreshCw className="h-4 w-4 mr-1" /> Actualizar</Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {columns.map((status) => (
-          <Card key={status}>
-            <CardContent className="p-3">
-              <p className="text-2xl font-bold">{getOrdersByStatus(status).length}</p>
-              <p className="text-xs text-muted-foreground">{statusConfig[status].label}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {visibleColumns.map((status) => {
+          const Icon = statusIcons[status] || Clock;
+          return (
+            <Card key={status}>
+              <CardContent className="p-3">
+                <p className="text-2xl font-bold">{getOrdersByStatus(status).length}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Icon className="w-3 h-3" /> {getStatusLabel(status)}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {columns.map((status) => {
-          const config = statusConfig[status];
+      <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-${Math.min(visibleColumns.length, 5)} gap-4`} style={{ gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))` }}>
+        {visibleColumns.map((status) => {
+          const Icon = statusIcons[status] || Clock;
           const columnOrders = getOrdersByStatus(status);
           return (
-            <div key={status} className="space-y-3">
+            <div key={status} className="space-y-3 min-w-0">
               <h3 className="font-bold text-sm flex items-center gap-2">
-                <config.icon className="h-4 w-4" /> {config.label}
+                <Icon className="h-4 w-4" /> {getStatusLabel(status)}
                 <Badge variant="secondary" className="ml-auto">{columnOrders.length}</Badge>
               </h3>
               <div className="space-y-3 min-h-[120px]">
                 {columnOrders.map((order) => {
                   const items = itemsByOrder[order.id] || [];
                   const isTable = order.order_type === "dine_in" && order.table_number;
+                  const next = getNextAction(order.status, order.order_type);
+                  const cardClass = statusCardClass[order.status] || "border-border";
                   return (
-                    <Card key={order.id} className={`overflow-hidden border-2 ${config.cardClass}`}>
+                    <Card key={order.id} className={`overflow-hidden border-2 ${cardClass}`}>
                       <CardContent className="p-4 space-y-3">
                         {isTable && (
                           <p className="text-3xl font-black text-primary leading-none text-center py-1">
@@ -147,7 +194,8 @@ const OrdersPage = () => {
                         </div>
                         <div className="flex gap-2 text-xs flex-wrap">
                           <Badge variant="outline">{getSourceLabel(order.source || "totem")}</Badge>
-                          {(order as any).payment_status === "paid" && <Badge className="bg-green-600">Pago</Badge>}
+                          <Badge variant="outline">{order.order_type === "delivery" ? "Delivery" : order.order_type === "takeaway" ? "Takeaway" : "Mesa"}</Badge>
+                          {(order as Order & { payment_status?: string }).payment_status === "paid" && <Badge className="bg-green-600">Pago</Badge>}
                         </div>
                         {order.customer_name && (
                           <div className="flex items-center gap-1.5 text-sm"><User className="w-3.5 h-3.5" />{order.customer_name}</div>
@@ -155,8 +203,11 @@ const OrdersPage = () => {
                         {order.customer_phone && (
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground"><Phone className="w-3.5 h-3.5" />{order.customer_phone}</div>
                         )}
-                        {!isTable && order.table_number && (
-                          <div className="flex items-center gap-1.5 text-sm"><Hash className="w-3.5 h-3.5" />Mesa {order.table_number}</div>
+                        {order.delivery_street && (
+                          <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span>{order.delivery_street} {order.delivery_number}, {order.delivery_city}</span>
+                          </div>
                         )}
                         <ul className="text-xs space-y-1 border-t pt-2 max-h-28 overflow-y-auto">
                           {items.map((it) => (
@@ -170,9 +221,9 @@ const OrdersPage = () => {
                           <span>Total</span>
                           <span>€ {Number(order.total).toFixed(2)}</span>
                         </div>
-                        {config.next && (
-                          <Button size="lg" className="w-full h-12 font-black text-base" onClick={() => updateStatus(order.id, config.next!)}>
-                            {config.action}
+                        {next && (
+                          <Button size="lg" className="w-full h-12 font-black text-base" onClick={() => updateStatus(order, next.next)}>
+                            {next.label}
                           </Button>
                         )}
                         {status === "pending" && (

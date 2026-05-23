@@ -4,7 +4,7 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
 import { useMesaFromUrl } from "@/hooks/useMesaFromUrl";
 
-type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation";
+type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
 
 interface OrderContextType {
@@ -18,6 +18,10 @@ interface OrderContextType {
   setSelectedCategory: (id: string | null) => void;
   orderNumber: string;
   setOrderNumber: (n: string) => void;
+  activeOrderId: string;
+  setActiveOrderId: (id: string) => void;
+  trackingOrderId: string;
+  setTrackingOrderId: (id: string) => void;
   generateOrderNumber: () => void;
   storeId: string;
   tableNumber: string;
@@ -62,7 +66,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const embedScreen = getEmbedScreen();
     if (embedScreen) return embedScreen;
     const p = new URLSearchParams(window.location.search).get("screen");
-    const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation"];
+    const orderParam = new URLSearchParams(window.location.search).get("order");
+    const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation", "tracking", "account"];
+    if (p === "tracking" && orderParam) return "tracking";
     return valid.includes(p as Screen) ? (p as Screen) : "language";
   })();
 
@@ -71,6 +77,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState("");
+  const [activeOrderId, setActiveOrderId] = useState(() =>
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("order") || "" : "",
+  );
+  const [trackingOrderId, setTrackingOrderId] = useState(() =>
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("order") || "" : "",
+  );
   const [tableNumber, setTableNumber] = useState("");
   const [mesaLocked, setMesaLocked] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
@@ -116,6 +128,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSelectedCategory,
         orderNumber,
         setOrderNumber,
+        activeOrderId,
+        setActiveOrderId,
+        trackingOrderId,
+        setTrackingOrderId,
         generateOrderNumber,
         storeId: effectiveStoreId,
         tableNumber,

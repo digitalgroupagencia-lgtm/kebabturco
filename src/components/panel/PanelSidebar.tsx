@@ -23,6 +23,8 @@ const cardapio = [
   { title: "Cardápio", url: "/panel/menu", icon: UtensilsCrossed },
   { title: "Banners", url: "/panel/banners", icon: ImageIcon },
   { title: "Zonas de entrega", url: "/panel/delivery-zones", icon: Truck },
+  { title: "Cupões", url: "/panel/coupons", icon: Wallet },
+  { title: "Fidelidade", url: "/panel/loyalty", icon: Users },
 ];
 const config = [
   { title: "Identidade", url: "/panel/branding", icon: Palette },

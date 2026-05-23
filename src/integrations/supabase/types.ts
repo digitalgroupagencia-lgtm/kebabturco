@@ -449,6 +449,19 @@ export type Database = {
           created_at: string
           customer_name: string | null
           customer_phone: string | null
+          customer_id: string | null
+          coupon_code: string | null
+          delivery_city: string | null
+          delivery_complement: string | null
+          delivery_fee: number
+          delivery_notes: string | null
+          delivery_number: string | null
+          delivery_postal_code: string | null
+          delivery_street: string | null
+          delivery_zone_id: string | null
+          delivery_zone_name: string | null
+          discount_amount: number
+          estimated_ready_at: string | null
           id: string
           notes: string | null
           order_number: string
@@ -1669,8 +1682,20 @@ export type Database = {
       create_customer_order: {
         Args: {
           _application_fee_cents?: number
+          _coupon_code?: string
+          _coupon_id?: string
           _customer_name?: string
           _customer_phone?: string
+          _delivery_city?: string
+          _delivery_complement?: string
+          _delivery_fee?: number
+          _delivery_notes?: string
+          _delivery_number?: string
+          _delivery_postal_code?: string
+          _delivery_street?: string
+          _delivery_zone_id?: string
+          _delivery_zone_name?: string
+          _discount_amount?: number
           _items: Json
           _notes?: string
           _order_type: string
@@ -1900,6 +1925,7 @@ export type Database = {
         | "pending"
         | "preparing"
         | "ready"
+        | "out_for_delivery"
         | "delivered"
         | "cancelled"
       payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
@@ -2040,7 +2066,7 @@ export const Constants = {
         "seller",
       ],
       order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
-      order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
+      order_status: ["pending", "preparing", "ready", "out_for_delivery", "delivered", "cancelled"],
       payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       print_job_status: ["pending", "printing", "printed", "failed"],

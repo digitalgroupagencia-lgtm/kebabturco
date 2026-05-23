@@ -13,7 +13,9 @@ import {
   buildPrintPayload,
   invokePrintOrder,
   fetchStoreStripeSettings,
+  validateCoupon,
 } from "@/services/orderService";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike, Loader2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
@@ -51,6 +53,8 @@ const PaymentScreen = () => {
   const {
     setScreen,
     setOrderNumber,
+    setActiveOrderId,
+    setTrackingOrderId,
     setPaymentMethod,
     storeId,
     tableNumber,
@@ -85,6 +89,11 @@ const PaymentScreen = () => {
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder">(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponId, setCouponId] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const { subscribe: subscribePush } = usePushNotifications();
 
   const geo = useCustomerGeocode(
     orderType === "delivery" ? storeId : null,
@@ -103,7 +112,25 @@ const PaymentScreen = () => {
     geo.distanceKm,
   );
   const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
-  const grandTotal = totalPrice + deliveryFee;
+  const grandTotal = Math.max(0, totalPrice + deliveryFee - couponDiscount);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim() || !storeId) return;
+    try {
+      const result = await validateCoupon(storeId, couponCode.trim(), totalPrice);
+      if (!result.valid) {
+        setCouponError(result.error || "Cupón inválido");
+        setCouponDiscount(0);
+        setCouponId(null);
+        return;
+      }
+      setCouponDiscount(result.discount_amount || 0);
+      setCouponId(result.coupon_id || null);
+      setCouponError(null);
+    } catch {
+      setCouponError("Erro ao validar cupón");
+    }
+  };
 
   useEffect(() => {
     if (!storeId) return;
@@ -159,9 +186,14 @@ const PaymentScreen = () => {
     return true;
   };
 
-  const notes = orderType === "delivery" && deliveryFee > 0
-    ? `Taxa entrega: ${deliveryFee.toFixed(2)}€${deliveryQuote.zone ? ` (${deliveryQuote.zone.name})` : ""}`
-    : null;
+  const notesParts: string[] = [];
+  if (orderType === "delivery" && deliveryFee > 0) {
+    notesParts.push(`Taxa entrega: ${deliveryFee.toFixed(2)}€${deliveryQuote.zone ? ` (${deliveryQuote.zone.name})` : ""}`);
+  }
+  if (couponDiscount > 0) {
+    notesParts.push(`Desconto cupón ${couponCode}: -${couponDiscount.toFixed(2)}€`);
+  }
+  const notes = notesParts.length ? notesParts.join(" | ") : null;
 
   const finishOrder = async (opts: {
     paymentMethod: PaymentMethodId;
@@ -188,10 +220,30 @@ const PaymentScreen = () => {
       paymentMethod: paymentMethodDb,
       paymentStatus: opts.paymentStatus,
       stripePaymentIntentId: opts.stripePi || null,
+      deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
+      deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
+      deliveryComplement: orderType === "delivery" ? deliveryComplement.trim() : null,
+      deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
+      deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
+      deliveryNotes: orderType === "delivery" ? deliveryNotes.trim() : null,
+      deliveryFee,
+      deliveryZoneId: deliveryQuote.zone?.id || null,
+      deliveryZoneName: deliveryQuote.zone?.name || null,
+      couponCode: couponId ? couponCode.trim() : null,
+      discountAmount: couponDiscount,
+      couponId,
     });
 
     setPaymentMethod(opts.paymentMethod);
     setOrderNumber(result.order_number);
+    setActiveOrderId(result.order_id);
+    setTrackingOrderId(result.order_id);
+
+    await subscribePush({
+      storeId,
+      orderId: result.order_id,
+      customerPhone: customerPhone.trim() || undefined,
+    });
 
     await invokePrintOrder(buildPrintPayload({
       storeId,
@@ -208,6 +260,10 @@ const PaymentScreen = () => {
       subtotal: totalPrice,
       deliveryFee,
       notes,
+      deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
+      deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
+      deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
+      deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
     }));
 
     clearCart();
@@ -361,6 +417,22 @@ const PaymentScreen = () => {
                   </div>
                 </>
               )}
+            </div>
+
+            <div className="mt-5 bg-card rounded-[24px] border border-border shadow-card p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2">Cupón de descuento</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
+                  placeholder="CÓDIGO"
+                  className="flex-1 h-11 px-3 rounded-xl border border-border font-bold uppercase"
+                />
+                <button type="button" onClick={applyCoupon} className="px-4 h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm">Aplicar</button>
+              </div>
+              {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
+              {couponDiscount > 0 && <p className="text-xs text-success mt-1 font-bold">−{couponDiscount.toFixed(2)}€ aplicado</p>}
             </div>
 
             {counterOnly ? (

@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 import type { CartItem } from "@/contexts/CartContext";
 
 export const APPLICATION_FEE_CENTS = 100; // €1
@@ -13,9 +12,37 @@ export type CreateCustomerOrderResult = {
   success: boolean;
   order_id: string;
   order_number: string;
+  loyalty?: { stamps: number; reward_ready: boolean };
 };
 
-type CreateCustomerOrderArgs = Database["public"]["Functions"]["create_customer_order"]["Args"];
+type CreateCustomerOrderArgs = {
+  _store_id: string;
+  _order_type: string;
+  _items: ReturnType<typeof cartItemsToRpcPayload>;
+  _total: number;
+  _subtotal?: number;
+  _table_number?: string;
+  _table_id?: string;
+  _customer_name?: string;
+  _customer_phone?: string;
+  _notes?: string;
+  _payment_method?: string;
+  _payment_status?: string;
+  _stripe_payment_intent_id?: string;
+  _application_fee_cents?: number;
+  _delivery_street?: string;
+  _delivery_number?: string;
+  _delivery_complement?: string;
+  _delivery_postal_code?: string;
+  _delivery_city?: string;
+  _delivery_notes?: string;
+  _delivery_fee?: number;
+  _delivery_zone_id?: string;
+  _delivery_zone_name?: string;
+  _coupon_code?: string;
+  _discount_amount?: number;
+  _coupon_id?: string;
+};
 
 export function cartItemsToRpcPayload(items: CartItem[]) {
   return items.map((i) => ({
@@ -49,6 +76,36 @@ export interface CreateCustomerOrderParams {
   paymentMethod?: string | null;
   paymentStatus?: "pending" | "paid" | "failed";
   stripePaymentIntentId?: string | null;
+  deliveryStreet?: string | null;
+  deliveryNumber?: string | null;
+  deliveryComplement?: string | null;
+  deliveryPostalCode?: string | null;
+  deliveryCity?: string | null;
+  deliveryNotes?: string | null;
+  deliveryFee?: number;
+  deliveryZoneId?: string | null;
+  deliveryZoneName?: string | null;
+  couponCode?: string | null;
+  discountAmount?: number;
+  couponId?: string | null;
+}
+
+export type ValidateCouponResult = {
+  valid: boolean;
+  error?: string;
+  coupon_id?: string;
+  code?: string;
+  discount_amount?: number;
+};
+
+export async function validateCoupon(storeId: string, code: string, subtotal: number) {
+  const { data, error } = await supabase.rpc("validate_coupon", {
+    _store_id: storeId,
+    _code: code,
+    _subtotal: subtotal,
+  });
+  if (error) throw error;
+  return data as ValidateCouponResult;
 }
 
 export async function fetchStoreStripeSettings(storeId: string): Promise<StoreStripeSettings | null> {
@@ -85,6 +142,18 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     _application_fee_cents: params.paymentStatus === "paid" && params.paymentMethod === "card"
       ? APPLICATION_FEE_CENTS
       : 0,
+    _delivery_street: params.deliveryStreet || undefined,
+    _delivery_number: params.deliveryNumber || undefined,
+    _delivery_complement: params.deliveryComplement || undefined,
+    _delivery_postal_code: params.deliveryPostalCode || undefined,
+    _delivery_city: params.deliveryCity || undefined,
+    _delivery_notes: params.deliveryNotes || undefined,
+    _delivery_fee: params.deliveryFee ?? 0,
+    _delivery_zone_id: params.deliveryZoneId || undefined,
+    _delivery_zone_name: params.deliveryZoneName || undefined,
+    _coupon_code: params.couponCode || undefined,
+    _discount_amount: params.discountAmount ?? 0,
+    _coupon_id: params.couponId || undefined,
   };
 
   const { data, error } = await supabase.rpc("create_customer_order", args);
@@ -139,7 +208,15 @@ export function buildPrintPayload(opts: {
   subtotal?: number;
   deliveryFee?: number;
   notes?: string | null;
+  deliveryAddress?: string | null;
+  deliveryNumber?: string | null;
+  deliveryCity?: string | null;
+  deliveryPostalCode?: string | null;
 }) {
+  const fullAddress = opts.deliveryAddress
+    ? `${opts.deliveryAddress}${opts.deliveryNumber ? ` ${opts.deliveryNumber}` : ""}${opts.deliveryCity ? `, ${opts.deliveryCity}` : ""}${opts.deliveryPostalCode ? ` ${opts.deliveryPostalCode}` : ""}`
+    : null;
+
   return {
     storeId: opts.storeId,
     orderNumber: opts.orderNumber,
@@ -150,6 +227,7 @@ export function buildPrintPayload(opts: {
     paymentMethod: opts.paymentMethod,
     paymentPending: opts.paymentPending,
     paidViaApp: opts.paidViaApp ?? false,
+    deliveryAddress: fullAddress,
     items: opts.items.map((i) => ({
       productName: (i.productName?.es || i.productName?.en || Object.values(i.productName)[0]) as string,
       quantity: i.quantity,

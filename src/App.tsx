@@ -22,6 +22,8 @@ import SellersPage from "./pages/panel/SellersPage.tsx";
 import TablesPage from "./pages/panel/TablesPage.tsx";
 import TableMapPage from "./pages/panel/TableMapPage.tsx";
 import PanelGuidePage from "./pages/panel/GuidePage.tsx";
+import CouponsPage from "./pages/panel/CouponsPage.tsx";
+import LoyaltyPage from "./pages/panel/LoyaltyPage.tsx";
 import SellerLayout from "./components/seller/SellerLayout.tsx";
 import SellerHome from "./pages/seller/SellerHome.tsx";
 import SellerTables from "./pages/seller/SellerTables.tsx";
@@ -96,6 +98,8 @@ const App = () => (
             <Route path="delivery-zones" element={<TenantDeliveryZonesPage />} />
             <Route path="payments" element={<OperationsPage />} />
             <Route path="guide" element={<PanelGuidePage />} />
+            <Route path="coupons" element={<CouponsPage />} />
+            <Route path="loyalty" element={<LoyaltyPage />} />
           </Route>
           <Route path="/seller" element={<SellerLayout />}>
             <Route index element={<SellerHome />} />

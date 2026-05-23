@@ -12,6 +12,8 @@ import ProductScreen from "@/components/screens/ProductScreen";
 import ReviewScreen from "@/components/screens/ReviewScreen";
 import PaymentScreen from "@/components/screens/PaymentScreen";
 import ConfirmationScreen from "@/components/screens/ConfirmationScreen";
+import OrderTrackingScreen from "@/components/screens/OrderTrackingScreen";
+import CustomerAccountScreen from "@/components/screens/CustomerAccountScreen";
 
 const ScreenRouter = () => {
   const { screen } = useOrder();
@@ -35,6 +37,10 @@ const ScreenRouter = () => {
       return <PaymentScreen />;
     case "confirmation":
       return <ConfirmationScreen />;
+    case "tracking":
+      return <OrderTrackingScreen />;
+    case "account":
+      return <CustomerAccountScreen />;
     default:
       return <SplashScreen />;
   }

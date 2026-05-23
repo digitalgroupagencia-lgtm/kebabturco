@@ -27,6 +27,7 @@ interface Payload {
   paymentPending: boolean;
   paidViaApp?: boolean;
   notes?: string | null;
+  deliveryAddress?: string | null;
   items: ItemLine[];
   total: number;
 }
@@ -61,6 +62,8 @@ const LABELS: Record<string, Record<string, string>> = {
   time: { pt: "Hora", en: "Time", es: "Hora", fr: "Heure" },
   total: { pt: "TOTAL", en: "TOTAL", es: "TOTAL", fr: "TOTAL" },
   notes: { pt: "Obs", en: "Notes", es: "Obs", fr: "Notes" },
+  delivery: { pt: "Domicilio", en: "Delivery", es: "Domicilio", fr: "Livraison" },
+  address: { pt: "Morada", en: "Address", es: "Direccion", fr: "Adresse" },
   without: { pt: "sem", en: "no", es: "sin", fr: "sans" },
 };
 
@@ -93,9 +96,10 @@ const buildTicket = (p: Payload, lang: string, brandName: string) => {
     lines.push(sep);
   }
 
-  lines.push(`${L("type")}:  ${p.orderType === "here" ? L("here") : p.orderType === "delivery" ? "DOMICILIO" : L("takeaway")}`);
+  lines.push(`${L("type")}:  ${p.orderType === "here" ? L("here") : p.orderType === "delivery" ? L("delivery") : L("takeaway")}`);
   if (p.customerName) lines.push(`${L("customer")}: ${p.customerName}`);
   if (p.customerPhone) lines.push(`${L("phone")}: ${p.customerPhone}`);
+  if (p.deliveryAddress) lines.push(`${L("address")}: ${p.deliveryAddress}`);
   lines.push(`${L("payment")}:  ${p.paymentMethod}`);
   lines.push(`${L("time")}:  ${new Date().toLocaleString(locale)}`);
   lines.push(sep);
