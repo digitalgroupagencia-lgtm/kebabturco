@@ -19,9 +19,17 @@ export function loadStoredActiveOrder(storeId: string): StoredActiveOrder | null
 }
 
 export function saveStoredActiveOrder(data: StoredActiveOrder) {
-  localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 export function clearStoredActiveOrder() {
-  localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
+  try {
+    localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 }

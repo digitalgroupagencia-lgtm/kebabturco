@@ -21,7 +21,10 @@ export const OperationsSettingsProvider: React.FC<{ children: React.ReactNode; s
   }, [storeId]);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId) {
+      setLoading(false);
+      return;
+    }
     load();
     const ch = supabase
       .channel(`ops:${storeId}`)

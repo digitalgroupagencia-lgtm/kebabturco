@@ -56,6 +56,16 @@ export async function checkForDeployedUpdate() {
   if (lastReload === remoteBuildId) return;
 
   sessionStorage.setItem(reloadKey, remoteBuildId);
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch {
+    /* ignore */
+  }
+
   window.location.reload();
 }
 

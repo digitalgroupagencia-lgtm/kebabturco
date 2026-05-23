@@ -46,6 +46,68 @@ const Ctx = createContext<ResolvedStore>({
 
 const SELECTED_STORE_KEY = "totem.selectedStoreId";
 
+/** Fallback de emergência — evita totem em branco se a resolução falhar. */
+const HOST_STORE_FALLBACK: Record<string, { tenantId: string; tenantSlug: string; storeId: string }> = {
+  "kebabturco.net": {
+    tenantId: "11111111-1111-1111-1111-111111111111",
+    tenantSlug: "kebab-turco",
+    storeId: "22222222-2222-2222-2222-222222222222",
+  },
+};
+
+type StorePublicRow = StoreOption & {
+  tenant_id?: string;
+  sort_order?: number;
+  created_at?: string;
+};
+
+async function fetchActiveStores(filter: { tenantId?: string } = {}): Promise<StorePublicRow[]> {
+  const select =
+    "id, name, address, image_url, short_description, sort_order, created_at, tenant_id";
+  const db = supabase as unknown as {
+    from: (table: string) => ReturnType<typeof supabase.from>;
+  };
+
+  const publicQuery = db
+    .from("stores_public")
+    .select(select)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const { data, error } = filter.tenantId
+    ? await publicQuery.eq("tenant_id", filter.tenantId)
+    : await publicQuery;
+
+  if (!error && data?.length) {
+    return data as StorePublicRow[];
+  }
+
+  // Compat: view stores_public ausente ou erro transitório
+  const legacyQuery = supabase
+    .from("stores")
+    .select(select)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const legacy = filter.tenantId
+    ? await legacyQuery.eq("tenant_id", filter.tenantId)
+    : await legacyQuery;
+
+  return (legacy.data || []) as StorePublicRow[];
+}
+
+function mapStoreOptions(rows: StorePublicRow[]): StoreOption[] {
+  return rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    address: s.address,
+    image_url: s.image_url,
+    short_description: s.short_description,
+  }));
+}
+
 type TenantRow = {
   id: string;
   slug: string;
@@ -89,7 +151,11 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       let tenant: TenantRow | null = null;
+      let storeId: string | null = null;
+      let basePath = "";
+      let stores: StoreOption[] = [];
 
+      try {
       if (tenantParam) {
         const { data } = await supabase
           .from("tenants")
@@ -127,25 +193,9 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           }) ?? null;
       }
 
-      let storeId: string | null = null;
-      let basePath = "";
-      let stores: StoreOption[] = [];
-
       if (tenant) {
-        const { data: list } = await supabase
-          .from("stores_public")
-          .select("id, name, address, image_url, short_description, sort_order, created_at")
-          .eq("tenant_id", tenant.id)
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true });
-        stores = (list || []).map((s: StoreOption) => ({
-          id: s.id,
-          name: s.name,
-          address: s.address,
-          image_url: s.image_url,
-          short_description: s.short_description,
-        }));
+        const list = await fetchActiveStores({ tenantId: tenant.id });
+        stores = mapStoreOptions(list);
         storeId = stores[0]?.id ?? null;
         if (tenant.use_master_domain && tenant.path_slug && !tenant.custom_domain) {
           basePath = "/" + tenant.path_slug;
@@ -154,28 +204,64 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           if (onMaster) basePath = "/" + tenant.path_slug;
         }
       } else {
-        const { data: store } = await supabase
-          .from("stores_public")
-          .select("id, name, address, image_url, short_description, tenant_id")
-          .eq("is_active", true)
-          .order("created_at")
-          .limit(1)
-          .maybeSingle();
+        const list = await fetchActiveStores();
+        const store = list[0];
         if (store) {
           storeId = store.id;
-          stores = [{
-            id: store.id,
-            name: store.name,
-            address: store.address,
-            image_url: store.image_url,
-            short_description: store.short_description,
-          }];
+          stores = mapStoreOptions([store]);
           const { data: t } = await supabase
             .from("tenants")
             .select("id, slug")
-            .eq("id", store.tenant_id)
+            .eq("id", store.tenant_id!)
             .maybeSingle();
           tenant = t as TenantRow | null;
+        }
+      }
+
+      const hostFallback = HOST_STORE_FALLBACK[host];
+      if (!storeId && hostFallback) {
+        storeId = hostFallback.storeId;
+        if (!tenant) {
+          tenant = {
+            id: hostFallback.tenantId,
+            slug: hostFallback.tenantSlug,
+            path_slug: null,
+            custom_domain: host,
+            master_domain: null,
+            use_master_domain: false,
+          };
+        }
+        if (!stores.length) {
+          const list = await fetchActiveStores({ tenantId: hostFallback.tenantId });
+          stores = mapStoreOptions(list.length ? list : [{
+            id: hostFallback.storeId,
+            name: "Gandia",
+            address: null,
+            image_url: null,
+            short_description: null,
+          }]);
+        }
+      }
+      } catch (err) {
+        console.error("[ResolvedStore] tenant/store resolution failed", err);
+        const hostFallback = HOST_STORE_FALLBACK[host];
+        if (hostFallback) {
+          storeId = hostFallback.storeId;
+          tenant = {
+            id: hostFallback.tenantId,
+            slug: hostFallback.tenantSlug,
+            path_slug: null,
+            custom_domain: host,
+            master_domain: null,
+            use_master_domain: false,
+          };
+          stores = [{
+            id: hostFallback.storeId,
+            name: "Gandia",
+            address: null,
+            image_url: null,
+            short_description: null,
+          }];
         }
       }
 

@@ -7,7 +7,7 @@ import {
   loadStoredActiveOrder,
   saveStoredActiveOrder,
   clearStoredActiveOrder,
-} from "@/features/customer/useActiveOrder";
+} from "@/features/customer/useActiveOrderStorage";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";

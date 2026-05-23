@@ -14,6 +14,7 @@ import PaymentScreen from "@/components/screens/PaymentScreen";
 import ConfirmationScreen from "@/components/screens/ConfirmationScreen";
 import OrderTrackingScreen from "@/components/screens/OrderTrackingScreen";
 import CustomerAccountScreen from "@/components/screens/CustomerAccountScreen";
+import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 
 const ScreenRouter = () => {
   const { screen } = useOrder();
@@ -48,6 +49,7 @@ const ScreenRouter = () => {
 
 // Kiosk Self-Service App
 const Index = () => (
+  <TotemErrorBoundary>
   <LanguageProvider>
     <CartProvider>
       <OrderProvider>
@@ -59,6 +61,7 @@ const Index = () => (
       </OrderProvider>
     </CartProvider>
   </LanguageProvider>
+  </TotemErrorBoundary>
 );
 
 export default Index;

@@ -30,7 +30,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.style.colorScheme = "light";
     }
     root.setAttribute("data-theme", theme);
-    localStorage.setItem("kiosk-theme", theme);
+    try {
+      localStorage.setItem("kiosk-theme", theme);
+    } catch {
+      /* ignore quota / private mode */
+    }
   }, [theme]);
 
   const toggle = () => setThemeState((t) => (t === "dark" ? "light" : "dark"));

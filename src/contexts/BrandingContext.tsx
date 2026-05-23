@@ -107,7 +107,11 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
   }, [storeId]);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     load();
     const channel = supabase
       .channel(`company_settings:${storeId}`)

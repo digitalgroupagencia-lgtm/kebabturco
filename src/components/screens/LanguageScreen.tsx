@@ -53,13 +53,14 @@ const LanguageScreen = () => {
   if (brandingLoading || storeLoading) {
     return (
       <div
-        className="min-h-[100dvh] flex flex-col bg-background relative"
+        className="min-h-[100dvh] flex flex-col items-center justify-center bg-background relative"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div
           className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
           style={{ height: "env(safe-area-inset-top)" }}
         />
+        <div className="h-10 w-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" aria-label="A carregar" />
       </div>
     );
   }
