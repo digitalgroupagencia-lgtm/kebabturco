@@ -2536,6 +2536,8 @@ export type Database = {
       }
       get_user_store_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      user_can_access_store: { Args: { _store_id: string }; Returns: boolean }
+      user_can_access_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
