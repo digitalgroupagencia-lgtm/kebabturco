@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, MapPin } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, MapPin, Copy, Download } from "lucide-react";
 
 interface Zone {
   id: string;
@@ -36,6 +36,7 @@ const TenantDeliveryZonesPage = () => {
   const [storeId, setStoreId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const currentStore = stores.find((s) => s.id === storeId);
 
@@ -117,6 +118,45 @@ const TenantDeliveryZonesPage = () => {
     setZones(zones.filter((z) => z.id !== id));
   };
 
+  const duplicateZone = async (z: Zone) => {
+    if (!storeId) return;
+    const { data, error } = await supabase.from("delivery_zones").insert({
+      store_id: storeId,
+      name: `${z.name} (cópia)`,
+      min_order: z.min_order,
+      delivery_fee: z.delivery_fee,
+      postal_codes: z.postal_codes || [],
+      city_names: z.city_names || [],
+      min_distance_km: z.min_distance_km,
+      max_distance_km: z.max_distance_km,
+      is_default: false,
+      is_active: z.is_active,
+      sort_order: zones.length,
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
+    setZones([...zones, data as Zone]);
+    toast.success("Zona duplicada");
+  };
+
+  const importPreset = async () => {
+    if (!storeId) return;
+    if (!confirm("Substituir zonas actuais pela plantilla operacional do tenant?")) return;
+    setImporting(true);
+    const { data, error } = await supabase.rpc("import_operational_preset", {
+      _store_id: storeId,
+      _replace_existing: true,
+    });
+    setImporting(false);
+    if (error) { toast.error(error.message); return; }
+    const result = data as { skipped?: boolean; zones_inserted?: number };
+    if (result?.skipped) {
+      toast.info("Zonas já existiam — nada alterado");
+    } else {
+      toast.success(`Plantilla aplicada (${result?.zones_inserted ?? 0} zonas)`);
+    }
+    await loadZones(storeId);
+  };
+
   if (loading) return <div className="p-8 flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Carregando...</div>;
 
   return (
@@ -136,7 +176,11 @@ const TenantDeliveryZonesPage = () => {
             {stores.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={addZone} className="ml-auto"><Plus className="h-4 w-4 mr-1" /> Nova zona</Button>
+        <Button variant="outline" onClick={importPreset} disabled={importing || !storeId}>
+          {importing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+          Importar plantilla
+        </Button>
+        <Button onClick={addZone}><Plus className="h-4 w-4 mr-1" /> Nova zona</Button>
       </div>
 
       {currentStore && (
@@ -235,12 +279,17 @@ const TenantDeliveryZonesPage = () => {
             </details>
 
             <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => duplicateZone(z)}><Copy className="h-4 w-4 mr-1" /> Duplicar</Button>
               <Button variant="ghost" size="sm" onClick={() => remove(z.id)}><Trash2 className="h-4 w-4 mr-1" /> Remover</Button>
               <Button size="sm" onClick={() => save(z)}>Salvar</Button>
             </div>
           </Card>
         ))}
-        {zones.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma zona ainda. Clique em "Nova zona" para começar.</p>}
+        {zones.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            Nenhuma zona configurada. Use &quot;Importar plantilla&quot; para carregar a configuração base do tenant ou crie uma zona manualmente.
+          </p>
+        )}
       </div>
     </div>
   );
