@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json,woff2,webmanifest}"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/panel/, /^\/admin/, /^\/seller/],
         importScripts: ["/push-handler.js"],
       },
       devOptions: {

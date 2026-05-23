@@ -42,7 +42,9 @@ const OpsOrdersLayout = ({
 
   return (
     <div className="space-y-4">
-      {headerExtra}
+      <div className="sticky top-0 z-20 -mx-1 px-1 pt-1 pb-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:mx-0 md:px-0 md:pt-0 md:pb-0 md:bg-transparent md:backdrop-blur-none">
+        {headerExtra}
+      </div>
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Pedidos activos</h2>
         <div className="flex items-center gap-2">

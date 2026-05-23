@@ -31,9 +31,10 @@ export function subscribeAppCacheBust(onBump: () => void) {
 
 async function fetchRemoteBuildId(): Promise<string | null> {
   try {
-    const response = await fetch(`${window.location.origin}/?_cb=${Date.now()}`, {
+    const path = window.location.pathname || "/";
+    const response = await fetch(`${window.location.origin}${path}?_cb=${Date.now()}`, {
       cache: "no-store",
-      headers: { Accept: "text/html" },
+      headers: { Accept: "text/html", "Cache-Control": "no-cache" },
     });
     if (!response.ok) return null;
     const html = await response.text();
@@ -58,6 +59,10 @@ export async function checkForDeployedUpdate() {
   sessionStorage.setItem(reloadKey, remoteBuildId);
 
   try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
     if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map((r) => r.unregister()));

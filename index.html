@@ -45,9 +45,8 @@ Haz tu pedido para comer aquí, para llevar o a domicilio.">
     <div id="root"></div>
     <script>
       (function () {
-        var path = location.pathname || "/";
-        var isCustomerApp = path === "/" || (!path.startsWith("/panel") && !path.startsWith("/admin") && !path.startsWith("/seller") && path !== "/auth");
-        if (!isCustomerApp || !("serviceWorker" in navigator)) return;
+        if (!("serviceWorker" in navigator) && !("caches" in window)) return;
+        // Safari e «Adicionar ao ecrã» guardavam versão antiga — especialmente no painel.
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           regs.forEach(function (r) { r.unregister(); });
         });

@@ -2,7 +2,19 @@ import { useEffect, type ElementType } from "react";
 import { Activity, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { APP_BUILD_ID } from "@/lib/appCacheBust";
 import { useOperationalDiagnostics, type DiagnosticStatus } from "@/features/ops/useOperationalDiagnostics";
+
+function formatBuildStamp(id: string) {
+  const n = Number(id);
+  if (!Number.isFinite(n) || n < 1e12) return id;
+  return new Date(n).toLocaleString("pt-PT", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 const statusStyle: Record<
   DiagnosticStatus,
@@ -56,6 +68,8 @@ const DiagnosticsPage = () => {
             <p className="text-xs text-muted-foreground mt-2">
               Última verificação:{" "}
               {lastRun.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              {" · "}
+              Versão desta página: {formatBuildStamp(APP_BUILD_ID)}
             </p>
           )}
         </div>
