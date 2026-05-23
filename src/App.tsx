@@ -60,6 +60,7 @@ import AdminCentralCampaignsPage from "./pages/admin/AdminCentralCampaignsPage.t
 import AdminCentralPushPage from "./pages/admin/AdminCentralPushPage.tsx";
 import AdminCentralConversationalPage from "./pages/admin/AdminCentralConversationalPage.tsx";
 import AdminTenantCentralsHubPage from "./pages/admin/AdminTenantCentralsHubPage.tsx";
+import TenantWorkspaceOverviewPage from "./pages/admin/tenant/TenantWorkspaceOverviewPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PlatformHostGate from "./components/PlatformHostGate.tsx";
 import Install from "./pages/Install.tsx";
@@ -89,7 +90,8 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/install" element={<Install />} />
           <Route path="/panel" element={<PanelLayout />}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<OrdersPage />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="menu" element={<MenuPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="table-map" element={<TableMapPage />} />
@@ -150,7 +152,9 @@ const App = () => (
             <Route path="conversations" element={<AiConversationsPage />} />
           </Route>
           <Route path="/admin/tenants/:slug" element={<TenantPanelLayout />}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<TenantWorkspaceOverviewPage />} />
+            <Route path="painel" element={<OrdersPage />} />
+            <Route path="painel/dashboard" element={<Dashboard />} />
             <Route path="menu" element={<MenuPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="table-map" element={<TableMapPage />} />

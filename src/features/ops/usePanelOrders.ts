@@ -5,6 +5,7 @@ import type { Tables, Database } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import { playNewOrderAlert } from "@/lib/panelAlerts";
 import { notifyOrderStatusChange } from "@/services/pushService";
+import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 
 export type PanelOrder = Tables<"orders"> & {
   delivery_street?: string | null;
@@ -97,6 +98,7 @@ export function usePanelOrders(storeId: string | undefined) {
             knownPendingRef.current.add(row.id);
             playNewOrderAlert();
             toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
+            void tryPrintPanelOrder(storeId, row, items[row.id] || []);
           }
         },
       )
@@ -129,17 +131,27 @@ export function usePanelOrders(storeId: string | undefined) {
     };
   }, [storeId, fetchOrders]);
 
-  const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus) => {
+  const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number) => {
     if (updatingRef.current.has(order.id)) return;
     updatingRef.current.add(order.id);
     const prevStatus = order.status;
 
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: newStatus as PanelOrder["status"] } : o)));
+    const patch: Record<string, unknown> = { status: newStatus as Database["public"]["Enums"]["order_status"] };
+    if (newStatus === "preparing" && prepMinutes) {
+      const eta = new Date();
+      eta.setMinutes(eta.getMinutes() + prepMinutes);
+      patch.estimated_ready_at = eta.toISOString();
+    }
 
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus as Database["public"]["Enums"]["order_status"] })
-      .eq("id", order.id);
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id
+          ? { ...o, status: newStatus as PanelOrder["status"], estimated_ready_at: (patch.estimated_ready_at as string) ?? o.estimated_ready_at }
+          : o,
+      ),
+    );
+
+    const { error } = await supabase.from("orders").update(patch).eq("id", order.id);
 
     updatingRef.current.delete(order.id);
 
@@ -174,5 +186,13 @@ export function usePanelOrders(storeId: string | undefined) {
     await notifyOrderStatusChange(orderId, "cancelled", order.order_number);
   }, [orders]);
 
-  return { orders, itemsByOrder, loading, updateStatus, cancelOrder, refresh: fetchOrders };
+  const setPrepMinutes = useCallback(async (order: PanelOrder, minutes: number) => {
+    const eta = new Date();
+    eta.setMinutes(eta.getMinutes() + minutes);
+    const iso = eta.toISOString();
+    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, estimated_ready_at: iso } : o)));
+    await supabase.from("orders").update({ estimated_ready_at: iso }).eq("id", order.id);
+  }, []);
+
+  return { orders, itemsByOrder, loading, updateStatus, cancelOrder, setPrepMinutes, refresh: fetchOrders };
 }

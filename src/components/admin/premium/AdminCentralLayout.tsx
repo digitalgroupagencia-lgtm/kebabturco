@@ -3,9 +3,10 @@ import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AdminPageHeader, { type Breadcrumb } from "./AdminPageHeader";
 import AdminTenantContextBar from "./AdminTenantContextBar";
-import GlobalCentralOverview from "./GlobalCentralOverview";
+import GlobalCentralOperations from "./GlobalCentralOperations";
 import PlatformPageShell from "./PlatformPageShell";
 import { useAdminCentralsTenants } from "@/hooks/usePlatformFeatures";
+import type { CentralSegment } from "@/lib/operationalCentralMetrics";
 
 type TenantRow = NonNullable<ReturnType<typeof useAdminCentralsTenants>["data"]>[number];
 
@@ -14,7 +15,7 @@ type Props = {
   description: string;
   breadcrumbs?: Breadcrumb[];
   backTo?: string;
-  centralSegment: string;
+  centralSegment: CentralSegment;
   showTenantList?: boolean;
   tenantList?: React.ReactNode;
   stats?: React.ReactNode;
@@ -101,7 +102,7 @@ export default function AdminCentralLayout({
       {showTenantList && !isScoped && tenantList}
 
       {showGlobalOverview && (
-        <GlobalCentralOverview
+        <GlobalCentralOperations
           centralTitle={title}
           tenants={tenants}
           centralSegment={centralSegment}

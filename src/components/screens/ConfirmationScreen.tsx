@@ -75,12 +75,12 @@ const ConfirmationScreen = () => {
   const companyName = brand?.company_name || "";
 
   return (
-    <div
-      className="h-[100dvh] min-h-0 bg-background animate-fade-in flex flex-col"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
-    >
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-        <div ref={cardRef} className="flex flex-col gap-1.5 px-3 pt-2 pb-3">
+    <div className="h-[100dvh] min-h-0 max-h-[100dvh] bg-background animate-fade-in flex flex-col overflow-hidden">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+        style={{ paddingTop: "max(8px, env(safe-area-inset-top))" }}
+      >
+        <div ref={cardRef} className="flex flex-col gap-1.5 px-3 pt-1 pb-4 max-w-lg mx-auto w-full">
           <div className="flex items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 min-w-0">
               {logoUrl ? (
@@ -130,7 +130,7 @@ const ConfirmationScreen = () => {
             <p className="text-[9px] uppercase tracking-[0.28em] text-muted-foreground font-bold">
               {t("yourNumber")}
             </p>
-            <p className="text-[52px] leading-none font-black text-success mt-0.5 tabular-nums tracking-tighter">
+            <p className="text-[42px] sm:text-[48px] leading-none font-black text-success mt-0.5 tabular-nums tracking-tighter">
               #{orderNumber}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold">

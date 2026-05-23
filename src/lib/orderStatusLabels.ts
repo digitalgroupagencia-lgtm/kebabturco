@@ -32,7 +32,7 @@ export function getNextAction(status: string, orderType?: string | null): { next
   if (idx < 0 || idx >= flow.length - 1) return null;
   const next = flow[idx + 1];
   const labels: Record<string, string> = {
-    preparing: "OK — Em preparação",
+    preparing: status === "pending" ? "Aceitar — em preparação" : "OK — Em preparação",
     ready: "Marcar pronto",
     out_for_delivery: "Saiu para entrega",
     delivered: orderType === "delivery" ? "Entregue" : orderType === "takeaway" ? "Recolhido" : "Entregue na mesa",

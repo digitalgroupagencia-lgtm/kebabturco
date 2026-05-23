@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, ChefHat, CheckCircle, Truck, Bike } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
@@ -20,10 +19,8 @@ const statusIcons: Record<string, React.ElementType> = {
 const columns: OrderStatus[] = ["pending", "preparing", "ready", "out_for_delivery", "delivered"];
 
 const OrdersPage = () => {
-  const { user } = useAuth();
-  const { roleData } = useUserRole(user?.id);
-  const storeId = roleData?.store_id;
-  const { orders, itemsByOrder, loading, updateStatus, cancelOrder } = usePanelOrders(storeId);
+  const { storeId, loading: storeLoading } = useAdminStoreId();
+  const { orders, itemsByOrder, loading, updateStatus, cancelOrder, setPrepMinutes } = usePanelOrders(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
 
   const visibleColumns = useMemo(
@@ -42,7 +39,7 @@ const OrdersPage = () => {
     return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
   }
 
-  if (loading) {
+  if (loading || storeLoading) {
     return (
       <div className="p-8 flex items-center gap-2">
         <Loader2 className="animate-spin h-4 w-4" /> A carregar pedidos...
@@ -70,6 +67,7 @@ const OrdersPage = () => {
             items={itemsByOrder[order.id] || []}
             onAdvance={updateStatus}
             onCancel={cancelOrder}
+            onSetPrepMinutes={setPrepMinutes}
           />
         ))}
         {mobileOrders.length === 0 && (
@@ -100,6 +98,7 @@ const OrdersPage = () => {
                     items={itemsByOrder[order.id] || []}
                     onAdvance={updateStatus}
                     onCancel={cancelOrder}
+                    onSetPrepMinutes={setPrepMinutes}
                   />
                 ))}
                 {columnOrders.length === 0 && (

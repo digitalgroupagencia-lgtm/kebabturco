@@ -1,21 +1,33 @@
 import { Link } from "react-router-dom";
-import { Loader2, Layers } from "lucide-react";
+import { Loader2, Layers, Bot, Megaphone, Heart, Bell, MessageSquare } from "lucide-react";
 import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
 import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
-import AdminStatStrip from "@/components/admin/premium/AdminStatStrip";
 import PlatformPageShell from "@/components/admin/premium/PlatformPageShell";
 import StatusPill from "@/components/admin/premium/StatusPill";
+import MetricTile from "@/components/admin/premium/MetricTile";
+import OperationalTimeline from "@/components/admin/premium/OperationalTimeline";
+import InsightPanel from "@/components/admin/premium/InsightPanel";
 import { useAdminCentralsTenants, usePlatformPlans } from "@/hooks/usePlatformFeatures";
+import { usePlatformOperationalSnapshot } from "@/hooks/usePlatformOperationalSnapshot";
 import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
+import {
+  aggregateCentralMetrics,
+  buildHubTimeline,
+  buildCentralInsights,
+  type CentralSegment,
+} from "@/lib/operationalCentralMetrics";
 import { ChevronRight, Building2 } from "lucide-react";
+
+const centralIcons = [Bot, Megaphone, Heart, Bell, MessageSquare];
 
 export default function AdminCentralsHubPage() {
   const { data: plans, isLoading: loadingPlans } = usePlatformPlans();
   const { data: tenants, isLoading: loadingTenants } = useAdminCentralsTenants();
+  const { data: snapshot, isLoading: loadingOps } = usePlatformOperationalSnapshot();
 
   const planSummary = (plans ?? []).map((p) => p.name).join(" · ") || "START · PRO · PREMIUM";
 
-  if (loadingPlans || loadingTenants) {
+  if (loadingPlans || loadingTenants || loadingOps || !snapshot) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -23,78 +35,95 @@ export default function AdminCentralsHubPage() {
     );
   }
 
+  const hubTimeline = buildHubTimeline(snapshot);
+  const hubInsights = buildCentralInsights(snapshot, "ai");
+
   return (
-    <PlatformPageShell width="default">
+    <PlatformPageShell width="wide">
       <AdminPageHeader
         title="Centrais operacionais"
-        description="Visão global da plataforma. Escolhe uma central ou entra num restaurante — nenhum cliente pré-seleccionado."
+        description="Visão global com métricas, timelines e actividade — escolhe uma central ou entra num restaurante."
         breadcrumbs={[
           { label: "Plataforma", to: "/admin" },
           { label: "Centrais" },
         ]}
       />
 
-      <StatusPill label="Modo plataforma" tone="neutral" />
+      <div className="flex flex-wrap gap-2">
+        <StatusPill label="Modo plataforma" tone="neutral" />
+        <StatusPill label={`${tenants?.length ?? 0} clientes`} tone="active" dot />
+      </div>
 
-      <AdminStatStrip
-        stats={[
-          { label: "Planos", value: String(plans?.length ?? 3) },
-          { label: "Centrais", value: String(ADMIN_CENTRALS.length) },
-          { label: "Clientes", value: String(tenants?.length ?? 0), tone: "success" },
-          { label: "Motores", value: "Standby", tone: "warning" },
-        ]}
-      />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricTile label="Pedidos 7d" value={snapshot.totalOrders7d} />
+        <MetricTile label="Receita 7d" value={`€${Math.round(snapshot.totalRevenue7d)}`} />
+        <MetricTile label="Centrais" value={String(ADMIN_CENTRALS.length)} />
+        <MetricTile label="Planos" value={String(plans?.length ?? 3)} sub={planSummary} />
+      </div>
 
-      <AdminPremiumCard
-        title="Planos activos"
-        summary={planSummary}
-        icon={Layers}
-        status="active"
-        meta="Funcionalidades desbloqueadas por plano — sem limite de pedidos"
-        actions={
-          <Link to="/admin/plans" className="text-xs font-bold text-primary hover:underline shrink-0">
-            Comparar
-          </Link>
-        }
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <OperationalTimeline
+          events={hubTimeline}
+          title="Actividade global · todas as centrais"
+          className="lg:col-span-2"
+        />
+        <InsightPanel insights={hubInsights} title="Pulse plataforma" />
+      </div>
 
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2 px-0.5">
-          Centrais
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+          Centrais · visão operacional
         </p>
-        <div className="space-y-2">
-          {ADMIN_CENTRALS.map((c) => (
-            <Link key={c.segment} to={c.globalPath}>
-              <AdminPremiumCard
-                title={c.title}
-                summary={c.desc}
-                icon={c.icon}
-                status="prepared"
-                actions={<ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                className="hover:border-primary/30 cursor-pointer"
-              />
-            </Link>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {ADMIN_CENTRALS.map((c, i) => {
+            const Icon = centralIcons[i] ?? Layers;
+            const m = aggregateCentralMetrics(snapshot, c.segment as CentralSegment);
+            return (
+              <Link key={c.segment} to={c.globalPath}>
+                <div className="rounded-xl border bg-card p-4 hover:border-primary/30 transition-colors h-full">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <StatusPill label={m.kpi1.value} tone="active" dot />
+                  </div>
+                  <p className="text-sm font-bold mt-3">{c.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.desc}</p>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    {m.kpi2.label}: {m.kpi2.value} · {m.kpi3.label}: {m.kpi3.value}
+                  </p>
+                  <ChevronRight className="h-4 w-4 text-primary mt-2" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2 px-0.5">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
           Por restaurante
         </p>
-        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-0.5">
-          {tenants?.map((t) => (
-            <Link key={t.id} to={`/admin/tenants/${t.slug}/centrals`}>
-              <AdminPremiumCard
-                title={t.name}
-                summary="Centrais dedicadas deste cliente"
-                icon={Building2}
-                badges={[{ label: String(t.plan ?? "start").toUpperCase(), variant: "outline" }]}
-                actions={<ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                className="hover:border-primary/30 cursor-pointer"
-              />
-            </Link>
-          ))}
+        <div className="space-y-2 max-h-[320px] overflow-y-auto">
+          {tenants?.map((t) => {
+            const row = snapshot.tenants.find((r) => r.tenantId === t.id);
+            return (
+              <Link key={t.id} to={`/admin/tenants/${t.slug}/centrals`}>
+                <AdminPremiumCard
+                  title={t.name}
+                  summary={
+                    row && row.orders7d > 0
+                      ? `${row.orders7d} pedidos 7d · ${row.aiModulesOn} módulos IA`
+                      : "Centrais dedicadas deste cliente"
+                  }
+                  icon={Building2}
+                  badges={[{ label: String(t.plan ?? "start").toUpperCase(), variant: "outline" }]}
+                  actions={<ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  className="hover:border-primary/30 cursor-pointer"
+                />
+              </Link>
+            );
+          })}
         </div>
       </div>
     </PlatformPageShell>

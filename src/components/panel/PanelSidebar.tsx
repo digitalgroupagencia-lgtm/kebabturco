@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 const operacao = [
-  { title: "Dashboard", url: "/panel", icon: LayoutGrid, end: true },
-  { title: "Pedidos", url: "/panel/orders", icon: ShoppingBag },
+  { title: "Pedidos", url: "/panel", icon: ShoppingBag, end: true },
+  { title: "Dashboard", url: "/panel/dashboard", icon: LayoutGrid },
   { title: "Mapa de mesas", url: "/panel/table-map", icon: LayoutGrid },
   { title: "Caixa", url: "/panel/cashier", icon: DollarSign },
   { title: "Estoque", url: "/panel/stock", icon: Package },

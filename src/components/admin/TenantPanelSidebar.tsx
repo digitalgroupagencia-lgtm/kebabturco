@@ -1,7 +1,7 @@
 import {
   LayoutGrid, ShoppingBag, UtensilsCrossed, Package, BarChart3, Settings,
   Users, LogOut, Monitor, DollarSign, Palette, Image, Wallet, Printer, Copy,
-  Link2, Globe, Store, Layout, Truck,
+  Link2, Globe, Store, Layout, Truck, Layers, Bot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams } from "react-router-dom";
@@ -20,8 +20,10 @@ export function TenantPanelSidebar() {
   const base = `/admin/tenants/${slug}`;
 
   const operacao = [
-    { title: "Dashboard", url: `${base}`, icon: LayoutGrid, end: true },
+    { title: "Overview", url: `${base}`, icon: LayoutGrid, end: true },
+    { title: "Centrais", url: `${base}/centrals`, icon: Bot },
     { title: "Pedidos", url: `${base}/orders`, icon: ShoppingBag },
+    { title: "Dashboard", url: `${base}/painel/dashboard`, icon: BarChart3 },
     { title: "Mapa de mesas", url: `${base}/table-map`, icon: LayoutGrid },
     { title: "Caixa", url: `${base}/cashier`, icon: DollarSign },
     { title: "Estoque", url: `${base}/stock`, icon: Package },

@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, MapPin, XCircle } from "lucide-react";
+import { User, Phone, MapPin, XCircle, Clock } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getNextAction } from "@/lib/orderStatusLabels";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
@@ -17,22 +18,36 @@ const statusCardClass: Record<string, string> = {
   cancelled: "bg-destructive/10 border-destructive/30",
 };
 
+const PREP_OPTIONS = [10, 12, 15, 20, 25, 30];
+
 function getSourceLabel(source: string) {
-  const map: Record<string, string> = { totem: "App", ifood: "iFood", counter: "Balcão", delivery: "Delivery", waiter: "Garçon" };
+  const map: Record<string, string> = {
+    totem: "App",
+    ifood: "iFood",
+    counter: "Balcão",
+    delivery: "Delivery",
+    waiter: "Garçon",
+  };
   return map[source] || source;
 }
 
 interface OpsOrderCardProps {
   order: PanelOrder;
   items: OrderItem[];
-  onAdvance: (order: PanelOrder, status: OrderStatus) => void;
+  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void;
   onCancel: (orderId: string) => void;
+  onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
 }
 
-const OpsOrderCard = ({ order, items, onAdvance, onCancel }: OpsOrderCardProps) => {
+const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: OpsOrderCardProps) => {
   const isTable = order.order_type === "dine_in" && order.table_number;
   const next = getNextAction(order.status, order.order_type);
   const cardClass = statusCardClass[order.status] || "border-border";
+  const [prepMin, setPrepMin] = useState(12);
+
+  const etaLabel = order.estimated_ready_at
+    ? new Date(order.estimated_ready_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   return (
     <Card className={`overflow-hidden border-2 ${cardClass}`}>
@@ -91,11 +106,46 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel }: OpsOrderCardProps) 
           <span>Total</span>
           <span>€ {Number(order.total).toFixed(2)}</span>
         </div>
+
+        {(order.status === "pending" || order.status === "preparing") && (
+          <div className="rounded-xl border bg-background/80 p-2.5 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Tempo estimado
+              {etaLabel && <span className="ml-auto text-foreground">Pronto ~{etaLabel}</span>}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {PREP_OPTIONS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setPrepMin(m);
+                    onSetPrepMinutes?.(order, m);
+                  }}
+                  className={`min-h-[36px] min-w-[44px] px-2 rounded-lg text-xs font-bold touch-action-manipulation ${
+                    prepMin === m
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {m}m
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {next && (
           <Button
             size="lg"
-            className="w-full h-12 font-black text-base touch-action-manipulation"
-            onClick={() => onAdvance(order, next.next)}
+            className="w-full h-14 font-black text-base touch-action-manipulation"
+            onClick={() =>
+              onAdvance(
+                order,
+                next.next,
+                order.status === "pending" && next.next === "preparing" ? prepMin : undefined,
+              )
+            }
           >
             {next.label}
           </Button>
@@ -104,7 +154,7 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel }: OpsOrderCardProps) 
           <Button
             size="sm"
             variant="destructive"
-            className="w-full touch-action-manipulation"
+            className="w-full h-11 touch-action-manipulation"
             onClick={() => onCancel(order.id)}
           >
             <XCircle className="h-4 w-4 mr-1" /> Cancelar

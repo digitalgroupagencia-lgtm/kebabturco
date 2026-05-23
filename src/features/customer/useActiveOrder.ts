@@ -1,90 +1,36 @@
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
+import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
+import { clearStoredActiveOrder } from "./useActiveOrderStorage";
 
-export const ACTIVE_ORDER_STORAGE_KEY = "kiosk-active-order";
-
-export interface StoredActiveOrder {
-  orderId: string;
-  orderNumber: string;
-  storeId: string;
-}
-
-type PublicOrder = {
-  id: string;
-  order_number: string;
-  status: string;
-  order_type: string;
-};
-
-export function loadStoredActiveOrder(storeId: string): StoredActiveOrder | null {
-  try {
-    const raw = localStorage.getItem(ACTIVE_ORDER_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredActiveOrder;
-    if (parsed.storeId === storeId && parsed.orderId) return parsed;
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-export function saveStoredActiveOrder(data: StoredActiveOrder) {
-  localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(data));
-}
-
-export function clearStoredActiveOrder() {
-  localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
-}
+export {
+  ACTIVE_ORDER_STORAGE_KEY,
+  loadStoredActiveOrder,
+  saveStoredActiveOrder,
+  clearStoredActiveOrder,
+  type StoredActiveOrder,
+} from "./useActiveOrderStorage";
 
 const TERMINAL_STATUSES = new Set(["delivered", "cancelled"]);
 
 export function useActiveOrder() {
-  const { activeOrderId, orderNumber, setActiveOrderId, setTrackingOrderId, setScreen, storeId } = useOrder();
-  const [order, setOrder] = useState<PublicOrder | null>(null);
+  const { activeOrderId, orderNumber, setActiveOrderId, setTrackingOrderId, setScreen } = useOrder();
+  const [order, setOrder] = useState<PublicOrderTrack | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchOrder = useCallback(async () => {
-    if (!activeOrderId) {
-      setOrder(null);
-      return;
-    }
-    setLoading(true);
-    const { data, error } = await supabase.rpc("get_order_public", { _order_id: activeOrderId });
-    if (!error && data?.[0]) {
-      const row = data[0] as PublicOrder;
+  const onOrder = useCallback(
+    (row: PublicOrderTrack | null) => {
       setOrder(row);
-      if (TERMINAL_STATUSES.has(row.status)) {
+      if (row && TERMINAL_STATUSES.has(row.status)) {
         clearStoredActiveOrder();
         setActiveOrderId("");
       }
-    } else {
-      setOrder(null);
-    }
-    setLoading(false);
-  }, [activeOrderId, setActiveOrderId]);
+    },
+    [setActiveOrderId],
+  );
 
-  useEffect(() => {
-    if (!activeOrderId) {
-      setOrder(null);
-      return;
-    }
-    fetchOrder();
-
-    const channel = supabase
-      .channel(`active-order-${activeOrderId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${activeOrderId}` },
-        fetchOrder,
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [activeOrderId, fetchOrder]);
+  useOrderTracking(activeOrderId || null, onOrder, setLoading);
 
   const trackOrder = () => {
     if (!activeOrderId) return;
@@ -98,12 +44,11 @@ export function useActiveOrder() {
     setOrder(null);
   };
 
-  const hasActiveOrder =
-    !!activeOrderId && !!order && !TERMINAL_STATUSES.has(order.status);
+  const hasActiveOrder = !!activeOrderId && !!order && !TERMINAL_STATUSES.has(order.status);
 
   return {
     order,
-    loading,
+    loading: loading && !!activeOrderId,
     hasActiveOrder,
     displayNumber: order?.order_number || orderNumber,
     statusLabel: order ? getStatusLabel(order.status, order.order_type) : "",
