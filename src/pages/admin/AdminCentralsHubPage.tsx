@@ -1,61 +1,97 @@
-import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Layers, Bot, Heart, Megaphone, Bell, MessageCircle } from "lucide-react";
-import OpsCompactCard from "@/components/panel/OpsCompactCard";
-import { usePlatformPlans } from "@/hooks/usePlatformFeatures";
-
-const centrals = [
-  { to: "/admin/centrals/ai", icon: Bot, title: "Central IA", desc: "Atendimento, vendedor, recuperação, marketing" },
-  { to: "/admin/centrals/loyalty", icon: Heart, title: "Central Fidelidade", desc: "Carimbos, pontos, cashback, VIP" },
-  { to: "/admin/centrals/campaigns", icon: Megaphone, title: "Central Campanhas", desc: "Promos, winback, horário fraco" },
-  { to: "/admin/centrals/push", icon: Bell, title: "Central Push", desc: "Notificações segmentadas e agendadas" },
-  { to: "/admin/centrals/conversational", icon: MessageCircle, title: "Conversar para pedir", desc: "Pedido por conversa (preparação)" },
-];
+import { Loader2, Layers } from "lucide-react";
+import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
+import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
+import AdminStatStrip from "@/components/admin/premium/AdminStatStrip";
+import { useAdminCentralsTenants, usePlatformPlans } from "@/hooks/usePlatformFeatures";
+import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
+import { ChevronRight, Building2 } from "lucide-react";
 
 export default function AdminCentralsHubPage() {
-  const { data: plans, isLoading } = usePlatformPlans();
+  const { data: plans, isLoading: loadingPlans } = usePlatformPlans();
+  const { data: tenants, isLoading: loadingTenants } = useAdminCentralsTenants();
 
-  const planSummary = useMemo(
-    () => (plans ?? []).map((p) => p.name).join(" · "),
-    [plans],
-  );
+  const planSummary = (plans ?? []).map((p) => p.name).join(" · ") || "START · PRO · PREMIUM";
+
+  if (loadingPlans || loadingTenants) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-lg space-y-4 pb-8">
-      <div>
-        <h2 className="text-xl font-black flex items-center gap-2">
-          <Layers className="h-5 w-5 text-primary" />
-          Centrais operacionais
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Gerir funcionalidades por restaurante. Motores automáticos ainda não activos — só preparação e toggles.
-        </p>
-      </div>
+    <div className="mx-auto max-w-lg space-y-4 pb-10">
+      <AdminPageHeader
+        title="Centrais operacionais"
+        description="Visão global da plataforma. Escolhe uma central ou entra directamente num restaurante."
+        breadcrumbs={[
+          { label: "Admin", to: "/admin" },
+          { label: "Centrais" },
+        ]}
+      />
 
-      <OpsCompactCard
+      <AdminStatStrip
+        stats={[
+          { label: "Planos", value: String(plans?.length ?? 3) },
+          { label: "Centrais", value: String(ADMIN_CENTRALS.length) },
+          { label: "Clientes", value: String(tenants?.length ?? 0), tone: "success" },
+          { label: "Motores", value: "Standby", tone: "warning" },
+        ]}
+      />
+
+      <AdminPremiumCard
         title="Planos activos"
-        summary={isLoading ? "A carregar…" : planSummary || "START · PRO · PREMIUM"}
-        meta="Gerir matriz de funcionalidades"
-        editable={false}
+        summary={planSummary}
+        icon={Layers}
+        status="active"
+        meta="Funcionalidades desbloqueadas por plano — sem limite de pedidos"
         actions={
-          <Link to="/admin/plans" className="text-xs font-bold text-primary hover:underline">
-            Ver planos
+          <Link to="/admin/plans" className="text-xs font-bold text-primary hover:underline shrink-0">
+            Comparar
           </Link>
         }
       />
 
-      <div className="space-y-2">
-        {centrals.map((c) => (
-          <Link key={c.to} to={c.to}>
-            <OpsCompactCard
-              title={c.title}
-              summary={c.desc}
-              badges={["Preparado"]}
-              editable={false}
-              actions={<c.icon className="h-4 w-4 text-muted-foreground" />}
-            />
-          </Link>
-        ))}
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2 px-0.5">
+          Centrais
+        </p>
+        <div className="space-y-2">
+          {ADMIN_CENTRALS.map((c) => (
+            <Link key={c.segment} to={c.globalPath}>
+              <AdminPremiumCard
+                title={c.title}
+                summary={c.desc}
+                icon={c.icon}
+                status="prepared"
+                actions={<ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                className="hover:border-primary/30 cursor-pointer"
+              />
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2 px-0.5">
+          Por restaurante
+        </p>
+        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-0.5">
+          {tenants?.map((t) => (
+            <Link key={t.id} to={`/admin/tenants/${t.slug}/centrals`}>
+              <AdminPremiumCard
+                title={t.name}
+                summary="Centrais dedicadas deste cliente"
+                icon={Building2}
+                badges={[{ label: String(t.plan ?? "start").toUpperCase(), variant: "outline" }]}
+                actions={<ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                className="hover:border-primary/30 cursor-pointer"
+              />
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

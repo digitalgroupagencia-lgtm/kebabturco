@@ -1,9 +1,12 @@
-import { useMemo, useState } from "react";
-import { Loader2, CreditCard } from "lucide-react";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import OpsCompactCard from "@/components/panel/OpsCompactCard";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
+import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
+import PlanComparisonGrid from "@/components/admin/premium/PlanComparisonGrid";
+import AdminCollapsibleSection from "@/components/admin/premium/AdminCollapsibleSection";
+import { Badge } from "@/components/ui/badge";
 import {
   useAdminCentralsTenants,
   usePlatformPlans,
@@ -22,19 +25,6 @@ export default function AdminPlansPage() {
   const firstTenantId = tenants?.[0]?.id ?? "";
   const tenantId = previewTenantId || firstTenantId;
   const { data: flags } = useTenantFeatureFlags(tenantId);
-
-  const matrix = useMemo(() => {
-    if (!plans?.length) return [];
-    return plans.map((p) => ({
-      ...p,
-      enabledCount: 0,
-    }));
-  }, [plans]);
-
-  const enabledByPlan = useMemo(() => {
-    const map: Record<string, number> = { start: 6, pro: 14, premium: 22 };
-    return map;
-  }, []);
 
   const changePlan = async (tenantId: string, planKey: PlanKey, isBeta: boolean) => {
     setSavingId(tenantId);
@@ -56,42 +46,38 @@ export default function AdminPlansPage() {
     );
   }
 
+  const flagSummary = flags
+    ? `${flags.filter((f) => f.enabled).length} funcionalidades activas`
+    : "";
+
   return (
-    <div className="mx-auto max-w-lg space-y-4 pb-8">
-      <div>
-        <h2 className="text-xl font-black flex items-center gap-2">
-          <CreditCard className="h-5 w-5 text-primary" />
-          Planos & funcionalidades
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          START, PRO e PREMIUM desbloqueiam funcionalidades — sem limite de pedidos.
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-5 pb-10">
+      <AdminPageHeader
+        title="Planos & funcionalidades"
+        description="START, PRO e PREMIUM desbloqueiam capacidades — sem limite de pedidos."
+        breadcrumbs={[
+          { label: "Admin", to: "/admin" },
+          { label: "Planos" },
+        ]}
+      />
 
-      <div className="grid gap-2">
-        {matrix.map((p) => (
-          <OpsCompactCard
-            key={p.plan_key}
-            title={p.name}
-            summary={p.description || ""}
-            meta={`~${enabledByPlan[p.plan_key as PlanKey] ?? "—"} funcionalidades`}
-            editable={false}
-          />
-        ))}
-      </div>
+      <PlanComparisonGrid plans={plans ?? []} />
 
-      <div>
-        <h3 className="text-sm font-bold mb-2">Clientes</h3>
+      <AdminCollapsibleSection
+        title="Clientes por plano"
+        summary={`${tenants?.length ?? 0} restaurantes · alterar plano ou beta`}
+        defaultOpen
+      >
         <div className="space-y-2">
           {tenants?.map((t) => {
-            const isBeta = (t.tenant_plan_assignments as { is_beta?: boolean }[] | null)?.[0]?.is_beta;
+            const assignments = t.tenant_plan_assignments as { is_beta?: boolean }[] | { is_beta?: boolean } | null;
+            const isBeta = Array.isArray(assignments) ? assignments[0]?.is_beta : assignments?.is_beta;
             return (
-              <OpsCompactCard
+              <AdminPremiumCard
                 key={t.id}
                 title={t.name}
-                summary={`Plano actual: ${PLAN_LABELS[(t.plan as PlanKey) || "start"] || t.plan}`}
-                badges={isBeta ? ["Beta"] : []}
-                editable={false}
+                summary={`Plano actual: ${PLAN_LABELS[(t.plan as PlanKey) || "start"]}`}
+                badges={isBeta ? [{ label: "Beta" }] : []}
                 actions={
                   <Select
                     value={(t.plan as string) || "start"}
@@ -112,16 +98,19 @@ export default function AdminPlansPage() {
             );
           })}
         </div>
-      </div>
+      </AdminCollapsibleSection>
 
       {tenantId && flags && (
-        <div>
-          <h3 className="text-sm font-bold mb-2">Pré-visualizar funcionalidades</h3>
+        <AdminCollapsibleSection title="Pré-visualizar funcionalidades" summary={flagSummary}>
           <Select value={tenantId} onValueChange={setPreviewTenantId}>
-            <SelectTrigger className="h-10 mb-2 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 mb-2 rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {tenants?.map((t) => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -129,10 +118,14 @@ export default function AdminPlansPage() {
             {Object.entries(CENTRAL_GROUPS).map(([key, label]) => {
               const count = flags.filter((f) => f.central_group === key && f.enabled).length;
               if (!count) return null;
-              return <Badge key={key} variant="secondary" className="text-[10px]">{label}: {count}</Badge>;
+              return (
+                <Badge key={key} variant="secondary" className="text-[10px]">
+                  {label}: {count}
+                </Badge>
+              );
             })}
           </div>
-        </div>
+        </AdminCollapsibleSection>
       )}
     </div>
   );

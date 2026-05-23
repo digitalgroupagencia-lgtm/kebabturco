@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2, Building2, CheckCircle2, Sparkles, Globe, ArrowRight, Link2 } from "lucide-react";
+import { Plus, Pencil, Store, Loader2, Building2, CheckCircle2, Sparkles, Globe, ArrowRight, Link2, Layers } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
 import TenantQrDialog from "@/components/admin/TenantQrDialog";
@@ -260,6 +260,14 @@ const TenantsPage = () => {
                     onClick={() => navigate(`/admin/tenants/${t.slug}`)}
                   >
                     Acessar projeto <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => navigate(`/admin/tenants/${t.slug}/centrals`)}
+                  >
+                    <Layers className="w-3.5 h-3.5" /> Centrais
                   </Button>
                   <DuplicateTenantDialog sourceTenantId={t.id} sourceName={t.name} />
                 </div>

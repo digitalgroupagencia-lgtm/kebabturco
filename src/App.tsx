@@ -59,6 +59,7 @@ import AdminCentralLoyaltyPage from "./pages/admin/AdminCentralLoyaltyPage.tsx";
 import AdminCentralCampaignsPage from "./pages/admin/AdminCentralCampaignsPage.tsx";
 import AdminCentralPushPage from "./pages/admin/AdminCentralPushPage.tsx";
 import AdminCentralConversationalPage from "./pages/admin/AdminCentralConversationalPage.tsx";
+import AdminTenantCentralsHubPage from "./pages/admin/AdminTenantCentralsHubPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PlatformHostGate from "./components/PlatformHostGate.tsx";
 import Install from "./pages/Install.tsx";
@@ -131,6 +132,12 @@ const App = () => (
             <Route path="centrals/campaigns" element={<AdminCentralCampaignsPage />} />
             <Route path="centrals/push" element={<AdminCentralPushPage />} />
             <Route path="centrals/conversational" element={<AdminCentralConversationalPage />} />
+            <Route path="tenants/:slug/centrals" element={<AdminTenantCentralsHubPage />} />
+            <Route path="tenants/:slug/centrals/ai" element={<AdminCentralAiPage />} />
+            <Route path="tenants/:slug/centrals/loyalty" element={<AdminCentralLoyaltyPage />} />
+            <Route path="tenants/:slug/centrals/campaigns" element={<AdminCentralCampaignsPage />} />
+            <Route path="tenants/:slug/centrals/push" element={<AdminCentralPushPage />} />
+            <Route path="tenants/:slug/centrals/conversational" element={<AdminCentralConversationalPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="branding" element={<BrandingPage />} />

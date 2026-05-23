@@ -1,41 +1,43 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import CentralPageShell from "@/components/admin/CentralPageShell";
-import CentralTenantPicker from "@/components/admin/CentralTenantPicker";
-import FeatureToggleList from "@/components/admin/FeatureToggleList";
-import OpsCompactCard from "@/components/panel/OpsCompactCard";
+import { MessageCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import AdminCentralLayout from "@/components/admin/premium/AdminCentralLayout";
+import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
+import AdminPreviewTabs from "@/components/admin/premium/AdminPreviewTabs";
+import AdminStatStrip from "@/components/admin/premium/AdminStatStrip";
+import AdminTenantListPanel from "@/components/admin/premium/AdminTenantListPanel";
+import AdminCollapsibleSection from "@/components/admin/premium/AdminCollapsibleSection";
 import {
   useAdminCentralsTenants,
   useSetFeatureOverride,
   useTenantFeatureFlags,
 } from "@/hooks/usePlatformFeatures";
+import { CONVERSATIONAL_PREVIEWS } from "@/lib/adminCentralPreviews";
+import {
+  getMinPlanForFeature,
+  isFeatureAvailableForPlan,
+  normalizePlan,
+} from "@/lib/platformFeatureGates";
+import type { PlanKey } from "@/lib/platformFeatures";
 
 const FLOW_STEPS = [
-  "Cliente escreve: «quero 2 kebabs sem cebola»",
-  "IA interpreta intenção e monta carrinho",
-  "Cliente revê e confirma",
-  "Checkout normal (pagamento existente)",
+  "Cliente escreve o pedido em linguagem natural",
+  "A plataforma monta o carrinho automaticamente",
+  "Cliente revê e confirma antes de pagar",
+  "Checkout normal com pagamentos existentes",
 ];
 
 export default function AdminCentralConversationalPage() {
   const { data: tenants } = useAdminCentralsTenants();
-  const [tenantId, setTenantId] = useState("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const setOverride = useSetFeatureOverride();
 
-  useEffect(() => {
-    if (!tenantId && tenants?.[0]?.id) setTenantId(tenants[0].id);
-  }, [tenants, tenantId]);
-
-  const { data: flags } = useTenantFeatureFlags(tenantId);
-  const convFlags = (flags ?? []).filter((f) => f.feature_key === "conversational_ordering");
-
-  const onToggle = async (key: string, enabled: boolean) => {
-    if (!tenantId) return;
-    setSavingKey(key);
+  const onToggle = async (tenantId: string, enabled: boolean) => {
+    setSavingKey("conv");
     try {
-      await setOverride(tenantId, key, enabled);
-      toast.success("Actualizado");
+      await setOverride(tenantId, "conversational_ordering", enabled);
+      toast.success(enabled ? "Modo conversacional preparado" : "Desactivado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -44,27 +46,90 @@ export default function AdminCentralConversationalPage() {
   };
 
   return (
-    <CentralPageShell
+    <AdminCentralLayout
       title="Conversar para pedir"
-      description="Modo conversacional dentro da app — arquitectura preparada; chat funcional numa fase futura."
+      description="Pedido por conversa dentro da app — pré-visualização activa, chat funcional numa fase futura."
+      centralSegment="conversational"
+      showTenantList
+      tenantList={
+        tenants ? <AdminTenantListPanel tenants={tenants} centralSegment="conversational" /> : null
+      }
     >
-      {tenants && tenants.length > 0 && (
-        <CentralTenantPicker tenants={tenants} value={tenantId} onChange={setTenantId} />
+      {({ tenantId, tenant, isScoped }) => (
+        <ConversationalPanel
+          tenantId={tenantId}
+          tenantPlan={normalizePlan(tenant.plan)}
+          isScoped={isScoped}
+          savingKey={savingKey}
+          onToggle={onToggle}
+        />
+      )}
+    </AdminCentralLayout>
+  );
+}
+
+function ConversationalPanel({
+  tenantId,
+  tenantPlan,
+  isScoped,
+  savingKey,
+  onToggle,
+}: {
+  tenantId: string;
+  tenantPlan: PlanKey;
+  isScoped: boolean;
+  savingKey: string | null;
+  onToggle: (tenantId: string, enabled: boolean) => void;
+}) {
+  const { data: flags } = useTenantFeatureFlags(tenantId);
+  const conv = flags?.find((f) => f.feature_key === "conversational_ordering");
+  const gated = !isFeatureAvailableForPlan("conversational_ordering", tenantPlan);
+  const on = conv?.enabled ?? false;
+
+  return (
+    <div className="space-y-4">
+      {isScoped && (
+        <AdminStatStrip
+          stats={[
+            { label: "Modo chat", value: on ? "Preparado" : "Off", tone: on ? "success" : "muted" },
+            { label: "Conversas", value: "—", tone: "muted" },
+            { label: "Conversão", value: "—", tone: "muted" },
+            { label: "Motor", value: "Standby", tone: "warning" },
+          ]}
+        />
       )}
 
-      <FeatureToggleList features={convFlags} savingKey={savingKey} onToggle={onToggle} preparedOnly />
+      <AdminPremiumCard
+        title="Pedido por conversa"
+        summary="Canal conversacional integrado no site/app do restaurante"
+        icon={MessageCircle}
+        status={gated ? "locked" : on ? "active" : "prepared"}
+        gated={gated}
+        requiredPlan={getMinPlanForFeature("conversational_ordering")}
+        preview={<AdminPreviewTabs variants={CONVERSATIONAL_PREVIEWS} />}
+        actions={
+          !gated ? (
+            <Switch
+              checked={on}
+              disabled={savingKey === "conv"}
+              onCheckedChange={(v) => onToggle(tenantId, v)}
+            />
+          ) : undefined
+        }
+      />
 
-      <div className="space-y-2 pt-2">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Fluxo previsto</p>
-        {FLOW_STEPS.map((step, i) => (
-          <OpsCompactCard
-            key={step}
-            title={`${i + 1}. ${step}`}
-            summary=""
-            editable={false}
-          />
-        ))}
-      </div>
-    </CentralPageShell>
+      <AdminCollapsibleSection title="Fluxo previsto" summary="4 passos até checkout">
+        <ol className="space-y-2 px-1 pb-2">
+          {FLOW_STEPS.map((step, i) => (
+            <li key={step} className="flex gap-2 text-xs text-muted-foreground">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-black text-primary">
+                {i + 1}
+              </span>
+              <span className="pt-0.5">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </AdminCollapsibleSection>
+    </div>
   );
 }
