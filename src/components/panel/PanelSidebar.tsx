@@ -31,6 +31,7 @@ const config = [
   { title: "Unidades", url: "/panel/stores", icon: Store },
   { title: "Telas do totem", url: "/panel/screens", icon: Layout },
   { title: "Idiomas", url: "/panel/languages", icon: Globe },
+  { title: "Recebimentos", url: "/panel/finance", icon: DollarSign },
   { title: "Pagamentos", url: "/panel/payments", icon: Wallet },
   { title: "Impressoras", url: "/panel/printers", icon: Printer },
   { title: "Totem", url: "/panel/totem", icon: Monitor },

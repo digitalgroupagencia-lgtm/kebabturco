@@ -24,6 +24,7 @@ import TableMapPage from "./pages/panel/TableMapPage.tsx";
 import PanelGuidePage from "./pages/panel/GuidePage.tsx";
 import CouponsPage from "./pages/panel/CouponsPage.tsx";
 import LoyaltyPage from "./pages/panel/LoyaltyPage.tsx";
+import FinancePage from "./pages/panel/FinancePage.tsx";
 import SellerLayout from "./components/seller/SellerLayout.tsx";
 import SellerHome from "./pages/seller/SellerHome.tsx";
 import SellerTables from "./pages/seller/SellerTables.tsx";
@@ -97,6 +98,7 @@ const App = () => (
             <Route path="languages" element={<TenantLanguagesPage />} />
             <Route path="delivery-zones" element={<TenantDeliveryZonesPage />} />
             <Route path="payments" element={<OperationsPage />} />
+            <Route path="finance" element={<FinancePage />} />
             <Route path="guide" element={<PanelGuidePage />} />
             <Route path="coupons" element={<CouponsPage />} />
             <Route path="loyalty" element={<LoyaltyPage />} />
@@ -136,6 +138,7 @@ const App = () => (
             <Route path="branding" element={<BrandingPage />} />
             <Route path="banners" element={<BannerPage />} />
             <Route path="payments" element={<OperationsPage />} />
+            <Route path="finance" element={<FinancePage />} />
             <Route path="printer" element={<PrinterPage />} />
             <Route path="settings" element={<PanelSettingsPage />} />
             <Route path="duplicate" element={<TenantDuplicatePage />} />

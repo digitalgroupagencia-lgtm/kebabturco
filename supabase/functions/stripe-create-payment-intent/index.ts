@@ -1,12 +1,11 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { computeApplicationFeeCents, PLATFORM_FEE_CENTS } from "../_shared/stripeFees.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const APPLICATION_FEE_CENTS = 100;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -16,7 +15,7 @@ Deno.serve(async (req) => {
   try {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
-      return new Response(JSON.stringify({ error: "Stripe não configurado" }), {
+      return new Response(JSON.stringify({ error: "Pagamentos online indisponíveis" }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -32,7 +31,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Whitelist de chaves de metadata permitidas (evita injeção)
     const ALLOWED_META_KEYS = new Set(["order_id", "order_number", "table_number", "customer_name"]);
     const safeMeta: Record<string, string> = {};
     if (metadata && typeof metadata === "object") {
@@ -43,7 +41,6 @@ Deno.serve(async (req) => {
       }
     }
 
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -51,37 +48,46 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("stripe_connect_account_id, stripe_charges_enabled")
+      .select("stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed")
       .eq("id", storeId)
       .maybeSingle();
 
     if (storeErr || !store?.stripe_connect_account_id || !store.stripe_charges_enabled) {
-      return new Response(JSON.stringify({ error: "Restaurante sem pagamentos online activos" }), {
+      return new Response(JSON.stringify({ error: "Recebimentos online ainda não activos para esta loja" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const applicationFeeCents = computeApplicationFeeCents(amountCents);
+    const estimatedStripeFeeCents = applicationFeeCents - PLATFORM_FEE_CENTS;
+
     const intent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency: "eur",
-      application_fee_amount: APPLICATION_FEE_CENTS,
+      application_fee_amount: applicationFeeCents,
       transfer_data: { destination: store.stripe_connect_account_id },
       automatic_payment_methods: { enabled: true },
       metadata: {
         ...safeMeta,
         store_id: storeId,
         order_type: orderType || "dine_in",
+        platform_fee_cents: String(PLATFORM_FEE_CENTS),
+        estimated_stripe_fee_cents: String(estimatedStripeFeeCents),
       },
-
     });
 
     return new Response(
-      JSON.stringify({ clientSecret: intent.client_secret, paymentIntentId: intent.id }),
+      JSON.stringify({
+        clientSecret: intent.client_secret,
+        paymentIntentId: intent.id,
+        estimatedProcessingFeeCents: applicationFeeCents,
+        platformFeeCents: PLATFORM_FEE_CENTS,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro Stripe";
+    const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento";
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

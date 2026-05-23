@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { provisionStripeConnect } from "@/services/orderService";
 import { Loader2, Plus, Trash2, Store as StoreIcon, Upload } from "lucide-react";
 
 interface Store {
@@ -57,6 +58,11 @@ const TenantStoresPage = () => {
       tenant_id: tenantId, name: "Nova unidade", is_active: true, sort_order: stores.length,
     }).select().single();
     if (error) { toast.error(error.message); return; }
+    try {
+      await provisionStripeConnect((data as Store).id);
+    } catch {
+      // Conta financeira pode ser activada depois em Recebimentos
+    }
     setStores([...stores, data as any]);
     toast.success("Unidade criada");
   };

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Wallet, Save, CreditCard, Loader2 } from "lucide-react";
+import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { createStripeConnectLink, fetchStoreStripeSettings } from "@/services/orderService";
+import { fetchStoreFinancialProfile } from "@/services/orderService";
 
 type Ops = Tables<"operations_settings">;
 
@@ -27,35 +28,17 @@ const OperationsPage = () => {
   const { storeId: STORE_ID } = useAdminStoreId();
   const [s, setS] = useState<Ops | null>(null);
   const [saving, setSaving] = useState(false);
-  const [stripeStatus, setStripeStatus] = useState<{ connected: boolean; accountId: string | null }>({ connected: false, accountId: null });
-  const [stripeLoading, setStripeLoading] = useState(false);
+  const [onlineReady, setOnlineReady] = useState(false);
 
   useEffect(() => {
     if (!STORE_ID) return;
     supabase.from("operations_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
       .then(({ data }) => setS(data ?? null));
-    fetchStoreStripeSettings(STORE_ID).then((data) => {
+    fetchStoreFinancialProfile(STORE_ID).then((data) => {
       if (!data) return;
-      setStripeStatus({
-        connected: data.stripe_charges_enabled,
-        accountId: data.stripe_connect_account_id,
-      });
+      setOnlineReady(data.stripe_charges_enabled && data.stripe_onboarding_completed);
     });
   }, [STORE_ID]);
-
-  const connectStripe = async () => {
-    if (!STORE_ID) return;
-    setStripeLoading(true);
-    try {
-      const returnUrl = window.location.href;
-      const { url } = await createStripeConnectLink(STORE_ID, returnUrl);
-      window.location.href = url;
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao ligar Stripe");
-    } finally {
-      setStripeLoading(false);
-    }
-  };
 
   const update = (k: keyof Ops, v: any) => setS((p) => p ? { ...p, [k]: v } as Ops : p);
 
@@ -94,24 +77,27 @@ const OperationsPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2"><CreditCard className="h-5 w-5" /> Stripe Connect</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2"><CreditCard className="h-5 w-5" /> Pagos online</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Ligue a conta Stripe do restaurante para receber pagamentos com cartão. Taxa da plataforma: <strong>€1 por pedido</strong>.
+            Saldo, repasses e dados bancários são geridos na área <strong>Recebimentos</strong>. Taxa por pedido online: <strong>1€ + custo de processamento</strong>.
           </p>
-          {stripeStatus.connected ? (
-            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-sm font-semibold text-green-700 dark:text-green-400">
-              Pagamentos online activos {stripeStatus.accountId ? `(…${stripeStatus.accountId.slice(-8)})` : ""}
+          {onlineReady ? (
+            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-sm font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Recebimentos online activos
             </div>
           ) : (
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm text-amber-800 dark:text-amber-300">
-              Conta Stripe pendente — clientes não conseguem pagar com cartão online.
+              Complete os dados bancários para activar pagamentos com cartão online.
             </div>
           )}
-          <Button onClick={connectStripe} disabled={stripeLoading} variant={stripeStatus.connected ? "outline" : "default"} className="gap-2">
-            {stripeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-            {stripeStatus.connected ? "Actualizar conta Stripe" : "Ligar conta Stripe"}
+          <Button asChild variant={onlineReady ? "outline" : "default"} className="gap-2">
+            <Link to="../finance">
+              Ir para Recebimentos
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
         </CardContent>
       </Card>

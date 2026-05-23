@@ -685,15 +685,19 @@ export type Database = {
           discount_amount: number
           estimated_ready_at: string | null
           id: string
+          net_to_store_cents: number | null
           notes: string | null
           order_number: string
           order_type: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          platform_fee_cents: number
+          processing_fee_cents: number
           seller_id: string | null
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
+          stripe_fee_cents: number
           stripe_payment_intent_id: string | null
           subtotal: number
           table_customer_id: string | null
@@ -721,15 +725,19 @@ export type Database = {
           discount_amount?: number
           estimated_ready_at?: string | null
           id?: string
+          net_to_store_cents?: number | null
           notes?: string | null
           order_number: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          platform_fee_cents?: number
+          processing_fee_cents?: number
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
+          stripe_fee_cents?: number
           stripe_payment_intent_id?: string | null
           subtotal?: number
           table_customer_id?: string | null
@@ -757,15 +765,19 @@ export type Database = {
           discount_amount?: number
           estimated_ready_at?: string | null
           id?: string
+          net_to_store_cents?: number | null
           notes?: string | null
           order_number?: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          platform_fee_cents?: number
+          processing_fee_cents?: number
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
+          stripe_fee_cents?: number
           stripe_payment_intent_id?: string | null
           subtotal?: number
           table_customer_id?: string | null
@@ -1483,6 +1495,107 @@ export type Database = {
           },
         ]
       }
+      store_payment_ledger: {
+        Row: {
+          created_at: string
+          description: string | null
+          entry_type: string
+          gross_cents: number
+          id: string
+          net_cents: number
+          order_id: string | null
+          platform_fee_cents: number
+          processing_fee_cents: number
+          store_id: string
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          entry_type?: string
+          gross_cents: number
+          id?: string
+          net_cents: number
+          order_id?: string | null
+          platform_fee_cents?: number
+          processing_fee_cents?: number
+          store_id: string
+          stripe_fee_cents?: number
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          entry_type?: string
+          gross_cents?: number
+          id?: string
+          net_cents?: number
+          order_id?: string | null
+          platform_fee_cents?: number
+          processing_fee_cents?: number
+          store_id?: string
+          stripe_fee_cents?: number
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payment_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payment_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payouts: {
+        Row: {
+          amount_cents: number
+          arrival_date: string | null
+          created_at: string
+          id: string
+          status: string
+          store_id: string
+          stripe_payout_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          arrival_date?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          store_id: string
+          stripe_payout_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          arrival_date?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          store_id?: string
+          stripe_payout_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payouts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           address: string | null
@@ -1497,8 +1610,15 @@ export type Database = {
           phone: string | null
           short_description: string | null
           sort_order: number
+          stripe_business_name: string | null
           stripe_charges_enabled: boolean
           stripe_connect_account_id: string | null
+          stripe_connect_created_at: string | null
+          stripe_iban_last4: string | null
+          stripe_last_payout_at: string | null
+          stripe_onboarding_completed: boolean
+          stripe_payout_status: string
+          stripe_payouts_enabled: boolean
           tenant_id: string
           updated_at: string
         }
@@ -1515,8 +1635,15 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
+          stripe_business_name?: string | null
           stripe_charges_enabled?: boolean
           stripe_connect_account_id?: string | null
+          stripe_connect_created_at?: string | null
+          stripe_iban_last4?: string | null
+          stripe_last_payout_at?: string | null
+          stripe_onboarding_completed?: boolean
+          stripe_payout_status?: string
+          stripe_payouts_enabled?: boolean
           tenant_id: string
           updated_at?: string
         }
@@ -1533,8 +1660,15 @@ export type Database = {
           phone?: string | null
           short_description?: string | null
           sort_order?: number
+          stripe_business_name?: string | null
           stripe_charges_enabled?: boolean
           stripe_connect_account_id?: string | null
+          stripe_connect_created_at?: string | null
+          stripe_iban_last4?: string | null
+          stripe_last_payout_at?: string | null
+          stripe_onboarding_completed?: boolean
+          stripe_payout_status?: string
+          stripe_payouts_enabled?: boolean
           tenant_id?: string
           updated_at?: string
         }
@@ -2233,6 +2367,16 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
+      record_payment_settlement: {
+        Args: {
+          _net_to_store_cents: number
+          _platform_fee_cents: number
+          _processing_fee_cents: number
+          _stripe_fee_cents: number
+          _stripe_payment_intent_id: string
+        }
+        Returns: Json
+      }
       release_tenant_edit_lock: {
         Args: { _tenant_id: string }
         Returns: undefined
@@ -2248,6 +2392,18 @@ export type Database = {
           _tenant_id: string
         }
         Returns: Json
+      }
+      sync_store_stripe_profile: {
+        Args: {
+          _business_name?: string
+          _charges_enabled: boolean
+          _iban_last4?: string
+          _onboarding_completed: boolean
+          _payout_status?: string
+          _payouts_enabled: boolean
+          _stripe_account_id: string
+        }
+        Returns: undefined
       }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }

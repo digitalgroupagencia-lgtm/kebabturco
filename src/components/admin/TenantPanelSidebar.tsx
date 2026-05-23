@@ -37,6 +37,7 @@ export function TenantPanelSidebar() {
     { title: "Unidades", url: `${base}/stores`, icon: Store },
     { title: "Telas do totem", url: `${base}/screens`, icon: Layout },
     { title: "Idiomas", url: `${base}/languages`, icon: Globe },
+    { title: "Recebimentos", url: `${base}/finance`, icon: DollarSign },
     { title: "Pagamentos", url: `${base}/payments`, icon: Wallet },
     { title: "Impressora", url: `${base}/printer`, icon: Printer },
     { title: "Totem", url: `${base}/totem`, icon: Monitor },

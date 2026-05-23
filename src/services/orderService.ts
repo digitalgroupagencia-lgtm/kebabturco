@@ -1,11 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { CartItem } from "@/contexts/CartContext";
 
-export const APPLICATION_FEE_CENTS = 100; // €1
+export const PLATFORM_FEE_CENTS = 100;
 
 export type StoreStripeSettings = {
   stripe_connect_account_id: string | null;
   stripe_charges_enabled: boolean;
+};
+
+export type StoreFinancialProfile = StoreStripeSettings & {
+  stripe_onboarding_completed: boolean;
+  stripe_payouts_enabled: boolean;
+  stripe_iban_last4: string | null;
+  stripe_business_name: string | null;
+  stripe_payout_status: string;
+  stripe_last_payout_at: string | null;
 };
 
 export type CreateCustomerOrderResult = {
@@ -108,19 +117,26 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
   return data as ValidateCouponResult;
 }
 
-export async function fetchStoreStripeSettings(storeId: string): Promise<StoreStripeSettings | null> {
+export async function fetchStoreFinancialProfile(storeId: string): Promise<StoreFinancialProfile | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("stripe_connect_account_id, stripe_charges_enabled")
+    .select(
+      "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at",
+    )
     .eq("id", storeId)
     .maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
+  return data as StoreFinancialProfile;
+}
 
+export async function fetchStoreStripeSettings(storeId: string): Promise<StoreStripeSettings | null> {
+  const profile = await fetchStoreFinancialProfile(storeId);
+  if (!profile) return null;
   return {
-    stripe_connect_account_id: data.stripe_connect_account_id,
-    stripe_charges_enabled: data.stripe_charges_enabled,
+    stripe_connect_account_id: profile.stripe_connect_account_id,
+    stripe_charges_enabled: profile.stripe_charges_enabled,
   };
 }
 
@@ -140,7 +156,7 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     _payment_status: params.paymentStatus || "pending",
     _stripe_payment_intent_id: params.stripePaymentIntentId || undefined,
     _application_fee_cents: params.paymentStatus === "paid" && params.paymentMethod === "card"
-      ? APPLICATION_FEE_CENTS
+      ? PLATFORM_FEE_CENTS
       : 0,
     _delivery_street: params.deliveryStreet || undefined,
     _delivery_number: params.deliveryNumber || undefined,
@@ -184,13 +200,31 @@ export async function createStripePaymentIntent(params: {
   return data as { clientSecret: string; paymentIntentId: string };
 }
 
-export async function createStripeConnectLink(storeId: string, returnUrl: string) {
+export async function provisionStripeConnect(storeId: string) {
   const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
-    body: { storeId, returnUrl },
+    body: { storeId, mode: "provision" },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
-  return data as { url: string };
+  return data as { accountId: string; provisioned: boolean };
+}
+
+export async function createStripeConnectSession(storeId: string) {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    body: { storeId, mode: "account_session" },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as { clientSecret: string; accountId: string };
+}
+
+export async function createStripeConnectLink(storeId: string, returnUrl: string) {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    body: { storeId, returnUrl, mode: "onboarding_link" },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as { url: string; accountId: string };
 }
 
 export function buildPrintPayload(opts: {
