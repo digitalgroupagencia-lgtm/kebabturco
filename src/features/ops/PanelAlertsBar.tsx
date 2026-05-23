@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   enablePanelAlerts,
+  isIOSPanelDevice,
   isPanelAlertsEnabled,
   playTestAlert,
   setPanelAlertsEnabled,
@@ -21,9 +22,17 @@ const PanelAlertsBar = () => {
       if (ok) {
         const heard = await playTestAlert();
         if (heard) {
-          toast.success("Alertas activos — bip a cada 2s enquanto houver pedido por aceitar");
+          toast.success(
+            isIOSPanelDevice()
+              ? "Alertas activos — ouviu o bip? Desactiva o modo silencioso se não."
+              : "Alertas activos — bip a cada 2s enquanto houver pedido por aceitar",
+          );
         } else {
-          toast.warning("Alertas activos — se não ouvir, desactiva modo silencioso do iPhone");
+          toast.warning(
+            isIOSPanelDevice()
+              ? "Sem som no iPhone — desactiva o interruptor silencioso (lateral) e toca Testar som outra vez"
+              : "Alertas activos — se não ouvir, verifica o volume",
+          );
         }
       } else {
         toast.error("Não foi possível activar o som. Toca outra vez.");
@@ -46,11 +55,17 @@ const PanelAlertsBar = () => {
     }
     const heard = await playTestAlert();
     if (heard) {
-      toast.success("Som de teste OK");
+      toast.success(isIOSPanelDevice() ? "Som de teste enviado — ouviu o bip?" : "Som de teste OK");
     } else {
-      toast.warning("Sem som — verifica volume e modo silencioso do telemóvel");
-      setEnabled(false);
-      setPanelAlertsEnabled(false);
+      toast.warning(
+        isIOSPanelDevice()
+          ? "Sem som — no iPhone: desactiva o modo silencioso (interruptor lateral) e sobe o volume"
+          : "Sem som — verifica volume do telemóvel",
+      );
+      if (!isIOSPanelDevice()) {
+        setEnabled(false);
+        setPanelAlertsEnabled(false);
+      }
     }
   };
 
@@ -62,7 +77,8 @@ const PanelAlertsBar = () => {
           <div className="min-w-0">
             <p className="text-sm font-black text-foreground">Activar alertas de pedidos</p>
             <p className="text-xs text-muted-foreground">
-              No telemóvel toca aqui uma vez. O bip repete de 2 em 2 segundos até aceitares o pedido.
+              No iPhone toca aqui uma vez e confirma que ouve o bip. Repete de 2 em 2s até aceitares o pedido.
+              {isIOSPanelDevice() && " Desactiva o modo silencioso (interruptor lateral)."}
             </p>
           </div>
         </div>
