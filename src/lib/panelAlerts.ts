@@ -2,7 +2,10 @@ import { deployDebugLog } from "@/lib/deployDebugLog";
 
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
+export const PANEL_ALERT_FLASH_EVENT = "panel-alert-flash";
+const STATIC_BEEP_URL = "/alert-beep.wav";
 const REPEAT_MS = 2000;
+const ALERT_DIAG_KEY = "panel-alert-diag";
 
 let audioCtx: AudioContext | null = null;
 let beepBlobUrl: string | null = null;
@@ -11,6 +14,14 @@ let repeatTimer: number | null = null;
 let visibilityHookInstalled = false;
 let iosAudioUnlocked = false;
 
+export type AlertDiagnostic = {
+  ok: boolean;
+  path: string;
+  error?: string;
+  at: number;
+  isIOS: boolean;
+};
+
 function isIOSLike(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
@@ -18,6 +29,28 @@ function isIOSLike(): boolean {
     /iPad|iPhone|iPod/.test(ua) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
   );
+}
+
+function saveAlertDiagnostic(diag: AlertDiagnostic) {
+  try {
+    sessionStorage.setItem(ALERT_DIAG_KEY, JSON.stringify(diag));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getLastAlertDiagnostic(): AlertDiagnostic | null {
+  try {
+    const raw = sessionStorage.getItem(ALERT_DIAG_KEY);
+    return raw ? (JSON.parse(raw) as AlertDiagnostic) : null;
+  } catch {
+    return null;
+  }
+}
+
+function flashVisualAlert() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(PANEL_ALERT_FLASH_EVENT));
 }
 
 function installVisibilityHook() {
@@ -35,7 +68,6 @@ function getDomAudio(): HTMLAudioElement {
   domAudio.preload = "auto";
   domAudio.setAttribute("playsinline", "true");
   domAudio.setAttribute("webkit-playsinline", "true");
-  domAudio.style.display = "none";
   document.body.appendChild(domAudio);
   return domAudio;
 }
@@ -63,10 +95,15 @@ export function setPanelAlertsEnabled(enabled: boolean) {
   }
 }
 
-async function ensureBeepUrl(): Promise<string> {
+async function ensureBeepBlobUrl(): Promise<string> {
   if (beepBlobUrl) return beepBlobUrl;
   beepBlobUrl = await generateBeepBlobUrl();
   return beepBlobUrl;
+}
+
+function beepSources(): string[] {
+  if (isIOSLike()) return [STATIC_BEEP_URL];
+  return [STATIC_BEEP_URL];
 }
 
 /** Safari/iPhone exige toque antes de som — chamar num botão. */
@@ -81,8 +118,8 @@ export async function enablePanelAlerts(): Promise<boolean> {
         hypothesisId: "H-iOS-A",
         location: "panelAlerts.ts:enablePanelAlerts",
         message: "ios html unlock",
-        data: { heard, iosAudioUnlocked },
-        runId: "alert-ios",
+        data: { heard, iosAudioUnlocked, source: STATIC_BEEP_URL },
+        runId: "alert-ios-v2",
       });
       return heard;
     }
@@ -96,7 +133,7 @@ export async function enablePanelAlerts(): Promise<boolean> {
       location: "panelAlerts.ts:enablePanelAlerts",
       message: "alerts enabled",
       data: { webAudioState: audioCtx?.state ?? "none", webOk, heard },
-      runId: "alert-audio",
+      runId: "alert-ios-v2",
     });
 
     return webOk || heard;
@@ -170,50 +207,80 @@ function encodeWav(buffer: AudioBuffer): ArrayBuffer {
   return ab;
 }
 
-/** iPhone/Safari — HTML Audio no DOM (Web Audio muitas vezes inaudível). */
-async function playHtmlBeep(isUnlock = false): Promise<boolean> {
-  try {
-    const url = await ensureBeepUrl();
-    const audio = getDomAudio();
-    audio.src = url;
-    audio.volume = 1;
-    audio.muted = false;
-    audio.currentTime = 0;
-
-    await audio.play();
-
-    if (isUnlock && isIOSLike()) {
-      iosAudioUnlocked = true;
+function waitForPlaying(audio: HTMLAudioElement, ms = 800): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!audio.paused && audio.currentTime > 0) {
+      resolve(true);
+      return;
     }
+    const timer = window.setTimeout(() => {
+      audio.removeEventListener("playing", onPlaying);
+      resolve(!audio.paused);
+    }, ms);
+    const onPlaying = () => {
+      window.clearTimeout(timer);
+      resolve(true);
+    };
+    audio.addEventListener("playing", onPlaying, { once: true });
+  });
+}
 
-    deployDebugLog({
-      hypothesisId: "H-iOS-B",
-      location: "panelAlerts.ts:playHtmlBeep",
-      message: "html beep play",
-      data: {
-        isUnlock,
-        isIOS: isIOSLike(),
-        paused: audio.paused,
-        volume: audio.volume,
-        readyState: audio.readyState,
-      },
-      runId: "alert-ios",
-    });
+/** iPhone/Safari — ficheiro estático no servidor (mais fiável que blob). */
+async function playHtmlBeep(isUnlock = false): Promise<boolean> {
+  const sources = beepSources();
+  let lastError = "sem fonte";
 
-    return !audio.paused;
-  } catch (err) {
-    deployDebugLog({
-      hypothesisId: "H-iOS-B",
-      location: "panelAlerts.ts:playHtmlBeep",
-      message: "html beep failed",
-      data: {
-        error: err instanceof Error ? err.message : String(err),
-        isIOS: isIOSLike(),
-      },
-      runId: "alert-ios",
-    });
-    return false;
+  for (const src of sources) {
+    try {
+      const audio = getDomAudio();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = src;
+      audio.volume = 1;
+      audio.muted = false;
+      audio.load();
+
+      await audio.play();
+      const playing = await waitForPlaying(audio);
+
+      if (playing) {
+        if (isUnlock && isIOSLike()) iosAudioUnlocked = true;
+        saveAlertDiagnostic({
+          ok: true,
+          path: `html:${src}`,
+          at: Date.now(),
+          isIOS: isIOSLike(),
+        });
+        deployDebugLog({
+          hypothesisId: "H-iOS-B",
+          location: "panelAlerts.ts:playHtmlBeep",
+          message: "html beep playing",
+          data: { src, isUnlock, currentTime: audio.currentTime, paused: audio.paused },
+          runId: "alert-ios-v2",
+        });
+        return true;
+      }
+      lastError = "play ok but not playing";
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      deployDebugLog({
+        hypothesisId: "H-iOS-B",
+        location: "panelAlerts.ts:playHtmlBeep",
+        message: "html beep failed",
+        data: { src, error: lastError, isIOS: isIOSLike() },
+        runId: "alert-ios-v2",
+      });
+    }
   }
+
+  saveAlertDiagnostic({
+    ok: false,
+    path: "html-failed",
+    error: lastError,
+    at: Date.now(),
+    isIOS: isIOSLike(),
+  });
+  return false;
 }
 
 function playWebBeep(): boolean {
@@ -246,41 +313,34 @@ function playWebBeep(): boolean {
 async function playAlertSound(): Promise<boolean> {
   if (!isPanelAlertsEnabled()) return false;
 
+  flashVisualAlert();
+
   let soundOk = false;
   let path = "none";
 
   if (isIOSLike()) {
     soundOk = await playHtmlBeep(false);
-    path = "ios-html";
-    if (!soundOk && iosAudioUnlocked) {
-      soundOk = await playHtmlBeep(false);
-    }
+    path = "ios-static-wav";
   } else {
-    const ready = await ensureAudioReady();
-    soundOk = ready && playWebBeep();
-    path = "web-audio";
+    soundOk = await playHtmlBeep(false);
+    path = "static-wav";
     if (!soundOk) {
-      soundOk = await playHtmlBeep(false);
-      path = "desktop-html-fallback";
+      const ready = await ensureAudioReady();
+      soundOk = ready && playWebBeep();
+      path = "web-audio";
     }
   }
 
   if (typeof navigator !== "undefined" && navigator.vibrate) {
-    navigator.vibrate(soundOk ? [120, 60, 120] : [200, 100, 200, 100, 200]);
+    navigator.vibrate(soundOk ? [200, 80, 200, 80, 200] : [400, 100, 400]);
   }
 
   deployDebugLog({
     hypothesisId: "H-iOS-C",
     location: "panelAlerts.ts:playAlertSound",
     message: "alert sound attempt",
-    data: {
-      soundOk,
-      path,
-      isIOS: isIOSLike(),
-      webState: audioCtx?.state ?? "none",
-      iosAudioUnlocked,
-    },
-    runId: "alert-ios",
+    data: { soundOk, path, isIOS: isIOSLike(), iosAudioUnlocked },
+    runId: "alert-ios-v2",
   });
 
   return soundOk;
@@ -291,11 +351,11 @@ export async function playTestAlert(): Promise<boolean> {
   if (!isPanelAlertsEnabled()) {
     const enabled = await enablePanelAlerts();
     if (!enabled) return false;
+    return true;
   }
   return playAlertSound();
 }
 
-/** Um bip imediato ao detectar pedido novo (o loop continua depois). */
 export function playNewOrderAlert() {
   void playAlertSound();
   return isPanelAlertsEnabled();
@@ -305,15 +365,12 @@ function tickPendingLoop() {
   void playAlertSound();
 }
 
-/** Bip a cada 2s enquanto existir pedido em «Pedido recebido». */
 export function syncPendingOrderAlertLoop(hasPendingOrders: boolean) {
   if (!hasPendingOrders || !isPanelAlertsEnabled()) {
     stopPendingOrderAlertLoop();
     return;
   }
-
   if (repeatTimer !== null) return;
-
   void playAlertSound();
   repeatTimer = window.setInterval(tickPendingLoop, REPEAT_MS);
 }
