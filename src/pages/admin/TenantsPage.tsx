@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,32 +9,29 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Store, Loader2, Building2, AlertTriangle, CheckCircle2, Sparkles, Globe, ArrowRight, Link2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Pencil, Store, Loader2, Building2, CheckCircle2, Sparkles, Globe, ArrowRight, Link2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import NewTenantWizard from "@/components/admin/NewTenantWizard";
 import TenantQrDialog from "@/components/admin/TenantQrDialog";
 import TenantLanguagesDialog from "@/components/admin/TenantLanguagesDialog";
 import DuplicateTenantDialog from "@/components/admin/DuplicateTenantDialog";
-import { useNavigate } from "react-router-dom";
+import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 
 interface TenantForm {
   name: string;
   slug: string;
-  plan: string;
-  max_orders_month: number;
+  plan: PlanKey;
   is_active: boolean;
   custom_domain: string;
 }
 
-const emptyForm: TenantForm = { name: "", slug: "", plan: "free", max_orders_month: 500, is_active: true, custom_domain: "" };
+const emptyForm: TenantForm = { name: "", slug: "", plan: "start", is_active: true, custom_domain: "" };
 
-const planOptions = [
-  { value: "free", label: "Free", limit: 500 },
-  { value: "starter", label: "Starter", limit: 2000 },
-  { value: "pro", label: "Pro", limit: 10000 },
-  { value: "enterprise", label: "Enterprise", limit: 99999 },
+const planOptions: { value: PlanKey; label: string }[] = [
+  { value: "start", label: "START" },
+  { value: "pro", label: "PRO" },
+  { value: "premium", label: "PREMIUM" },
 ];
 
 const TenantsPage = () => {
@@ -47,7 +44,11 @@ const TenantsPage = () => {
   const { data: tenants, isLoading } = useQuery({
     queryKey: ["admin-tenants"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("tenants").select("*").eq("is_template", false).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("*, tenant_plan_assignments(is_beta)")
+        .eq("is_template", false)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -64,7 +65,6 @@ const TenantsPage = () => {
     },
   });
 
-  // Uso mensal real por tenant (pedidos do mês corrente, não cancelados)
   const { data: usageMap } = useQuery({
     queryKey: ["admin-tenant-usage"],
     queryFn: async () => {
@@ -90,24 +90,39 @@ const TenantsPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (tenant: TenantForm & { id?: string }) => {
+      let tenantId = tenant.id;
       if (tenant.id) {
         const { error } = await supabase.from("tenants").update({
-          name: tenant.name, slug: tenant.slug, plan: tenant.plan,
-          max_orders_month: tenant.max_orders_month, is_active: tenant.is_active,
+          name: tenant.name,
+          slug: tenant.slug,
+          plan: tenant.plan,
+          is_active: tenant.is_active,
           custom_domain: tenant.custom_domain || null,
         }).eq("id", tenant.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("tenants").insert({
-          name: tenant.name, slug: tenant.slug, plan: tenant.plan,
-          max_orders_month: tenant.max_orders_month, is_active: tenant.is_active,
+        const { data, error } = await supabase.from("tenants").insert({
+          name: tenant.name,
+          slug: tenant.slug,
+          plan: tenant.plan,
+          is_active: tenant.is_active,
           custom_domain: tenant.custom_domain || null,
-        });
+        }).select("id").single();
         if (error) throw error;
+        tenantId = data.id;
+      }
+      if (tenantId) {
+        const { error: planErr } = await supabase.rpc("set_tenant_plan", {
+          _tenant_id: tenantId,
+          _plan_key: tenant.plan,
+          _is_beta: false,
+        });
+        if (planErr) throw planErr;
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-tenants"] });
+      qc.invalidateQueries({ queryKey: ["admin-centrals-tenants"] });
       toast.success(editId ? "Cliente atualizado!" : "Cliente criado!");
       setOpen(false);
       setEditId(null);
@@ -118,7 +133,13 @@ const TenantsPage = () => {
 
   const openEdit = (t: any) => {
     setEditId(t.id);
-    setForm({ name: t.name, slug: t.slug, plan: t.plan || "free", max_orders_month: t.max_orders_month || 500, is_active: t.is_active, custom_domain: t.custom_domain || "" });
+    setForm({
+      name: t.name,
+      slug: t.slug,
+      plan: (t.plan as PlanKey) || "start",
+      is_active: t.is_active,
+      custom_domain: t.custom_domain || "",
+    });
     setOpen(true);
   };
 
@@ -133,11 +154,16 @@ const TenantsPage = () => {
   return (
     <div className="space-y-6 max-w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold">Clientes (Tenants)</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">Clientes</h2>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button variant="outline" className="w-full sm:w-auto" asChild>
             <Link to="/admin/domains">
               <Link2 className="mr-2 h-4 w-4" /> Domínios & Links
+            </Link>
+          </Button>
+          <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <Link to="/admin/centrals">
+              Centrais
             </Link>
           </Button>
           <NewTenantWizard
@@ -167,25 +193,17 @@ const TenantsPage = () => {
               <div>
                 <Label className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Domínio próprio</Label>
                 <Input value={form.custom_domain} onChange={(e) => setForm({ ...form, custom_domain: e.target.value })} placeholder="pedido.restaurante.com" />
-                <p className="text-xs text-muted-foreground mt-1">Aponte o DNS deste domínio para o sistema. Ao acessar, abrirá direto neste cliente.</p>
               </div>
               <div>
                 <Label>Plano</Label>
-                <Select value={form.plan} onValueChange={(v) => {
-                  const opt = planOptions.find((p) => p.value === v);
-                  setForm({ ...form, plan: v, max_orders_month: opt?.limit ?? 500 });
-                }}>
+                <Select value={form.plan} onValueChange={(v) => setForm({ ...form, plan: v as PlanKey })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {planOptions.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label} ({p.limit} pedidos/mês)</SelectItem>
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label>Limite pedidos/mês</Label>
-                <Input type="number" value={form.max_orders_month} onChange={(e) => setForm({ ...form, max_orders_month: Number(e.target.value) })} />
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
@@ -203,10 +221,7 @@ const TenantsPage = () => {
       <div className="grid gap-3">
         {tenants?.map((t) => {
           const used = usageMap?.[t.id] ?? 0;
-          const limit = t.max_orders_month ?? 500;
-          const pct = Math.min((used / Math.max(limit, 1)) * 100, 100);
-          const overLimit = used >= limit;
-          const nearLimit = !overLimit && pct >= 80;
+          const isBeta = (t.tenant_plan_assignments as { is_beta?: boolean } | null)?.is_beta;
           return (
             <Card key={t.id} className="overflow-hidden">
               <CardContent className="p-4 space-y-3">
@@ -257,7 +272,8 @@ const TenantsPage = () => {
                   ) : (
                     <Badge variant="secondary" className="gap-1">Inativo</Badge>
                   )}
-                  <Badge variant="outline" className="capitalize">{t.plan || "free"}</Badge>
+                  <Badge variant="outline" className="uppercase">{PLAN_LABELS[(t.plan as PlanKey) || "start"] || t.plan}</Badge>
+                  {isBeta && <Badge variant="secondary">Beta</Badge>}
                   <Badge variant="outline" className="gap-1">
                     <Store className="w-3 h-3" /> {storeCounts?.[t.id] ?? 0} {(storeCounts?.[t.id] ?? 0) === 1 ? "loja" : "lojas"}
                   </Badge>
@@ -266,28 +282,11 @@ const TenantsPage = () => {
                       <Globe className="w-3 h-3 shrink-0" /> {(t as any).custom_domain}
                     </Badge>
                   )}
-                  {overLimit && (
-                    <Badge className="bg-destructive text-destructive-foreground gap-1">
-                      <AlertTriangle className="w-3 h-3" /> Limite atingido
-                    </Badge>
-                  )}
-                  {nearLimit && (
-                    <Badge variant="outline" className="border-accent text-accent-foreground bg-accent/10 gap-1">
-                      <AlertTriangle className="w-3 h-3" /> {Math.round(pct)}% do limite
-                    </Badge>
-                  )}
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Uso mensal</span>
-                    <span className="font-medium tabular-nums">{used} / {limit} pedidos</span>
-                  </div>
-                  <Progress
-                    value={pct}
-                    className={overLimit ? "[&>div]:bg-destructive" : nearLimit ? "[&>div]:bg-accent" : ""}
-                  />
-                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {used} pedidos este mês · sem limite por plano
+                </p>
               </CardContent>
             </Card>
           );

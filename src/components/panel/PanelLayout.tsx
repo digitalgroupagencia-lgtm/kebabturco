@@ -7,7 +7,6 @@ import { PanelSidebar } from "./PanelSidebar";
 import AdminAssistant from "@/components/admin/AdminAssistant";
 import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import { Loader2 } from "lucide-react";
-import TenantLimitBanner from "./TenantLimitBanner";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 
 const PanelLayout = () => {
@@ -43,7 +42,6 @@ const PanelLayout = () => {
               <AdminThemeToggle />
             </header>
             <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-              {roleData?.tenant_id && <TenantLimitBanner tenantId={roleData.tenant_id} />}
               <Outlet />
             </main>
           </div>

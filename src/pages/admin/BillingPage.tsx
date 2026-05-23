@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 
 const BillingPage = () => {
@@ -43,9 +42,9 @@ const BillingPage = () => {
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
-  const planPrices: Record<string, number> = { free: 0, starter: 99, pro: 249, enterprise: 499 };
+  const planPrices: Record<string, number> = { start: 49, pro: 149, premium: 349 };
 
-  const totalMRR = tenants?.reduce((sum, t) => sum + (planPrices[t.plan || "free"] || 0), 0) ?? 0;
+  const totalMRR = tenants?.reduce((sum, t) => sum + (planPrices[t.plan || "start"] || 0), 0) ?? 0;
 
   return (
     <div className="space-y-6 max-w-full">
@@ -66,7 +65,7 @@ const BillingPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tenants?.filter((t) => t.plan && t.plan !== "free").length ?? 0}
+              {tenants?.filter((t) => t.plan && t.plan !== "start").length ?? 0}
             </div>
           </CardContent>
         </Card>
@@ -89,24 +88,20 @@ const BillingPage = () => {
         <CardContent className="space-y-5">
           {tenants?.map((t) => {
             const used = orderCounts?.[t.id] ?? 0;
-            const limit = t.max_orders_month ?? 500;
-            const pct = Math.min((used / limit) * 100, 100);
-            const over = used >= limit;
             return (
-              <div key={t.id} className="space-y-2 pb-4 border-b last:border-b-0 last:pb-0">
+              <div key={t.id} className="space-y-1 pb-4 border-b last:border-b-0 last:pb-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
                     <span className="font-semibold truncate">{t.name}</span>
-                    <Badge variant="outline" className="capitalize">{t.plan || "free"}</Badge>
+                    <Badge variant="outline" className="uppercase">{t.plan || "start"}</Badge>
                     <span className="text-xs text-muted-foreground">
-                      R$ {planPrices[t.plan || "free"] || 0}/mês
+                      R$ {planPrices[t.plan || "start"] || 0}/mês
                     </span>
                   </div>
-                  <span className={`text-xs sm:text-sm tabular-nums shrink-0 ${over ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                    {used} / {limit} pedidos
+                  <span className="text-xs sm:text-sm tabular-nums shrink-0 text-muted-foreground">
+                    {used} pedidos este mês
                   </span>
                 </div>
-                <Progress value={pct} className={over ? "[&>div]:bg-destructive" : pct > 80 ? "[&>div]:bg-accent" : ""} />
               </div>
             );
           })}

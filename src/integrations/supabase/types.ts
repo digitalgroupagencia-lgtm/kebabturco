@@ -871,6 +871,183 @@ export type Database = {
           },
         ]
       }
+      platform_features: {
+        Row: {
+          central_group: string
+          created_at: string
+          description: string | null
+          feature_key: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          central_group?: string
+          created_at?: string
+          description?: string | null
+          feature_key: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          central_group?: string
+          created_at?: string
+          description?: string | null
+          feature_key?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      platform_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          plan_key: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          plan_key: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan_key?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      plan_features: {
+        Row: { feature_id: string; plan_id: string }
+        Insert: { feature_id: string; plan_id: string }
+        Update: { feature_id?: string; plan_id?: string }
+        Relationships: []
+      }
+      tenant_ai_modules: {
+        Row: {
+          config: Json
+          id: string
+          is_enabled: boolean
+          module_key: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          is_enabled?: boolean
+          module_key: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          id?: string
+          is_enabled?: boolean
+          module_key?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_feature_overrides: {
+        Row: {
+          enabled: boolean
+          feature_key: string
+          id: string
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled: boolean
+          feature_key: string
+          id?: string
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          feature_key?: string
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_loyalty_programs: {
+        Row: {
+          config: Json
+          id: string
+          is_active: boolean
+          model_type: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          model_type?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          model_type?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_plan_assignments: {
+        Row: {
+          assigned_at: string
+          is_beta: boolean
+          plan_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          is_beta?: boolean
+          plan_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          is_beta?: boolean
+          plan_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           ai_auto_images: boolean
@@ -2309,6 +2486,16 @@ export type Database = {
           status: string
         }[]
       }
+      get_tenant_feature_flags: {
+        Args: { _tenant_id: string }
+        Returns: {
+          central_group: string
+          enabled: boolean
+          feature_key: string
+          name: string
+          source: string
+        }[]
+      }
       get_tenant_monthly_usage: {
         Args: { _tenant_id: string }
         Returns: {
@@ -2393,6 +2580,19 @@ export type Database = {
         }
         Returns: Json
       }
+      set_tenant_feature_override: {
+        Args: {
+          _enabled: boolean
+          _feature_key: string
+          _notes?: string
+          _tenant_id: string
+        }
+        Returns: undefined
+      }
+      set_tenant_plan: {
+        Args: { _is_beta?: boolean; _plan_key: string; _tenant_id: string }
+        Returns: undefined
+      }
       sync_store_stripe_profile: {
         Args: {
           _business_name?: string
@@ -2404,6 +2604,10 @@ export type Database = {
           _stripe_account_id: string
         }
         Returns: undefined
+      }
+      tenant_has_feature: {
+        Args: { _feature_key: string; _tenant_id: string }
+        Returns: boolean
       }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }

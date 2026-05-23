@@ -52,6 +52,13 @@ import TenantStoresPage from "./pages/admin/tenant/TenantStoresPage.tsx";
 import TenantDeliveryZonesPage from "./pages/admin/tenant/TenantDeliveryZonesPage.tsx";
 import TenantScreensPage from "./pages/admin/tenant/TenantScreensPage.tsx";
 import AdminDomainsPage from "./pages/admin/AdminDomainsPage.tsx";
+import AdminPlansPage from "./pages/admin/AdminPlansPage.tsx";
+import AdminCentralsHubPage from "./pages/admin/AdminCentralsHubPage.tsx";
+import AdminCentralAiPage from "./pages/admin/AdminCentralAiPage.tsx";
+import AdminCentralLoyaltyPage from "./pages/admin/AdminCentralLoyaltyPage.tsx";
+import AdminCentralCampaignsPage from "./pages/admin/AdminCentralCampaignsPage.tsx";
+import AdminCentralPushPage from "./pages/admin/AdminCentralPushPage.tsx";
+import AdminCentralConversationalPage from "./pages/admin/AdminCentralConversationalPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PlatformHostGate from "./components/PlatformHostGate.tsx";
 import Install from "./pages/Install.tsx";
@@ -117,6 +124,13 @@ const App = () => (
             <Route index element={<AdminDashboard />} />
             <Route path="tenants" element={<TenantsPage />} />
             <Route path="domains" element={<AdminDomainsPage />} />
+            <Route path="plans" element={<AdminPlansPage />} />
+            <Route path="centrals" element={<AdminCentralsHubPage />} />
+            <Route path="centrals/ai" element={<AdminCentralAiPage />} />
+            <Route path="centrals/loyalty" element={<AdminCentralLoyaltyPage />} />
+            <Route path="centrals/campaigns" element={<AdminCentralCampaignsPage />} />
+            <Route path="centrals/push" element={<AdminCentralPushPage />} />
+            <Route path="centrals/conversational" element={<AdminCentralConversationalPage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="branding" element={<BrandingPage />} />
