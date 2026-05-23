@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { checkBridgeStatus } from "@/services/printerService";
+import { APP_BUILD_ID, GIT_SHA, isRunningLatestPublishedVersion } from "@/lib/appCacheBust";
 
 export type DiagnosticStatus = "ok" | "warn" | "fail" | "pending";
 
@@ -25,6 +26,40 @@ export function useOperationalDiagnostics() {
   const run = useCallback(async () => {
     setRunning(true);
     const results: DiagnosticItem[] = [];
+
+    // VERSÃO — browser vs servidor publicado
+    try {
+      const version = await isRunningLatestPublishedVersion();
+      if (!version.remote) {
+        results.push({
+          id: "deploy",
+          label: "Versão publicada",
+          status: "warn",
+          detail: `Browser: ${GIT_SHA} (${APP_BUILD_ID}). Servidor ainda sem /version.json — Publish pendente ou cache CDN.`,
+        });
+      } else if (version.ok) {
+        results.push({
+          id: "deploy",
+          label: "Versão publicada",
+          status: "ok",
+          detail: `Actualizado — commit ${GIT_SHA}, build ${APP_BUILD_ID}.`,
+        });
+      } else {
+        results.push({
+          id: "deploy",
+          label: "Versão publicada",
+          status: "fail",
+          detail: `DESACTUALIZADO — browser ${GIT_SHA} vs servidor ${version.remote.gitSha}. Recarrega ou limpa cache Safari.`,
+        });
+      }
+    } catch {
+      results.push({
+        id: "deploy",
+        label: "Versão publicada",
+        status: "warn",
+        detail: "Não foi possível comparar com /version.json.",
+      });
+    }
 
     // PRODUÇÃO — loja e menu público
     try {

@@ -48,7 +48,7 @@ const AppCacheBustRouter = ({ children }: Props) => {
 
     const interval = window.setInterval(() => {
       void checkForDeployedUpdate();
-    }, 5 * 60 * 1000);
+    }, 60 * 1000);
 
     return () => window.clearInterval(interval);
   }, []);

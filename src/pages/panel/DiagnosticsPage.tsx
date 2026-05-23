@@ -62,7 +62,7 @@ const DiagnosticsPage = () => {
             Diagnóstico operacional
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Seis luzes do sistema — o que está verde, amarelo ou vermelho agora.
+            Sete luzes — inclui se esta página está na mesma versão que o servidor publicou.
           </p>
           {lastRun && (
             <p className="text-xs text-muted-foreground mt-2">
