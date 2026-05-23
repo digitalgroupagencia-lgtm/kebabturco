@@ -3,7 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, Database } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
-import { isPanelAlertsEnabled, playNewOrderAlert } from "@/lib/panelAlerts";
+import {
+  isPanelAlertsEnabled,
+  PANEL_ALERTS_CHANGED_EVENT,
+  playNewOrderAlert,
+  stopPendingOrderAlertLoop,
+  syncPendingOrderAlertLoop,
+} from "@/lib/panelAlerts";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 
@@ -211,6 +217,19 @@ export function usePanelOrders(storeId: string | undefined) {
       if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
   }, [storeId, fetchOrders, notifyNewPending]);
+
+  const hasPendingOrders = orders.some((o) => o.status === "pending");
+
+  useEffect(() => {
+    syncPendingOrderAlertLoop(hasPendingOrders);
+    return () => stopPendingOrderAlertLoop();
+  }, [hasPendingOrders]);
+
+  useEffect(() => {
+    const resync = () => syncPendingOrderAlertLoop(orders.some((o) => o.status === "pending"));
+    window.addEventListener(PANEL_ALERTS_CHANGED_EVENT, resync);
+    return () => window.removeEventListener(PANEL_ALERTS_CHANGED_EVENT, resync);
+  }, [orders]);
 
   const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number): Promise<boolean> => {
     if (updatingRef.current.has(order.id)) return false;

@@ -19,8 +19,12 @@ const PanelAlertsBar = () => {
       const ok = await enablePanelAlerts();
       setEnabled(ok);
       if (ok) {
-        playTestAlert();
-        toast.success("Alertas activos — vais ouvir novos pedidos");
+        const heard = await playTestAlert();
+        if (heard) {
+          toast.success("Alertas activos — bip a cada 2s enquanto houver pedido por aceitar");
+        } else {
+          toast.warning("Alertas activos — se não ouvir, desactiva modo silencioso do iPhone");
+        }
       } else {
         toast.error("Não foi possível activar o som. Toca outra vez.");
       }
@@ -40,10 +44,11 @@ const PanelAlertsBar = () => {
       await handleEnable();
       return;
     }
-    if (playTestAlert()) {
+    const heard = await playTestAlert();
+    if (heard) {
       toast.success("Som de teste OK");
     } else {
-      toast.warning("Som bloqueado — activa alertas outra vez");
+      toast.warning("Sem som — verifica volume e modo silencioso do telemóvel");
       setEnabled(false);
       setPanelAlertsEnabled(false);
     }
@@ -57,7 +62,7 @@ const PanelAlertsBar = () => {
           <div className="min-w-0">
             <p className="text-sm font-black text-foreground">Activar alertas de pedidos</p>
             <p className="text-xs text-muted-foreground">
-              No telemóvel é preciso tocar aqui uma vez para ouvir novos pedidos.
+              No telemóvel toca aqui uma vez. O bip repete de 2 em 2 segundos até aceitares o pedido.
             </p>
           </div>
         </div>
@@ -79,7 +84,7 @@ const PanelAlertsBar = () => {
     <div className="rounded-xl border border-success/40 bg-success/5 px-3 py-2 flex items-center justify-between gap-2">
       <span className="flex items-center gap-2 text-xs font-bold text-success">
         <Bell className="w-4 h-4" />
-        Alertas activos
+        Alertas activos · bip de 2 em 2s
       </span>
       <div className="flex gap-1.5 shrink-0">
         <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={handleTest}>
