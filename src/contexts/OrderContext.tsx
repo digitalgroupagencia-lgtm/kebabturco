@@ -3,6 +3,11 @@ import { useCart } from "@/contexts/CartContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
 import { useMesaFromUrl } from "@/hooks/useMesaFromUrl";
+import {
+  loadStoredActiveOrder,
+  saveStoredActiveOrder,
+  clearStoredActiveOrder,
+} from "@/features/customer/useActiveOrder";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
@@ -76,13 +81,48 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
-  const [orderNumber, setOrderNumber] = useState("");
-  const [activeOrderId, setActiveOrderId] = useState(() =>
-    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("order") || "" : "",
-  );
-  const [trackingOrderId, setTrackingOrderId] = useState(() =>
-    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("order") || "" : "",
-  );
+  const [orderNumber, setOrderNumber] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const urlOrder = new URLSearchParams(window.location.search).get("order");
+    if (urlOrder) return "";
+    const stored = loadStoredActiveOrder(effectiveStoreId);
+    return stored?.orderNumber || "";
+  });
+  const [activeOrderId, setActiveOrderIdState] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const urlOrder = new URLSearchParams(window.location.search).get("order");
+    if (urlOrder) return urlOrder;
+    const stored = loadStoredActiveOrder(effectiveStoreId);
+    return stored?.orderId || "";
+  });
+  const [trackingOrderId, setTrackingOrderId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const urlOrder = new URLSearchParams(window.location.search).get("order");
+    if (urlOrder) return urlOrder;
+    const stored = loadStoredActiveOrder(effectiveStoreId);
+    return stored?.orderId || "";
+  });
+
+  const setActiveOrderId = (id: string) => {
+    setActiveOrderIdState(id);
+    if (!id) clearStoredActiveOrder();
+  };
+
+  useEffect(() => {
+    if (!effectiveStoreId || activeOrderId) return;
+    const stored = loadStoredActiveOrder(effectiveStoreId);
+    if (stored) {
+      setActiveOrderIdState(stored.orderId);
+      setTrackingOrderId(stored.orderId);
+      setOrderNumber(stored.orderNumber);
+    }
+  }, [effectiveStoreId, activeOrderId]);
+
+  useEffect(() => {
+    if (activeOrderId && orderNumber && effectiveStoreId) {
+      saveStoredActiveOrder({ orderId: activeOrderId, orderNumber, storeId: effectiveStoreId });
+    }
+  }, [activeOrderId, orderNumber, effectiveStoreId]);
   const [tableNumber, setTableNumber] = useState("");
   const [mesaLocked, setMesaLocked] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
