@@ -41,5 +41,3 @@ export const useOperationsSettings = () => {
   if (!c) throw new Error("useOperationsSettings must be used within OperationsSettingsProvider");
   return c;
 };
-
-import * as React from "react";

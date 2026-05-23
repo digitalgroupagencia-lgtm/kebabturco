@@ -68,10 +68,12 @@ import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
+import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 
 const queryClient = new QueryClient();
 
 const App = () => (
+  <TotemErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -187,6 +189,7 @@ const App = () => (
       </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </TotemErrorBoundary>
 );
 
 export default App;

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,9 +56,9 @@ const AppCacheBustRouter = ({ children }: Props) => {
   const routeKey = `${location.pathname}${location.search}:${cacheEpoch}:${APP_BUILD_ID}`;
 
   return (
-    <div key={routeKey} className="contents">
+    <Fragment key={routeKey}>
       {children}
-    </div>
+    </Fragment>
   );
 };
 

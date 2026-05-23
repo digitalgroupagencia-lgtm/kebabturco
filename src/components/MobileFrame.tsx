@@ -12,7 +12,7 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
   return (
     <>
       {/* Mobile real */}
-      <div className="md:hidden min-h-[100dvh] w-full bg-background relative">
+      <div className="md:hidden min-h-screen min-h-[100dvh] w-full bg-background relative">
         {/* Camada que pinta a área da safe-area-top (atrás da barra do navegador / notch)
             com a cor do header, evitando "corte" visual quando a URL bar aparece. */}
         <div

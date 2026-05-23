@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => ({
     injectAppBuildId(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      injectRegister: false,
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",

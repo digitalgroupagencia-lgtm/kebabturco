@@ -149,6 +149,27 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const timeout = window.setTimeout(() => {
+      if (!active) return;
+      const hostFallback = HOST_STORE_FALLBACK[host];
+      if (!hostFallback) return;
+      setState({
+        storeId: hostFallback.storeId,
+        selectedStoreId: hostFallback.storeId,
+        stores: [{
+          id: hostFallback.storeId,
+          name: "Gandia",
+          address: null,
+          image_url: null,
+          short_description: null,
+        }],
+        tenantId: hostFallback.tenantId,
+        tenantSlug: hostFallback.tenantSlug,
+        basePath: "",
+        loading: false,
+      });
+    }, 5000);
+
     (async () => {
       let tenant: TenantRow | null = null;
       let storeId: string | null = null;
@@ -286,7 +307,10 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
         loading: false,
       });
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const setSelectedStoreId = useCallback((id: string | null) => {

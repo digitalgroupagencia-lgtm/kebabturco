@@ -28,7 +28,7 @@ const TITLE_BY_LANG: Record<string, string> = {
 const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
-  const { settings, loading: brandingLoading } = useBranding();
+  const { settings } = useBranding();
   const { stores, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -50,17 +50,17 @@ const LanguageScreen = () => {
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 
-  if (brandingLoading || storeLoading) {
+  if (storeLoading) {
     return (
       <div
-        className="min-h-[100dvh] flex flex-col items-center justify-center bg-background relative"
+        className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-[#CC0000] relative"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
+        <p className="text-white font-bold text-lg mb-4">Kebab Turco</p>
         <div
-          className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
-          style={{ height: "env(safe-area-inset-top)" }}
+          className="h-10 w-10 rounded-full border-4 border-white/30 border-t-white animate-spin"
+          aria-label="A carregar"
         />
-        <div className="h-10 w-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" aria-label="A carregar" />
       </div>
     );
   }
@@ -68,7 +68,7 @@ const LanguageScreen = () => {
   return (
 
     <div
-      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
+      className="min-h-screen min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       {/* Faixa de status bar na cor da marca */}
