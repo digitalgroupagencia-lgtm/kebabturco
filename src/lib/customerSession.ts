@@ -56,10 +56,9 @@ export function loadCartItemCount(): number {
   }
 }
 
-/** Já passou pelo idioma ou tem sessão activa — não mostrar ecrã de idioma outra vez. */
+/** Só salta idioma se houver pedido activo ou carrinho por concluir. */
 export function shouldSkipLanguageScreen(): boolean {
   if (loadAnyStoredActiveOrder()?.orderId) return true;
-  if (loadSavedLang()) return true;
   if (loadCartItemCount() > 0) return true;
   return false;
 }
@@ -72,6 +71,25 @@ export function resolveScreenAfterLanguageSkip(): Screen {
     return "confirmation";
   }
   if (loadCartItemCount() > 0) return "home";
-  if (loadSavedOrderType()) return "home";
-  return "orderType";
+  return "language";
+}
+
+export const KIOSK_TABLE_KEY = "kiosk-table-number";
+
+export function loadSavedTableNumber(): string {
+  try {
+    return localStorage.getItem(KIOSK_TABLE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveSavedTableNumber(value: string) {
+  try {
+    const trimmed = value.trim();
+    if (trimmed) localStorage.setItem(KIOSK_TABLE_KEY, trimmed);
+    else localStorage.removeItem(KIOSK_TABLE_KEY);
+  } catch {
+    /* ignore */
+  }
 }

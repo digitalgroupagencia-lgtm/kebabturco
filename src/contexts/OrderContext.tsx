@@ -10,7 +10,9 @@ import {
 } from "@/features/customer/useActiveOrderStorage";
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
+  loadSavedTableNumber,
   resolveScreenAfterLanguageSkip,
+  saveSavedTableNumber,
   shouldSkipLanguageScreen,
 } from "@/lib/customerSession";
 
@@ -164,7 +166,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       syncActiveOrderUrl(activeOrderId);
     }
   }, [activeOrderId, screen]);
-  const [tableNumber, setTableNumber] = useState("");
+  const [tableNumber, setTableNumberState] = useState(() =>
+    typeof window === "undefined" ? "" : loadSavedTableNumber(),
+  );
+  const setTableNumber = (value: string) => {
+    setTableNumberState(value);
+    saveSavedTableNumber(value);
+  };
   const [mesaLocked, setMesaLocked] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");

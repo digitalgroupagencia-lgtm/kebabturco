@@ -16,6 +16,7 @@ import {
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { filterImplementedPaymentMethods } from "@/lib/paymentMethods";
+import { loadSavedOrderType } from "@/lib/customerSession";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -80,7 +81,7 @@ const PaymentScreen = () => {
     deliveryNotes,
     setDeliveryNotes,
   } = useOrder();
-  const { items, totalPrice, clearCart, orderType } = useCart();
+  const { items, totalPrice, clearCart, orderType, setOrderType } = useCart();
   const { settings } = useOperationsSettings();
   const brandingCtx = useBranding();
   const { t, tProduct } = useLanguage();
@@ -128,6 +129,18 @@ const PaymentScreen = () => {
   };
 
   useEffect(() => {
+    if (orderType) return;
+    const saved = loadSavedOrderType();
+    if (saved) setOrderType(saved);
+  }, [orderType, setOrderType]);
+
+  useEffect(() => {
+    if (!orderType && items.length > 0) {
+      setScreen("orderType");
+    }
+  }, [orderType, items.length, setScreen]);
+
+  useEffect(() => {
     if (!storeId) return;
     fetchStoreStripeSettings(storeId)
       .then((data) => setStripeEnabled(!!data?.stripe_charges_enabled))
@@ -154,20 +167,20 @@ const PaymentScreen = () => {
     return METHOD_DEFS.filter((m) => implemented.includes(m.id));
   }, [settings, stripeEnabled]);
 
-  /** Mesa: só cartão online (Apple/Google Pay em fase seguinte). */
+  /** Mesa: cartão online; se Stripe indisponível, balcão para não bloquear o cliente. */
   const checkoutMethods = useMemo(() => {
     if (isTableOrder) {
-      if (!stripeEnabled) return [];
-      return METHOD_DEFS.filter((m) => m.id === "card");
+      if (stripeEnabled) return METHOD_DEFS.filter((m) => m.id === "card");
+      return METHOD_DEFS.filter((m) => m.id === "counter");
     }
     if (settings?.payment_mode === "counter") {
       return METHOD_DEFS.filter((m) => m.id === "counter");
     }
-    return enabledMethods;
+    return enabledMethods.length > 0 ? enabledMethods : METHOD_DEFS.filter((m) => m.id === "counter");
   }, [isTableOrder, stripeEnabled, settings?.payment_mode, enabledMethods]);
 
   const counterOnly = !isTableOrder && settings?.payment_mode === "counter";
-  const tablePayReady = isTableOrder && stripeEnabled && checkoutMethods.length > 0;
+  const tablePayReady = isTableOrder && checkoutMethods.length > 0;
   const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing;
 
   useEffect(() => {
@@ -177,6 +190,10 @@ const PaymentScreen = () => {
   useEffect(() => {
     if (isTableOrder && stripeEnabled) {
       setSelected("card");
+      return;
+    }
+    if (isTableOrder && !stripeEnabled) {
+      setSelected("counter");
       return;
     }
     if (checkoutMethods.length === 1) {
@@ -189,16 +206,21 @@ const PaymentScreen = () => {
   }, [checkoutMethods, selected, isTableOrder, stripeEnabled]);
 
   const validate = () => {
-    if (!mesaLocked && !isTableOrder && (!customerName.trim() || customerName.trim().length < 2)) {
-      setShowError("name");
+    if (!orderType) {
+      setShowError("method");
       return false;
     }
-    if (isTableOrder && !mesaLocked && (!customerName.trim() || customerName.trim().length < 2)) {
+    if (isTableOrder) {
+      if (!tableNumber.trim()) {
+        setShowError("table");
+        return false;
+      }
+      if (!mesaLocked && (!customerName.trim() || customerName.trim().length < 2)) {
+        setShowError("name");
+        return false;
+      }
+    } else if (!customerName.trim() || customerName.trim().length < 2) {
       setShowError("name");
-      return false;
-    }
-    if (isTableOrder && !mesaLocked && !tableNumber.trim()) {
-      setShowError("table");
       return false;
     }
     if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) {
@@ -221,7 +243,11 @@ const PaymentScreen = () => {
       setShowError("method");
       return false;
     }
-    if (isTableOrder && selected !== "card") {
+    if (isTableOrder && stripeEnabled && selected !== "card") {
+      setShowError("method");
+      return false;
+    }
+    if (isTableOrder && !stripeEnabled && selected !== "counter") {
       setShowError("method");
       return false;
     }
@@ -243,7 +269,7 @@ const PaymentScreen = () => {
     paymentStatus: "pending" | "paid";
     stripePi?: string | null;
   }) => {
-    if (isTableOrder && opts.paymentStatus !== "paid") {
+    if (isTableOrder && opts.paymentMethod === "card" && opts.paymentStatus !== "paid") {
       setShowError("method");
       return;
     }
@@ -350,7 +376,7 @@ const PaymentScreen = () => {
       return;
     }
 
-    if (isTableOrder) {
+    if (isTableOrder && selected === "card") {
       setShowError("method");
       return;
     }
@@ -425,10 +451,30 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
-            {!mesaLocked && (isTableOrder || orderType !== "delivery") && (
+            {isTableOrder && (
               <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "table" ? "ring-2 ring-destructive/40" : ""}`}>
-                {(!isTableOrder || !mesaLocked) && (
-                  <div className={`px-3 ${compact ? "py-2.5" : "py-4"} ${showError === "name" ? "bg-destructive/5" : ""}`}>
+                <div className={`px-3 py-2.5 ${showError === "table" ? "bg-destructive/5" : ""}`}>
+                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                    <Hash className="w-3 h-3 text-primary" />
+                    {t("tableNumber")} <span className="text-destructive">*</span>
+                  </label>
+                  {mesaLocked && tableNumber.trim() ? (
+                    <p className="text-center text-3xl font-black text-primary tabular-nums py-1">{tableNumber}</p>
+                  ) : (
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={tableNumber}
+                      onChange={(e) => {
+                        setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4));
+                        if (showError === "table") setShowError(null);
+                      }}
+                      className={`w-full h-12 px-3 text-center text-2xl font-black tabular-nums bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "table" ? "border-destructive/60" : "border-transparent"}`}
+                    />
+                  )}
+                </div>
+                {!mesaLocked && (
+                  <div className={`px-3 py-2.5 border-t border-border ${showError === "name" ? "bg-destructive/5" : ""}`}>
                     <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                       <User className="w-3 h-3 text-primary" />
                       {t("yourName")} <span className="text-destructive">*</span>
@@ -436,68 +482,108 @@ const PaymentScreen = () => {
                     <input
                       type="text"
                       value={customerName}
-                      onChange={(e) => { setCustomerName(e.target.value.slice(0, 40)); if (showError === "name") setShowError(null); }}
+                      onChange={(e) => {
+                        setCustomerName(e.target.value.slice(0, 40));
+                        if (showError === "name") setShowError(null);
+                      }}
                       placeholder="—"
-                      className={`w-full ${compact ? "h-10 text-sm" : "h-12 text-base"} px-3 font-bold bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "name" ? "border-destructive/60" : "border-transparent"}`}
-                    />
-                  </div>
-                )}
-                {isTableOrder && !mesaLocked && (
-                  <div className={`px-3 py-2.5 border-t border-border ${showError === "table" ? "bg-destructive/5" : ""}`}>
-                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
-                      <Hash className="w-3 h-3 text-primary" />
-                      {t("tableNumber")} <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={tableNumber}
-                      onChange={(e) => { setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4)); if (showError === "table") setShowError(null); }}
-                      className={`w-full h-10 px-3 text-center text-xl font-black tabular-nums bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "table" ? "border-destructive/60" : "border-transparent"}`}
+                      className={`w-full h-10 text-sm px-3 font-bold bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "name" ? "border-destructive/60" : "border-transparent"}`}
                     />
                   </div>
                 )}
               </div>
             )}
 
-            {(orderType === "takeaway" || orderType === "delivery") && (
-              <div className={`mt-3 bg-card rounded-2xl border border-border px-3 py-3 ${showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
-                <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
-                  <Phone className="w-3 h-3 text-primary" />
-                  {t("yourPhone")} <span className="text-destructive">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(e) => { setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20)); if (showError === "phone") setShowError(null); }}
-                  className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
-                />
+            {orderType === "takeaway" && (
+              <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
+                <div className={`px-3 py-2.5 ${showError === "name" ? "bg-destructive/5" : ""}`}>
+                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                    <User className="w-3 h-3 text-primary" />
+                    {t("yourName")} <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value.slice(0, 40));
+                      if (showError === "name") setShowError(null);
+                    }}
+                    className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                  />
+                </div>
+                <div className={`px-3 py-2.5 border-t border-border ${showError === "phone" ? "bg-destructive/5" : ""}`}>
+                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                    <Phone className="w-3 h-3 text-primary" />
+                    {t("yourPhone")} <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20));
+                      if (showError === "phone") setShowError(null);
+                    }}
+                    className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                  />
+                </div>
               </div>
             )}
 
             {orderType === "delivery" && (
-              <div className="mt-3 space-y-2 bg-card rounded-2xl border border-border p-3">
-                <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>
+              <div className={`mt-3 space-y-0 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "phone" || showError === "address" ? "ring-2 ring-destructive/40" : ""}`}>
+                <div className={`px-3 py-2.5 ${showError === "name" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
-                    <MapPin className="w-3 h-3" />
-                    {t("addressStreet")} *
+                    <User className="w-3 h-3 text-primary" />
+                    {t("yourName")} <span className="text-destructive">*</span>
                   </label>
-                  <input type="text" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value.slice(0, 120))} className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value.slice(0, 40));
+                      if (showError === "name") setShowError(null);
+                    }}
+                    className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={t("addressNumber")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
-                  <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={t("addressPostal")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                <div className={`px-3 py-2.5 border-t border-border ${showError === "phone" ? "bg-destructive/5" : ""}`}>
+                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                    <Phone className="w-3 h-3 text-primary" />
+                    {t("yourPhone")} <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20));
+                      if (showError === "phone") setShowError(null);
+                    }}
+                    className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={deliveryCity}
-                  onChange={(e) => { setDeliveryCity(e.target.value.slice(0, 60)); if (showError === "city" || showError === "minOrder") setShowError(null); }}
-                  placeholder={t("addressCity")}
-                  className={`w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
-                />
-                {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
-                  <p className="text-xs text-destructive font-bold">Pedido mínimo: {deliveryQuote.minOrder.toFixed(2)}€</p>
-                )}
+                <div className="px-3 py-3 border-t border-border space-y-2">
+                  <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                      <MapPin className="w-3 h-3" />
+                      {t("addressStreet")} *
+                    </label>
+                    <input type="text" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value.slice(0, 120))} className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={t("addressNumber")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                    <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={t("addressPostal")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                  </div>
+                  <input
+                    type="text"
+                    value={deliveryCity}
+                    onChange={(e) => { setDeliveryCity(e.target.value.slice(0, 60)); if (showError === "city" || showError === "minOrder") setShowError(null); }}
+                    placeholder={t("addressCity")}
+                    className={`w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
+                  />
+                  {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
+                    <p className="text-xs text-destructive font-bold">Pedido mínimo: {deliveryQuote.minOrder.toFixed(2)}€</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -518,7 +604,16 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {isTableOrder && !tablePayReady && (
+            {isTableOrder && !stripeEnabled && (
+              <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-amber-500/40 bg-amber-500/5 p-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Pagamento online indisponível — finalize com pagamento no balcão. A equipa receberá o pedido na mesa {tableNumber || "—"}.
+                </p>
+              </div>
+            )}
+
+            {isTableOrder && stripeEnabled && !tablePayReady && (
               <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <div>

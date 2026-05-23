@@ -8,6 +8,7 @@ import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, S
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { loadSavedOrderType } from "@/lib/customerSession";
 
 type LangMap = Record<string, string>;
 type SuggestionConfig = {
@@ -38,7 +39,7 @@ const ReviewScreen = () => {
     setEditingCartItemId,
     setSelectedCategory,
   } = useOrder();
-  const { items, addItem, removeItem, totalPrice, orderType, clearCart } = useCart();
+  const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType } = useCart();
 
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
@@ -70,7 +71,13 @@ const ReviewScreen = () => {
   const handleClearAll = () => {
     if (window.confirm(confirmMsg)) clearCart();
   };
-  const canCheckout = items.length > 0;
+  const canCheckout = items.length > 0 && !!orderType;
+
+  useEffect(() => {
+    if (orderType) return;
+    const saved = loadSavedOrderType();
+    if (saved) setOrderType(saved);
+  }, [orderType, setOrderType]);
 
   const pickLang = (m?: LangMap) => (m && (m[lang] || m.es || m.pt || m.en || m.fr)) || "";
 

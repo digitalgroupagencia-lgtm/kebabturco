@@ -26,7 +26,7 @@ const ingredientFromModifier = (extra: Extra) => {
 };
 
 export function useMenuData() {
-  const { storeId, selectedStoreId } = useResolvedStore();
+  const { storeId, selectedStoreId, loading: storeLoading } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? storeId;
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<MenuProduct[]>([]);
@@ -40,6 +40,11 @@ export function useMenuData() {
     let active = true;
 
     if (!effectiveStoreId) {
+      if (storeLoading) {
+        setLoading(true);
+        setError(null);
+        return;
+      }
       setCategories([]);
       setProducts([]);
       setError("no_store");
@@ -146,7 +151,7 @@ export function useMenuData() {
     return () => {
       active = false;
     };
-  }, [effectiveStoreId, reloadToken]);
+  }, [effectiveStoreId, reloadToken, storeLoading]);
 
   return useMemo(
     () => ({ categories, products, loading, error, retry }),
