@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
-import { Gift, Megaphone, Plus } from "lucide-react";
+import { Gift, Megaphone, Plus, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type LoyaltyRow = {
   id: string;
@@ -34,6 +36,8 @@ const LoyaltyPage = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campName, setCampName] = useState("");
   const [campMessage, setCampMessage] = useState("Hace tiempo que no pides — ¡te echamos de menos!");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [clientsOpen, setClientsOpen] = useState(true);
 
   const load = async () => {
     if (!storeId) return;
@@ -45,11 +49,18 @@ const LoyaltyPage = () => {
     setCampaigns((camps as Campaign[]) || []);
   };
 
-  useEffect(() => { load(); }, [storeId]);
+  useEffect(() => {
+    load();
+  }, [storeId]);
 
   const resetStamps = async (id: string) => {
-    await supabase.from("loyalty_accounts").update({ stamps: 0, rewards_redeemed: accounts.find((a) => a.id === id)!.rewards_redeemed + 1 }).eq("id", id);
-    toast.success("Recompensa resgatada — carimbos zerados");
+    const row = accounts.find((a) => a.id === id);
+    if (!row) return;
+    await supabase
+      .from("loyalty_accounts")
+      .update({ stamps: 0, rewards_redeemed: row.rewards_redeemed + 1 })
+      .eq("id", id);
+    toast.success("Prémio resgatado");
     load();
   };
 
@@ -62,12 +73,14 @@ const LoyaltyPage = () => {
       message_template: campMessage,
       trigger_days: 30,
     });
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Campanha criada");
-      setCampName("");
-      load();
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    toast.success("Campanha criada");
+    setCampName("");
+    setCreateOpen(false);
+    load();
   };
 
   const toggleCampaign = async (c: Campaign) => {
@@ -75,54 +88,116 @@ const LoyaltyPage = () => {
     load();
   };
 
-  if (!storeId) return <div className="p-8 text-muted-foreground">Sem loja vinculada</div>;
+  if (!storeId) return <div className="p-6 text-sm text-muted-foreground">Sem loja vinculada</div>;
+
+  const readyCount = accounts.filter((a) => a.stamps >= STAMPS_NEEDED).length;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold flex items-center gap-2"><Gift className="w-6 h-6" /> Fidelidade & Campanhas</h2>
+    <div className="mx-auto max-w-lg space-y-4 pb-8">
+      <div>
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Gift className="w-5 h-5 text-primary" />
+          Fidelidade
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">
+          {STAMPS_NEEDED} carimbos = recompensa · {accounts.length} clientes
+          {readyCount > 0 && ` · ${readyCount} prémio(s) prontos`}
+        </p>
+      </div>
 
-      <Card>
-        <CardHeader><CardTitle>Programa de carimbos</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">Cada pedido dá 1 carimbo. Ao completar {STAMPS_NEEDED} carimbos, o cliente ganha recompensa (gerir manualmente).</p>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {accounts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
-                <div>
-                  <p className="font-bold">{a.phone}</p>
-                  <p className="text-sm text-muted-foreground">{a.stamps}/{STAMPS_NEEDED} carimbos · {a.total_orders} pedidos</p>
-                </div>
-                {a.stamps >= STAMPS_NEEDED && (
-                  <Button size="sm" onClick={() => resetStamps(a.id)}>Resgatar prémio</Button>
-                )}
-              </div>
-            ))}
-            {accounts.length === 0 && <p className="text-muted-foreground text-sm">Ainda sem clientes no programa</p>}
-          </div>
-        </CardContent>
-      </Card>
+      <Collapsible open={clientsOpen} onOpenChange={setClientsOpen}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full flex items-center justify-between rounded-2xl border bg-card px-3.5 py-3 shadow-sm"
+          >
+            <span className="text-sm font-bold">Clientes com carimbos</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${clientsOpen ? "rotate-180" : ""}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-2 pt-2">
+          {accounts.map((a) => (
+            <OpsCompactCard
+              key={a.id}
+              title={a.phone}
+              summary={`${a.stamps}/${STAMPS_NEEDED} carimbos · ${a.total_orders} pedidos`}
+              meta={a.rewards_redeemed > 0 ? `${a.rewards_redeemed} prémios já resgatados` : undefined}
+              badges={a.stamps >= STAMPS_NEEDED ? ["Prémio pronto"] : []}
+              editable={false}
+              actions={
+                a.stamps >= STAMPS_NEEDED ? (
+                  <Button size="sm" className="h-9 font-bold text-xs" onClick={() => resetStamps(a.id)}>
+                    Resgatar
+                  </Button>
+                ) : (
+                  <Badge variant="outline" className="text-[10px]">
+                    {STAMPS_NEEDED - a.stamps} faltam
+                  </Badge>
+                )
+              }
+            />
+          ))}
+          {accounts.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-6 border border-dashed rounded-2xl">
+              Ainda sem clientes no programa
+            </p>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Megaphone className="w-5 h-5" /> Campanhas automáticas</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div><Label>Nome</Label><Input value={campName} onChange={(e) => setCampName(e.target.value)} placeholder="Recuperar inactivos 30d" /></div>
-            <div><Label>Mensagem</Label><Input value={campMessage} onChange={(e) => setCampMessage(e.target.value)} /></div>
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold flex items-center gap-1.5">
+            <Megaphone className="w-4 h-4 text-primary" />
+            Campanhas
+          </h3>
+          <Button variant="outline" size="sm" className="h-9 rounded-xl text-xs" onClick={() => setCreateOpen((v) => !v)}>
+            <Plus className="w-4 h-4 mr-1" />
+            {createOpen ? "Fechar" : "Nova"}
+          </Button>
+        </div>
+
+        {createOpen && (
+          <div className="rounded-2xl border bg-card p-3.5 space-y-2.5 mb-2 shadow-sm">
+            <div>
+              <Label className="text-xs">Nome</Label>
+              <Input
+                value={campName}
+                onChange={(e) => setCampName(e.target.value)}
+                placeholder="Recuperar inactivos 30d"
+                className="h-10 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Mensagem</Label>
+              <Input value={campMessage} onChange={(e) => setCampMessage(e.target.value)} className="h-10 mt-1" />
+            </div>
+            <Button className="w-full h-11 font-bold" onClick={createCampaign}>
+              Criar campanha
+            </Button>
           </div>
-          <Button onClick={createCampaign}><Plus className="w-4 h-4 mr-1" /> Criar campanha win-back</Button>
-          <div className="space-y-2 mt-4">
-            {campaigns.map((c) => (
-              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border">
-                <div>
-                  <p className="font-bold">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">{c.campaign_type} · {c.trigger_days}d · {c.message_template}</p>
-                </div>
-                <Switch checked={c.is_active} onCheckedChange={() => toggleCampaign(c)} />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        )}
+
+        <div className="space-y-2">
+          {campaigns.map((c) => (
+            <OpsCompactCard
+              key={c.id}
+              title={c.name}
+              summary={`${c.campaign_type} · ${c.trigger_days ?? "—"} dias`}
+              meta={c.message_template.length > 48 ? `${c.message_template.slice(0, 48)}…` : c.message_template}
+              inactive={!c.is_active}
+              badges={c.is_active ? ["Activa"] : ["Pausada"]}
+              editable={false}
+              actions={<Switch checked={c.is_active} onCheckedChange={() => toggleCampaign(c)} />}
+            />
+          ))}
+          {campaigns.length === 0 && !createOpen && (
+            <p className="text-center text-sm text-muted-foreground py-6 border border-dashed rounded-2xl">
+              Nenhuma campanha
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

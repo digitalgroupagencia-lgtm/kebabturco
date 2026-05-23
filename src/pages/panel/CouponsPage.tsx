@@ -2,12 +2,18 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
-import { Plus, Trash2, Tag } from "lucide-react";
+import { Plus, Trash2, Tag, MoreVertical } from "lucide-react";
 
 type Coupon = {
   id: string;
@@ -22,13 +28,23 @@ type Coupon = {
   expires_at: string | null;
 };
 
+function formatCouponSummary(c: Coupon): string {
+  const discount =
+    c.discount_type === "percent" ? `${c.discount_value}% desconto` : `${c.discount_value}€ desconto`;
+  const min = c.min_order > 0 ? `mín. ${c.min_order}€` : "sem mínimo";
+  const uses = c.max_uses ? `${c.uses_count}/${c.max_uses} usos` : `${c.uses_count} usos`;
+  return `${discount} · ${min} · ${uses}`;
+}
+
 const CouponsPage = () => {
   const { storeId } = useAdminStoreId();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
   const [code, setCode] = useState("");
   const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
   const [discountValue, setDiscountValue] = useState("10");
   const [minOrder, setMinOrder] = useState("0");
+  const [saving, setSaving] = useState(false);
 
   const load = async () => {
     if (!storeId) return;
@@ -36,10 +52,13 @@ const CouponsPage = () => {
     setCoupons((data as Coupon[]) || []);
   };
 
-  useEffect(() => { load(); }, [storeId]);
+  useEffect(() => {
+    load();
+  }, [storeId]);
 
   const create = async () => {
     if (!storeId || !code.trim()) return;
+    setSaving(true);
     const { error } = await supabase.from("coupons").insert({
       store_id: storeId,
       code: code.trim().toUpperCase(),
@@ -47,12 +66,15 @@ const CouponsPage = () => {
       discount_value: parseFloat(discountValue) || 0,
       min_order: parseFloat(minOrder) || 0,
     });
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Cupón criado");
-      setCode("");
-      load();
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    toast.success("Cupón criado");
+    setCode("");
+    setCreateOpen(false);
+    load();
   };
 
   const toggle = async (c: Coupon) => {
@@ -61,51 +83,106 @@ const CouponsPage = () => {
   };
 
   const remove = async (id: string) => {
+    if (!confirm("Remover cupón?")) return;
     await supabase.from("coupons").delete().eq("id", id);
     toast.success("Removido");
     load();
   };
 
-  if (!storeId) return <div className="p-8 text-muted-foreground">Sem loja vinculada</div>;
+  if (!storeId) return <div className="p-6 text-sm text-muted-foreground">Sem loja vinculada</div>;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold flex items-center gap-2"><Tag className="w-6 h-6" /> Cupões</h2>
+    <div className="mx-auto max-w-lg space-y-4 pb-8">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black flex items-center gap-2">
+            <Tag className="w-5 h-5 text-primary" />
+            Cupões
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">{coupons.length} cupões · activos no checkout</p>
+        </div>
+        <Button
+          variant={createOpen ? "secondary" : "default"}
+          size="sm"
+          className="h-10 rounded-xl font-bold shrink-0"
+          onClick={() => setCreateOpen((v) => !v)}
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          {createOpen ? "Fechar" : "Novo"}
+        </Button>
+      </div>
 
-      <Card>
-        <CardHeader><CardTitle>Novo cupón</CardTitle></CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div><Label>Código</Label><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="VERAO10" /></div>
+      {createOpen && (
+        <div className="rounded-2xl border bg-card p-3.5 space-y-2.5 shadow-sm ring-1 ring-primary/10">
           <div>
-            <Label>Tipo</Label>
-            <select className="w-full h-10 rounded-md border px-3" value={discountType} onChange={(e) => setDiscountType(e.target.value as "percent" | "fixed")}>
-              <option value="percent">Percentagem (%)</option>
-              <option value="fixed">Valor fixo (€)</option>
-            </select>
+            <Label className="text-xs">Código</Label>
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="VERAO10"
+              className="h-11 mt-1 font-bold tracking-wide"
+            />
           </div>
-          <div><Label>Valor</Label><Input type="number" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} /></div>
-          <div><Label>Pedido mínimo (€)</Label><Input type="number" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} /></div>
-          <Button onClick={create} className="md:col-span-2"><Plus className="w-4 h-4 mr-1" /> Criar cupón</Button>
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Tipo</Label>
+              <select
+                className="w-full h-10 mt-1 rounded-md border px-2 text-sm bg-background"
+                value={discountType}
+                onChange={(e) => setDiscountType(e.target.value as "percent" | "fixed")}
+              >
+                <option value="percent">Percentagem</option>
+                <option value="fixed">Valor fixo €</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Valor</Label>
+              <Input type="number" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="h-10 mt-1" />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Pedido mínimo (€)</Label>
+            <Input type="number" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} className="h-10 mt-1" />
+          </div>
+          <Button className="w-full h-11 font-bold" onClick={create} disabled={saving}>
+            {saving ? "A guardar…" : "Criar cupón"}
+          </Button>
+        </div>
+      )}
 
-      <div className="grid gap-3">
+      <div className="space-y-2">
         {coupons.map((c) => (
-          <Card key={c.id}>
-            <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <p className="font-black text-lg">{c.code}</p>
-                <p className="text-sm text-muted-foreground">
-                  {c.discount_type === "percent" ? `${c.discount_value}%` : `€${c.discount_value}`} off · min €{c.min_order} · usos {c.uses_count}{c.max_uses ? `/${c.max_uses}` : ""}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
+          <OpsCompactCard
+            key={c.id}
+            title={c.code}
+            summary={formatCouponSummary(c)}
+            inactive={!c.is_active}
+            badges={c.is_active ? ["Activo"] : ["Pausado"]}
+            editable={false}
+            actions={
+              <>
                 <Switch checked={c.is_active} onCheckedChange={() => toggle(c)} />
-                <Button variant="destructive" size="icon" onClick={() => remove(c.id)}><Trash2 className="w-4 h-4" /></Button>
-              </div>
-            </CardContent>
-          </Card>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem className="text-destructive" onClick={() => remove(c.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" /> Remover
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            }
+          />
         ))}
+        {coupons.length === 0 && !createOpen && (
+          <p className="text-center text-sm text-muted-foreground py-10 border border-dashed rounded-2xl">
+            Nenhum cupón. Toque em Novo para criar.
+          </p>
+        )}
       </div>
     </div>
   );
