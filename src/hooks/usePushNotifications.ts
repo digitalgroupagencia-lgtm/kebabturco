@@ -21,6 +21,11 @@ export function usePushNotifications() {
         return false;
       }
 
+      if (!opts.storeId) {
+        setError("Loja inválida");
+        return false;
+      }
+
       try {
         const permission = await Notification.requestPermission();
         if (permission !== "granted") {
@@ -40,17 +45,14 @@ export function usePushNotifications() {
         const json = sub.toJSON();
         if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return false;
 
-        const { error: dbErr } = await supabase.from("push_subscriptions").upsert(
-          {
-            store_id: opts.storeId || null,
-            order_id: opts.orderId || null,
-            customer_phone: opts.customerPhone || null,
-            endpoint: json.endpoint,
-            p256dh: json.keys.p256dh,
-            auth: json.keys.auth,
-          },
-          { onConflict: "endpoint" },
-        );
+        const { error: dbErr } = await supabase.rpc("register_push_subscription", {
+          _store_id: opts.storeId!,
+          _order_id: opts.orderId ?? null,
+          _customer_phone: opts.customerPhone ?? null,
+          _endpoint: json.endpoint,
+          _p256dh: json.keys.p256dh,
+          _auth: json.keys.auth,
+        });
 
         if (dbErr) throw dbErr;
         setSubscribed(true);

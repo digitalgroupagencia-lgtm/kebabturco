@@ -22,6 +22,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const CONFIG = {
   SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   STORE_ID: process.env.STORE_ID || null, // se vazio, escuta todos
   DEFAULT_PRINTER_IP: process.env.DEFAULT_PRINTER_IP || '192.168.1.200',
@@ -30,12 +31,20 @@ const CONFIG = {
   POLL_INTERVAL: 3000,
 };
 
-if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
-  console.error('[ERRO] Configure SUPABASE_URL e SUPABASE_ANON_KEY no .env');
+const supabaseKey = CONFIG.SUPABASE_SERVICE_ROLE_KEY || CONFIG.SUPABASE_ANON_KEY;
+
+if (!CONFIG.SUPABASE_URL || !supabaseKey) {
+  console.error('[ERRO] Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (recomendado) ou SUPABASE_ANON_KEY no .env');
   process.exit(1);
 }
 
-const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+if (!CONFIG.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('[AVISO] Sem SUPABASE_SERVICE_ROLE_KEY — após hardening de segurança a impressão pode falhar.');
+} else {
+  console.log('[CFG] Autenticação: service role (PC local)');
+}
+
+const supabase = createClient(CONFIG.SUPABASE_URL, supabaseKey);
 
 function printViaTcp(ip, port, data) {
   return new Promise((resolve, reject) => {

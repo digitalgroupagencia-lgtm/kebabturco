@@ -30,7 +30,10 @@ pm2 startup
 | Variável | Descrição |
 |----------|-----------|
 | `SUPABASE_URL` | URL do projeto |
-| `SUPABASE_ANON_KEY` | Anon key pública |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Recomendado** — chave service role (só neste PC, nunca no browser) |
+| `SUPABASE_ANON_KEY` | Fallback legado (pode falhar após hardening de segurança) |
 | `STORE_ID` | UUID da loja (deixe vazio para escutar todas) |
 | `DEFAULT_PRINTER_IP` | Fallback se o job não trouxer IP |
 | `DEFAULT_PRINTER_PORT` | Padrão 9100 |
+
+Obtenha a **service role key** em Supabase → Project Settings → API. Use apenas no PC da cozinha.

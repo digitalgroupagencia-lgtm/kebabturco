@@ -2582,6 +2582,17 @@ export type Database = {
         }
         Returns: Json
       }
+      register_push_subscription: {
+        Args: {
+          _auth: string
+          _customer_phone?: string
+          _endpoint: string
+          _order_id?: string
+          _p256dh: string
+          _store_id: string
+        }
+        Returns: undefined
+      }
       set_tenant_feature_override: {
         Args: {
           _enabled: boolean
