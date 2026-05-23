@@ -17,7 +17,7 @@ import {
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { filterImplementedPaymentMethods } from "@/lib/paymentMethods";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike, Loader2 } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
@@ -44,8 +44,8 @@ const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Pagamento seguro online", en: "Secure online payment", es: "Pago seguro online", fr: "Paiement sécurisé en ligne" },
   cash: { pt: "Pagamento em dinheiro", en: "Cash payment", es: "Pago en efectivo", fr: "Paiement en espèces" },
   pix: { pt: "Pagamento instantâneo", en: "Instant payment", es: "Pago instantáneo", fr: "Paiement instantané" },
-  apple: { pt: "Pagar com iPhone", en: "Pay with iPhone", es: "Pago con iPhone", fr: "Payer avec iPhone" },
-  google: { pt: "Pagar com Android", en: "Pay with Android", es: "Pago con Android", fr: "Payer avec Android" },
+  apple: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
+  google: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
   link: { pt: "Receba um link", en: "Get a link", es: "Recibe un enlace", fr: "Recevoir un lien" },
   counter: { pt: "Pague ao retirar", en: "Pay when picking up", es: "Paga al recoger tu pedido", fr: "Payer au retrait" },
 };
@@ -97,6 +97,9 @@ const PaymentScreen = () => {
   const [couponError, setCouponError] = useState<string | null>(null);
   const { subscribe: subscribePush } = usePushNotifications();
 
+  const isTableOrder = orderType === "here";
+  const orderTypeDb = isTableOrder ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
+
   const { quote: deliveryQuote } = useDeliveryFee(
     orderType === "delivery" ? storeId : null,
     deliveryPostalCode,
@@ -107,7 +110,7 @@ const PaymentScreen = () => {
   const grandTotal = Math.max(0, totalPrice + deliveryFee - couponDiscount);
 
   const applyCoupon = async () => {
-    if (!couponCode.trim() || !storeId) return;
+    if (!couponCode.trim() || !storeId || isTableOrder) return;
     try {
       const result = await validateCoupon(storeId, couponCode.trim(), totalPrice);
       if (!result.valid) {
@@ -151,29 +154,50 @@ const PaymentScreen = () => {
     return METHOD_DEFS.filter((m) => implemented.includes(m.id));
   }, [settings, stripeEnabled]);
 
-  const counterOnly = settings?.payment_mode === "counter";
-  const orderTypeDb = orderType === "here" ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
+  /** Mesa: só cartão online (Apple/Google Pay em fase seguinte). */
+  const checkoutMethods = useMemo(() => {
+    if (isTableOrder) {
+      if (!stripeEnabled) return [];
+      return METHOD_DEFS.filter((m) => m.id === "card");
+    }
+    if (settings?.payment_mode === "counter") {
+      return METHOD_DEFS.filter((m) => m.id === "counter");
+    }
+    return enabledMethods;
+  }, [isTableOrder, stripeEnabled, settings?.payment_mode, enabledMethods]);
+
+  const counterOnly = !isTableOrder && settings?.payment_mode === "counter";
+  const tablePayReady = isTableOrder && stripeEnabled && checkoutMethods.length > 0;
+  const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing;
 
   useEffect(() => {
     if (counterOnly) setSelected("counter");
   }, [counterOnly]);
 
   useEffect(() => {
-    if (enabledMethods.length === 1) {
-      setSelected(enabledMethods[0].id);
+    if (isTableOrder && stripeEnabled) {
+      setSelected("card");
       return;
     }
-    if (selected && !enabledMethods.some((m) => m.id === selected)) {
+    if (checkoutMethods.length === 1) {
+      setSelected(checkoutMethods[0].id);
+      return;
+    }
+    if (selected && !checkoutMethods.some((m) => m.id === selected)) {
       setSelected(null);
     }
-  }, [enabledMethods, selected]);
+  }, [checkoutMethods, selected, isTableOrder, stripeEnabled]);
 
   const validate = () => {
-    if (!mesaLocked && (!customerName.trim() || customerName.trim().length < 2)) {
+    if (!mesaLocked && !isTableOrder && (!customerName.trim() || customerName.trim().length < 2)) {
       setShowError("name");
       return false;
     }
-    if (orderType === "here" && !tableNumber.trim()) {
+    if (isTableOrder && !mesaLocked && (!customerName.trim() || customerName.trim().length < 2)) {
+      setShowError("name");
+      return false;
+    }
+    if (isTableOrder && !mesaLocked && !tableNumber.trim()) {
       setShowError("table");
       return false;
     }
@@ -189,7 +213,18 @@ const PaymentScreen = () => {
       if (!deliveryCity.trim()) { setShowError("city"); return false; }
       if (deliveryQuote.belowMinimum) { setShowError("minOrder"); return false; }
     }
-    if (!selected) { setShowError("method"); return false; }
+    if (checkoutMethods.length === 0) {
+      setShowError("method");
+      return false;
+    }
+    if (!selected) {
+      setShowError("method");
+      return false;
+    }
+    if (isTableOrder && selected !== "card") {
+      setShowError("method");
+      return false;
+    }
     setShowError(null);
     return true;
   };
@@ -208,6 +243,11 @@ const PaymentScreen = () => {
     paymentStatus: "pending" | "paid";
     stripePi?: string | null;
   }) => {
+    if (isTableOrder && opts.paymentStatus !== "paid") {
+      setShowError("method");
+      return;
+    }
+
     const paymentMethodDb =
       opts.paymentMethod === "apple" ? "apple_pay"
         : opts.paymentMethod === "google" ? "google_pay"
@@ -280,26 +320,38 @@ const PaymentScreen = () => {
     setScreen("confirmation");
   };
 
+  const startCardPayment = async () => {
+    const amountCents = Math.round(grandTotal * 100);
+    const { clientSecret, paymentIntentId } = await createStripePaymentIntent({
+      storeId,
+      amountCents,
+      orderType: orderTypeDb,
+    });
+    setStripePaymentIntentId(paymentIntentId);
+    setStripeClientSecret(clientSecret);
+  };
+
   const confirm = async () => {
     if (processing || !validate() || !selected) return;
 
-    if (selected === "card" && stripeEnabled && settings?.payment_mode !== "counter") {
+    const needsStripe =
+      selected === "card" && stripeEnabled && (isTableOrder || settings?.payment_mode !== "counter");
+
+    if (needsStripe) {
       setProcessing(true);
       try {
-        const amountCents = Math.round(grandTotal * 100);
-        const { clientSecret, paymentIntentId } = await createStripePaymentIntent({
-          storeId,
-          amountCents,
-          orderType: orderTypeDb,
-        });
-        setStripePaymentIntentId(paymentIntentId);
-        setStripeClientSecret(clientSecret);
+        await startCardPayment();
       } catch (e) {
         console.error(e);
-        await finishOrder({ paymentMethod: selected, paymentStatus: "pending" });
+        setShowError("method");
       } finally {
         setProcessing(false);
       }
+      return;
+    }
+
+    if (isTableOrder) {
+      setShowError("method");
       return;
     }
 
@@ -314,33 +366,45 @@ const PaymentScreen = () => {
     }
   };
 
-  return (
-    <div className="relative min-h-[100dvh] bg-secondary/20 animate-fade-in flex flex-col">
-      <ScreenHeader eyebrow={t("finalStep")} title={t("pay")} onBack={() => setScreen("review")} sticky />
+  const compact = isTableOrder;
 
-      <div className="px-4 pt-4 pb-32">
-        <div className="relative bg-card rounded-[28px] p-6 border border-border shadow-card overflow-hidden">
-          <div className="pointer-events-none absolute -top-12 -right-10 w-40 h-40 rounded-full bg-price/5 blur-3xl" />
-          <div className="relative flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-bold">{t("totalToPay")}</p>
-              <p className="text-[44px] leading-none font-black text-price mt-1.5 tabular-nums tracking-tight">{grandTotal.toFixed(2)}€</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{items.length} {items.length === 1 ? t("oneItem") : t("items")} · {t("taxesIncluded")}</p>
+  return (
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+      <ScreenHeader
+        eyebrow={t("finalStep")}
+        title={isTableOrder ? "Pagamento na mesa" : t("pay")}
+        onBack={() => setScreen("review")}
+        sticky
+      />
+
+      <div className={`flex-1 overflow-y-auto overscroll-contain ${compact ? "px-3 pt-2 pb-24" : "px-4 pt-4 pb-28"}`}>
+        <div className={`relative bg-card border border-border shadow-card overflow-hidden ${compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{t("totalToPay")}</p>
+              <p className={`font-black text-price tabular-nums tracking-tight ${compact ? "text-3xl mt-0.5" : "text-[44px] leading-none mt-1.5"}`}>
+                {grandTotal.toFixed(2)}€
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {items.length} {items.length === 1 ? t("oneItem") : t("items")}
+              </p>
             </div>
-            {logoUrl && <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded-xl bg-secondary/50 p-1" />}
+            {mesaLocked && tableNumber ? (
+              <div className="shrink-0 text-center bg-primary/10 rounded-xl px-3 py-2">
+                <p className="text-[9px] uppercase font-bold text-muted-foreground">Mesa</p>
+                <p className="text-xl font-black text-primary">{tableNumber}</p>
+              </div>
+            ) : logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-11 h-11 object-contain rounded-lg bg-secondary/50 p-1 shrink-0" />
+            ) : null}
           </div>
-          {mesaLocked && tableNumber && (
-            <div className="mt-4 pt-3 border-t border-border flex items-center justify-center gap-2 text-primary">
-              <Hash className="w-5 h-5" />
-              <span className="text-xl font-black">Mesa {tableNumber}</span>
-            </div>
-          )}
         </div>
 
         {stripeClientSecret ? (
-          <div className="mt-5 bg-card rounded-[24px] border border-border shadow-card p-4">
-            <p className="text-sm font-black text-foreground mb-3">Pagamento com cartão</p>
+          <div className={`mt-3 bg-card rounded-2xl border border-border shadow-card ${compact ? "p-3" : "p-4 mt-5 rounded-[24px]"}`}>
+            <p className="text-sm font-black text-foreground mb-2">Pagamento com cartão</p>
             <StripePaymentForm
+              compact={compact}
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
               onCancel={() => { setStripeClientSecret(null); setStripePaymentIntentId(null); }}
@@ -361,139 +425,154 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
-            <div className="mt-5 bg-card rounded-[24px] border border-border shadow-card overflow-hidden">
-              {!mesaLocked && (
-                <div className={`px-4 py-4 ${showError === "name" ? "bg-destructive/5 animate-pulse" : ""}`}>
-                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                    <User className="w-3.5 h-3.5 text-primary" />
-                    {t("yourName")} <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => { setCustomerName(e.target.value.slice(0, 40)); if (showError === "name") setShowError(null); }}
-                    placeholder="—"
-                    className={`w-full h-12 px-4 text-base font-bold bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary ${showError === "name" ? "border-destructive/60" : "border-transparent"}`}
-                  />
-                </div>
-              )}
-
-              {orderType === "here" && !mesaLocked && (
-                <div className={`px-4 py-4 border-t border-border ${showError === "table" ? "bg-destructive/5 animate-pulse" : ""}`}>
-                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                    <Hash className="w-3.5 h-3.5 text-primary" />
-                    {t("tableNumber")} <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={tableNumber}
-                    onChange={(e) => { setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4)); if (showError === "table") setShowError(null); }}
-                    className={`w-full h-14 px-4 text-center text-2xl font-black tabular-nums bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary ${showError === "table" ? "border-destructive/60" : "border-transparent"}`}
-                  />
-                </div>
-              )}
-
-              {(orderType === "takeaway" || orderType === "delivery") && (
-                <div className={`px-4 py-4 border-t border-border ${showError === "phone" ? "bg-destructive/5 animate-pulse" : ""}`}>
-                  <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                    <Phone className="w-3.5 h-3.5 text-primary" />
-                    {t("yourPhone")} <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => { setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20)); if (showError === "phone") setShowError(null); }}
-                    className={`w-full h-12 px-4 text-base font-bold bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary ${showError === "phone" ? "border-destructive/60" : "border-transparent"}`}
-                  />
-                </div>
-              )}
-
-              {orderType === "delivery" && (
-                <>
-                  <div className={`px-4 py-4 border-t border-border ${showError === "address" ? "bg-destructive/5 animate-pulse" : ""}`}>
-                    <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-2">
-                      <MapPin className="w-3.5 h-3.5 text-primary" />
-                      {t("addressStreet")} <span className="text-destructive">*</span>
+            {!mesaLocked && (isTableOrder || orderType !== "delivery") && (
+              <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "table" ? "ring-2 ring-destructive/40" : ""}`}>
+                {(!isTableOrder || !mesaLocked) && (
+                  <div className={`px-3 ${compact ? "py-2.5" : "py-4"} ${showError === "name" ? "bg-destructive/5" : ""}`}>
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                      <User className="w-3 h-3 text-primary" />
+                      {t("yourName")} <span className="text-destructive">*</span>
                     </label>
-                    <input type="text" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value.slice(0, 120))} className="w-full h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 border-transparent focus:border-primary" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 px-4 py-4 border-t border-border">
-                    <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={t("addressNumber")} className="h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 border-transparent" />
-                    <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={t("addressPostal")} className="h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 border-transparent" />
-                  </div>
-                  <div className={`px-4 py-4 border-t border-border ${showError === "city" || showError === "minOrder" ? "bg-destructive/5" : ""}`}>
                     <input
                       type="text"
-                      value={deliveryCity}
-                      onChange={(e) => { setDeliveryCity(e.target.value.slice(0, 60)); if (showError === "city" || showError === "minOrder") setShowError(null); }}
-                      placeholder={t("addressCity")}
-                      className={`w-full h-12 px-4 font-bold bg-secondary/60 rounded-2xl border-2 focus:outline-none focus:border-primary ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
+                      value={customerName}
+                      onChange={(e) => { setCustomerName(e.target.value.slice(0, 40)); if (showError === "name") setShowError(null); }}
+                      placeholder="—"
+                      className={`w-full ${compact ? "h-10 text-sm" : "h-12 text-base"} px-3 font-bold bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "name" ? "border-destructive/60" : "border-transparent"}`}
                     />
-                    {deliveryQuote.zone && deliveryPostalCode.trim() && deliveryCity.trim() && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        <span className="font-bold text-foreground">{deliveryQuote.zone.name}</span>
-                        {" · "}
-                        {deliveryQuote.fee > 0
-                          ? `+${deliveryQuote.fee.toFixed(2)}€ entrega`
-                          : "Entrega grátis"}
-                        {" · "}
-                        Mín. {deliveryQuote.minOrder.toFixed(0)}€
-                      </p>
-                    )}
-                    {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
-                      <p className="text-xs text-destructive font-bold mt-1">
-                        Pedido mínimo para esta zona: {deliveryQuote.minOrder.toFixed(2)}€
-                      </p>
-                    )}
                   </div>
-                </>
-              )}
-            </div>
+                )}
+                {isTableOrder && !mesaLocked && (
+                  <div className={`px-3 py-2.5 border-t border-border ${showError === "table" ? "bg-destructive/5" : ""}`}>
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                      <Hash className="w-3 h-3 text-primary" />
+                      {t("tableNumber")} <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={tableNumber}
+                      onChange={(e) => { setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4)); if (showError === "table") setShowError(null); }}
+                      className={`w-full h-10 px-3 text-center text-xl font-black tabular-nums bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "table" ? "border-destructive/60" : "border-transparent"}`}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
-            <div className="mt-5 bg-card rounded-[24px] border border-border shadow-card p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2">Cupón de descuento</p>
-              <div className="flex gap-2">
+            {(orderType === "takeaway" || orderType === "delivery") && (
+              <div className={`mt-3 bg-card rounded-2xl border border-border px-3 py-3 ${showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
+                <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                  <Phone className="w-3 h-3 text-primary" />
+                  {t("yourPhone")} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => { setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20)); if (showError === "phone") setShowError(null); }}
+                  className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                />
+              </div>
+            )}
+
+            {orderType === "delivery" && (
+              <div className="mt-3 space-y-2 bg-card rounded-2xl border border-border p-3">
+                <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>
+                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                    <MapPin className="w-3 h-3" />
+                    {t("addressStreet")} *
+                  </label>
+                  <input type="text" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value.slice(0, 120))} className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={t("addressNumber")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                  <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={t("addressPostal")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                </div>
                 <input
                   type="text"
-                  value={couponCode}
-                  onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
-                  placeholder="CÓDIGO"
-                  className="flex-1 h-11 px-3 rounded-xl border border-border font-bold uppercase"
+                  value={deliveryCity}
+                  onChange={(e) => { setDeliveryCity(e.target.value.slice(0, 60)); if (showError === "city" || showError === "minOrder") setShowError(null); }}
+                  placeholder={t("addressCity")}
+                  className={`w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
                 />
-                <button type="button" onClick={applyCoupon} className="px-4 h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm">Aplicar</button>
+                {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
+                  <p className="text-xs text-destructive font-bold">Pedido mínimo: {deliveryQuote.minOrder.toFixed(2)}€</p>
+                )}
               </div>
-              {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
-              {couponDiscount > 0 && <p className="text-xs text-success mt-1 font-bold">−{couponDiscount.toFixed(2)}€ aplicado</p>}
-            </div>
+            )}
 
-            {counterOnly ? (
-              <div className="mt-5 bg-card rounded-[24px] border-2 border-success/40 p-5 flex items-center gap-4">
-                <Store className="w-7 h-7 text-success" />
-                <p className="font-black">{t("payAtCounterTitle")}</p>
+            {!isTableOrder && (
+              <div className="mt-3 bg-card rounded-2xl border border-border p-3">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Cupón</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
+                    placeholder="CÓDIGO"
+                    className="flex-1 h-9 px-3 rounded-lg border border-border font-bold uppercase text-sm"
+                  />
+                  <button type="button" onClick={applyCoupon} className="px-3 h-9 rounded-lg bg-primary text-primary-foreground font-bold text-xs">Aplicar</button>
+                </div>
+                {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
               </div>
-            ) : (
-              <div className="mt-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground px-1 mb-2">{t("pickMethod")}</p>
-                <div className="flex flex-col gap-2">
-                  {enabledMethods.map((pm) => {
+            )}
+
+            {isTableOrder && !tablePayReady && (
+              <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
+                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-black text-destructive">Pagamento online indisponível</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Para pedir na mesa é obrigatório pagar com cartão. Peça ajuda à equipa do restaurante.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {counterOnly && !isTableOrder ? (
+              <div className="mt-3 bg-card rounded-2xl border-2 border-success/40 p-4 flex items-center gap-3">
+                <Store className="w-6 h-6 text-success shrink-0" />
+                <p className="font-black text-sm">{t("payAtCounterTitle")}</p>
+              </div>
+            ) : checkoutMethods.length > 0 && (
+              <div className={`mt-3 ${showError === "method" ? "ring-2 ring-destructive/40 rounded-2xl p-0.5" : ""}`}>
+                <p className="text-[10px] font-bold uppercase text-muted-foreground px-1 mb-1.5">
+                  {isTableOrder ? "Forma de pagamento *" : t("pickMethod")}
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {checkoutMethods.map((pm) => {
                     const isSel = selected === pm.id;
                     return (
                       <button
                         key={pm.id}
-                        onClick={() => setSelected(pm.id)}
-                        className={`flex items-center gap-4 p-3.5 rounded-2xl border-2 transition-all ${isSel ? "border-success ring-2 ring-success/15" : "border-border"}`}
+                        type="button"
+                        onClick={() => { setSelected(pm.id); setShowError(null); }}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${isSel ? "border-success bg-success/5" : "border-border bg-card"}`}
                       >
-                        <pm.icon className="w-5 h-5" />
-                        <div className="flex-1 text-left">
-                          <p className="font-black">{tProduct(METHOD_LABELS[pm.id])}</p>
-                          <p className="text-xs text-muted-foreground">{tProduct(METHOD_SUBS[pm.id])}</p>
+                        <pm.icon className="w-5 h-5 shrink-0" />
+                        <div className="flex-1 text-left min-w-0">
+                          <p className="font-black text-sm">{tProduct(METHOD_LABELS[pm.id])}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{tProduct(METHOD_SUBS[pm.id])}</p>
                         </div>
-                        {isSel && <Check className="w-5 h-5 text-success" />}
+                        {isSel && <Check className="w-5 h-5 text-success shrink-0" />}
                       </button>
                     );
                   })}
+                  {isTableOrder && stripeEnabled && (
+                    <div className="flex gap-2 opacity-50 px-1 pt-0.5">
+                      <div className="flex-1 flex items-center gap-2 p-2 rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+                        <Smartphone className="w-4 h-4" /> Apple Pay · em breve
+                      </div>
+                      <div className="flex-1 flex items-center gap-2 p-2 rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+                        <Smartphone className="w-4 h-4" /> Google Pay · em breve
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {showError === "method" && (
+                  <p className="text-xs text-destructive font-bold mt-1.5 px-1">Seleccione uma forma de pagamento para continuar.</p>
+                )}
               </div>
             )}
           </>
@@ -501,14 +580,18 @@ const PaymentScreen = () => {
       </div>
 
       {!stripeClientSecret && (
-        <div className="sticky left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-md border-t border-border px-3 pt-2 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <button
+            type="button"
             onClick={confirm}
-            disabled={processing}
-            className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] font-black disabled:opacity-40"
+            disabled={!canFinalize}
+            className="w-full flex items-center justify-between gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base disabled:opacity-40 touch-action-manipulation"
           >
-            <span>{processing ? t("processing") : t("finalizeOrder")}</span>
-            <span className="bg-white/20 rounded-full px-3.5 py-1 tabular-nums">{grandTotal.toFixed(2)}€</span>
+            <span className="flex items-center gap-2">
+              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+              {processing ? t("processing") : isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
+            </span>
+            <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
           </button>
         </div>
       )}

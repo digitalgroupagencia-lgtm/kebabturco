@@ -5,10 +5,11 @@ import { Loader2 } from "lucide-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
-function CheckoutForm({ amountLabel, onSuccess, onCancel }: {
+function CheckoutForm({ amountLabel, onSuccess, onCancel, compact }: {
   amountLabel: string;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
+  compact?: boolean;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -35,15 +36,15 @@ function CheckoutForm({ amountLabel, onSuccess, onCancel }: {
   };
 
   return (
-    <div className="space-y-4">
-      <PaymentElement options={{ layout: "tabs" }} />
-      {err && <p className="text-sm font-bold text-destructive">{err}</p>}
+    <div className={compact ? "space-y-2" : "space-y-4"}>
+      <PaymentElement options={{ layout: compact ? "accordion" : "tabs" }} />
+      {err && <p className="text-xs font-bold text-destructive">{err}</p>}
       <div className="flex gap-2">
         <button
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="flex-1 h-12 rounded-2xl border border-border font-bold text-muted-foreground"
+          className={`flex-1 rounded-xl border border-border font-bold text-muted-foreground ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
         >
           Voltar
         </button>
@@ -51,9 +52,9 @@ function CheckoutForm({ amountLabel, onSuccess, onCancel }: {
           type="button"
           onClick={pay}
           disabled={!stripe || busy}
-          className="flex-[2] h-12 rounded-2xl bg-primary text-primary-foreground font-black flex items-center justify-center gap-2"
+          className={`flex-[2] rounded-xl bg-primary text-primary-foreground font-black flex items-center justify-center gap-2 ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
         >
-          {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : `Pagar ${amountLabel}`}
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pagar ${amountLabel}`}
         </button>
       </div>
     </div>
@@ -65,6 +66,7 @@ export default function StripePaymentForm(props: {
   amountLabel: string;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
+  compact?: boolean;
 }) {
   if (!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
     return (
@@ -76,7 +78,7 @@ export default function StripePaymentForm(props: {
 
   return (
     <Elements stripe={stripePromise} options={{ clientSecret: props.clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#D62300" } } }}>
-      <CheckoutForm {...props} />
+      <CheckoutForm amountLabel={props.amountLabel} onSuccess={props.onSuccess} onCancel={props.onCancel} compact={props.compact} />
     </Elements>
   );
 }
