@@ -11,8 +11,9 @@ import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 
 const ConfirmationScreen = () => {
   const {
-    setScreen, orderNumber, tableNumber, paymentMethod,
+    setScreen, orderNumber, tableNumber, paymentMethod, orderPaymentStatus,
     customerName, customerPhone, setTableNumber, setPaymentMethod,
+    setOrderPaymentStatus,
     setCustomerName, setCustomerPhone, activeOrderId, setTrackingOrderId,
   } = useOrder();
   const { orderType } = useCart();
@@ -21,19 +22,26 @@ const ConfirmationScreen = () => {
   const { t } = useLanguage();
 
   const isCounter = paymentMethod === "counter";
+  const isCash = paymentMethod === "cash";
+  const isPaidOnline = orderPaymentStatus === "paid";
   const isHere = orderType === "here";
   const prepMin = (settings as any)?.avg_prep_minutes ?? 12;
   const cardRef = useRef<HTMLDivElement>(null);
   const [savedAt] = useState(() => new Date());
   const [downloading, setDownloading] = useState(false);
 
-  const message = isCounter
-    ? settings?.msg_counter || "Pago pendiente en mostrador"
-    : settings?.msg_paid || "Pago confirmado";
+  const message = isPaidOnline
+    ? settings?.msg_paid || "Pago confirmado online"
+    : isCounter
+      ? settings?.msg_counter || "Pago pendiente en mostrador"
+      : isCash
+        ? "Pago en efectivo al recoger o recibir"
+        : "Pedido registrado — pago pendiente";
 
   const handleNewOrder = () => {
     setTableNumber("");
     setPaymentMethod(null);
+    setOrderPaymentStatus("pending");
     setCustomerName("");
     setCustomerPhone("");
     setScreen(shouldForceDeliveryOnly() ? "home" : "orderType");
@@ -218,15 +226,23 @@ const ConfirmationScreen = () => {
 
           <div
             className={`rounded-xl p-2.5 flex items-center gap-2 border-2 shadow-card ${
-              isCounter ? "bg-accent/10 border-accent" : "bg-success/10 border-success"
+              isPaidOnline
+                ? "bg-success/10 border-success"
+                : isCounter || isCash
+                  ? "bg-accent/10 border-accent"
+                  : "bg-secondary border-border"
             }`}
           >
             <div
               className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                isCounter ? "bg-accent text-accent-foreground" : "bg-success text-success-foreground"
+                isPaidOnline
+                  ? "bg-success text-success-foreground"
+                  : isCounter || isCash
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-secondary text-foreground"
               }`}
             >
-              {isCounter ? <Store className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+              {isPaidOnline ? <CheckCircle className="w-4 h-4" /> : <Store className="w-4 h-4" />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">

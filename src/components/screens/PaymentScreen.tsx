@@ -15,6 +15,7 @@ import {
   validateCoupon,
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { filterImplementedPaymentMethods } from "@/lib/paymentMethods";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, ChevronRight, User, Hash, Phone, MapPin, Home, Mailbox, FileText, Bike, Loader2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
@@ -55,6 +56,7 @@ const PaymentScreen = () => {
     setActiveOrderId,
     setTrackingOrderId,
     setPaymentMethod,
+    setOrderPaymentStatus,
     storeId,
     tableNumber,
     setTableNumber,
@@ -129,18 +131,24 @@ const PaymentScreen = () => {
   }, [storeId]);
 
   const enabledMethods = useMemo(() => {
-    if (!settings) return METHOD_DEFS;
-    const map: Record<PaymentMethodId, boolean> = {
-      card: settings.pay_card_enabled,
-      cash: settings.pay_cash_enabled,
-      pix: settings.pay_pix_enabled,
-      apple: settings.pay_apple_enabled,
-      google: settings.pay_google_enabled,
-      counter: settings.pay_counter_enabled,
-      link: settings.pay_link_enabled,
-    };
-    return METHOD_DEFS.filter((m) => map[m.id]);
-  }, [settings]);
+    const baseIds: PaymentMethodId[] = settings
+      ? (METHOD_DEFS.filter((m) => {
+          const map: Record<PaymentMethodId, boolean> = {
+            card: settings.pay_card_enabled,
+            cash: settings.pay_cash_enabled,
+            pix: settings.pay_pix_enabled,
+            apple: settings.pay_apple_enabled,
+            google: settings.pay_google_enabled,
+            counter: settings.pay_counter_enabled,
+            link: settings.pay_link_enabled,
+          };
+          return map[m.id];
+        }).map((m) => m.id))
+      : ["counter"];
+
+    const implemented = filterImplementedPaymentMethods(baseIds, stripeEnabled);
+    return METHOD_DEFS.filter((m) => implemented.includes(m.id));
+  }, [settings, stripeEnabled]);
 
   const counterOnly = settings?.payment_mode === "counter";
   const orderTypeDb = orderType === "here" ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
@@ -148,6 +156,16 @@ const PaymentScreen = () => {
   useEffect(() => {
     if (counterOnly) setSelected("counter");
   }, [counterOnly]);
+
+  useEffect(() => {
+    if (enabledMethods.length === 1) {
+      setSelected(enabledMethods[0].id);
+      return;
+    }
+    if (selected && !enabledMethods.some((m) => m.id === selected)) {
+      setSelected(null);
+    }
+  }, [enabledMethods, selected]);
 
   const validate = () => {
     if (!mesaLocked && (!customerName.trim() || customerName.trim().length < 2)) {
@@ -224,6 +242,7 @@ const PaymentScreen = () => {
     });
 
     setPaymentMethod(opts.paymentMethod);
+    setOrderPaymentStatus(opts.paymentStatus);
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
@@ -286,7 +305,7 @@ const PaymentScreen = () => {
     try {
       await finishOrder({
         paymentMethod: selected,
-        paymentStatus: selected === "counter" ? "pending" : "paid",
+        paymentStatus: "pending",
       });
     } finally {
       setProcessing(false);

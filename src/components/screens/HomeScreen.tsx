@@ -7,7 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import ActiveOrderBar from "@/features/customer/ActiveOrderBar";
-import { Plus, History } from "lucide-react";
+import { Plus, History, Loader2, RefreshCw } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
@@ -20,7 +20,7 @@ const HomeScreen = () => {
   const { totalItems } = useCart();
   const { settings } = useBranding();
   const { theme } = useTheme();
-  const { categories, products, loading } = useMenuData();
+  const { categories, products, loading, error, retry } = useMenuData();
   const isDark = theme === "dark";
   const headerLogo =
     (isDark && ((settings as any)?.logo_main_dark_url || (settings as any)?.logo_secondary_dark_url)) ||
@@ -69,6 +69,39 @@ const HomeScreen = () => {
     setSelectedProductId(id);
     setScreen("product");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-3">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar menu" />
+        <p className="text-sm text-muted-foreground font-semibold">A carregar menu…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    const copy =
+      error === "empty"
+        ? { title: "Menu indisponível", body: "Esta loja ainda não tem produtos activos. Tente mais tarde." }
+        : error === "no_store"
+          ? { title: "Loja não encontrada", body: "Não foi possível identificar a loja. Actualize a página." }
+          : { title: "Erro ao carregar menu", body: "Verifique a ligação e tente novamente." };
+
+    return (
+      <div className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center gap-4">
+        <p className="text-lg font-black text-foreground">{copy.title}</p>
+        <p className="text-sm text-muted-foreground max-w-xs">{copy.body}</p>
+        <button
+          type="button"
+          onClick={retry}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Tentar novamente
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-[100dvh] md:h-full flex flex-col bg-background overflow-hidden ${totalItems > 0 ? "pb-[72px]" : ""}`}>

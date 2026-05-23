@@ -2,18 +2,45 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
+
+async function firstActiveStoreForTenant(tenantId: string): Promise<string | null> {
+  const db = supabase as unknown as {
+    from: (table: string) => ReturnType<typeof supabase.from>;
+  };
+  const { data, error } = await db
+    .from("stores_public")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data?.id) {
+    const legacy = await supabase
+      .from("stores")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return legacy.data?.id ?? null;
+  }
+
+  return data.id as string;
+}
 
 /**
- * Resolve o store_id correto para páginas administrativas:
- *  - /admin/tenants/:slug/... → store da loja desse tenant
- *  - /panel/...               → store do usuário autenticado (via user_roles.tenant_id)
- *  - fallback                 → primeira store ativa
- *
- * Substitui os hardcodes de STORE_ID nas páginas admin/panel.
+ * Resolve store_id para páginas admin/panel — nunca usa loja global aleatória.
  */
 export function useAdminStoreId(): { storeId: string | null; loading: boolean } {
   const { slug } = useParams<{ slug?: string }>();
   const { user } = useAuth();
+  const { tenantId: hostTenantId } = useResolvedStore();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,35 +50,36 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
       setLoading(true);
       let resolved: string | null = null;
 
-      // 1. Rota tenant-aware (/admin/tenants/:slug)
       if (slug) {
         const { data: t } = await supabase
-          .from("tenants").select("id").eq("slug", slug).maybeSingle();
-        if (t) {
-          const { data: s } = await supabase
-            .from("stores").select("id").eq("tenant_id", t.id).order("created_at").limit(1).maybeSingle();
-          resolved = s?.id ?? null;
+          .from("tenants")
+          .select("id")
+          .eq("slug", slug)
+          .maybeSingle();
+        if (t?.id) {
+          resolved = await firstActiveStoreForTenant(t.id);
         }
       }
 
-      // 2. Painel próprio (/panel) → tenant do user
       if (!resolved && user?.id) {
-        const { data: role } = await supabase
-          .from("user_roles").select("store_id, tenant_id").eq("user_id", user.id).limit(1).maybeSingle();
-        if (role?.store_id) {
-          resolved = role.store_id;
-        } else if (role?.tenant_id) {
-          const { data: s } = await supabase
-            .from("stores").select("id").eq("tenant_id", role.tenant_id).order("created_at").limit(1).maybeSingle();
-          resolved = s?.id ?? null;
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("store_id, tenant_id")
+          .eq("user_id", user.id);
+
+        const withStore = roles?.find((r) => r.store_id);
+        if (withStore?.store_id) {
+          resolved = withStore.store_id;
+        } else {
+          const tenantIds = [...new Set((roles || []).map((r) => r.tenant_id).filter(Boolean))] as string[];
+          if (tenantIds.length === 1) {
+            resolved = await firstActiveStoreForTenant(tenantIds[0]);
+          }
         }
       }
 
-      // 3. Fallback final
-      if (!resolved) {
-        const { data: s } = await supabase
-          .from("stores").select("id").eq("is_active", true).order("created_at").limit(1).maybeSingle();
-        resolved = s?.id ?? null;
+      if (!resolved && hostTenantId) {
+        resolved = await firstActiveStoreForTenant(hostTenantId);
       }
 
       if (active) {
@@ -59,8 +87,10 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
         setLoading(false);
       }
     })();
-    return () => { active = false; };
-  }, [slug, user?.id]);
+    return () => {
+      active = false;
+    };
+  }, [slug, user?.id, hostTenantId]);
 
   return { storeId, loading };
 }

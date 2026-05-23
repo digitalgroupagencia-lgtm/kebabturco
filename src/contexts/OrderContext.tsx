@@ -52,6 +52,8 @@ interface OrderContextType {
   setDeliveryNotes: (v: string) => void;
   paymentMethod: PaymentMethodId | null;
   setPaymentMethod: (m: PaymentMethodId | null) => void;
+  orderPaymentStatus: "pending" | "paid";
+  setOrderPaymentStatus: (s: "pending" | "paid") => void;
   productReturnScreen: Screen;
   setProductReturnScreen: (s: Screen) => void;
 }
@@ -135,6 +137,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [deliveryCity, setDeliveryCity] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState<"pending" | "paid">("pending");
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
 
   useEffect(() => {
@@ -197,6 +200,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setDeliveryNotes,
         paymentMethod,
         setPaymentMethod,
+        orderPaymentStatus,
+        setOrderPaymentStatus,
         productReturnScreen,
         setProductReturnScreen,
       }}

@@ -1,19 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import {
-  categories as fallbackCategories,
-  products as fallbackProducts,
-  type Category,
-  type Extra,
-  type Product,
-  type Variant,
-} from "@/data/products";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
+import type { Category, Extra, Product, Variant } from "@/data/products";
 
 type JsonName = Record<string, string>;
 
 export type MenuProduct = Product & { ingredients?: string[] };
+
+export type MenuLoadError = "network" | "empty" | "no_store";
 
 const asName = (value: unknown, fallback = ""): JsonName => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as JsonName;
@@ -36,18 +31,27 @@ export function useMenuData() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<MenuProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<MenuLoadError | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const retry = useCallback(() => setReloadToken((n) => n + 1), []);
 
   useEffect(() => {
     let active = true;
+
     if (!effectiveStoreId) {
+      setCategories([]);
+      setProducts([]);
+      setError("no_store");
       setLoading(false);
       return;
     }
 
     (async () => {
       setLoading(true);
+      setError(null);
 
-      const [{ data: catRows }, { data: productRows }] = await Promise.all([
+      const [catRes, prodRes] = await Promise.all([
         supabase
           .from("categories")
           .select("id, name, image_url, sort_order, created_at")
@@ -66,14 +70,27 @@ export function useMenuData() {
 
       if (!active) return;
 
-      if (!catRows?.length || !productRows?.length) {
-        setCategories(fallbackCategories);
-        setProducts(fallbackProducts);
+      if (catRes.error || prodRes.error) {
+        console.error("[useMenuData]", catRes.error || prodRes.error);
+        setCategories([]);
+        setProducts([]);
+        setError("network");
         setLoading(false);
         return;
       }
 
-      const mappedCategories = catRows.map((cat: any) => ({
+      const catRows = catRes.data;
+      const productRows = prodRes.data;
+
+      if (!catRows?.length || !productRows?.length) {
+        setCategories([]);
+        setProducts([]);
+        setError("empty");
+        setLoading(false);
+        return;
+      }
+
+      const mappedCategories = catRows.map((cat: { id: string; name: unknown; image_url: string | null }) => ({
         id: cat.id,
         name: asName(cat.name),
         image: cat.image_url || "",
@@ -81,10 +98,10 @@ export function useMenuData() {
       }));
 
       const categoryImage = new Map(mappedCategories.map((cat) => [cat.id, cat.image]));
-      const mappedProducts = productRows.map((prod: any) => {
+      const mappedProducts = productRows.map((prod: Record<string, unknown>) => {
         const modifiers = Array.isArray(prod.price_modifiers) ? prod.price_modifiers : [];
-        const allExtras = modifiers.map((modifier: any, index: number) => ({
-          id: modifier.id || `modifier-${index}`,
+        const allExtras = modifiers.map((modifier: Record<string, unknown>, index: number) => ({
+          id: (modifier.id as string) || `modifier-${index}`,
           name: asName(modifier.name),
           price: Number(modifier.price || 0),
         })) as Extra[];
@@ -106,12 +123,12 @@ export function useMenuData() {
           inferredVariants.length >= 2 ? inferredVariants : undefined;
 
         return {
-          id: prod.id,
+          id: prod.id as string,
           name,
           description,
           price: Number(prod.price || 0),
-          image: prod.image_url || categoryImage.get(prod.category_id) || "",
-          category: prod.category_id,
+          image: (prod.image_url as string) || categoryImage.get(prod.category_id as string) || "",
+          category: prod.category_id as string,
           isBestseller: Boolean(prod.is_bestseller),
           isPromo: Boolean(prod.is_promo),
           extras,
@@ -122,13 +139,17 @@ export function useMenuData() {
 
       setCategories(mappedCategories);
       setProducts(mappedProducts);
+      setError(null);
       setLoading(false);
     })();
 
     return () => {
       active = false;
     };
-  }, [effectiveStoreId]);
+  }, [effectiveStoreId, reloadToken]);
 
-  return useMemo(() => ({ categories, products, loading }), [categories, products, loading]);
+  return useMemo(
+    () => ({ categories, products, loading, error, retry }),
+    [categories, products, loading, error, retry],
+  );
 }
