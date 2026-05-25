@@ -36,6 +36,14 @@
   <meta name="twitter:description" content="Peça online no Kebab Turco">
 </head>
   <body>
+    <script>
+      (function () {
+        var p = location.pathname || "/";
+        if (p.indexOf("*") !== -1) {
+          location.replace("/");
+        }
+      })();
+    </script>
     <div id="boot-fallback" style="margin:0;min-height:100vh;min-height:100dvh;background:#fff"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -1,6 +1,7 @@
 import { withCacheBust } from "@/lib/appCacheBust";
 import { isLovableEditorHost } from "@/lib/platformHosts";
 import { SINGLE_TENANT_MODE } from "@/lib/appMode";
+import { isReservedAppPath } from "@/lib/appPaths";
 import { buildTenantUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 
 export type TenantPreviewScreen =
@@ -17,7 +18,7 @@ export const PREVIEW_MESSAGE_TYPE = "snaporder:preview-branding" as const;
 
 const PREVIEW_PATH_RE = /^\/preview\/([^/]+)/;
 
-/** Slug do restaurante em prévia (query ?tenant= ou caminho /preview/slug). */
+/** Slug em modo prévia explícita (?preview=1&tenant= ou /preview/slug). */
 export function getPreviewTenantSlug(): string | null {
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
@@ -28,11 +29,24 @@ export function getPreviewTenantSlug(): string | null {
   return match?.[1] ?? null;
 }
 
+/** Slug do restaurante para resolver loja (inclui /kebab-turco no preview). */
+export function getStoreTenantSlug(): string | null {
+  const explicit = getPreviewTenantSlug();
+  if (explicit) return explicit;
+
+  if (typeof window === "undefined") return null;
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  const first = segments[0] ?? null;
+  if (first === "preview") return segments[1] ?? null;
+  if (first && !isReservedAppPath(first) && segments.length === 1) return first;
+  return null;
+}
+
 export function isAdminPreviewMode(): boolean {
   return getPreviewTenantSlug() != null;
 }
 
-/** Prévia de restaurante dentro da plataforma SnapOrder ou editor Lovable. */
+/** Prévia embebida (iframe admin ou /preview/slug). */
 export function isEmbeddedTenantPreview(): boolean {
   return getPreviewTenantSlug() != null;
 }

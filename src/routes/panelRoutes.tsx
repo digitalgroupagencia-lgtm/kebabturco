@@ -1,4 +1,4 @@
-import { useRoutes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import Dashboard from "@/pages/panel/Dashboard.tsx";
 import MenuPage from "@/pages/panel/MenuPage.tsx";
@@ -27,42 +27,39 @@ import TenantDeliveryZonesPage from "@/pages/admin/tenant/TenantDeliveryZonesPag
 import TenantScreensPage from "@/pages/admin/tenant/TenantScreensPage.tsx";
 import TenantLanguagesPage from "@/pages/admin/tenant/TenantLanguagesPage.tsx";
 
-const panelRouteTree = [
-  {
-    path: "/",
-    element: <PanelLayout />,
-    children: [
-      { index: true, element: <OrdersPage /> },
-      { path: "dashboard", element: <Dashboard /> },
-      { path: "menu", element: <MenuPage /> },
-      { path: "modifiers", element: <ModifierGroupsPage /> },
-      { path: "orders", element: <OrdersPage /> },
-      { path: "table-map", element: <TableMapPage /> },
-      { path: "cashier", element: <CashierPage /> },
-      { path: "stock", element: <StockPage /> },
-      { path: "reports", element: <ReportsPage /> },
-      { path: "team", element: <TeamPage /> },
-      { path: "sellers", element: <SellersPage /> },
-      { path: "totem", element: <TotemConfigPage /> },
-      { path: "tables", element: <TablesPage /> },
-      { path: "printers", element: <PrinterPage /> },
-      { path: "settings", element: <PanelSettingsPage /> },
-      { path: "diagnostics", element: <DiagnosticsPage /> },
-      { path: "branding", element: <BrandingPage /> },
-      { path: "banners", element: <BannerPage /> },
-      { path: "stores", element: <TenantStoresPage /> },
-      { path: "screens", element: <TenantScreensPage /> },
-      { path: "languages", element: <TenantLanguagesPage /> },
-      { path: "delivery-zones", element: <TenantDeliveryZonesPage /> },
-      { path: "payments", element: <OperationsPage /> },
-      { path: "finance", element: <FinancePage /> },
-      { path: "guide", element: <PanelGuidePage /> },
-      { path: "coupons", element: <CouponsPage /> },
-      { path: "loyalty", element: <LoyaltyPage /> },
-    ],
-  },
-];
-
 export default function PanelRoutes() {
-  return useRoutes(panelRouteTree);
+  return (
+    <Routes>
+      <Route element={<PanelLayout />}>
+        <Route index element={<OrdersPage />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="menu" element={<MenuPage />} />
+        <Route path="modifiers" element={<ModifierGroupsPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="table-map" element={<TableMapPage />} />
+        <Route path="cashier" element={<CashierPage />} />
+        <Route path="stock" element={<StockPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="team" element={<TeamPage />} />
+        <Route path="sellers" element={<SellersPage />} />
+        <Route path="totem" element={<TotemConfigPage />} />
+        <Route path="tables" element={<TablesPage />} />
+        <Route path="printers" element={<PrinterPage />} />
+        <Route path="settings" element={<PanelSettingsPage />} />
+        <Route path="diagnostics" element={<DiagnosticsPage />} />
+        <Route path="branding" element={<BrandingPage />} />
+        <Route path="banners" element={<BannerPage />} />
+        <Route path="stores" element={<TenantStoresPage />} />
+        <Route path="screens" element={<TenantScreensPage />} />
+        <Route path="languages" element={<TenantLanguagesPage />} />
+        <Route path="delivery-zones" element={<TenantDeliveryZonesPage />} />
+        <Route path="payments" element={<OperationsPage />} />
+        <Route path="finance" element={<FinancePage />} />
+        <Route path="guide" element={<PanelGuidePage />} />
+        <Route path="coupons" element={<CouponsPage />} />
+        <Route path="loyalty" element={<LoyaltyPage />} />
+        <Route path="*" element={<Navigate to="/panel" replace />} />
+      </Route>
+    </Routes>
+  );
 }

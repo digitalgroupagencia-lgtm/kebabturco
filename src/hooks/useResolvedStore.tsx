@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
+import { isReservedAppPath } from "@/lib/appPaths";
 import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
-import { getPreviewTenantSlug } from "@/lib/tenantPreview";
+import { getStoreTenantSlug } from "@/lib/tenantPreview";
 
 /**
  * Resolve store_id para a loja pública:
@@ -162,7 +163,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     const host = normalizeHostname(window.location.hostname);
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const firstSeg = pathSegments[0] === "preview" ? pathSegments[1] || null : pathSegments[0] || null;
-    const tenantParam = getPreviewTenantSlug();
+    const tenantParam = getStoreTenantSlug();
 
     const timeout = window.setTimeout(() => {
       if (!active) return;
@@ -216,6 +217,10 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
               if (!segMatch || !t.master_domain) return false;
               return normalizeHostname(t.master_domain) === host;
             }) ?? null;
+        }
+
+        if (!tenant && firstSeg && !isReservedAppPath(firstSeg)) {
+          tenant = await fetchTenantBySlug(firstSeg);
         }
 
         if (!tenant && isDefaultKebabContextHost(host)) {

@@ -1,7 +1,9 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
+import { isDefaultKebabContextHost } from "@/lib/platformHosts";
+import { isReservedAppPath } from "@/lib/appPaths";
 
 const Index = lazy(() => import("@/pages/Index.tsx"));
 const Auth = lazy(() => import("@/pages/Auth.tsx"));
@@ -22,7 +24,18 @@ const tenantStore = withSuspense(
   </MobileFrame>,
 );
 
-/** Kebab Turco — rotas simples: loja, painel, auth, admin. */
+/** /kebab-turco ou slug similar no preview — abre a loja. */
+function TenantSlugStore() {
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  if (!tenantSlug || isReservedAppPath(tenantSlug)) {
+    return withSuspense(<Navigate to="/" replace />);
+  }
+  if (!isDefaultKebabContextHost(window.location.hostname)) {
+    return withSuspense(<Navigate to="/" replace />);
+  }
+  return tenantStore;
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
@@ -33,10 +46,9 @@ const AppRoutes = () => (
     <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
     <Route path="/cashier" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
     <Route path="/cashier/*" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
-    {/* Legado multi-tenant — redireccionar para não confundir */}
-    <Route path="/admin/tenants/*" element={withSuspense(<Navigate to="/admin" replace />)} />
     <Route path="/preview/:tenantSlug/panel/*" element={withSuspense(<PanelRoutes />)} />
     <Route path="/preview/:tenantSlug" element={tenantStore} />
+    <Route path="/:tenantSlug" element={<TenantSlugStore />} />
     <Route path="*" element={withSuspense(<NotFound />)} />
   </Routes>
 );

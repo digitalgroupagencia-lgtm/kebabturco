@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppRoutes from "@/routes/AppRoutes.tsx";
+import PreviewPathGuard from "@/components/PreviewPathGuard.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
@@ -23,6 +24,7 @@ const App = () => (
         <ThemeProvider>
           <BrowserRouter>
             <AppCacheBustRouter>
+              <PreviewPathGuard />
               <ResolvedStoreProvider>
                 <SiteBrandingEffect />
                 <BrandingProvider>
