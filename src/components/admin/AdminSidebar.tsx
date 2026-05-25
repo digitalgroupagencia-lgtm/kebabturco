@@ -172,8 +172,9 @@ export function AdminSidebar() {
                               <SidebarMenuSubButton asChild>
                                 <NavLink
                                   to={c.globalPath}
-                                  className="hover:bg-muted/50"
-                                  activeClassName="bg-primary/10 text-primary font-semibold"
+                                  className={({ isActive }) =>
+                                    cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
+                                  }
                                   onClick={handleNav}
                                 >
                                   <Icon className="h-3.5 w-3.5" />
