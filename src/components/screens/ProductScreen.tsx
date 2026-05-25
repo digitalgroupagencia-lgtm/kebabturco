@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMenuData } from "@/hooks/useMenuData";
-import { useProductModifierConfig } from "@/hooks/useProductModifierConfig";
+import { useEffectiveModifierConfig } from "@/hooks/useEffectiveModifierConfig";
 import ProductCustomizationFlow from "@/components/customization/ProductCustomizationFlow";
 import LegacyProductCustomizer from "@/components/screens/LegacyProductCustomizer";
 import PageSpinner from "@/components/PageSpinner";
@@ -28,7 +28,8 @@ const ProductScreen = () => {
   const { items } = useCart();
   const { products } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
-  const { config: modifierConfig, loading: modifierLoading } = useProductModifierConfig(product?.id);
+  const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
+    useEffectiveModifierConfig(product);
 
   const editingItem = useMemo(
     () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
@@ -45,7 +46,7 @@ const ProductScreen = () => {
     );
   }
 
-  if (modifierConfig?.hasStructuredModifiers) {
+  if (hasStructuredModifiers && modifierConfig) {
     return (
       <ProductCustomizationFlow
         product={product}

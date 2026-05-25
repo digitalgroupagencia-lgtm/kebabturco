@@ -6,7 +6,13 @@ import type { Category, Extra, Product, Variant } from "@/data/products";
 
 type JsonName = Record<string, string>;
 
-export type MenuProduct = Product & { ingredients?: string[] };
+export type MenuProduct = Product & {
+  ingredients?: string[];
+  productType?: "simple" | "combo";
+  comboUnitCount?: number;
+  unitLabel?: Record<string, string>;
+  categorySlug?: string;
+};
 
 export type MenuLoadError = "network" | "empty" | "no_store";
 
@@ -66,17 +72,37 @@ export function useMenuData() {
           .order("created_at", { ascending: true }),
         supabase
           .from("products")
-          .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order, created_at, price_modifiers")
+          .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order, created_at, price_modifiers, product_type, combo_unit_count, unit_label")
           .eq("store_id", effectiveStoreId)
           .eq("is_active", true)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
       ]);
 
+      let productRows = prodRes.data;
+      if (prodRes.error) {
+        const fallback = await supabase
+          .from("products")
+          .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order, created_at, price_modifiers")
+          .eq("store_id", effectiveStoreId)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true });
+        if (fallback.error) {
+          console.error("[useMenuData]", fallback.error);
+          setCategories([]);
+          setProducts([]);
+          setError("network");
+          setLoading(false);
+          return;
+        }
+        productRows = fallback.data;
+      }
+
       if (!active) return;
 
-      if (catRes.error || prodRes.error) {
-        console.error("[useMenuData]", catRes.error || prodRes.error);
+      if (catRes.error) {
+        console.error("[useMenuData]", catRes.error);
         setCategories([]);
         setProducts([]);
         setError("network");
@@ -85,7 +111,6 @@ export function useMenuData() {
       }
 
       const catRows = catRes.data;
-      const productRows = prodRes.data;
 
       if (!catRows?.length || !productRows?.length) {
         setCategories([]);
@@ -101,6 +126,14 @@ export function useMenuData() {
         image: cat.image_url || "",
         icon: "",
       }));
+
+      const categorySlug = new Map(
+        catRows.map((cat: { id: string; name: unknown }) => {
+          const n = asName(cat.name);
+          const slug = (n.es || n.pt || n.en || "cat").toLowerCase().replace(/\s+/g, "-");
+          return [cat.id, slug];
+        }),
+      );
 
       const categoryImage = new Map(mappedCategories.map((cat) => [cat.id, cat.image]));
       const mappedProducts = productRows.map((prod: Record<string, unknown>) => {
@@ -134,11 +167,15 @@ export function useMenuData() {
           price: Number(prod.price || 0),
           image: (prod.image_url as string) || categoryImage.get(prod.category_id as string) || "",
           category: prod.category_id as string,
+          categorySlug: categorySlug.get(prod.category_id as string) || "",
           isBestseller: Boolean(prod.is_bestseller),
           isPromo: Boolean(prod.is_promo),
           extras,
           ingredients,
           variants,
+          productType: (prod.product_type as "simple" | "combo") || "simple",
+          comboUnitCount: Number(prod.combo_unit_count || 0),
+          unitLabel: asName(prod.unit_label),
         } satisfies MenuProduct;
       });
 

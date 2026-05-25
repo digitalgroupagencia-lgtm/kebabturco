@@ -33,6 +33,15 @@ export function isMeatChoiceLabel(label: string): boolean {
 export function parseRemovableIngredients(description: string, skipGenericCarne = false): string[] {
   if (!description) return [];
 
+  const lower = description.toLowerCase();
+  if (
+    /\bcombo\b|\bmen[uú]\b/.test(lower) ||
+    /\d+\s*(pan\s*)?(pita|rollo|pizza)/i.test(lower) ||
+    /\+\s*patatas|bebida\s*\d/i.test(lower)
+  ) {
+    return [];
+  }
+
   const normalized = description
     .replace(/\s+(?:y|e|and|et)\s+/gi, ", ")
     .replace(/\s*\.\s*$/, "");
