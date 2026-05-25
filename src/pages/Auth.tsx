@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Lock, User, ChefHat } from "lucide-react";
+import { Mail, Lock, User, ChefHat, Shield } from "lucide-react";
+import { isAdminMasterHost, PLATFORM_NAME } from "@/lib/platformHosts";
+import { resolvePostLoginDestination } from "@/lib/authRedirect";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +17,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const isPlatformLogin = isAdminMasterHost(window.location.hostname);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,18 +29,19 @@ const Auth = () => {
         if (error) throw error;
         const userId = data.user?.id;
         if (userId) {
-          const { data: roleRow } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", userId)
-            .limit(1)
-            .maybeSingle();
-          const role = (roleRow as any)?.role as string | undefined;
-          if (role === "admin_master") navigate("/admin");
-          else if (role === "seller") navigate("/seller");
-          else navigate("/panel");
+          const dest = await resolvePostLoginDestination(userId);
+          if (dest.type === "denied") {
+            await supabase.auth.signOut();
+            toast.error(dest.message);
+            return;
+          }
+          if (dest.type === "external") {
+            window.location.assign(dest.url);
+            return;
+          }
+          navigate(dest.path);
         } else {
-          navigate("/panel");
+          navigate(isPlatformLogin ? "/admin" : "/panel");
         }
       } else {
         const { error } = await supabase.auth.signUp({
@@ -63,11 +67,19 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-2">
-            <ChefHat className="w-8 h-8 text-primary-foreground" />
+            {isPlatformLogin ? (
+              <Shield className="w-8 h-8 text-primary-foreground" />
+            ) : (
+              <ChefHat className="w-8 h-8 text-primary-foreground" />
+            )}
           </div>
           <CardTitle className="text-2xl">{isLogin ? "Entrar" : "Criar conta"}</CardTitle>
           <CardDescription>
-            {isLogin ? "Acesse o painel do seu restaurante" : "Cadastre-se para começar"}
+            {isPlatformLogin
+              ? `${PLATFORM_NAME} · gestão da plataforma`
+              : isLogin
+                ? "Acesse o painel do seu restaurante"
+                : "Cadastre-se para começar"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

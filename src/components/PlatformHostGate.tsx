@@ -3,10 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { isAdminMasterHost } from "@/lib/platformHosts";
 
 /**
- * No domínio reservado admin.snaporder.es (futuro):
+ * Nos domínios reservados da plataforma (ex.: snaporder.digitalgroupsti.com):
  * - / → /admin
- * - rotas públicas do totem → /admin
- * Mantém /admin/* e /auth.
+ * - loja pública, painel restaurante, etc. → /admin
+ * Mantém /admin/*, /auth e /install.
  */
 export default function PlatformHostGate() {
   const location = useLocation();

@@ -14,9 +14,9 @@ type Msg = { role: "user" | "assistant"; content: string | ContentPart[] };
 
 const SUGGESTIONS = [
   "Liste meus restaurantes e domínios",
-  "Muda a cor da barra superior do Kebab Turco pra #8B1A1A",
-  "Desativa o Apple Pay do Kebab Turco",
-  "Ativa só español e english no totem do Kebab Turco",
+  "Lista todos os restaurantes activos",
+  "Muda o plano do Kebab Turco para Premium",
+  "Quantos pedidos foram feitos hoje na plataforma?",
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;

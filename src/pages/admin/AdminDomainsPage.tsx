@@ -137,12 +137,12 @@ export default function AdminDomainsPage() {
         </CardHeader>
         <CardContent className="text-sm space-y-2">
           <p>
-            Futuro painel da plataforma:{" "}
+            Domínios da plataforma SnapOrder:{" "}
             <strong>{ADMIN_MASTER_HOSTS.join(", ")}</strong>
           </p>
           <p className="text-muted-foreground text-xs">
-            Aponte o DNS deste domínio para o mesmo deploy. O sistema redirecciona automaticamente para <code>/admin</code>.
-            Não associe este domínio a nenhum restaurante.
+            Apontam para o mesmo deploy Lovable. Abrem automaticamente o Admin Master (<code>/admin</code>).
+            Nunca associe estes domínios a um restaurante na base de dados.
           </p>
         </CardContent>
       </Card>

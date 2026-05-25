@@ -1,5 +1,10 @@
 /** Hostnames reservados para o Admin Master da plataforma SnapOrder. */
-export const ADMIN_MASTER_HOSTS = ["admin.snaporder.es"] as const;
+export const ADMIN_MASTER_HOSTS = [
+  "snaporder.digitalgroupsti.com",
+  "admin.snaporder.es",
+] as const;
+
+export const PLATFORM_NAME = "SnapOrder";
 
 export function normalizeHostname(hostname: string): string {
   return hostname.replace(/^www\./i, "").toLowerCase().trim();
