@@ -7,6 +7,15 @@ const asName = (value: unknown): Record<string, string> => {
   return { es: "", pt: "", en: "", fr: "" };
 };
 
+const emptyConfig = (productId: string): ProductModifierConfig => ({
+  productId,
+  productType: "simple",
+  comboUnitCount: 0,
+  unitLabel: { es: "Unidad", pt: "Unidade", en: "Unit" },
+  groups: [],
+  hasStructuredModifiers: false,
+});
+
 export function useProductModifierConfig(productId: string | undefined) {
   const [config, setConfig] = useState<ProductModifierConfig | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,24 +30,42 @@ export function useProductModifierConfig(productId: string | undefined) {
     (async () => {
       setLoading(true);
       try {
-        const { data: product, error: pErr } = await supabase
+        let product: {
+          id: string;
+          product_type?: string;
+          combo_unit_count?: number;
+          unit_label?: unknown;
+        } | null = null;
+
+        const full = await supabase
           .from("products")
           .select("id, product_type, combo_unit_count, unit_label")
           .eq("id", productId)
           .maybeSingle();
 
-        if (pErr || !product) {
-          if (active) setConfig(null);
+        if (full.error) {
+          const minimal = await supabase.from("products").select("id").eq("id", productId).maybeSingle();
+          if (minimal.error || !minimal.data) {
+            if (active) setConfig(emptyConfig(productId));
+            return;
+          }
+          product = minimal.data;
+        } else {
+          product = full.data;
+        }
+
+        if (!product) {
+          if (active) setConfig(emptyConfig(productId));
           return;
         }
 
-        const { data: links, error: lErr } = await supabase
+        const linksRes = await supabase
           .from("product_modifier_groups")
           .select("sort_order, repeat_per_unit, group_id")
           .eq("product_id", productId)
           .order("sort_order", { ascending: true });
 
-        if (lErr || !links?.length) {
+        if (linksRes.error || !linksRes.data?.length) {
           if (active) {
             setConfig({
               productId,
@@ -52,32 +79,33 @@ export function useProductModifierConfig(productId: string | undefined) {
           return;
         }
 
+        const links = linksRes.data;
         const groupIds = links.map((l) => l.group_id);
-        const { data: groupsRaw, error: gErr } = await supabase
+        const groupsRes = await supabase
           .from("modifier_groups")
           .select("*")
           .in("id", groupIds)
           .eq("is_active", true);
 
-        if (gErr || !groupsRaw?.length) {
-          if (active) setConfig(null);
+        if (groupsRes.error || !groupsRes.data?.length) {
+          if (active) setConfig(emptyConfig(productId));
           return;
         }
 
-        const { data: optionsRaw, error: oErr } = await supabase
+        const optionsRes = await supabase
           .from("modifier_options")
           .select("*")
           .in("group_id", groupIds)
           .eq("is_active", true)
           .order("sort_order", { ascending: true });
 
-        if (oErr) {
-          if (active) setConfig(null);
+        if (optionsRes.error) {
+          if (active) setConfig(emptyConfig(productId));
           return;
         }
 
         const optionsByGroup = new Map<string, ModifierOption[]>();
-        for (const opt of optionsRaw || []) {
+        for (const opt of optionsRes.data || []) {
           const list = optionsByGroup.get(opt.group_id) || [];
           list.push({
             id: opt.id,
@@ -91,7 +119,7 @@ export function useProductModifierConfig(productId: string | undefined) {
           optionsByGroup.set(opt.group_id, list);
         }
 
-        const groupMap = new Map(groupsRaw.map((g) => [g.id, g]));
+        const groupMap = new Map(groupsRes.data.map((g) => [g.id, g]));
         const groups: ModifierGroup[] = links
           .map((link) => {
             const g = groupMap.get(link.group_id);
@@ -124,6 +152,9 @@ export function useProductModifierConfig(productId: string | undefined) {
             hasStructuredModifiers: groups.length > 0,
           });
         }
+      } catch (err) {
+        console.warn("[useProductModifierConfig]", err);
+        if (active) setConfig(emptyConfig(productId));
       } finally {
         if (active) setLoading(false);
       }
