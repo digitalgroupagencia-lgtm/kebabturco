@@ -43,10 +43,15 @@ Haz tu pedido para comer aquí, para llevar o a domicilio.">
       (function () {
         var host = location.hostname.replace(/^www\./i, "").toLowerCase();
         var platformHosts = ["snaporder.digitalgroupsti.com", "admin.snaporder.es"];
-        if (platformHosts.indexOf(host) === -1) return;
+        var isPlatform =
+          platformHosts.indexOf(host) !== -1 ||
+          host.endsWith(".lovableproject.com") ||
+          host.endsWith(".lovable.app") ||
+          host.endsWith(".lovable.dev");
+        if (!isPlatform) return;
         var path = location.pathname || "/";
         if (path === "/" || path === "") {
-          location.replace("/admin");
+          location.replace("/auth");
           return;
         }
         var allowed =

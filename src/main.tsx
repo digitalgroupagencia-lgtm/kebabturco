@@ -1,13 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { isAdminMasterHost } from "./lib/platformHosts";
+import { isPlatformHost } from "./lib/platformHosts";
 
 function redirectPlatformHostIfNeeded() {
-  if (!isAdminMasterHost(window.location.hostname)) return;
+  if (!isPlatformHost(window.location.hostname)) return;
   const path = window.location.pathname || "/";
   if (path === "/" || path === "") {
-    window.location.replace("/admin");
+    window.location.replace("/auth");
     return;
   }
   const allowed =

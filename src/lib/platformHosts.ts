@@ -17,17 +17,28 @@ export function isAdminMasterHost(hostname?: string | null): boolean {
 }
 
 export function isPlatformReservedHost(hostname?: string | null): boolean {
-  return isAdminMasterHost(hostname);
+  return isPlatformHost(hostname);
 }
 
-/** Ambientes de preview/dev — podem usar tenant demo sem custom_domain. */
-export function isDevPreviewHost(hostname?: string | null): boolean {
+/** Editor Lovable — tratar como plataforma SnapOrder (login em /). */
+export function isLovableEditorHost(hostname?: string | null): boolean {
   if (!hostname) return false;
   const host = normalizeHostname(hostname);
   return (
-    host === "localhost" ||
+    host.endsWith(".lovableproject.com") ||
     host.endsWith(".lovable.app") ||
-    host.endsWith(".lovable.dev") ||
-    host.startsWith("127.0.0.1")
+    host.endsWith(".lovable.dev")
   );
+}
+
+/** Domínio da plataforma SnapOrder (produção ou editor Lovable). */
+export function isPlatformHost(hostname?: string | null): boolean {
+  return isAdminMasterHost(hostname) || isLovableEditorHost(hostname);
+}
+
+/** Ambiente local — pode usar tenant demo sem custom_domain. */
+export function isDevPreviewHost(hostname?: string | null): boolean {
+  if (!hostname) return false;
+  const host = normalizeHostname(hostname);
+  return host === "localhost" || host.startsWith("127.0.0.1");
 }

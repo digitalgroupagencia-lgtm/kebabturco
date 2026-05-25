@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { isAdminMasterHost } from "@/lib/platformHosts";
+import { isPlatformHost } from "@/lib/platformHosts";
 import { buildTenantUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 
 type RoleRow = { role: string; tenant_id: string | null };
@@ -24,11 +24,11 @@ export async function resolvePostLoginDestination(userId: string): Promise<{
     .eq("user_id", userId);
 
   const rows = (roles ?? []) as RoleRow[];
-  const isPlatformHost = isAdminMasterHost(window.location.hostname);
+  const onPlatformHost = isPlatformHost(window.location.hostname);
   const isAdminMaster = rows.some((r) => r.role === "admin_master");
   const primaryRole = rows.find((r) => r.role === "admin_master")?.role ?? rows[0]?.role;
 
-  if (isPlatformHost) {
+  if (onPlatformHost) {
     if (isAdminMaster) return { type: "internal", path: "/admin" };
     return {
       type: "denied",

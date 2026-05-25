@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
-import { isAdminMasterHost } from "@/lib/platformHosts";
+import { isPlatformHost } from "@/lib/platformHosts";
 
 const Index = lazy(() => import("@/pages/Index.tsx"));
 const Auth = lazy(() => import("@/pages/Auth.tsx"));
@@ -18,16 +18,17 @@ const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
 
+const platformHome = withSuspense(<Navigate to="/auth" replace />);
 const platformRedirect = withSuspense(<Navigate to="/admin" replace />);
 
-/** snaporder.* = plataforma; kebabturco.net e outros custom_domain = restaurante (white-label). */
-const isPlatform = isAdminMasterHost(window.location.hostname);
+/** snaporder.* e editor Lovable = plataforma; custom_domain = restaurante (white-label). */
+const isPlatform = isPlatformHost(window.location.hostname);
 
 const AppRoutes = () => (
   <Routes>
     {isPlatform ? (
       <>
-        <Route path="/" element={platformRedirect} />
+        <Route path="/" element={platformHome} />
         <Route path="/auth" element={withSuspense(<Auth />)} />
         <Route path="/install" element={withSuspense(<Install />)} />
         <Route path="/admin/tenants/:slug/*" element={withSuspense(<TenantWorkspaceRoutes />)} />
