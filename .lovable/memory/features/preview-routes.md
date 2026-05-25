@@ -1,6 +1,6 @@
 # Rotas do preview Lovable (Kebab Turco único)
 
-O selector de páginas do preview deve listar apenas estes endereços:
+O selector de páginas do preview deve listar **apenas**:
 
 - `/` — loja
 - `/auth` — login
@@ -13,6 +13,9 @@ O selector de páginas do preview deve listar apenas estes endereços:
 - `/admin/routes` — mapa de endereços
 - `/admin/plans` — planos
 
-Endereços legados SnapOrder (`/admin/tenants`, `/:tenantPath`, `/admin/*`, `/preview/...`) foram removidos do código. Se ainda aparecerem no selector, sincronizar de novo a partir do GitHub e publicar.
+## Regras do projecto
 
-Todas as definições de navegação vivem em `src/routes/AppRoutes.tsx`. Os ficheiros `*RouteConfig.ts` não contêm elementos Route.
+- Só existem 4 ficheiros em `src/pages/` (loja, login, instalar, erro).
+- Painel, admin e vendedor vivem em `src/views/` — **não** são páginas soltas no preview.
+- Não usar wildcards (`/*`) nem paths multi-cliente SnapOrder.
+- Se o selector ainda mostrar entradas antigas: **Definições → Git → GitHub → sincronizar a branch main** e depois publicar.

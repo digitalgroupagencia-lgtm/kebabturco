@@ -40,7 +40,7 @@ Vou dividir em **4 entregas**, na ordem em que faz sentido construir. Você apro
 
 **Objetivo:** painel onde você clica numa tela do totem e edita logo/ícones/textos vendo o mockup do celular ao lado.
 
-**Nova rota:** `/admin/tenants/:slug/screens`
+**Nova página:** editor de telas do totem em `/panel/screens`
 
 **Layout:** split 50/50
 - **Esquerda:** lista de telas (Splash, Idioma, Escolha de Unidade, Tipo de Pedido, Home/Cardápio). Clica → seleciona.

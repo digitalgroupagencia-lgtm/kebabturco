@@ -136,18 +136,6 @@ export const ROUTE_MAP_SECTIONS: RouteMapSection[] = [
       { path: "/seller/new", label: "Novo pedido", description: "Criar pedido.", role: "seller", active: true, kind: "real" },
     ],
   },
-  {
-    id: "legacy",
-    title: "Rotas antigas / inactivas",
-    description: "Legado SnapOrder multi-tenant — redireccionam ou não existem.",
-    routes: [
-      { path: "/admin/tenants", label: "Clientes (SnapOrder)", description: "Redirecciona → /admin (catch-all).", role: "—", active: false, kind: "legacy" },
-      { path: "/admin/tenants/:slug", label: "Workspace tenant", description: "Removido — redirecciona → /admin.", role: "—", active: false, kind: "legacy" },
-      { path: "/preview/kebab-turco", label: "Prévia legada", description: "Redirecciona → / com parâmetros de prévia.", role: "—", active: false, kind: "legacy" },
-      { path: "/admin/domains", label: "Domínios plataforma", description: "Redirecciona → /admin.", role: "—", active: false, kind: "legacy" },
-      { path: "/admin/billing", label: "Cobrança multi-cliente", description: "Redirecciona → /admin.", role: "—", active: false, kind: "legacy" },
-    ],
-  },
 ];
 
 /** Separa pathname e search de uma entrada do mapa. */

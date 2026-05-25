@@ -6,7 +6,7 @@ type: preference
 REGRA: Sempre que qualquer feature/fluxo/rota/configuração nova for adicionada OU alterada no sistema, atualizar imediatamente o SYSTEM_PROMPT em `supabase/functions/admin-assistant/index.ts` para refletir a mudança.
 
 O Assistente do Admin Master é a fonte de verdade do usuário sobre o que existe na plataforma. Ele precisa saber:
-- Todas as rotas (/admin/*, /panel/*, totem)
+- Endereços principais: loja `/`, login `/auth`, painel `/panel`, administração `/admin`, vendedor `/seller`
 - Todas as edge functions e o que cada uma faz
 - Como criar novo cliente (Wizard IA)
 - Como configurar domínio próprio
