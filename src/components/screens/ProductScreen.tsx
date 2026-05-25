@@ -18,6 +18,9 @@ import {
   parseRemovableIngredients,
 } from "@/lib/parseProductCustomization";
 import { toast } from "sonner";
+import { useProductModifierConfig } from "@/hooks/useProductModifierConfig";
+import ProductCustomizationFlow from "@/components/customization/ProductCustomizationFlow";
+import PageSpinner from "@/components/PageSpinner";
 
 
 const ingredientMap: Record<string, string[]> = {
@@ -104,8 +107,32 @@ const ProductScreen = () => {
   const { addItem, updateItem, items } = useCart();
   const { t, tProduct } = useLanguage();
   const { products } = useMenuData();
-
   const product = products.find((item) => item.id === selectedProductId);
+  const { config: modifierConfig, loading: modifierLoading } = useProductModifierConfig(product?.id);
+
+  const editingItem = useMemo(
+    () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
+    [editingCartItemId, items],
+  );
+
+  if (product && modifierLoading) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center">
+        <PageSpinner />
+      </div>
+    );
+  }
+
+  if (product && modifierConfig?.hasStructuredModifiers) {
+    return (
+      <ProductCustomizationFlow
+        product={product}
+        config={modifierConfig}
+        editingItem={editingItem}
+        onBack={goBack}
+      />
+    );
+  }
 
   const descriptionText = product ? tProduct(product.description) : "";
   const nameText = product ? tProduct(product.name) : "";
@@ -143,12 +170,6 @@ const ProductScreen = () => {
     () => product?.extras ?? (product ? extrasByCategory[product.category] || [] : []),
     [product],
   );
-  // Quando estiver editando um item já no carrinho, recuperamos o estado inicial
-  const editingItem = useMemo(
-    () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
-    [editingCartItemId, items],
-  );
-
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<Size | undefined>(undefined);
   const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(undefined);

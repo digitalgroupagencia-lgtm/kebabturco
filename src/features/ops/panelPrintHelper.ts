@@ -28,7 +28,15 @@ export function panelOrderToTicket(
       name: it.product_name,
       price: Number(it.unit_price),
       quantity: it.quantity,
+      size: it.size_name ?? undefined,
       notes: it.notes ?? undefined,
+      extras: Array.isArray(it.extras)
+        ? (it.extras as { name?: string; quantity?: number; price?: number }[]).map((e) => ({
+            name: e.name || "",
+            price: e.price,
+          }))
+        : undefined,
+      removed: Array.isArray(it.removed) ? (it.removed as string[]) : undefined,
     })),
     total: Number(order.total),
     subtotal: Number(order.subtotal ?? order.total),

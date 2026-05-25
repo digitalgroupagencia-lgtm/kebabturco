@@ -6,6 +6,7 @@ import { User, Phone, MapPin, XCircle, Clock } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getNextAction, getOrderModalityBanner, getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
+import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
 
 type OrderItem = Tables<"order_items">;
 
@@ -100,15 +101,25 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: O
             </span>
           </div>
         )}
-        <ul className="text-xs space-y-1 border-t pt-2 max-h-28 overflow-y-auto">
-          {items.map((it) => (
-            <li key={it.id} className="flex justify-between gap-2">
-              <span className="truncate">
-                {it.quantity}x {it.product_name}
-              </span>
-              <span className="font-bold shrink-0">€{Number(it.total_price).toFixed(2)}</span>
-            </li>
-          ))}
+        <ul className="text-xs space-y-2 border-t pt-2 max-h-40 overflow-y-auto">
+          {items.map((it) => {
+            const details = formatOrderItemDetailLines(it);
+            return (
+              <li key={it.id} className="space-y-0.5">
+                <div className="flex justify-between gap-2">
+                  <span className="truncate font-semibold">
+                    {it.quantity}x {it.product_name}
+                  </span>
+                  <span className="font-bold shrink-0">€{Number(it.total_price).toFixed(2)}</span>
+                </div>
+                {details.map((d) => (
+                  <p key={d} className="text-[10px] text-muted-foreground pl-2 leading-snug">
+                    · {d}
+                  </p>
+                ))}
+              </li>
+            );
+          })}
         </ul>
         <div className="flex items-center justify-between font-black text-lg text-primary">
           <span>Total</span>

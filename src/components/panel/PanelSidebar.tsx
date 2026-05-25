@@ -1,7 +1,7 @@
 import {
   LayoutGrid, ShoppingBag, UtensilsCrossed, Package, BarChart3, Settings,
   Users, LogOut, Monitor, DollarSign, Palette, Image as ImageIcon, Wallet,
-  Printer, Globe, Store, Layout, Truck, UserCog, BookOpen, Activity,
+  Printer, Globe, Store, Layout, Truck, UserCog, BookOpen, Activity, Layers,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,7 @@ const operacao = [
 ];
 const cardapio = [
   { title: "Cardápio", url: "/panel/menu", icon: UtensilsCrossed },
+  { title: "Personalização", url: "/panel/modifiers", icon: Layers },
   { title: "Banners", url: "/panel/banners", icon: ImageIcon },
   { title: "Zonas de entrega", url: "/panel/delivery-zones", icon: Truck },
   { title: "Cupões", url: "/panel/coupons", icon: Wallet },

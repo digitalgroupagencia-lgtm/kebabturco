@@ -9,6 +9,8 @@ import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { loadSavedOrderType } from "@/lib/customerSession";
+import { configurationSummaryLines } from "@/lib/modifiers/legacyBridge";
+import type { CartConfiguration } from "@/lib/modifiers/types";
 
 type LangMap = Record<string, string>;
 type SuggestionConfig = {
@@ -235,6 +237,15 @@ const ReviewScreen = () => {
                     <p className="text-[11px] text-destructive font-semibold mt-1">
                       {t("without")}: {item.removedIngredients.join(", ")}
                     </p>
+                  )}
+                  {item.configuration && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {configurationSummaryLines(item.configuration as CartConfiguration, tProduct).map((line) => (
+                        <li key={line} className="text-[11px] text-foreground/80 font-medium">
+                          · {line}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                   {item.note && (
                     <p className="text-[11px] text-foreground/80 italic mt-1 bg-warning/10 px-2 py-1 rounded-md border-l-2 border-warning">

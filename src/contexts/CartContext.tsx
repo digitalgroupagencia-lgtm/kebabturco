@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { loadSavedOrderType, saveSavedOrderType } from "@/lib/customerSession";
+import type { CartConfiguration, ModifierSelection, ProductType } from "@/lib/modifiers/types";
 
 export interface CartItemExtra {
   id: string;
@@ -28,6 +29,10 @@ export interface CartItem {
   note?: string;
   unitPrice: number;
   totalPrice: number;
+  /** Seleções estruturadas (sistema de modificadores) */
+  selections?: ModifierSelection[];
+  configuration?: CartConfiguration;
+  productType?: ProductType;
 }
 
 interface CartContextType {
@@ -45,11 +50,26 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const shouldKeepGrouped = (item: Omit<CartItem, "id">) =>
+  item.productType === "combo" ||
+  Boolean(item.configuration?.comboUnits?.length) ||
+  (item.selections?.length ?? 0) > 0;
+
 const splitIntoSingleItems = (item: Omit<CartItem, "id">, firstId?: string): CartItem[] => {
   const quantity = Math.max(1, Math.trunc(Number(item.quantity) || 1));
   const unitPrice = Number.isFinite(item.unitPrice)
     ? item.unitPrice
     : (Number(item.totalPrice) || 0) / quantity;
+
+  if (shouldKeepGrouped(item)) {
+    return [{
+      ...item,
+      id: firstId || crypto.randomUUID(),
+      quantity: 1,
+      unitPrice,
+      totalPrice: unitPrice,
+    }];
+  }
 
   return Array.from({ length: quantity }, (_, index) => ({
     ...item,
