@@ -41,27 +41,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
+import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
+import { nav } from "@/lib/navPaths.ts";
 
 const overviewItems = [
-  { title: "Command Center", url: "/admin", icon: LayoutGrid, end: true },
-  { title: "Mapa de rotas", url: "/admin/routes", icon: Map },
-  { title: "Planos & funcionalidades", url: "/admin/plans", icon: CreditCard },
+  { title: "Command Center", url: nav.admin(), icon: LayoutGrid, end: true },
+  { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
+  { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
 ];
 
 const storeItems = [
-  { title: "Identidade visual", url: "/admin/branding", icon: Palette },
-  { title: "Banners", url: "/admin/banner", icon: Image },
-  { title: "Operações", url: "/admin/operations", icon: Wrench },
-  { title: "Impressora", url: "/admin/printer", icon: Printer },
+  { title: "Identidade visual", url: nav.admin("branding"), icon: Palette },
+  { title: "Banners", url: nav.admin("banner"), icon: Image },
+  { title: "Operações", url: nav.admin("operations"), icon: Wrench },
+  { title: "Impressora", url: nav.admin("printer"), icon: Printer },
 ];
 
 const systemItems = [
-  { title: "Utilizadores", url: "/admin/users", icon: Users },
-  { title: "Monitorização", url: "/admin/monitoring", icon: Activity },
-  { title: "Guia", url: "/admin/guide", icon: BookOpen },
-  { title: "Conversas IA", url: "/admin/conversations", icon: MessageSquare },
-  { title: "Definições", url: "/admin/settings", icon: Settings },
+  { title: "Utilizadores", url: nav.admin("users"), icon: Users },
+  { title: "Monitorização", url: nav.admin("monitoring"), icon: Activity },
+  { title: "Guia", url: nav.admin("guide"), icon: BookOpen },
+  { title: "Conversas IA", url: nav.admin("conversations"), icon: MessageSquare },
+  { title: "Definições", url: nav.admin("settings"), icon: Settings },
 ];
 
 const centralIcons: Record<string, typeof Bot> = {
@@ -143,11 +144,11 @@ export function AdminSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <NavLink
-                  to="/admin/centrals"
+                  to={centralAdminPath()}
                   end
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/50",
-                    location.pathname === "/admin/centrals" && "bg-primary/10 text-primary font-semibold",
+                    location.pathname === centralAdminPath() && "bg-primary/10 text-primary font-semibold",
                   )}
                   onClick={handleNav}
                 >
@@ -177,7 +178,7 @@ export function AdminSidebar() {
                             <SidebarMenuSubItem key={c.segment}>
                               <SidebarMenuSubButton asChild>
                                 <NavLink
-                                  to={c.globalPath}
+                                  to={centralAdminPath(c.segment)}
                                   className={({ isActive }) =>
                                     cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
                                   }
@@ -201,7 +202,7 @@ export function AdminSidebar() {
                     <SidebarMenuItem key={c.segment}>
                       <SidebarMenuButton asChild>
                         <NavLink
-                          to={c.globalPath}
+                          to={centralAdminPath(c.segment)}
                           className={({ isActive }) =>
                             cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
                           }

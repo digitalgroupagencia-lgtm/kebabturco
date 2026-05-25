@@ -10,38 +10,39 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { nav } from "@/lib/navPaths.ts";
 
 const operacao = [
-  { title: "Pedidos", url: "/panel", icon: ShoppingBag, end: true },
-  { title: "Dashboard", url: "/panel/dashboard", icon: LayoutGrid },
-  { title: "Mapa de mesas", url: "/panel/table-map", icon: LayoutGrid },
-  { title: "Caixa", url: "/panel/cashier", icon: DollarSign },
-  { title: "Estoque", url: "/panel/stock", icon: Package },
-  { title: "Relatórios", url: "/panel/reports", icon: BarChart3 },
+  { title: "Pedidos", url: nav.panel(), icon: ShoppingBag, end: true },
+  { title: "Dashboard", url: nav.panel("dashboard"), icon: LayoutGrid },
+  { title: "Mapa de mesas", url: nav.panel("table-map"), icon: LayoutGrid },
+  { title: "Caixa", url: nav.panel("cashier"), icon: DollarSign },
+  { title: "Estoque", url: nav.panel("stock"), icon: Package },
+  { title: "Relatórios", url: nav.panel("reports"), icon: BarChart3 },
 ];
 const cardapio = [
-  { title: "Cardápio", url: "/panel/menu", icon: UtensilsCrossed },
-  { title: "Personalização", url: "/panel/modifiers", icon: Layers },
-  { title: "Banners", url: "/panel/banners", icon: ImageIcon },
-  { title: "Zonas de entrega", url: "/panel/delivery-zones", icon: Truck },
-  { title: "Cupões", url: "/panel/coupons", icon: Wallet },
-  { title: "Fidelidade", url: "/panel/loyalty", icon: Users },
+  { title: "Cardápio", url: nav.panel("menu"), icon: UtensilsCrossed },
+  { title: "Personalização", url: nav.panel("modifiers"), icon: Layers },
+  { title: "Banners", url: nav.panel("banners"), icon: ImageIcon },
+  { title: "Zonas de entrega", url: nav.panel("delivery-zones"), icon: Truck },
+  { title: "Cupões", url: nav.panel("coupons"), icon: Wallet },
+  { title: "Fidelidade", url: nav.panel("loyalty"), icon: Users },
 ];
 const config = [
-  { title: "Identidade", url: "/panel/branding", icon: Palette },
-  { title: "Unidades", url: "/panel/stores", icon: Store },
-  { title: "Telas do totem", url: "/panel/screens", icon: Layout },
-  { title: "Idiomas", url: "/panel/languages", icon: Globe },
-  { title: "Recebimentos", url: "/panel/finance", icon: DollarSign },
-  { title: "Pagamentos", url: "/panel/payments", icon: Wallet },
-  { title: "Impressoras", url: "/panel/printers", icon: Printer },
-  { title: "Totem", url: "/panel/totem", icon: Monitor },
-  { title: "Mesas & QR", url: "/panel/tables", icon: LayoutGrid },
-  { title: "Equipe", url: "/panel/team", icon: Users },
-  { title: "Vendedores", url: "/panel/sellers", icon: UserCog },
-  { title: "Guia", url: "/panel/guide", icon: BookOpen },
-  { title: "Diagnóstico", url: "/panel/diagnostics", icon: Activity },
-  { title: "Configurações", url: "/panel/settings", icon: Settings },
+  { title: "Identidade", url: nav.panel("branding"), icon: Palette },
+  { title: "Unidades", url: nav.panel("stores"), icon: Store },
+  { title: "Telas do totem", url: nav.panel("screens"), icon: Layout },
+  { title: "Idiomas", url: nav.panel("languages"), icon: Globe },
+  { title: "Recebimentos", url: nav.panel("finance"), icon: DollarSign },
+  { title: "Pagamentos", url: nav.panel("payments"), icon: Wallet },
+  { title: "Impressoras", url: nav.panel("printers"), icon: Printer },
+  { title: "Totem", url: nav.panel("totem"), icon: Monitor },
+  { title: "Mesas & QR", url: nav.panel("tables"), icon: LayoutGrid },
+  { title: "Equipe", url: nav.panel("team"), icon: Users },
+  { title: "Vendedores", url: nav.panel("sellers"), icon: UserCog },
+  { title: "Guia", url: nav.panel("guide"), icon: BookOpen },
+  { title: "Diagnóstico", url: nav.panel("diagnostics"), icon: Activity },
+  { title: "Configurações", url: nav.panel("settings"), icon: Settings },
 ];
 
 export function PanelSidebar() {

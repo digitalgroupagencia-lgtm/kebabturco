@@ -3,6 +3,7 @@ import { Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PlanKey } from "@/lib/platformFeatures";
 import { upgradeLabelForPlan } from "@/lib/platformFeatureGates";
+import { nav } from "@/lib/navPaths.ts";
 
 type Props = {
   requiredPlan: PlanKey;
@@ -28,7 +29,7 @@ export default function PlanGateOverlay({ requiredPlan, compact, className }: Pr
           </p>
         )}
         <Button size="sm" className="h-8 text-xs w-full gap-1.5" asChild>
-          <Link to="/admin/plans">
+          <Link to={nav.admin("plans")}>
             <Sparkles className="h-3.5 w-3.5" />
             Ver planos
           </Link>

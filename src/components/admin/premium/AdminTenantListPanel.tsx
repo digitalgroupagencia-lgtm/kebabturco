@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Building2, ChevronRight } from "lucide-react";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import AdminPremiumCard from "./AdminPremiumCard";
+import { nav } from "@/lib/navPaths.ts";
 
 type Tenant = {
   id: string;
@@ -22,7 +23,7 @@ export default function AdminTenantListPanel({ tenants, centralSegment, title = 
     <div className="space-y-2">
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-0.5">{title}</p>
       {tenants.map((t) => (
-        <Link key={t.id} to={`/admin/tenants/${t.slug}/centrals/${centralSegment}`}>
+        <Link key={t.id} to={nav.admin("tenants", t.slug, "centrals", centralSegment)}>
           <AdminPremiumCard
             title={t.name}
             summary={`/${t.slug}`}

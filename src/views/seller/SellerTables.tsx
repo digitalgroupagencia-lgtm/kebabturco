@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { fmtMoney } from "@/hooks/useTenantBilling";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { nav } from "@/lib/navPaths.ts";
 
 const SellerTables = () => {
   const { storeId } = useSellerContext();
@@ -34,7 +35,7 @@ const SellerTables = () => {
       ) : (
         <div className="space-y-2">
           {sessions?.map((s: any) => (
-            <Card key={s.id} onClick={() => navigate(`/seller/tables/${s.id}`)} className="cursor-pointer active:scale-[0.99] transition">
+            <Card key={s.id} onClick={() => navigate(nav.seller("tables", s.id))} className="cursor-pointer active:scale-[0.99] transition">
               <CardContent className="p-3 flex items-center justify-between">
                 <div>
                   <p className="font-black text-lg">Mesa {s.table_number}</p>

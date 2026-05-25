@@ -9,6 +9,7 @@ import { groupKindLabel } from "@/lib/modifiers/groupKindMeta";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import type { ModifierGroupKind } from "@/lib/modifiers/types";
 import { Link } from "react-router-dom";
+import { nav } from "@/lib/navPaths.ts";
 
 type GroupLink = {
   group_id: string;
@@ -106,7 +107,7 @@ export default function ProductModifierEditor({
     <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold text-foreground">Personalização avançada</p>
-        <Link to="/panel/modifiers" className="text-xs font-bold text-primary hover:underline">
+        <Link to={nav.panel("modifiers")} className="text-xs font-bold text-primary hover:underline">
           Gerir grupos →
         </Link>
       </div>

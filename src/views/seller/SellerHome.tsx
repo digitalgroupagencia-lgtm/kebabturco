@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Table as TableIcon, ListOrdered, Loader2 } from "lucide-react";
 import { fmtMoney } from "@/hooks/useTenantBilling";
+import { nav } from "@/lib/navPaths.ts";
 
 const SellerHome = () => {
   const { userId, fullName, storeId, loading } = useSellerContext();
@@ -57,13 +58,13 @@ const SellerHome = () => {
       </div>
 
       <div className="space-y-2">
-        <Button size="lg" className="w-full h-14 text-base font-bold" onClick={() => navigate("/seller/new")}>
+        <Button size="lg" className="w-full h-14 text-base font-bold" onClick={() => navigate(nav.seller("new"))}>
           <Plus className="w-5 h-5 mr-2" /> Novo pedido
         </Button>
-        <Button size="lg" variant="outline" className="w-full h-14 text-base font-bold" onClick={() => navigate("/seller/tables")}>
+        <Button size="lg" variant="outline" className="w-full h-14 text-base font-bold" onClick={() => navigate(nav.seller("tables"))}>
           <TableIcon className="w-5 h-5 mr-2" /> Mesas abertas
         </Button>
-        <Button size="lg" variant="outline" className="w-full h-14 text-base font-bold" onClick={() => navigate("/seller/my-orders")}>
+        <Button size="lg" variant="outline" className="w-full h-14 text-base font-bold" onClick={() => navigate(nav.seller("my-orders"))}>
           <ListOrdered className="w-5 h-5 mr-2" /> Meus pedidos
         </Button>
       </div>

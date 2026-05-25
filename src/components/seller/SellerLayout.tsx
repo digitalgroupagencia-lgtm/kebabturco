@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { nav } from "@/lib/navPaths.ts";
 
 const SellerLayout = () => {
   const { user, loading, signOut } = useAuth();
@@ -12,14 +13,13 @@ const SellerLayout = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) navigate("/auth");
+    if (!loading && !user) navigate(nav.auth());
   }, [user, loading, navigate]);
 
   useEffect(() => {
     if (!roleLoading && roleData && roleData.role !== "seller") {
-      // não é vendedor — manda pro lugar certo
-      if (roleData.role === "admin_master") navigate("/admin");
-      else navigate("/panel");
+      if (roleData.role === "admin_master") navigate(nav.admin());
+      else navigate(nav.panel());
     }
   }, [roleLoading, roleData, navigate]);
 
@@ -45,9 +45,9 @@ const SellerLayout = () => {
 
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-border h-16 flex items-stretch px-2" style={{ paddingBottom: "max(0px,env(safe-area-inset-bottom))" }}>
         {[
-          { to: "/seller", label: "Início", icon: Home, end: true },
-          { to: "/seller/tables", label: "Mesas", icon: TableIcon },
-          { to: "/seller/my-orders", label: "Pedidos", icon: ListOrdered },
+          { to: nav.seller(), label: "Início", icon: Home, end: true },
+          { to: nav.seller("tables"), label: "Mesas", icon: TableIcon },
+          { to: nav.seller("my-orders"), label: "Pedidos", icon: ListOrdered },
         ].map((it) => (
           <NavLink
             key={it.to}

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isGeneralAdmin } from "@/lib/projectAccess";
+import { nav } from "@/lib/navPaths.ts";
 
 type RoleRow = { role: string; tenant_id: string | null };
 
@@ -17,8 +18,8 @@ export async function resolvePostLoginDestination(userId: string): Promise<{
   const primaryRole = rows.find((r) => r.role === "admin_master")?.role ?? rows[0]?.role;
 
   if (isGeneralAdmin(primaryRole) || rows.some((r) => r.role === "admin_master")) {
-    return { type: "internal", path: "/admin" };
+    return { type: "internal", path: nav.admin() };
   }
-  if (primaryRole === "seller") return { type: "internal", path: "/seller" };
-  return { type: "internal", path: "/panel" };
+  if (primaryRole === "seller") return { type: "internal", path: nav.seller() };
+  return { type: "internal", path: nav.panel() };
 }

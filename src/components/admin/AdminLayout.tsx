@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
+import { nav } from "@/lib/navPaths.ts";
 
 const AdminLayout = () => {
   const { user, loading: authLoading } = useAuth();
@@ -18,13 +19,13 @@ const AdminLayout = () => {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth");
+      navigate(nav.auth());
     }
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (!authLoading && !roleLoading && roleData && !canAccessGeneralAdmin(roleData.role)) {
-      navigate("/panel");
+      navigate(nav.panel());
     }
   }, [authLoading, roleLoading, roleData, navigate]);
 

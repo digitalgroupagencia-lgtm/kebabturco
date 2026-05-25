@@ -11,6 +11,7 @@ import { bumpAppCache } from "@/lib/appCacheBust";
 import TenantLivePreview from "@/components/admin/TenantLivePreview";
 import type { TenantPreviewScreen } from "@/lib/tenantPreview";
 import { getTenantTotemUrl } from "@/lib/tenantUrls";
+import { nav } from "@/lib/navPaths.ts";
 
 type ScreenKey = "splash" | "language" | "storeSelect" | "orderType" | "home";
 
@@ -124,7 +125,7 @@ const TenantScreensPage = () => {
 
           <Card className="p-4 space-y-3">
             {(() => {
-              const base = slug ? `/admin/tenants/${slug}` : "/panel";
+              const base = slug ? nav.admin("tenants", slug) : nav.panel();
               return (
                 <>
                   {active === "splash" && (

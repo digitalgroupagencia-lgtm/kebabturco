@@ -32,7 +32,8 @@ import MetricTile from "@/components/admin/premium/MetricTile";
 import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
 import StatusPill from "@/components/admin/premium/StatusPill";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
-import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
+import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
+import { nav } from "@/lib/navPaths.ts";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 
@@ -186,14 +187,14 @@ const AdminDashboard = () => {
         <div className="flex gap-2 shrink-0">
           {!SINGLE_TENANT_MODE && (
             <Button variant="outline" size="sm" asChild>
-              <Link to="/admin/tenants">Ver clientes</Link>
+              <Link to={nav.admin("tenants")}>Ver clientes</Link>
             </Button>
           )}
           <Button variant="outline" size="sm" asChild>
-            <Link to="/admin/branding">Identidade visual</Link>
+            <Link to={nav.admin("branding")}>Identidade visual</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link to="/admin/centrals">Centrais</Link>
+            <Link to={centralAdminPath()}>Centrais</Link>
           </Button>
         </div>
       </div>
@@ -290,7 +291,7 @@ const AdminDashboard = () => {
         <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
             <h3 className="text-sm font-semibold">Clientes</h3>
-            <Link to="/admin/tenants" className="text-xs font-semibold text-primary hover:underline">
+            <Link to={nav.admin("tenants")} className="text-xs font-semibold text-primary hover:underline">
               Ver todos
             </Link>
           </div>
@@ -306,7 +307,7 @@ const AdminDashboard = () => {
               return (
                 <Link
                   key={tid}
-                  to={`/admin/tenants/${slug}`}
+                  to={nav.admin("tenants", slug)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -326,7 +327,7 @@ const AdminDashboard = () => {
               (tenants ?? []).slice(0, 6).map((t) => (
                 <Link
                   key={t.id}
-                  to={`/admin/tenants/${t.slug}`}
+                  to={nav.admin("tenants", t.slug)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -350,7 +351,7 @@ const AdminDashboard = () => {
         <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
             <h3 className="text-sm font-semibold">Centrais · pulse global</h3>
-            <Link to="/admin/centrals" className="text-xs font-semibold text-primary hover:underline">
+            <Link to={centralAdminPath()} className="text-xs font-semibold text-primary hover:underline">
               Hub
             </Link>
           </div>
@@ -361,7 +362,7 @@ const AdminDashboard = () => {
               return (
                 <Link
                   key={c.segment}
-                  to={c.globalPath}
+                  to={centralAdminPath(c.segment)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">

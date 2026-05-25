@@ -9,7 +9,8 @@ import OperationalTimeline from "@/components/admin/premium/OperationalTimeline"
 import InsightPanel from "@/components/admin/premium/InsightPanel";
 import { useAdminCentralsTenants, usePlatformPlans } from "@/hooks/usePlatformFeatures";
 import { usePlatformOperationalSnapshot } from "@/hooks/usePlatformOperationalSnapshot";
-import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
+import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
+import { nav } from "@/lib/navPaths.ts";
 import {
   aggregateCentralMetrics,
   buildHubTimeline,
@@ -49,7 +50,7 @@ export default function AdminCentralsHubPage() {
             : "Visão global com métricas, timelines e actividade — escolhe uma central ou entra num restaurante."
         }
         breadcrumbs={[
-          { label: APP_NAME, to: "/admin" },
+          { label: APP_NAME, to: nav.admin() },
           { label: "Centrais" },
         ]}
       />
@@ -86,7 +87,7 @@ export default function AdminCentralsHubPage() {
             const Icon = centralIcons[i] ?? Layers;
             const m = aggregateCentralMetrics(snapshot, c.segment as CentralSegment);
             return (
-              <Link key={c.segment} to={c.globalPath}>
+              <Link key={c.segment} to={centralAdminPath(c.segment)}>
                 <div className="rounded-xl border bg-card p-4 hover:border-primary/30 transition-colors h-full">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -116,7 +117,7 @@ export default function AdminCentralsHubPage() {
           {tenants?.map((t) => {
             const row = snapshot.tenants.find((r) => r.tenantId === t.id);
             return (
-              <Link key={t.id} to={`/admin/tenants/${t.slug}/centrals`}>
+              <Link key={t.id} to={nav.admin("tenants", t.slug, "centrals")}>
                 <AdminPremiumCard
                   title={t.name}
                   summary={

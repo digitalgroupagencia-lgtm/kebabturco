@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Loader2, ArrowLeft, Plus, Minus, ShoppingCart, Trash2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { fmtMoney } from "@/hooks/useTenantBilling";
+import { nav } from "@/lib/navPaths.ts";
 
 interface Line { product_id: string; product_name: string; unit_price: number; quantity: number; }
 
@@ -119,7 +120,7 @@ const SellerNewOrder = () => {
       qc.invalidateQueries({ queryKey: ["open-tables"] });
       qc.invalidateQueries({ queryKey: ["my-orders"] });
       qc.invalidateQueries({ queryKey: ["seller-today"] });
-      navigate(`/seller/tables/${out.session_id}`);
+      navigate(nav.seller("tables", out.session_id));
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao enviar pedido");
     } finally { setSubmitting(false); }

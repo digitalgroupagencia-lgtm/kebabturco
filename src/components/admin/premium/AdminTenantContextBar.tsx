@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import { cn } from "@/lib/utils";
+import { centralAdminPath } from "@/lib/adminCentralsNav";
+import { nav } from "@/lib/navPaths.ts";
 
 type Tenant = {
   id: string;
@@ -37,7 +39,7 @@ export default function AdminTenantContextBar({
   onChange,
   isScoped,
   scopedSlug,
-  centralsPath = "/admin/centrals",
+  centralsPath = centralAdminPath(),
   className,
   allowEmpty,
 }: Props) {
@@ -98,7 +100,7 @@ export default function AdminTenantContextBar({
 
       {current && !isScoped && (
         <Link
-          to={`/admin/tenants/${current.slug}/centrals`}
+          to={nav.admin("tenants", current.slug, "centrals")}
           className="flex items-center justify-between rounded-xl border bg-card/60 px-3 py-2 text-xs hover:bg-card transition-colors"
         >
           <span className="text-muted-foreground">

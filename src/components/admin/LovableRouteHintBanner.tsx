@@ -2,6 +2,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LOVABLE_WILDCARD_HINT } from "@/lib/routeMap";
+import { nav } from "@/lib/navPaths.ts";
 
 export default function LovableRouteHintBanner() {
   const [params, setParams] = useSearchParams();
@@ -21,7 +22,7 @@ export default function LovableRouteHintBanner() {
         <p className="text-xs text-muted-foreground mt-1">
           O preview Lovable mostrou um endereço genérico. Foi corrigido para <strong>/admin</strong>.
           Consulte o{" "}
-          <Link to="/admin/routes" className="text-primary font-semibold underline">
+          <Link to={nav.admin("routes")} className="text-primary font-semibold underline">
             mapa de rotas
           </Link>{" "}
           para testar endereços reais.

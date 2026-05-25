@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Mail, Lock, User, ChefHat } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
+import { nav } from "@/lib/navPaths.ts";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -31,7 +32,7 @@ const Auth = () => {
           const dest = await resolvePostLoginDestination(userId);
           navigate(dest.path);
         } else {
-          navigate("/panel");
+          navigate(nav.panel());
         }
       } else {
         const { error } = await supabase.auth.signUp({

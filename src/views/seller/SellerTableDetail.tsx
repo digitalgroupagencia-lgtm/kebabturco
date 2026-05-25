@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ArrowLeft, Plus, Loader2, UserPlus, Receipt, Users } from "lucide-react";
 import { toast } from "sonner";
 import { fmtMoney } from "@/hooks/useTenantBilling";
+import { nav } from "@/lib/navPaths.ts";
 
 const PAYMENTS = [
   { id: "card", label: "Cartão" },
@@ -73,7 +74,7 @@ const SellerTableDetail = () => {
     toast.success("Mesa fechada");
     setClosingTable(false);
     refreshAll();
-    navigate("/seller/tables");
+    navigate(nav.seller("tables"));
   };
 
   const closeTableSplit = async () => {
@@ -86,7 +87,7 @@ const SellerTableDetail = () => {
     toast.success("Mesa fechada (pagamentos separados)");
     setClosingTable(false);
     refreshAll();
-    navigate("/seller/tables");
+    navigate(nav.seller("tables"));
   };
 
   const total = (customers ?? []).reduce((s: number, c: any) => s + Number(c.total_amount || 0), 0);
@@ -98,7 +99,7 @@ const SellerTableDetail = () => {
 
   return (
     <div className="p-3 space-y-3">
-      <button onClick={() => navigate("/seller/tables")} className="text-xs flex items-center gap-1 text-muted-foreground"><ArrowLeft className="w-3 h-3" /> Voltar</button>
+      <button onClick={() => navigate(nav.seller("tables"))} className="text-xs flex items-center gap-1 text-muted-foreground"><ArrowLeft className="w-3 h-3" /> Voltar</button>
 
       <div className="flex items-end justify-between gap-2">
         <div className="min-w-0">
@@ -121,7 +122,7 @@ const SellerTableDetail = () => {
               </div>
               {c.status === "active" ? (
                 <>
-                  <Button size="sm" variant="outline" onClick={() => navigate(`/seller/new?table=${encodeURIComponent(session.table_number)}&customer=${encodeURIComponent(c.customer_name)}`)}>
+                  <Button size="sm" variant="outline" onClick={() => navigate(`${nav.seller("new")}?table=${encodeURIComponent(session.table_number)}&customer=${encodeURIComponent(c.customer_name)}`)}>
                     <Plus className="w-3 h-3 mr-1" /> Item
                   </Button>
                   <Button size="sm" className="bg-cta hover:bg-cta/90 text-white" onClick={() => setClosingCustomer({ id: c.customer_id, name: c.customer_name, total: Number(c.total_amount || 0) })}>
@@ -147,7 +148,7 @@ const SellerTableDetail = () => {
       </Card>
 
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" className="h-12 font-bold" onClick={() => navigate(`/seller/new?table=${encodeURIComponent(session.table_number)}`)}>
+        <Button variant="outline" className="h-12 font-bold" onClick={() => navigate(`${nav.seller("new")}?table=${encodeURIComponent(session.table_number)}`)}>
           <Plus className="w-4 h-4 mr-1" /> Novo pedido
         </Button>
         <Button className="h-12 font-bold bg-primary text-primary-foreground" onClick={() => setClosingTable(true)} disabled={activeCount === 0}>

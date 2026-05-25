@@ -2,10 +2,11 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
+import { nav, resolveRoute } from "@/lib/navPaths.ts";
 
 const LEGACY_PREVIEW_SEARCH = `?preview=1&tenant=${DEFAULT_TENANT_SLUG}`;
 
-const LEGACY_ADMIN_PREFIXES = ["/admin/tenants", "/admin/domains", "/admin/billing"];
+const LEGACY_ADMIN_SEGMENTS = new Set(["tenants", "domains", "billing"]);
 
 /**
  * Corrige endereços inválidos ou legados do preview (wildcards, SnapOrder multi-cliente).
@@ -22,23 +23,52 @@ export default function PreviewPathGuard() {
     }
 
     if (pathname === "/kebab-turco") {
-      navigate("/", { replace: true });
+      navigate(nav.home(), { replace: true });
       return;
     }
 
     if (pathname === "/preview/kebab-turco" || pathname.startsWith("/preview/")) {
-      navigate({ pathname: "/", search: LEGACY_PREVIEW_SEARCH }, { replace: true });
+      navigate({ pathname: nav.home(), search: LEGACY_PREVIEW_SEARCH }, { replace: true });
       return;
     }
 
-    if (LEGACY_ADMIN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-      navigate("/admin", { replace: true });
+    const parts = pathname.split("/").filter(Boolean);
+
+    if (parts[0] === "admin" && LEGACY_ADMIN_SEGMENTS.has(parts[1] ?? "")) {
+      navigate(nav.admin(), { replace: true });
       return;
     }
 
-    const slug = pathname.split("/").filter(Boolean)[0];
-    if (slug && !isReservedAppPath(slug) && pathname.split("/").filter(Boolean).length === 1) {
-      navigate("/", { replace: true });
+    if (parts[0] === "painel") {
+      navigate(parts[1] === "dashboard" ? nav.panel("dashboard") : nav.panel(), { replace: true });
+      return;
+    }
+
+    if (parts[0] === "centrals" && parts[1]) {
+      navigate(nav.admin("centrals", parts[1]), { replace: true });
+      return;
+    }
+
+    if (parts.length === 1 && !isReservedAppPath(parts[0])) {
+      const panelTarget = nav.panel(parts[0]);
+      if (resolveRoute(panelTarget)) {
+        navigate(panelTarget, { replace: true });
+        return;
+      }
+      const adminTarget = nav.admin(parts[0]);
+      if (resolveRoute(adminTarget)) {
+        navigate(adminTarget, { replace: true });
+        return;
+      }
+      const sellerTarget = nav.seller(parts[0]);
+      if (resolveRoute(sellerTarget)) {
+        navigate(sellerTarget, { replace: true });
+        return;
+      }
+    }
+
+    if (parts.length === 1 && !isReservedAppPath(parts[0])) {
+      navigate(nav.home(), { replace: true });
     }
   }, [pathname, navigate]);
 

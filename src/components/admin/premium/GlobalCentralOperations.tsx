@@ -12,6 +12,7 @@ import {
 } from "@/lib/operationalCentralMetrics";
 import { usePlatformOperationalSnapshot } from "@/hooks/usePlatformOperationalSnapshot";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
+import { nav } from "@/lib/navPaths.ts";
 
 type Tenant = { id: string; name: string; slug: string; plan?: string | null; is_active?: boolean };
 
@@ -75,7 +76,7 @@ export default function GlobalCentralOperations({ centralTitle, centralSegment, 
             return (
               <Link
                 key={t.id}
-                to={`/admin/tenants/${t.slug}/centrals/${centralSegment}`}
+                to={nav.admin("tenants", t.slug, "centrals", centralSegment)}
                 className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 hover:border-primary/30 hover:bg-muted/20 transition-colors group"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">

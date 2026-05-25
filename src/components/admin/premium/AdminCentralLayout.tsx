@@ -7,6 +7,8 @@ import GlobalCentralOperations from "./GlobalCentralOperations";
 import PlatformPageShell from "./PlatformPageShell";
 import { useAdminCentralsTenants } from "@/hooks/usePlatformFeatures";
 import type { CentralSegment } from "@/lib/operationalCentralMetrics";
+import { centralAdminPath } from "@/lib/adminCentralsNav";
+import { nav } from "@/lib/navPaths.ts";
 
 type TenantRow = NonNullable<ReturnType<typeof useAdminCentralsTenants>["data"]>[number];
 
@@ -55,14 +57,14 @@ export default function AdminCentralLayout({
 
   const defaultCrumbs: Breadcrumb[] = isScoped && scopedTenant
     ? [
-        { label: "Plataforma", to: "/admin" },
-        { label: "Clientes", to: "/admin/tenants" },
-        { label: scopedTenant.name, to: `/admin/tenants/${scopedTenant.slug}` },
+        { label: "Plataforma", to: nav.admin() },
+        { label: "Clientes", to: nav.admin("tenants") },
+        { label: scopedTenant.name, to: nav.admin("tenants", scopedTenant.slug) },
         { label: title },
       ]
     : [
-        { label: "Plataforma", to: "/admin" },
-        { label: "Centrais", to: "/admin/centrals" },
+        { label: "Plataforma", to: nav.admin() },
+        { label: "Centrais", to: centralAdminPath() },
         { label: title },
       ];
 
@@ -82,7 +84,7 @@ export default function AdminCentralLayout({
         title={title}
         description={description}
         breadcrumbs={breadcrumbs ?? defaultCrumbs}
-        backTo={backTo ?? (isScoped ? `/admin/tenants/${slug}/centrals` : "/admin/centrals")}
+        backTo={backTo ?? (isScoped ? nav.admin("tenants", slug!, "centrals") : centralAdminPath())}
       />
 
       {stats}
@@ -94,7 +96,7 @@ export default function AdminCentralLayout({
           onChange={setSelectedId}
           isScoped={isScoped}
           scopedSlug={slug}
-          centralsPath="/admin/centrals"
+          centralsPath={centralAdminPath()}
           allowEmpty={!isScoped}
         />
       )}

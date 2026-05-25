@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/carousel";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import { cn } from "@/lib/utils";
+import { nav } from "@/lib/navPaths.ts";
 
 type Plan = {
   plan_key: string;
@@ -99,7 +100,7 @@ export default function PlanComparisonGrid({ plans, className }: Props) {
           </Badge>
         ))}
         <Button variant="link" size="sm" className="h-7 text-xs" asChild>
-          <Link to="/admin/plans">Ver planos</Link>
+          <Link to={nav.admin("plans")}>Ver planos</Link>
         </Button>
       </div>
     </div>

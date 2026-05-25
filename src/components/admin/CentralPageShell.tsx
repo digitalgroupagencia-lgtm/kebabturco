@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { centralAdminPath } from "@/lib/adminCentralsNav";
 
 type Props = {
   title: string;
@@ -9,7 +10,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-export default function CentralPageShell({ title, description, backTo = "/admin/centrals", children }: Props) {
+export default function CentralPageShell({ title, description, backTo = centralAdminPath(), children }: Props) {
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-8">
       <div className="flex items-start gap-2">
