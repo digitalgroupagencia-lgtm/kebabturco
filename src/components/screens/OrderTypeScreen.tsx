@@ -8,7 +8,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { supabase } from "@/integrations/supabase/client";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
-import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 
@@ -19,7 +18,6 @@ const OrderTypeScreen = () => {
   const { t, lang } = useLanguage();
   const { theme } = useTheme();
   const { storeId } = useResolvedStore();
-  const bottomInset = useCustomerBottomInset();
   const isDark = theme === "dark";
 
   const logo =
@@ -72,65 +70,60 @@ const OrderTypeScreen = () => {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: bottomInset,
-      }}
+      className="h-[100dvh] flex flex-col bg-background animate-fade-in relative overflow-hidden"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      {/* Faixa de status bar na cor da marca */}
       <div
         className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
         style={{ height: "env(safe-area-inset-top)" }}
       />
-      <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
+      <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
         <ThemeToggle />
       </div>
 
-      {/* Logo, título e modos de pedido agrupados — ícones mais acima */}
-      <div className="flex-1 flex flex-col items-center px-6 pt-6 pb-4 gap-5 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 flex flex-col items-center px-4 pt-3 pb-2 gap-3">
         {!brandingLoading && logo && (
-          <div className="w-full max-w-[240px] aspect-square flex items-center justify-center shrink-0 drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div className="w-full max-w-[140px] aspect-square flex items-center justify-center shrink-0 drop-shadow-[0_6px_18px_rgba(0,0,0,0.15)]">
             <img src={logo} alt={brandName} className="w-full h-full object-contain" />
           </div>
         )}
 
-        <div className="text-center shrink-0">
+        <div className="text-center shrink-0 px-2">
           {mesaLocked && tableNumber && (
-            <div className="mb-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg">
-              <UtensilsCrossed className="w-5 h-5" />
-              <span className="text-lg font-black">Mesa {tableNumber}</span>
+            <div className="mb-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground shadow-md">
+              <UtensilsCrossed className="w-4 h-4" />
+              <span className="text-base font-black">Mesa {tableNumber}</span>
             </div>
           )}
-          <h1 className="text-[24px] leading-tight font-black text-foreground tracking-tight">
+          <h1 className="text-[20px] leading-tight font-black text-foreground tracking-tight">
             {t("howOrder")}
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm">{t("pickOption")}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{t("pickOption")}</p>
         </div>
 
-        <div className="flex items-center justify-center w-full max-w-md shrink-0 mt-1">
+        <div className="flex items-center justify-center w-full max-w-md shrink-0 flex-1 min-h-0">
           <div
             className="flex flex-row items-stretch justify-center w-full flex-nowrap"
-            style={{ gap: enabled.length >= 3 ? "0.75rem" : "1rem" }}
+            style={{ gap: enabled.length >= 3 ? "0.5rem" : "0.75rem" }}
           >
             {enabled.map(({ key, label, sub, icon, Fallback, tint }) => (
               <button
                 key={key}
                 onClick={() => handleSelect(key)}
-                className={`flex-1 min-w-0 flex flex-col items-center gap-2 p-3 bg-card rounded-3xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
+                className={`flex-1 min-w-0 flex flex-col items-center gap-1.5 p-2.5 bg-card rounded-2xl shadow-[0_6px_18px_-10px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
                   mesaLocked && key === "here" ? "border-primary ring-2 ring-primary/40" : "border-border/60"
                 }`}
               >
-                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 ${icon ? "" : tint}`}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 ${icon ? "" : tint}`}>
                   {icon ? (
                     <img src={icon} alt={label} className="w-full h-full object-contain" />
                   ) : (
-                    <Fallback className="w-9 h-9" strokeWidth={2.2} />
+                    <Fallback className="w-7 h-7" strokeWidth={2.2} />
                   )}
                 </div>
                 <div className="text-center w-full">
-                  <span className="text-sm font-black text-foreground block leading-tight truncate">{label}</span>
-                  <span className="text-[10px] text-muted-foreground mt-0.5 block line-clamp-2">{sub}</span>
+                  <span className="text-xs font-black text-foreground block leading-tight truncate">{label}</span>
+                  <span className="text-[9px] text-muted-foreground mt-0.5 block line-clamp-2 leading-snug">{sub}</span>
                 </div>
               </button>
             ))}
@@ -141,10 +134,13 @@ const OrderTypeScreen = () => {
         </div>
       </div>
 
-      <div className="shrink-0 pb-6 px-6 space-y-3 mt-auto">
+      <div
+        className="shrink-0 px-4 pt-2 space-y-2"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
         <InstallAppButton lang={lang} />
-        <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
-          {brandName || "\u00A0"}
+        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-bold pb-1">
+          Desenvolvido por Euro Business Group
         </p>
       </div>
     </div>

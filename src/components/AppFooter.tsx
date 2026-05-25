@@ -1,6 +1,6 @@
 import { useOrder } from "@/contexts/OrderContext";
 
-const HIDDEN_SCREENS = new Set(["confirmation", "payment"]);
+const HIDDEN_SCREENS = new Set(["confirmation", "payment", "language", "orderType", "splash", "storeSelect"]);
 
 const AppFooter = () => {
   const { screen } = useOrder();
@@ -13,7 +13,7 @@ const AppFooter = () => {
       style={{ paddingBottom: "max(6px, env(safe-area-inset-bottom))" }}
       aria-label="Créditos de desenvolvimento"
     >
-      <p className="px-4 text-center text-[10px] leading-tight text-white/50">
+      <p className="px-4 text-center text-[10px] leading-tight text-muted-foreground/50">
         Desenvolvido por Euro Business Group
       </p>
     </footer>

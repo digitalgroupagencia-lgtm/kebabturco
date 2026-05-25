@@ -56,11 +56,10 @@ export function loadCartItemCount(): number {
   }
 }
 
-/** Salta idioma se o cliente já escolheu antes ou tem pedido/carrinho em curso. */
+/** Salta idioma só com pedido activo ou carrinho em curso. */
 export function shouldSkipLanguageScreen(): boolean {
   if (loadAnyStoredActiveOrder()?.orderId) return true;
   if (loadCartItemCount() > 0) return true;
-  if (loadSavedLang()) return true;
   return false;
 }
 
@@ -73,7 +72,6 @@ export function resolveScreenAfterLanguageSkip(): Screen {
   }
   if (loadCartItemCount() > 0) return "home";
   if (loadSavedOrderType()) return "home";
-  if (loadSavedLang()) return "orderType";
   return "language";
 }
 

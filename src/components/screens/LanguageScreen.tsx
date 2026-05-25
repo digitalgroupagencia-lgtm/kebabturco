@@ -3,7 +3,6 @@ import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 import flagBr from "@/assets/flag-br.png";
@@ -33,7 +32,6 @@ const LanguageScreen = () => {
   const { stores, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const bottomInset = useCustomerBottomInset();
 
   const logo =
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
@@ -64,11 +62,8 @@ const LanguageScreen = () => {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col bg-background animate-fade-in relative"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: bottomInset,
-      }}
+      className="h-[100dvh] flex flex-col bg-background animate-fade-in relative overflow-hidden"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div
         className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
@@ -79,9 +74,9 @@ const LanguageScreen = () => {
       </div>
 
       {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
-      <div className="flex flex-col items-center px-6 pt-4 shrink-0">
+      <div className="flex flex-col items-center px-6 pt-3 shrink-0">
         {logo && (
-          <div className="w-full max-w-[280px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <img src={logo} alt={brandName} className="w-full h-full object-contain" draggable={false} />
           </div>
         )}
@@ -101,7 +96,7 @@ const LanguageScreen = () => {
       </div>
 
       {/* Bandeiras logo abaixo do título — tamanho original */}
-      <div className="flex items-center justify-center px-4 pt-3 pb-2 w-full shrink-0">
+      <div className="flex items-center justify-center px-4 pt-2 pb-1 w-full shrink-0 flex-1 min-h-0">
         <div
           className="flex flex-row items-start justify-center w-full max-w-md flex-nowrap"
           style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
@@ -131,12 +126,13 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0" aria-hidden />
-
-      <div className="shrink-0 pt-4 pb-6 px-6 space-y-3">
+      <div
+        className="shrink-0 px-6 pt-2 space-y-2"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
         <InstallAppButton lang={primaryLang} />
-        <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
-          Pizza · Kebab · Burger
+        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-bold pb-1">
+          Desenvolvido por Euro Business Group
         </p>
       </div>
     </div>

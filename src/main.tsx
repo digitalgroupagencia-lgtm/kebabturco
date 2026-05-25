@@ -1,6 +1,24 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { isAdminMasterHost } from "./lib/platformHosts";
+
+function redirectPlatformHostIfNeeded() {
+  if (!isAdminMasterHost(window.location.hostname)) return;
+  const path = window.location.pathname || "/";
+  if (path === "/" || path === "") {
+    window.location.replace("/admin");
+    return;
+  }
+  const allowed =
+    path.startsWith("/admin") ||
+    path === "/auth" ||
+    path.startsWith("/auth/") ||
+    path === "/install";
+  if (!allowed) window.location.replace("/admin");
+}
+
+redirectPlatformHostIfNeeded();
 
 function removeBootFallback() {
   document.getElementById("boot-fallback")?.remove();
