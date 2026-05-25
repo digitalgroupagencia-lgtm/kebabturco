@@ -1,11 +1,15 @@
+/**
+ * Lista curada para o selector de páginas do preview Lovable.
+ * Única fonte de `<Route path="...">` no projecto — não duplicar noutros ficheiros.
+ */
 import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
-import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
-import { adminRouteElements } from "@/routes/adminRoutes.tsx";
-import { panelRouteElements } from "@/routes/panelRoutes.tsx";
-import { sellerRouteElements } from "@/routes/sellerRoutes.tsx";
+import { ADMIN_ROUTE_LOADERS } from "@/routes/adminRouteConfig.ts";
+import { buildLayoutRoutes } from "@/routes/buildLayoutRoutes.tsx";
+import { PANEL_ROUTE_LOADERS } from "@/routes/panelRouteConfig.ts";
+import { SELLER_ROUTE_LOADERS } from "@/routes/sellerRouteConfig.ts";
 
 const Index = lazy(() => import("@/pages/Index.tsx"));
 const Auth = lazy(() => import("@/pages/Auth.tsx"));
@@ -25,7 +29,19 @@ const tenantStore = withSuspense(
   </MobileFrame>,
 );
 
-const legacyPreviewSearch = `?preview=1&tenant=${DEFAULT_TENANT_SLUG}`;
+/** Endereços que o preview Lovable deve listar (referência explícita). */
+export const LOVABLE_PREVIEW_PATHS = [
+  "/",
+  "/auth",
+  "/install",
+  "/cashier",
+  "/panel",
+  "/panel/menu",
+  "/panel/cashier",
+  "/admin",
+  "/admin/routes",
+  "/admin/plans",
+] as const;
 
 const AppRoutes = () => (
   <Routes>
@@ -34,24 +50,9 @@ const AppRoutes = () => (
     <Route path="/install" element={withSuspense(<Install />)} />
     <Route path="/cashier" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
 
-    <Route path="/panel" element={withSuspense(<PanelLayout />)}>
-      {panelRouteElements}
-    </Route>
-
-    <Route path="/admin" element={withSuspense(<AdminLayout />)}>
-      {adminRouteElements}
-    </Route>
-
-    <Route path="/seller" element={withSuspense(<SellerLayout />)}>
-      {sellerRouteElements}
-    </Route>
-
-    {/* Legado multi-tenant — redirects fixos (sem :param no scanner). */}
-    <Route
-      path="/preview/kebab-turco"
-      element={withSuspense(<Navigate to={{ pathname: "/", search: legacyPreviewSearch }} replace />)}
-    />
-    <Route path="/kebab-turco" element={withSuspense(<Navigate to="/" replace />)} />
+    {buildLayoutRoutes(PanelLayout, PANEL_ROUTE_LOADERS)}
+    {buildLayoutRoutes(AdminLayout, ADMIN_ROUTE_LOADERS)}
+    {buildLayoutRoutes(SellerLayout, SELLER_ROUTE_LOADERS)}
 
     <Route path="*" element={withSuspense(<NotFound />)} />
   </Routes>
