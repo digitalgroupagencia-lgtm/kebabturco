@@ -18,7 +18,8 @@ Usuário prefere instruções simples, sem edição manual. Fala português.
 **Nunca** recriar `src/pages/panel/`, `src/pages/admin/` ou `src/pages/seller/`.
 **Nunca** usar wildcards (`/*`, `/:tenantPath`, `/admin/tenants/:slug/*`).
 
-## Memories
+## Integrações
+- **Google Maps:** desligado — ver [Integrações](mem://features/integrations)
 - [Regras Kebab Turco](mem://features/kebab-rules) — Delivery, modificadores, impressão
 - [Rotas do preview](mem://features/preview-routes) — Lista curada do dropdown
 - [Módulo Vendedor](mem://features/seller-module) — App vendedor, mesas, pedidos

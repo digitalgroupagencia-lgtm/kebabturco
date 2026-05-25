@@ -1,8 +1,5 @@
 project_id = "kvpssbhclafoymhecmuk"
 
-[functions.geocode-address]
-verify_jwt = false
-
 [functions.send-push-notification]
 verify_jwt = false
 

@@ -13,11 +13,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { formatDeliveryZoneSummary } from "@/lib/formatDeliveryZoneSummary";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Truck, MapPin, Copy, Download, MoreVertical, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Trash2, Truck, Copy, Download, MoreVertical } from "lucide-react";
 
 interface Zone {
   id: string;
@@ -38,9 +37,6 @@ interface Store {
   id: string;
   name: string;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  geocoded_address: string | null;
 }
 
 function ZoneEditor({
@@ -170,11 +166,9 @@ const TenantDeliveryZonesPage = () => {
   const [zones, setZones] = useState<Zone[]>([]);
   const [storeId, setStoreId] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [geocoding, setGeocoding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [storeOpen, setStoreOpen] = useState(false);
 
   const currentStore = stores.find((s) => s.id === storeId);
 
@@ -193,7 +187,7 @@ const TenantDeliveryZonesPage = () => {
     }
     const { data: s } = await supabase
       .from("stores")
-      .select("id,name,address,latitude,longitude,geocoded_address")
+      .select("id,name,address")
       .eq("tenant_id", tid)
       .order("sort_order");
     setStores((s as Store[]) || []);
@@ -216,24 +210,6 @@ const TenantDeliveryZonesPage = () => {
   useEffect(() => {
     if (storeId) loadZones(storeId);
   }, [storeId]);
-
-  const geocodeStore = async () => {
-    if (!currentStore?.address) {
-      toast.error("A loja não tem endereço. Edite a loja primeiro.");
-      return;
-    }
-    setGeocoding(true);
-    const { data, error } = await supabase.functions.invoke("geocode-address", {
-      body: { storeId: currentStore.id, address: currentStore.address, mode: "store" },
-    });
-    setGeocoding(false);
-    if (error || !data) {
-      toast.error(error?.message || "Erro ao geocodificar");
-      return;
-    }
-    toast.success("Loja localizada");
-    await load();
-  };
 
   const update = (id: string, patch: Partial<Zone>) =>
     setZones((p) => p.map((z) => (z.id === id ? { ...z, ...patch } : z)));
@@ -385,32 +361,10 @@ const TenantDeliveryZonesPage = () => {
         </Button>
       </div>
 
-      {currentStore && (
-        <Collapsible open={storeOpen} onOpenChange={setStoreOpen}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="w-full flex items-center justify-between gap-2 rounded-2xl border bg-card px-3.5 py-3 text-left shadow-sm"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <MapPin className="h-4 w-4 text-primary shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold truncate">Local da loja</p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {currentStore.latitude != null ? "Geocodificada" : currentStore.address || "Sem morada"}
-                  </p>
-                </div>
-              </div>
-              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${storeOpen ? "rotate-180" : ""}`} />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2 px-1 space-y-2">
-            <p className="text-xs text-muted-foreground break-words">{currentStore.address || "—"}</p>
-            <Button size="sm" variant="outline" className="w-full h-10" onClick={geocodeStore} disabled={geocoding || !currentStore.address}>
-              {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Localizar no mapa"}
-            </Button>
-          </CollapsibleContent>
-        </Collapsible>
+      {currentStore?.address && (
+        <p className="text-xs text-muted-foreground rounded-xl border bg-card px-3.5 py-3">
+          Morada da unidade: <span className="text-foreground font-medium">{currentStore.address}</span>
+        </p>
       )}
 
       <div className="space-y-2.5">
