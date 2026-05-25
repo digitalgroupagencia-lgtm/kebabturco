@@ -19,11 +19,21 @@ export function isBrokenEditorPath(pathname: string): boolean {
   return pathname.includes("*");
 }
 
-/** Converte caminho quebrado do editor para um endereço real. */
+/** Converte caminho quebrado do editor para pathname real. */
 export function fixBrokenEditorPath(pathname: string): string {
   if (!pathname.includes("*")) return pathname;
   if (pathname.startsWith("/admin")) return "/admin";
   if (pathname.startsWith("/panel")) return "/panel";
   if (pathname.startsWith("/auth")) return "/auth";
+  if (pathname.startsWith("/seller")) return "/seller";
   return "/";
+}
+
+/** Destino completo com aviso quando wildcard veio do preview Lovable. */
+export function fixBrokenEditorLocation(pathname: string): { pathname: string; search: string } {
+  const fixed = fixBrokenEditorPath(pathname);
+  if (!pathname.includes("*")) return { pathname, search: "" };
+  const hint = "routeHint=lovable-wildcard";
+  if (fixed === "/admin") return { pathname: fixed, search: `?${hint}` };
+  return { pathname: fixed, search: "" };
 }

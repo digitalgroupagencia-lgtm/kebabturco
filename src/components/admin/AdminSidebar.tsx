@@ -18,6 +18,7 @@ import {
   Wrench,
   Printer,
   CreditCard,
+  Map,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +45,7 @@ import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
 
 const overviewItems = [
   { title: "Command Center", url: "/admin", icon: LayoutGrid, end: true },
+  { title: "Mapa de rotas", url: "/admin/routes", icon: Map },
   { title: "Planos & funcionalidades", url: "/admin/plans", icon: CreditCard },
 ];
 

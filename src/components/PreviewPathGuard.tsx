@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { fixBrokenEditorPath, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
+import { fixBrokenEditorLocation, isBrokenEditorPath } from "@/lib/appPaths";
 
 /**
  * Corrige endereços inválidos do preview (ex.: /admin/* do selector Lovable).
@@ -10,9 +10,9 @@ export default function PreviewPathGuard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isBrokenEditorPath(pathname)) {
-      navigate(fixBrokenEditorPath(pathname), { replace: true });
-    }
+    if (!isBrokenEditorPath(pathname)) return;
+    const { pathname: fixed, search } = fixBrokenEditorLocation(pathname);
+    navigate({ pathname: fixed, search }, { replace: true });
   }, [pathname, navigate]);
 
   return null;

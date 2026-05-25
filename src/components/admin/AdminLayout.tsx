@@ -9,6 +9,7 @@ import AdminThemeToggle from "./AdminThemeToggle";
 import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { canAccessGeneralAdmin } from "@/lib/projectAccess";
+import LovableRouteHintBanner from "./LovableRouteHintBanner";
 
 const AdminLayout = () => {
   const { user, loading: authLoading } = useAuth();
@@ -51,6 +52,7 @@ const AdminLayout = () => {
           </header>
           <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
             <div className="max-w-full mx-auto">
+              <LovableRouteHintBanner />
               <Outlet />
             </div>
           </main>
