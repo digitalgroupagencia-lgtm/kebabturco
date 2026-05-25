@@ -255,7 +255,7 @@ export function usePanelOrders(storeId: string | undefined) {
     try {
       const { data: updated, error } = await supabase
         .from("orders")
-        .update(patch)
+        .update(patch as never)
         .eq("id", order.id)
         .select()
         .single();
