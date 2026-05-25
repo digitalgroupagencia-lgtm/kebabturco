@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.tenant-manifest]
+verify_jwt = false
