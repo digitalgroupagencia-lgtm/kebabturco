@@ -5,7 +5,9 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Loader2, History, RotateCcw, Gift } from "lucide-react";
+import PhoneInput from "@/components/PhoneInput";
+import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
+import { Loader2, Package, RotateCcw, Gift } from "lucide-react";
 import { toast } from "sonner";
 
 type PastOrder = {
@@ -18,28 +20,35 @@ type PastOrder = {
   items: Array<{ product_name: string; quantity: number; unit_price: number; extras?: unknown; removed?: string[]; notes?: string }>;
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Recebido",
+  preparing: "A preparar",
+  ready: "Pronto",
+  delivered: "Entregue",
+  cancelled: "Cancelado",
+};
+
 const CustomerAccountScreen = () => {
-  const { setScreen, setTrackingOrderId, customerPhone, setCustomerPhone } = useOrder();
+  const { setScreen, setTrackingOrderId, customerPhone, setCustomerPhone, phoneDialCode, setPhoneDialCode } = useOrder();
   const { addItem } = useCart();
-  const { tProduct } = useLanguage();
+  const { t } = useLanguage();
   const { storeId, selectedStoreId } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? storeId;
-  const [phone, setPhone] = useState(customerPhone);
   const [orders, setOrders] = useState<PastOrder[]>([]);
   const [loyalty, setLoyalty] = useState<{ stamps: number; stamps_needed: number; reward_ready: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   const search = async () => {
-    if (!effectiveStoreId || phone.trim().length < 6) {
+    const fullPhone = formatFullPhone(phoneDialCode, customerPhone);
+    if (!effectiveStoreId || !isValidCustomerPhone(phoneDialCode, customerPhone)) {
       toast.error("Introduce un teléfono válido");
       return;
     }
     setLoading(true);
-    setCustomerPhone(phone.trim());
     const [{ data: orderData }, { data: loyaltyData }] = await Promise.all([
-      supabase.rpc("get_customer_orders", { _store_id: effectiveStoreId, _phone: phone.trim() }),
-      supabase.rpc("get_loyalty_status", { _store_id: effectiveStoreId, _phone: phone.trim() }),
+      supabase.rpc("get_customer_orders", { _store_id: effectiveStoreId, _phone: fullPhone }),
+      supabase.rpc("get_loyalty_status", { _store_id: effectiveStoreId, _phone: fullPhone }),
     ]);
     setOrders((orderData as PastOrder[]) || []);
     setLoyalty(loyaltyData as typeof loyalty);
@@ -48,8 +57,7 @@ const CustomerAccountScreen = () => {
   };
 
   useEffect(() => {
-    if (customerPhone.length >= 6) {
-      setPhone(customerPhone);
+    if (isValidCustomerPhone(phoneDialCode, customerPhone)) {
       search();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,19 +86,25 @@ const CustomerAccountScreen = () => {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
-      <ScreenHeader eyebrow="Conta" title="Os meus pedidos" onBack={() => setScreen("home")} sticky />
+      <ScreenHeader eyebrow={t("trackMyOrders")} title={t("myOrdersTitle")} onBack={() => setScreen("home")} sticky />
 
       <div className="flex-1 px-4 py-4 space-y-4 pb-8">
-        <div className="flex gap-2">
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
-            placeholder="Teu telemóvel"
-            className="flex-1 h-12 px-4 rounded-2xl border border-border bg-card font-bold"
+        <p className="text-sm text-muted-foreground">{t("phoneSearchHint")}</p>
+
+        <div className="space-y-2">
+          <PhoneInput
+            dialCode={phoneDialCode}
+            onDialCodeChange={setPhoneDialCode}
+            localNumber={customerPhone}
+            onLocalNumberChange={setCustomerPhone}
           />
-          <button onClick={search} disabled={loading} className="px-5 h-12 rounded-2xl bg-primary text-primary-foreground font-black disabled:opacity-50">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Ver"}
+          <button
+            onClick={search}
+            disabled={loading}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Package className="w-5 h-5" />}
+            {t("searchMyOrders")}
           </button>
         </div>
 
@@ -117,7 +131,7 @@ const CustomerAccountScreen = () => {
               <div>
                 <p className="font-black text-lg">#{order.order_number}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(order.created_at).toLocaleDateString()} · {order.status}
+                  {new Date(order.created_at).toLocaleDateString()} · {STATUS_LABEL[order.status] || order.status}
                 </p>
               </div>
               <p className="font-black text-price tabular-nums">{Number(order.total).toFixed(2)}€</p>
@@ -132,7 +146,7 @@ const CustomerAccountScreen = () => {
                 onClick={() => { setTrackingOrderId(order.id); setScreen("tracking"); }}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border text-sm font-bold"
               >
-                <History className="w-4 h-4" /> Acompanhar
+                <Package className="w-4 h-4" /> {t("trackMyOrders")}
               </button>
               <button
                 onClick={() => reorder(order)}

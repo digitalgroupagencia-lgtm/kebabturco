@@ -18,6 +18,8 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { filterImplementedPaymentMethods } from "@/lib/paymentMethods";
 import { loadSavedOrderType } from "@/lib/customerSession";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
+import PhoneInput from "@/components/PhoneInput";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 
@@ -68,6 +70,8 @@ const PaymentScreen = () => {
     setCustomerName,
     customerPhone,
     setCustomerPhone,
+    phoneDialCode,
+    setPhoneDialCode,
     deliveryAddress,
     setDeliveryAddress,
     deliveryNumber,
@@ -99,6 +103,7 @@ const PaymentScreen = () => {
   const { subscribe: subscribePush } = usePushNotifications();
 
   const isTableOrder = orderType === "here";
+  const fullCustomerPhone = formatFullPhone(phoneDialCode, customerPhone);
   const orderTypeDb = isTableOrder ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
 
   const { quote: deliveryQuote } = useDeliveryFee(
@@ -223,12 +228,11 @@ const PaymentScreen = () => {
       setShowError("name");
       return false;
     }
-    if (orderType === "takeaway" && (!customerPhone.trim() || customerPhone.trim().length < 6)) {
+    if (!isValidCustomerPhone(phoneDialCode, customerPhone)) {
       setShowError("phone");
       return false;
     }
     if (orderType === "delivery") {
-      if (!customerPhone.trim() || customerPhone.trim().length < 6) { setShowError("phone"); return false; }
       if (!deliveryAddress.trim()) { setShowError("address"); return false; }
       if (!deliveryNumber.trim()) { setShowError("number"); return false; }
       if (!deliveryPostalCode.trim()) { setShowError("postal"); return false; }
@@ -289,7 +293,7 @@ const PaymentScreen = () => {
       tableNumber: tableNumber.trim() || null,
       tableId: mesaTableId,
       customerName: customerName.trim() || null,
-      customerPhone: customerPhone.trim() || null,
+      customerPhone: fullCustomerPhone || null,
       notes,
       paymentMethod: paymentMethodDb,
       paymentStatus: opts.paymentStatus,
@@ -318,7 +322,7 @@ const PaymentScreen = () => {
     await subscribePush({
       storeId,
       orderId: result.order_id,
-      customerPhone: customerPhone.trim() || undefined,
+      customerPhone: fullCustomerPhone || undefined,
     });
 
     await invokePrintOrder(buildPrintPayload({
@@ -327,7 +331,7 @@ const PaymentScreen = () => {
       orderType: orderTypeDb,
       tableNumber: tableNumber.trim() || null,
       customerName: customerName.trim() || null,
-      customerPhone: customerPhone.trim() || null,
+      customerPhone: fullCustomerPhone || null,
       paymentMethod: opts.paymentMethod,
       paymentPending: opts.paymentStatus !== "paid",
       paidViaApp: opts.paymentStatus === "paid",
@@ -452,7 +456,7 @@ const PaymentScreen = () => {
         ) : (
           <>
             {isTableOrder && (
-              <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "table" ? "ring-2 ring-destructive/40" : ""}`}>
+              <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "table" || showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
                 <div className={`px-3 py-2.5 ${showError === "table" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                     <Hash className="w-3 h-3 text-primary" />
@@ -491,6 +495,26 @@ const PaymentScreen = () => {
                     />
                   </div>
                 )}
+                <div className={`px-3 py-2.5 border-t border-border ${showError === "phone" ? "bg-destructive/5" : ""}`}>
+                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                    <Phone className="w-3 h-3 text-primary" />
+                    {t("yourPhone")} <span className="text-destructive">*</span>
+                  </label>
+                  <PhoneInput
+                    dialCode={phoneDialCode}
+                    onDialCodeChange={(code) => {
+                      setPhoneDialCode(code);
+                      if (showError === "phone") setShowError(null);
+                    }}
+                    localNumber={customerPhone}
+                    onLocalNumberChange={(value) => {
+                      setCustomerPhone(value);
+                      if (showError === "phone") setShowError(null);
+                    }}
+                    error={showError === "phone"}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1.5">{t("phoneOrderHint")}</p>
+                </div>
               </div>
             )}
 
@@ -516,15 +540,20 @@ const PaymentScreen = () => {
                     <Phone className="w-3 h-3 text-primary" />
                     {t("yourPhone")} <span className="text-destructive">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => {
-                      setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20));
+                  <PhoneInput
+                    dialCode={phoneDialCode}
+                    onDialCodeChange={(code) => {
+                      setPhoneDialCode(code);
                       if (showError === "phone") setShowError(null);
                     }}
-                    className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                    localNumber={customerPhone}
+                    onLocalNumberChange={(value) => {
+                      setCustomerPhone(value);
+                      if (showError === "phone") setShowError(null);
+                    }}
+                    error={showError === "phone"}
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1.5">{t("phoneOrderHint")}</p>
                 </div>
               </div>
             )}
@@ -551,15 +580,20 @@ const PaymentScreen = () => {
                     <Phone className="w-3 h-3 text-primary" />
                     {t("yourPhone")} <span className="text-destructive">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => {
-                      setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20));
+                  <PhoneInput
+                    dialCode={phoneDialCode}
+                    onDialCodeChange={(code) => {
+                      setPhoneDialCode(code);
                       if (showError === "phone") setShowError(null);
                     }}
-                    className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+                    localNumber={customerPhone}
+                    onLocalNumberChange={(value) => {
+                      setCustomerPhone(value);
+                      if (showError === "phone") setShowError(null);
+                    }}
+                    error={showError === "phone"}
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1.5">{t("phoneOrderHint")}</p>
                 </div>
                 <div className="px-3 py-3 border-t border-border space-y-2">
                   <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>

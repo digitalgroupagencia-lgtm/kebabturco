@@ -78,6 +78,8 @@ export function resolveScreenAfterLanguageSkip(): Screen {
 }
 
 export const KIOSK_TABLE_KEY = "kiosk-table-number";
+export const KIOSK_PHONE_DIAL_KEY = "kiosk-phone-dial";
+export const KIOSK_PHONE_LOCAL_KEY = "kiosk-phone-local";
 
 export function loadSavedTableNumber(): string {
   try {
@@ -92,6 +94,32 @@ export function saveSavedTableNumber(value: string) {
     const trimmed = value.trim();
     if (trimmed) localStorage.setItem(KIOSK_TABLE_KEY, trimmed);
     else localStorage.removeItem(KIOSK_TABLE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadSavedCustomerPhone(): { dialCode: string; local: string } | null {
+  try {
+    const dial = localStorage.getItem(KIOSK_PHONE_DIAL_KEY);
+    const local = localStorage.getItem(KIOSK_PHONE_LOCAL_KEY);
+    if (!local?.trim()) return null;
+    return { dialCode: dial || "+34", local: local.trim() };
+  } catch {
+    return null;
+  }
+}
+
+export function saveSavedCustomerPhone(dialCode: string, local: string) {
+  try {
+    const trimmed = local.trim();
+    if (trimmed) {
+      localStorage.setItem(KIOSK_PHONE_DIAL_KEY, dialCode);
+      localStorage.setItem(KIOSK_PHONE_LOCAL_KEY, trimmed);
+    } else {
+      localStorage.removeItem(KIOSK_PHONE_DIAL_KEY);
+      localStorage.removeItem(KIOSK_PHONE_LOCAL_KEY);
+    }
   } catch {
     /* ignore */
   }

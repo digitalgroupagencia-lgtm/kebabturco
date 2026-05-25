@@ -5,7 +5,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { Plus, History, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Package, Loader2, RefreshCw } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import { splitProductName } from "@/lib/splitProductName";
@@ -136,9 +136,9 @@ const HomeScreen = () => {
               type="button"
               onClick={() => setScreen("account")}
               className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95"
-              aria-label="Os meus pedidos"
+              aria-label={t("trackMyOrders")}
             >
-              <History className="w-4 h-4" />
+              <Package className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">

@@ -32,6 +32,7 @@ import {
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { clearStoredActiveOrder } from "@/features/customer/useActiveOrderStorage";
 import { hasCustomerAcknowledged, markCustomerAcknowledged } from "@/lib/customerOrderUrl";
+import { formatFullPhone } from "@/lib/phoneNumber";
 
 const ConfirmationScreen = () => {
   const {
@@ -42,6 +43,7 @@ const ConfirmationScreen = () => {
     orderPaymentStatus,
     customerName,
     customerPhone,
+    phoneDialCode,
     setTableNumber,
     setPaymentMethod,
     setOrderPaymentStatus,
@@ -310,7 +312,7 @@ const ConfirmationScreen = () => {
               </div>
             )}
 
-            {!isHere && customerPhone && (
+            {customerPhone && (
               <div className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-card min-w-0">
                 <div className="w-9 h-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0">
                   <Phone className="w-4 h-4" />
@@ -320,7 +322,7 @@ const ConfirmationScreen = () => {
                     {t("phoneLabel")}
                   </p>
                   <p className="font-black text-foreground text-[12px] tabular-nums truncate leading-tight">
-                    {customerPhone}
+                    {formatFullPhone(phoneDialCode, customerPhone)}
                   </p>
                 </div>
               </div>

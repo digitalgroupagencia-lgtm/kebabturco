@@ -11,10 +11,13 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   loadSavedTableNumber,
+  loadSavedCustomerPhone,
+  saveSavedCustomerPhone,
   resolveScreenAfterLanguageSkip,
   saveSavedTableNumber,
   shouldSkipLanguageScreen,
 } from "@/lib/customerSession";
+import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
 export type { Screen };
@@ -46,6 +49,8 @@ interface OrderContextType {
   setCustomerName: (n: string) => void;
   customerPhone: string;
   setCustomerPhone: (p: string) => void;
+  phoneDialCode: string;
+  setPhoneDialCode: (code: string) => void;
   deliveryAddress: string;
   setDeliveryAddress: (v: string) => void;
   deliveryNumber: string;
@@ -176,7 +181,17 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [mesaLocked, setMesaLocked] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const savedPhone = typeof window !== "undefined" ? loadSavedCustomerPhone() : null;
+  const [phoneDialCode, setPhoneDialCodeState] = useState(savedPhone?.dialCode ?? DEFAULT_DIAL_CODE);
+  const [customerPhone, setCustomerPhoneState] = useState(savedPhone?.local ?? "");
+  const setPhoneDialCode = (code: string) => {
+    setPhoneDialCodeState(code);
+    saveSavedCustomerPhone(code, customerPhone);
+  };
+  const setCustomerPhone = (value: string) => {
+    setCustomerPhoneState(value);
+    saveSavedCustomerPhone(phoneDialCode, value);
+  };
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryNumber, setDeliveryNumber] = useState("");
   const [deliveryComplement, setDeliveryComplement] = useState("");
@@ -233,6 +248,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCustomerName,
         customerPhone,
         setCustomerPhone,
+        phoneDialCode,
+        setPhoneDialCode,
         deliveryAddress,
         setDeliveryAddress,
         deliveryNumber,
