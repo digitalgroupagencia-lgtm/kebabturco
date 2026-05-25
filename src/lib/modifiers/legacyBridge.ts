@@ -19,7 +19,10 @@ export function selectionsToLegacyFields(allSelections: ModifierSelection[]): {
       for (let i = 0; i < s.quantity; i++) removedIngredients.push(label);
       continue;
     }
-    if (s.groupKind === "extra" || (s.groupKind === "choice" && s.priceDelta > 0)) {
+    if (
+      s.groupKind === "extra" ||
+      (s.groupKind === "choice" && s.priceDelta > 0)
+    ) {
       extras.push({
         id: s.optionId,
         name: s.optionName,
@@ -27,6 +30,7 @@ export function selectionsToLegacyFields(allSelections: ModifierSelection[]): {
         quantity: s.quantity,
       });
     }
+    // substitution: preço via selections, nunca como extra adicionável
   }
 
   return { extras, removedIngredients };
@@ -60,6 +64,10 @@ export function configurationSummaryLines(
 function formatSelectionLine(s: ModifierSelection, tName: (n: Record<string, string>) => string): string {
   const opt = tName(s.optionName);
   if (s.groupKind === "removal") return `Sem ${opt}`;
+  if (s.groupKind === "substitution") {
+    const price = s.priceDelta > 0 ? ` (+${s.priceDelta.toFixed(2)}€)` : "";
+    return `${opt}${price}`;
+  }
   if (s.quantity > 1) return `${s.quantity}× ${opt}`;
   return opt;
 }

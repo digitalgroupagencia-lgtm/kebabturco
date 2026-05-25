@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical } from "lucide-react";
 import type { ModifierGroupKind, SelectionMode } from "@/lib/modifiers/types";
+import { GROUP_KIND_META, groupKindLabel, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
 
 type GroupRow = {
   id: string;
@@ -102,14 +103,16 @@ export default function ModifierGroupsPage() {
       toast.error("Nome do grupo é obrigatório");
       return;
     }
+    const kind = (editingGroup.group_kind || "choice") as ModifierGroupKind;
+    const normalized = normalizeGroupKindSettings(kind, editingGroup.is_required ?? false);
     const payload = {
       store_id: storeId,
       name: editingGroup.name,
       description: editingGroup.description || {},
-      group_kind: editingGroup.group_kind || "choice",
-      selection_mode: editingGroup.selection_mode || "single",
-      min_select: editingGroup.min_select ?? 0,
-      max_select: editingGroup.max_select ?? 1,
+      group_kind: kind,
+      selection_mode: normalized?.selection_mode ?? editingGroup.selection_mode ?? "single",
+      min_select: normalized?.min_select ?? editingGroup.min_select ?? 0,
+      max_select: normalized?.max_select ?? editingGroup.max_select ?? 1,
       is_required: editingGroup.is_required ?? false,
       is_active: editingGroup.is_active ?? true,
       sort_order: editingGroup.sort_order ?? groups.length,
@@ -161,6 +164,9 @@ export default function ModifierGroupsPage() {
       sort_order: editingOption.sort_order ?? groupOptions.length,
       is_active: true,
     };
+    if (payload.is_default) {
+      await supabase.from("modifier_options").update({ is_default: false }).eq("group_id", editingOption.group_id);
+    }
     if (editingOption.id) {
       const { error } = await supabase.from("modifier_options").update(payload).eq("id", editingOption.id);
       if (error) { toast.error(error.message); return; }
@@ -195,12 +201,21 @@ export default function ModifierGroupsPage() {
             <Layers className="w-7 h-7 text-primary" /> Personalização
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Grupos reutilizáveis: bebidas, carnes, extras, ingredientes removíveis…
+            Quatro tipos de personalização — reutilizáveis em todos os produtos.
           </p>
         </div>
         <Button onClick={() => openGroup()} className="font-bold">
           <Plus className="w-4 h-4 mr-1" /> Novo grupo
         </Button>
+      </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {(Object.keys(GROUP_KIND_META) as ModifierGroupKind[]).map((kind) => (
+          <div key={kind} className="rounded-xl border bg-card p-3 space-y-1">
+            <p className="text-sm font-black">{groupKindLabel(kind)}</p>
+            <p className="text-xs text-muted-foreground leading-snug">{GROUP_KIND_META[kind].adminHintPt}</p>
+          </div>
+        ))}
       </div>
 
       <div className="grid lg:grid-cols-[280px_1fr] gap-4">
@@ -252,8 +267,12 @@ export default function ModifierGroupsPage() {
           <CardContent className="space-y-3">
             {selectedGroup && (
               <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 rounded-full bg-muted font-semibold">{selectedGroup.group_kind}</span>
-                <span className="px-2 py-1 rounded-full bg-muted font-semibold">{selectedGroup.selection_mode}</span>
+                <span className="px-2 py-1 rounded-full bg-muted font-semibold">
+                  {groupKindLabel(selectedGroup.group_kind)}
+                </span>
+                {selectedGroup.group_kind !== "substitution" && selectedGroup.group_kind !== "extra" && (
+                  <span className="px-2 py-1 rounded-full bg-muted font-semibold">{selectedGroup.selection_mode}</span>
+                )}
                 {selectedGroup.is_required && (
                   <span className="px-2 py-1 rounded-full bg-destructive/10 text-destructive font-semibold">Obrigatório</span>
                 )}
@@ -309,25 +328,41 @@ export default function ModifierGroupsPage() {
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Tipo</Label>
-                  <Select
-                    value={editingGroup.group_kind || "choice"}
-                    onValueChange={(v) => setEditingGroup({ ...editingGroup, group_kind: v as ModifierGroupKind })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="choice">Escolha</SelectItem>
-                      <SelectItem value="extra">Extra</SelectItem>
-                      <SelectItem value="removal">Remover ingrediente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Tipo</Label>
+                <Select
+                  value={editingGroup.group_kind || "choice"}
+                  onValueChange={(v) => {
+                    const kind = v as ModifierGroupKind;
+                    const normalized = normalizeGroupKindSettings(kind, editingGroup.is_required ?? false);
+                    setEditingGroup({
+                      ...editingGroup,
+                      group_kind: kind,
+                      ...(normalized || {}),
+                    });
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="choice">Escolha obrigatória</SelectItem>
+                    <SelectItem value="substitution">Substituição (acompanhamento)</SelectItem>
+                    <SelectItem value="removal">Remover ingrediente</SelectItem>
+                    <SelectItem value="extra">Extra adicionável</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editingGroup.group_kind && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+                    {GROUP_KIND_META[editingGroup.group_kind as ModifierGroupKind]?.adminHintPt}
+                  </p>
+                )}
+              </div>
+              {editingGroup.group_kind !== "substitution" && editingGroup.group_kind !== "extra" && (
                 <div>
                   <Label>Modo</Label>
                   <Select
                     value={editingGroup.selection_mode || "single"}
                     onValueChange={(v) => setEditingGroup({ ...editingGroup, selection_mode: v as SelectionMode })}
+                    disabled={editingGroup.group_kind === "removal"}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -336,31 +371,44 @@ export default function ModifierGroupsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Mínimo</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={editingGroup.min_select ?? 0}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, min_select: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <Label>Máximo</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={editingGroup.max_select ?? 1}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, max_select: Number(e.target.value) })}
-                  />
-                </div>
+                {editingGroup.group_kind !== "substitution" && editingGroup.group_kind !== "extra" && (
+                  <>
+                    <div>
+                      <Label>Mínimo</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={editingGroup.min_select ?? 0}
+                        onChange={(e) => setEditingGroup({ ...editingGroup, min_select: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Máximo</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={editingGroup.max_select ?? 1}
+                        onChange={(e) => setEditingGroup({ ...editingGroup, max_select: Number(e.target.value) })}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={editingGroup.is_required ?? false}
-                  onCheckedChange={(c) => setEditingGroup({ ...editingGroup, is_required: c })}
+                  onCheckedChange={(c) => {
+                    const kind = (editingGroup.group_kind || "choice") as ModifierGroupKind;
+                    const normalized = normalizeGroupKindSettings(kind, c);
+                    setEditingGroup({
+                      ...editingGroup,
+                      is_required: c,
+                      ...(normalized || {}),
+                    });
+                  }}
                 />
                 <Label>Obrigatório</Label>
               </div>
@@ -408,6 +456,15 @@ export default function ModifierGroupsPage() {
                   onChange={(e) => setEditingOption({ ...editingOption, max_qty: Number(e.target.value) })}
                 />
               </div>
+              {(selectedGroup?.group_kind === "choice" || selectedGroup?.group_kind === "substitution") && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={editingOption.is_default ?? false}
+                    onCheckedChange={(c) => setEditingOption({ ...editingOption, is_default: c })}
+                  />
+                  <Label>Opção incluída por defeito</Label>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>

@@ -1,6 +1,7 @@
 import { Check, Minus, Plus } from "lucide-react";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
-import { getGroupSelectionCount } from "@/lib/modifiers/validation";
+import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
+import { GROUP_KIND_META } from "@/lib/modifiers/groupKindMeta";
 
 type Props = {
   group: ModifierGroup;
@@ -10,10 +11,6 @@ type Props = {
   tName: (n: Record<string, string>) => string;
   tDesc?: (n: Record<string, string>) => string;
 };
-
-function groupKey(groupId: string, unitIndex?: number | null) {
-  return unitIndex != null ? `${groupId}::u${unitIndex}` : groupId;
-}
 
 function updateOption(
   state: SelectionState,
@@ -29,7 +26,8 @@ function updateOption(
   if (qty <= 0) map.delete(optionId);
   else map.set(optionId, qty);
 
-  if (group.selectionMode === "single" && qty > 0) {
+  const singleOnly = group.groupKind === "substitution" || group.selectionMode === "single";
+  if (singleOnly && qty > 0) {
     for (const id of map.keys()) {
       if (id !== optionId) map.delete(id);
     }
@@ -40,24 +38,26 @@ function updateOption(
 }
 
 const badgeLabel = (group: ModifierGroup) => {
-  if (group.isRequired) return "Obrigatório";
-  if (group.groupKind === "extra") return "Extra";
-  if (group.groupKind === "removal") return "Personalizar";
-  return "Opcional";
+  const meta = GROUP_KIND_META[group.groupKind];
+  if (group.isRequired && group.groupKind !== "removal") return meta?.customerBadgePt || "Obrigatório";
+  return meta?.customerBadgePt || "Opcional";
 };
 
 export default function ChoiceGroupSection({ group, state, unitIndex, onChange, tName, tDesc }: Props) {
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const isRemoval = group.groupKind === "removal";
   const isExtra = group.groupKind === "extra";
+  const isSubstitution = group.groupKind === "substitution";
+  const isSingle = isSubstitution || group.selectionMode === "single";
   const key = groupKey(group.id, unitIndex);
   const selected = state.get(key) || new Map();
 
   const subtitle = group.description && tDesc ? tDesc(group.description) : null;
-  const maxHint =
-    group.selectionMode === "multiple" && group.maxSelect > 1
+  const maxHint = isSubstitution
+    ? "Substitui o acompanhamento — escolhe apenas uma opção"
+    : group.selectionMode === "multiple" && group.maxSelect > 1
       ? `Escolhe até ${group.maxSelect}`
-      : group.isRequired
+      : group.isRequired && isSingle
         ? "Escolhe 1"
         : null;
 
@@ -168,25 +168,36 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
                   key={opt.id}
                   type="button"
                   onClick={() => {
-                    if (group.selectionMode === "single") {
-                      onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex));
+                    if (isSingle) {
+                      if (sel && group.isRequired) return;
+                      onChange(updateOption(state, group, opt.id, sel && !group.isRequired ? 0 : 1, unitIndex));
                     } else {
-                      const nextQty = sel ? 0 : 1;
-                      onChange(updateOption(state, group, opt.id, nextQty, unitIndex));
+                      onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex));
                     }
                   }}
                   className={`relative rounded-2xl border px-2 py-3 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.97] min-h-[56px] ${
-                    sel ? "border-primary bg-primary/10 ring-2 ring-primary/25" : "border-border/70 bg-background"
+                    sel
+                      ? isSubstitution
+                        ? "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/25"
+                        : "border-primary bg-primary/10 ring-2 ring-primary/25"
+                      : "border-border/70 bg-background"
                   }`}
                 >
                   {sel && (
-                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <span
+                      className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${
+                        isSubstitution ? "bg-amber-500 text-white" : "bg-primary text-primary-foreground"
+                      }`}
+                    >
                       <Check className="w-3 h-3" strokeWidth={3} />
                     </span>
                   )}
                   <span className="text-sm font-black text-center leading-tight">{tName(opt.name)}</span>
                   {opt.priceDelta > 0 && (
                     <span className="text-[11px] font-bold text-price tabular-nums">+{opt.priceDelta.toFixed(2)}€</span>
+                  )}
+                  {isSubstitution && opt.isDefault && !sel && (
+                    <span className="text-[10px] text-muted-foreground font-semibold">Incluído</span>
                   )}
                 </button>
               );

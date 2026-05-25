@@ -1,6 +1,6 @@
 export type LocalizedName = Record<string, string>;
 
-export type ModifierGroupKind = "choice" | "removal" | "extra";
+export type ModifierGroupKind = "choice" | "removal" | "extra" | "substitution";
 export type SelectionMode = "single" | "multiple";
 export type ProductType = "simple" | "combo";
 

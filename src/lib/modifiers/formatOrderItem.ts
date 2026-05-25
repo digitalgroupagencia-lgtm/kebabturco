@@ -19,7 +19,10 @@ export function formatOrderItemDetailLines(item: OrderItem): string[] {
       const unit = s.unitLabel?.es || s.unitLabel?.pt || "";
       const prefix = unit && s.unitIndex != null ? `${unit} ${(s.unitIndex ?? 0) + 1}: ` : "";
       if (s.groupKind === "removal") lines.push(`${prefix}Sem ${opt}`);
-      else if (s.quantity > 1) lines.push(`${prefix}${s.quantity}× ${opt}`);
+      else if (s.groupKind === "substitution") {
+        const price = s.priceDelta > 0 ? ` (+${Number(s.priceDelta).toFixed(2)}€)` : "";
+        lines.push(`${prefix}${opt}${price}`);
+      } else if (s.quantity > 1) lines.push(`${prefix}${s.quantity}× ${opt}`);
       else lines.push(`${prefix}${opt}`);
     }
   }

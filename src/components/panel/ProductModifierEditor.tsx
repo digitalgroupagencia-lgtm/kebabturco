@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { groupKindLabel } from "@/lib/modifiers/groupKindMeta";
+import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
+import type { ModifierGroupKind } from "@/lib/modifiers/types";
 import { Link } from "react-router-dom";
 
 type GroupLink = {
@@ -135,21 +138,41 @@ export default function ProductModifierEditor({
 
       {groups.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Cria grupos em Personalização (ex.: bebida 2L, tipo de carne, extras).
+          Cria grupos em Personalização: escolha, substituição, ingredientes ou extras.
         </p>
       ) : (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {groups.map((g) => {
+        <div className="space-y-2 max-h-56 overflow-y-auto">
+          {sortModifierGroups(
+            groups.map((g) => ({
+              id: g.id,
+              storeId: "",
+              name: g.name,
+              description: {},
+              groupKind: g.group_kind as ModifierGroupKind,
+              selectionMode: "single",
+              minSelect: 0,
+              maxSelect: 1,
+              isRequired: g.is_required,
+              sortOrder: 0,
+              repeatPerUnit: false,
+              linkSortOrder: 0,
+              options: [],
+            })),
+          ).map((sorted) => {
+            const g = groups.find((x) => x.id === sorted.id)!;
             const linked = links.find((l) => l.group_id === g.id);
             return (
               <div key={g.id} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
                 <Switch checked={!!linked} onCheckedChange={() => toggleGroup(g.id)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{g.name?.pt || g.name?.es}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">{g.group_kind}{g.is_required ? " · obrig." : ""}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {groupKindLabel(g.group_kind as ModifierGroupKind)}
+                    {g.is_required ? " · obrigatório" : ""}
+                  </p>
                 </div>
                 {linked && productType === "combo" && (
-                  <label className="flex items-center gap-1 text-[10px] font-bold shrink-0">
+                  <label className="flex items-center gap-1 text-[10px] font-bold shrink-0" title="Repetir em cada unidade (ex.: cada pita)">
                     <Switch checked={linked.repeat_per_unit} onCheckedChange={() => toggleRepeat(g.id)} />
                     Por unidade
                   </label>
@@ -158,6 +181,12 @@ export default function ProductModifierEditor({
             );
           })}
         </div>
+      )}
+
+      {productType === "combo" && links.length > 0 && (
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          Bebida e substituições: liga sem «Por unidade». Carne, molho e ingredientes: liga com «Por unidade» para configurar cada pita/pizza.
+        </p>
       )}
     </div>
   );

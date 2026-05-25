@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModifierGroup, ModifierOption, ProductModifierConfig, ProductType } from "@/lib/modifiers/types";
+import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 
 const asName = (value: unknown): Record<string, string> => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
@@ -148,7 +149,7 @@ export function useProductModifierConfig(productId: string | undefined) {
             productType: (product.product_type as ProductType) || "simple",
             comboUnitCount: Math.max(0, product.combo_unit_count || 0),
             unitLabel: asName(product.unit_label),
-            groups,
+            groups: sortModifierGroups(groups),
             hasStructuredModifiers: groups.length > 0,
           });
         }

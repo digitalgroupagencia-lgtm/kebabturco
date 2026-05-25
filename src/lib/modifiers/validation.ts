@@ -1,6 +1,6 @@
 import type { ModifierGroup, ModifierSelection, SelectionState } from "./types";
 
-function groupKey(groupId: string, unitIndex?: number | null) {
+export function groupKey(groupId: string, unitIndex?: number | null) {
   return unitIndex != null ? `${groupId}::u${unitIndex}` : groupId;
 }
 
@@ -19,14 +19,14 @@ export function getSelectedOptionIds(state: SelectionState, groupId: string, uni
 export function validateGroupSelection(group: ModifierGroup, state: SelectionState, unitIndex?: number | null): string | null {
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const min = group.isRequired ? Math.max(1, group.minSelect) : group.minSelect;
-  const max = group.selectionMode === "single" ? Math.min(1, group.maxSelect || 1) : group.maxSelect;
+  const isSingle = group.groupKind === "substitution" || group.selectionMode === "single";
+  const max = isSingle ? Math.min(1, group.maxSelect || 1) : group.maxSelect;
 
   if (count < min) {
-    return group.groupKind === "removal"
-      ? "required_removal"
-      : group.groupKind === "extra"
-        ? "required_extra"
-        : "required_choice";
+    if (group.groupKind === "removal") return "required_removal";
+    if (group.groupKind === "extra") return "required_extra";
+    if (group.groupKind === "substitution") return "required_substitution";
+    return "required_choice";
   }
   if (max > 0 && count > max) return "too_many";
   return null;

@@ -11,6 +11,8 @@ import type { ProductModifierConfig, SelectionState, CartConfiguration } from "@
 import { buildSelectionsFromState, validateAllGroups } from "@/lib/modifiers/validation";
 import { computeUnitPrice } from "@/lib/modifiers/pricing";
 import { flattenConfiguration, selectionsToLegacyFields } from "@/lib/modifiers/legacyBridge";
+import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
+import { buildDefaultSelectionState, buildDefaultUnitStates } from "@/lib/modifiers/defaults";
 import { parseProductCode } from "@/lib/parseProductCode";
 import type { CartItem } from "@/contexts/CartContext";
 
@@ -30,8 +32,14 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
   const { t, tProduct } = useLanguage();
   const { addItem, updateItem } = useCart();
 
-  const globalGroups = useMemo(() => config.groups.filter((g) => !g.repeatPerUnit), [config.groups]);
-  const unitGroups = useMemo(() => config.groups.filter((g) => g.repeatPerUnit), [config.groups]);
+  const globalGroups = useMemo(
+    () => sortModifierGroups(config.groups.filter((g) => !g.repeatPerUnit)),
+    [config.groups],
+  );
+  const unitGroups = useMemo(
+    () => sortModifierGroups(config.groups.filter((g) => g.repeatPerUnit)),
+    [config.groups],
+  );
   const isCombo = config.productType === "combo" && config.comboUnitCount > 1 && unitGroups.length > 0;
 
   const [quantity, setQuantity] = useState(1);
@@ -45,6 +53,13 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
   const totalSteps = isCombo ? 1 + config.comboUnitCount : 1;
   const onUnitStep = isCombo && comboStep > 0;
   const currentUnitIndex = onUnitStep ? comboStep - 1 : null;
+
+  useEffect(() => {
+    if (editingItem?.configuration) return;
+    setGlobalState(buildDefaultSelectionState(globalGroups));
+    setUnitStates(buildDefaultUnitStates(unitGroups, config.comboUnitCount || 0));
+    setComboStep(0);
+  }, [product.id, config.groups, config.comboUnitCount, editingItem?.id, globalGroups, unitGroups]);
 
   useEffect(() => {
     if (!editingItem?.configuration) return;
@@ -121,9 +136,11 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
       toast.error(
         result.error === "required_choice"
           ? "Escolhe uma opção antes de continuar"
-          : result.error === "required_removal"
-            ? "Completa a personalização"
-            : "Verifica as tuas escolhas",
+          : result.error === "required_substitution"
+            ? "Escolhe o acompanhamento do menu"
+            : result.error === "required_removal"
+              ? "Completa a personalização"
+              : "Verifica as tuas escolhas",
       );
       return false;
     }
