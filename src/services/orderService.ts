@@ -204,12 +204,24 @@ export async function verifyStripePaymentIntent(params: {
   orderId: string;
   amountCents: number;
 }) {
-  const { data, error } = await supabase.functions.invoke("stripe-verify-payment-intent", {
-    body: params,
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data as { success: boolean; orderId?: string; orderNumber?: string };
+  const tryInvoke = async (name: string, body: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke(name, { body });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data as { success: boolean; orderId?: string; orderNumber?: string };
+  };
+
+  try {
+    return await tryInvoke("stripe-verify-payment-intent", params);
+  } catch (first) {
+    const msg = first instanceof Error ? first.message : String(first);
+    const missing =
+      msg.includes("404") ||
+      msg.toLowerCase().includes("not found") ||
+      msg.toLowerCase().includes("failed to send");
+    if (!missing) throw first;
+    return tryInvoke("stripe-create-payment-intent", { action: "verify", ...params });
+  }
 }
 
 export async function invokePrintOrder(body: Record<string, unknown>) {

@@ -1,11 +1,12 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { computeApplicationFeeCents, PLATFORM_FEE_CENTS } from "../_shared/stripeFees.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import {
+  corsHeaders,
+  handleOperationalDiagnostics,
+  handleVerifyPaymentIntent,
+  computeApplicationFeeCents,
+  PLATFORM_FEE_CENTS,
+} from "../_shared/stripePaymentActions.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,6 +14,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+
+    if (body?.action === "diagnostics") {
+      return handleOperationalDiagnostics(req, body);
+    }
+
+    if (body?.action === "verify") {
+      return handleVerifyPaymentIntent(body);
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       return new Response(JSON.stringify({ error: "Pagamentos online indisponíveis" }), {
@@ -22,7 +33,7 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    const { storeId, amountCents, orderType, metadata = {} } = await req.json();
+    const { storeId, amountCents, orderType, metadata = {} } = body;
 
     if (!storeId || !amountCents || amountCents < 50 || amountCents > 1_000_00 * 10) {
       return new Response(JSON.stringify({ error: "Parâmetros inválidos" }), {

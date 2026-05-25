@@ -55,9 +55,14 @@ export async function probeSchemaFallback(): Promise<{
 }
 
 export async function fetchServerOperationalDiagnostics(storeId: string | null): Promise<ServerDiagnostics | null> {
-  const { data, error } = await supabase.functions.invoke("operational-diagnostics", {
-    body: { storeId },
-  });
-  if (error || data?.error) return null;
-  return data as ServerDiagnostics;
+  const invoke = async (name: string, payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke(name, { body: payload });
+    if (error || data?.error) return null;
+    return data as ServerDiagnostics;
+  };
+
+  const direct = await invoke("operational-diagnostics", { storeId });
+  if (direct) return direct;
+
+  return invoke("stripe-create-payment-intent", { action: "diagnostics", storeId });
 }

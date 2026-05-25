@@ -63,7 +63,7 @@ export function useOperationalDiagnostics() {
         critical: true,
         detail: "Faltam actualizações na base de dados — mesas QR, impressão única e caixa podem falhar.",
         action:
-          "Peça ao suporte para aplicar as migrations pendentes no Supabase, ou active o deploy automático no GitHub (uma vez). Depois volte aqui e clique Verificar.",
+          "Na Lovable, escreva no chat exactamente: «Apply all pending Supabase migrations». Depois Sync + Publish e clique Verificar aqui.",
       });
     } else if (!schemaQr || !schemaPrint || !schemaValidated || !rpcReady) {
       const missing: string[] = [];
@@ -77,7 +77,8 @@ export function useOperationalDiagnostics() {
         status: "fail",
         critical: true,
         detail: `Actualização incompleta: falta ${missing.join(", ")}.`,
-        action: "Contacte o suporte para concluir a actualização da base de dados no Supabase.",
+        action:
+          "Na Lovable, escreva no chat: «Apply all pending Supabase migrations». Se persistir, contacte o suporte Lovable Cloud.",
       });
     } else {
       results.push({
@@ -148,7 +149,8 @@ export function useOperationalDiagnostics() {
         status: "warn",
         critical: true,
         detail: "Não foi possível verificar o servidor — a função de diagnóstico pode não estar activa.",
-        action: "Peça ao suporte para publicar a função operational-diagnostics no Supabase.",
+        action:
+          "Na Lovable: «Deploy all edge functions» (ou «Deploy stripe-create-payment-intent»). Depois Sync + Publish.",
       });
     } else if (!serverDiag.stripeSecretKey) {
       results.push({
@@ -236,21 +238,28 @@ export function useOperationalDiagnostics() {
 
     // FUNÇÕES SERVIDOR
     if (serverDiag) {
-      const requiredFns = [
-        { key: "stripe-create-payment-intent", label: "criar pagamento" },
-        { key: "stripe-verify-payment-intent", label: "confirmar pagamento" },
-        { key: "print-order", label: "imprimir pedido" },
-        { key: "stripe-webhook", label: "avisos da Stripe" },
-      ] as const;
-      const missingFns = requiredFns.filter((f) => !serverDiag.edgeFunctions[f.key]);
+      const verifyOk =
+        serverDiag.edgeFunctions["stripe-verify-payment-intent"] ||
+        serverDiag.edgeFunctions["stripe-create-payment-intent"];
+      const diagOk =
+        serverDiag.edgeFunctions["operational-diagnostics"] ||
+        serverDiag.edgeFunctions["stripe-create-payment-intent"];
+      const missingFns: string[] = [];
+      if (!serverDiag.edgeFunctions["stripe-create-payment-intent"]) missingFns.push("criar pagamento");
+      if (!verifyOk) missingFns.push("confirmar pagamento");
+      if (!serverDiag.edgeFunctions["print-order"]) missingFns.push("imprimir pedido");
+      if (!serverDiag.edgeFunctions["stripe-webhook"]) missingFns.push("avisos da Stripe");
+      if (!diagOk) missingFns.push("diagnóstico do servidor");
+
       if (missingFns.length) {
         results.push({
           id: "edge-functions",
           label: "Serviços do servidor",
           status: "fail",
           critical: true,
-          detail: `Serviços em falta: ${missingFns.map((f) => f.label).join(", ")}.`,
-          action: "Peça ao suporte para publicar as funções no Supabase (deploy automático no push ou manual).",
+          detail: `Serviços em falta: ${missingFns.join(", ")}.`,
+          action:
+            "Na Lovable, escreva no chat: «Apply all pending Supabase migrations» e depois «Deploy all edge functions». Depois Sync + Publish.",
         });
       } else {
         results.push({

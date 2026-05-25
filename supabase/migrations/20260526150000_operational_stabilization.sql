@@ -24,7 +24,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.claim_kitchen_print(uuid) TO anon, authenticated, service_role;
 
-/** Operador marca pedido como pago no balcão. */
+-- Operador marca pedido como pago no balcão.
 CREATE OR REPLACE FUNCTION public.mark_order_paid_at_counter(
   _order_id uuid,
   _payment_method text DEFAULT 'cash'

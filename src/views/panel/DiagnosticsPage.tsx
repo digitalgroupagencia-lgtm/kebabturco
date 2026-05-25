@@ -86,7 +86,7 @@ const DiagnosticsPage = () => {
 
       {(failCount > 0 || warnCount > 0) && (
         <div
-          className={`rounded-xl border-2 p-4 ${
+          className={`rounded-xl border-2 p-4 space-y-3 ${
             failCount > 0 ? "border-destructive/50 bg-destructive/5" : "border-amber-500/50 bg-amber-500/5"
           }`}
         >
@@ -101,6 +101,22 @@ const DiagnosticsPage = () => {
                 <li key={c.id}>• {c.label}</li>
               ))}
             </ul>
+          )}
+          {items.some((i) => i.id === "database" && i.status === "fail") && (
+            <div className="rounded-lg bg-background/80 border p-3 text-xs space-y-2">
+              <p className="font-bold">Copie e cole no chat da Lovable:</p>
+              <p className="font-mono text-[11px] leading-relaxed select-all">
+                Apply all pending Supabase migrations for Kebab Turco operational bootstrap.
+              </p>
+            </div>
+          )}
+          {items.some((i) => i.id === "edge-functions" && i.status === "fail") && (
+            <div className="rounded-lg bg-background/80 border p-3 text-xs space-y-2">
+              <p className="font-bold">Depois, no chat da Lovable:</p>
+              <p className="font-mono text-[11px] leading-relaxed select-all">
+                Deploy all edge functions, especially stripe-create-payment-intent and print-order.
+              </p>
+            </div>
           )}
         </div>
       )}
