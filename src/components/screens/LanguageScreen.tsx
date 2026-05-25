@@ -10,6 +10,7 @@ import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
 import flagFr from "@/assets/flag-fr.png";
+import { Loader2 } from "lucide-react";
 
 const FALLBACK_FLAG: Record<string, string> = {
   pt: flagBr,
@@ -52,14 +53,11 @@ const LanguageScreen = () => {
   if (storeLoading) {
     return (
       <div
-        className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-[#CC0000] relative"
+        className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-3"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <p className="text-white font-bold text-lg mb-4">Kebab Turco</p>
-        <div
-          className="h-10 w-10 rounded-full border-4 border-white/30 border-t-white animate-spin"
-          aria-label="A carregar"
-        />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar" />
+        <p className="text-sm text-muted-foreground font-semibold">A carregar menu…</p>
       </div>
     );
   }
