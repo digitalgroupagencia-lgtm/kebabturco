@@ -1,7 +1,7 @@
 import { Check, Minus, Plus } from "lucide-react";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
-import { GROUP_KIND_META } from "@/lib/modifiers/groupKindMeta";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Props = {
   group: ModifierGroup;
@@ -11,6 +11,12 @@ type Props = {
   tName: (n: Record<string, string>) => string;
   tDesc?: (n: Record<string, string>) => string;
 };
+
+const SELECTED =
+  "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/25 text-emerald-950";
+const SELECTED_BADGE = "bg-emerald-500 text-white";
+const INCLUDED = "border-emerald-500/50 bg-emerald-500/10 text-emerald-900";
+const REMOVED = "border-red-500 bg-red-500/10";
 
 function updateOption(
   state: SelectionState,
@@ -37,28 +43,29 @@ function updateOption(
   return next;
 }
 
-const badgeLabel = (group: ModifierGroup) => {
-  const meta = GROUP_KIND_META[group.groupKind];
-  if (group.isRequired && group.groupKind !== "removal") return meta?.customerBadgePt || "Obrigatório";
-  return meta?.customerBadgePt || "Opcional";
-};
-
 export default function ChoiceGroupSection({ group, state, unitIndex, onChange, tName, tDesc }: Props) {
+  const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const isRemoval = group.groupKind === "removal";
   const isExtra = group.groupKind === "extra";
-  const isSubstitution = group.groupKind === "substitution";
-  const isSingle = isSubstitution || group.selectionMode === "single";
+  const isSingle = group.groupKind === "substitution" || group.selectionMode === "single";
   const key = groupKey(group.id, unitIndex);
   const selected = state.get(key) || new Map();
 
+  const badgeLabel = () => {
+    if (group.isRequired && !isRemoval) return t("required");
+    if (isRemoval) return t("customize");
+    if (isExtra) return t("extraTag");
+    return t("optional");
+  };
+
   const subtitle = group.description && tDesc ? tDesc(group.description) : null;
-  const maxHint = isSubstitution
-    ? "Substitui o acompanhamento — escolhe apenas uma opção"
+  const maxHint = group.groupKind === "substitution"
+    ? t("substitutionHint")
     : group.selectionMode === "multiple" && group.maxSelect > 1
-      ? `Escolhe até ${group.maxSelect}`
+      ? `${t("chooseUpTo")} ${group.maxSelect}`
       : group.isRequired && isSingle
-        ? "Escolhe 1"
+        ? t("chooseOne")
         : null;
 
   return (
@@ -74,11 +81,11 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
             group.isRequired
               ? count > 0
                 ? "bg-emerald-500/15 text-emerald-700"
-                : "bg-destructive/10 text-destructive"
+                : "bg-red-500/10 text-red-600"
               : "bg-muted text-muted-foreground"
           }`}
         >
-          {group.isRequired && count === 0 ? "Falta escolher" : badgeLabel(group)}
+          {group.isRequired && count === 0 ? t("missingChoice") : badgeLabel()}
         </span>
       </div>
 
@@ -96,20 +103,18 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
                     onChange(updateOption(state, group, opt.id, removed ? 0 : 1, unitIndex))
                   }
                   className={`rounded-2xl border px-3 py-3 text-left transition-all active:scale-[0.98] min-h-[52px] ${
-                    removed
-                      ? "border-destructive/40 bg-destructive/5"
-                      : "border-border/70 bg-background"
+                    removed ? REMOVED : INCLUDED
                   }`}
                 >
                   <span
                     className={`block text-sm font-bold leading-tight ${
-                      removed ? "line-through text-destructive/80" : "text-foreground"
+                      removed ? "line-through text-red-700" : "text-emerald-900"
                     }`}
                   >
                     {label}
                   </span>
-                  <span className="text-[10px] text-muted-foreground mt-1 block">
-                    {removed ? "Removido" : "Incluído"}
+                  <span className={`text-[10px] mt-1 block ${removed ? "text-red-600" : "text-emerald-700"}`}>
+                    {removed ? t("removedLabel") : t("included")}
                   </span>
                 </button>
               );
@@ -146,7 +151,7 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
                     aria-label="Mais"
                     disabled={qty >= max}
                     onClick={() => onChange(updateOption(state, group, opt.id, Math.min(max, qty + 1), unitIndex))}
-                    className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30"
+                    className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center disabled:opacity-30"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -176,28 +181,17 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
                     }
                   }}
                   className={`relative rounded-2xl border px-2 py-3 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.97] min-h-[56px] ${
-                    sel
-                      ? isSubstitution
-                        ? "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/25"
-                        : "border-primary bg-primary/10 ring-2 ring-primary/25"
-                      : "border-border/70 bg-background"
+                    sel ? SELECTED : "border-border/70 bg-background"
                   }`}
                 >
                   {sel && (
-                    <span
-                      className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${
-                        isSubstitution ? "bg-amber-500 text-white" : "bg-primary text-primary-foreground"
-                      }`}
-                    >
+                    <span className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${SELECTED_BADGE}`}>
                       <Check className="w-3 h-3" strokeWidth={3} />
                     </span>
                   )}
                   <span className="text-sm font-black text-center leading-tight">{tName(opt.name)}</span>
                   {opt.priceDelta > 0 && (
                     <span className="text-[11px] font-bold text-price tabular-nums">+{opt.priceDelta.toFixed(2)}€</span>
-                  )}
-                  {isSubstitution && opt.isDefault && !sel && (
-                    <span className="text-[10px] text-muted-foreground font-semibold">Incluído</span>
                   )}
                 </button>
               );

@@ -212,7 +212,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
   const stepTitle = onUnitStep
     ? `${tProduct(unitLabelFor(config, currentUnitIndex!, tProduct))}`
     : isCombo
-      ? "Escolhas do combo"
+      ? t("comboChoices")
       : tProduct(product.name);
 
   return (
@@ -230,7 +230,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
             ))}
           </div>
           <p className="text-[11px] font-bold text-muted-foreground mt-2 uppercase tracking-wider">
-            Passo {comboStep + 1} de {totalSteps} · {stepTitle}
+            {t("stepOf")} {comboStep + 1} {t("of")} {totalSteps} · {stepTitle}
           </p>
         </div>
       )}
@@ -276,12 +276,12 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
 
         {(comboStep === totalSteps - 1 || !isCombo) && (
           <section className="rounded-[24px] border border-border/70 bg-card p-4 space-y-2 shadow-card">
-            <label className="text-sm font-black text-foreground">{t("note") || "Observações"}</label>
+            <label className="text-sm font-black text-foreground">{t("note")}</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value.slice(0, 200))}
               rows={2}
-              placeholder="Ex.: sem cebola, molho à parte…"
+              placeholder={t("notePlaceholder")}
               className="w-full rounded-2xl border border-border/70 bg-secondary/30 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </section>
@@ -290,7 +290,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
 
       <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-muted-foreground">Total</span>
+          <span className="text-sm font-bold text-muted-foreground">{t("total")}</span>
           <span className="text-2xl font-black text-price tabular-nums">
             {(unitPrice * (editingItem ? 1 : quantity)).toFixed(2)}€
           </span>
@@ -302,7 +302,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
               onClick={() => setComboStep((s) => s - 1)}
               className="h-14 px-4 rounded-2xl border border-border font-bold flex items-center gap-1"
             >
-              <ChevronLeft className="w-5 h-5" /> Voltar
+              <ChevronLeft className="w-5 h-5" /> {t("back")}
             </button>
           )}
           <button
@@ -312,12 +312,12 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
           >
             {isCombo && comboStep < totalSteps - 1 ? (
               <>
-                Continuar <ChevronRight className="w-5 h-5" />
+                {t("continueBtn")} <ChevronRight className="w-5 h-5" />
               </>
             ) : editingItem ? (
-              t("update") || "Actualizar"
+              t("update")
             ) : (
-              t("addToCart") || "Adicionar ao pedido"
+              t("addToOrder")
             )}
           </button>
         </div>

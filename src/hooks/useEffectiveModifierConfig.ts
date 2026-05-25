@@ -8,6 +8,7 @@ import {
   mergeStoreGroupsForCombo,
   synthesizeModifierConfigFromProduct,
 } from "@/lib/modifiers/synthesizeConfig";
+import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 
 const asName = (value: unknown): Record<string, string> => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
@@ -94,9 +95,20 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
   const config = useMemo((): ProductModifierConfig | null => {
     if (!product) return dbConfig;
 
-    if (dbConfig?.hasStructuredModifiers) return dbConfig;
-
     const synthesized = synthesizeModifierConfigFromProduct(product);
+
+    if (dbConfig?.hasStructuredModifiers) {
+      const hasRemoval = dbConfig.groups.some((g) => g.groupKind === "removal");
+      const synthRemoval = synthesized?.groups.filter((g) => g.groupKind === "removal") || [];
+      if (!hasRemoval && synthRemoval.length) {
+        return {
+          ...dbConfig,
+          groups: sortModifierGroups([...dbConfig.groups, ...synthRemoval]),
+        };
+      }
+      return dbConfig;
+    }
+
     if (synthesized?.hasStructuredModifiers) return synthesized;
 
     if (synthesized?.productType === "combo" && storeGroups.length) {

@@ -2,16 +2,17 @@ import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Extra, Variant } from "@/data/products";
 import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "./types";
 import { sortModifierGroups } from "./groupOrder";
+import { parseRemovableIngredients } from "@/lib/parseProductCustomization";
+
+const SYNTH_PREFIX = "synth";
+
+const MEAT_CATEGORY_RE = /pita|kebab|rollo|menu|combo|box|plato|taco|bowl|pizza/i;
 
 const DEFAULT_MEAT_VARIANTS: Variant[] = [
   { id: "pollo", name: { es: "Pollo", pt: "Frango", en: "Chicken", fr: "Poulet" } },
   { id: "ternera", name: { es: "Ternera", pt: "Vaca", en: "Beef", fr: "Bœuf" } },
   { id: "mixto", name: { es: "Mixto", pt: "Mixto", en: "Mixed", fr: "Mixte" } },
 ];
-
-const MEAT_CATEGORY_RE = /pita|kebab|rollo|menu|combo|box|plato|taco|bowl/i;
-
-const SYNTH_PREFIX = "synth";
 
 function asLabel(name: Record<string, string>): Record<string, string> {
   const es = name.es || name.pt || name.en || "";
@@ -146,7 +147,13 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
     paidExtras.push(extra);
   }
 
-  const descText = `${product.description.es || ""} ${product.description.pt || ""}`.toLowerCase();
+  const descFull = product.description.es || product.description.pt || product.description.en || "";
+  for (const ing of parseRemovableIngredients(descFull, meatVariants.length >= 2)) {
+    removalLabels.add(ing);
+  }
+
+  const descText = descFull.toLowerCase();
+
   if (isCombo && removalLabels.size === 0 && MEAT_CATEGORY_RE.test(`${product.categorySlug || ""} ${product.name.es || ""}`)) {
     for (const label of ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"]) {
       removalLabels.add(label);
