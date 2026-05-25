@@ -112,8 +112,17 @@ export function brandingFromCompany(row: CompanyRow | null | undefined): SiteBra
     icon512Url: pickIcon(row.icon_512_url, logo),
     appleTouchIconUrl: pickIcon(row.apple_touch_icon_url, logo),
     ogImageUrl: row.og_image_url || row.banner_home_url || logo,
-    manifestUrl: "/manifest.json",
+    manifestUrl: buildTenantManifestUrl(),
   };
+}
+
+/** URL da edge function que devolve manifest específico por Host. */
+function buildTenantManifestUrl(): string {
+  if (typeof window === "undefined") return "/manifest.json";
+  const supaUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+  if (!supaUrl) return "/manifest.json";
+  const host = window.location.hostname;
+  return `${supaUrl}/functions/v1/tenant-manifest?host=${encodeURIComponent(host)}`;
 }
 
 function setMeta(name: string, content: string, attr: "name" | "property" = "name") {
