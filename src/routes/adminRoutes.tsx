@@ -16,6 +16,7 @@ import AdminCentralLoyaltyPage from "@/pages/admin/AdminCentralLoyaltyPage.tsx";
 import AdminCentralCampaignsPage from "@/pages/admin/AdminCentralCampaignsPage.tsx";
 import AdminCentralPushPage from "@/pages/admin/AdminCentralPushPage.tsx";
 import AdminCentralConversationalPage from "@/pages/admin/AdminCentralConversationalPage.tsx";
+import AdminPlansPage from "@/pages/admin/AdminPlansPage.tsx";
 
 const redirect = <Navigate to="/admin" replace />;
 
@@ -27,7 +28,7 @@ export default function AdminRoutes() {
         <Route path="tenants" element={redirect} />
         <Route path="tenants/*" element={redirect} />
         <Route path="domains" element={redirect} />
-        <Route path="plans" element={redirect} />
+        <Route path="plans" element={<AdminPlansPage />} />
         <Route path="billing" element={redirect} />
         <Route path="centrals" element={<AdminCentralsHubPage />} />
         <Route path="centrals/ai" element={<AdminCentralAiPage />} />

@@ -8,7 +8,7 @@ import AdminAssistant from "./AdminAssistant";
 import AdminThemeToggle from "./AdminThemeToggle";
 import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
-import { canAccessProjectAdmin } from "@/lib/projectAccess";
+import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 
 const AdminLayout = () => {
   const { user, loading: authLoading } = useAuth();
@@ -22,7 +22,7 @@ const AdminLayout = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (!authLoading && !roleLoading && roleData && !canAccessProjectAdmin(roleData.role)) {
+    if (!authLoading && !roleLoading && roleData && !canAccessGeneralAdmin(roleData.role)) {
       navigate("/panel");
     }
   }, [authLoading, roleLoading, roleData, navigate]);
@@ -35,7 +35,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user || !canAccessProjectAdmin(roleData?.role)) return null;
+  if (!user || !canAccessGeneralAdmin(roleData?.role)) return null;
 
   return (
     <SidebarProvider>

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -7,38 +8,53 @@ import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
 import PlanComparisonGrid from "@/components/admin/premium/PlanComparisonGrid";
 import AdminCollapsibleSection from "@/components/admin/premium/AdminCollapsibleSection";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  useAdminCentralsTenants,
   usePlatformPlans,
   useSetTenantPlan,
   useTenantFeatureFlags,
 } from "@/hooks/usePlatformFeatures";
+import { APP_NAME, DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { CENTRAL_GROUPS, PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 
 export default function AdminPlansPage() {
   const { data: plans, isLoading: loadingPlans } = usePlatformPlans();
-  const { data: tenants, isLoading: loadingTenants } = useAdminCentralsTenants();
   const setPlan = useSetTenantPlan();
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [previewTenantId, setPreviewTenantId] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
-  const firstTenantId = tenants?.[0]?.id ?? "";
-  const tenantId = previewTenantId || firstTenantId;
+  const { data: tenant, isLoading: loadingTenant } = useQuery({
+    queryKey: ["kebab-tenant-plan", DEFAULT_TENANT_SLUG],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select(`
+          id, name, slug, plan, is_active,
+          tenant_plan_assignments ( is_beta, plan_id )
+        `)
+        .eq("slug", DEFAULT_TENANT_SLUG)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const tenantId = tenant?.id ?? null;
   const { data: flags } = useTenantFeatureFlags(tenantId);
 
-  const changePlan = async (tenantId: string, planKey: PlanKey, isBeta: boolean) => {
-    setSavingId(tenantId);
+  const changePlan = async (planKey: PlanKey) => {
+    if (!tenantId) return;
+    setSaving(true);
     try {
-      await setPlan(tenantId, planKey, isBeta);
-      toast.success("Plano actualizado");
+      await setPlan(tenantId, planKey, tenant?.slug === DEFAULT_TENANT_SLUG);
+      toast.success("Plano do Kebab Turco actualizado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
     } finally {
-      setSavingId(null);
+      setSaving(false);
     }
   };
 
-  if (loadingPlans || loadingTenants) {
+  if (loadingPlans || loadingTenant) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -46,17 +62,20 @@ export default function AdminPlansPage() {
     );
   }
 
+  const assignments = tenant?.tenant_plan_assignments as { is_beta?: boolean }[] | { is_beta?: boolean } | null;
+  const isBeta = Array.isArray(assignments) ? assignments[0]?.is_beta : assignments?.is_beta;
+  const currentPlan = (tenant?.plan as PlanKey) || "start";
   const flagSummary = flags
-    ? `${flags.filter((f) => f.enabled).length} funcionalidades activas`
+    ? `${flags.filter((f) => f.enabled).length} funcionalidades activas neste plano`
     : "";
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
       <AdminPageHeader
         title="Planos & funcionalidades"
-        description="START, PRO e PREMIUM desbloqueiam capacidades — sem limite de pedidos."
+        description={`Define o plano do ${APP_NAME}: START, PRO ou PREMIUM — com IA, fidelidade, campanhas, etc.`}
         breadcrumbs={[
-          { label: "Admin", to: "/admin" },
+          { label: "Administração", to: "/admin" },
           { label: "Planos" },
         ]}
       />
@@ -64,66 +83,58 @@ export default function AdminPlansPage() {
       <PlanComparisonGrid plans={plans ?? []} />
 
       <AdminCollapsibleSection
-        title="Clientes por plano"
-        summary={`${tenants?.length ?? 0} restaurantes · alterar plano ou beta`}
+        title={`Plano actual · ${APP_NAME}`}
+        summary={`${PLAN_LABELS[currentPlan]}${isBeta ? " · Beta" : ""}`}
         defaultOpen
       >
-        <div className="space-y-2">
-          {tenants?.map((t) => {
-            const assignments = t.tenant_plan_assignments as { is_beta?: boolean }[] | { is_beta?: boolean } | null;
-            const isBeta = Array.isArray(assignments) ? assignments[0]?.is_beta : assignments?.is_beta;
-            return (
-              <AdminPremiumCard
-                key={t.id}
-                title={t.name}
-                summary={`Plano actual: ${PLAN_LABELS[(t.plan as PlanKey) || "start"]}`}
-                badges={isBeta ? [{ label: "Beta" }] : []}
-                actions={
-                  <Select
-                    value={(t.plan as string) || "start"}
-                    disabled={savingId === t.id}
-                    onValueChange={(v) => changePlan(t.id, v as PlanKey, t.slug === "kebab-turco")}
-                  >
-                    <SelectTrigger className="h-9 w-[120px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="start">START</SelectItem>
-                      <SelectItem value="pro">PRO</SelectItem>
-                      <SelectItem value="premium">PREMIUM</SelectItem>
-                    </SelectContent>
-                  </Select>
-                }
-              />
-            );
-          })}
-        </div>
+        <AdminPremiumCard
+          title={tenant?.name ?? APP_NAME}
+          summary="Altere o plano para activar ou desactivar módulos (IA, push, fidelidade, campanhas…)"
+          badges={[
+            { label: PLAN_LABELS[currentPlan] },
+            ...(isBeta ? [{ label: "Beta" }] : []),
+          ]}
+          actions={
+            <Select value={currentPlan} disabled={saving || !tenantId} onValueChange={(v) => changePlan(v as PlanKey)}>
+              <SelectTrigger className="h-9 w-[130px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="start">START</SelectItem>
+                <SelectItem value="pro">PRO</SelectItem>
+                <SelectItem value="premium">PREMIUM</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+        />
       </AdminCollapsibleSection>
 
       {tenantId && flags && (
-        <AdminCollapsibleSection title="Pré-visualizar funcionalidades" summary={flagSummary}>
-          <Select value={tenantId} onValueChange={setPreviewTenantId}>
-            <SelectTrigger className="h-10 mb-2 rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {tenants?.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex flex-wrap gap-1">
-            {Object.entries(CENTRAL_GROUPS).map(([key, label]) => {
-              const count = flags.filter((f) => f.central_group === key && f.enabled).length;
-              if (!count) return null;
-              return (
-                <Badge key={key} variant="secondary" className="text-[10px]">
-                  {label}: {count}
-                </Badge>
-              );
-            })}
+        <AdminCollapsibleSection title="Benefícios activos neste plano" summary={flagSummary} defaultOpen>
+          <div className="space-y-3">
+            {flags.filter((f) => f.enabled).length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma funcionalidade extra activa — verifique o plano.</p>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {flags
+                .filter((f) => f.enabled)
+                .map((f) => (
+                  <Badge key={f.feature_key} variant="secondary" className="text-[10px]">
+                    {f.name}
+                  </Badge>
+                ))}
+            </div>
+            <div className="flex flex-wrap gap-1 pt-2 border-t border-border/50">
+              {Object.entries(CENTRAL_GROUPS).map(([key, label]) => {
+                const count = flags.filter((f) => f.central_group === key && f.enabled).length;
+                if (!count) return null;
+                return (
+                  <Badge key={key} variant="outline" className="text-[10px]">
+                    {label}: {count}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
         </AdminCollapsibleSection>
       )}

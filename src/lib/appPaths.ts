@@ -18,3 +18,12 @@ export function isReservedAppPath(segment: string | null | undefined): boolean {
 export function isBrokenEditorPath(pathname: string): boolean {
   return pathname.includes("*");
 }
+
+/** Converte caminho quebrado do editor para um endereço real. */
+export function fixBrokenEditorPath(pathname: string): string {
+  if (!pathname.includes("*")) return pathname;
+  if (pathname.startsWith("/admin")) return "/admin";
+  if (pathname.startsWith("/panel")) return "/panel";
+  if (pathname.startsWith("/auth")) return "/auth";
+  return "/";
+}

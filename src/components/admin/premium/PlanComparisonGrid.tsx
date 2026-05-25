@@ -99,7 +99,7 @@ export default function PlanComparisonGrid({ plans, className }: Props) {
           </Badge>
         ))}
         <Button variant="link" size="sm" className="h-7 text-xs" asChild>
-          <Link to="/admin/tenants">Gerir clientes</Link>
+          <Link to="/admin/plans">Ver planos</Link>
         </Button>
       </div>
     </div>

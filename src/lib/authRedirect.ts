@@ -1,8 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isGeneralAdmin } from "@/lib/projectAccess";
 
 type RoleRow = { role: string; tenant_id: string | null };
 
-/** Destino após login — projecto único Kebab Turco. */
+/** Destino após login — admin geral vs painel do restaurante. */
 export async function resolvePostLoginDestination(userId: string): Promise<{
   type: "internal";
   path: string;
@@ -13,10 +14,9 @@ export async function resolvePostLoginDestination(userId: string): Promise<{
     .eq("user_id", userId);
 
   const rows = (roles ?? []) as RoleRow[];
-  const isAdminMaster = rows.some((r) => r.role === "admin_master");
   const primaryRole = rows.find((r) => r.role === "admin_master")?.role ?? rows[0]?.role;
 
-  if (isAdminMaster || primaryRole === "admin_master" || primaryRole === "restaurant_admin") {
+  if (isGeneralAdmin(primaryRole) || rows.some((r) => r.role === "admin_master")) {
     return { type: "internal", path: "/admin" };
   }
   if (primaryRole === "seller") return { type: "internal", path: "/seller" };

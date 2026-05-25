@@ -17,6 +17,7 @@ import {
   Image,
   Wrench,
   Printer,
+  CreditCard,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +44,7 @@ import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
 
 const overviewItems = [
   { title: "Command Center", url: "/admin", icon: LayoutGrid, end: true },
+  { title: "Planos & funcionalidades", url: "/admin/plans", icon: CreditCard },
 ];
 
 const storeItems = [
@@ -112,7 +114,7 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{APP_NAME}</SidebarGroupLabel>
+          <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {overviewItems.map((item) => (

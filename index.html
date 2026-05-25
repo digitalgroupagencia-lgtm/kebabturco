@@ -39,9 +39,20 @@
     <script>
       (function () {
         var p = location.pathname || "/";
-        if (p.indexOf("*") !== -1) {
-          location.replace("/");
+        if (p.indexOf("*") === -1) return;
+        if (p.indexOf("/admin") === 0) {
+          location.replace("/admin");
+          return;
         }
+        if (p.indexOf("/panel") === 0) {
+          location.replace("/panel");
+          return;
+        }
+        if (p.indexOf("/auth") === 0) {
+          location.replace("/auth");
+          return;
+        }
+        location.replace("/");
       })();
     </script>
     <div id="boot-fallback" style="margin:0;min-height:100vh;min-height:100dvh;background:#fff"></div>
