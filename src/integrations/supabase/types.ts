@@ -123,6 +123,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cash_registers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       categories: {
@@ -164,19 +171,30 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       company_settings: {
         Row: {
           accent_color: string
+          apple_touch_icon_url: string | null
           background_color: string
           banner_home_url: string | null
           button_style: string
           company_name: string
           created_at: string
           cta_color: string
+          favicon_url: string | null
           font_family: string | null
           header_color: string
+          icon_192_url: string | null
+          icon_512_url: string | null
           icon_delivery_url: string | null
           icon_dine_in_url: string | null
           icon_takeaway_url: string | null
@@ -190,22 +208,29 @@ export type Database = {
           logo_order_type_url: string | null
           logo_secondary_dark_url: string | null
           logo_secondary_url: string | null
+          meta_description: string | null
+          og_image_url: string | null
           primary_color: string
           secondary_color: string
+          short_name: string | null
           store_id: string
           text_color: string
           updated_at: string
         }
         Insert: {
           accent_color?: string
+          apple_touch_icon_url?: string | null
           background_color?: string
           banner_home_url?: string | null
           button_style?: string
           company_name?: string
           created_at?: string
           cta_color?: string
+          favicon_url?: string | null
           font_family?: string | null
           header_color?: string
+          icon_192_url?: string | null
+          icon_512_url?: string | null
           icon_delivery_url?: string | null
           icon_dine_in_url?: string | null
           icon_takeaway_url?: string | null
@@ -219,22 +244,29 @@ export type Database = {
           logo_order_type_url?: string | null
           logo_secondary_dark_url?: string | null
           logo_secondary_url?: string | null
+          meta_description?: string | null
+          og_image_url?: string | null
           primary_color?: string
           secondary_color?: string
+          short_name?: string | null
           store_id: string
           text_color?: string
           updated_at?: string
         }
         Update: {
           accent_color?: string
+          apple_touch_icon_url?: string | null
           background_color?: string
           banner_home_url?: string | null
           button_style?: string
           company_name?: string
           created_at?: string
           cta_color?: string
+          favicon_url?: string | null
           font_family?: string | null
           header_color?: string
+          icon_192_url?: string | null
+          icon_512_url?: string | null
           icon_delivery_url?: string | null
           icon_dine_in_url?: string | null
           icon_takeaway_url?: string | null
@@ -248,8 +280,11 @@ export type Database = {
           logo_order_type_url?: string | null
           logo_secondary_dark_url?: string | null
           logo_secondary_url?: string | null
+          meta_description?: string | null
+          og_image_url?: string | null
           primary_color?: string
           secondary_color?: string
+          short_name?: string | null
           store_id?: string
           text_color?: string
           updated_at?: string
@@ -260,6 +295,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -357,6 +399,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "coupons_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       customers: {
@@ -390,6 +439,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -494,6 +550,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "loyalty_accounts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       marketing_campaigns: {
@@ -533,6 +596,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaigns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -604,6 +674,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operations_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -809,6 +886,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_table_customer_id_fkey"
             columns: ["table_customer_id"]
             isOneToOne: false
@@ -867,6 +951,36 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_features: {
+        Row: {
+          feature_id: string
+          plan_id: string
+        }
+        Insert: {
+          feature_id: string
+          plan_id: string
+        }
+        Update: {
+          feature_id?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_features_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "platform_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "platform_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -934,126 +1048,14 @@ export type Database = {
         }
         Relationships: []
       }
-      plan_features: {
-        Row: { feature_id: string; plan_id: string }
-        Insert: { feature_id: string; plan_id: string }
-        Update: { feature_id?: string; plan_id?: string }
-        Relationships: []
-      }
-      tenant_ai_modules: {
-        Row: {
-          config: Json
-          id: string
-          is_enabled: boolean
-          module_key: string
-          status: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          config?: Json
-          id?: string
-          is_enabled?: boolean
-          module_key: string
-          status?: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          config?: Json
-          id?: string
-          is_enabled?: boolean
-          module_key?: string
-          status?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tenant_feature_overrides: {
-        Row: {
-          enabled: boolean
-          feature_key: string
-          id: string
-          notes: string | null
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          enabled: boolean
-          feature_key: string
-          id?: string
-          notes?: string | null
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          enabled?: boolean
-          feature_key?: string
-          id?: string
-          notes?: string | null
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tenant_loyalty_programs: {
-        Row: {
-          config: Json
-          id: string
-          is_active: boolean
-          model_type: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          config?: Json
-          id?: string
-          is_active?: boolean
-          model_type?: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          config?: Json
-          id?: string
-          is_active?: boolean
-          model_type?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tenant_plan_assignments: {
-        Row: {
-          assigned_at: string
-          is_beta: boolean
-          plan_id: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          assigned_at?: string
-          is_beta?: boolean
-          plan_id: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          assigned_at?: string
-          is_beta?: boolean
-          plan_id?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       platform_settings: {
         Row: {
           ai_auto_images: boolean
           ai_auto_menu: boolean
           ai_image_style: string
           allow_signup: boolean
+          apple_touch_icon_url: string | null
+          background_color: string | null
           created_at: string
           daily_summary: boolean
           default_currency: string
@@ -1061,16 +1063,26 @@ export type Database = {
           default_max_orders: number
           default_plan: string
           default_timezone: string
+          display_name: string | null
           email_notifications: boolean
+          favicon_url: string | null
+          icon_192_url: string | null
+          icon_512_url: string | null
           id: string
+          logo_url: string | null
           maintenance_message: string
           maintenance_mode: boolean
+          meta_description: string | null
+          og_image_url: string | null
           over_limit_alerts: boolean
           password_min_length: number
           platform_name: string
+          primary_color: string | null
           require_2fa: boolean
           session_hours: number
+          short_name: string | null
           support_email: string
+          theme_color: string | null
           trial_days: number
           updated_at: string
         }
@@ -1079,6 +1091,8 @@ export type Database = {
           ai_auto_menu?: boolean
           ai_image_style?: string
           allow_signup?: boolean
+          apple_touch_icon_url?: string | null
+          background_color?: string | null
           created_at?: string
           daily_summary?: boolean
           default_currency?: string
@@ -1086,16 +1100,26 @@ export type Database = {
           default_max_orders?: number
           default_plan?: string
           default_timezone?: string
+          display_name?: string | null
           email_notifications?: boolean
+          favicon_url?: string | null
+          icon_192_url?: string | null
+          icon_512_url?: string | null
           id?: string
+          logo_url?: string | null
           maintenance_message?: string
           maintenance_mode?: boolean
+          meta_description?: string | null
+          og_image_url?: string | null
           over_limit_alerts?: boolean
           password_min_length?: number
           platform_name?: string
+          primary_color?: string | null
           require_2fa?: boolean
           session_hours?: number
+          short_name?: string | null
           support_email?: string
+          theme_color?: string | null
           trial_days?: number
           updated_at?: string
         }
@@ -1104,6 +1128,8 @@ export type Database = {
           ai_auto_menu?: boolean
           ai_image_style?: string
           allow_signup?: boolean
+          apple_touch_icon_url?: string | null
+          background_color?: string | null
           created_at?: string
           daily_summary?: boolean
           default_currency?: string
@@ -1111,16 +1137,26 @@ export type Database = {
           default_max_orders?: number
           default_plan?: string
           default_timezone?: string
+          display_name?: string | null
           email_notifications?: boolean
+          favicon_url?: string | null
+          icon_192_url?: string | null
+          icon_512_url?: string | null
           id?: string
+          logo_url?: string | null
           maintenance_message?: string
           maintenance_mode?: boolean
+          meta_description?: string | null
+          og_image_url?: string | null
           over_limit_alerts?: boolean
           password_min_length?: number
           platform_name?: string
+          primary_color?: string | null
           require_2fa?: boolean
           session_hours?: number
+          short_name?: string | null
           support_email?: string
+          theme_color?: string | null
           trial_days?: number
           updated_at?: string
         }
@@ -1252,6 +1288,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "printer_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       printers: {
@@ -1291,6 +1334,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1462,6 +1512,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -1545,6 +1602,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "promo_banners_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       push_subscriptions: {
@@ -1591,6 +1655,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1670,6 +1741,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       store_payment_ledger: {
@@ -1730,6 +1808,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "store_payment_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       store_payouts: {
@@ -1769,6 +1854,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payouts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1914,6 +2006,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "table_session_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       table_sessions: {
@@ -1974,6 +2073,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "table_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "table_sessions_table_id_fkey"
             columns: ["table_id"]
             isOneToOne: false
@@ -2016,6 +2122,160 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tables_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_ai_modules: {
+        Row: {
+          config: Json
+          id: string
+          is_enabled: boolean
+          module_key: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          is_enabled?: boolean
+          module_key: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          id?: string
+          is_enabled?: boolean
+          module_key?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_ai_modules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_feature_overrides: {
+        Row: {
+          enabled: boolean
+          feature_key: string
+          id: string
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled: boolean
+          feature_key: string
+          id?: string
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          feature_key?: string
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_feature_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_loyalty_programs: {
+        Row: {
+          config: Json
+          id: string
+          is_active: boolean
+          model_type: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          model_type?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          model_type?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_loyalty_programs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_plan_assignments: {
+        Row: {
+          assigned_at: string
+          is_beta: boolean
+          plan_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          is_beta?: boolean
+          plan_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          is_beta?: boolean
+          plan_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "platform_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_plan_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -2229,6 +2489,13 @@ export type Database = {
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "totem_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -2265,6 +2532,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_roles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_roles_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -2275,7 +2549,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      stores_public: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          name: string | null
+          short_description: string | null
+          sort_order: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          short_description?: string | null
+          sort_order?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          short_description?: string | null
+          sort_order?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       acquire_tenant_edit_lock: { Args: { _tenant_id: string }; Returns: Json }
@@ -2536,8 +2853,6 @@ export type Database = {
       }
       get_user_store_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
-      user_can_access_store: { Args: { _store_id: string }; Returns: boolean }
-      user_can_access_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2566,6 +2881,17 @@ export type Database = {
         }
         Returns: Json
       }
+      register_push_subscription: {
+        Args: {
+          _auth?: string
+          _customer_phone?: string
+          _endpoint?: string
+          _order_id?: string
+          _p256dh?: string
+          _store_id: string
+        }
+        Returns: undefined
+      }
       release_tenant_edit_lock: {
         Args: { _tenant_id: string }
         Returns: undefined
@@ -2581,17 +2907,6 @@ export type Database = {
           _tenant_id: string
         }
         Returns: Json
-      }
-      register_push_subscription: {
-        Args: {
-          _auth: string
-          _customer_phone?: string
-          _endpoint: string
-          _order_id?: string
-          _p256dh: string
-          _store_id: string
-        }
-        Returns: undefined
       }
       set_tenant_feature_override: {
         Args: {
@@ -2622,6 +2937,8 @@ export type Database = {
         Args: { _feature_key: string; _tenant_id: string }
         Returns: boolean
       }
+      user_can_access_store: { Args: { _store_id: string }; Returns: boolean }
+      user_can_access_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
         Returns: Json
