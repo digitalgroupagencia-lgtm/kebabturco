@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Layout, Smartphone, Image as ImageIcon, Languages, Store, UtensilsCrossed, ExternalLink, RefreshCw } from "lucide-react";
-import { bumpAppCache, withCacheBust } from "@/lib/appCacheBust";
+import { Loader2, Layout, Image as ImageIcon, Languages, Store, UtensilsCrossed } from "lucide-react";
+import { bumpAppCache } from "@/lib/appCacheBust";
+import TenantLivePreview from "@/components/admin/TenantLivePreview";
+import type { TenantPreviewScreen } from "@/lib/tenantPreview";
+import { getTenantTotemUrl } from "@/lib/tenantUrls";
 
 type ScreenKey = "splash" | "language" | "storeSelect" | "orderType" | "home";
 
@@ -24,7 +27,15 @@ const TenantScreensPage = () => {
   const { tenant: ctxTenant } = useSelectedTenant();
   const navigate = useNavigate();
   const [storeId, setStoreId] = useState<string | null>(null);
-  const [tenant, setTenant] = useState<{ id: string; slug: string; custom_domain: string | null } | null>(null);
+  const [tenant, setTenant] = useState<{
+    id: string;
+    slug: string;
+    name: string;
+    custom_domain: string | null;
+    path_slug: string | null;
+    master_domain: string | null;
+    use_master_domain: boolean;
+  } | null>(null);
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<ScreenKey>("splash");
@@ -36,10 +47,10 @@ const TenantScreensPage = () => {
       setLoading(true);
       let t: any = null;
       if (slug) {
-        const r = await supabase.from("tenants").select("id, slug, custom_domain").eq("slug", slug).maybeSingle();
+      const r = await supabase.from("tenants").select("id, slug, name, custom_domain, path_slug, master_domain, use_master_domain").eq("slug", slug).maybeSingle();
         t = r.data;
       } else if (ctxTenant?.id) {
-        const r = await supabase.from("tenants").select("id, slug, custom_domain").eq("id", ctxTenant.id).maybeSingle();
+        const r = await supabase.from("tenants").select("id, slug, name, custom_domain, path_slug, master_domain, use_master_domain").eq("id", ctxTenant.id).maybeSingle();
         t = r.data;
       }
       if (!t) { setLoading(false); return; }
@@ -73,19 +84,24 @@ const TenantScreensPage = () => {
   const setField = (k: string, v: any) => setConfig((p: any) => ({ ...p, [k]: v }));
 
   if (loading) return <div className="p-8 flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Carregando...</div>;
-  if (!config) return <div className="p-8">Crie uma unidade primeiro.</div>;
+  if (!config || !tenant) return <div className="p-8">Crie uma unidade primeiro.</div>;
 
-  const baseUrl = tenant?.custom_domain ? `https://${tenant.custom_domain}` : window.location.origin;
-  const previewUrl = withCacheBust(
-    `${baseUrl}/?tenant=${tenant?.slug}&screen=${active}&preview=1`,
-    iframeKey,
-  );
+  const tenantConfig = {
+    slug: tenant.slug,
+    name: tenant.name,
+    custom_domain: tenant.custom_domain,
+    path_slug: tenant.path_slug,
+    master_domain: tenant.master_domain,
+    use_master_domain: tenant.use_master_domain,
+  };
+
+  const totemUrl = getTenantTotemUrl(tenantConfig);
 
   return (
     <div className="p-4 sm:p-6">
       <div className="mb-4">
         <h1 className="text-2xl font-bold flex items-center gap-2"><Layout className="h-6 w-6" /> Telas do totem</h1>
-        <p className="text-sm text-muted-foreground">Pré-visualização ao vivo da tela real do totem deste cliente.</p>
+        <p className="text-sm text-muted-foreground">Pré-visualização do site real deste restaurante.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
@@ -179,32 +195,17 @@ const TenantScreensPage = () => {
 
         </div>
 
-        {/* Painel direito: preview ao vivo (iframe do totem real) */}
         <div className="lg:sticky lg:top-20 lg:self-start">
-          <Card className="p-4 bg-muted/30">
-            <div className="text-xs text-muted-foreground mb-3 flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5" /> Preview ao vivo (totem real)</span>
-              <div className="flex gap-1">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setIframeKey((k) => k + 1); bumpAppCache(); }} title="Recarregar">
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" asChild title="Abrir em nova aba">
-                  <a href={previewUrl} target="_blank" rel="noreferrer"><ExternalLink className="h-3.5 w-3.5" /></a>
-                </Button>
-              </div>
-            </div>
-            <div
-              className="mx-auto rounded-[2rem] border-8 border-foreground/90 overflow-hidden shadow-xl bg-background"
-              style={{ width: 320, height: 640 }}
-            >
-              <iframe
-                key={`${active}-${iframeKey}`}
-                src={previewUrl}
-                title="Preview do totem"
-                className="w-full h-full border-0"
-              />
-            </div>
-          </Card>
+          <TenantLivePreview
+            key={iframeKey}
+            tenant={tenantConfig}
+            screen={active as TenantPreviewScreen}
+          />
+          <div className="mt-2 text-center">
+            <Button variant="link" size="sm" className="text-xs" asChild>
+              <a href={totemUrl} target="_blank" rel="noreferrer">Abrir {tenant.custom_domain || "loja"} ↗</a>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

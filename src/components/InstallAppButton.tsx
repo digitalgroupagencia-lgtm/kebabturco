@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Download, Share, Plus, X } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { isAdminPreviewMode } from "@/lib/tenantPreview";
 
 const TEXT: Record<string, { install: string; iosTitle: string; s1: string; s2: string; s3: string; close: string }> = {
   pt: { install: "Instalar app", iosTitle: "Instalar no iPhone", s1: "Toque em Compartilhar", s2: "Toque em 'Adicionar à Tela de Início'", s3: "Toque em 'Adicionar'", close: "Fechar" },
@@ -18,6 +19,7 @@ const InstallAppButton = ({ lang = "es" }: Props) => {
   const [showIOS, setShowIOS] = useState(false);
   const t = TEXT[lang] || TEXT.es;
 
+  if (isAdminPreviewMode()) return null;
   if (isStandalone) return null;
   if (!canInstall && !isIOS) return null;
 

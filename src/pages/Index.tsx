@@ -18,6 +18,24 @@ import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import DomainNotConfiguredScreen from "@/components/screens/DomainNotConfiguredScreen";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { isPlatformHost } from "@/lib/platformHosts";
+import { isAdminPreviewMode } from "@/lib/tenantPreview";
+import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
+
+const PreviewBootstrap = () => {
+  const { storeId, loading } = useResolvedStore();
+  usePreviewBootstrap(loading ? "" : storeId ?? "");
+  return null;
+};
+
+const CustomerChrome = () => {
+  if (isAdminPreviewMode()) return null;
+  return (
+    <>
+      <CustomerBottomDock />
+      <AppFooter />
+    </>
+  );
+};
 
 const ScreenRouter = () => {
   const { screen } = useOrder();
@@ -61,10 +79,10 @@ const Index = () => (
   <LanguageProvider>
     <CartProvider>
       <OrderProvider>
+        <PreviewBootstrap />
         <div className="max-w-md mx-auto min-h-screen min-h-[100dvh] md:h-full md:min-h-0 bg-background relative shadow-lg">
           <ScreenRouter />
-          <CustomerBottomDock />
-          <AppFooter />
+          <CustomerChrome />
         </div>
       </OrderProvider>
     </CartProvider>

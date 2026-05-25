@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { bumpAppCache } from "@/lib/appCacheBust";
+import { isAdminPreviewMode, PREVIEW_MESSAGE_TYPE } from "@/lib/tenantPreview";
 
 export type CompanySettings = Tables<"company_settings">;
 
@@ -89,7 +90,33 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const resolved = useResolvedStore();
   const storeId = storeIdProp ?? resolved.storeId ?? "";
   const [settings, setSettings] = useState<CompanySettings | null>(null);
+  const [draftOverride, setDraftOverride] = useState<Partial<CompanySettings> | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const effectiveSettings = useMemo(() => {
+    if (!settings) return null;
+    if (!draftOverride) return settings;
+    return { ...settings, ...draftOverride };
+  }, [settings, draftOverride]);
+
+  useEffect(() => {
+    if (!isAdminPreviewMode()) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== PREVIEW_MESSAGE_TYPE) return;
+      setDraftOverride((event.data.payload as Partial<CompanySettings>) ?? null);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  useEffect(() => {
+    if (!effectiveSettings) return;
+    applyTheme(effectiveSettings);
+    applyInstallMeta(effectiveSettings);
+    if (effectiveSettings.company_name) {
+      document.title = effectiveSettings.company_name;
+    }
+  }, [effectiveSettings]);
 
   const load = useCallback(async () => {
     if (!storeId) { setLoading(false); return; }
@@ -100,8 +127,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
       .maybeSingle();
     if (data) {
       setSettings(data);
-      applyTheme(data);
-      applyInstallMeta(data);
+      setDraftOverride(null);
     }
     setLoading(false);
   }, [storeId]);
@@ -129,7 +155,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
   }, [storeId, load]);
 
   return (
-    <BrandingContext.Provider value={{ settings, loading, refresh: load }}>
+    <BrandingContext.Provider value={{ settings: effectiveSettings, loading, refresh: load }}>
       {children}
     </BrandingContext.Provider>
   );

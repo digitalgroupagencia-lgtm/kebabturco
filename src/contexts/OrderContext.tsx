@@ -87,10 +87,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (embedScreen) return embedScreen;
 
     const params = new URLSearchParams(window.location.search);
+    const isPreview = params.get("preview") === "1";
     const p = params.get("screen");
     const orderParam = params.get("order");
     const stored = loadAnyStoredActiveOrder();
     const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation", "tracking", "account"];
+
+    if (isPreview && valid.includes(p as Screen)) {
+      return p as Screen;
+    }
 
     if (orderParam || stored?.orderId) {
       const urlScreen = readCustomerScreenFromUrl();
@@ -108,7 +113,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   })();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("preview") === "1") return params.get("productId");
+    return null;
+  });
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState(() => {
