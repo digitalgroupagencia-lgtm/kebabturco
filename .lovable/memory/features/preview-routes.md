@@ -1,6 +1,6 @@
 # Rotas do preview Lovable (Kebab Turco único)
 
-O selector de páginas do preview deve listar **apenas** estas entradas (declaradas em `AppRoutes.tsx`):
+O selector de páginas do preview deve listar **apenas** estas entradas (declaradas em `src/App.tsx`):
 
 - `/` — loja
 - `/auth` — login
@@ -22,7 +22,7 @@ O selector de páginas do preview deve listar **apenas** estas entradas (declara
 
 - Só existem **4 ficheiros** em `src/pages/` (`Index`, `Auth`, `Install`, `NotFound`).
 - **Nunca** recriar `src/pages/panel/`, `src/pages/admin/` ou `src/pages/seller/` — a Lovable indexa essa pasta.
-- Rotas literais do dropdown: **só** em `src/routes/AppRoutes.tsx` (paths absolutos, sem nested relativos).
+- Rotas literais do dropdown: **só** em `src/App.tsx` (paths absolutos, sem nested relativos).
 - Outras páginas (`/install`, `/panel/stock`, `/seller/tables`, centrais admin) → `CatchAllResolver` **sem** `<Route path={variável}>`.
 - Navegação no código: `nav.panel()`, `nav.admin()`, `nav.seller()` — sem strings `"/panel/..."` literais.
 - Não usar wildcards (`/*`) nem paths multi-cliente SnapOrder.

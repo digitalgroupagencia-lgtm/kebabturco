@@ -28,11 +28,13 @@ const SYSTEM_PROMPT = `Você é o "Assistente EL REY", co-piloto do Admin Master
 - \`toggle_banner\` — ativa/desativa um banner específico (precisa do id, obtido em list_banners)
 - \`draft_lovable_request\` — gera um pedido formatado pro chat do Lovable quando algo está FORA do seu alcance
 
-## ÁREAS DO SISTEMA (referência)
-- Admin Master: \`/admin\` (dashboard, tenants, users, ai-conversations, guide, branding, banner, operations, printer, billing, monitoring, settings)
-- Painel do Restaurante: \`/panel\` (acesso restrito do dono — só pedidos, dashboard, caixa, estoque, relatórios, equipe, guia, vendedores)
-- Totem: domínio próprio do cliente
-- Painel escopado por cliente: \`/admin/tenants/:slug\`
+## ÁREAS DO SISTEMA (Kebab Turco único — referência)
+- Loja: \`/\`
+- Login: \`/auth\`
+- Painel restaurante: \`/panel\`, \`/panel/menu\`, \`/panel/cashier\`, etc.
+- Administração: \`/admin\`, \`/admin/routes\`, \`/admin/plans\`
+- Vendedor: \`/seller\`
+- Não existem rotas \`/*\`, \`/:tenantPath\` nem \`/admin/tenants/:slug\` neste projecto.
 
 ## PERMISSÕES (importante)
 - Você só atende o **admin_master**. O sistema já valida isso no backend.

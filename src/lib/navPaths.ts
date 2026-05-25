@@ -15,7 +15,7 @@ export const nav = {
   seller: (...rest: string[]) => joinPath("seller", ...rest),
 } as const;
 
-/** Lista curada — espelha exactamente AppRoutes (dropdown preview Lovable). */
+/** Lista curada — espelha exactamente App.tsx (dropdown preview Lovable). */
 export const LOVABLE_PREVIEW_PATHS = [
   "/",
   "/auth",

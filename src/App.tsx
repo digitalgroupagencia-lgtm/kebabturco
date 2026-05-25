@@ -1,10 +1,12 @@
+import { Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
+import MobileFrame from "@/components/MobileFrame.tsx";
+import PageSpinner from "@/components/PageSpinner.tsx";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import AppRoutes from "@/routes/AppRoutes.tsx";
 import PreviewPathGuard from "@/components/PreviewPathGuard.tsx";
 import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
@@ -12,8 +14,68 @@ import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
+import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
+import { adminPage, panelPage, sellerPage } from "@/routes/layoutPage.tsx";
+import {
+  AdminDashboard,
+  AdminPlansPage,
+  AdminRoutesMapPage,
+  Auth,
+  BannerPage,
+  BrandingPage,
+  CashierPage,
+  Index,
+  MenuPage,
+  ModifierGroupsPage,
+  NotFound,
+  OperationsPage,
+  OrdersPage,
+  SellerHome,
+  TenantDeliveryZonesPage,
+} from "@/routes/appRouteRegistry.ts";
+
+export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
 
 const queryClient = new QueryClient();
+
+const withSuspense = (node: ReactNode) => (
+  <Suspense fallback={<PageSpinner />}>{node}</Suspense>
+);
+
+const tenantStore = withSuspense(
+  <MobileFrame>
+    <Index />
+  </MobileFrame>,
+);
+
+/**
+ * Rotas do dropdown Lovable — manter `<Route path="...">` literais NESTE ficheiro.
+ * Não mover para outro módulo: o scanner do preview lê App.tsx directamente.
+ */
+const LovablePreviewRoutes = () => (
+  <Routes>
+    <Route path="/" element={tenantStore} />
+    <Route path="/auth" element={withSuspense(<Auth />)} />
+    <Route path="/cashier" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
+
+    <Route path="/panel" element={withSuspense(panelPage(OrdersPage))} />
+    <Route path="/panel/menu" element={withSuspense(panelPage(MenuPage))} />
+    <Route path="/panel/cashier" element={withSuspense(panelPage(CashierPage))} />
+    <Route path="/panel/modifiers" element={withSuspense(panelPage(ModifierGroupsPage))} />
+    <Route path="/panel/branding" element={withSuspense(panelPage(BrandingPage))} />
+    <Route path="/panel/banners" element={withSuspense(panelPage(BannerPage))} />
+    <Route path="/panel/delivery-zones" element={withSuspense(panelPage(TenantDeliveryZonesPage))} />
+    <Route path="/panel/payments" element={withSuspense(panelPage(OperationsPage))} />
+
+    <Route path="/admin" element={withSuspense(adminPage(AdminDashboard))} />
+    <Route path="/admin/routes" element={withSuspense(adminPage(AdminRoutesMapPage))} />
+    <Route path="/admin/plans" element={withSuspense(adminPage(AdminPlansPage))} />
+
+    <Route path="/seller" element={withSuspense(sellerPage(SellerHome))} />
+
+    <Route path="*" element={withSuspense(<CatchAllResolver notFound={<NotFound />} />)} />
+  </Routes>
+);
 
 const App = () => (
   <TotemErrorBoundary>
@@ -29,7 +91,7 @@ const App = () => (
                 <SiteBrandingEffect />
                 <BrandingProvider>
                   <OperationsSettingsProvider>
-                    <AppRoutes />
+                    <LovablePreviewRoutes />
                   </OperationsSettingsProvider>
                 </BrandingProvider>
               </ResolvedStoreProvider>
