@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 
 async function firstActiveStoreForTenant(tenantId: string): Promise<string | null> {
   const db = supabase as unknown as {
@@ -80,6 +81,17 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
 
       if (!resolved && hostTenantId) {
         resolved = await firstActiveStoreForTenant(hostTenantId);
+      }
+
+      if (!resolved) {
+        const { data: t } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", DEFAULT_TENANT_SLUG)
+          .maybeSingle();
+        if (t?.id) {
+          resolved = await firstActiveStoreForTenant(t.id);
+        }
       }
 
       if (active) {

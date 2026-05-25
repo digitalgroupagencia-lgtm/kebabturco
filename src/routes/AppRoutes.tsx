@@ -2,7 +2,6 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
-import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 
 const Index = lazy(() => import("@/pages/Index.tsx"));
 const Auth = lazy(() => import("@/pages/Auth.tsx"));
@@ -12,14 +11,10 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"));
 const PanelRoutes = lazy(() => import("@/routes/panelRoutes.tsx"));
 const SellerRoutes = lazy(() => import("@/routes/sellerRoutes.tsx"));
 const AdminRoutes = lazy(() => import("@/routes/adminRoutes.tsx"));
-const TenantWorkspaceRoutes = lazy(() => import("@/routes/tenantWorkspaceRoutes.tsx"));
 
 const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
-
-const platformHome = withSuspense(<Navigate to="/auth" replace />);
-const platformRedirect = withSuspense(<Navigate to="/admin" replace />);
 
 const tenantStore = withSuspense(
   <MobileFrame>
@@ -27,49 +22,23 @@ const tenantStore = withSuspense(
   </MobileFrame>,
 );
 
-/** Prévia de restaurante no editor Lovable: /preview/kebab-turco */
-const previewRoutes = (
-  <>
+/** Kebab Turco — rotas simples: loja, painel, auth, admin. */
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={tenantStore} />
+    <Route path="/auth" element={withSuspense(<Auth />)} />
+    <Route path="/install" element={withSuspense(<Install />)} />
+    <Route path="/panel/*" element={withSuspense(<PanelRoutes />)} />
+    <Route path="/seller/*" element={withSuspense(<SellerRoutes />)} />
+    <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
+    <Route path="/cashier" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
+    <Route path="/cashier/*" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
+    {/* Legado multi-tenant — redireccionar para não confundir */}
+    <Route path="/admin/tenants/*" element={withSuspense(<Navigate to="/admin" replace />)} />
     <Route path="/preview/:tenantSlug/panel/*" element={withSuspense(<PanelRoutes />)} />
     <Route path="/preview/:tenantSlug" element={tenantStore} />
-  </>
+    <Route path="*" element={withSuspense(<NotFound />)} />
+  </Routes>
 );
-
-/** snaporder.* = plataforma; custom_domain = restaurante; /preview/slug = loja no editor. */
-const AppRoutes = () => {
-  const isPlatform = isPlatformAdminContext();
-
-  if (isPlatform) {
-    return (
-      <Routes>
-        <Route path="/" element={platformHome} />
-        <Route path="/auth" element={withSuspense(<Auth />)} />
-        <Route path="/install" element={withSuspense(<Install />)} />
-        <Route path="/admin/tenants/:slug/*" element={withSuspense(<TenantWorkspaceRoutes />)} />
-        <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
-        {previewRoutes}
-        <Route path="/panel/*" element={platformRedirect} />
-        <Route path="/seller/*" element={platformRedirect} />
-        <Route path="/:tenantPath/*" element={platformRedirect} />
-        <Route path="*" element={platformRedirect} />
-      </Routes>
-    );
-  }
-
-  return (
-    <Routes>
-      <Route path="/" element={tenantStore} />
-      {previewRoutes}
-      <Route path="/:tenantPath" element={tenantStore} />
-      <Route path="/auth" element={withSuspense(<Auth />)} />
-      <Route path="/install" element={withSuspense(<Install />)} />
-      <Route path="/panel/*" element={withSuspense(<PanelRoutes />)} />
-      <Route path="/seller/*" element={withSuspense(<SellerRoutes />)} />
-      <Route path="/admin/tenants/:slug/*" element={withSuspense(<TenantWorkspaceRoutes />)} />
-      <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
-      <Route path="*" element={withSuspense(<NotFound />)} />
-    </Routes>
-  );
-};
 
 export default AppRoutes;

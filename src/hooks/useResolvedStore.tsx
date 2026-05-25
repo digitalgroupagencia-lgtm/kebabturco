@@ -1,17 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isPlatformHost, isDevPreviewHost, normalizeHostname } from "@/lib/platformHosts";
-import { getPreviewTenantSlug, isEmbeddedTenantPreview } from "@/lib/tenantPreview";
+import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
+import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
+import { getPreviewTenantSlug } from "@/lib/tenantPreview";
 
 /**
- * Resolve a store_id correta para o totem/app público com base em:
- *   1. custom_domain (ex.: kebabturco.net)
- *   2. domínio mestre + path_slug (ex.: dominio.com/kebabturco)
- *   3. preview/dev (localhost, *.lovable.app) → primeira loja activa
- *   4. fallback hardcoded só para kebabturco.net (emergência)
- *
- * Domínios novos sem tenant configurado → storeId null (ecrã «em configuração»).
- * Domínios da plataforma (snaporder.*) → nunca resolvem restaurante.
+ * Resolve store_id para a loja pública:
+ *   1. prévia (?tenant= ou /preview/slug)
+ *   2. custom_domain (ex.: kebabturco.net)
+ *   3. domínio mestre + path_slug
+ *   4. contexto Kebab (localhost, Lovable, kebabturco.net) → slug kebab-turco
+ *   5. fallback hardcoded de emergência
  */
 
 export interface StoreOption {
@@ -23,11 +22,8 @@ export interface StoreOption {
 }
 
 interface ResolvedStore {
-  /** Store primária do tenant — usada para branding, idiomas e totem_config (compartilhado entre unidades). */
   storeId: string | null;
-  /** Store selecionada pelo cliente quando o tenant tem 2+ unidades. Cai no storeId quando há só uma. */
   selectedStoreId: string | null;
-  /** Lista de stores ativas do tenant (>= 2 dispara a tela de escolha de unidade). */
   stores: StoreOption[];
   setSelectedStoreId: (id: string | null) => void;
   tenantId: string | null;
@@ -49,13 +45,10 @@ const Ctx = createContext<ResolvedStore>({
 
 const SELECTED_STORE_KEY = "totem.selectedStoreId";
 
-/** Fallback de emergência — evita totem em branco se a resolução falhar. */
-const HOST_STORE_FALLBACK: Record<string, { tenantId: string; tenantSlug: string; storeId: string }> = {
-  "kebabturco.net": {
-    tenantId: "11111111-1111-1111-1111-111111111111",
-    tenantSlug: "kebab-turco",
-    storeId: "22222222-2222-2222-2222-222222222222",
-  },
+const KEBAB_FALLBACK = {
+  tenantId: "11111111-1111-1111-1111-111111111111",
+  tenantSlug: DEFAULT_TENANT_SLUG,
+  storeId: "22222222-2222-2222-2222-222222222222",
 };
 
 type StorePublicRow = StoreOption & {
@@ -86,7 +79,6 @@ async function fetchActiveStores(filter: { tenantId?: string } = {}): Promise<St
     return data as StorePublicRow[];
   }
 
-  // Compat: view stores_public ausente ou erro transitório
   const legacyQuery = supabase
     .from("stores")
     .select(select)
@@ -120,6 +112,40 @@ type TenantRow = {
   use_master_domain: boolean;
 };
 
+async function fetchTenantBySlug(slug: string): Promise<TenantRow | null> {
+  const { data } = await supabase
+    .from("tenants")
+    .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
+    .eq("slug", slug)
+    .maybeSingle();
+  return data as TenantRow | null;
+}
+
+function applyKebabFallback(host: string): {
+  tenant: TenantRow;
+  storeId: string;
+  stores: StoreOption[];
+} {
+  return {
+    tenant: {
+      id: KEBAB_FALLBACK.tenantId,
+      slug: KEBAB_FALLBACK.tenantSlug,
+      path_slug: null,
+      custom_domain: host || "kebabturco.net",
+      master_domain: null,
+      use_master_domain: false,
+    },
+    storeId: KEBAB_FALLBACK.storeId,
+    stores: [{
+      id: KEBAB_FALLBACK.storeId,
+      name: "Kebab Turco",
+      address: null,
+      image_url: null,
+      short_description: null,
+    }],
+  };
+}
+
 export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<ResolvedStore, "setSelectedStoreId">>({
     storeId: null,
@@ -135,38 +161,19 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     let active = true;
     const host = normalizeHostname(window.location.hostname);
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
-    const firstSeg = pathSegments[0] || null;
+    const firstSeg = pathSegments[0] === "preview" ? pathSegments[1] || null : pathSegments[0] || null;
     const tenantParam = getPreviewTenantSlug();
-
-    if (isPlatformHost(host) && !isEmbeddedTenantPreview()) {
-      setState({
-        storeId: null,
-        selectedStoreId: null,
-        stores: [],
-        tenantId: null,
-        tenantSlug: null,
-        basePath: "",
-        loading: false,
-      });
-      return;
-    }
 
     const timeout = window.setTimeout(() => {
       if (!active) return;
-      const hostFallback = HOST_STORE_FALLBACK[host];
-      if (!hostFallback) return;
+      if (!isDefaultKebabContextHost(host)) return;
+      const fb = applyKebabFallback(host);
       setState({
-        storeId: hostFallback.storeId,
-        selectedStoreId: hostFallback.storeId,
-        stores: [{
-          id: hostFallback.storeId,
-          name: "Gandia",
-          address: null,
-          image_url: null,
-          short_description: null,
-        }],
-        tenantId: hostFallback.tenantId,
-        tenantSlug: hostFallback.tenantSlug,
+        storeId: fb.storeId,
+        selectedStoreId: fb.storeId,
+        stores: fb.stores,
+        tenantId: fb.tenant.id,
+        tenantSlug: fb.tenant.slug,
         basePath: "",
         loading: false,
       });
@@ -179,112 +186,80 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
       let stores: StoreOption[] = [];
 
       try {
-      if (tenantParam) {
-        const { data } = await supabase
-          .from("tenants")
-          .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
-          .eq("slug", tenantParam)
-          .maybeSingle();
-        if (data) tenant = data as TenantRow;
-      }
-
-      if (!tenant && host) {
-        const { data: rows } = await supabase
-          .from("tenants")
-          .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
-          .eq("is_active", true);
-
-        tenant =
-          (rows as TenantRow[] | null)?.find((t) => {
-            if (!t.custom_domain) return false;
-            return normalizeHostname(t.custom_domain) === host;
-          }) ?? null;
-      }
-
-      if (!tenant && firstSeg) {
-        const { data: rows } = await supabase
-          .from("tenants")
-          .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
-          .eq("use_master_domain", true)
-          .eq("is_active", true);
-
-        tenant =
-          (rows as TenantRow[] | null)?.find((t) => {
-            const segMatch = t.path_slug === firstSeg || t.slug === firstSeg;
-            if (!segMatch || !t.master_domain) return false;
-            return normalizeHostname(t.master_domain) === host;
-          }) ?? null;
-      }
-
-      if (tenant) {
-        const list = await fetchActiveStores({ tenantId: tenant.id });
-        stores = mapStoreOptions(list);
-        storeId = stores[0]?.id ?? null;
-        if (tenant.use_master_domain && tenant.path_slug && !tenant.custom_domain) {
-          basePath = "/" + tenant.path_slug;
-        } else if (tenant.use_master_domain && tenant.path_slug && tenant.custom_domain) {
-          const onMaster = tenant.master_domain && host === normalizeHostname(tenant.master_domain);
-          if (onMaster) basePath = "/" + tenant.path_slug;
+        if (tenantParam) {
+          tenant = await fetchTenantBySlug(tenantParam);
         }
-      } else if (isDevPreviewHost(host)) {
-        const list = await fetchActiveStores();
-        const store = list[0];
-        if (store) {
-          storeId = store.id;
-          stores = mapStoreOptions([store]);
-          const { data: t } = await supabase
+
+        if (!tenant && host) {
+          const { data: rows } = await supabase
             .from("tenants")
-            .select("id, slug")
-            .eq("id", store.tenant_id!)
-            .maybeSingle();
-          tenant = t as TenantRow | null;
-        }
-      }
+            .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
+            .eq("is_active", true);
 
-      const hostFallback = HOST_STORE_FALLBACK[host];
-      if (!storeId && hostFallback) {
-        storeId = hostFallback.storeId;
-        if (!tenant) {
-          tenant = {
-            id: hostFallback.tenantId,
-            slug: hostFallback.tenantSlug,
-            path_slug: null,
-            custom_domain: host,
-            master_domain: null,
-            use_master_domain: false,
-          };
+          tenant =
+            (rows as TenantRow[] | null)?.find((t) => {
+              if (!t.custom_domain) return false;
+              return normalizeHostname(t.custom_domain) === host;
+            }) ?? null;
         }
-        if (!stores.length) {
-          const list = await fetchActiveStores({ tenantId: hostFallback.tenantId });
-          stores = mapStoreOptions(list.length ? list : [{
-            id: hostFallback.storeId,
-            name: "Gandia",
-            address: null,
-            image_url: null,
-            short_description: null,
-          }]);
+
+        if (!tenant && firstSeg && firstSeg !== "panel" && firstSeg !== "admin" && firstSeg !== "auth") {
+          const { data: rows } = await supabase
+            .from("tenants")
+            .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")
+            .eq("use_master_domain", true)
+            .eq("is_active", true);
+
+          tenant =
+            (rows as TenantRow[] | null)?.find((t) => {
+              const segMatch = t.path_slug === firstSeg || t.slug === firstSeg;
+              if (!segMatch || !t.master_domain) return false;
+              return normalizeHostname(t.master_domain) === host;
+            }) ?? null;
         }
-      }
+
+        if (!tenant && isDefaultKebabContextHost(host)) {
+          tenant = await fetchTenantBySlug(DEFAULT_TENANT_SLUG);
+        }
+
+        if (tenant) {
+          const list = await fetchActiveStores({ tenantId: tenant.id });
+          stores = mapStoreOptions(list);
+          storeId = stores[0]?.id ?? null;
+          if (tenant.use_master_domain && tenant.path_slug && !tenant.custom_domain) {
+            basePath = "/" + tenant.path_slug;
+          } else if (tenant.use_master_domain && tenant.path_slug && tenant.custom_domain) {
+            const onMaster = tenant.master_domain && host === normalizeHostname(tenant.master_domain);
+            if (onMaster) basePath = "/" + tenant.path_slug;
+          }
+        }
+
+        if (!storeId && isDefaultKebabContextHost(host)) {
+          const fb = applyKebabFallback(host);
+          storeId = fb.storeId;
+          if (!tenant) tenant = fb.tenant;
+          if (!stores.length) {
+            const list = await fetchActiveStores({ tenantId: KEBAB_FALLBACK.tenantId });
+            stores = mapStoreOptions(
+              list.length
+                ? list
+                : [{
+                    id: fb.storeId,
+                    name: "Kebab Turco",
+                    address: null,
+                    image_url: null,
+                    short_description: null,
+                  }],
+            );
+          }
+        }
       } catch (err) {
         console.error("[ResolvedStore] tenant/store resolution failed", err);
-        const hostFallback = HOST_STORE_FALLBACK[host];
-        if (hostFallback) {
-          storeId = hostFallback.storeId;
-          tenant = {
-            id: hostFallback.tenantId,
-            slug: hostFallback.tenantSlug,
-            path_slug: null,
-            custom_domain: host,
-            master_domain: null,
-            use_master_domain: false,
-          };
-          stores = [{
-            id: hostFallback.storeId,
-            name: "Gandia",
-            address: null,
-            image_url: null,
-            short_description: null,
-          }];
+        if (isDefaultKebabContextHost(host)) {
+          const fb = applyKebabFallback(host);
+          storeId = fb.storeId;
+          tenant = fb.tenant;
+          stores = fb.stores;
         }
       }
 
@@ -309,6 +284,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
         loading: false,
       });
     })();
+
     return () => {
       active = false;
       window.clearTimeout(timeout);

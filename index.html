@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="SnapOrder" />
+    <meta name="apple-mobile-web-app-title" content="Kebab Turco" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#CC0000" />
     <style>html,body{margin:0;background:#fff}</style>
-    <meta name="description" content="SnapOrder — gestão white-label de restaurantes" />
+    <meta name="description" content="Peça online no Kebab Turco" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>SnapOrder</title>
+    <title>Kebab Turco</title>
     
   
   
@@ -30,38 +30,12 @@
   
   
   
-  
-  <meta property="og:title" content="SnapOrder Platform">
-  <meta name="twitter:title" content="SnapOrder Platform">
-  <meta property="og:description" content="Gestão white-label de restaurantes">
-  <meta name="twitter:description" content="Gestão white-label de restaurantes">
+  <meta property="og:title" content="Kebab Turco">
+  <meta name="twitter:title" content="Kebab Turco">
+  <meta property="og:description" content="Peça online no Kebab Turco">
+  <meta name="twitter:description" content="Peça online no Kebab Turco">
 </head>
   <body>
-    <script>
-      (function () {
-        var host = location.hostname.replace(/^www\./i, "").toLowerCase();
-        var platformHosts = ["snaporder.digitalgroupsti.com", "admin.snaporder.es"];
-        var isPlatform =
-          platformHosts.indexOf(host) !== -1 ||
-          host.endsWith(".lovableproject.com") ||
-          host.endsWith(".lovable.app") ||
-          host.endsWith(".lovable.dev");
-        if (!isPlatform) return;
-        var params = new URLSearchParams(location.search);
-        if (params.get("preview") === "1" && params.get("tenant")) return;
-        var path = location.pathname || "/";
-        if (path === "/" || path === "") {
-          location.replace("/auth");
-          return;
-        }
-        var allowed =
-          path.indexOf("/admin") === 0 ||
-          path === "/auth" ||
-          path.indexOf("/auth/") === 0 ||
-          path === "/install";
-        if (!allowed) location.replace("/admin");
-      })();
-    </script>
     <div id="boot-fallback" style="margin:0;min-height:100vh;min-height:100dvh;background:#fff"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -34,6 +34,7 @@ import StatusPill from "@/components/admin/premium/StatusPill";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import { ADMIN_CENTRALS } from "@/lib/adminCentralsNav";
 import { Button } from "@/components/ui/button";
+import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 
 const fmtMoney = (v: number, cur = "EUR") =>
   new Intl.NumberFormat("pt-PT", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(v || 0);
@@ -151,6 +152,7 @@ const AdminDashboard = () => {
   });
 
   (tenants ?? []).slice(0, 2).forEach((t) => {
+    if (SINGLE_TENANT_MODE) return;
     activityItems.push({
       id: `tenant-${t.id}`,
       title: `Cliente activo · ${t.name}`,
@@ -169,19 +171,26 @@ const AdminDashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <StatusPill label="Plataforma" tone="neutral" />
+            <StatusPill label={APP_NAME} tone="neutral" />
             <StatusPill label="Command Center" tone="active" dot />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Visão global
+            {SINGLE_TENANT_MODE ? "Visão geral" : "Visão global"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Todos os restaurantes · sem cliente seleccionado
+            {SINGLE_TENANT_MODE
+              ? "Painel de administração do restaurante"
+              : "Todos os restaurantes · sem cliente seleccionado"}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
+          {!SINGLE_TENANT_MODE && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/tenants">Ver clientes</Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
-            <Link to="/admin/tenants">Ver clientes</Link>
+            <Link to="/admin/branding">Identidade visual</Link>
           </Button>
           <Button size="sm" asChild>
             <Link to="/admin/centrals">Centrais</Link>
@@ -193,9 +202,9 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricTile
           icon={Building2}
-          label="Restaurantes activos"
-          value={stats?.active_tenants ?? 0}
-          sub={`${stats?.total_tenants ?? 0} no total`}
+          label={SINGLE_TENANT_MODE ? "Estado da loja" : "Restaurantes activos"}
+          value={SINGLE_TENANT_MODE ? (stats?.active_tenants ? "Activa" : "—") : (stats?.active_tenants ?? 0)}
+          sub={SINGLE_TENANT_MODE ? APP_NAME : `${stats?.total_tenants ?? 0} no total`}
         />
         <MetricTile
           icon={DollarSign}
@@ -276,7 +285,8 @@ const AdminDashboard = () => {
       </div>
 
       {/* Tenants + centrals */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 ${SINGLE_TENANT_MODE ? "" : "xl:grid-cols-2"} gap-4`}>
+        {!SINGLE_TENANT_MODE && (
         <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
             <h3 className="text-sm font-semibold">Clientes</h3>
@@ -335,6 +345,7 @@ const AdminDashboard = () => {
               ))}
           </div>
         </div>
+        )}
 
         <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">

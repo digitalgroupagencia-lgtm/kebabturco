@@ -3,6 +3,7 @@
  */
 
 import type { Tables } from "@/integrations/supabase/types";
+import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
 
@@ -51,10 +52,10 @@ type CompanyRow = Tables<"company_settings"> & {
 };
 
 export const SNAPORDER_NEUTRAL_BRANDING: SiteBranding = {
-  scope: "platform",
-  displayName: "SnapOrder Platform",
-  shortName: "SnapOrder",
-  metaDescription: "Gestão white-label de restaurantes",
+  scope: "tenant",
+  displayName: APP_NAME,
+  shortName: APP_NAME,
+  metaDescription: "Peça online no Kebab Turco",
   themeColor: "#CC0000",
   backgroundColor: "#ffffff",
   primaryColor: "#CC0000",
@@ -178,10 +179,12 @@ export function applySiteBrandingToDocument(branding: SiteBranding): void {
 }
 
 export function shouldApplyPlatformSiteBranding(): boolean {
+  if (SINGLE_TENANT_MODE) return false;
   return isPlatformAdminContext();
 }
 
 export function shouldApplyTenantSiteBranding(): boolean {
+  if (SINGLE_TENANT_MODE) return true;
   if (typeof window === "undefined") return false;
   return !isPlatformAdminContext() || isEmbeddedTenantPreview();
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Lock, User, ChefHat, Shield } from "lucide-react";
-import { PLATFORM_NAME } from "@/lib/platformHosts";
-import { isPlatformAdminContext } from "@/lib/platformAdminContext";
+import { Mail, Lock, User, ChefHat } from "lucide-react";
+import { APP_NAME } from "@/lib/appMode";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
 
 const Auth = () => {
@@ -18,7 +17,6 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const isPlatformLogin = isPlatformAdminContext();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,18 +29,9 @@ const Auth = () => {
         const userId = data.user?.id;
         if (userId) {
           const dest = await resolvePostLoginDestination(userId);
-          if (dest.type === "denied") {
-            await supabase.auth.signOut();
-            toast.error(dest.message);
-            return;
-          }
-          if (dest.type === "external") {
-            window.location.assign(dest.url);
-            return;
-          }
           navigate(dest.path);
         } else {
-          navigate(isPlatformLogin ? "/admin" : "/panel");
+          navigate("/panel");
         }
       } else {
         const { error } = await supabase.auth.signUp({
@@ -68,19 +57,13 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-2">
-            {isPlatformLogin ? (
-              <Shield className="w-8 h-8 text-primary-foreground" />
-            ) : (
-              <ChefHat className="w-8 h-8 text-primary-foreground" />
-            )}
+            <ChefHat className="w-8 h-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl">{isLogin ? "Entrar" : "Criar conta"}</CardTitle>
           <CardDescription>
-            {isPlatformLogin
-              ? `${PLATFORM_NAME} · gestão da plataforma`
-              : isLogin
-                ? "Acesse o painel do seu restaurante"
-                : "Cadastre-se para começar"}
+            {isLogin
+              ? `${APP_NAME} · acesse o painel ou administração`
+              : "Cadastre-se para começar"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

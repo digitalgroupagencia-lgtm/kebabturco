@@ -17,7 +17,6 @@ import CustomerAccountScreen from "@/components/screens/CustomerAccountScreen";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import DomainNotConfiguredScreen from "@/components/screens/DomainNotConfiguredScreen";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { isAdminPreviewMode } from "@/lib/tenantPreview";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 
@@ -41,7 +40,7 @@ const ScreenRouter = () => {
   const { screen } = useOrder();
   const { storeId, loading } = useResolvedStore();
 
-  if (!isPlatformAdminContext() && !loading && !storeId) {
+  if (!loading && !storeId) {
     return <DomainNotConfiguredScreen hostname={window.location.hostname} />;
   }
 

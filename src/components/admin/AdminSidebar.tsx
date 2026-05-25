@@ -1,8 +1,6 @@
 import { useState } from "react";
 import {
   LayoutGrid,
-  Building2,
-  CreditCard,
   Activity,
   Users,
   Settings,
@@ -10,15 +8,19 @@ import {
   BookOpen,
   MessageSquare,
   Layers,
-  Globe,
   ChevronDown,
   Bot,
   Heart,
   Megaphone,
   Bell,
+  Palette,
+  Image,
+  Wrench,
+  Printer,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_NAME } from "@/lib/appMode";
 import {
   Sidebar,
   SidebarContent,
@@ -43,11 +45,11 @@ const overviewItems = [
   { title: "Command Center", url: "/admin", icon: LayoutGrid, end: true },
 ];
 
-const clientsItems = [
-  { title: "Clientes", url: "/admin/tenants", icon: Building2 },
-  { title: "Planos", url: "/admin/plans", icon: CreditCard },
-  { title: "Domínios & Links", url: "/admin/domains", icon: Globe },
-  { title: "Planos & Cobrança", url: "/admin/billing", icon: CreditCard },
+const storeItems = [
+  { title: "Identidade visual", url: "/admin/branding", icon: Palette },
+  { title: "Banners", url: "/admin/banner", icon: Image },
+  { title: "Operações", url: "/admin/operations", icon: Wrench },
+  { title: "Impressora", url: "/admin/printer", icon: Printer },
 ];
 
 const systemItems = [
@@ -110,7 +112,7 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Visão geral</SidebarGroupLabel>
+          <SidebarGroupLabel>{APP_NAME}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {overviewItems.map((item) => (
@@ -121,10 +123,10 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Clientes & planos</SidebarGroupLabel>
+          <SidebarGroupLabel>Loja & operação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {clientsItems.map((item) => (
+              {storeItems.map((item) => (
                 <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
               ))}
             </SidebarMenu>

@@ -17,6 +17,7 @@ import {
   type CentralSegment,
 } from "@/lib/operationalCentralMetrics";
 import { ChevronRight, Building2 } from "lucide-react";
+import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 
 const centralIcons = [Bot, Megaphone, Heart, Bell, MessageSquare];
 
@@ -42,16 +43,22 @@ export default function AdminCentralsHubPage() {
     <PlatformPageShell width="wide">
       <AdminPageHeader
         title="Centrais operacionais"
-        description="Visão global com métricas, timelines e actividade — escolhe uma central ou entra num restaurante."
+        description={
+          SINGLE_TENANT_MODE
+            ? "Visão operacional das centrais do Kebab Turco."
+            : "Visão global com métricas, timelines e actividade — escolhe uma central ou entra num restaurante."
+        }
         breadcrumbs={[
-          { label: "Plataforma", to: "/admin" },
+          { label: APP_NAME, to: "/admin" },
           { label: "Centrais" },
         ]}
       />
 
       <div className="flex flex-wrap gap-2">
-        <StatusPill label="Modo plataforma" tone="neutral" />
-        <StatusPill label={`${tenants?.length ?? 0} clientes`} tone="active" dot />
+        <StatusPill label={SINGLE_TENANT_MODE ? APP_NAME : "Modo plataforma"} tone="neutral" />
+        {!SINGLE_TENANT_MODE && (
+          <StatusPill label={`${tenants?.length ?? 0} clientes`} tone="active" dot />
+        )}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -100,6 +107,7 @@ export default function AdminCentralsHubPage() {
         </div>
       </div>
 
+      {!SINGLE_TENANT_MODE && (
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
           Por restaurante
@@ -126,6 +134,7 @@ export default function AdminCentralsHubPage() {
           })}
         </div>
       </div>
+      )}
     </PlatformPageShell>
   );
 }

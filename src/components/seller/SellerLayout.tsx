@@ -32,7 +32,7 @@ const SellerLayout = () => {
     <div className="min-h-[100dvh] w-full bg-background flex flex-col max-w-full overflow-x-hidden">
       <header className="sticky top-0 z-30 h-12 px-3 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-black text-primary text-sm">SnapOrder · Vendedor</span>
+          <span className="font-black text-primary text-sm">Kebab Turco · Vendedor</span>
         </div>
         <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sair">
           <LogOut className="w-4 h-4" />

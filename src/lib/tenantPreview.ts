@@ -1,5 +1,6 @@
 import { withCacheBust } from "@/lib/appCacheBust";
-import { isPlatformHost } from "@/lib/platformHosts";
+import { isLovableEditorHost } from "@/lib/platformHosts";
+import { SINGLE_TENANT_MODE } from "@/lib/appMode";
 import { buildTenantUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 
 export type TenantPreviewScreen =
@@ -74,10 +75,11 @@ export function buildTenantEmbedPreviewUrl(options: {
   if (options.productId) params.set("productId", options.productId);
   if (options.seedCheckout) params.set("seedCheckout", "1");
 
-  const onPlatformAdmin =
-    typeof window !== "undefined" && isPlatformHost(window.location.hostname);
+  const useLocalPreview =
+    typeof window !== "undefined" &&
+    (SINGLE_TENANT_MODE || isLovableEditorHost(window.location.hostname));
 
-  const base = onPlatformAdmin
+  const base = useLocalPreview
     ? `${window.location.origin}${buildLovableTenantPreviewPath(options.tenant.slug)}?${params.toString()}`
     : (() => {
         const url = new URL(buildTenantUrl(options.tenant, "/"));

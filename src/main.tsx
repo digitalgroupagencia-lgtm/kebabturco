@@ -1,27 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { isPlatformHost } from "@/lib/platformHosts";
-import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
-
-function redirectPlatformHostIfNeeded() {
-  if (!isPlatformHost(window.location.hostname)) return;
-  if (isEmbeddedTenantPreview()) return;
-  const path = window.location.pathname || "/";
-  if (path === "/" || path === "") {
-    window.location.replace("/auth");
-    return;
-  }
-  const allowed =
-    path.startsWith("/admin") ||
-    path.startsWith("/preview/") ||
-    path === "/auth" ||
-    path.startsWith("/auth/") ||
-    path === "/install";
-  if (!allowed) window.location.replace("/admin");
-}
-
-redirectPlatformHostIfNeeded();
 
 function removeBootFallback() {
   document.getElementById("boot-fallback")?.remove();

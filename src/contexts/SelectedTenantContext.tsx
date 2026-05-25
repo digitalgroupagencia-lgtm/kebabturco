@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 
 interface SelectedTenant {
   id: string;
@@ -50,7 +51,13 @@ export function SelectedTenantProvider({ children }: { children: ReactNode }) {
         tenantId = role?.tenant_id ?? null;
       }
 
-      // Final fallback: first active tenant (single-tenant mode)
+      // Final fallback: tenant Kebab Turco (projecto único)
+      if (!tenantId) {
+        const { data: t0 } = await supabase
+          .from("tenants").select("id").eq("slug", DEFAULT_TENANT_SLUG).maybeSingle();
+        tenantId = t0?.id ?? null;
+      }
+
       if (!tenantId) {
         const { data: t0 } = await supabase
           .from("tenants").select("id").eq("is_active", true).order("created_at").limit(1).maybeSingle();

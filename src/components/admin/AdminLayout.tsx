@@ -2,12 +2,13 @@ import { useEffect } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import AdminAssistant from "./AdminAssistant";
 import AdminThemeToggle from "./AdminThemeToggle";
 import { Loader2 } from "lucide-react";
+import { APP_NAME } from "@/lib/appMode";
+import { canAccessProjectAdmin } from "@/lib/projectAccess";
 
 const AdminLayout = () => {
   const { user, loading: authLoading } = useAuth();
@@ -21,12 +22,8 @@ const AdminLayout = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (!authLoading && !roleLoading && roleData && roleData.role !== "admin_master") {
-      if (isPlatformAdminContext()) {
-        navigate("/auth", { replace: true });
-      } else {
-        navigate("/panel");
-      }
+    if (!authLoading && !roleLoading && roleData && !canAccessProjectAdmin(roleData.role)) {
+      navigate("/panel");
     }
   }, [authLoading, roleLoading, roleData, navigate]);
 
@@ -38,7 +35,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user || roleData?.role !== "admin_master") return null;
+  if (!user || !canAccessProjectAdmin(roleData?.role)) return null;
 
   return (
     <SidebarProvider>
@@ -48,7 +45,7 @@ const AdminLayout = () => {
           <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
             <SidebarTrigger className="mr-2 sm:mr-4" />
             <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">
-              SnapOrder Platform
+              {APP_NAME} · Administração
             </h1>
             <AdminThemeToggle />
           </header>
