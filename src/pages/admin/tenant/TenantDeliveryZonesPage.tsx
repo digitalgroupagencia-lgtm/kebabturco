@@ -325,7 +325,7 @@ const TenantDeliveryZonesPage = () => {
     if (!storeId) return;
     if (!confirm("Substituir zonas actuais pela plantilla do tenant?")) return;
     setImporting(true);
-    const { data, error } = await supabase.rpc("import_operational_preset", {
+    const { data, error } = await (supabase.rpc as any)("import_operational_preset", {
       _store_id: storeId,
       _replace_existing: true,
     });
