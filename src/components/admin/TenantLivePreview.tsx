@@ -6,7 +6,8 @@ import { bumpAppCache } from "@/lib/appCacheBust";
 import type { Tables } from "@/integrations/supabase/types";
 import type { TenantUrlConfig } from "@/lib/tenantUrls";
 import {
-  buildTenantPreviewUrl,
+  buildTenantEmbedPreviewUrl,
+  buildTenantPublicPreviewUrl,
   getPreviewPostMessageTarget,
   getTenantPublicDomain,
   PREVIEW_MESSAGE_TYPE,
@@ -38,7 +39,7 @@ export default function TenantLivePreview({
 
   const previewUrl = useMemo(() => {
     if (!tenant?.slug) return null;
-    return buildTenantPreviewUrl({
+    return buildTenantEmbedPreviewUrl({
       tenant,
       screen,
       productId,
@@ -46,6 +47,11 @@ export default function TenantLivePreview({
       cacheToken: iframeKey,
     });
   }, [tenant, screen, productId, seedCheckout, iframeKey]);
+
+  const publicUrl = useMemo(() => {
+    if (!tenant?.slug) return null;
+    return buildTenantPublicPreviewUrl({ tenant, screen, productId, seedCheckout });
+  }, [tenant, screen, productId, seedCheckout]);
 
   const publicDomain = tenant ? getTenantPublicDomain(tenant) : "";
 
@@ -99,7 +105,7 @@ export default function TenantLivePreview({
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
             <Button size="icon" variant="ghost" className="h-7 w-7" asChild title="Abrir site real">
-              <a href={previewUrl} target="_blank" rel="noreferrer">
+              <a href={publicUrl ?? previewUrl} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </Button>
@@ -107,7 +113,7 @@ export default function TenantLivePreview({
         </div>
         <p className="flex items-center gap-1 text-[11px] truncate" title={publicDomain}>
           <Globe className="h-3 w-3 shrink-0" />
-          <span className="truncate">{publicDomain || tenant.slug}</span>
+          <span className="truncate">Prévia em tempo real · publicado em {publicDomain || tenant.slug}</span>
         </p>
         {draftSettings && (
           <p className="text-[10px] text-primary/80">Alterações não guardadas reflectem-se na prévia</p>

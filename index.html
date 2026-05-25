@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Kebab Turco" />
+    <meta name="apple-mobile-web-app-title" content="SnapOrder" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#CC0000" />
     <style>html,body{margin:0;background:#fff}</style>
-    <meta name="description" content="Pide tu kebab favorito en Gandia. Pizza, kebab, pita, rollos y mucho más." />
+    <meta name="description" content="SnapOrder — gestão white-label de restaurantes" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>Kebab Turco Gandia - Pide online</title>
+    <title>SnapOrder</title>
     
   
   
@@ -31,12 +31,10 @@
   
   
   
-  <meta property="og:title" content="Kebab Turco - Pizzeria &amp; Kebab - Pide online">
-  <meta name="twitter:title" content="Kebab Turco - Pizzeria &amp; Kebab - Pide online">
-  <meta property="og:description" content="Pizza, kebab, pita, rollos y mucho más.
-Haz tu pedido para comer aquí, para llevar o a domicilio.">
-  <meta name="twitter:description" content="Pizza, kebab, pita, rollos y mucho más.
-Haz tu pedido para comer aquí, para llevar o a domicilio.">
+  <meta property="og:title" content="SnapOrder Platform">
+  <meta name="twitter:title" content="SnapOrder Platform">
+  <meta property="og:description" content="Gestão white-label de restaurantes">
+  <meta name="twitter:description" content="Gestão white-label de restaurantes">
 </head>
   <body>
     <script>
@@ -49,6 +47,8 @@ Haz tu pedido para comer aquí, para llevar o a domicilio.">
           host.endsWith(".lovable.app") ||
           host.endsWith(".lovable.dev");
         if (!isPlatform) return;
+        var params = new URLSearchParams(location.search);
+        if (params.get("preview") === "1" && params.get("tenant")) return;
         var path = location.pathname || "/";
         if (path === "/" || path === "") {
           location.replace("/auth");

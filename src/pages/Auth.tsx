@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Mail, Lock, User, ChefHat, Shield } from "lucide-react";
-import { isPlatformHost, PLATFORM_NAME } from "@/lib/platformHosts";
+import { PLATFORM_NAME } from "@/lib/platformHosts";
+import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
 
 const Auth = () => {
@@ -17,7 +18,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const isPlatformLogin = isPlatformHost(window.location.hostname);
+  const isPlatformLogin = isPlatformAdminContext();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,10 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { isPlatformHost } from "./lib/platformHosts";
+import { isPlatformHost } from "@/lib/platformHosts";
+import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
 
 function redirectPlatformHostIfNeeded() {
   if (!isPlatformHost(window.location.hostname)) return;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("preview") === "1" && params.get("tenant")) return;
   const path = window.location.pathname || "/";
   if (path === "/" || path === "") {
     window.location.replace("/auth");

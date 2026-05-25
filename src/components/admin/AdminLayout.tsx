@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { isPlatformHost } from "@/lib/platformHosts";
+import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import AdminAssistant from "./AdminAssistant";
@@ -22,7 +22,7 @@ const AdminLayout = () => {
 
   useEffect(() => {
     if (!authLoading && !roleLoading && roleData && roleData.role !== "admin_master") {
-      if (isPlatformHost(window.location.hostname)) {
+      if (isPlatformAdminContext()) {
         navigate("/auth", { replace: true });
       } else {
         navigate("/panel");

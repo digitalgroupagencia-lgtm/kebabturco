@@ -116,6 +116,13 @@ const BrandingPage = () => {
       accent_color: s.accent_color,
       cta_color: s.cta_color,
       header_color: (s as any).header_color,
+      short_name: (s as any).short_name,
+      meta_description: (s as any).meta_description,
+      favicon_url: (s as any).favicon_url,
+      icon_192_url: (s as any).icon_192_url,
+      icon_512_url: (s as any).icon_512_url,
+      apple_touch_icon_url: (s as any).apple_touch_icon_url,
+      og_image_url: (s as any).og_image_url,
     }).eq("store_id", STORE_ID);
     setSaving(false);
     if (error) toast.error("Erro ao salvar"); else toast.success("Identidade visual atualizada!");
@@ -193,6 +200,38 @@ const BrandingPage = () => {
           <Save className="h-4 w-4 mr-2" /> {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Nome no browser e telemóvel</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Nome curto (ícone no telemóvel)</Label>
+            <Input
+              value={(s as any).short_name || ""}
+              onChange={(e) => update("short_name" as keyof Settings, e.target.value)}
+              placeholder={s.company_name || "Ex.: Kebab Turco"}
+              className="mt-1 max-w-md"
+            />
+          </div>
+          <div>
+            <Label>Descrição (Google / partilhas)</Label>
+            <Input
+              value={(s as any).meta_description || ""}
+              onChange={(e) => update("meta_description" as keyof Settings, e.target.value)}
+              placeholder="Peça online em..."
+              className="mt-1"
+            />
+          </div>
+          <ImageField label="Favicon (separador do browser)" field={"favicon_url" as keyof Settings} dimensions="48×48 px" />
+          <ImageField label="Ícone telemóvel 192" field={"icon_192_url" as keyof Settings} dimensions="192×192 px" />
+          <ImageField label="Ícone telemóvel 512" field={"icon_512_url" as keyof Settings} dimensions="512×512 px" />
+          <ImageField label="Ícone iPhone (ecrã inicial)" field={"apple_touch_icon_url" as keyof Settings} dimensions="180×180 px" />
+          <ImageField label="Imagem de partilha (WhatsApp, etc.)" field={"og_image_url" as keyof Settings} dimensions="1200×630 px" />
+          <p className="text-xs text-muted-foreground">
+            Se deixar vazio, usa o logo principal. A instalação completa no telemóvel será activada na Fase 2.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-3 sm:p-4">

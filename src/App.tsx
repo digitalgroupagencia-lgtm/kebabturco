@@ -9,6 +9,7 @@ import { BrandingProvider } from "./contexts/BrandingContext.tsx";
 import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
+import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <BrowserRouter>
             <AppCacheBustRouter>
               <ResolvedStoreProvider>
+                <SiteBrandingEffect />
                 <BrandingProvider>
                   <OperationsSettingsProvider>
                     <AppRoutes />

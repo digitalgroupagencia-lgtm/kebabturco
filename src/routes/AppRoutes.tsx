@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
-import { isPlatformHost } from "@/lib/platformHosts";
+import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 
 const Index = lazy(() => import("@/pages/Index.tsx"));
 const Auth = lazy(() => import("@/pages/Auth.tsx"));
@@ -21,8 +21,8 @@ const withSuspense = (node: ReactNode) => (
 const platformHome = withSuspense(<Navigate to="/auth" replace />);
 const platformRedirect = withSuspense(<Navigate to="/admin" replace />);
 
-/** snaporder.* e editor Lovable = plataforma; custom_domain = restaurante (white-label). */
-const isPlatform = isPlatformHost(window.location.hostname);
+/** snaporder.* = plataforma; custom_domain = restaurante; ?tenant&preview = prévia embebida. */
+const isPlatform = isPlatformAdminContext();
 
 const AppRoutes = () => (
   <Routes>

@@ -15,6 +15,9 @@ const SettingsPage = () => {
   const { settings, isLoading, save, isSaving } = usePlatformSettings();
 
   const [platformName, setPlatformName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [shortName, setShortName] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
   const [supportEmail, setSupportEmail] = useState("");
   const [defaultLanguage, setDefaultLanguage] = useState("pt");
   const [defaultCurrency, setDefaultCurrency] = useState("BRL");
@@ -43,6 +46,9 @@ const SettingsPage = () => {
   useEffect(() => {
     if (!settings) return;
     setPlatformName(settings.platform_name);
+    setDisplayName((settings as { display_name?: string }).display_name || settings.platform_name || "SnapOrder Platform");
+    setShortName((settings as { short_name?: string }).short_name || "SnapOrder");
+    setMetaDescription((settings as { meta_description?: string }).meta_description || "");
     setSupportEmail(settings.support_email);
     setDefaultLanguage(settings.default_language);
     setDefaultCurrency(settings.default_currency);
@@ -105,7 +111,10 @@ const SettingsPage = () => {
               <CardDescription>Dados básicos exibidos para todos os clientes.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div><Label>Nome da plataforma</Label><Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} /></div>
+              <div><Label>Nome da plataforma (interno)</Label><Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} /></div>
+              <div><Label>Título no browser</Label><Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="SnapOrder Platform" /></div>
+              <div><Label>Nome curto (telemóvel)</Label><Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="SnapOrder" /></div>
+              <div><Label>Descrição pública</Label><Input value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="Gestão white-label de restaurantes" /></div>
               <div><Label>E-mail de suporte</Label><Input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} /></div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
@@ -145,7 +154,7 @@ const SettingsPage = () => {
                   </Select>
                 </div>
               </div>
-              <Button disabled={isSaving} onClick={() => persist("Plataforma", { platform_name: platformName, support_email: supportEmail, default_language: defaultLanguage, default_currency: defaultCurrency, default_timezone: defaultTimezone })}>
+              <Button disabled={isSaving} onClick={() => persist("Plataforma", { platform_name: platformName, display_name: displayName, short_name: shortName, meta_description: metaDescription, support_email: supportEmail, default_language: defaultLanguage, default_currency: defaultCurrency, default_timezone: defaultTimezone })}>
                 <Save className="w-4 h-4 mr-2" /> Salvar
               </Button>
             </CardContent>

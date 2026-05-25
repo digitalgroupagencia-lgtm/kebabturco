@@ -1,8 +1,8 @@
 {
-  "name": "Kebab Turco Gandia",
-  "short_name": "Kebab Turco",
-  "description": "Pide tu kebab favorito en Gandia",
-  "lang": "es",
+  "name": "SnapOrder",
+  "short_name": "SnapOrder",
+  "description": "Gestão white-label de restaurantes",
+  "lang": "pt",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
