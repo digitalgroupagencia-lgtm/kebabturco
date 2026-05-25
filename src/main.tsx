@@ -6,8 +6,7 @@ import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
 
 function redirectPlatformHostIfNeeded() {
   if (!isPlatformHost(window.location.hostname)) return;
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("preview") === "1" && params.get("tenant")) return;
+  if (isEmbeddedTenantPreview()) return;
   const path = window.location.pathname || "/";
   if (path === "/" || path === "") {
     window.location.replace("/auth");
@@ -15,6 +14,7 @@ function redirectPlatformHostIfNeeded() {
   }
   const allowed =
     path.startsWith("/admin") ||
+    path.startsWith("/preview/") ||
     path === "/auth" ||
     path.startsWith("/auth/") ||
     path === "/install";

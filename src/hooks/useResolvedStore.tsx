@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isPlatformHost, isDevPreviewHost, normalizeHostname } from "@/lib/platformHosts";
-import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
+import { getPreviewTenantSlug, isEmbeddedTenantPreview } from "@/lib/tenantPreview";
 
 /**
  * Resolve a store_id correta para o totem/app público com base em:
@@ -136,8 +136,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     const host = normalizeHostname(window.location.hostname);
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const firstSeg = pathSegments[0] || null;
-    const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get("tenant");
+    const tenantParam = getPreviewTenantSlug();
 
     if (isPlatformHost(host) && !isEmbeddedTenantPreview()) {
       setState({

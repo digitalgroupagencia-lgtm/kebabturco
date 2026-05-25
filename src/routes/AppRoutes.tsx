@@ -21,37 +21,55 @@ const withSuspense = (node: ReactNode) => (
 const platformHome = withSuspense(<Navigate to="/auth" replace />);
 const platformRedirect = withSuspense(<Navigate to="/admin" replace />);
 
-/** snaporder.* = plataforma; custom_domain = restaurante; ?tenant&preview = prévia embebida. */
-const isPlatform = isPlatformAdminContext();
+const tenantStore = withSuspense(
+  <MobileFrame>
+    <Index />
+  </MobileFrame>,
+);
 
-const AppRoutes = () => (
-  <Routes>
-    {isPlatform ? (
-      <>
+/** Prévia de restaurante no editor Lovable: /preview/kebab-turco */
+const previewRoutes = (
+  <>
+    <Route path="/preview/:tenantSlug/panel/*" element={withSuspense(<PanelRoutes />)} />
+    <Route path="/preview/:tenantSlug" element={tenantStore} />
+  </>
+);
+
+/** snaporder.* = plataforma; custom_domain = restaurante; /preview/slug = loja no editor. */
+const AppRoutes = () => {
+  const isPlatform = isPlatformAdminContext();
+
+  if (isPlatform) {
+    return (
+      <Routes>
         <Route path="/" element={platformHome} />
         <Route path="/auth" element={withSuspense(<Auth />)} />
         <Route path="/install" element={withSuspense(<Install />)} />
         <Route path="/admin/tenants/:slug/*" element={withSuspense(<TenantWorkspaceRoutes />)} />
         <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
+        {previewRoutes}
         <Route path="/panel/*" element={platformRedirect} />
         <Route path="/seller/*" element={platformRedirect} />
         <Route path="/:tenantPath/*" element={platformRedirect} />
         <Route path="*" element={platformRedirect} />
-      </>
-    ) : (
-      <>
-        <Route path="/" element={withSuspense(<MobileFrame><Index /></MobileFrame>)} />
-        <Route path="/:tenantPath" element={withSuspense(<MobileFrame><Index /></MobileFrame>)} />
-        <Route path="/auth" element={withSuspense(<Auth />)} />
-        <Route path="/install" element={withSuspense(<Install />)} />
-        <Route path="/panel/*" element={withSuspense(<PanelRoutes />)} />
-        <Route path="/seller/*" element={withSuspense(<SellerRoutes />)} />
-        <Route path="/admin/tenants/:slug/*" element={withSuspense(<TenantWorkspaceRoutes />)} />
-        <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
-        <Route path="*" element={withSuspense(<NotFound />)} />
-      </>
-    )}
-  </Routes>
-);
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={tenantStore} />
+      {previewRoutes}
+      <Route path="/:tenantPath" element={tenantStore} />
+      <Route path="/auth" element={withSuspense(<Auth />)} />
+      <Route path="/install" element={withSuspense(<Install />)} />
+      <Route path="/panel/*" element={withSuspense(<PanelRoutes />)} />
+      <Route path="/seller/*" element={withSuspense(<SellerRoutes />)} />
+      <Route path="/admin/tenants/:slug/*" element={withSuspense(<TenantWorkspaceRoutes />)} />
+      <Route path="/admin/*" element={withSuspense(<AdminRoutes />)} />
+      <Route path="*" element={withSuspense(<NotFound />)} />
+    </Routes>
+  );
+};
 
 export default AppRoutes;

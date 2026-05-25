@@ -14,16 +14,33 @@ export type TenantPreviewScreen =
 
 export const PREVIEW_MESSAGE_TYPE = "snaporder:preview-branding" as const;
 
-export function isAdminPreviewMode(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("preview") === "1";
+const PREVIEW_PATH_RE = /^\/preview\/([^/]+)/;
+
+/** Slug do restaurante em prévia (query ?tenant= ou caminho /preview/slug). */
+export function getPreviewTenantSlug(): string | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("preview") === "1" && params.get("tenant")) {
+    return params.get("tenant");
+  }
+  const match = window.location.pathname.match(PREVIEW_PATH_RE);
+  return match?.[1] ?? null;
 }
 
-/** Prévia embebida no Admin Master: ?tenant=slug&preview=1 na origem da plataforma. */
+export function isAdminPreviewMode(): boolean {
+  return getPreviewTenantSlug() != null;
+}
+
+/** Prévia de restaurante dentro da plataforma SnapOrder ou editor Lovable. */
 export function isEmbeddedTenantPreview(): boolean {
-  if (typeof window === "undefined") return false;
-  const params = new URLSearchParams(window.location.search);
-  return params.get("preview") === "1" && !!params.get("tenant");
+  return getPreviewTenantSlug() != null;
+}
+
+/** Caminho de prévia no editor Lovable (ex.: /preview/kebab-turco). */
+export function buildLovableTenantPreviewPath(tenantSlug: string, subpath = ""): string {
+  const base = `/preview/${tenantSlug}`;
+  if (!subpath) return base;
+  return subpath.startsWith("/") ? `${base}${subpath}` : `${base}/${subpath}`;
 }
 
 export function getTenantPublicDomain(tenant: TenantUrlConfig): string {
@@ -61,7 +78,7 @@ export function buildTenantEmbedPreviewUrl(options: {
     typeof window !== "undefined" && isPlatformHost(window.location.hostname);
 
   const base = onPlatformAdmin
-    ? `${window.location.origin}/?${params.toString()}`
+    ? `${window.location.origin}${buildLovableTenantPreviewPath(options.tenant.slug)}?${params.toString()}`
     : (() => {
         const url = new URL(buildTenantUrl(options.tenant, "/"));
         params.forEach((v, k) => url.searchParams.set(k, v));
