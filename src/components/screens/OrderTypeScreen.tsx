@@ -101,16 +101,16 @@ const OrderTypeScreen = () => {
           <p className="text-muted-foreground mt-1 text-xs">{t("pickOption")}</p>
         </div>
 
-        <div className="flex items-center justify-center w-full max-w-md shrink-0 flex-1 min-h-0">
+        <div className="w-full max-w-md shrink-0 flex-1 min-h-0 flex items-center">
           <div
-            className="flex flex-row items-stretch justify-center w-full flex-nowrap"
+            className="flex flex-row items-stretch justify-start w-full overflow-x-auto no-scrollbar px-1"
             style={{ gap: enabled.length >= 3 ? "0.5rem" : "0.75rem" }}
           >
             {enabled.map(({ key, label, sub, icon, Fallback, tint }) => (
               <button
                 key={key}
                 onClick={() => handleSelect(key)}
-                className={`flex-1 min-w-0 flex flex-col items-center gap-1.5 p-2.5 bg-card rounded-2xl shadow-[0_6px_18px_-10px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
+                className={`w-[30%] min-w-[96px] max-w-[112px] shrink-0 flex flex-col items-center gap-1.5 p-2 bg-card rounded-2xl shadow-[0_6px_18px_-10px_rgba(0,0,0,0.2)] border active:scale-[0.97] transition-all touch-action-manipulation ${
                   mesaLocked && key === "here" ? "border-primary ring-2 ring-primary/40" : "border-border/60"
                 }`}
               >

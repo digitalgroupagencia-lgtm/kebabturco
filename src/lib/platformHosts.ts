@@ -19,3 +19,15 @@ export function isAdminMasterHost(hostname?: string | null): boolean {
 export function isPlatformReservedHost(hostname?: string | null): boolean {
   return isAdminMasterHost(hostname);
 }
+
+/** Ambientes de preview/dev — podem usar tenant demo sem custom_domain. */
+export function isDevPreviewHost(hostname?: string | null): boolean {
+  if (!hostname) return false;
+  const host = normalizeHostname(hostname);
+  return (
+    host === "localhost" ||
+    host.endsWith(".lovable.app") ||
+    host.endsWith(".lovable.dev") ||
+    host.startsWith("127.0.0.1")
+  );
+}

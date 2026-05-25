@@ -15,9 +15,17 @@ import ConfirmationScreen from "@/components/screens/ConfirmationScreen";
 import OrderTrackingScreen from "@/components/screens/OrderTrackingScreen";
 import CustomerAccountScreen from "@/components/screens/CustomerAccountScreen";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
+import DomainNotConfiguredScreen from "@/components/screens/DomainNotConfiguredScreen";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { isAdminMasterHost } from "@/lib/platformHosts";
 
 const ScreenRouter = () => {
   const { screen } = useOrder();
+  const { storeId, loading } = useResolvedStore();
+
+  if (!isAdminMasterHost(window.location.hostname) && !loading && !storeId) {
+    return <DomainNotConfiguredScreen hostname={window.location.hostname} />;
+  }
 
   switch (screen) {
     case "splash":

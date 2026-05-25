@@ -1,14 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isAdminMasterHost, normalizeHostname } from "@/lib/platformHosts";
+import { isAdminMasterHost, isDevPreviewHost, normalizeHostname } from "@/lib/platformHosts";
 
 /**
  * Resolve a store_id correta para o totem/app público com base em:
  *   1. custom_domain (ex.: kebabturco.net)
  *   2. domínio mestre + path_slug (ex.: dominio.com/kebabturco)
- *   3. fallback: primeira store ativa (modo demo — evitar em produção)
+ *   3. preview/dev (localhost, *.lovable.app) → primeira loja activa
+ *   4. fallback hardcoded só para kebabturco.net (emergência)
  *
- * Esse hook NÃO depende de auth — funciona para visitantes anônimos.
+ * Domínios novos sem tenant configurado → storeId null (ecrã «em configuração»).
+ * Domínios da plataforma (snaporder.*) → nunca resolvem restaurante.
  */
 
 export interface StoreOption {
@@ -224,7 +226,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           const onMaster = tenant.master_domain && host === normalizeHostname(tenant.master_domain);
           if (onMaster) basePath = "/" + tenant.path_slug;
         }
-      } else {
+      } else if (isDevPreviewHost(host)) {
         const list = await fetchActiveStores();
         const store = list[0];
         if (store) {
