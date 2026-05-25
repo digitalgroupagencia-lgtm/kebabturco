@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
+import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 
 const LEGACY_PREVIEW_SEARCH = `?preview=1&tenant=${DEFAULT_TENANT_SLUG}`;
 
@@ -50,14 +51,9 @@ export default function PreviewPathGuard() {
     }
 
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {
-      const panelTarget = nav.panel(parts[0]);
-      if (resolveRoute(panelTarget)) {
-        navigate(panelTarget, { replace: true });
-        return;
-      }
-      const adminTarget = nav.admin(parts[0]);
-      if (resolveRoute(adminTarget)) {
-        navigate(adminTarget, { replace: true });
+      const legacy = legacyBareSegmentTarget(parts[0]);
+      if (legacy) {
+        navigate(legacy, { replace: true });
         return;
       }
       const sellerTarget = nav.seller(parts[0]);

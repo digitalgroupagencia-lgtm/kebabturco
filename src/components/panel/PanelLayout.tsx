@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PanelSidebar } from "./PanelSidebar";
+import PanelAccessGuard from "./PanelAccessGuard";
 import AdminAssistant from "@/components/admin/AdminAssistant";
 import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import { Loader2 } from "lucide-react";
@@ -47,7 +48,7 @@ const PanelLayout = ({ page: Page }: Props) => {
               <AdminThemeToggle />
             </header>
             <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-              {Page ? <Page /> : <Outlet />}
+              <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
             </main>
           </div>
           {roleData?.role === "admin_master" && <AdminAssistant />}

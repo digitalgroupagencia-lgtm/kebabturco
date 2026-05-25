@@ -107,7 +107,7 @@ export default function ProductModifierEditor({
     <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold text-foreground">Personalização avançada</p>
-        <Link to={nav.panel("modifiers")} className="text-xs font-bold text-primary hover:underline">
+        <Link to={nav.admin("modifiers")} className="text-xs font-bold text-primary hover:underline">
           Gerir grupos →
         </Link>
       </div>

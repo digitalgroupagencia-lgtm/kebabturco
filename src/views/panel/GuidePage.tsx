@@ -13,35 +13,35 @@ const SECTIONS: FaqSection[] = [
     items: [
       { q: "Como acesso meu painel?", a: "Entre em **/auth** com seu e-mail e senha. Você será redirecionado para **/panel** automaticamente." },
       { q: "Como cadastro um membro da equipe?", a: "Vá em **Equipe** no menu lateral → **Novo Membro**. Informe nome, e-mail, senha temporária, papel e o **idioma** que ele verá o sistema." },
-      { q: "Quais papéis existem?", a: "**Admin Restaurante** (acesso total ao painel), **Operador** (caixa e pedidos), **Cozinha** (somente cozinha), **Vendedor** (app mobile em /seller)." },
+      { q: "Quais papéis existem?", a: "**Admin Restaurante** (operação do dia: pedidos, caixa, mesas, equipa), **Operador** (caixa e pedidos), **Cozinha** (somente cozinha), **Vendedor** (app mobile em /seller). Alterações de cardápio, identidade e pagamentos são feitas pelo administrador do projecto." },
     ],
   },
   {
     title: "Cardápio e Produtos",
     items: [
-      { q: "Onde cadastro produtos?", a: "Em **Cardápio**. Crie categorias e depois produtos dentro de cada categoria com nome, descrição, preço, imagem, tamanhos e adicionais." },
-      { q: "Como destaco um produto?", a: "Marque como **bestseller** ou **promo** na edição do produto. Eles aparecem em destaque no totem." },
+      { q: "Onde cadastro produtos?", a: "A gestão do **Cardápio** fica com o administrador do projecto (área de administração). No painel operacional você consulta pedidos e usa a caixa; para alterar produtos ou preços, peça ao responsável pela configuração." },
+      { q: "Como destaco um produto?", a: "Destaques (bestseller ou promo) são definidos na configuração do cardápio pelo administrador do projecto." },
     ],
   },
   {
     title: "Identidade Visual e Banners",
     items: [
-      { q: "Onde mudo cores e logos?", a: "Em **Identidade**. Define cores primária/CTA/header/fundo, fonte, logos e ícones de modo." },
-      { q: "Como adicionar banners promocionais?", a: "Em **Banners**. Suporta imagens (até 5) e vídeos (YouTube ou .mp4), com ordenação e ativar/desativar." },
+      { q: "Onde mudo cores e logos?", a: "Cores, logos e tema são configurados pelo administrador do projecto, não no painel operacional do restaurante." },
+      { q: "Como adicionar banners promocionais?", a: "Banners do totem são geridos pelo administrador do projecto." },
     ],
   },
   {
     title: "Totem e Telas",
     items: [
-      { q: "Como configurar as telas do totem?", a: "Em **Telas do totem** você controla quais etapas aparecem (idioma, modo, banners, finalização)." },
+      { q: "Como configurar as telas do totem?", a: "A configuração das telas do totem é feita pelo administrador do projecto." },
       { q: "Como obter o link público do totem?", a: "O totem abre na rota raiz do domínio. Cole esse link no equipamento físico." },
     ],
   },
   {
     title: "Pagamentos e Impressora",
     items: [
-      { q: "Como configurar métodos de pagamento?", a: "Em **Pagamentos**. Ative cartão, dinheiro, Pix, Apple Pay, Google Pay, link e balcão." },
-      { q: "Como conectar uma impressora térmica?", a: "Em **Impressoras**. Informe IP e porta (padrão 9100) e o endpoint do agente local. Use **Testar impressão** para validar." },
+      { q: "Como configurar métodos de pagamento?", a: "Métodos de pagamento são configurados pelo administrador do projecto." },
+      { q: "Como conectar uma impressora térmica?", a: "A ligação da impressora é configurada pelo administrador do projecto." },
     ],
   },
   {
@@ -68,7 +68,7 @@ export default function GuidePage() {
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           <BookOpen className="h-6 w-6" /> Central de Ajuda
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Guia passo a passo de tudo que existe no painel.</p>
+        <p className="text-sm text-muted-foreground mt-1">Guia da operação diária do restaurante.</p>
       </div>
 
       <div className="relative">

@@ -21,17 +21,14 @@ import {
   AdminPlansPage,
   AdminRoutesMapPage,
   Auth,
-  BannerPage,
   BrandingPage,
   CashierPage,
   Index,
   MenuPage,
-  ModifierGroupsPage,
   NotFound,
   OperationsPage,
   OrdersPage,
   SellerHome,
-  TenantDeliveryZonesPage,
 } from "@/routes/appRouteRegistry.ts";
 
 export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
@@ -59,15 +56,12 @@ const LovablePreviewRoutes = () => (
     <Route path="/cashier" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
 
     <Route path="/panel" element={withSuspense(panelPage(OrdersPage))} />
-    <Route path="/panel/menu" element={withSuspense(panelPage(MenuPage))} />
     <Route path="/panel/cashier" element={withSuspense(panelPage(CashierPage))} />
-    <Route path="/panel/modifiers" element={withSuspense(panelPage(ModifierGroupsPage))} />
-    <Route path="/panel/branding" element={withSuspense(panelPage(BrandingPage))} />
-    <Route path="/panel/banners" element={withSuspense(panelPage(BannerPage))} />
-    <Route path="/panel/delivery-zones" element={withSuspense(panelPage(TenantDeliveryZonesPage))} />
-    <Route path="/panel/payments" element={withSuspense(panelPage(OperationsPage))} />
 
     <Route path="/admin" element={withSuspense(adminPage(AdminDashboard))} />
+    <Route path="/admin/menu" element={withSuspense(adminPage(MenuPage))} />
+    <Route path="/admin/branding" element={withSuspense(adminPage(BrandingPage))} />
+    <Route path="/admin/operations" element={withSuspense(adminPage(OperationsPage))} />
     <Route path="/admin/routes" element={withSuspense(adminPage(AdminRoutesMapPage))} />
     <Route path="/admin/plans" element={withSuspense(adminPage(AdminPlansPage))} />
 
