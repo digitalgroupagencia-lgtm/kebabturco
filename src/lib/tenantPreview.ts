@@ -51,9 +51,13 @@ export function isEmbeddedTenantPreview(): boolean {
   return getPreviewTenantSlug() != null;
 }
 
-/** Caminho de prévia no editor Lovable (ex.: /preview/kebab-turco). */
-export function buildLovableTenantPreviewPath(tenantSlug: string, subpath = ""): string {
-  const base = `/preview/${tenantSlug}`;
+/** Caminho de prévia no editor Lovable — loja única usa `/` (legado /preview/slug redirecciona). */
+export function buildLovableTenantPreviewPath(_tenantSlug: string, subpath = ""): string {
+  if (SINGLE_TENANT_MODE) {
+    if (!subpath) return "/";
+    return subpath.startsWith("/") ? subpath : `/${subpath}`;
+  }
+  const base = `/preview/${_tenantSlug}`;
   if (!subpath) return base;
   return subpath.startsWith("/") ? `${base}${subpath}` : `${base}/${subpath}`;
 }

@@ -1,5 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import AdminLayout from "@/components/admin/AdminLayout.tsx";
+import { Navigate, Route } from "react-router-dom";
 import AdminDashboard from "@/pages/admin/AdminDashboard.tsx";
 import MonitoringPage from "@/pages/admin/MonitoringPage.tsx";
 import BrandingPage from "@/pages/admin/BrandingPage.tsx";
@@ -19,36 +18,27 @@ import AdminCentralConversationalPage from "@/pages/admin/AdminCentralConversati
 import AdminPlansPage from "@/pages/admin/AdminPlansPage.tsx";
 import AdminRoutesMapPage from "@/pages/admin/AdminRoutesMapPage.tsx";
 
-const redirect = <Navigate to="/admin" replace />;
-
-export default function AdminRoutes() {
-  return (
-    <Routes>
-      <Route element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="tenants" element={redirect} />
-        <Route path="tenants/*" element={redirect} />
-        <Route path="domains" element={redirect} />
-        <Route path="plans" element={<AdminPlansPage />} />
-        <Route path="routes" element={<AdminRoutesMapPage />} />
-        <Route path="billing" element={redirect} />
-        <Route path="centrals" element={<AdminCentralsHubPage />} />
-        <Route path="centrals/ai" element={<AdminCentralAiPage />} />
-        <Route path="centrals/loyalty" element={<AdminCentralLoyaltyPage />} />
-        <Route path="centrals/campaigns" element={<AdminCentralCampaignsPage />} />
-        <Route path="centrals/push" element={<AdminCentralPushPage />} />
-        <Route path="centrals/conversational" element={<AdminCentralConversationalPage />} />
-        <Route path="monitoring" element={<MonitoringPage />} />
-        <Route path="branding" element={<BrandingPage />} />
-        <Route path="banner" element={<BannerPage />} />
-        <Route path="operations" element={<OperationsPage />} />
-        <Route path="printer" element={<PrinterPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="settings" element={<AdminSettingsPage />} />
-        <Route path="guide" element={<GuidePage />} />
-        <Route path="conversations" element={<AiConversationsPage />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Route>
-    </Routes>
-  );
-}
+/** Filhos de `<Route path="/admin">` — sem wildcard no AppRoutes. */
+export const adminRouteElements = (
+  <>
+    <Route index element={<AdminDashboard />} />
+    <Route path="plans" element={<AdminPlansPage />} />
+    <Route path="routes" element={<AdminRoutesMapPage />} />
+    <Route path="centrals" element={<AdminCentralsHubPage />} />
+    <Route path="centrals/ai" element={<AdminCentralAiPage />} />
+    <Route path="centrals/loyalty" element={<AdminCentralLoyaltyPage />} />
+    <Route path="centrals/campaigns" element={<AdminCentralCampaignsPage />} />
+    <Route path="centrals/push" element={<AdminCentralPushPage />} />
+    <Route path="centrals/conversational" element={<AdminCentralConversationalPage />} />
+    <Route path="monitoring" element={<MonitoringPage />} />
+    <Route path="branding" element={<BrandingPage />} />
+    <Route path="banner" element={<BannerPage />} />
+    <Route path="operations" element={<OperationsPage />} />
+    <Route path="printer" element={<PrinterPage />} />
+    <Route path="users" element={<UsersPage />} />
+    <Route path="settings" element={<AdminSettingsPage />} />
+    <Route path="guide" element={<GuidePage />} />
+    <Route path="conversations" element={<AiConversationsPage />} />
+    <Route path="*" element={<Navigate to="/admin" replace />} />
+  </>
+);
