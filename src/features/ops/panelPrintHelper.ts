@@ -25,10 +25,9 @@ export function panelOrderToTicket(
     contact_phone: order.customer_phone,
     notes: order.notes,
     items: items.map((it) => ({
+      name: it.product_name,
+      price: Number(it.unit_price),
       quantity: it.quantity,
-      product_name: it.product_name,
-      unit_price: Number(it.unit_price),
-      total_price: Number(it.total_price),
       notes: it.notes ?? undefined,
     })),
     total: Number(order.total),
