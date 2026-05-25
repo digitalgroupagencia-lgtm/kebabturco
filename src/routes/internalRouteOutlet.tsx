@@ -1,17 +1,12 @@
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import PageSpinner from "@/components/PageSpinner.tsx";
 import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import AdminLayout from "@/components/admin/AdminLayout.tsx";
 import SellerLayout from "@/components/seller/SellerLayout.tsx";
-import {
-  pathForRouteDef,
-  resolveRoute,
-  type AppArea,
-  type RouteSegmentDef,
-} from "@/lib/navPaths.ts";
+import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/navPaths.ts";
 
-const AREA_LAYOUT: Record<AppArea, ComponentType> = {
+const AREA_LAYOUT: Record<AppArea, ComponentType<{ page?: ComponentType<object> }>> = {
   panel: PanelLayout,
   admin: AdminLayout,
   seller: SellerLayout,
@@ -27,14 +22,20 @@ function lazyPage(loader: RouteSegmentDef["loader"]) {
   return pageCache.get(key)!;
 }
 
+const Install = lazy(() => import("@/pages/Install.tsx"));
+
 const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
 
-/** Rotas internas resolvidas em runtime (sem `<Route path="/panel/...">` literais). */
+/** Páginas internas — render directo, sem `<Route path={...}>` dinâmico (evita scanner Lovable). */
 export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
   const location = useLocation();
   const pathname = location.pathname.replace(/\/+$/, "") || "/";
+
+  if (pathname === "/install") {
+    return withSuspense(<Install />);
+  }
 
   const def = resolveRoute(pathname);
   if (!def) {
@@ -43,15 +44,6 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
 
   const Layout = AREA_LAYOUT[def.area];
   const Page = lazyPage(def.loader);
-  const path = pathForRouteDef(def);
 
-  return (
-    <Suspense fallback={<PageSpinner />}>
-      <Routes location={location}>
-        <Route element={withSuspense(<Layout />)}>
-          <Route path={path} element={withSuspense(<Page />)} />
-        </Route>
-      </Routes>
-    </Suspense>
-  );
+  return withSuspense(<Layout page={Page} />);
 }

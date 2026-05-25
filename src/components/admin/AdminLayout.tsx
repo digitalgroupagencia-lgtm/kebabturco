@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ComponentType } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -12,7 +12,11 @@ import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
 import { nav } from "@/lib/navPaths.ts";
 
-const AdminLayout = () => {
+type Props = {
+  page?: ComponentType<object>;
+};
+
+const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const navigate = useNavigate();
@@ -54,7 +58,7 @@ const AdminLayout = () => {
           <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
             <div className="max-w-full mx-auto">
               <LovableRouteHintBanner />
-              <Outlet />
+              {Page ? <Page /> : <Outlet />}
             </div>
           </main>
         </div>

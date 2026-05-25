@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ComponentType } from "react";
 import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -6,7 +6,11 @@ import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { nav } from "@/lib/navPaths.ts";
 
-const SellerLayout = () => {
+type Props = {
+  page?: ComponentType<object>;
+};
+
+const SellerLayout = ({ page: Page }: Props) => {
   const { user, loading, signOut } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const navigate = useNavigate();
@@ -40,7 +44,7 @@ const SellerLayout = () => {
       </header>
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
-        <Outlet />
+        {Page ? <Page /> : <Outlet />}
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-border h-16 flex items-stretch px-2" style={{ paddingBottom: "max(0px,env(safe-area-inset-bottom))" }}>

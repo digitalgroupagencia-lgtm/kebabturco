@@ -15,18 +15,22 @@ export const nav = {
   seller: (...rest: string[]) => joinPath("seller", ...rest),
 } as const;
 
-/** Única lista com caminhos completos literais — alinhada com AppRoutes (preview Lovable). */
+/** Lista curada — espelha exactamente AppRoutes (dropdown preview Lovable). */
 export const LOVABLE_PREVIEW_PATHS = [
   "/",
   "/auth",
-  "/install",
-  "/cashier",
   "/panel",
   "/panel/menu",
   "/panel/cashier",
+  "/panel/modifiers",
+  "/panel/branding",
+  "/panel/banners",
+  "/panel/delivery-zones",
+  "/panel/payments",
   "/admin",
   "/admin/routes",
   "/admin/plans",
+  "/cashier",
   "/seller",
 ] as const;
 

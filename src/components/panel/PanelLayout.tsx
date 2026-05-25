@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, type ComponentType } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
+import { nav } from "@/lib/navPaths.ts";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -9,14 +10,18 @@ import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 
-const PanelLayout = () => {
+type Props = {
+  page?: ComponentType<object>;
+};
+
+const PanelLayout = ({ page: Page }: Props) => {
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth");
+      navigate(nav.auth());
     }
   }, [user, loading, navigate]);
 
@@ -42,7 +47,7 @@ const PanelLayout = () => {
               <AdminThemeToggle />
             </header>
             <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-              <Outlet />
+              {Page ? <Page /> : <Outlet />}
             </main>
           </div>
           {roleData?.role === "admin_master" && <AdminAssistant />}

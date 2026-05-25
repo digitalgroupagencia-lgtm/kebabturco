@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Duplicados que a Lovable recria ao sincronizar — nunca commitar
+src/pages/panel/
+src/pages/admin/
+src/pages/seller/
