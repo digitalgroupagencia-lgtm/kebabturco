@@ -81,8 +81,9 @@ function NavItem({
         <NavLink
           to={item.url}
           end={item.end}
-          className="hover:bg-muted/50"
-          activeClassName="bg-primary/10 text-primary font-semibold"
+          className={({ isActive }) =>
+            cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
+          }
           onClick={onNav}
         >
           <item.icon className="mr-2 h-4 w-4 shrink-0" />
