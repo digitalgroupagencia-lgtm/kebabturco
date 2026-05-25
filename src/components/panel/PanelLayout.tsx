@@ -10,6 +10,7 @@ import AdminAssistant from "@/components/admin/AdminAssistant";
 import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
+import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 
 type Props = {
   page?: ComponentType<object>;
@@ -48,6 +49,7 @@ const PanelLayout = ({ page: Page }: Props) => {
               <AdminThemeToggle />
             </header>
             <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+              <OperationalDiagnosticsBanner area="panel" />
               <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
             </main>
           </div>

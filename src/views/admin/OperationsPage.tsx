@@ -11,6 +11,8 @@ import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { fetchStoreFinancialProfile } from "@/services/orderService";
+import { stripeAdminConfigIssue } from "@/lib/paymentPolicy";
+import { nav } from "@/lib/navPaths";
 
 type Ops = Tables<"operations_settings">;
 
@@ -71,6 +73,9 @@ const OperationsPage = () => {
 
   if (!s) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
+  const stripePublishableKey = Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  const stripeIssue = stripeAdminConfigIssue(onlineReady, stripePublishableKey);
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -80,6 +85,16 @@ const OperationsPage = () => {
         </div>
         <Button onClick={save} disabled={saving} className="w-full sm:w-auto"><Save className="w-4 h-4 mr-2" /> {saving ? "Guardando..." : "Guardar"}</Button>
       </div>
+
+      {stripeIssue && (
+        <div className="rounded-xl border-2 border-destructive/40 bg-destructive/5 p-4 space-y-2">
+          <p className="font-bold text-sm text-destructive">{stripeIssue.message}</p>
+          <p className="text-xs text-muted-foreground">{stripeIssue.action}</p>
+          <Button asChild variant="outline" size="sm" className="h-9">
+            <Link to={nav.admin("diagnostics")}>Abrir Estado do sistema</Link>
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
+import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 import { nav } from "@/lib/navPaths.ts";
 
 type Props = {
@@ -57,6 +58,7 @@ const AdminLayout = ({ page: Page }: Props) => {
           </header>
           <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
             <div className="max-w-full mx-auto">
+              <OperationalDiagnosticsBanner area="admin" />
               <LovableRouteHintBanner />
               {Page ? <Page /> : <Outlet />}
             </div>

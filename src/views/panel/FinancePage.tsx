@@ -13,6 +13,8 @@ import {
 } from "@/services/orderService";
 import { PLATFORM_FEE_EUR, estimateProcessingFeeEur } from "@/lib/processingFee";
 import { Loader2, Wallet, ArrowDownLeft, Building2, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { nav } from "@/lib/navPaths";
 
 type LedgerRow = {
   id: string;
@@ -120,6 +122,9 @@ const FinancePage = () => {
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
           O sistema gere pagamentos e repasses. Taxa por pedido online: {PLATFORM_FEE_EUR.toFixed(2)}€ + custo de processamento (ex. 20€ ≈ {exampleFee.toFixed(2)}€ total).
         </p>
+        <Link to={nav.admin("diagnostics")} className="text-xs text-primary font-semibold underline mt-2 inline-block">
+          Ver Estado do sistema (pagamentos e webhook)
+        </Link>
       </div>
 
       <div className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-5 text-primary-foreground shadow-lg">

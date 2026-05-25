@@ -84,7 +84,31 @@ export function shouldPrintAfterCheckout(
 }
 
 export function stripeConfigIssue(stripeReady: boolean, hasPublishableKey: boolean): string | null {
-  if (!hasPublishableKey) return "Chave pública Stripe em falta no site — contacte o suporte.";
-  if (!stripeReady) return "Pagamentos online ainda não activos — complete os dados bancários em Recebimentos.";
+  if (!hasPublishableKey) {
+    return "Pagamento com cartão indisponível — peça ao administrador para configurar a Stripe no site.";
+  }
+  if (!stripeReady) {
+    return "Pagamentos online ainda não activos — complete os dados bancários em Recebimentos.";
+  }
+  return null;
+}
+
+/** Mensagem para o painel admin (mais detalhada). */
+export function stripeAdminConfigIssue(
+  stripeReady: boolean,
+  hasPublishableKey: boolean,
+): { message: string; action: string } | null {
+  if (!hasPublishableKey) {
+    return {
+      message: "Chave pública da Stripe em falta no site publicado.",
+      action: "Lovable → Variáveis → VITE_STRIPE_PUBLISHABLE_KEY → Sync + Publish. Ver também Estado do sistema.",
+    };
+  }
+  if (!stripeReady) {
+    return {
+      message: "Conta Stripe do restaurante incompleta.",
+      action: "Admin → Recebimentos → Completar dados bancários.",
+    };
+  }
   return null;
 }

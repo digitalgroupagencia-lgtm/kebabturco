@@ -1,9 +1,11 @@
 import { useEffect, type ElementType } from "react";
+import { Link } from "react-router-dom";
 import { Activity, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { APP_BUILD_ID } from "@/lib/appCacheBust";
 import { useOperationalDiagnostics, type DiagnosticStatus } from "@/features/ops/useOperationalDiagnostics";
+import { nav } from "@/lib/navPaths";
 
 function formatBuildStamp(id: string) {
   const n = Number(id);
@@ -47,11 +49,14 @@ const statusStyle: Record<
 };
 
 const DiagnosticsPage = () => {
-  const { items, running, lastRun, run } = useOperationalDiagnostics();
+  const { items, running, lastRun, run, failCount, warnCount } = useOperationalDiagnostics();
 
   useEffect(() => {
     void run();
   }, [run]);
+
+  const critical = items.filter((i) => i.critical && i.status === "fail");
+  const optional = items.filter((i) => i.id === "push" || i.id === "lovable-maps");
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -59,17 +64,17 @@ const DiagnosticsPage = () => {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
-            Diagnóstico operacional
+            Estado do sistema
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Sete luzes — inclui se esta página está na mesma versão que o servidor publicou.
+            Verificação automática — pagamentos, mesas, impressão e versão publicada.
           </p>
           {lastRun && (
             <p className="text-xs text-muted-foreground mt-2">
               Última verificação:{" "}
               {lastRun.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               {" · "}
-              Versão desta página: {formatBuildStamp(APP_BUILD_ID)}
+              Versão: {formatBuildStamp(APP_BUILD_ID)}
             </p>
           )}
         </div>
@@ -79,9 +84,31 @@ const DiagnosticsPage = () => {
         </Button>
       </div>
 
+      {(failCount > 0 || warnCount > 0) && (
+        <div
+          className={`rounded-xl border-2 p-4 ${
+            failCount > 0 ? "border-destructive/50 bg-destructive/5" : "border-amber-500/50 bg-amber-500/5"
+          }`}
+        >
+          <p className="font-black text-base">
+            {failCount > 0
+              ? `${failCount} problema(s) — corrija antes de confiar em pagamentos online`
+              : `${warnCount} aviso(s) — reveja quando puder`}
+          </p>
+          {critical.length > 0 && (
+            <ul className="mt-2 space-y-1 text-sm">
+              {critical.slice(0, 3).map((c) => (
+                <li key={c.id}>• {c.label}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <div className="space-y-3">
-        {(items.length ? items : [{ id: "loading", label: "A verificar…", status: "pending" as const, detail: "" }]).map(
-          (item) => {
+        {items
+          .filter((i) => !optional.some((o) => o.id === i.id))
+          .map((item) => {
             const style = statusStyle[item.status];
             const Icon = style.icon;
             return (
@@ -98,31 +125,57 @@ const DiagnosticsPage = () => {
                       </span>
                     </div>
                     {item.detail && <p className="text-sm text-muted-foreground mt-1">{item.detail}</p>}
+                    {item.action && (
+                      <p className="text-sm font-semibold mt-2 text-foreground/90">O que fazer: {item.action}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             );
-          },
-        )}
+          })}
       </div>
 
-      <p className="text-xs text-muted-foreground border-t pt-4">
-        Objectivo pós-estabilização: todas as luzes verdes excepto Push (opcional). Se algo falhar, corrigir antes de
-        activar novas funcionalidades premium.
-      </p>
+      {optional.length > 0 && (
+        <>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground pt-2">Informação</p>
+          <div className="space-y-3">
+            {optional.map((item) => {
+              const style = statusStyle[item.status];
+              const Icon = style.icon;
+              return (
+                <Card key={item.id} className={`border ${style.ring}`}>
+                  <CardContent className="p-4 flex gap-3">
+                    <Icon className={`h-5 w-5 shrink-0 ${style.badge}`} />
+                    <div>
+                      <p className="font-bold text-sm">{item.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.detail}</p>
+                      {item.action && <p className="text-xs font-semibold mt-1">{item.action}</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2">
-        <p className="text-sm font-bold text-amber-800 dark:text-amber-200">Segurança (scanner Lovable)</p>
-        <p className="text-xs text-muted-foreground">
-          Avisos laranja do scanner — revisão manual sem afectar operação diária. Correr{" "}
-          <code className="text-[10px]">supabase/diagnostics/phase0_security_audit.sql</code> no SQL Editor.
+      <div className="rounded-xl border bg-card p-4 space-y-2 text-sm">
+        <p className="font-bold">Fluxo ideal para si</p>
+        <ol className="list-decimal pl-5 space-y-1 text-muted-foreground text-xs">
+          <li>Eu envio alterações para o GitHub (automático).</li>
+          <li>Você faz <strong>Sync + Publish</strong> na Lovable.</li>
+          <li>Volta aqui e clique <strong>Verificar</strong> — todas as luzes verdes = pronto para operar.</li>
+        </ol>
+        <p className="text-xs text-muted-foreground pt-1">
+          Pagamentos e mesas:{" "}
+          <Link to={nav.admin("finance")} className="text-primary underline font-semibold">
+            Recebimentos
+          </Link>
+          {" · "}
+          <Link to={nav.panel("tables")} className="text-primary underline font-semibold">
+            Mesas
+          </Link>
         </p>
-        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li>Telefones clientes (customers) — RLS por tenant; fases 1–2 SQL</li>
-          <li>Chaves push (push_subscriptions) — só staff autenticado; fase 3 SQL</li>
-          <li>Stripe Connect — rotas autenticadas; sem exposição anon</li>
-          <li>Campos pedido públicos — get_order_public limita o que o cliente vê; fase 8 OK</li>
-        </ul>
       </div>
     </div>
   );
