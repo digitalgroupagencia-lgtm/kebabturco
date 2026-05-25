@@ -1,4 +1,5 @@
-import type { Tables } from "@/integrations/supabase/types";
+import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
+import { supabase } from "@/integrations/supabase/client";
 import type { TicketOrder } from "@/services/escPosTicketBuilder";
 import { fetchPrinterConfig, printOrder } from "@/services/printerService";
 
@@ -47,13 +48,19 @@ export function panelOrderToTicket(
   };
 }
 
-/** Imprime na cozinha se a impressora estiver activa (não bloqueia UI). */
+/** Imprime na cozinha se elegível e ainda não impresso (uma vez por pedido). */
 export async function tryPrintPanelOrder(
   storeId: string,
   order: PanelOrder,
   items: OrderItem[],
 ) {
   try {
+    if (!orderReadyForKitchen(order)) return;
+    if (order.kitchen_printed_at) return;
+    const { data: claimed, error: claimErr } = await supabase.rpc("claim_kitchen_print", {
+      _order_id: order.id,
+    });
+    if (claimErr || !claimed) return;
     const cfg = await fetchPrinterConfig(storeId);
     if (!cfg.enabled) return;
     await printOrder(storeId, panelOrderToTicket(order, items), order.id);

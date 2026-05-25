@@ -46,8 +46,8 @@ const SettingsPage = () => {
   useEffect(() => {
     if (!settings) return;
     setPlatformName(settings.platform_name);
-    setDisplayName((settings as { display_name?: string }).display_name || settings.platform_name || "SnapOrder Platform");
-    setShortName((settings as { short_name?: string }).short_name || "SnapOrder");
+    setDisplayName((settings as { display_name?: string }).display_name || settings.platform_name || "Kebab Turco");
+    setShortName((settings as { short_name?: string }).short_name || "Kebab Turco");
     setMetaDescription((settings as { meta_description?: string }).meta_description || "");
     setSupportEmail(settings.support_email);
     setDefaultLanguage(settings.default_language);
@@ -112,8 +112,8 @@ const SettingsPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div><Label>Nome da plataforma (interno)</Label><Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} /></div>
-              <div><Label>Título no browser</Label><Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="SnapOrder Platform" /></div>
-              <div><Label>Nome curto (telemóvel)</Label><Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="SnapOrder" /></div>
+              <div><Label>Título no browser</Label><Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Kebab Turco" /></div>
+              <div><Label>Nome curto (telemóvel)</Label><Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="Kebab Turco" /></div>
               <div><Label>Descrição pública</Label><Input value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="Gestão white-label de restaurantes" /></div>
               <div><Label>E-mail de suporte</Label><Input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} /></div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

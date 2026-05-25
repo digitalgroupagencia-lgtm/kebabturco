@@ -24,7 +24,7 @@ const columns: OrderStatus[] = ["pending", "preparing", "ready", "out_for_delive
 
 const OrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
-  const { orders, itemsByOrder, loading, connectionStatus, updateStatus, cancelOrder, setPrepMinutes, refresh } =
+  const { orders, itemsByOrder, loading, connectionStatus, updateStatus, cancelOrder, setPrepMinutes, markOrderPaid, refresh } =
     usePanelOrders(storeId);
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
@@ -109,6 +109,7 @@ const OrdersPage = () => {
             onAdvance={handleAdvance}
             onCancel={cancelOrder}
             onSetPrepMinutes={setPrepMinutes}
+            onMarkPaid={markOrderPaid}
           />
         ))}
         {mobileOrders.length === 0 && (
@@ -140,6 +141,7 @@ const OrdersPage = () => {
                     onAdvance={handleAdvance}
                     onCancel={cancelOrder}
                     onSetPrepMinutes={setPrepMinutes}
+                    onMarkPaid={markOrderPaid}
                   />
                 ))}
                 {columnOrders.length === 0 && (

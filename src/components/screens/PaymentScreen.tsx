@@ -315,6 +315,7 @@ const PaymentScreen = () => {
     if (printOk) {
       await invokePrintOrder(buildPrintPayload({
         storeId,
+        orderId: result.order_id,
         orderNumber: result.order_number,
         orderType: orderTypeDb,
         tableNumber: mesaValidated ? tableNumber.trim() || null : null,
@@ -483,6 +484,7 @@ const PaymentScreen = () => {
 
                   await invokePrintOrder(buildPrintPayload({
                     storeId,
+                    orderId: result.order_id,
                     orderNumber: result.order_number,
                     orderType: orderTypeDb,
                     tableNumber: mesaValidated ? tableNumber.trim() || null : null,

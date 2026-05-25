@@ -79,8 +79,8 @@ export function brandingFromPlatform(row: PlatformRow | null | undefined): SiteB
   const logo = row.logo_url || null;
   return {
     scope: "platform",
-    displayName: row.display_name || row.platform_name || "SnapOrder Platform",
-    shortName: row.short_name || row.platform_name || "SnapOrder",
+    displayName: row.display_name || row.platform_name || APP_NAME,
+    shortName: row.short_name || row.platform_name || APP_NAME,
     metaDescription: row.meta_description || SNAPORDER_NEUTRAL_BRANDING.metaDescription,
     themeColor: row.theme_color || row.primary_color || "#CC0000",
     backgroundColor: row.background_color || "#ffffff",

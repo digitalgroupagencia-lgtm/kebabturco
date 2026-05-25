@@ -10,6 +10,8 @@ import {
   stopPendingOrderAlertLoop,
   syncPendingOrderAlertLoop,
 } from "@/lib/panelAlerts";
+import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
+import { markOrderPaidAtCounter } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 
@@ -57,14 +59,16 @@ export function usePanelOrders(storeId: string | undefined) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const notifyNewPending = useCallback(
-    async (row: PanelOrder, items: OrderItem[]) => {
+    async (row: PanelOrder, items: OrderItem[], withPrint = true) => {
       if (!storeId) return;
       const sound = playNewOrderAlert();
       toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
       if (!sound && !isPanelAlertsEnabled()) {
         toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
       }
-      void tryPrintPanelOrder(storeId, row, items);
+      if (withPrint && orderReadyForKitchen(row)) {
+        void tryPrintPanelOrder(storeId, row, items);
+      }
     },
     [storeId],
   );
@@ -88,7 +92,7 @@ export function usePanelOrders(storeId: string | undefined) {
             knownPendingRef.current.add(o.id);
             const items = await fetchItemsForOrders([o.id]);
             setItemsByOrder((prev) => ({ ...prev, ...items }));
-            void notifyNewPending(o as PanelOrder, items[o.id] || []);
+            void notifyNewPending(o as PanelOrder, items[o.id] || [], orderReadyForKitchen(o as PanelOrder));
           }
         }
       }
@@ -166,7 +170,7 @@ export function usePanelOrders(storeId: string | undefined) {
 
             if (initializedRef.current && row.status === "pending" && !knownPendingRef.current.has(row.id)) {
               knownPendingRef.current.add(row.id);
-              void notifyNewPending(row, items[row.id] || []);
+              void notifyNewPending(row, items[row.id] || [], orderReadyForKitchen(row));
             }
           },
         )
@@ -175,7 +179,19 @@ export function usePanelOrders(storeId: string | undefined) {
           { event: "UPDATE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
           (payload) => {
             const row = payload.new as PanelOrder;
+            const old = payload.old as PanelOrder;
             setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
+            if (
+              old?.payment_status !== "paid" &&
+              row.payment_status === "paid" &&
+              orderReadyForKitchen(row) &&
+              !row.kitchen_printed_at
+            ) {
+              void (async () => {
+                const items = itemsByOrder[row.id] || (await fetchItemsForOrders([row.id]))[row.id] || [];
+                void tryPrintPanelOrder(storeId!, row, items);
+              })();
+            }
           },
         )
         .on(
@@ -304,6 +320,31 @@ export function usePanelOrders(storeId: string | undefined) {
     await supabase.from("orders").update({ estimated_ready_at: iso }).eq("id", order.id);
   }, []);
 
+  const markOrderPaid = useCallback(
+    async (order: PanelOrder, method: "cash" | "card" = "cash") => {
+      if (updatingRef.current.has(order.id)) return false;
+      updatingRef.current.add(order.id);
+      try {
+        await markOrderPaidAtCounter(order.id, method);
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === order.id ? { ...o, payment_status: "paid" as const, payment_method: method } : o,
+          ),
+        );
+        const items = itemsByOrder[order.id] || [];
+        void tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid" }, items);
+        toast.success(`Pagamento registado — #${order.order_number}`);
+        return true;
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");
+        return false;
+      } finally {
+        updatingRef.current.delete(order.id);
+      }
+    },
+    [storeId, itemsByOrder],
+  );
+
   return {
     orders,
     itemsByOrder,
@@ -312,6 +353,7 @@ export function usePanelOrders(storeId: string | undefined) {
     updateStatus,
     cancelOrder,
     setPrepMinutes,
+    markOrderPaid,
     refresh: fetchOrders,
   };
 }

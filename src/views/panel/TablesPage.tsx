@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Loader2, QrCode, Printer, LayoutGrid } from "lucide-react";
+import { Plus, Loader2, QrCode, Printer, LayoutGrid, Copy, Download, RefreshCw } from "lucide-react";
 import { getTableQrUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
+import { regenerateTableQrToken } from "@/services/orderService";
 
 type TableRow = {
   id: string;
@@ -21,15 +22,21 @@ type TableRow = {
   qr_token: string;
 };
 
+function tableQrUrl(tenantMeta: TenantUrlConfig, table: TableRow) {
+  return getTableQrUrl(tenantMeta, { number: table.number, qr_token: table.qr_token });
+}
+
 const TablesPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { tenant: ctxTenant } = useSelectedTenant();
   const [tables, setTables] = useState<TableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [newNumber, setNewNumber] = useState("");
   const [newCapacity, setNewCapacity] = useState("4");
   const [qrTable, setQrTable] = useState<TableRow | null>(null);
+  const qrSvgRef = useRef<SVGSVGElement>(null);
   const [tenantMeta, setTenantMeta] = useState<TenantUrlConfig>({
     slug: "",
     custom_domain: null,
@@ -108,12 +115,66 @@ const TablesPage = () => {
     else load();
   };
 
+  const copyLink = async (table: TableRow) => {
+    const url = tableQrUrl(tenantMeta, table);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(`Link da mesa ${table.number} copiado`);
+    } catch {
+      toast.error("Não foi possível copiar o link");
+    }
+  };
+
+  const downloadQrPng = (table: TableRow, svgEl?: SVGSVGElement | null) => {
+    const svg = svgEl ?? qrSvgRef.current;
+    if (!svg) return;
+    const data = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const img = new Image();
+    const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    img.onload = () => {
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 512, 512);
+      ctx.drawImage(img, 0, 0, 512, 512);
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) return;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(pngBlob);
+        a.download = `kebab-turco-mesa-${table.number}-qr.png`;
+        a.click();
+        URL.revokeObjectURL(objectUrl);
+      }, "image/png");
+    };
+    img.src = objectUrl;
+  };
+
+  const regenerateQr = async (table: TableRow) => {
+    if (!window.confirm(`Regenerar QR da mesa ${table.number}? Os códigos antigos deixam de funcionar.`)) return;
+    setRegeneratingId(table.id);
+    try {
+      const newToken = await regenerateTableQrToken(table.id);
+      const updated = { ...table, qr_token: newToken };
+      setTables((prev) => prev.map((t) => (t.id === table.id ? updated : t)));
+      if (qrTable?.id === table.id) setQrTable(updated);
+      toast.success(`Novo QR gerado para a mesa ${table.number}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao regenerar QR");
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
+
   const printQr = () => {
     if (!qrTable) return;
-    const url = getTableQrUrl(tenantMeta, { number: qrTable.number, qr_token: qrTable.qr_token });
+    const url = tableQrUrl(tenantMeta, qrTable);
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(`<html><head><title>Mesa ${qrTable.number}</title></head><body style="text-align:center;font-family:sans-serif;padding:40px"><h1>Mesa ${qrTable.number}</h1><div id="q"></div><p style="word-break:break-all;font-size:12px;margin-top:16px">${url}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("q"),{text:${JSON.stringify(url)},width:256,height:256});setTimeout(()=>window.print(),500);<\/script></body></html>`);
+    w.document.write(`<html><head><title>Mesa ${qrTable.number} — Kebab Turco</title></head><body style="text-align:center;font-family:sans-serif;padding:40px"><h1>Kebab Turco</h1><h2>Mesa ${qrTable.number}</h2><p>Escaneie para pedir na mesa</p><div id="q"></div><p style="word-break:break-all;font-size:12px;margin-top:16px">${url}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("q"),{text:${JSON.stringify(url)},width:256,height:256});setTimeout(()=>window.print(),500);<\/script></body></html>`);
     w.document.close();
   };
 
@@ -129,7 +190,9 @@ const TablesPage = () => {
     <div className="space-y-6 p-4 sm:p-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><LayoutGrid className="h-6 w-6 text-primary" /> Gestão de mesas</h1>
-        <p className="text-sm text-muted-foreground mt-1">Adicione mesas, active/desactive e imprima o QR code de cada uma.</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Crie mesas, gere QR codes definitivos e imprima para cada mesa. Cada QR abre o Kebab Turco já na mesa correcta.
+        </p>
       </div>
 
       <Card className="p-4 space-y-3">
@@ -154,7 +217,7 @@ const TablesPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tables.map((t) => {
-          const qrUrl = getTableQrUrl(tenantMeta, { number: t.number, qr_token: t.qr_token });
+          const qrUrl = tableQrUrl(tenantMeta, t);
           return (
             <Card key={t.id} className={`p-4 space-y-3 ${!t.is_active ? "opacity-60" : ""}`}>
               <div className="flex items-center justify-between">
@@ -162,9 +225,21 @@ const TablesPage = () => {
                 <Switch checked={t.is_active} onCheckedChange={(v) => toggleActive(t, v)} />
               </div>
               <p className="text-sm text-muted-foreground">{t.capacity} lugares · {t.is_active ? "Activa" : "Inactiva"}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => setQrTable(t)}>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="flex-1 gap-1 min-w-[100px]" onClick={() => setQrTable(t)}>
                   <QrCode className="h-4 w-4" /> Ver QR
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(t)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  disabled={regeneratingId === t.id}
+                  onClick={() => regenerateQr(t)}
+                >
+                  {regeneratingId === t.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground break-all">{qrUrl}</p>
@@ -184,11 +259,39 @@ const TablesPage = () => {
           </DialogHeader>
           {qrTable && (
             <div className="flex flex-col items-center gap-4">
-              <QRCodeSVG value={getTableQrUrl(tenantMeta, { number: qrTable.number, qr_token: qrTable.qr_token })} size={220} />
+              <QRCodeSVG
+                ref={qrSvgRef}
+                value={tableQrUrl(tenantMeta, qrTable)}
+                size={220}
+                includeMargin
+              />
               <p className="text-xs text-muted-foreground text-center break-all">
-                {getTableQrUrl(tenantMeta, { number: qrTable.number, qr_token: qrTable.qr_token })}
+                {tableQrUrl(tenantMeta, qrTable)}
               </p>
-              <Button onClick={printQr} className="w-full gap-2"><Printer className="h-4 w-4" /> Imprimir QR</Button>
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button variant="outline" onClick={() => copyLink(qrTable)} className="gap-2">
+                  <Copy className="h-4 w-4" /> Copiar link
+                </Button>
+                <Button variant="outline" onClick={() => downloadQrPng(qrTable)} className="gap-2">
+                  <Download className="h-4 w-4" /> Baixar PNG
+                </Button>
+                <Button onClick={printQr} className="col-span-2 gap-2">
+                  <Printer className="h-4 w-4" /> Imprimir QR
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="col-span-2 gap-2"
+                  disabled={regeneratingId === qrTable.id}
+                  onClick={() => regenerateQr(qrTable)}
+                >
+                  {regeneratingId === qrTable.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Regenerar QR (invalida o anterior)
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

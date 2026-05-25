@@ -18,6 +18,7 @@ interface ItemLine {
 
 interface Payload {
   storeId: string;
+  orderId?: string;
   orderNumber: string;
   customerName?: string | null;
   customerPhone?: string | null;
@@ -149,15 +150,34 @@ Deno.serve(async (req) => {
     // Bloqueia abuso anónimo (SSRF, spam de impressão).
     const { data: recentOrder } = await supabase
       .from("orders")
-      .select("id, created_at")
+      .select("id, created_at, payment_status, order_type, table_validated, kitchen_printed_at")
       .eq("store_id", payload.storeId)
       .eq("order_number", payload.orderNumber)
-      .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .maybeSingle();
 
     if (!recentOrder) {
       return new Response(JSON.stringify({ error: "Pedido não encontrado ou expirado" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const orderId = payload.orderId || recentOrder.id;
+
+    const readyForKitchen =
+      recentOrder.payment_status === "paid" ||
+      (recentOrder.order_type === "dine_in" && recentOrder.table_validated === true);
+
+    if (!readyForKitchen) {
+      return new Response(JSON.stringify({ skipped: true, reason: "awaiting_payment" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: claimed } = await supabase.rpc("claim_kitchen_print", { _order_id: orderId });
+    if (!claimed) {
+      return new Response(JSON.stringify({ skipped: true, reason: "already_printed" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

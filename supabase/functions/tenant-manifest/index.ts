@@ -11,9 +11,9 @@ const PLATFORM_HOSTS = new Set([
 ]);
 
 const SNAPORDER_MANIFEST = {
-  name: "SnapOrder",
-  short_name: "SnapOrder",
-  description: "Gestão white-label de restaurantes",
+  name: "Kebab Turco",
+  short_name: "Kebab Turco",
+  description: "Peça online no Kebab Turco",
   lang: "pt",
   start_url: "/",
   scope: "/",

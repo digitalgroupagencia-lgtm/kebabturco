@@ -180,6 +180,24 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
   return data as CreateCustomerOrderResult;
 }
 
+export async function markOrderPaidAtCounter(orderId: string, paymentMethod: "cash" | "card" = "cash") {
+  const { data, error } = await supabase.rpc("mark_order_paid_at_counter", {
+    _order_id: orderId,
+    _payment_method: paymentMethod,
+  });
+  if (error) throw error;
+  if (data && typeof data === "object" && (data as { error?: string }).error) {
+    throw new Error((data as { error: string }).error);
+  }
+  return data as { success: boolean; order_id?: string; order_number?: string };
+}
+
+export async function regenerateTableQrToken(tableId: string) {
+  const { data, error } = await supabase.rpc("regenerate_table_qr_token", { _table_id: tableId });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function verifyStripePaymentIntent(params: {
   storeId: string;
   paymentIntentId: string;
@@ -245,6 +263,7 @@ export async function createStripeConnectLink(storeId: string, returnUrl: string
 
 export function buildPrintPayload(opts: {
   storeId: string;
+  orderId?: string | null;
   orderNumber: string;
   orderType: string;
   tableNumber?: string | null;
@@ -269,6 +288,7 @@ export function buildPrintPayload(opts: {
 
   return {
     storeId: opts.storeId,
+    orderId: opts.orderId || null,
     orderNumber: opts.orderNumber,
     tableNumber: opts.tableNumber || null,
     customerName: opts.customerName || null,

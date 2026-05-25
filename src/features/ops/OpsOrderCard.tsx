@@ -50,15 +50,17 @@ interface OpsOrderCardProps {
   onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void>;
   onCancel: (orderId: string) => void;
   onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
+  onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void>;
 }
 
-const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: OpsOrderCardProps) => {
+const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes, onMarkPaid }: OpsOrderCardProps) => {
   const modality = getOrderModalityBanner(order);
   const payment = getPanelPaymentBadge(order);
   const next = getNextAction(order.status, order.order_type);
   const cardClass = statusCardClass[order.status] || "border-border";
   const [prepMin, setPrepMin] = useState(12);
   const [advancing, setAdvancing] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   const etaLabel = order.estimated_ready_at
     ? new Date(order.estimated_ready_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
@@ -150,6 +152,48 @@ const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes }: O
                   {m}m
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {order.payment_status === "pending" && onMarkPaid && (
+          <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-2.5 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-yellow-800 dark:text-yellow-200">
+              Pagamento pendente — caixa
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="flex-1 h-11 font-bold touch-action-manipulation"
+                disabled={markingPaid}
+                onClick={async () => {
+                  setMarkingPaid(true);
+                  try {
+                    await onMarkPaid(order, "cash");
+                  } finally {
+                    setMarkingPaid(false);
+                  }
+                }}
+              >
+                Dinheiro recebido
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="flex-1 h-11 font-bold touch-action-manipulation"
+                disabled={markingPaid}
+                onClick={async () => {
+                  setMarkingPaid(true);
+                  try {
+                    await onMarkPaid(order, "card");
+                  } finally {
+                    setMarkingPaid(false);
+                  }
+                }}
+              >
+                Cartão presencial
+              </Button>
             </div>
           </div>
         )}
