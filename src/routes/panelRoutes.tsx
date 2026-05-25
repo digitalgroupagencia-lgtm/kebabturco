@@ -2,6 +2,7 @@ import { useRoutes } from "react-router-dom";
 import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import Dashboard from "@/pages/panel/Dashboard.tsx";
 import MenuPage from "@/pages/panel/MenuPage.tsx";
+import ModifierGroupsPage from "@/pages/panel/ModifierGroupsPage.tsx";
 import OrdersPage from "@/pages/panel/OrdersPage.tsx";
 import CashierPage from "@/pages/panel/CashierPage.tsx";
 import StockPage from "@/pages/panel/StockPage.tsx";
@@ -34,6 +35,7 @@ const panelRouteTree = [
       { index: true, element: <OrdersPage /> },
       { path: "dashboard", element: <Dashboard /> },
       { path: "menu", element: <MenuPage /> },
+      { path: "modifiers", element: <ModifierGroupsPage /> },
       { path: "orders", element: <OrdersPage /> },
       { path: "table-map", element: <TableMapPage /> },
       { path: "cashier", element: <CashierPage /> },

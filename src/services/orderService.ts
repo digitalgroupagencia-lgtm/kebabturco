@@ -68,6 +68,8 @@ export function cartItemsToRpcPayload(items: CartItem[]) {
     })),
     removed: i.removedIngredients,
     notes: i.note || null,
+    selections: i.selections || [],
+    configuration: i.configuration || null,
   }));
 }
 

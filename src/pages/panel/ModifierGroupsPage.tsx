@@ -1,0 +1,420 @@
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical } from "lucide-react";
+import type { ModifierGroupKind, SelectionMode } from "@/lib/modifiers/types";
+
+type GroupRow = {
+  id: string;
+  name: Record<string, string>;
+  description: Record<string, string>;
+  group_kind: ModifierGroupKind;
+  selection_mode: SelectionMode;
+  min_select: number;
+  max_select: number;
+  is_required: boolean;
+  is_active: boolean;
+  sort_order: number;
+};
+
+type OptionRow = {
+  id: string;
+  group_id: string;
+  name: Record<string, string>;
+  price_delta: number;
+  max_qty: number;
+  is_default: boolean;
+  sort_order: number;
+};
+
+const emptyGroup = (): Partial<GroupRow> => ({
+  name: { pt: "", es: "", en: "" },
+  description: { pt: "", es: "" },
+  group_kind: "choice",
+  selection_mode: "single",
+  min_select: 0,
+  max_select: 1,
+  is_required: false,
+  is_active: true,
+});
+
+export default function ModifierGroupsPage() {
+  const { storeId, loading: loadingStore } = useAdminStoreId();
+  const [groups, setGroups] = useState<GroupRow[]>([]);
+  const [options, setOptions] = useState<OptionRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [groupDialog, setGroupDialog] = useState(false);
+  const [optionDialog, setOptionDialog] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Partial<GroupRow> | null>(null);
+  const [editingOption, setEditingOption] = useState<Partial<OptionRow> | null>(null);
+
+  const fetchAll = useCallback(async () => {
+    if (!storeId) return;
+    setLoading(true);
+    const { data: gData } = await supabase
+      .from("modifier_groups")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("sort_order");
+    const gs = (gData || []) as GroupRow[];
+    setGroups(gs);
+    if (gs.length && !selectedGroupId) setSelectedGroupId(gs[0].id);
+
+    const ids = gs.map((g) => g.id);
+    if (ids.length) {
+      const { data: oData } = await supabase
+        .from("modifier_options")
+        .select("*")
+        .in("group_id", ids)
+        .order("sort_order");
+      setOptions((oData || []) as OptionRow[]);
+    } else {
+      setOptions([]);
+    }
+    setLoading(false);
+  }, [storeId, selectedGroupId]);
+
+  useEffect(() => {
+    if (storeId) fetchAll();
+  }, [storeId, fetchAll]);
+
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+  const groupOptions = options.filter((o) => o.group_id === selectedGroupId);
+
+  const openGroup = (g?: GroupRow) => {
+    setEditingGroup(g ? { ...g } : emptyGroup());
+    setGroupDialog(true);
+  };
+
+  const saveGroup = async () => {
+    if (!storeId || !editingGroup) return;
+    const namePt = editingGroup.name?.pt?.trim() || editingGroup.name?.es?.trim();
+    if (!namePt) {
+      toast.error("Nome do grupo é obrigatório");
+      return;
+    }
+    const payload = {
+      store_id: storeId,
+      name: editingGroup.name,
+      description: editingGroup.description || {},
+      group_kind: editingGroup.group_kind || "choice",
+      selection_mode: editingGroup.selection_mode || "single",
+      min_select: editingGroup.min_select ?? 0,
+      max_select: editingGroup.max_select ?? 1,
+      is_required: editingGroup.is_required ?? false,
+      is_active: editingGroup.is_active ?? true,
+      sort_order: editingGroup.sort_order ?? groups.length,
+    };
+    if (editingGroup.id) {
+      const { error } = await supabase.from("modifier_groups").update(payload).eq("id", editingGroup.id);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const { error } = await supabase.from("modifier_groups").insert(payload);
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success("Grupo guardado");
+    setGroupDialog(false);
+    fetchAll();
+  };
+
+  const deleteGroup = async (id: string) => {
+    if (!confirm("Apagar este grupo? Produtos ligados perdem a associação.")) return;
+    const { error } = await supabase.from("modifier_groups").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Grupo apagado");
+    if (selectedGroupId === id) setSelectedGroupId(null);
+    fetchAll();
+  };
+
+  const openOption = (o?: OptionRow) => {
+    if (!selectedGroupId) return;
+    setEditingOption(
+      o
+        ? { ...o }
+        : { group_id: selectedGroupId, name: { pt: "", es: "" }, price_delta: 0, max_qty: 1, sort_order: groupOptions.length },
+    );
+    setOptionDialog(true);
+  };
+
+  const saveOption = async () => {
+    if (!editingOption?.group_id) return;
+    const label = editingOption.name?.pt?.trim() || editingOption.name?.es?.trim();
+    if (!label) {
+      toast.error("Nome da opção é obrigatório");
+      return;
+    }
+    const payload = {
+      group_id: editingOption.group_id,
+      name: editingOption.name,
+      price_delta: Number(editingOption.price_delta || 0),
+      max_qty: Math.max(1, Number(editingOption.max_qty || 1)),
+      is_default: editingOption.is_default ?? false,
+      sort_order: editingOption.sort_order ?? groupOptions.length,
+      is_active: true,
+    };
+    if (editingOption.id) {
+      const { error } = await supabase.from("modifier_options").update(payload).eq("id", editingOption.id);
+      if (error) { toast.error(error.message); return; }
+    } else {
+      const { error } = await supabase.from("modifier_options").insert(payload);
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success("Opção guardada");
+    setOptionDialog(false);
+    fetchAll();
+  };
+
+  const deleteOption = async (id: string) => {
+    const { error } = await supabase.from("modifier_options").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    fetchAll();
+  };
+
+  if (loadingStore || loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black flex items-center gap-2">
+            <Layers className="w-7 h-7 text-primary" /> Personalização
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Grupos reutilizáveis: bebidas, carnes, extras, ingredientes removíveis…
+          </p>
+        </div>
+        <Button onClick={() => openGroup()} className="font-bold">
+          <Plus className="w-4 h-4 mr-1" /> Novo grupo
+        </Button>
+      </div>
+
+      <div className="grid lg:grid-cols-[280px_1fr] gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Grupos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 p-2">
+            {groups.length === 0 && (
+              <p className="text-sm text-muted-foreground p-3">Cria o primeiro grupo de escolhas.</p>
+            )}
+            {groups.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => setSelectedGroupId(g.id)}
+                className={`w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2 transition-colors ${
+                  selectedGroupId === g.id ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted/60"
+                }`}
+              >
+                <GripVertical className="w-4 h-4 opacity-40 shrink-0" />
+                <span className="truncate flex-1">{g.name?.pt || g.name?.es || "Grupo"}</span>
+                {g.is_required && (
+                  <span className="text-[9px] uppercase font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
+                    Obrig.
+                  </span>
+                )}
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">
+              {selectedGroup ? selectedGroup.name?.pt || selectedGroup.name?.es : "Seleciona um grupo"}
+            </CardTitle>
+            {selectedGroup && (
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" onClick={() => openGroup(selectedGroup)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => deleteGroup(selectedGroup.id)}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {selectedGroup && (
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-2 py-1 rounded-full bg-muted font-semibold">{selectedGroup.group_kind}</span>
+                <span className="px-2 py-1 rounded-full bg-muted font-semibold">{selectedGroup.selection_mode}</span>
+                {selectedGroup.is_required && (
+                  <span className="px-2 py-1 rounded-full bg-destructive/10 text-destructive font-semibold">Obrigatório</span>
+                )}
+              </div>
+            )}
+            <Button size="sm" disabled={!selectedGroupId} onClick={() => openOption()} className="font-bold">
+              <Plus className="w-4 h-4 mr-1" /> Nova opção
+            </Button>
+            <div className="space-y-2">
+              {groupOptions.map((o) => (
+                <div key={o.id} className="flex items-center gap-3 rounded-xl border px-3 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold truncate">{o.name?.pt || o.name?.es}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {o.price_delta > 0 ? `+${Number(o.price_delta).toFixed(2)} €` : "Sem custo extra"}
+                      {o.max_qty > 1 ? ` · máx. ${o.max_qty}` : ""}
+                    </p>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => openOption(o)}>
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteOption(o.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={groupDialog} onOpenChange={setGroupDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingGroup?.id ? "Editar grupo" : "Novo grupo"}</DialogTitle>
+          </DialogHeader>
+          {editingGroup && (
+            <div className="space-y-3">
+              <div>
+                <Label>Nome (PT)</Label>
+                <Input
+                  value={editingGroup.name?.pt || ""}
+                  onChange={(e) =>
+                    setEditingGroup({ ...editingGroup, name: { ...editingGroup.name, pt: e.target.value, es: editingGroup.name?.es || e.target.value } })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Nome (ES)</Label>
+                <Input
+                  value={editingGroup.name?.es || ""}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, name: { ...editingGroup.name, es: e.target.value } })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <Select
+                    value={editingGroup.group_kind || "choice"}
+                    onValueChange={(v) => setEditingGroup({ ...editingGroup, group_kind: v as ModifierGroupKind })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="choice">Escolha</SelectItem>
+                      <SelectItem value="extra">Extra</SelectItem>
+                      <SelectItem value="removal">Remover ingrediente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Modo</Label>
+                  <Select
+                    value={editingGroup.selection_mode || "single"}
+                    onValueChange={(v) => setEditingGroup({ ...editingGroup, selection_mode: v as SelectionMode })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">Única</SelectItem>
+                      <SelectItem value="multiple">Múltipla</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Mínimo</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={editingGroup.min_select ?? 0}
+                    onChange={(e) => setEditingGroup({ ...editingGroup, min_select: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label>Máximo</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={editingGroup.max_select ?? 1}
+                    onChange={(e) => setEditingGroup({ ...editingGroup, max_select: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={editingGroup.is_required ?? false}
+                  onCheckedChange={(c) => setEditingGroup({ ...editingGroup, is_required: c })}
+                />
+                <Label>Obrigatório</Label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={saveGroup} className="font-bold">Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={optionDialog} onOpenChange={setOptionDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingOption?.id ? "Editar opção" : "Nova opção"}</DialogTitle>
+          </DialogHeader>
+          {editingOption && (
+            <div className="space-y-3">
+              <div>
+                <Label>Nome (PT)</Label>
+                <Input
+                  value={editingOption.name?.pt || ""}
+                  onChange={(e) =>
+                    setEditingOption({ ...editingOption, name: { ...editingOption.name, pt: e.target.value, es: editingOption.name?.es || e.target.value } })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Preço extra (€)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={editingOption.price_delta ?? 0}
+                  onChange={(e) => setEditingOption({ ...editingOption, price_delta: Number(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label>Quantidade máxima</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={editingOption.max_qty ?? 1}
+                  onChange={(e) => setEditingOption({ ...editingOption, max_qty: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={saveOption} className="font-bold">Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

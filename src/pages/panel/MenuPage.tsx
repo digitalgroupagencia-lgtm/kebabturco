@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import ProductModifierEditor, { saveProductModifierLinks } from "@/components/panel/ProductModifierEditor";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
@@ -40,6 +41,9 @@ const MenuPage = () => {
   const [prodBestseller, setProdBestseller] = useState(false);
   const [prodPromo, setProdPromo] = useState(false);
   const [modifierLines, setModifierLines] = useState("");
+  const [prodType, setProdType] = useState<"simple" | "combo">("simple");
+  const [comboUnits, setComboUnits] = useState(1);
+  const [modifierLinks, setModifierLinks] = useState<{ group_id: string; sort_order: number; repeat_per_unit: boolean }[]>([]);
 
   useEffect(() => {
     if (storeId) {
@@ -158,6 +162,9 @@ const MenuPage = () => {
           return `${label}|${m.price ?? 0}`;
         }).join("\n"),
       );
+      const p = prod as Product & { product_type?: string; combo_unit_count?: number };
+      setProdType(p.product_type === "combo" ? "combo" : "simple");
+      setComboUnits(Math.max(1, p.combo_unit_count || 1));
     } else {
       setEditingProduct(null);
       setProdNamePt("");
@@ -168,6 +175,9 @@ const MenuPage = () => {
       setProdBestseller(false);
       setProdPromo(false);
       setModifierLines("");
+      setProdType("simple");
+      setComboUnits(1);
+      setModifierLinks([]);
     }
     setProdDialogOpen(true);
   };
@@ -202,6 +212,8 @@ const MenuPage = () => {
       is_bestseller: prodBestseller,
       is_promo: prodPromo,
       price_modifiers: priceModifiers as unknown as import("@/integrations/supabase/types").Json,
+      product_type: prodType,
+      combo_unit_count: prodType === "combo" ? comboUnits : 0,
     };
 
     if (editingProduct) {
@@ -210,10 +222,22 @@ const MenuPage = () => {
         .update(payload)
         .eq("id", editingProduct.id);
       if (error) { toast.error("Erro ao atualizar produto"); return; }
+      try {
+        await saveProductModifierLinks(editingProduct.id, modifierLinks);
+      } catch {
+        toast.error("Produto guardado, mas falhou ao ligar grupos");
+      }
       toast.success("Produto atualizado!");
     } else {
-      const { error } = await supabase.from("products").insert(payload);
+      const { data: inserted, error } = await supabase.from("products").insert(payload).select("id").single();
       if (error) { toast.error("Erro ao criar produto"); return; }
+      if (inserted?.id && modifierLinks.length) {
+        try {
+          await saveProductModifierLinks(inserted.id, modifierLinks);
+        } catch {
+          toast.error("Produto criado, mas falhou ao ligar grupos");
+        }
+      }
       toast.success("Produto criado!");
     }
 
@@ -397,8 +421,17 @@ const MenuPage = () => {
                       <Label>🏷️ Em promoção</Label>
                       <Switch checked={prodPromo} onCheckedChange={setProdPromo} />
                     </div>
+                    <ProductModifierEditor
+                      storeId={storeId!}
+                      productId={editingProduct?.id}
+                      productType={prodType}
+                      comboUnitCount={comboUnits}
+                      onProductTypeChange={setProdType}
+                      onComboUnitCountChange={setComboUnits}
+                      onLinksChange={setModifierLinks}
+                    />
                     <div>
-                      <Label>Extras / Modificadores (1 por linha: Nome|preço)</Label>
+                      <Label>Extras legado (1 por linha: Nome|preço)</Label>
                       <textarea
                         value={modifierLines}
                         onChange={(e) => setModifierLines(e.target.value)}
@@ -406,7 +439,7 @@ const MenuPage = () => {
                         rows={4}
                         className="w-full rounded-md border px-3 py-2 text-sm font-mono"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">Use &quot;Sin X&quot; ou &quot;Sem X&quot; para ingredientes removíveis</p>
+                      <p className="text-xs text-muted-foreground mt-1">Use grupos acima para personalização profissional. Isto é fallback antigo.</p>
                     </div>
                   </div>
                   <DialogFooter>
