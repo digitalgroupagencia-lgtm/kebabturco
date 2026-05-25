@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Palette, Image as ImageIcon, Save, Upload,
-  Languages, ListOrdered, Sparkles, Loader2, Monitor, UtensilsCrossed, CreditCard,
+  Languages, ListOrdered, Sparkles, Loader2, Monitor, UtensilsCrossed, CreditCard, Globe,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
@@ -21,6 +21,7 @@ type Settings = Tables<"company_settings">;
 
 const TAB_SCREEN: Record<string, TenantPreviewScreen> = {
   splash: "splash",
+  site: "splash",
   language: "language",
   orderType: "orderType",
   header: "home",
@@ -177,6 +178,7 @@ const BrandingPage = () => {
 
   const tabs = [
     { value: "splash", label: "Splash", icon: Sparkles },
+    { value: "site", label: "Site & telemóvel", icon: Globe },
     { value: "language", label: "Idioma", icon: Languages },
     { value: "orderType", label: "Tipo pedido", icon: ListOrdered },
     { value: "header", label: "Header", icon: Monitor },
@@ -201,45 +203,6 @@ const BrandingPage = () => {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Nome no browser e telemóvel</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label>Nome curto (ícone no telemóvel)</Label>
-            <Input
-              value={(s as any).short_name || ""}
-              onChange={(e) => update("short_name" as keyof Settings, e.target.value)}
-              placeholder={s.company_name || "Ex.: Kebab Turco"}
-              className="mt-1 max-w-md"
-            />
-          </div>
-          <div>
-            <Label>Descrição (Google / partilhas)</Label>
-            <Input
-              value={(s as any).meta_description || ""}
-              onChange={(e) => update("meta_description" as keyof Settings, e.target.value)}
-              placeholder="Peça online em..."
-              className="mt-1"
-            />
-          </div>
-          <ImageField label="Favicon (separador do browser)" field={"favicon_url" as keyof Settings} dimensions="48×48 px" />
-          <ImageField label="Ícone telemóvel 192" field={"icon_192_url" as keyof Settings} dimensions="192×192 px" />
-          <ImageField label="Ícone telemóvel 512" field={"icon_512_url" as keyof Settings} dimensions="512×512 px" />
-          <ImageField label="Ícone iPhone (ecrã inicial)" field={"apple_touch_icon_url" as keyof Settings} dimensions="180×180 px" />
-          <ImageField label="Imagem de partilha (WhatsApp, etc.)" field={"og_image_url" as keyof Settings} dimensions="1200×630 px" />
-          <p className="text-xs text-muted-foreground">
-            Se deixar vazio, usa o logo principal. A instalação completa no telemóvel será activada na Fase 2.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-3 sm:p-4">
-          <Label>Nome do estabelecimento</Label>
-          <Input value={s.company_name} onChange={(e) => update("company_name", e.target.value)} className="mt-1 max-w-md" />
-        </CardContent>
-      </Card>
-
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex flex-wrap h-auto">
           {tabs.map((t) => (
@@ -254,8 +217,45 @@ const BrandingPage = () => {
             <TabsContent value="splash" className="space-y-4 mt-0">
               <Card><CardHeader><CardTitle className="text-base">Logo da tela Splash</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
+                  <div>
+                    <Label>Nome do estabelecimento</Label>
+                    <Input value={s.company_name} onChange={(e) => update("company_name", e.target.value)} className="mt-1 max-w-md" />
+                  </div>
                   <ImageField label="Logo principal (modo claro)" field="logo_main_url" dimensions="512×512 px" />
                   <ImageField label="Logo principal (modo escuro)" field={"logo_main_dark_url" as keyof Settings} dimensions="512×512 px" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="site" className="space-y-4 mt-0">
+              <Card><CardHeader><CardTitle className="text-base">Nome e ícones no browser e telemóvel</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Nome curto (ícone no telemóvel)</Label>
+                    <Input
+                      value={(s as any).short_name || ""}
+                      onChange={(e) => update("short_name" as keyof Settings, e.target.value)}
+                      placeholder={s.company_name || "Ex.: Kebab Turco"}
+                      className="mt-1 max-w-md"
+                    />
+                  </div>
+                  <div>
+                    <Label>Descrição (Google / partilhas)</Label>
+                    <Input
+                      value={(s as any).meta_description || ""}
+                      onChange={(e) => update("meta_description" as keyof Settings, e.target.value)}
+                      placeholder="Peça online em..."
+                      className="mt-1"
+                    />
+                  </div>
+                  <ImageField label="Ícone do separador do browser" field={"favicon_url" as keyof Settings} dimensions="48×48 px" />
+                  <ImageField label="Ícone telemóvel 192" field={"icon_192_url" as keyof Settings} dimensions="192×192 px" />
+                  <ImageField label="Ícone telemóvel 512" field={"icon_512_url" as keyof Settings} dimensions="512×512 px" />
+                  <ImageField label="Ícone iPhone (ecrã inicial)" field={"apple_touch_icon_url" as keyof Settings} dimensions="180×180 px" />
+                  <ImageField label="Imagem de partilha (WhatsApp, etc.)" field={"og_image_url" as keyof Settings} dimensions="1200×630 px" />
+                  <p className="text-xs text-muted-foreground">
+                    Se deixar vazio, usa o logo principal da aba Splash.
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
