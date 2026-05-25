@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
@@ -15,20 +15,12 @@ import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
-import { adminPage, panelPage, sellerPage } from "@/routes/layoutPage.tsx";
+import { panelPage } from "@/routes/layoutPage.tsx";
 import {
-  AdminDashboard,
-  AdminPlansPage,
-  AdminRoutesMapPage,
   Auth,
-  BrandingPage,
-  CashierPage,
   Index,
-  MenuPage,
   NotFound,
-  OperationsPage,
   OrdersPage,
-  SellerHome,
 } from "@/routes/appRouteRegistry.ts";
 
 export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
@@ -53,20 +45,7 @@ const LovablePreviewRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
-    <Route path="/cashier" element={withSuspense(<Navigate to="/panel/cashier" replace />)} />
-
     <Route path="/panel" element={withSuspense(panelPage(OrdersPage))} />
-    <Route path="/panel/cashier" element={withSuspense(panelPage(CashierPage))} />
-
-    <Route path="/admin" element={withSuspense(adminPage(AdminDashboard))} />
-    <Route path="/admin/menu" element={withSuspense(adminPage(MenuPage))} />
-    <Route path="/admin/branding" element={withSuspense(adminPage(BrandingPage))} />
-    <Route path="/admin/operations" element={withSuspense(adminPage(OperationsPage))} />
-    <Route path="/admin/routes" element={withSuspense(adminPage(AdminRoutesMapPage))} />
-    <Route path="/admin/plans" element={withSuspense(adminPage(AdminPlansPage))} />
-
-    <Route path="/seller" element={withSuspense(sellerPage(SellerHome))} />
-
     <Route path="*" element={withSuspense(<CatchAllResolver notFound={<NotFound />} />)} />
   </Routes>
 );

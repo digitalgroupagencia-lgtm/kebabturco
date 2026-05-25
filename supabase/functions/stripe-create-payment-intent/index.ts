@@ -7,14 +7,40 @@ import {
   computeApplicationFeeCents,
   PLATFORM_FEE_CENTS,
 } from "../_shared/stripePaymentActions.ts";
+import { getStripeSecretKey } from "../_shared/stripeEnv.ts";
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method === "GET") {
+    const stripeConfigured = Boolean(getStripeSecretKey());
+    return json({
+      ok: true,
+      service: "stripe-create-payment-intent",
+      stripeConfigured,
+    });
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
+
+    if (body?.health === true || body?.ping === true) {
+      const stripeConfigured = Boolean(getStripeSecretKey());
+      return json({
+        ok: true,
+        service: "stripe-create-payment-intent",
+        stripeConfigured,
+      });
+    }
 
     if (body?.action === "diagnostics") {
       return handleOperationalDiagnostics(req, body);
@@ -24,22 +50,35 @@ Deno.serve(async (req) => {
       return handleVerifyPaymentIntent(body);
     }
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      return new Response(JSON.stringify({ error: "Pagamentos online indisponíveis" }), {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!body?.storeId && !body?.amountCents) {
+      const stripeConfigured = Boolean(getStripeSecretKey());
+      return json({
+        ok: true,
+        service: "stripe-create-payment-intent",
+        stripeConfigured,
+        message: stripeConfigured
+          ? "Serviço activo — envie storeId e amountCents para criar pagamento."
+          : "Stripe não configurada — adicione STRIPE_SECRET_KEY nos segredos Lovable Cloud.",
       });
+    }
+
+    const stripeKey = getStripeSecretKey();
+    if (!stripeKey) {
+      return json(
+        {
+          error: "Pagamentos online indisponíveis",
+          code: "stripe_secret_missing",
+          hint: "Configure STRIPE_SECRET_KEY nos segredos Lovable Cloud (Integrações → Stripe).",
+        },
+        503,
+      );
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const { storeId, amountCents, orderType, metadata = {} } = body;
 
     if (!storeId || !amountCents || amountCents < 50 || amountCents > 1_000_00 * 10) {
-      return new Response(JSON.stringify({ error: "Parâmetros inválidos" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Parâmetros inválidos" }, 400);
     }
 
     const ALLOWED_META_KEYS = new Set(["order_id", "order_number", "table_number", "customer_name"]);
@@ -64,10 +103,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (storeErr || !store?.stripe_connect_account_id || !store.stripe_charges_enabled) {
-      return new Response(JSON.stringify({ error: "Recebimentos online ainda não activos para esta loja" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
     }
 
     const applicationFeeCents = computeApplicationFeeCents(amountCents);
@@ -88,20 +124,14 @@ Deno.serve(async (req) => {
       },
     });
 
-    return new Response(
-      JSON.stringify({
-        clientSecret: intent.client_secret,
-        paymentIntentId: intent.id,
-        estimatedProcessingFeeCents: applicationFeeCents,
-        platformFeeCents: PLATFORM_FEE_CENTS,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return json({
+      clientSecret: intent.client_secret,
+      paymentIntentId: intent.id,
+      estimatedProcessingFeeCents: applicationFeeCents,
+      platformFeeCents: PLATFORM_FEE_CENTS,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: msg }, 500);
   }
 });

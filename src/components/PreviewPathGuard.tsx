@@ -23,6 +23,11 @@ export default function PreviewPathGuard() {
       return;
     }
 
+    if (pathname === "/cashier") {
+      navigate(nav.panel("cashier"), { replace: true });
+      return;
+    }
+
     if (pathname === "/kebab-turco") {
       navigate(nav.home(), { replace: true });
       return;

@@ -15,21 +15,8 @@ export const nav = {
   seller: (...rest: string[]) => joinPath("seller", ...rest),
 } as const;
 
-/** Lista curada — espelha exactamente App.tsx (dropdown preview Lovable). */
-export const LOVABLE_PREVIEW_PATHS = [
-  "/",
-  "/auth",
-  "/panel",
-  "/panel/cashier",
-  "/admin",
-  "/admin/menu",
-  "/admin/branding",
-  "/admin/operations",
-  "/admin/routes",
-  "/admin/plans",
-  "/cashier",
-  "/seller",
-] as const;
+/** Lista curada — dropdown preview Lovable (só 3 entradas). */
+export const LOVABLE_PREVIEW_PATHS = ["/", "/auth", "/panel"] as const;
 
 export type AppArea = "panel" | "admin" | "seller";
 

@@ -6,6 +6,7 @@ import {
   computeNetToStoreCents,
   computeProcessingFeeCents,
 } from "./stripeFees.ts";
+import { getStripeSecretKey, getStripeWebhookSecret } from "./stripeEnv.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,8 +64,8 @@ export async function handleOperationalDiagnostics(
   }
 
   const storeId = typeof body.storeId === "string" ? body.storeId : null;
-  const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
+  const stripeSecret = getStripeSecretKey() ?? "";
+  const webhookSecret = getStripeWebhookSecret() ?? "";
 
   let storeProfile: Record<string, unknown> | null = null;
   if (storeId) {
@@ -120,7 +121,7 @@ export async function handleOperationalDiagnostics(
 }
 
 export async function handleVerifyPaymentIntent(body: Record<string, unknown>): Promise<Response> {
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const stripeKey = getStripeSecretKey();
   if (!stripeKey) {
     return json({ error: "Pagamentos online indisponíveis" }, 503);
   }

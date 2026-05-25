@@ -158,8 +158,9 @@ export function useOperationalDiagnostics() {
         label: "Pagamentos online (servidor)",
         status: "fail",
         critical: true,
-        detail: "Chave secreta da Stripe em falta no servidor.",
-        action: "No Supabase → Edge Functions → Secrets → adicione STRIPE_SECRET_KEY.",
+        detail: "Chave secreta da Stripe em falta no servidor Lovable Cloud.",
+        action:
+          "Lovable → Cloud → Secrets → adicionar STRIPE_SECRET_KEY (chave secreta da Stripe, sk_live_... ou sk_test_...). Se já ligou Stripe nas Integrações, peça no chat: «Sync Stripe secret to edge functions».",
       });
     } else {
       results.push({

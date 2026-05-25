@@ -12,8 +12,8 @@ Roles: admin_master, restaurant_admin, operator, kitchen, seller.
 Usuário prefere instruções simples, sem edição manual. Fala português.
 
 ## Preview Lovable (dropdown de páginas)
-**Só** estas entradas — declaradas em `src/App.tsx`:
-`/` · `/auth` · `/panel` · `/panel/menu` · `/panel/cashier` · `/panel/modifiers` · `/panel/branding` · `/panel/banners` · `/panel/delivery-zones` · `/panel/payments` · `/admin` · `/admin/routes` · `/admin/plans` · `/cashier` · `/seller`
+**Só** estas 3 entradas — literais em `src/App.tsx`:
+`/` · `/auth` · `/panel`
 
 **Nunca** recriar `src/pages/panel/`, `src/pages/admin/` ou `src/pages/seller/`.
 **Nunca** usar wildcards (`/*`, `/:tenantPath`, `/admin/tenants/:slug/*`).
