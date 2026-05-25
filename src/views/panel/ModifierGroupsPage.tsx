@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical } from "lucide-react";
-import type { ModifierGroupKind, SelectionMode } from "@/lib/modifiers/types";
+import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical, AlertTriangle } from "lucide-react";
+import type { ModifierGroupKind, SelectionMode, ModifierGroup } from "@/lib/modifiers/types";
 import { GROUP_KIND_META, groupKindLabel, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
+import { getModifierConfigWarnings } from "@/lib/modifiers/sanitizeGroups";
 
 type GroupRow = {
   id: string;
@@ -90,6 +91,35 @@ export default function ModifierGroupsPage() {
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
   const groupOptions = options.filter((o) => o.group_id === selectedGroupId);
+
+  const configWarnings = useMemo(() => {
+    const modifierGroups: ModifierGroup[] = groups.map((g) => ({
+      id: g.id,
+      storeId: storeId || "",
+      name: g.name,
+      description: g.description,
+      groupKind: g.group_kind,
+      selectionMode: g.selection_mode,
+      minSelect: g.min_select,
+      maxSelect: g.max_select,
+      isRequired: g.is_required,
+      sortOrder: g.sort_order,
+      repeatPerUnit: false,
+      linkSortOrder: g.sort_order,
+      options: options
+        .filter((o) => o.group_id === g.id)
+        .map((o) => ({
+          id: o.id,
+          groupId: o.group_id,
+          name: o.name,
+          priceDelta: Number(o.price_delta || 0),
+          maxQty: o.max_qty || 1,
+          isDefault: o.is_default ?? false,
+          sortOrder: o.sort_order ?? 0,
+        })),
+    }));
+    return getModifierConfigWarnings(modifierGroups);
+  }, [groups, options, storeId]);
 
   const openGroup = (g?: GroupRow) => {
     setEditingGroup(g ? { ...g } : emptyGroup());
@@ -208,6 +238,22 @@ export default function ModifierGroupsPage() {
           <Plus className="w-4 h-4 mr-1" /> Novo grupo
         </Button>
       </div>
+
+      {configWarnings.length > 0 && (
+        <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+          <p className="text-sm font-black flex items-center gap-2 text-amber-900 dark:text-amber-100">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            Configuração que pode bloquear clientes
+          </p>
+          <ul className="text-sm text-amber-900/90 dark:text-amber-100/90 space-y-1 list-disc pl-5">
+            {configWarnings.map((w) => (
+              <li key={w.groupId}>
+                <span className="font-bold">{w.groupName}:</span> {w.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {(Object.keys(GROUP_KIND_META) as ModifierGroupKind[]).map((kind) => (

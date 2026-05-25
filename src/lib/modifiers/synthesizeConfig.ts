@@ -2,6 +2,7 @@ import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Extra, Variant } from "@/data/products";
 import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "./types";
 import { sortModifierGroups } from "./groupOrder";
+import { sanitizeProductModifierConfig } from "./sanitizeGroups";
 import { parseRemovableIngredients } from "@/lib/parseProductCustomization";
 
 const SYNTH_PREFIX = "synth";
@@ -304,14 +305,14 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
     fr: "Unité",
   };
 
-  return {
+  return sanitizeProductModifierConfig({
     productId: product.id,
     productType: isCombo ? "combo" : "simple",
     comboUnitCount: isCombo ? unitCount : 0,
     unitLabel,
     groups: sortModifierGroups(groups),
     hasStructuredModifiers: groups.length > 0,
-  };
+  });
 }
 
 /** Aplica grupos da loja a combos quando o produto ainda não tem ligações manuais. */
@@ -335,9 +336,9 @@ export function mergeStoreGroupsForCombo(
     linkSortOrder: g.sortOrder,
   }));
 
-  return {
+  return sanitizeProductModifierConfig({
     ...config,
     groups: sortModifierGroups(groups),
     hasStructuredModifiers: groups.length > 0,
-  };
+  });
 }

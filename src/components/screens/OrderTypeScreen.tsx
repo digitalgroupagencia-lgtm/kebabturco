@@ -64,7 +64,7 @@ const OrderTypeScreen = () => {
   };
 
   const enabled: Array<{ key: "here" | "takeaway" | "delivery"; label: string; sub: string; icon: string | null | undefined; Fallback: any; tint: string }> = [];
-  if (opts.dine_in) enabled.push({ key: "here", label: t("eatHere"), sub: t("eatHereSub"), icon: iconDineIn, Fallback: UtensilsCrossed, tint: "bg-primary/10 text-primary" });
+  if (opts.dine_in && mesaLocked) enabled.push({ key: "here", label: t("eatHere"), sub: t("eatHereSub"), icon: iconDineIn, Fallback: UtensilsCrossed, tint: "bg-primary/10 text-primary" });
   if (opts.takeaway) enabled.push({ key: "takeaway", label: t("takeaway"), sub: t("takeawaySub"), icon: iconTakeaway, Fallback: ShoppingBag, tint: "bg-accent/20 text-accent-foreground" });
   if (opts.delivery) enabled.push({ key: "delivery", label: t("delivery"), sub: t("deliverySub"), icon: iconDelivery, Fallback: Bike, tint: "bg-success/15 text-success" });
 
@@ -94,6 +94,11 @@ const OrderTypeScreen = () => {
               <UtensilsCrossed className="w-4 h-4" />
               <span className="text-base font-black">Mesa {tableNumber}</span>
             </div>
+          )}
+          {!mesaLocked && opts.dine_in && (
+            <p className="text-xs text-muted-foreground mb-2 px-2">
+              Para pedir na mesa, escaneie o QR code da sua mesa.
+            </p>
           )}
           <h1 className="text-[20px] leading-tight font-black text-foreground tracking-tight">
             {t("howOrder")}

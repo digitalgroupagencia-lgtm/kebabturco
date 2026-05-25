@@ -13,9 +13,15 @@ import {
   invokePrintOrder,
   fetchStoreStripeSettings,
   validateCoupon,
+  verifyStripePaymentIntent,
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { filterImplementedPaymentMethods } from "@/lib/paymentMethods";
+import {
+  requiresPrepayment,
+  resolveCheckoutMethods,
+  shouldPrintAfterCheckout,
+  stripeConfigIssue,
+} from "@/lib/paymentPolicy";
 import { loadSavedOrderType } from "@/lib/customerSession";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
@@ -86,7 +92,7 @@ const PaymentScreen = () => {
     setDeliveryNotes,
   } = useOrder();
   const { items, totalPrice, clearCart, orderType, setOrderType } = useCart();
-  const { settings } = useOperationsSettings();
+  const { settings, loading: settingsLoading } = useOperationsSettings();
   const brandingCtx = useBranding();
   const { t, tProduct } = useLanguage();
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
@@ -95,7 +101,7 @@ const PaymentScreen = () => {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone">(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
@@ -103,6 +109,16 @@ const PaymentScreen = () => {
   const { subscribe: subscribePush } = usePushNotifications();
 
   const isTableOrder = orderType === "here";
+  const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
+  const stripePublishableKey = Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
+  const stripeIssue = stripeConfigIssue(stripeEnabled, stripePublishableKey);
+
+  useEffect(() => {
+    if (isTableOrder && !mesaValidated) {
+      setScreen("orderType");
+    }
+  }, [isTableOrder, mesaValidated, setScreen]);
   const fullCustomerPhone = formatFullPhone(phoneDialCode, customerPhone);
   const orderTypeDb = isTableOrder ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
 
@@ -152,55 +168,22 @@ const PaymentScreen = () => {
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
-  const enabledMethods = useMemo(() => {
-    const baseIds: PaymentMethodId[] = settings
-      ? (METHOD_DEFS.filter((m) => {
-          const map: Record<PaymentMethodId, boolean> = {
-            card: settings.pay_card_enabled,
-            cash: settings.pay_cash_enabled,
-            pix: settings.pay_pix_enabled,
-            apple: settings.pay_apple_enabled,
-            google: settings.pay_google_enabled,
-            counter: settings.pay_counter_enabled,
-            link: settings.pay_link_enabled,
-          };
-          return map[m.id];
-        }).map((m) => m.id))
-      : ["counter"];
-
-    const implemented = filterImplementedPaymentMethods(baseIds, stripeEnabled);
-    return METHOD_DEFS.filter((m) => implemented.includes(m.id));
-  }, [settings, stripeEnabled]);
-
-  /** Mesa: cartão online; se Stripe indisponível, balcão para não bloquear o cliente. */
   const checkoutMethods = useMemo(() => {
-    if (isTableOrder) {
-      if (stripeEnabled) return METHOD_DEFS.filter((m) => m.id === "card");
-      return METHOD_DEFS.filter((m) => m.id === "counter");
-    }
-    if (settings?.payment_mode === "counter") {
-      return METHOD_DEFS.filter((m) => m.id === "counter");
-    }
-    return enabledMethods.length > 0 ? enabledMethods : METHOD_DEFS.filter((m) => m.id === "counter");
-  }, [isTableOrder, stripeEnabled, settings?.payment_mode, enabledMethods]);
+    if (!orderType) return [];
+    const ids = resolveCheckoutMethods({
+      orderType,
+      mesaValidated,
+      settings,
+      stripeReady: stripeEnabled,
+      stripePublishableKey,
+    });
+    return METHOD_DEFS.filter((m) => ids.includes(m.id));
+  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
 
-  const counterOnly = !isTableOrder && settings?.payment_mode === "counter";
-  const tablePayReady = isTableOrder && checkoutMethods.length > 0;
-  const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing;
-
-  useEffect(() => {
-    if (counterOnly) setSelected("counter");
-  }, [counterOnly]);
+  const tablePayReady = checkoutMethods.length > 0;
+  const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing && !stripeClientSecret;
 
   useEffect(() => {
-    if (isTableOrder && stripeEnabled) {
-      setSelected("card");
-      return;
-    }
-    if (isTableOrder && !stripeEnabled) {
-      setSelected("counter");
-      return;
-    }
     if (checkoutMethods.length === 1) {
       setSelected(checkoutMethods[0].id);
       return;
@@ -208,7 +191,7 @@ const PaymentScreen = () => {
     if (selected && !checkoutMethods.some((m) => m.id === selected)) {
       setSelected(null);
     }
-  }, [checkoutMethods, selected, isTableOrder, stripeEnabled]);
+  }, [checkoutMethods, selected]);
 
   const validate = () => {
     if (!orderType) {
@@ -216,12 +199,8 @@ const PaymentScreen = () => {
       return false;
     }
     if (isTableOrder) {
-      if (!tableNumber.trim()) {
+      if (!mesaValidated || !mesaTableId) {
         setShowError("table");
-        return false;
-      }
-      if (!mesaLocked && (!customerName.trim() || customerName.trim().length < 2)) {
-        setShowError("name");
         return false;
       }
     } else if (!customerName.trim() || customerName.trim().length < 2) {
@@ -237,6 +216,7 @@ const PaymentScreen = () => {
       if (!deliveryNumber.trim()) { setShowError("number"); return false; }
       if (!deliveryPostalCode.trim()) { setShowError("postal"); return false; }
       if (!deliveryCity.trim()) { setShowError("city"); return false; }
+      if (!deliveryQuote.zoneMatched) { setShowError("zone"); return false; }
       if (deliveryQuote.belowMinimum) { setShowError("minOrder"); return false; }
     }
     if (checkoutMethods.length === 0) {
@@ -247,11 +227,11 @@ const PaymentScreen = () => {
       setShowError("method");
       return false;
     }
-    if (isTableOrder && stripeEnabled && selected !== "card") {
+    if (prepaymentRequired && selected !== "card") {
       setShowError("method");
       return false;
     }
-    if (isTableOrder && !stripeEnabled && selected !== "counter") {
+    if (selected === "card" && stripeIssue) {
       setShowError("method");
       return false;
     }
@@ -273,8 +253,8 @@ const PaymentScreen = () => {
     paymentStatus: "pending" | "paid";
     stripePi?: string | null;
   }) => {
-    if (isTableOrder && opts.paymentMethod === "card" && opts.paymentStatus !== "paid") {
-      setShowError("method");
+    if (isTableOrder && !mesaValidated) {
+      setShowError("table");
       return;
     }
 
@@ -290,8 +270,8 @@ const PaymentScreen = () => {
       items,
       subtotal: totalPrice,
       total: grandTotal,
-      tableNumber: tableNumber.trim() || null,
-      tableId: mesaTableId,
+      tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+      tableId: mesaValidated ? mesaTableId : null,
       customerName: customerName.trim() || null,
       customerPhone: fullCustomerPhone || null,
       notes,
@@ -325,29 +305,39 @@ const PaymentScreen = () => {
       customerPhone: fullCustomerPhone || undefined,
     });
 
-    await invokePrintOrder(buildPrintPayload({
-      storeId,
-      orderNumber: result.order_number,
-      orderType: orderTypeDb,
-      tableNumber: tableNumber.trim() || null,
-      customerName: customerName.trim() || null,
-      customerPhone: fullCustomerPhone || null,
-      paymentMethod: opts.paymentMethod,
-      paymentPending: opts.paymentStatus !== "paid",
-      paidViaApp: opts.paymentStatus === "paid",
-      items,
-      total: grandTotal,
-      subtotal: totalPrice,
-      deliveryFee,
-      notes,
-      deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
-      deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
-      deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
-      deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
-    }));
+    const printOk = shouldPrintAfterCheckout(
+      orderType || "takeaway",
+      opts.paymentStatus,
+      settings,
+      mesaValidated,
+    );
+
+    if (printOk) {
+      await invokePrintOrder(buildPrintPayload({
+        storeId,
+        orderNumber: result.order_number,
+        orderType: orderTypeDb,
+        tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+        customerName: customerName.trim() || null,
+        customerPhone: fullCustomerPhone || null,
+        paymentMethod: opts.paymentMethod,
+        paymentPending: opts.paymentStatus !== "paid",
+        paidViaApp: opts.paymentStatus === "paid",
+        items,
+        total: grandTotal,
+        subtotal: totalPrice,
+        deliveryFee,
+        notes,
+        deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
+        deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
+        deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
+        deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
+      }));
+    }
 
     clearCart();
     setScreen("confirmation");
+    return result;
   };
 
   const startCardPayment = async () => {
@@ -364,10 +354,11 @@ const PaymentScreen = () => {
   const confirm = async () => {
     if (processing || !validate() || !selected) return;
 
-    const needsStripe =
-      selected === "card" && stripeEnabled && (isTableOrder || settings?.payment_mode !== "counter");
-
-    if (needsStripe) {
+    if (selected === "card") {
+      if (!stripeEnabled || !stripePublishableKey) {
+        setShowError("method");
+        return;
+      }
       setProcessing(true);
       try {
         await startCardPayment();
@@ -380,7 +371,7 @@ const PaymentScreen = () => {
       return;
     }
 
-    if (isTableOrder && selected === "card") {
+    if (prepaymentRequired) {
       setShowError("method");
       return;
     }
@@ -441,11 +432,81 @@ const PaymentScreen = () => {
               onSuccess={async () => {
                 setProcessing(true);
                 try {
-                  await finishOrder({
+                  const amountCents = Math.round(grandTotal * 100);
+                  const result = await createCustomerOrder({
+                    storeId,
+                    orderType: orderTypeDb,
+                    items,
+                    subtotal: totalPrice,
+                    total: grandTotal,
+                    tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+                    tableId: mesaValidated ? mesaTableId : null,
+                    customerName: customerName.trim() || null,
+                    customerPhone: fullCustomerPhone || null,
+                    notes,
                     paymentMethod: "card",
-                    paymentStatus: "paid",
-                    stripePi: stripePaymentIntentId,
+                    paymentStatus: "pending",
+                    stripePaymentIntentId: stripePaymentIntentId,
+                    deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
+                    deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
+                    deliveryComplement: orderType === "delivery" ? deliveryComplement.trim() : null,
+                    deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
+                    deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
+                    deliveryNotes: orderType === "delivery" ? deliveryNotes.trim() : null,
+                    deliveryFee,
+                    deliveryZoneId: deliveryQuote.zone?.id || null,
+                    deliveryZoneName: deliveryQuote.zone?.name || null,
+                    couponCode: couponId ? couponCode.trim() : null,
+                    discountAmount: couponDiscount,
+                    couponId,
                   });
+
+                  await verifyStripePaymentIntent({
+                    storeId,
+                    paymentIntentId: stripePaymentIntentId!,
+                    orderId: result.order_id,
+                    amountCents,
+                  });
+
+                  setPaymentMethod("card");
+                  setOrderPaymentStatus("paid");
+                  setOrderNumber(result.order_number);
+                  setActiveOrderId(result.order_id);
+                  setTrackingOrderId(result.order_id);
+                  syncActiveOrderUrl(result.order_id, "confirmation");
+
+                  await subscribePush({
+                    storeId,
+                    orderId: result.order_id,
+                    customerPhone: fullCustomerPhone || undefined,
+                  });
+
+                  await invokePrintOrder(buildPrintPayload({
+                    storeId,
+                    orderNumber: result.order_number,
+                    orderType: orderTypeDb,
+                    tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+                    customerName: customerName.trim() || null,
+                    customerPhone: fullCustomerPhone || null,
+                    paymentMethod: "card",
+                    paymentPending: false,
+                    paidViaApp: true,
+                    items,
+                    total: grandTotal,
+                    subtotal: totalPrice,
+                    deliveryFee,
+                    notes,
+                    deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
+                    deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
+                    deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
+                    deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
+                  }));
+
+                  clearCart();
+                  setScreen("confirmation");
+                } catch (e) {
+                  console.error(e);
+                  setShowError("method");
                 } finally {
                   setProcessing(false);
                   setStripeClientSecret(null);
@@ -455,46 +516,16 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
-            {isTableOrder && (
-              <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "table" || showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
+            {isTableOrder && mesaValidated && (
+              <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
                 <div className={`px-3 py-2.5 ${showError === "table" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                     <Hash className="w-3 h-3 text-primary" />
                     {t("tableNumber")} <span className="text-destructive">*</span>
                   </label>
-                  {mesaLocked && tableNumber.trim() ? (
-                    <p className="text-center text-3xl font-black text-primary tabular-nums py-1">{tableNumber}</p>
-                  ) : (
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={tableNumber}
-                      onChange={(e) => {
-                        setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4));
-                        if (showError === "table") setShowError(null);
-                      }}
-                      className={`w-full h-12 px-3 text-center text-2xl font-black tabular-nums bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "table" ? "border-destructive/60" : "border-transparent"}`}
-                    />
-                  )}
+                  <p className="text-center text-3xl font-black text-primary tabular-nums py-1">{tableNumber}</p>
+                  <p className="text-[10px] text-center text-muted-foreground">Mesa validada por QR code</p>
                 </div>
-                {!mesaLocked && (
-                  <div className={`px-3 py-2.5 border-t border-border ${showError === "name" ? "bg-destructive/5" : ""}`}>
-                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
-                      <User className="w-3 h-3 text-primary" />
-                      {t("yourName")} <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => {
-                        setCustomerName(e.target.value.slice(0, 40));
-                        if (showError === "name") setShowError(null);
-                      }}
-                      placeholder="—"
-                      className={`w-full h-10 text-sm px-3 font-bold bg-secondary/60 rounded-xl border-2 focus:outline-none focus:border-primary ${showError === "name" ? "border-destructive/60" : "border-transparent"}`}
-                    />
-                  </div>
-                )}
                 <div className={`px-3 py-2.5 border-t border-border ${showError === "phone" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                     <Phone className="w-3 h-3 text-primary" />
@@ -638,31 +669,27 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {isTableOrder && !stripeEnabled && (
+            {stripeIssue && prepaymentRequired && (
+              <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
+                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground">{stripeIssue}</p>
+              </div>
+            )}
+
+            {checkoutMethods.length === 0 && !settingsLoading && (
               <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-amber-500/40 bg-amber-500/5 p-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
-                  Pagamento online indisponível — finalize com pagamento no balcão. A equipa receberá o pedido na mesa {tableNumber || "—"}.
+                  {prepaymentRequired
+                    ? "Pagamento online obrigatório — active os recebimentos ou peça ajuda à equipa."
+                    : "Nenhum método de pagamento disponível para este tipo de pedido."}
                 </p>
               </div>
             )}
 
-            {isTableOrder && stripeEnabled && !tablePayReady && (
-              <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
-                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-black text-destructive">Pagamento online indisponível</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Para pedir na mesa é obrigatório pagar com cartão. Peça ajuda à equipa do restaurante.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {counterOnly && !isTableOrder ? (
-              <div className="mt-3 bg-card rounded-2xl border-2 border-success/40 p-4 flex items-center gap-3">
-                <Store className="w-6 h-6 text-success shrink-0" />
-                <p className="font-black text-sm">{t("payAtCounterTitle")}</p>
+            {settingsLoading ? (
+              <div className="mt-3 flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
               </div>
             ) : checkoutMethods.length > 0 && (
               <div className={`mt-3 ${showError === "method" ? "ring-2 ring-destructive/40 rounded-2xl p-0.5" : ""}`}>
@@ -688,15 +715,10 @@ const PaymentScreen = () => {
                       </button>
                     );
                   })}
-                  {isTableOrder && stripeEnabled && (
-                    <div className="flex gap-2 opacity-50 px-1 pt-0.5">
-                      <div className="flex-1 flex items-center gap-2 p-2 rounded-lg border border-dashed border-border text-xs text-muted-foreground">
-                        <Smartphone className="w-4 h-4" /> Apple Pay · em breve
-                      </div>
-                      <div className="flex-1 flex items-center gap-2 p-2 rounded-lg border border-dashed border-border text-xs text-muted-foreground">
-                        <Smartphone className="w-4 h-4" /> Google Pay · em breve
-                      </div>
-                    </div>
+                  {selected === "card" && stripeEnabled && (
+                    <p className="text-[10px] text-muted-foreground px-1 pt-1">
+                      Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
+                    </p>
                   )}
                 </div>
                 {showError === "method" && (

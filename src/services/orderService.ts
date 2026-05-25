@@ -180,6 +180,20 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
   return data as CreateCustomerOrderResult;
 }
 
+export async function verifyStripePaymentIntent(params: {
+  storeId: string;
+  paymentIntentId: string;
+  orderId: string;
+  amountCents: number;
+}) {
+  const { data, error } = await supabase.functions.invoke("stripe-verify-payment-intent", {
+    body: params,
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as { success: boolean; orderId?: string; orderNumber?: string };
+}
+
 export async function invokePrintOrder(body: Record<string, unknown>) {
   try {
     await supabase.functions.invoke("print-order", { body });

@@ -46,6 +46,7 @@ interface CartContextType {
   totalPrice: number;
   orderType: "here" | "takeaway" | "delivery" | null;
   setOrderType: (t: "here" | "takeaway" | "delivery") => void;
+  clearOrderType: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -107,6 +108,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveSavedOrderType(t);
   };
 
+  const clearOrderType = () => {
+    setOrderTypeState(null);
+    saveSavedOrderType(null);
+  };
+
   useEffect(() => {
     const needsSplit = items.some((item) => item.quantity !== 1 || item.totalPrice !== item.unitPrice);
     if (needsSplit) {
@@ -141,7 +147,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const totalPrice = items.reduce((sum, i) => sum + i.totalPrice, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, updateItem, removeItem, updateQuantity, clearCart, totalItems, totalPrice, orderType, setOrderType }}>
+    <CartContext.Provider value={{ items, addItem, updateItem, removeItem, updateQuantity, clearCart, totalItems, totalPrice, orderType, setOrderType, clearOrderType }}>
       {children}
     </CartContext.Provider>
   );

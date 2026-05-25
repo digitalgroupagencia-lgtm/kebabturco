@@ -76,6 +76,32 @@ export function resolveScreenAfterLanguageSkip(): Screen {
 }
 
 export const KIOSK_TABLE_KEY = "kiosk-table-number";
+export const KIOSK_MESA_TOKEN_KEY = "kiosk-mesa-token";
+
+export function loadSavedMesaToken(): string | null {
+  try {
+    const raw = localStorage.getItem(KIOSK_MESA_TOKEN_KEY);
+    return raw?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSavedMesaToken(token: string) {
+  try {
+    localStorage.setItem(KIOSK_MESA_TOKEN_KEY, token.trim());
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearSavedMesaToken() {
+  try {
+    localStorage.removeItem(KIOSK_MESA_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 export const KIOSK_PHONE_DIAL_KEY = "kiosk-phone-dial";
 export const KIOSK_PHONE_LOCAL_KEY = "kiosk-phone-local";
 

@@ -4,9 +4,17 @@ import { groupKey } from "./validation";
 function applyDefaultsForGroups(groups: ModifierGroup[], unitIndex?: number | null): SelectionState {
   const state: SelectionState = new Map();
   for (const group of groups) {
-    if (group.groupKind !== "choice" && group.groupKind !== "substitution") continue;
-    const def = group.options.find((o) => o.isDefault);
-    if (!def) continue;
+    const mustSelect =
+      group.isRequired ||
+      group.minSelect >= 1 ||
+      group.groupKind === "choice" ||
+      group.groupKind === "substitution";
+
+    if (!mustSelect || group.options.length === 0) continue;
+
+    let def = group.options.find((o) => o.isDefault);
+    if (!def) def = group.options[0];
+
     const key = groupKey(group.id, unitIndex);
     state.set(key, new Map([[def.id, 1]]));
   }

@@ -18,6 +18,7 @@ type TableRow = {
   number: string;
   capacity: number;
   is_active: boolean;
+  qr_token: string;
 };
 
 const TablesPage = () => {
@@ -73,7 +74,7 @@ const TablesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("tables")
-      .select("id, number, capacity, is_active")
+      .select("id, number, capacity, is_active, qr_token")
       .eq("store_id", storeId)
       .order("number");
     if (error) toast.error(error.message);
@@ -109,7 +110,7 @@ const TablesPage = () => {
 
   const printQr = () => {
     if (!qrTable) return;
-    const url = getTableQrUrl(tenantMeta, qrTable.number);
+    const url = getTableQrUrl(tenantMeta, { number: qrTable.number, qr_token: qrTable.qr_token });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(`<html><head><title>Mesa ${qrTable.number}</title></head><body style="text-align:center;font-family:sans-serif;padding:40px"><h1>Mesa ${qrTable.number}</h1><div id="q"></div><p style="word-break:break-all;font-size:12px;margin-top:16px">${url}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("q"),{text:${JSON.stringify(url)},width:256,height:256});setTimeout(()=>window.print(),500);<\/script></body></html>`);
@@ -153,7 +154,7 @@ const TablesPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tables.map((t) => {
-          const qrUrl = getTableQrUrl(tenantMeta, t.number);
+          const qrUrl = getTableQrUrl(tenantMeta, { number: t.number, qr_token: t.qr_token });
           return (
             <Card key={t.id} className={`p-4 space-y-3 ${!t.is_active ? "opacity-60" : ""}`}>
               <div className="flex items-center justify-between">
@@ -183,9 +184,9 @@ const TablesPage = () => {
           </DialogHeader>
           {qrTable && (
             <div className="flex flex-col items-center gap-4">
-              <QRCodeSVG value={getTableQrUrl(tenantMeta, qrTable.number)} size={220} />
+              <QRCodeSVG value={getTableQrUrl(tenantMeta, { number: qrTable.number, qr_token: qrTable.qr_token })} size={220} />
               <p className="text-xs text-muted-foreground text-center break-all">
-                {getTableQrUrl(tenantMeta, qrTable.number)}
+                {getTableQrUrl(tenantMeta, { number: qrTable.number, qr_token: qrTable.qr_token })}
               </p>
               <Button onClick={printQr} className="w-full gap-2"><Printer className="h-4 w-4" /> Imprimir QR</Button>
             </div>

@@ -9,6 +9,7 @@ import {
   synthesizeModifierConfigFromProduct,
 } from "@/lib/modifiers/synthesizeConfig";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
+import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
 
 const asName = (value: unknown): Record<string, string> => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
@@ -93,7 +94,10 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
   }, [storeId, dbConfig?.hasStructuredModifiers]);
 
   const config = useMemo((): ProductModifierConfig | null => {
-    if (!product) return dbConfig;
+    const finalize = (cfg: ProductModifierConfig | null) =>
+      cfg ? sanitizeProductModifierConfig(cfg) : null;
+
+    if (!product) return finalize(dbConfig);
 
     const synthesized = synthesizeModifierConfigFromProduct(product);
 
@@ -101,15 +105,15 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
       const hasRemoval = dbConfig.groups.some((g) => g.groupKind === "removal");
       const synthRemoval = synthesized?.groups.filter((g) => g.groupKind === "removal") || [];
       if (!hasRemoval && synthRemoval.length) {
-        return {
+        return finalize({
           ...dbConfig,
           groups: sortModifierGroups([...dbConfig.groups, ...synthRemoval]),
-        };
+        });
       }
-      return dbConfig;
+      return finalize(dbConfig);
     }
 
-    if (synthesized?.hasStructuredModifiers) return synthesized;
+    if (synthesized?.hasStructuredModifiers) return finalize(synthesized);
 
     if (synthesized?.productType === "combo" && storeGroups.length) {
       const merged = mergeStoreGroupsForCombo(
@@ -120,10 +124,10 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
         },
         storeGroups,
       );
-      if (merged.hasStructuredModifiers) return merged;
+      if (merged.hasStructuredModifiers) return finalize(merged);
     }
 
-    return synthesized ?? dbConfig;
+    return finalize(synthesized ?? dbConfig);
   }, [product, dbConfig, storeGroups]);
 
   const loading = dbLoading || storeLoading;

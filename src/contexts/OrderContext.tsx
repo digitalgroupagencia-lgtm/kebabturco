@@ -10,10 +10,12 @@ import {
 } from "@/features/customer/useActiveOrderStorage";
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
-  loadSavedTableNumber,
+  clearSavedMesaToken,
   loadSavedCustomerPhone,
-  saveSavedCustomerPhone,
+  loadSavedTableNumber,
   resolveScreenAfterLanguageSkip,
+  saveSavedCustomerPhone,
+  saveSavedMesaToken,
   saveSavedTableNumber,
   shouldSkipLanguageScreen,
 } from "@/lib/customerSession";
@@ -77,7 +79,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? resolvedStoreId ?? "";
   const { mesa, loading: mesaLoading } = useMesaFromUrl(effectiveStoreId || null);
-  const { setOrderType } = useCart();
+  const { setOrderType, orderType, clearOrderType } = useCart();
 
   const initialScreen: Screen = (() => {
     if (typeof window === "undefined") return "language";
@@ -213,17 +215,31 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
 
   useEffect(() => {
-    if (mesaLoading || !mesa?.locked) return;
-    setTableNumber(mesa.mesaNumber);
-    setMesaTableId(mesa.tableId);
-    setMesaLocked(true);
-    setOrderType("here");
+    if (mesaLoading) return;
+    if (mesa?.locked) {
+      setTableNumber(mesa.mesaNumber);
+      setMesaTableId(mesa.tableId);
+      setMesaLocked(true);
+      saveSavedMesaToken(mesa.qrToken);
+      setOrderType("here");
+      return;
+    }
+    setMesaLocked(false);
+    setMesaTableId(null);
   }, [mesa, mesaLoading, setOrderType]);
+
+  useEffect(() => {
+    if (mesaLoading) return;
+    if (orderType === "here" && !mesaLocked) {
+      clearOrderType();
+    }
+  }, [mesaLoading, mesaLocked, orderType, clearOrderType]);
 
   const clearMesaLock = () => {
     setMesaLocked(false);
     setMesaTableId(null);
     setTableNumber("");
+    clearSavedMesaToken();
   };
 
   const generateOrderNumber = () => {

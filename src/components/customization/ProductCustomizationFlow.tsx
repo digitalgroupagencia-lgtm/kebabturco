@@ -133,15 +133,15 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
     const idx = onUnitStep ? currentUnitIndex : undefined;
     const result = validateAllGroups(groups, state, idx);
     if (!result.valid) {
-      toast.error(
+      const msg =
         result.error === "required_choice"
-          ? "Escolhe uma opção antes de continuar"
+          ? t("errRequiredChoice")
           : result.error === "required_substitution"
-            ? "Escolhe o acompanhamento do menu"
+            ? t("errRequiredSubstitution")
             : result.error === "required_removal"
-              ? "Completa a personalização"
-              : "Verifica as tuas escolhas",
-      );
+              ? t("errRequiredRemoval")
+              : t("errVerifyChoices");
+      toast.error(msg);
       return false;
     }
     return true;
@@ -149,14 +149,14 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
 
   const validateAll = (): boolean => {
     if (!validateAllGroups(globalGroups, globalState).valid) {
-      toast.error("Completa as escolhas obrigatórias do combo");
+      toast.error(isCombo ? t("errRequiredCombo") : t("errRequiredProduct"));
       setComboStep(0);
       return false;
     }
     if (isCombo) {
       for (let i = 0; i < config.comboUnitCount; i++) {
         if (!validateAllGroups(unitGroups, unitStates[i] || new Map(), i).valid) {
-          toast.error(`Completa a personalização da unidade ${i + 1}`);
+          toast.error(`${t("errRequiredUnit")} ${i + 1}`);
           setComboStep(i + 1);
           return false;
         }

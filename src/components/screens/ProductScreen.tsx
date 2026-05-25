@@ -6,6 +6,8 @@ import { useEffectiveModifierConfig } from "@/hooks/useEffectiveModifierConfig";
 import ProductCustomizationFlow from "@/components/customization/ProductCustomizationFlow";
 import LegacyProductCustomizer from "@/components/screens/LegacyProductCustomizer";
 import PageSpinner from "@/components/PageSpinner";
+import ScreenHeader from "@/components/ScreenHeader";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /** Escolhe ecrã legado vs personalização avançada — sem violar regras de hooks do React. */
 const ProductScreen = () => {
@@ -26,6 +28,7 @@ const ProductScreen = () => {
   };
 
   const { items } = useCart();
+  const { t } = useLanguage();
   const { products } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
   const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
@@ -36,7 +39,23 @@ const ProductScreen = () => {
     [editingCartItemId, items],
   );
 
-  if (!product) return null;
+  if (!product) {
+    return (
+      <div className="h-[100dvh] flex flex-col bg-background">
+        <ScreenHeader eyebrow={t("menu")} title={t("productUnavailable")} onBack={goBack} sticky />
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
+          <p className="text-muted-foreground text-sm">{t("productUnavailable")}</p>
+          <button
+            type="button"
+            onClick={goBack}
+            className="h-12 px-6 rounded-2xl bg-primary text-primary-foreground font-bold"
+          >
+            {t("back")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (modifierLoading) {
     return (

@@ -1,0 +1,90 @@
+import type { PaymentMethodId } from "@/contexts/OrderContext";
+import type { OperationsSettings } from "@/hooks/useOperationsSettings";
+
+export type CustomerOrderType = "here" | "takeaway" | "delivery";
+
+export type PaymentPolicyInput = {
+  orderType: CustomerOrderType;
+  mesaValidated: boolean;
+  settings: OperationsSettings | null;
+  stripeReady: boolean;
+  stripePublishableKey: boolean;
+};
+
+function opsFlag(settings: OperationsSettings | null, key: string, fallback: boolean): boolean {
+  if (!settings) return fallback;
+  const v = (settings as Record<string, unknown>)[key];
+  return typeof v === "boolean" ? v : fallback;
+}
+
+/** Métodos disponíveis no checkout conforme tipo de pedido e configuração. */
+export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethodId[] {
+  const { orderType, mesaValidated, settings, stripeReady, stripePublishableKey } = input;
+  const cardAllowed =
+    stripeReady &&
+    stripePublishableKey &&
+    opsFlag(settings, "pay_card_enabled", true);
+
+  if (orderType === "here") {
+    if (!mesaValidated) return [];
+    const methods: PaymentMethodId[] = [];
+    if (cardAllowed) methods.push("card");
+    if (opsFlag(settings, "pay_cash_dine_in", true)) methods.push("cash");
+    if (opsFlag(settings, "pay_counter_enabled", false)) methods.push("counter");
+    return methods;
+  }
+
+  const methods: PaymentMethodId[] = [];
+  if (cardAllowed) methods.push("card");
+
+  if (orderType === "takeaway") {
+    if (opsFlag(settings, "pay_cash_takeaway", false)) methods.push("cash");
+    if (opsFlag(settings, "pay_counter_enabled", false)) methods.push("counter");
+  }
+
+  if (orderType === "delivery") {
+    if (opsFlag(settings, "pay_cash_delivery", false)) methods.push("cash");
+  }
+
+  return methods;
+}
+
+export function requiresPrepayment(
+  orderType: CustomerOrderType,
+  settings: OperationsSettings | null,
+): boolean {
+  if (orderType === "takeaway") return opsFlag(settings, "require_prepayment_takeaway", true);
+  if (orderType === "delivery") return opsFlag(settings, "require_prepayment_delivery", true);
+  return false;
+}
+
+export function mustPayOnlineBeforeSubmit(
+  orderType: CustomerOrderType,
+  selected: PaymentMethodId | null,
+  settings: OperationsSettings | null,
+  stripeReady: boolean,
+): boolean {
+  if (!requiresPrepayment(orderType, settings)) return false;
+  if (!stripeReady) return false;
+  return selected === "card" || selected === null;
+}
+
+/** Impressão automática após checkout. */
+export function shouldPrintAfterCheckout(
+  orderType: CustomerOrderType,
+  paymentStatus: "pending" | "paid",
+  settings: OperationsSettings | null,
+  mesaValidated: boolean,
+): boolean {
+  if (paymentStatus === "paid") return true;
+  if (orderType === "here" && mesaValidated && opsFlag(settings, "print_pending_dine_in", true)) {
+    return true;
+  }
+  return false;
+}
+
+export function stripeConfigIssue(stripeReady: boolean, hasPublishableKey: boolean): string | null {
+  if (!hasPublishableKey) return "Chave pública Stripe em falta no site — contacte o suporte.";
+  if (!stripeReady) return "Pagamentos online ainda não activos — complete os dados bancários em Recebimentos.";
+  return null;
+}

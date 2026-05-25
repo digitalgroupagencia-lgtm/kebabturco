@@ -56,9 +56,13 @@ export function getTenantTotemUrl(tenant: TenantUrlConfig, fallbackOrigin?: stri
   return buildTenantUrl(tenant, "", fallbackOrigin);
 }
 
-export function getTableQrUrl(tenant: TenantUrlConfig, mesaNumber: string, fallbackOrigin?: string): string {
+export function getTableQrUrl(
+  tenant: TenantUrlConfig,
+  table: { number: string; qr_token: string },
+  fallbackOrigin?: string,
+): string {
   const url = new URL(buildTenantUrl(tenant, "", fallbackOrigin));
-  url.searchParams.set("mesa", mesaNumber);
+  url.searchParams.set("t", table.qr_token);
   return url.href;
 }
 
