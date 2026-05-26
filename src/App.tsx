@@ -48,6 +48,20 @@ const internal = withSuspense(<CatchAllResolver notFound={<NotFound />} />);
 const LovablePreviewRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
+    <Route path="/menu" element={internal} />
+    <Route path="/cardapio" element={internal} />
+    <Route path="/checkout" element={internal} />
+    <Route path="/pagamento" element={internal} />
+    <Route path="/confirmacao" element={internal} />
+    <Route path="/pedido-concluido" element={internal} />
+    <Route path="/confirmation" element={internal} />
+    <Route path="/acompanhar" element={internal} />
+    <Route path="/acompanhar-pedido" element={internal} />
+    <Route path="/tracking" element={internal} />
+    <Route path="/meus-pedidos" element={internal} />
+    <Route path="/pedidos" element={internal} />
+    <Route path="/mesa" element={internal} />
+    <Route path="/qr" element={internal} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
     <Route path="/panel" element={internal} />
     <Route path="/panel/menu" element={internal} />
