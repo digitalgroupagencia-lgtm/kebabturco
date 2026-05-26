@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone, AlertCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { markOrderPaidAtCounter } from "@/services/orderService";
 
 type CashRegister = Tables<"cash_registers">;
+type PendingOrder = Tables<"orders">;
 
 const CashierPage = () => {
   const { user } = useAuth();
@@ -26,13 +28,56 @@ const CashierPage = () => {
   const [openingBalance, setOpeningBalance] = useState("0");
   const [closingBalance, setClosingBalance] = useState("0");
   const [todaySales, setTodaySales] = useState({ total: 0, card: 0, cash: 0, pix: 0, count: 0 });
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const fetchPendingOrders = useCallback(async () => {
+    if (!storeId) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("store_id", storeId)
+      .eq("payment_status", "pending")
+      .neq("status", "cancelled")
+      .gte("created_at", today.toISOString())
+      .order("created_at", { ascending: false });
+    setPendingOrders((data ?? []) as PendingOrder[]);
+  }, [storeId]);
 
   useEffect(() => {
     if (storeId) {
       fetchCurrentRegister();
       fetchTodaySales();
+      fetchPendingOrders();
     }
-  }, [storeId]);
+  }, [storeId, fetchPendingOrders]);
+
+  useEffect(() => {
+    if (!storeId) return;
+    const channel = supabase
+      .channel(`cashier-orders-${storeId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` }, () => {
+        fetchPendingOrders();
+        fetchTodaySales();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [storeId, fetchPendingOrders]);
+
+  const confirmCashPayment = async (order: PendingOrder, method: "cash" | "card" = "cash") => {
+    setConfirmingId(order.id);
+    try {
+      await markOrderPaidAtCounter(order.id, method);
+      toast.success(`Pagamento registado — #${order.order_number}`);
+      await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   const fetchCurrentRegister = async () => {
     if (!storeId) return;
