@@ -15,8 +15,16 @@ describe("resolveLegacyRouteRedirect", () => {
   });
 
   it("redirects legacy panel config paths to admin", () => {
-    expect(resolveLegacyRouteRedirect("/panel/menu")).toBe("/admin/menu");
-    expect(resolveLegacyRouteRedirect("/panel/finance")).toBe("/admin/finance");
+    expect(resolveLegacyRouteRedirect("/panel/modifiers")).toBe("/admin/modifiers");
+    expect(resolveLegacyRouteRedirect("/panel/branding")).toBe("/admin/branding");
+  });
+
+  it("keeps restaurant-admin paths inside the restaurant panel", () => {
+    expect(resolveLegacyRouteRedirect("/admin/menu")).toBe("/panel/menu");
+    expect(resolveLegacyRouteRedirect("/admin/finance")).toBe("/panel/finance");
+    expect(resolveLegacyRouteRedirect("/admin/settings")).toBe("/panel/settings");
+    expect(resolveLegacyRouteRedirect("/panel/menu")).toBeNull();
+    expect(resolveLegacyRouteRedirect("/panel/finance")).toBeNull();
   });
 
   it("returns null for canonical routes", () => {
