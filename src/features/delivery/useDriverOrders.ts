@@ -30,11 +30,11 @@ export function useDriverOrders(storeId?: string) {
   const updatingRef = useRef<Set<string>>(new Set());
 
   const fetchOrders = useCallback(async () => {
-    const { data, error } = await supabase.rpc("get_driver_deliveries", {
+    const { data, error } = await (supabase.rpc as any)("get_driver_deliveries", {
       _store_id: storeId ?? null,
     });
     if (!error && data) {
-      setOrders(data as DriverOrder[]);
+      setOrders(data as unknown as DriverOrder[]);
     }
     setLoading(false);
   }, [storeId]);
