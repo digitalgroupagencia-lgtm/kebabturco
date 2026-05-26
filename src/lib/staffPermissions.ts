@@ -1,6 +1,7 @@
 import type { Database } from "@/integrations/supabase/types";
 
-export type StaffRole = Database["public"]["Enums"]["app_role"];
+type DbAppRole = Database["public"]["Enums"]["app_role"];
+export type StaffRole = DbAppRole | "manager" | "cashier" | "attendant" | "delivery";
 
 export type AppArea = "admin" | "panel" | "seller" | "delivery";
 
