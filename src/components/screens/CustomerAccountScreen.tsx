@@ -197,6 +197,14 @@ const CustomerAccountScreen = () => {
             </div>
           </div>
         ))}
+        <div className="pt-6 pb-2 text-center">
+          <a
+            href="/staff-login"
+            className="text-[11px] text-foreground/40 hover:text-foreground/70 transition-colors tracking-wide"
+          >
+            Equipe
+          </a>
+        </div>
       </div>
     </div>
   );

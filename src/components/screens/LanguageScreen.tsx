@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -5,6 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
+import { nav } from "@/lib/navPaths";
 import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
@@ -31,6 +34,17 @@ const LanguageScreen = () => {
   const { settings } = useBranding();
   const { stores, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
+  const navigate = useNavigate();
+  const longPressRef = useRef<number | null>(null);
+  const startLogoPress = () => {
+    longPressRef.current = window.setTimeout(() => navigate(nav.staff()), 5000);
+  };
+  const endLogoPress = () => {
+    if (longPressRef.current) {
+      window.clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  };
   const isDark = theme === "dark";
 
   const logo =
@@ -76,8 +90,16 @@ const LanguageScreen = () => {
       {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
       <div className="flex flex-col items-center px-6 pt-3 shrink-0">
         {logo && (
-          <div className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-            <img src={logo} alt={brandName} className="w-full h-full object-contain" draggable={false} />
+          <div
+            className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
+            onTouchStart={startLogoPress}
+            onTouchEnd={endLogoPress}
+            onTouchCancel={endLogoPress}
+            onMouseDown={startLogoPress}
+            onMouseUp={endLogoPress}
+            onMouseLeave={endLogoPress}
+          >
+            <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
           </div>
         )}
 

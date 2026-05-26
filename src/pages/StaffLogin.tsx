@@ -50,8 +50,8 @@ const StaffLogin = () => {
       setError("Loja não identificada. Actualize a página.");
       return;
     }
-    if (!/^\d{4,8}$/.test(pin)) {
-      setError("Introduza entre 4 e 8 dígitos");
+    if (!/^\d{6,8}$/.test(pin)) {
+      setError("Introduza entre 6 e 8 dígitos");
       return;
     }
 
