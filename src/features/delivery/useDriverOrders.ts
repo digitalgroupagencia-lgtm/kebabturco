@@ -50,7 +50,7 @@ export function useDriverOrders(storeId?: string) {
       if (updatingRef.current.has(order.id)) return false;
       updatingRef.current.add(order.id);
       try {
-        const { data, error } = await supabase.rpc("start_delivery", { _order_id: order.id });
+        const { data, error } = await (supabase.rpc as any)("start_delivery", { _order_id: order.id });
         if (error) throw error;
         const result = data as { success?: boolean; delivery_confirmation_code?: string };
         if (!result?.success) throw new Error("Não foi possível iniciar a entrega");
