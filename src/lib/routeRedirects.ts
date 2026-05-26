@@ -1,5 +1,25 @@
 import { nav } from "@/lib/navPaths.ts";
 
+export type CustomerRouteAliasScreen = "home" | "payment" | "confirmation" | "tracking" | "account" | "orderType";
+
+/** Rotas públicas antigas/amigáveis → ecrã interno do cliente. */
+const CUSTOMER_ROUTE_ALIASES: Readonly<Record<string, CustomerRouteAliasScreen>> = {
+  "/menu": "home",
+  "/cardapio": "home",
+  "/checkout": "payment",
+  "/pagamento": "payment",
+  "/confirmacao": "confirmation",
+  "/pedido-concluido": "confirmation",
+  "/confirmation": "confirmation",
+  "/acompanhar": "tracking",
+  "/acompanhar-pedido": "tracking",
+  "/tracking": "tracking",
+  "/meus-pedidos": "account",
+  "/pedidos": "account",
+  "/mesa": "orderType",
+  "/qr": "orderType",
+};
+
 /** Rotas antigas ou alias → destino canónico (sem 404). */
 const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/admin/panel": nav.panel(),
@@ -11,6 +31,9 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/admin/qrcode": nav.panel("tables"),
   "/admin/qr-codes": nav.panel("tables"),
   "/admin/qr": nav.panel("tables"),
+  "/admin/finance": nav.panel("finance"),
+  "/admin/settings": nav.panel("settings"),
+  "/admin/menu": nav.panel("menu"),
   "/admin/payments": nav.admin("operations"),
   "/admin/payment": nav.admin("operations"),
   "/admin/config": nav.admin("settings"),
@@ -24,11 +47,8 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/panel/branding": nav.admin("branding"),
   "/panel/banners": nav.admin("banner"),
   "/panel/modifiers": nav.admin("modifiers"),
-  "/panel/menu": nav.admin("menu"),
   "/panel/delivery-zones": nav.admin("delivery-zones"),
   "/panel/payments": nav.admin("operations"),
-  "/panel/settings": nav.admin("settings"),
-  "/panel/finance": nav.admin("finance"),
   "/cashier": nav.panel("cashier"),
   "/painel": nav.panel(),
   "/painel/pedidos": nav.panel(),
@@ -45,6 +65,10 @@ const PREFIX_REDIRECTS: Readonly<
       if (rest === "/qrcodes" || rest === "/qr-codes" || rest === "/tables") return nav.panel("tables");
       return nav.panel();
     },
+  },
+  {
+    prefix: "/admin/projects",
+    resolve: () => nav.home(),
   },
 ];
 
@@ -69,6 +93,20 @@ export function resolveLegacyRouteRedirect(pathname: string): string | null {
   }
 
   return null;
+}
+
+export function customerScreenFromPathname(pathname: string): CustomerRouteAliasScreen | null {
+  return CUSTOMER_ROUTE_ALIASES[normalizePathname(pathname)] ?? null;
+}
+
+export function resolveCustomerRouteRedirect(pathname: string, search = ""): { pathname: string; search: string } | null {
+  const screen = customerScreenFromPathname(pathname);
+  if (!screen) return null;
+
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  params.set("screen", screen);
+  const qs = params.toString();
+  return { pathname: nav.home(), search: qs ? `?${qs}` : "" };
 }
 
 /** Rotas públicas do cliente (ecrãs internos — não URLs do router). */

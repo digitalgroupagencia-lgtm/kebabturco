@@ -7,6 +7,9 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "cashier",
   "table-map",
   "tables",
+  "finance",
+  "settings",
+  "menu",
   "team",
   "sellers",
   "guide",
@@ -15,7 +18,6 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
 
 /** Configuração do projecto — bloqueada em /panel; redirecciona para /admin. */
 export const PANEL_CONFIG_SEGMENT_TO_ADMIN: Readonly<Record<string, readonly string[]>> = {
-  menu: ["menu"],
   modifiers: ["modifiers"],
   banners: ["banner"],
   "delivery-zones": ["delivery-zones"],
@@ -25,11 +27,9 @@ export const PANEL_CONFIG_SEGMENT_TO_ADMIN: Readonly<Record<string, readonly str
   stores: ["stores"],
   screens: ["screens"],
   languages: ["languages"],
-  finance: ["finance"],
   payments: ["operations"],
   printers: ["printer"],
   totem: ["totem"],
-  settings: ["settings"],
   stock: ["stock"],
   reports: ["reports"],
   orders: [],
