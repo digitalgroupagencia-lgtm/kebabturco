@@ -1,4 +1,9 @@
 import { nav } from "@/lib/navPaths.ts";
+import {
+  canAccessPanel,
+  panelSegmentAllowed,
+  type StaffRole,
+} from "@/lib/staffPermissions";
 
 /** Segmentos permitidos no painel operacional do restaurante (/panel). */
 export const PANEL_OPERATIONAL_SEGMENTS = new Set([
@@ -53,7 +58,6 @@ export function isPanelConfigSegment(segment: string): boolean {
   return segment in PANEL_CONFIG_SEGMENT_TO_ADMIN;
 }
 
-/** Destino em /admin quando alguém abre configuração via /panel/... */
 export function adminPathForPanelConfig(segment: string): string {
   const adminSegments = PANEL_CONFIG_SEGMENT_TO_ADMIN[segment];
   if (!adminSegments) return nav.admin();
@@ -66,13 +70,16 @@ export function redirectTargetForPanelPath(
   role: string | null | undefined,
 ): string | null {
   const segment = panelSegmentFromPathname(pathname);
+  const staffRole = role as StaffRole | null | undefined;
+
+  if (staffRole && !panelSegmentAllowed(staffRole, segment)) {
+    return nav.panel();
+  }
+
   if (isPanelOperationalSegment(segment)) return null;
 
-  // Rotas do restaurante que nunca devem expulsar para o admin geral.
   if (segment === "menu" || segment === "finance" || segment === "settings") return null;
 
-  // admin_master pode usar o painel do restaurante completamente — não redireccionar
-  // segmentos de configuração para /admin (causa "tudo abre admin geral").
   if (role === "admin_master") return null;
 
   if (segment && !isPanelOperationalSegment(segment)) {
@@ -84,13 +91,16 @@ export function redirectTargetForPanelPath(
 
 export const RESTAURANT_PANEL_ROLES = new Set([
   "restaurant_admin",
+  "manager",
   "operator",
   "kitchen",
+  "cashier",
+  "attendant",
 ]);
 
 export function canUseRestaurantPanel(role: string | null | undefined): boolean {
   if (!role) return false;
-  return RESTAURANT_PANEL_ROLES.has(role) || role === "admin_master";
+  return canAccessPanel(role as StaffRole) || role === "admin_master";
 }
 
 export function legacyBareSegmentTarget(segment: string): string | null {

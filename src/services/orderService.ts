@@ -242,6 +242,27 @@ export async function confirmDeliveryWithCode(orderId: string, code: string) {
   return result as { success: true; order_number?: string };
 }
 
+export async function assignDeliveryDriver(orderId: string, driverUserId: string) {
+  const { data, error } = await supabase.rpc("assign_delivery_driver", {
+    _order_id: orderId,
+    _driver_user_id: driverUserId,
+  });
+  if (error) throw error;
+  return data as { success: boolean; assigned_driver_id?: string };
+}
+
+export async function listStoreDrivers(storeId: string) {
+  const { data, error } = await supabase.rpc("list_store_drivers", { _store_id: storeId });
+  if (error) throw error;
+  return (data ?? []) as { user_id: string; full_name: string }[];
+}
+
+export async function startDelivery(orderId: string) {
+  const { data, error } = await supabase.rpc("start_delivery", { _order_id: orderId });
+  if (error) throw error;
+  return data as { success: boolean; delivery_confirmation_code?: string };
+}
+
 export async function regenerateTableQrToken(tableId: string) {
   const { data, error } = await supabase.rpc("regenerate_table_qr_token", { _table_id: tableId });
   if (error) throw error;

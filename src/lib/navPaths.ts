@@ -13,12 +13,13 @@ export const nav = {
   panel: (...rest: string[]) => joinPath("panel", ...rest),
   admin: (...rest: string[]) => joinPath("admin", ...rest),
   seller: (...rest: string[]) => joinPath("seller", ...rest),
+  delivery: (...rest: string[]) => joinPath("delivery", ...rest),
 } as const;
 
 /** Lista curada — dropdown preview Lovable (só 3 entradas). */
 export const LOVABLE_PREVIEW_PATHS = ["/", "/auth", "/panel"] as const;
 
-export type AppArea = "panel" | "admin" | "seller";
+export type AppArea = "panel" | "admin" | "seller" | "delivery";
 
 export type RouteSegmentDef = {
   area: AppArea;
@@ -80,11 +81,14 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "seller", segments: ["tables", ":sessionId"], loader: () => import("@/views/seller/SellerTableDetail.tsx") },
   { area: "seller", segments: ["my-orders"], loader: () => import("@/views/seller/SellerMyOrders.tsx") },
   { area: "seller", segments: ["new"], loader: () => import("@/views/seller/SellerNewOrder.tsx") },
+
+  { area: "delivery", segments: [], loader: () => import("@/views/delivery/DeliveryHomePage.tsx") },
 ];
 
 export function pathForRouteDef(def: RouteSegmentDef): string {
   if (def.area === "panel") return nav.panel(...def.segments);
   if (def.area === "admin") return nav.admin(...def.segments);
+  if (def.area === "delivery") return nav.delivery(...def.segments);
   return nav.seller(...def.segments);
 }
 

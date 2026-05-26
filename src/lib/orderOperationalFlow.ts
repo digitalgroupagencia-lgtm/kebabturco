@@ -5,7 +5,9 @@ export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for
 export type PanelOrderAction =
   | { kind: "accept_eta"; label: string }
   | { kind: "advance"; next: OrderStatus; label: string }
-  | { kind: "delivery_code"; label: string };
+  | { kind: "assign_driver"; label: string }
+  | { kind: "delivery_code"; label: string }
+  | { kind: "start_delivery"; label: string };
 
 export function resolveOrderType(order: {
   order_type?: string | null;
@@ -37,14 +39,20 @@ export function generateDeliveryConfirmationCode(): string {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
-export function getPanelOrderAction(order: {
-  status: string;
-  order_type?: string | null;
-  table_number?: string | null;
-  delivery_street?: string | null;
-}): PanelOrderAction | null {
+export function getPanelOrderAction(
+  order: {
+    status: string;
+    order_type?: string | null;
+    table_number?: string | null;
+    delivery_street?: string | null;
+    assigned_driver_id?: string | null;
+  },
+  options?: { viewerUserId?: string | null; canAssignDriver?: boolean },
+): PanelOrderAction | null {
   const status = order.status;
   const type = resolveOrderType(order);
+  const viewerUserId = options?.viewerUserId ?? null;
+  const canAssignDriver = options?.canAssignDriver ?? true;
 
   if (status === "pending") {
     return { kind: "accept_eta", label: "Aceitar" };
@@ -54,7 +62,19 @@ export function getPanelOrderAction(order: {
   }
   if (status === "ready" || status === "out_for_delivery") {
     if (type === "delivery") {
-      return { kind: "delivery_code", label: "Confirmar entrega" };
+      if (status === "out_for_delivery") {
+        if (order.assigned_driver_id && order.assigned_driver_id === viewerUserId) {
+          return { kind: "delivery_code", label: "Finalizar entrega" };
+        }
+        return null;
+      }
+      if (!order.assigned_driver_id && canAssignDriver) {
+        return { kind: "assign_driver", label: "Atribuir entregador" };
+      }
+      if (order.assigned_driver_id && order.assigned_driver_id === viewerUserId) {
+        return { kind: "start_delivery", label: "Iniciar entrega" };
+      }
+      return null;
     }
     return { kind: "advance", next: "delivered", label: "Pedido entregue" };
   }
@@ -65,7 +85,8 @@ export function customerTrackingStepIndex(status: string): number {
   if (status === "cancelled") return -1;
   if (status === "pending") return 0;
   if (status === "preparing") return 1;
-  if (status === "ready" || status === "out_for_delivery") return 2;
-  if (status === "delivered") return 3;
+  if (status === "ready") return 2;
+  if (status === "out_for_delivery") return 3;
+  if (status === "delivered") return 4;
   return 0;
 }

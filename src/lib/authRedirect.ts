@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isGeneralAdmin } from "@/lib/projectAccess";
 import { nav } from "@/lib/navPaths.ts";
+import { primaryAppAreaForRole, type StaffRole } from "@/lib/staffPermissions";
 
 type RoleRow = { role: string; tenant_id: string | null };
 
@@ -29,11 +30,17 @@ export async function resolvePostLoginDestination(
     .eq("user_id", userId);
 
   const rows = (roles ?? []) as RoleRow[];
-  const primaryRole = rows.find((r) => r.role === "admin_master")?.role ?? rows[0]?.role;
+  const primaryRole =
+    (rows.find((r) => r.role === "admin_master")?.role as StaffRole | undefined) ??
+    (rows[0]?.role as StaffRole | undefined);
 
   if (isGeneralAdmin(primaryRole) || rows.some((r) => r.role === "admin_master")) {
     return { type: "internal", path: nav.admin() };
   }
   if (primaryRole === "seller") return { type: "internal", path: nav.seller() };
+
+  const area = primaryAppAreaForRole(primaryRole);
+  if (area === "delivery") return { type: "internal", path: nav.delivery() };
+
   return { type: "internal", path: nav.panel() };
 }

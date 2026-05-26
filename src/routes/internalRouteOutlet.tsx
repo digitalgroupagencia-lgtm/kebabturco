@@ -5,6 +5,7 @@ import PageSpinner from "@/components/PageSpinner.tsx";
 import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import AdminLayout from "@/components/admin/AdminLayout.tsx";
 import SellerLayout from "@/components/seller/SellerLayout.tsx";
+import DeliveryLayout from "@/components/delivery/DeliveryLayout.tsx";
 import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/navPaths.ts";
 import { resolveAdminRestaurantPanelAlias, resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 
@@ -12,6 +13,7 @@ const AREA_LAYOUT: Record<AppArea, ComponentType<{ page?: ComponentType<object> 
   panel: PanelLayout,
   admin: AdminLayout,
   seller: SellerLayout,
+  delivery: DeliveryLayout,
 };
 
 const pageCache = new Map<string, ComponentType<object>>();

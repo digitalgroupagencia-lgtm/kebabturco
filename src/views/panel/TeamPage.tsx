@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Users, Plus, Trash2, Shield } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam } from "@/lib/staffPermissions";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -33,11 +34,15 @@ const LANGUAGES = [
 ];
 
 const roleLabels: Record<AppRole, { label: string; color: string }> = {
-  admin_master: { label: "Admin Master", color: "bg-destructive" },
-  restaurant_admin: { label: "Admin Restaurante", color: "bg-primary" },
-  operator: { label: "Operador", color: "bg-accent text-accent-foreground" },
-  kitchen: { label: "Cozinha", color: "bg-success" },
-  seller: { label: "Vendedor", color: "bg-cta text-cta-foreground" },
+  admin_master: { label: STAFF_ROLE_LABELS.admin_master, color: "bg-destructive" },
+  restaurant_admin: { label: STAFF_ROLE_LABELS.restaurant_admin, color: "bg-primary" },
+  manager: { label: STAFF_ROLE_LABELS.manager, color: "bg-primary" },
+  operator: { label: STAFF_ROLE_LABELS.operator, color: "bg-accent text-accent-foreground" },
+  kitchen: { label: STAFF_ROLE_LABELS.kitchen, color: "bg-success" },
+  cashier: { label: STAFF_ROLE_LABELS.cashier, color: "bg-yellow-600 text-white" },
+  attendant: { label: STAFF_ROLE_LABELS.attendant, color: "bg-blue-600 text-white" },
+  delivery: { label: STAFF_ROLE_LABELS.delivery, color: "bg-orange-600 text-white" },
+  seller: { label: STAFF_ROLE_LABELS.seller, color: "bg-cta text-cta-foreground" },
 };
 
 const TeamPage = () => {
@@ -194,7 +199,7 @@ const TeamPage = () => {
     );
   }
 
-  const canManage = roleData?.role === "admin_master" || roleData?.role === "restaurant_admin";
+  const canManage = canManageTeam(roleData?.role);
 
   return (
     <div className="space-y-6">
@@ -243,9 +248,11 @@ const TeamPage = () => {
                       <Select value={m.role} onValueChange={(v) => updateRole(m.id, v as AppRole)}>
                         <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="restaurant_admin">Admin Restaurante</SelectItem>
-                          <SelectItem value="operator">Operador</SelectItem>
-                          <SelectItem value="kitchen">Cozinha</SelectItem>
+                          {RESTAURANT_STAFF_ROLES.map((r) => (
+                            <SelectItem key={r} value={r}>
+                              {roleLabels[r]?.label ?? r}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -313,9 +320,11 @@ const TeamPage = () => {
               <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="restaurant_admin">Admin Restaurante</SelectItem>
-                  <SelectItem value="operator">Operador</SelectItem>
-                  <SelectItem value="kitchen">Cozinha</SelectItem>
+                  {RESTAURANT_STAFF_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {roleLabels[r]?.label ?? r}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

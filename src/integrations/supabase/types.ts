@@ -769,6 +769,7 @@ export type Database = {
       orders: {
         Row: {
           application_fee_cents: number
+          assigned_driver_id: string | null
           coupon_code: string | null
           created_at: string
           customer_id: string | null
@@ -781,6 +782,7 @@ export type Database = {
           delivery_notes: string | null
           delivery_number: string | null
           delivery_postal_code: string | null
+          delivery_started_at: string | null
           delivery_street: string | null
           delivery_zone_id: string | null
           delivery_zone_name: string | null
@@ -2822,12 +2824,14 @@ export type Database = {
       get_order_public: {
         Args: { _order_id: string }
         Returns: {
+          assigned_driver_name: string
           created_at: string
           delivery_city: string
           delivery_confirmation_code: string
           delivery_fee: number
           delivery_number: string
           delivery_postal_code: string
+          delivery_started_at: string
           delivery_street: string
           discount_amount: number
           estimated_ready_at: string
@@ -2838,6 +2842,39 @@ export type Database = {
           status: string
           total: number
         }[]
+      }
+      get_driver_deliveries: {
+        Args: { _store_id?: string }
+        Returns: {
+          assigned_driver_id: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          delivery_city: string
+          delivery_confirmation_code: string
+          delivery_notes: string
+          delivery_number: string
+          delivery_started_at: string
+          delivery_street: string
+          estimated_ready_at: string
+          id: string
+          notes: string
+          order_number: string
+          status: string
+          total: number
+        }[]
+      }
+      list_store_drivers: {
+        Args: { _store_id: string }
+        Returns: { full_name: string; user_id: string }[]
+      }
+      assign_delivery_driver: {
+        Args: { _driver_user_id: string; _order_id: string }
+        Returns: Json
+      }
+      start_delivery: {
+        Args: { _order_id: string }
+        Returns: Json
       }
       get_orders_heatmap: {
         Args: never
@@ -3066,6 +3103,10 @@ export type Database = {
         | "operator"
         | "kitchen"
         | "seller"
+        | "manager"
+        | "cashier"
+        | "attendant"
+        | "delivery"
       order_source: "totem" | "ifood" | "counter" | "delivery" | "waiter"
       order_status:
         | "pending"
@@ -3210,6 +3251,10 @@ export const Constants = {
         "operator",
         "kitchen",
         "seller",
+        "manager",
+        "cashier",
+        "attendant",
+        "delivery",
       ],
       order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: [

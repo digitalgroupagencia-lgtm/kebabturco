@@ -28,12 +28,15 @@ describe("redirectTargetForPanelPath", () => {
     expect(redirectTargetForPanelPath(nav.panel(), "restaurant_admin")).toBeNull();
   });
 
-  it("never redirects restaurant menu/finance/settings for any role", () => {
-    for (const role of ["admin_master", "restaurant_admin", "operator"] as const) {
-      expect(redirectTargetForPanelPath(nav.panel("menu"), role)).toBeNull();
-      expect(redirectTargetForPanelPath(nav.panel("finance"), role)).toBeNull();
-      expect(redirectTargetForPanelPath(nav.panel("settings"), role)).toBeNull();
-    }
+  it("restricts operator from config segments but keeps orders", () => {
+    expect(redirectTargetForPanelPath(nav.panel("menu"), "operator")).toBe(nav.panel());
+    expect(redirectTargetForPanelPath(nav.panel(), "operator")).toBeNull();
+    expect(redirectTargetForPanelPath(nav.panel("cashier"), "operator")).toBeNull();
+  });
+
+  it("allows manager access to team and menu", () => {
+    expect(redirectTargetForPanelPath(nav.panel("menu"), "manager")).toBeNull();
+    expect(redirectTargetForPanelPath(nav.panel("team"), "manager")).toBeNull();
   });
 
   it("treats /panel/menu as operational", () => {

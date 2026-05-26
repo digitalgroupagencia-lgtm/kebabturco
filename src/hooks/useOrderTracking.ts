@@ -12,6 +12,8 @@ export type PublicOrderTrack = {
   delivery_street: string | null;
   delivery_city: string | null;
   delivery_confirmation_code: string | null;
+  assigned_driver_name: string | null;
+  delivery_started_at: string | null;
 };
 
 const POLL_MS = 1_000;

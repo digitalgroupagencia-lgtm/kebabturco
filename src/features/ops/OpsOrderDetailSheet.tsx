@@ -6,6 +6,7 @@ import { User, Phone, MapPin, Clock, XCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
+import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
@@ -52,7 +53,9 @@ type Props = {
   onCancel: (orderId: string) => void;
   onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
   onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void>;
-  onRequestDeliveryConfirm?: (order: PanelOrder) => void;
+  onRequestAssignDriver?: (order: PanelOrder) => void;
+  viewerRole?: string | null;
+  driverName?: string | null;
 };
 
 const OpsOrderDetailSheet = ({
@@ -65,7 +68,9 @@ const OpsOrderDetailSheet = ({
   onCancel,
   onSetPrepMinutes,
   onMarkPaid,
-  onRequestDeliveryConfirm,
+  onRequestAssignDriver,
+  viewerRole,
+  driverName,
 }: Props) => {
   const [advancing, setAdvancing] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
@@ -74,7 +79,7 @@ const OpsOrderDetailSheet = ({
 
   const modality = getOrderModalityBanner(order);
   const payment = getPanelPaymentBadge(order);
-  const action = getPanelOrderAction(order);
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole) });
   const etaLabel = formatOrderEta(order);
   const prepRemaining = formatPrepRemaining(order);
   const itemCount = orderItemCount(items);
@@ -89,10 +94,11 @@ const OpsOrderDetailSheet = ({
       onRequestAccept(order);
       return;
     }
-    if (action.kind === "delivery_code") {
-      onRequestDeliveryConfirm?.(order);
+    if (action.kind === "assign_driver") {
+      onRequestAssignDriver?.(order);
       return;
     }
+    if (action.kind === "delivery_code" || action.kind === "start_delivery") return;
     if (requiresEtaBeforeAccept(order.status, action.next)) {
       onRequestAccept(order);
       return;
@@ -143,11 +149,14 @@ const OpsOrderDetailSheet = ({
           {showDeliveryCode && (
             <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3 text-center">
               <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
-                Código para o estafeta
+                Código de entrega
               </p>
               <p className="text-3xl font-black tracking-[0.25em] tabular-nums text-orange-600">
                 {order.delivery_confirmation_code}
               </p>
+              {driverName && (
+                <p className="text-xs text-muted-foreground mt-1">Entregador: {driverName}</p>
+              )}
             </div>
           )}
 
@@ -276,7 +285,7 @@ const OpsOrderDetailSheet = ({
           {action && order.status !== "cancelled" && (
             <Button
               className={`w-full h-11 font-bold touch-action-manipulation ${
-                action.kind === "delivery_code" ? "bg-orange-600 hover:bg-orange-700" : ""
+                action.kind === "assign_driver" ? "bg-orange-600 hover:bg-orange-700" : ""
               }`}
               disabled={advancing}
               onClick={() => void handlePrimary()}

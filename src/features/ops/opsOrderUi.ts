@@ -1,6 +1,7 @@
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, type OrderStatus } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, panelColumnStatus } from "@/lib/orderOperationalFlow";
+import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import type { PanelOrder } from "./usePanelOrders";
 
 export const ETA_QUICK_OPTIONS = [10, 15, 20, 25, 30] as const;
@@ -57,8 +58,8 @@ export function getModalityShortLabel(order: PanelOrder): string {
   return banner.label.slice(0, 8);
 }
 
-export function getCompactActionLabel(order: PanelOrder): string | null {
-  const action = getPanelOrderAction(order);
+export function getCompactActionLabel(order: PanelOrder, viewerRole?: string | null): string | null {
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole) });
   if (!action) return null;
   return action.label;
 }

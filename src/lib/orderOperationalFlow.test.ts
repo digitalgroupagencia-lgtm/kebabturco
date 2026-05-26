@@ -26,9 +26,9 @@ describe("orderOperationalFlow", () => {
     expect(code).toMatch(/^\d{4}$/);
   });
 
-  it("requires delivery code action for delivery at ready", () => {
+  it("requires assign driver for ready delivery without driver", () => {
     const action = getPanelOrderAction({ status: "ready", order_type: "delivery" });
-    expect(action).toEqual({ kind: "delivery_code", label: "Confirmar entrega" });
+    expect(action).toEqual({ kind: "assign_driver", label: "Atribuir entregador" });
   });
 
   it("allows direct delivery for counter orders at ready", () => {
@@ -36,15 +36,26 @@ describe("orderOperationalFlow", () => {
     expect(action).toEqual({ kind: "advance", next: "delivered", label: "Pedido entregue" });
   });
 
-  it("requires ETA before accept for pending orders", () => {
-    const action = getPanelOrderAction({ status: "pending", order_type: "takeaway" });
-    expect(action).toEqual({ kind: "accept_eta", label: "Aceitar" });
+  it("driver starts delivery when assigned", () => {
+    const action = getPanelOrderAction(
+      { status: "ready", order_type: "delivery", assigned_driver_id: "driver-1" },
+      { viewerUserId: "driver-1" },
+    );
+    expect(action).toEqual({ kind: "start_delivery", label: "Iniciar entrega" });
   });
 
-  it("tracks customer steps without separate out_for_delivery step", () => {
+  it("driver confirms when out for delivery", () => {
+    const action = getPanelOrderAction(
+      { status: "out_for_delivery", order_type: "delivery", assigned_driver_id: "driver-1" },
+      { viewerUserId: "driver-1" },
+    );
+    expect(action).toEqual({ kind: "delivery_code", label: "Finalizar entrega" });
+  });
+
+  it("tracks customer steps with out_for_delivery", () => {
     expect(customerTrackingStepIndex("ready")).toBe(2);
-    expect(customerTrackingStepIndex("out_for_delivery")).toBe(2);
-    expect(customerTrackingStepIndex("delivered")).toBe(3);
+    expect(customerTrackingStepIndex("out_for_delivery")).toBe(3);
+    expect(customerTrackingStepIndex("delivered")).toBe(4);
   });
 
   it("detects delivery orders", () => {

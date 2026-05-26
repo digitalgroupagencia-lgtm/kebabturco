@@ -97,6 +97,16 @@ const OrderTrackingScreen = () => {
                   </p>
                 </div>
 
+                {order.status === "out_for_delivery" && order.assigned_driver_name && (
+                  <div className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-4 text-center">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+                      Entregador
+                    </p>
+                    <p className="text-lg font-black">{order.assigned_driver_name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">O seu pedido saiu para entrega</p>
+                  </div>
+                )}
+
                 {order.delivery_confirmation_code &&
                   (order.status === "ready" || order.status === "out_for_delivery") && (
                     <div className="rounded-2xl border border-orange-500/40 bg-orange-500/10 p-5 text-center space-y-2">

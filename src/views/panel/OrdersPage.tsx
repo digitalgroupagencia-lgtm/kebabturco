@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, ChefHat, Package, CheckCircle2, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
@@ -10,13 +12,14 @@ import OpsStatusTabs from "@/features/ops/OpsStatusTabs";
 import OpsOrderCard from "@/features/ops/OpsOrderCard";
 import OpsOrderDetailSheet from "@/features/ops/OpsOrderDetailSheet";
 import OpsAcceptEtaDialog from "@/features/ops/OpsAcceptEtaDialog";
-import OpsDeliveryConfirmDialog from "@/features/ops/OpsDeliveryConfirmDialog";
+import OpsAssignDriverDialog, { type StoreDriver } from "@/features/ops/OpsAssignDriverDialog";
 import OpsModeFilter, { filterOrdersByMode, type OpsViewMode } from "@/features/ops/OpsModeFilter";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
+import { listStoreDrivers } from "@/services/orderService";
 import {
   acknowledgePendingOrderAlert,
   isPendingOrderAlerting,
@@ -35,6 +38,8 @@ const BASE_COLUMNS: OrderStatus[] = ["pending", "preparing", "ready", "delivered
 
 const OrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
+  const { user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
   const {
     orders,
     itemsByOrder,
@@ -44,8 +49,7 @@ const OrdersPage = () => {
     cancelOrder,
     setPrepMinutes,
     markOrderPaid,
-    confirmDelivery,
-    ensureDeliveryCode,
+    assignDriver,
     refresh,
   } = usePanelOrders(storeId);
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(storeId);
@@ -54,9 +58,11 @@ const OrdersPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [etaDialogOrder, setEtaDialogOrder] = useState<PanelOrder | null>(null);
-  const [deliveryConfirmOrder, setDeliveryConfirmOrder] = useState<PanelOrder | null>(null);
+  const [assignOrder, setAssignOrder] = useState<PanelOrder | null>(null);
+  const [drivers, setDrivers] = useState<StoreDriver[]>([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [accepting, setAccepting] = useState(false);
-  const [confirmingDelivery, setConfirmingDelivery] = useState(false);
+  const [assigning, setAssigning] = useState(false);
   const [, setUnackTick] = useState(0);
 
   useEffect(() => {
@@ -64,6 +70,20 @@ const OrdersPage = () => {
     window.addEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
     return () => window.removeEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
   }, []);
+
+  useEffect(() => {
+    if (!storeId) return;
+    setLoadingDrivers(true);
+    void listStoreDrivers(storeId)
+      .then(setDrivers)
+      .finally(() => setLoadingDrivers(false));
+  }, [storeId]);
+
+  const driverNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    drivers.forEach((d) => map.set(d.user_id, d.full_name));
+    return map;
+  }, [drivers]);
 
   const openOrderDetail = useCallback((order: PanelOrder) => {
     acknowledgePendingOrderAlert(order.id);
@@ -75,15 +95,9 @@ const OrdersPage = () => {
     setEtaDialogOrder(order);
   }, []);
 
-  const openDeliveryConfirmDialog = useCallback(
-    (order: PanelOrder) => {
-      void (async () => {
-        const withCode = await ensureDeliveryCode(order);
-        setDeliveryConfirmOrder(withCode);
-      })();
-    },
-    [ensureDeliveryCode],
-  );
+  const openAssignDialog = useCallback((order: PanelOrder) => {
+    setAssignOrder(order);
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -124,31 +138,39 @@ const OrdersPage = () => {
     [handleAdvance],
   );
 
-  const handleConfirmDelivery = useCallback(
-    async (order: PanelOrder, code: string) => {
-      setConfirmingDelivery(true);
+  const handleAssignDriver = useCallback(
+    async (order: PanelOrder, driverUserId: string) => {
+      setAssigning(true);
       try {
-        const ok = await confirmDelivery(order, code);
+        const ok = await assignDriver(order, driverUserId);
         if (ok) {
-          setDeliveryConfirmOrder(null);
-          setDetailOrderId(null);
-          setMobileTab("delivered");
+          setAssignOrder(null);
         }
       } finally {
-        setConfirmingDelivery(false);
+        setAssigning(false);
       }
     },
-    [confirmDelivery],
+    [assignDriver],
   );
 
   const filteredOrders = useMemo(() => filterOrdersByMode(orders, viewMode), [orders, viewMode]);
-
   const visibleColumns = BASE_COLUMNS;
-
   const getOrdersByStatus = (status: OrderStatus) =>
     filteredOrders.filter((o) => panelColumnStatus(o.status) === status);
-
   const detailOrder = detailOrderId ? orders.find((o) => o.id === detailOrderId) ?? null : null;
+
+  const cardProps = (order: PanelOrder) => ({
+    order,
+    items: itemsByOrder[order.id] || [],
+    needsAttention: isPendingOrderAlerting(order.id),
+    viewerRole: roleData?.role,
+    driverName: order.assigned_driver_id ? driverNameById.get(order.assigned_driver_id) : null,
+    onAdvance: handleAdvance,
+    onCancel: cancelOrder,
+    onOpenDetail: openOrderDetail,
+    onRequestAccept: openAcceptDialog,
+    onRequestAssignDriver: openAssignDialog,
+  });
 
   if (!storeId) {
     return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
@@ -176,19 +198,9 @@ const OrdersPage = () => {
             {columnOrders.length}
           </Badge>
         </h3>
-        <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 min-h-[80px]">
+        <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-[80px]">
           {columnOrders.map((order) => (
-            <OpsOrderCard
-              key={order.id}
-              order={order}
-              items={itemsByOrder[order.id] || []}
-              needsAttention={isPendingOrderAlerting(order.id)}
-              onAdvance={handleAdvance}
-              onCancel={cancelOrder}
-              onOpenDetail={openOrderDetail}
-              onRequestAccept={openAcceptDialog}
-              onRequestDeliveryConfirm={openDeliveryConfirmDialog}
-            />
+            <OpsOrderCard key={order.id} {...cardProps(order)} />
           ))}
           {columnOrders.length === 0 && (
             <div className="text-center py-6 text-muted-foreground text-xs border border-dashed rounded-lg">
@@ -216,26 +228,11 @@ const OrdersPage = () => {
           </div>
         }
       >
-        <OpsStatusTabs
-          columns={visibleColumns}
-          orders={filteredOrders}
-          selected={mobileTab}
-          onSelect={setMobileTab}
-        />
+        <OpsStatusTabs columns={visibleColumns} orders={filteredOrders} selected={mobileTab} onSelect={setMobileTab} />
 
-        <div className="md:hidden space-y-2 max-h-[calc(100vh-14rem)] overflow-y-auto pr-0.5">
+        <div className="md:hidden space-y-1.5 max-h-[calc(100vh-14rem)] overflow-y-auto pr-0.5">
           {mobileOrders.map((order) => (
-            <OpsOrderCard
-              key={order.id}
-              order={order}
-              items={itemsByOrder[order.id] || []}
-              needsAttention={isPendingOrderAlerting(order.id)}
-              onAdvance={handleAdvance}
-              onCancel={cancelOrder}
-              onOpenDetail={openOrderDetail}
-              onRequestAccept={openAcceptDialog}
-              onRequestDeliveryConfirm={openDeliveryConfirmDialog}
-            />
+            <OpsOrderCard key={order.id} {...cardProps(order)} />
           ))}
           {mobileOrders.length === 0 && (
             <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-xl">
@@ -262,7 +259,13 @@ const OrdersPage = () => {
         }}
         onAdvance={handleAdvance}
         onRequestAccept={openAcceptDialog}
-        onRequestDeliveryConfirm={openDeliveryConfirmDialog}
+        onRequestAssignDriver={openAssignDialog}
+        viewerRole={roleData?.role}
+        driverName={
+          detailOrder?.assigned_driver_id
+            ? driverNameById.get(detailOrder.assigned_driver_id)
+            : undefined
+        }
         onCancel={cancelOrder}
         onSetPrepMinutes={setPrepMinutes}
         onMarkPaid={(o, m) => {
@@ -280,14 +283,16 @@ const OrdersPage = () => {
         confirming={accepting}
       />
 
-      <OpsDeliveryConfirmDialog
-        order={deliveryConfirmOrder}
-        open={!!deliveryConfirmOrder}
+      <OpsAssignDriverDialog
+        order={assignOrder}
+        drivers={drivers}
+        loadingDrivers={loadingDrivers}
+        open={!!assignOrder}
         onOpenChange={(open) => {
-          if (!open) setDeliveryConfirmOrder(null);
+          if (!open) setAssignOrder(null);
         }}
-        onConfirm={handleConfirmDelivery}
-        confirming={confirmingDelivery}
+        onConfirm={handleAssignDriver}
+        assigning={assigning}
       />
     </>
   );

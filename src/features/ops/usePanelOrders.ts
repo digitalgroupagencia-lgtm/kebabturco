@@ -9,7 +9,7 @@ import {
   playNewOrderAlert,
 } from "@/lib/panelAlerts";
 import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
-import { markOrderPaidAtCounter, confirmDeliveryWithCode } from "@/services/orderService";
+import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
@@ -23,6 +23,8 @@ export type PanelOrder = Tables<"orders"> & {
   delivery_city?: string | null;
   delivery_number?: string | null;
   delivery_confirmation_code?: string | null;
+  assigned_driver_id?: string | null;
+  delivery_started_at?: string | null;
   kitchen_printed_at?: string | null;
 };
 
@@ -360,44 +362,21 @@ export function usePanelOrders(storeId: string | undefined) {
     [storeId, itemsByOrder],
   );
 
-  const ensureDeliveryCode = useCallback(async (order: PanelOrder): Promise<PanelOrder> => {
-    if (order.delivery_confirmation_code) return order;
-    const code = generateDeliveryConfirmationCode();
-    const { error } = await supabase
-      .from("orders")
-      .update({ delivery_confirmation_code: code })
-      .eq("id", order.id);
-    if (error) return order;
-    const updated = { ...order, delivery_confirmation_code: code };
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
-    return updated;
-  }, []);
-
-  const confirmDelivery = useCallback(async (order: PanelOrder, code: string): Promise<boolean> => {
+  const assignDriver = useCallback(async (order: PanelOrder, driverUserId: string): Promise<boolean> => {
     if (updatingRef.current.has(order.id)) return false;
-
     updatingRef.current.add(order.id);
-    const prevStatus = order.status;
-
-    setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, status: "delivered" as const } : o)),
-    );
-
     try {
-      const result = await confirmDeliveryWithCode(order.id, code);
-      if (!result.success) {
-        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-        throw new Error(result.error || "Código incorrecto");
-      }
-
-      toast.success(`Entrega confirmada — #${order.order_number}`);
-      void notifyOrderStatusChange(order.id, "delivered", order.order_number);
+      await assignDeliveryDriver(order.id, driverUserId);
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === order.id ? { ...o, assigned_driver_id: driverUserId } : o,
+        ),
+      );
+      toast.success("Entregador atribuído");
       return true;
     } catch (e) {
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-      const message = e instanceof Error ? e.message : "Código incorrecto";
-      toast.error(message);
-      throw e;
+      toast.error(e instanceof Error ? e.message : "Erro ao atribuir entregador");
+      return false;
     } finally {
       updatingRef.current.delete(order.id);
     }
@@ -412,8 +391,7 @@ export function usePanelOrders(storeId: string | undefined) {
     cancelOrder,
     setPrepMinutes,
     markOrderPaid,
-    confirmDelivery,
-    ensureDeliveryCode,
+    assignDriver,
     refresh: fetchOrders,
   };
 }

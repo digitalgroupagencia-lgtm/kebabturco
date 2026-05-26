@@ -46,10 +46,10 @@ describe("opsOrderUi", () => {
     expect(getCompactActionLabel(baseOrder)).toBe("Aceitar");
   });
 
-  it("shows delivery confirm label for ready delivery orders", () => {
+  it("shows assign driver label for ready delivery orders", () => {
     expect(
-      getCompactActionLabel({ ...baseOrder, status: "ready", order_type: "delivery" } as PanelOrder),
-    ).toBe("Confirmar entrega");
+      getCompactActionLabel({ ...baseOrder, status: "ready", order_type: "delivery" } as PanelOrder, "operator"),
+    ).toBe("Atribuir entregador");
   });
 
   it("shows mark ready label for preparing orders", () => {
