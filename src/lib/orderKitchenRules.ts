@@ -13,6 +13,10 @@ export function orderReadyForKitchen(order: KitchenOrderLike): boolean {
 }
 
 export function needsPaymentBeforeKitchen(order: KitchenOrderLike): boolean {
-  if (order.order_type === "takeaway" || order.order_type === "delivery") return true;
+  if (order.order_type === "takeaway") return true;
   return false;
+}
+
+export function blocksOperationalProgressUntilPaid(order: KitchenOrderLike): boolean {
+  return order.order_type === "takeaway" && order.payment_status !== "paid";
 }
