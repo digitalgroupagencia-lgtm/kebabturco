@@ -36,6 +36,7 @@ interface OpsOrderCardProps {
   onOpenDetail: (order: PanelOrder) => void;
   onRequestAccept: (order: PanelOrder) => void;
   onRequestAssignDriver: (order: PanelOrder) => void;
+  onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void> | Promise<boolean>;
 }
 
 const OpsOrderCard = memo(function OpsOrderCard({
