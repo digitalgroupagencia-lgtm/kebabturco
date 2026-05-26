@@ -1,5 +1,5 @@
 import { useEffect, type ComponentType } from "react";
-import { useNavigate, Outlet } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { nav } from "@/lib/navPaths.ts";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -20,12 +20,15 @@ const PanelLayout = ({ page: Page }: Props) => {
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate(nav.auth());
+      const next = encodeURIComponent(location.pathname + location.search);
+      navigate(`${nav.auth()}?next=${next}`, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location.pathname, location.search]);
+
 
   if (loading) {
     return (
