@@ -17,36 +17,39 @@ import {
 import { toast } from "sonner";
 
 async function fetchDrinkGroups(storeId: string): Promise<ModifierGroup[]> {
-  const { data: groups } = await supabase
-    .from("modifier_groups")
+  const { data: groups } = await (supabase
+    .from("modifier_groups" as any)
     .select("id, name, group_kind, sort_order, is_active")
     .eq("store_id", storeId)
     .eq("is_active", true)
-    .order("sort_order");
+    .order("sort_order") as any);
 
-  if (!groups?.length) return [];
+  const groupsTyped = (groups ?? []) as any[];
+  if (!groupsTyped.length) return [];
 
-  const ids = groups.map((g) => g.id);
-  const { data: options } = await supabase
-    .from("modifier_options")
+  const ids = groupsTyped.map((g: any) => g.id);
+  const { data: options } = await (supabase
+    .from("modifier_options" as any)
     .select("id, group_id, name, price, image_url, sort_order, is_active")
     .in("group_id", ids)
     .eq("is_active", true)
-    .order("sort_order");
+    .order("sort_order") as any);
 
-  return groups.map((g) => ({
+  const optionsTyped = (options ?? []) as any[];
+
+  return groupsTyped.map((g: any) => ({
     id: g.id,
     name: g.name as ModifierGroup["name"],
     groupKind: g.group_kind as ModifierGroup["groupKind"],
-    options: (options ?? [])
-      .filter((o) => o.group_id === g.id)
-      .map((o) => ({
+    options: optionsTyped
+      .filter((o: any) => o.group_id === g.id)
+      .map((o: any) => ({
         id: o.id,
         name: o.name as ModifierGroup["options"][0]["name"],
         price: Number(o.price ?? 0),
         imageUrl: o.image_url ?? undefined,
       })),
-  }));
+  })) as unknown as ModifierGroup[];
 }
 
 async function findDrinksCategoryId(storeId: string): Promise<string | null> {
@@ -89,10 +92,10 @@ export default function MenuCatalogAuditPanel() {
 
   const issues = useMemo(() => {
     if (!products.length) return [] as CatalogAuditIssue[];
-    return mergeCatalogAudits(
+    return mergeCatalogAudits([
       auditModifierOptionsAgainstCatalog(groups, products),
       auditExpectedDrinkCatalog(products),
-    );
+    ]);
   }, [groups, products]);
 
   const summary = useMemo(() => catalogAuditSummary(issues), [issues]);
@@ -130,7 +133,7 @@ export default function MenuCatalogAuditPanel() {
         (count ?? 0) + 1,
       );
 
-      const { error } = await supabase.from("products").insert(payload);
+      const { error } = await supabase.from("products").insert(payload as any);
       if (error) throw error;
 
       toast.success(`"${issue.optionName}" adicionado ao cardápio`);
