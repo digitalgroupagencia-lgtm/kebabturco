@@ -1,5 +1,25 @@
 import { nav } from "@/lib/navPaths.ts";
 
+export type CustomerRouteAliasScreen = "home" | "payment" | "confirmation" | "tracking" | "account" | "orderType";
+
+/** Rotas públicas antigas/amigáveis → ecrã interno do cliente. */
+const CUSTOMER_ROUTE_ALIASES: Readonly<Record<string, CustomerRouteAliasScreen>> = {
+  "/menu": "home",
+  "/cardapio": "home",
+  "/checkout": "payment",
+  "/pagamento": "payment",
+  "/confirmacao": "confirmation",
+  "/pedido-concluido": "confirmation",
+  "/confirmation": "confirmation",
+  "/acompanhar": "tracking",
+  "/acompanhar-pedido": "tracking",
+  "/tracking": "tracking",
+  "/meus-pedidos": "account",
+  "/pedidos": "account",
+  "/mesa": "orderType",
+  "/qr": "orderType",
+};
+
 /** Rotas antigas ou alias → destino canónico (sem 404). */
 const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/admin/panel": nav.panel(),
@@ -46,6 +66,10 @@ const PREFIX_REDIRECTS: Readonly<
       return nav.panel();
     },
   },
+  {
+    prefix: "/admin/projects",
+    resolve: () => nav.home(),
+  },
 ];
 
 export function normalizePathname(pathname: string): string {
@@ -69,6 +93,20 @@ export function resolveLegacyRouteRedirect(pathname: string): string | null {
   }
 
   return null;
+}
+
+export function customerScreenFromPathname(pathname: string): CustomerRouteAliasScreen | null {
+  return CUSTOMER_ROUTE_ALIASES[normalizePathname(pathname)] ?? null;
+}
+
+export function resolveCustomerRouteRedirect(pathname: string, search = ""): { pathname: string; search: string } | null {
+  const screen = customerScreenFromPathname(pathname);
+  if (!screen) return null;
+
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  params.set("screen", screen);
+  const qs = params.toString();
+  return { pathname: nav.home(), search: qs ? `?${qs}` : "" };
 }
 
 /** Rotas públicas do cliente (ecrãs internos — não URLs do router). */
