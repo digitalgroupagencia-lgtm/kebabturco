@@ -166,9 +166,10 @@ export function useMenuData() {
           name,
           description,
           price: Number(prod.price || 0),
-          image: (prod.image_url as string) || categoryImage.get(prod.category_id as string) || "",
+          image: (prod.image_url as string) || (categoryImage.get(prod.category_id as string) as string) || "",
           category: prod.category_id as string,
-          categorySlug: categorySlug.get(prod.category_id as string) || "",
+          categorySlug: (categorySlug.get(prod.category_id as string) as string) || "",
+
           isBestseller: Boolean(prod.is_bestseller),
           isPromo: Boolean(prod.is_promo),
           extras,
