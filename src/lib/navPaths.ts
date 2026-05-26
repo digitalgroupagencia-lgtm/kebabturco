@@ -16,8 +16,8 @@ export const nav = {
   delivery: (...rest: string[]) => joinPath("delivery", ...rest),
 } as const;
 
-/** Lista curada — dropdown preview Lovable (só 3 entradas). */
-export const LOVABLE_PREVIEW_PATHS = ["/", "/auth", "/panel"] as const;
+/** Lista curada — dropdown preview Lovable (só loja + login). */
+export const LOVABLE_PREVIEW_PATHS = ["/", "/auth"] as const;
 
 export type AppArea = "panel" | "admin" | "seller" | "delivery";
 

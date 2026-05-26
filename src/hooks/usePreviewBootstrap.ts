@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { isAdminPreviewMode } from "@/lib/tenantPreview";
+import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { saveSavedLang, saveSavedOrderType } from "@/lib/customerSession";
 
 /** Prepara totem em modo preview: ecrã fixo, carrinho demo para checkout, sem saltar idioma. */
@@ -10,16 +11,17 @@ export function usePreviewBootstrap(storeId: string) {
   const { screen } = useOrder();
   const { items, addItem, setOrderType } = useCart();
   const seeded = useRef(false);
+  const inPreview = isAdminPreviewMode() || isLovableEditorPreview();
 
   useEffect(() => {
-    if (!isAdminPreviewMode() || !storeId) return;
+    if (!inPreview || !storeId) return;
     saveSavedLang("es");
     saveSavedOrderType("takeaway");
     setOrderType("takeaway");
   }, [storeId, setOrderType]);
 
   useEffect(() => {
-    if (!isAdminPreviewMode() || !storeId || seeded.current) return;
+    if (!inPreview || !storeId || seeded.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("seedCheckout") !== "1") return;
     if (items.length > 0) {

@@ -6,6 +6,7 @@ export const RESERVED_APP_PATHS = new Set([
   "install",
   "seller",
   "cashier",
+  "delivery",
   "preview",
 ]);
 
@@ -26,6 +27,7 @@ export function fixBrokenEditorPath(pathname: string): string {
   if (pathname.startsWith("/panel")) return "/panel";
   if (pathname.startsWith("/auth")) return "/auth";
   if (pathname.startsWith("/seller")) return "/seller";
+  if (pathname.startsWith("/delivery")) return "/delivery";
   return "/";
 }
 

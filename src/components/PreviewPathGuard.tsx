@@ -5,6 +5,11 @@ import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 import {
+  isLovableEditorPreview,
+  lovableStorefrontLocation,
+  shouldOpenStorefrontInLovablePreview,
+} from "@/lib/lovablePreview";
+import {
   resolveCustomerRouteRedirect,
   resolveLegacyRouteRedirect,
 } from "@/lib/routeRedirects.ts";
@@ -21,6 +26,12 @@ export default function PreviewPathGuard() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isLovableEditorPreview() && shouldOpenStorefrontInLovablePreview(pathname)) {
+      const target = lovableStorefrontLocation();
+      navigate(target, { replace: true });
+      return;
+    }
+
     if (isBrokenEditorPath(pathname)) {
       const { pathname: fixed, search } = fixBrokenEditorLocation(pathname);
       navigate({ pathname: fixed, search }, { replace: true });

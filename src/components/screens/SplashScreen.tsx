@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import InstallAppButton from "@/components/InstallAppButton";
 import { hasMesaQrInUrl } from "@/lib/customerSession";
+import { isLovableEditorPreview } from "@/lib/lovablePreview";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
@@ -25,8 +26,12 @@ const SplashScreen = () => {
 
 
   useEffect(() => {
-    const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
-    if (isPreview) return;
+    const params = new URLSearchParams(window.location.search);
+    const isPreview = params.get("preview") === "1";
+    if (isPreview || isLovableEditorPreview()) {
+      setScreen((params.get("screen") || "home") as "home");
+      return;
+    }
     const timer = setTimeout(() => {
       const mesaQr = hasMesaQrInUrl();
       setScreen(mesaQr ? "orderType" : activeLangs.length > 1 ? "language" : "orderType");

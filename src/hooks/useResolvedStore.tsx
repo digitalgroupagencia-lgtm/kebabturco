@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode, use
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { isReservedAppPath } from "@/lib/appPaths";
-import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
+import { isDefaultKebabContextHost, isLovableEditorHost, normalizeHostname } from "@/lib/platformHosts";
 import { getStoreTenantSlug } from "@/lib/tenantPreview";
 import {
   KEBAB_FALLBACK_STORE_ID,
@@ -213,16 +213,46 @@ function commitResolvedState(prev: ResolvedPayload, next: ResolvedPayload): Reso
   };
 }
 
-export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Omit<ResolvedStore, "setSelectedStoreId">>({
-    storeId: null,
-    selectedStoreId: null,
-    stores: [],
-    tenantId: null,
-    tenantSlug: null,
+function createInitialStoreState(): Omit<ResolvedStore, "setSelectedStoreId"> {
+  if (typeof window === "undefined") {
+    return {
+      storeId: null,
+      selectedStoreId: null,
+      stores: [],
+      tenantId: null,
+      tenantSlug: null,
+      basePath: "",
+      loading: true,
+    };
+  }
+
+  const host = normalizeHostname(window.location.hostname);
+  if (!isDefaultKebabContextHost(host)) {
+    return {
+      storeId: null,
+      selectedStoreId: null,
+      stores: [],
+      tenantId: null,
+      tenantSlug: null,
+      basePath: "",
+      loading: true,
+    };
+  }
+
+  const fb = applyKebabFallback(host);
+  return {
+    storeId: fb.storeId,
+    selectedStoreId: fb.storeId,
+    stores: fb.stores,
+    tenantId: fb.tenant.id,
+    tenantSlug: fb.tenant.slug,
     basePath: "",
     loading: true,
-  });
+  };
+}
+
+export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<Omit<ResolvedStore, "setSelectedStoreId">>(createInitialStoreState);
 
   useEffect(() => {
     let active = true;
@@ -246,7 +276,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           loading: false,
         });
       });
-    }, 10000);
+    }, isLovableEditorHost(host) ? 2000 : 10000);
 
     (async () => {
       let tenant: TenantRow | null = null;

@@ -38,7 +38,16 @@
   <body>
     <script>
       (function () {
+        var h = (location.hostname || "").toLowerCase();
+        var isLovable =
+          h.endsWith(".lovable.app") ||
+          h.endsWith(".lovable.dev") ||
+          h.endsWith(".lovableproject.com");
         var p = location.pathname || "/";
+        if (isLovable && /^\/(panel|admin|delivery|seller|cashier)(\/|$)/.test(p)) {
+          location.replace("/?preview=1&tenant=kebab-turco&screen=home");
+          return;
+        }
         if (p.indexOf("*") === -1) return;
         if (p.indexOf("/admin") === 0) {
           location.replace("/admin?routeHint=lovable-wildcard");
