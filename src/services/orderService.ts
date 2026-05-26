@@ -375,18 +375,71 @@ export async function syncStripeConnectStatus(storeId: string): Promise<StripeCo
   return data as StripeConnectStatus;
 }
 
-export async function provisionTestStripeConnect(storeId: string) {
-  const data = await invokeConnectFunction({ storeId, mode: "provision_test" });
-  return data as {
-    accountId: string;
-    provisioned: boolean;
-    simulated: boolean;
-    ready: boolean;
-    connectEnvironment: "test";
-    message: string;
-    chargesEnabled?: boolean;
-    onboardingCompleted?: boolean;
+export async function provisionTestStripeConnectLocal(storeId: string) {
+  const { data: store, error: loadErr } = await supabase
+    .from("stores")
+    .select("name")
+    .eq("id", storeId)
+    .maybeSingle();
+  if (loadErr) throw loadErr;
+
+  const label = store?.name ? `${store.name} (teste simulado)` : "Kebab Turco (teste simulado)";
+  const { error } = await supabase
+    .from("stores")
+    .update({
+      stripe_connect_environment: "test",
+      stripe_connect_test_simulated: true,
+      stripe_connect_account_id: `simulated-${storeId.replace(/-/g, "").slice(0, 12)}`,
+      stripe_charges_enabled: true,
+      stripe_onboarding_completed: true,
+      stripe_payouts_enabled: true,
+      stripe_payout_status: "active",
+      stripe_business_name: label,
+      stripe_iban_last4: "0000",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", storeId);
+  if (error) throw error;
+
+  return {
+    accountId: `simulated-${storeId.replace(/-/g, "").slice(0, 12)}`,
+    provisioned: true,
+    simulated: true,
+    ready: true,
+    connectEnvironment: "test" as const,
+    chargesEnabled: true,
+    onboardingCompleted: true,
+    message:
+      "Modo teste simulado activo. Para pagar com cartão 4242, configure também as chaves de teste da Stripe.",
   };
+}
+
+export async function provisionTestStripeConnect(storeId: string) {
+  try {
+    const data = await invokeConnectFunction({ storeId, mode: "provision_test" });
+    if (data) {
+      return data as {
+        accountId: string;
+        provisioned: boolean;
+        simulated: boolean;
+        ready: boolean;
+        connectEnvironment: "test";
+        message: string;
+        chargesEnabled?: boolean;
+        onboardingCompleted?: boolean;
+      };
+    }
+  } catch (e) {
+    const code = (e as Error & { code?: string }).code;
+    const msg = e instanceof Error ? e.message : String(e);
+    const missingKey =
+      code === "test_key_missing" ||
+      msg.toLowerCase().includes("stripe_secret_key_test") ||
+      msg.toLowerCase().includes("chave secreta de teste");
+    if (!missingKey) throw e;
+  }
+
+  return provisionTestStripeConnectLocal(storeId);
 }
 
 /** @deprecated Usar createStripeConnectEmbeddedSession — onboarding embebido no painel */

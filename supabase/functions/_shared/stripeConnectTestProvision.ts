@@ -166,11 +166,45 @@ export async function provisionTestConnectAccount(
 ): Promise<TestProvisionResult> {
   const testKey = getStripeSecretKeyTest();
   if (!testKey) {
-    throw new ConnectError(
-      "Chave secreta de teste em falta — adicione STRIPE_SECRET_KEY_TEST nos segredos do servidor.",
-      503,
-      "test_key_missing",
-    );
+    const simulatedId = `simulated-${store.id.replace(/-/g, "").slice(0, 12)}`;
+    const { error: updErr } = await service
+      .from("stores")
+      .update({
+        stripe_connect_account_id: simulatedId,
+        stripe_connect_environment: "test",
+        stripe_connect_test_simulated: true,
+        stripe_charges_enabled: true,
+        stripe_onboarding_completed: true,
+        stripe_payouts_enabled: true,
+        stripe_payout_status: "active",
+        stripe_business_name: store.name ? `${store.name} (teste simulado)` : "Kebab Turco (teste simulado)",
+        stripe_iban_last4: "0000",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", store.id);
+
+    if (updErr) {
+      console.error("[provision_test] simulated without key", updErr);
+      throw new ConnectError("Não foi possível activar recebimentos de teste.", 500, "store_update_failed");
+    }
+
+    return {
+      accountId: simulatedId,
+      status: {
+        accountId: simulatedId,
+        chargesEnabled: true,
+        payoutsEnabled: true,
+        onboardingCompleted: true,
+        payoutStatus: "active",
+        businessName: store.name || "Kebab Turco (teste simulado)",
+        ibanLast4: "0000",
+        requirementsDue: [],
+      },
+      simulated: true,
+      connectEnvironment: "test",
+      message:
+        "Modo teste simulado activo. Para pagar com cartão 4242, adicione STRIPE_SECRET_KEY_TEST nos segredos do servidor.",
+    };
   }
 
   const stripe = new Stripe(testKey, { apiVersion: "2023-10-16" });

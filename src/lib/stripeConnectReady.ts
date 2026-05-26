@@ -1,12 +1,19 @@
 import type { StoreFinancialProfile, StoreStripeSettings } from "@/services/orderService";
 
-/** Conta Connect pronta para aceitar pagamentos com cartão online. */
 export function isStripeConnectReady(
   profile: StoreFinancialProfile | StoreStripeSettings | null | undefined,
 ): boolean {
-  if (!profile?.stripe_connect_account_id) return false;
-  if (!profile.stripe_charges_enabled) return false;
+  if (!profile) return false;
   const full = profile as StoreFinancialProfile;
+  if (
+    full.stripe_connect_test_simulated &&
+    full.stripe_charges_enabled &&
+    full.stripe_onboarding_completed
+  ) {
+    return true;
+  }
+  if (!profile.stripe_connect_account_id) return false;
+  if (!profile.stripe_charges_enabled) return false;
   if ("stripe_onboarding_completed" in full && !full.stripe_onboarding_completed) return false;
   return true;
 }

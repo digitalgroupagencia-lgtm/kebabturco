@@ -326,15 +326,16 @@ const FinancePage = () => {
               )}
               {!serverHasTestKey && (
                 <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold mt-2">
-                  Confirme que STRIPE_SECRET_KEY_TEST está nos Segredos do servidor Lovable Cloud.
+                  Pode activar o modo simulado já agora. Para pagar com cartão 4242 no checkout, configure depois a
+                  chave de teste da Stripe nos segredos do servidor e a chave publicável de teste no projecto.
                 </p>
               )}
             </div>
           </div>
 
           <Button
-            className="w-full h-12 font-black text-base bg-amber-600 hover:bg-amber-700 text-white"
-            disabled={testProvisionBusy || schemaIncomplete || !serverHasTestKey}
+            className="w-full h-12 font-black text-base bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+            disabled={testProvisionBusy || schemaIncomplete}
             onClick={() => void activateTestReceivables()}
           >
             {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

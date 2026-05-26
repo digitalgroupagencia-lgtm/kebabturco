@@ -128,17 +128,24 @@ Deno.serve(async (req) => {
 
     const { store, error: storeLoadErr } = await loadStoreConnectPaymentRow(supabase, storeId);
 
+    const testSimulated = Boolean(store?.stripe_connect_test_simulated);
+
+    if (storeLoadErr || !store) {
+      return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
+    }
+
     if (
-      storeLoadErr ||
-      !store?.stripe_connect_account_id ||
-      !store.stripe_charges_enabled ||
-      !store.stripe_onboarding_completed
+      !testSimulated &&
+      (!store.stripe_connect_account_id || !store.stripe_charges_enabled || !store.stripe_onboarding_completed)
     ) {
       return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
     }
 
+    if (testSimulated && (!store.stripe_charges_enabled || !store.stripe_onboarding_completed)) {
+      return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
+    }
+
     const connectEnv = await resolveStoreConnectEnvironment(store);
-    const testSimulated = Boolean(store.stripe_connect_test_simulated);
     const stripeKey = pickStripeSecretForEnvironment(connectEnv === "test" || testSimulated ? "test" : connectEnv);
     if (!stripeKey) {
       return json(
