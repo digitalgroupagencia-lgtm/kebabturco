@@ -26,7 +26,7 @@ function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
+import { hasStripePublishableKey, stripePublishableTestKeySource } from "@/lib/stripePublishableKey";
 
 export function useOperationalDiagnostics() {
   const { storeId } = useAdminStoreId();
@@ -121,22 +121,38 @@ export function useOperationalDiagnostics() {
       }
     }
 
-    // STRIPE — chave pública no site (Lovable)
-    if (!hasStripePublishableKey()) {
+    // STRIPE — chave pública no site (Lovable / config pública do projecto)
+    const hasLivePk = hasStripePublishableKey("live");
+    const hasTestPk = hasStripePublishableKey("test");
+    if (!hasLivePk && !hasTestPk) {
       results.push({
         id: "stripe-site-key",
         label: "Pagamentos online (site)",
         status: "fail",
         critical: true,
-        detail: "Chave publicável da Stripe em falta no site — o cliente não vê cartão.",
-        action: "Sync + Publish na Lovable. A chave já está no projecto; se persistir, peça na Lovable para activar variáveis de ambiente do frontend.",
+        detail: "Chaves publicáveis da Stripe em falta no site — o cliente não vê cartão.",
+        action:
+          "Sync + Publish na Lovable. A chave live já está no projecto; para testes, cole pk_test_... em config/stripe.public.env.",
+      });
+    } else if (!hasLivePk && hasTestPk) {
+      results.push({
+        id: "stripe-site-key",
+        label: "Pagamentos online (site)",
+        status: "warn",
+        detail: "Chave de teste activa — checkout simulado. Produção usa pk_live quando a plataforma for aprovada.",
+        action:
+          stripePublishableTestKeySource() === "env"
+            ? undefined
+            : "Cole a pk_test em config/stripe.public.env (não vai para Segredos).",
       });
     } else {
       results.push({
         id: "stripe-site-key",
         label: "Pagamentos online (site)",
         status: "ok",
-        detail: "Chave publicável da Stripe activa — cartão e Apple/Google Pay podem aparecer no checkout.",
+        detail: hasTestPk
+          ? "Chaves live e teste activas — checkout usa teste ou produção conforme o modo."
+          : "Chave publicável live activa — cartão e Apple/Google Pay podem aparecer no checkout.",
       });
     }
 
@@ -189,7 +205,7 @@ export function useOperationalDiagnostics() {
           "Plataforma pendente de verificação — pagamentos reais e contas live bloqueados até aprovação.",
         action: testKeysOnServer
           ? "Use modo teste em Admin → Recebimentos para experimentar. Produção activa-se quando a Stripe aprovar o perfil."
-          : "Aguarde aprovação da Stripe. Para testar antes, peça chaves de teste (sk_test + pk_test) nos segredos Lovable.",
+          : "Aguarde aprovação da Stripe. Para testar antes, cole pk_test_... em config/stripe.public.env e sk_test nos Segredos do servidor.",
       });
     } else if (serverDiag && platform && !platform.productionBlocked) {
       results.push({

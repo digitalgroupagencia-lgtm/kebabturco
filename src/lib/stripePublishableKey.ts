@@ -1,27 +1,30 @@
 import { SINGLE_TENANT_MODE } from "@/lib/appMode";
 
 /**
- * Chave publicável Stripe — Kebab Turco produção.
- * Segura no browser (pk_live). Preferir variável VITE_STRIPE_PUBLISHABLE_KEY na Lovable se disponível.
+ * Chaves publicáveis Stripe — Kebab Turco.
+ * Seguras no browser (pk_*). Versionadas no projecto, NÃO em Segredos Lovable.
+ *
+ * Ordem de leitura:
+ * 1. import.meta.env (build injecta config/stripe.public.env)
+ * 2. fallback abaixo (mesmo padrão da chave live)
  */
-const KEBAB_TURCO_STRIPE_PUBLISHABLE_FALLBACK = SINGLE_TENANT_MODE
+export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = SINGLE_TENANT_MODE
   ? "pk_live_51R9ZJLGdymad9Lk9B5XUkb4FcdewOt7PCavKpGl6pitpYf0QngWoO4EBsBMKQAv8CeGZflC0BdqP3mgYSVPm6gb0004WMwRvvV"
   : "";
 
-const ENV_CANDIDATES = [
+/** Cole aqui a pk_test da Stripe (modo Test) se preferir em vez de config/stripe.public.env */
+export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE ? "" : "";
+
+export type StripePublishableEnvironment = "live" | "test";
+
+const LIVE_ENV_CANDIDATES = [
   "VITE_STRIPE_PUBLISHABLE_KEY",
   "VITE_STRIPE_PUBLIC_KEY",
   "VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   "STRIPE_PUBLISHABLE_KEY",
 ] as const;
 
-const TEST_ENV_CANDIDATES = [
-  "VITE_STRIPE_PUBLISHABLE_KEY_TEST",
-  "VITE_STRIPE_TEST_PUBLISHABLE_KEY",
-  "VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST",
-] as const;
-
-export type StripePublishableEnvironment = "live" | "test";
+const TEST_ENV_CANDIDATES = ["VITE_STRIPE_PUBLISHABLE_KEY_TEST"] as const;
 
 function readEnvKey(name: string): string {
   const v = (import.meta.env as Record<string, string | undefined>)[name];
@@ -29,7 +32,7 @@ function readEnvKey(name: string): string {
 }
 
 function readLiveKeyFromEnv(): string {
-  for (const name of ENV_CANDIDATES) {
+  for (const name of LIVE_ENV_CANDIDATES) {
     const v = readEnvKey(name);
     if (v && !v.includes("_test_")) return v;
   }
@@ -41,7 +44,7 @@ function readTestKeyFromEnv(): string {
     const v = readEnvKey(name);
     if (v) return v;
   }
-  for (const name of ENV_CANDIDATES) {
+  for (const name of LIVE_ENV_CANDIDATES) {
     const v = readEnvKey(name);
     if (v.includes("_test_")) return v;
   }
@@ -53,12 +56,12 @@ export function getStripePublishableKeyForEnvironment(
   environment: StripePublishableEnvironment = "live",
 ): string {
   if (environment === "test") {
-    return readTestKeyFromEnv();
+    return readTestKeyFromEnv() || KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST;
   }
-  return readLiveKeyFromEnv() || KEBAB_TURCO_STRIPE_PUBLISHABLE_FALLBACK;
+  return readLiveKeyFromEnv() || KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE;
 }
 
-/** Chave publicável activa (variável de ambiente ou fallback Kebab Turco). */
+/** Chave publicável live activa. */
 export function getStripePublishableKey(): string {
   return getStripePublishableKeyForEnvironment("live");
 }
@@ -69,6 +72,12 @@ export function hasStripePublishableKey(environment: StripePublishableEnvironmen
 
 export function stripePublishableKeySource(): "env" | "fallback" | "none" {
   if (readLiveKeyFromEnv()) return "env";
-  if (KEBAB_TURCO_STRIPE_PUBLISHABLE_FALLBACK) return "fallback";
+  if (KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE) return "fallback";
+  return "none";
+}
+
+export function stripePublishableTestKeySource(): "env" | "fallback" | "none" {
+  if (readTestKeyFromEnv()) return "env";
+  if (KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST) return "fallback";
   return "none";
 }

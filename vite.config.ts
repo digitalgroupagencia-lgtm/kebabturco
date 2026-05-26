@@ -72,14 +72,50 @@ const emitVersionJson = () => ({
   },
 });
 
+function parsePublicEnvFile(filePath: string): Record<string, string> {
+  if (!fs.existsSync(filePath)) return {};
+  const out: Record<string, string> = {};
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (value) out[key] = value;
+  }
+  return out;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const stripePublicFile = parsePublicEnvFile(path.join(__dirname, "config/stripe.public.env"));
   const stripePublishableFromEnv =
     env.VITE_STRIPE_PUBLISHABLE_KEY ||
     env.STRIPE_PUBLISHABLE_KEY ||
     env.VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
     "";
+  const stripeTestPublishableFromProject =
+    stripePublicFile.VITE_STRIPE_PUBLISHABLE_KEY_TEST ||
+    env.VITE_STRIPE_PUBLISHABLE_KEY_TEST ||
+    "";
+
+  const stripeDefines: Record<string, string> = {};
+  if (stripePublishableFromEnv) {
+    stripeDefines["import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY"] = JSON.stringify(stripePublishableFromEnv);
+  }
+  if (stripeTestPublishableFromProject) {
+    stripeDefines["import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST"] = JSON.stringify(
+      stripeTestPublishableFromProject,
+    );
+  }
 
   return {
   server: {
@@ -96,9 +132,7 @@ export default defineConfig(({ mode }) => {
     emitVersionJson(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
-  define: stripePublishableFromEnv
-    ? { "import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY": JSON.stringify(stripePublishableFromEnv) }
-    : {},
+  define: stripeDefines,
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
