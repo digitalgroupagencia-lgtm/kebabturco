@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabase } from "@/integrations/supabase/client";
+const supabase = _supabase as unknown as any;
 import type { MenuProduct } from "@/hooks/useMenuData";
 import { useProductModifierConfig } from "@/hooks/useProductModifierConfig";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
