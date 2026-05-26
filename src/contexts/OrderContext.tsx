@@ -11,6 +11,7 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearSavedMesaToken,
+  customerScreenFromRouteAlias,
   loadSavedCustomerName,
   loadSavedCustomerPhone,
   loadSavedDeliveryAddress,
@@ -100,6 +101,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const orderParam = params.get("order");
     const stored = loadAnyStoredActiveOrder();
     const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation", "tracking", "account"];
+
+    const routeScreen = customerScreenFromRouteAlias(window.location.pathname);
+    if (routeScreen && valid.includes(routeScreen as Screen)) return routeScreen as Screen;
 
     if (isPreview && valid.includes(p as Screen)) {
       return p as Screen;
