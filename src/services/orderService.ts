@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
+const supabase = _supabaseRaw as unknown as any;
 import type { CartItem } from "@/contexts/CartContext";
 
 export const PLATFORM_FEE_CENTS = 100;
