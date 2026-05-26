@@ -1,4 +1,4 @@
-import { Clock, ChefHat, CheckCircle, Truck, Bike } from "lucide-react";
+import { Clock, ChefHat, CheckCircle, Truck, Bike, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
 import type { PanelOrder } from "./usePanelOrders";
 
@@ -8,6 +8,7 @@ const statusIcons: Record<string, React.ElementType> = {
   ready: CheckCircle,
   out_for_delivery: Bike,
   delivered: Truck,
+  cancelled: XCircle,
 };
 
 interface OpsStatusTabsProps {

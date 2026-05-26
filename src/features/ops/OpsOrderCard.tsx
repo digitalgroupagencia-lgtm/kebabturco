@@ -1,237 +1,136 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { memo, useState, type MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, MapPin, XCircle, Clock } from "lucide-react";
+import { ChevronRight, Clock, XCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { getNextAction, getOrderModalityBanner, getPanelPaymentBadge } from "@/lib/orderStatusLabels";
+import { getNextAction, getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
-import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
+import {
+  compactCardBorderClass,
+  formatOrderClock,
+  formatOrderEta,
+  getCompactActionLabel,
+  getModalityShortLabel,
+  orderItemCount,
+  requiresEtaBeforeAccept,
+} from "./opsOrderUi";
 
 type OrderItem = Tables<"order_items">;
 
-const statusCardClass: Record<string, string> = {
-  pending: "bg-red-500/15 border-red-500 ring-1 ring-red-500/30 animate-pulse",
-  preparing: "bg-yellow-500/15 border-yellow-400",
-  ready: "bg-green-500/15 border-green-500",
-  out_for_delivery: "bg-blue-500/15 border-blue-500",
-  delivered: "bg-muted/80 border-muted-foreground/20 opacity-75",
-  cancelled: "bg-destructive/10 border-destructive/30",
-};
-
-const modalityBannerClass = {
-  delivery: "bg-blue-600 text-white",
-  takeaway: "bg-amber-600 text-white",
-  dine_in: "bg-primary text-primary-foreground",
-  unknown: "bg-muted text-foreground",
-} as const;
-
 const paymentBadgeClass = {
-  paid: "bg-green-600 text-white",
-  pending: "bg-yellow-500 text-black",
+  paid: "bg-green-600/90 text-white text-[10px]",
+  pending: "bg-yellow-500 text-black text-[10px]",
 } as const;
-
-const PREP_OPTIONS = [10, 12, 15, 20, 25, 30];
-
-function getSourceLabel(source: string) {
-  const map: Record<string, string> = {
-    totem: "App",
-    ifood: "iFood",
-    counter: "Balcão",
-    delivery: "Delivery",
-    waiter: "Garçon",
-  };
-  return map[source] || source;
-}
 
 interface OpsOrderCardProps {
   order: PanelOrder;
   items: OrderItem[];
   onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void>;
   onCancel: (orderId: string) => void;
-  onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
-  onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void>;
+  onOpenDetail: (order: PanelOrder) => void;
+  onRequestAccept: (order: PanelOrder) => void;
 }
 
-const OpsOrderCard = ({ order, items, onAdvance, onCancel, onSetPrepMinutes, onMarkPaid }: OpsOrderCardProps) => {
-  const modality = getOrderModalityBanner(order);
+const OpsOrderCard = memo(function OpsOrderCard({
+  order,
+  items,
+  onAdvance,
+  onCancel,
+  onOpenDetail,
+  onRequestAccept,
+}: OpsOrderCardProps) {
   const payment = getPanelPaymentBadge(order);
   const next = getNextAction(order.status, order.order_type);
-  const cardClass = statusCardClass[order.status] || "border-border";
-  const [prepMin, setPrepMin] = useState(12);
+  const actionLabel = getCompactActionLabel(order);
+  const itemCount = orderItemCount(items);
+  const etaLabel = formatOrderEta(order);
+  const timeLabel = formatOrderClock(order.created_at);
   const [advancing, setAdvancing] = useState(false);
-  const [markingPaid, setMarkingPaid] = useState(false);
 
-  const etaLabel = order.estimated_ready_at
-    ? new Date(order.estimated_ready_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
-    : null;
+  const isPending = order.status === "pending";
+  const borderClass = compactCardBorderClass(order.status);
+
+  const handlePrimary = async (e: MouseEvent) => {
+    e.stopPropagation();
+    if (!next) return;
+    if (requiresEtaBeforeAccept(order.status, next.next)) {
+      onRequestAccept(order);
+      return;
+    }
+    setAdvancing(true);
+    try {
+      await onAdvance(order, next.next);
+    } finally {
+      setAdvancing(false);
+    }
+  };
 
   return (
-    <Card className={`overflow-hidden border-2 ${cardClass}`}>
-      <div className={`px-4 py-2.5 text-center ${modalityBannerClass[modality.tone]}`}>
-        <p className="text-lg font-black tracking-wide leading-none">{modality.label}</p>
-        <p className="text-[11px] font-semibold opacity-90 mt-0.5">{modality.detail}</p>
-      </div>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-black text-xl">#{order.order_number}</span>
-          <span className="text-xs text-muted-foreground">
-            {new Date(order.created_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+    <article
+      className={`rounded-lg border bg-card shadow-sm overflow-hidden ${borderClass} ${
+        isPending ? "ring-1 ring-red-500/20" : ""
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => onOpenDetail(order)}
+        className="w-full text-left px-2.5 py-2 hover:bg-muted/40 transition-colors touch-action-manipulation"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-black text-base tabular-nums shrink-0">#{order.order_number}</span>
+          <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold shrink-0">
+            {getModalityShortLabel(order)}
+          </Badge>
+          <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">{timeLabel}</span>
+          <ChevronRight className="h-3.5 w-3.5 ml-auto text-muted-foreground shrink-0" />
+        </div>
+
+        <div className="mt-1 flex items-center gap-2 min-w-0 text-sm">
+          <span className="truncate font-medium flex-1 min-w-0">
+            {order.customer_name || "Cliente"}
           </span>
-        </div>
-        <div className="flex gap-2 text-xs flex-wrap">
-          <Badge variant="outline">{getSourceLabel(order.source || "totem")}</Badge>
-          <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
-        </div>
-        {order.customer_name && (
-          <div className="flex items-center gap-1.5 text-sm">
-            <User className="w-3.5 h-3.5" />
-            {order.customer_name}
-          </div>
-        )}
-        {order.customer_phone && (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Phone className="w-3.5 h-3.5" />
-            {order.customer_phone}
-          </div>
-        )}
-        {order.delivery_street && (
-          <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            <span>
-              {order.delivery_street} {order.delivery_number}, {order.delivery_city}
-            </span>
-          </div>
-        )}
-        <ul className="text-xs space-y-2 border-t pt-2 max-h-40 overflow-y-auto">
-          {items.map((it) => {
-            const details = formatOrderItemDetailLines(it);
-            return (
-              <li key={it.id} className="space-y-0.5">
-                <div className="flex justify-between gap-2">
-                  <span className="truncate font-semibold">
-                    {it.quantity}x {it.product_name}
-                  </span>
-                  <span className="font-bold shrink-0">€{Number(it.total_price).toFixed(2)}</span>
-                </div>
-                {details.map((d) => (
-                  <p key={d} className="text-[10px] text-muted-foreground pl-2 leading-snug">
-                    · {d}
-                  </p>
-                ))}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="flex items-center justify-between font-black text-lg text-primary">
-          <span>Total</span>
-          <span>€ {Number(order.total).toFixed(2)}</span>
+          <span className="text-[11px] text-muted-foreground shrink-0">{itemCount} it.</span>
+          <span className="font-black text-primary tabular-nums shrink-0">€{Number(order.total).toFixed(2)}</span>
         </div>
 
-        {(order.status === "pending" || order.status === "preparing") && (
-          <div className="rounded-xl border bg-background/80 p-2.5 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Tempo estimado
-              {etaLabel && <span className="ml-auto text-foreground">Pronto ~{etaLabel}</span>}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {PREP_OPTIONS.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    setPrepMin(m);
-                    onSetPrepMinutes?.(order, m);
-                  }}
-                  className={`min-h-[36px] min-w-[44px] px-2 rounded-lg text-xs font-bold touch-action-manipulation ${
-                    prepMin === m
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {m}m
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          <Badge className={`h-5 px-1.5 ${paymentBadgeClass[payment.tone]}`}>{payment.label}</Badge>
+          {etaLabel && (
+            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5">
+              <Clock className="h-2.5 w-2.5" /> {etaLabel}
+            </Badge>
+          )}
+        </div>
+      </button>
 
-        {order.payment_status === "pending" && onMarkPaid && (
-          <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-2.5 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-yellow-800 dark:text-yellow-200">
-              Pagamento pendente — caixa
-            </p>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="flex-1 h-11 font-bold touch-action-manipulation"
-                disabled={markingPaid}
-                onClick={async () => {
-                  setMarkingPaid(true);
-                  try {
-                    await onMarkPaid(order, "cash");
-                  } finally {
-                    setMarkingPaid(false);
-                  }
-                }}
-              >
-                Dinheiro recebido
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="flex-1 h-11 font-bold touch-action-manipulation"
-                disabled={markingPaid}
-                onClick={async () => {
-                  setMarkingPaid(true);
-                  try {
-                    await onMarkPaid(order, "card");
-                  } finally {
-                    setMarkingPaid(false);
-                  }
-                }}
-              >
-                Cartão presencial
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {next && (
-          <Button
-            size="lg"
-            className="w-full h-14 font-black text-base touch-action-manipulation"
-            disabled={advancing}
-            onClick={async () => {
-              setAdvancing(true);
-              try {
-                await onAdvance(
-                  order,
-                  next.next,
-                  order.status === "pending" && next.next === "preparing" ? prepMin : undefined,
-                );
-              } finally {
-                setAdvancing(false);
-              }
-            }}
-          >
-            {advancing ? "A actualizar…" : next.label}
-          </Button>
-        )}
-        {order.status === "pending" && (
+      {next && order.status !== "cancelled" && (
+        <div className="px-2 pb-2 flex gap-1.5">
           <Button
             size="sm"
-            variant="destructive"
-            className="w-full h-11 touch-action-manipulation"
-            onClick={() => onCancel(order.id)}
+            className="flex-1 h-9 font-bold text-xs touch-action-manipulation"
+            disabled={advancing}
+            onClick={(e) => void handlePrimary(e)}
           >
-            <XCircle className="h-4 w-4 mr-1" /> Cancelar
+            {advancing ? "…" : actionLabel}
           </Button>
-        )}
-      </CardContent>
-    </Card>
+          {isPending && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-9 w-9 p-0 text-destructive hover:text-destructive shrink-0 touch-action-manipulation"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCancel(order.id);
+              }}
+              aria-label="Cancelar pedido"
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+    </article>
   );
-};
+});
 
 export default OpsOrderCard;

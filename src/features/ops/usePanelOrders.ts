@@ -14,6 +14,7 @@ import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
+import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
 
 export type PanelOrder = Tables<"orders"> & {
   delivery_street?: string | null;
@@ -251,8 +252,18 @@ export function usePanelOrders(storeId: string | undefined) {
 
   const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number): Promise<boolean> => {
     if (updatingRef.current.has(order.id)) return false;
-    updatingRef.current.add(order.id);
+
     const prevStatus = order.status;
+    if (
+      prevStatus === "pending" &&
+      newStatus === "preparing" &&
+      !validateAcceptPrepMinutes(prepMinutes)
+    ) {
+      toast.error("Escolha o tempo estimado antes de aceitar o pedido.");
+      return false;
+    }
+
+    updatingRef.current.add(order.id);
 
     const patch: Record<string, unknown> = { status: newStatus as Database["public"]["Enums"]["order_status"] };
     if (newStatus === "preparing" && prepMinutes) {

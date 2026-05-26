@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ChefHat, CheckCircle, Truck, Bike, RefreshCw, Radio } from "lucide-react";
+import { Clock, ChefHat, CheckCircle, Truck, Bike, RefreshCw, Radio, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
 import type { PanelOrder, PanelConnectionStatus } from "./usePanelOrders";
 
@@ -11,6 +11,7 @@ const statusIcons: Record<string, React.ElementType> = {
   ready: CheckCircle,
   out_for_delivery: Bike,
   delivered: Truck,
+  cancelled: XCircle,
 };
 
 interface OpsOrdersLayoutProps {
@@ -70,7 +71,10 @@ const OpsOrdersLayout = ({
         </div>
       </div>
 
-      <div className="hidden md:grid md:grid-cols-5 gap-3">
+      <div
+        className="hidden md:grid gap-3"
+        style={{ gridTemplateColumns: `repeat(${Math.min(columns.length, 6)}, minmax(0, 1fr))` }}
+      >
         {columns.map((status) => {
           const Icon = statusIcons[status] || Clock;
           return (
