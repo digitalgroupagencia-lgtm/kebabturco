@@ -19,7 +19,9 @@ export type PanelOrder = Tables<"orders"> & {
   delivery_street?: string | null;
   delivery_city?: string | null;
   delivery_number?: string | null;
+  kitchen_printed_at?: string | null;
 };
+
 type OrderItem = Tables<"order_items">;
 export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
 export type PanelConnectionStatus = "connecting" | "live" | "backup";
