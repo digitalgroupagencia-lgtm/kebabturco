@@ -105,7 +105,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (isLovableEditorPreview()) {
       if (isPreview && valid.includes(p as Screen)) return p as Screen;
-      return "home";
+      return "language";
     }
 
     const orderParam = params.get("order");

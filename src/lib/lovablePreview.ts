@@ -6,7 +6,7 @@ export function isLovableEditorPreview(): boolean {
   return typeof window !== "undefined" && isLovableEditorHost(window.location.hostname);
 }
 
-export const LOVABLE_PREVIEW_SEARCH = `preview=1&tenant=${DEFAULT_TENANT_SLUG}&screen=home`;
+export const LOVABLE_PREVIEW_SEARCH = `preview=1&tenant=${DEFAULT_TENANT_SLUG}&screen=language`;
 
 export function shouldOpenStorefrontInLovablePreview(pathname: string): boolean {
   const p = pathname.replace(/\/+$/, "") || "/";

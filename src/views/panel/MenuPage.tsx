@@ -92,6 +92,20 @@ const MenuPage = () => {
     }
   };
 
+  useEffect(() => {
+    const handleCreated = (event: Event) => {
+      const categoryId = (event as CustomEvent<{ categoryId?: string }>).detail?.categoryId;
+      void fetchCategories();
+      if (categoryId) {
+        setSelectedCategoryId(categoryId);
+        void fetchProducts(categoryId);
+      }
+    };
+
+    window.addEventListener("menu-catalog-audit-product-created", handleCreated);
+    return () => window.removeEventListener("menu-catalog-audit-product-created", handleCreated);
+  }, [storeId]);
+
   // Category CRUD
   const openCatDialog = (cat?: Category) => {
     if (cat) {

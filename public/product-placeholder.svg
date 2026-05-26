@@ -1,0 +1,8 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="800" fill="#F4F1ED"/>
+  <circle cx="400" cy="360" r="132" fill="#E7DDD4"/>
+  <path d="M268 520C296 474 341 448 400 448C459 448 504 474 532 520" stroke="#A18A78" stroke-width="28" stroke-linecap="round"/>
+  <path d="M322 336H478" stroke="#A18A78" stroke-width="26" stroke-linecap="round"/>
+  <path d="M338 392H462" stroke="#A18A78" stroke-width="26" stroke-linecap="round"/>
+  <text x="400" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#6F5B4E">Imagem pendente</text>
+</svg>

@@ -26,16 +26,13 @@ export default function PreviewPathGuard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("[PreviewPathGuard]", { pathname, search });
     if (isLovableEditorPreview() && shouldOpenStorefrontInLovablePreview(pathname)) {
-      console.log("[PreviewPathGuard] → storefront (lovable preview)");
       const target = lovableStorefrontLocation();
       navigate(target, { replace: true });
       return;
     }
 
     if (isBrokenEditorPath(pathname)) {
-      console.log("[PreviewPathGuard] → broken editor path fix");
       const { pathname: fixed, search } = fixBrokenEditorLocation(pathname);
       navigate({ pathname: fixed, search }, { replace: true });
       return;
@@ -43,26 +40,22 @@ export default function PreviewPathGuard() {
 
     const legacyRedirect = resolveLegacyRouteRedirect(pathname);
     if (legacyRedirect) {
-      console.log("[PreviewPathGuard] → legacy redirect", legacyRedirect);
       navigate(legacyRedirect, { replace: true });
       return;
     }
 
     const customerRedirect = resolveCustomerRouteRedirect(pathname, search);
     if (customerRedirect) {
-      console.log("[PreviewPathGuard] → customer redirect", customerRedirect);
       navigate(customerRedirect, { replace: true });
       return;
     }
 
     if (pathname === "/kebab-turco") {
-      console.log("[PreviewPathGuard] → /kebab-turco fix");
       navigate(nav.home(), { replace: true });
       return;
     }
 
     if (pathname === "/preview/kebab-turco" || pathname.startsWith("/preview/")) {
-      console.log("[PreviewPathGuard] → /preview fix");
       navigate({ pathname: nav.home(), search: LEGACY_PREVIEW_SEARCH }, { replace: true });
       return;
     }
@@ -70,19 +63,16 @@ export default function PreviewPathGuard() {
     const parts = pathname.split("/").filter(Boolean);
 
     if (parts[0] === "admin" && LEGACY_ADMIN_SEGMENTS.has(parts[1] ?? "")) {
-      console.log("[PreviewPathGuard] → legacy admin segment");
       navigate(nav.admin(), { replace: true });
       return;
     }
 
     if (parts[0] === "painel") {
-      console.log("[PreviewPathGuard] → painel→panel");
       navigate(parts[1] === "dashboard" ? nav.panel("dashboard") : nav.panel(), { replace: true });
       return;
     }
 
     if (parts[0] === "centrals" && parts[1]) {
-      console.log("[PreviewPathGuard] → centrals");
       navigate(nav.admin("centrals", parts[1]), { replace: true });
       return;
     }
@@ -90,20 +80,17 @@ export default function PreviewPathGuard() {
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {
       const legacy = legacyBareSegmentTarget(parts[0]);
       if (legacy) {
-        console.log("[PreviewPathGuard] → bare segment legacy");
         navigate(legacy, { replace: true });
         return;
       }
       const sellerTarget = nav.seller(parts[0]);
       if (resolveRoute(sellerTarget)) {
-        console.log("[PreviewPathGuard] → seller target");
         navigate(sellerTarget, { replace: true });
         return;
       }
     }
 
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {
-      console.log("[PreviewPathGuard] → fallback home");
       navigate(nav.home(), { replace: true });
     }
   }, [pathname, search, navigate]);

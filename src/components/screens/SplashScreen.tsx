@@ -31,7 +31,7 @@ const SplashScreen = () => {
     const params = new URLSearchParams(window.location.search);
     const isPreview = params.get("preview") === "1";
     if (isPreview || isLovableEditorPreview()) {
-      setScreen((params.get("screen") || "home") as "home");
+      setScreen((params.get("screen") || "language") as Parameters<typeof setScreen>[0]);
       return;
     }
     const timer = setTimeout(() => {
