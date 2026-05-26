@@ -52,7 +52,7 @@ export function requiresPrepayment(
   orderType: CustomerOrderType,
   settings: OperationsSettings | null,
 ): boolean {
-  if (orderType === "takeaway") return opsFlag(settings, "require_prepayment_takeaway", true);
+  if (orderType === "takeaway") return false;
   if (orderType === "delivery") return opsFlag(settings, "require_prepayment_delivery", true);
   return false;
 }
