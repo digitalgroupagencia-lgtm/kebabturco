@@ -13,15 +13,11 @@ type Props = {
   tName: (n: Record<string, string>) => string;
   tDesc?: (n: Record<string, string>) => string;
   hideHeader?: boolean;
+  stepMode?: boolean;
 };
 
 const INCLUDED = "border-emerald-500/50 bg-emerald-500/10 text-emerald-900";
 const REMOVED = "border-red-500 bg-red-500/10";
-
-function extractSizeHint(label: string): string | null {
-  const match = label.match(/\b(2\s*l|2l|33\s*cl|33cl|1[\.,]25\s*l|500\s*ml|50\s*cl|lata)\b/i);
-  return match ? match[0].replace(/\s+/g, "") : null;
-}
 
 function updateOption(
   state: SelectionState,
@@ -48,7 +44,22 @@ function updateOption(
   return next;
 }
 
-export default function ChoiceGroupSection({ group, state, unitIndex, onChange, tName, tDesc, hideHeader }: Props) {
+function choiceGridCols(count: number): string {
+  if (count >= 3) return "grid-cols-3";
+  if (count === 2) return "grid-cols-2";
+  return "grid-cols-1";
+}
+
+export default function ChoiceGroupSection({
+  group,
+  state,
+  unitIndex,
+  onChange,
+  tName,
+  tDesc,
+  hideHeader,
+  stepMode,
+}: Props) {
   const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const isRemoval = group.groupKind === "removal";
@@ -66,6 +77,7 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
         unitIndex={unitIndex}
         onChange={onChange}
         tName={tName}
+        stepMode={stepMode}
       />
     );
   }
@@ -87,8 +99,10 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
         : null;
 
   return (
-    <section className="rounded-[24px] border border-border/70 bg-card shadow-card overflow-hidden">
-      {!hideHeader && (
+    <section
+      className={`overflow-hidden ${stepMode ? "" : "rounded-[24px] border border-border/70 bg-card shadow-card"}`}
+    >
+      {!hideHeader && !stepMode && (
         <div className="px-4 py-3.5 border-b border-border/60 bg-secondary/30 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-[17px] font-black text-foreground leading-tight">{tName(group.name)}</h3>
@@ -121,7 +135,7 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
         </div>
       )}
 
-      <div className={`p-3 space-y-2 ${hideHeader ? "pt-1" : ""}`}>
+      <div className={`space-y-2 ${stepMode ? "" : "p-3"} ${hideHeader ? "pt-1" : ""}`}>
         {isRemoval ? (
           <div className="grid grid-cols-2 gap-2">
             {group.options.map((opt) => {
@@ -192,23 +206,19 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
             );
           })
         ) : (
-          <div
-            className={`grid gap-3 ${
-              group.options.length >= 3 ? "grid-cols-2" : group.options.length === 1 ? "grid-cols-1" : "grid-cols-2"
-            }`}
-          >
+          <div className={`grid gap-2 ${choiceGridCols(group.options.length)}`}>
             {group.options.map((opt) => {
               const qty = selected.get(opt.id) || 0;
               const sel = qty > 0;
-              const isDrink = /bebida|refresco|drink|boisson/i.test(`${group.name.es || ""} ${group.name.pt || ""}`);
+              const compact = group.options.length >= 3;
               return (
                 <ProductChoiceCard
                   key={opt.id}
                   title={tName(opt.name)}
-                  subtitle={isDrink ? extractSizeHint(tName(opt.name)) : null}
                   priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
                   imageUrl={opt.imageUrl}
                   selected={sel}
+                  compact={compact}
                   onClick={() => {
                     if (isSingle) {
                       if (sel && group.isRequired) return;

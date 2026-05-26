@@ -7,7 +7,7 @@ import ChoiceGroupSection from "@/components/customization/ChoiceGroupSection";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { MenuProduct } from "@/hooks/useMenuData";
-import type { ProductModifierConfig, SelectionState, CartConfiguration } from "@/lib/modifiers/types";
+import type { ModifierGroup, ProductModifierConfig, SelectionState, CartConfiguration } from "@/lib/modifiers/types";
 import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
 import { buildSelectionsFromState, validateAllGroups } from "@/lib/modifiers/validation";
 import { computeUnitPrice } from "@/lib/modifiers/pricing";
@@ -16,6 +16,7 @@ import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { buildDefaultSelectionState, buildDefaultUnitStates } from "@/lib/modifiers/defaults";
 import { parseProductCode } from "@/lib/parseProductCode";
 import type { CartItem } from "@/contexts/CartContext";
+import { comboUnitStepTitle } from "@/lib/modifiers/comboProductRules";
 
 type Props = {
   product: MenuProduct;
@@ -25,9 +26,10 @@ type Props = {
   onBack: () => void;
 };
 
-import {
-  comboUnitStepTitle,
-} from "@/lib/modifiers/comboProductRules";
+type WizardStep =
+  | { kind: "intro" }
+  | { kind: "global"; group: ModifierGroup }
+  | { kind: "unit"; unitIndex: number };
 
 export default function ProductCustomizationFlow({ product, config, menuProducts = [], editingItem, onBack }: Props) {
   const { t, tProduct } = useLanguage();
@@ -50,7 +52,23 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
     () => sortModifierGroups(safeGroups.filter((g) => g.repeatPerUnit)),
     [safeGroups],
   );
-  const isCombo = effectiveConfig.productType === "combo" && effectiveConfig.comboUnitCount > 1 && unitGroups.length > 0;
+
+  const isMultiUnit =
+    effectiveConfig.productType === "combo" && effectiveConfig.comboUnitCount > 1 && unitGroups.length > 0;
+
+  const useStepWizard = effectiveConfig.productType === "combo" && globalGroups.length > 0;
+
+  const wizardSteps = useMemo((): WizardStep[] => {
+    if (!useStepWizard) return [];
+    const steps: WizardStep[] = [{ kind: "intro" }];
+    for (const group of globalGroups) steps.push({ kind: "global", group });
+    if (isMultiUnit) {
+      for (let i = 0; i < effectiveConfig.comboUnitCount; i++) {
+        steps.push({ kind: "unit", unitIndex: i });
+      }
+    }
+    return steps;
+  }, [useStepWizard, globalGroups, isMultiUnit, effectiveConfig.comboUnitCount]);
 
   const [quantity, setQuantity] = useState(1);
   const [globalState, setGlobalState] = useState<SelectionState>(() => new Map());
@@ -60,9 +78,11 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
   const [comboStep, setComboStep] = useState(0);
   const [note, setNote] = useState("");
 
-  const totalSteps = isCombo ? 1 + effectiveConfig.comboUnitCount : 1;
-  const onUnitStep = isCombo && comboStep > 0;
-  const currentUnitIndex = onUnitStep ? comboStep - 1 : null;
+  const totalSteps = useStepWizard ? wizardSteps.length : 1;
+  const currentWizardStep = useStepWizard ? wizardSteps[comboStep] : null;
+  const onUnitStep = currentWizardStep?.kind === "unit";
+  const currentUnitIndex = onUnitStep ? currentWizardStep.unitIndex : null;
+  const isLastStep = comboStep >= totalSteps - 1;
 
   useEffect(() => {
     if (editingItem?.configuration) return;
@@ -102,7 +122,16 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
     }
   }, [editingItem?.id]);
 
-  const activeGroups = onUnitStep ? unitGroups : globalGroups;
+  const activeGroups = useStepWizard
+    ? currentWizardStep?.kind === "global"
+      ? [currentWizardStep.group]
+      : onUnitStep
+        ? unitGroups
+        : []
+    : onUnitStep
+      ? unitGroups
+      : globalGroups;
+
   const activeState = onUnitStep ? unitStates[currentUnitIndex!] || new Map() : globalState;
   const setActiveState = (next: SelectionState) => {
     if (onUnitStep) {
@@ -118,7 +147,7 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
 
   const buildConfiguration = (): CartConfiguration => {
     const globalSelections = buildSelectionsFromState(globalGroups, globalState);
-    const comboUnits = isCombo
+    const comboUnits = isMultiUnit
       ? Array.from({ length: effectiveConfig.comboUnitCount }, (_, i) => ({
           unitIndex: i,
           unitLabel: comboUnitStepTitle(product, i),
@@ -142,7 +171,9 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
   const allSelections = flattenConfiguration(configuration);
   const unitPrice = computeUnitPrice(basePrice, 0, allSelections);
 
-  const validateStep = (): boolean => {
+  const validateCurrentStep = (): boolean => {
+    if (currentWizardStep?.kind === "intro") return true;
+
     const groups = activeGroups;
     const state = activeState;
     const idx = onUnitStep ? currentUnitIndex : undefined;
@@ -164,15 +195,18 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
 
   const validateAll = (): boolean => {
     if (!validateAllGroups(globalGroups, globalState).valid) {
-      toast.error(isCombo ? t("errRequiredCombo") : t("errRequiredProduct"));
-      setComboStep(0);
+      toast.error(isMultiUnit ? t("errRequiredCombo") : t("errRequiredProduct"));
+      setComboStep(useStepWizard ? 1 : 0);
       return false;
     }
-    if (isCombo) {
+    if (isMultiUnit) {
       for (let i = 0; i < effectiveConfig.comboUnitCount; i++) {
         if (!validateAllGroups(unitGroups, unitStates[i] || new Map(), i).valid) {
           toast.error(`${t("errRequiredUnit")} ${i + 1}`);
-          setComboStep(i + 1);
+          const unitStepIndex = wizardSteps.findIndex(
+            (s) => s.kind === "unit" && s.unitIndex === i,
+          );
+          if (unitStepIndex >= 0) setComboStep(unitStepIndex);
           return false;
         }
       }
@@ -181,12 +215,12 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
   };
 
   const handleNext = () => {
-    if (!validateStep()) return;
+    if (!validateCurrentStep()) return;
     if (comboStep < totalSteps - 1) setComboStep((s) => s + 1);
   };
 
   const handleAdd = () => {
-    if (isCombo && comboStep < totalSteps - 1) {
+    if (useStepWizard && !isLastStep) {
       handleNext();
       return;
     }
@@ -224,20 +258,33 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
 
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
 
-  const stepTitle = onUnitStep
-    ? tProduct(comboUnitStepTitle(product, currentUnitIndex!))
-    : isCombo
-      ? t("comboChoices")
-      : tProduct(product.name);
+  const stepTitle = (() => {
+    if (!currentWizardStep) return tProduct(product.name);
+    if (currentWizardStep.kind === "intro") return tProduct(product.name);
+    if (currentWizardStep.kind === "global") return tProduct(currentWizardStep.group.name);
+    return tProduct(comboUnitStepTitle(product, currentWizardStep.unitIndex));
+  })();
 
-  const stepHeading = onUnitStep ? stepTitle : null;
+  const stepHint = (() => {
+    if (currentWizardStep?.kind === "global") {
+      const g = currentWizardStep.group;
+      if (g.groupKind === "substitution") return t("potatoStepHint");
+      if (/bebida|refresco|drink/i.test(`${g.name.es} ${g.name.pt}`)) return t("chooseOne");
+      return g.isRequired ? t("chooseOne") : null;
+    }
+    if (onUnitStep) return t("chooseOne");
+    return null;
+  })();
+
+  const showIntro = !useStepWizard || currentWizardStep?.kind === "intro";
+  const showNote = !useStepWizard || isLastStep;
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <ScreenHeader eyebrow={t("menu")} title={productCleanName} onBack={onBack} sticky />
 
-      {isCombo && (
-        <div className="px-4 pt-2 pb-1">
+      {useStepWizard && (
+        <div className="px-4 pt-2 pb-1 shrink-0">
           <div className="flex gap-1">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div
@@ -248,16 +295,18 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
           </div>
           <p className="text-[11px] font-bold text-muted-foreground mt-2 uppercase tracking-wider">
             {t("stepOf")} {comboStep + 1} {t("of")} {totalSteps}
-            {!onUnitStep && stepTitle ? ` · ${stepTitle}` : ""}
           </p>
-          {stepHeading && (
-            <h2 className="text-[22px] font-black text-foreground leading-tight mt-2">{stepHeading}</h2>
+          {currentWizardStep?.kind !== "intro" && (
+            <>
+              <h2 className="text-[22px] font-black text-foreground leading-tight mt-2">{stepTitle}</h2>
+              {stepHint && <p className="text-sm text-muted-foreground mt-1">{stepHint}</p>}
+            </>
           )}
         </div>
       )}
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 space-y-4 pb-4">
-        {comboStep === 0 && (
+        {showIntro && (
           <>
             <section className="relative rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
               {productCode && (
@@ -274,7 +323,14 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
               </div>
             </section>
 
-            {!isCombo && !editingItem && (
+            {!useStepWizard && !editingItem && (
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-foreground">{t("quantity")}</span>
+                <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={20} />
+              </div>
+            )}
+
+            {useStepWizard && currentWizardStep?.kind === "intro" && !editingItem && (
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm font-bold text-foreground">{t("quantity")}</span>
                 <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={20} />
@@ -285,7 +341,7 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
 
         {activeGroups.map((group) => (
           <ChoiceGroupSection
-            key={`${group.id}-${currentUnitIndex ?? "g"}`}
+            key={`${group.id}-${currentUnitIndex ?? "g"}-${comboStep}`}
             group={group}
             state={activeState}
             unitIndex={onUnitStep ? currentUnitIndex : undefined}
@@ -293,10 +349,11 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
             tName={tProduct}
             tDesc={tProduct}
             hideHeader={onUnitStep && group.repeatPerUnit}
+            stepMode={useStepWizard && currentWizardStep?.kind === "global"}
           />
         ))}
 
-        {(comboStep === totalSteps - 1 || !isCombo) && (
+        {showNote && (
           <section className="rounded-[24px] border border-border/70 bg-card p-4 space-y-2 shadow-card">
             <label className="text-sm font-black text-foreground">{t("note")}</label>
             <textarea
@@ -318,7 +375,7 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
           </span>
         </div>
         <div className="flex gap-2">
-          {isCombo && comboStep > 0 && (
+          {useStepWizard && comboStep > 0 && (
             <button
               type="button"
               onClick={() => setComboStep((s) => s - 1)}
@@ -332,7 +389,7 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
             onClick={handleAdd}
             className="flex-1 h-14 rounded-2xl bg-primary text-primary-foreground font-black text-base active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
-            {isCombo && comboStep < totalSteps - 1 ? (
+            {useStepWizard && !isLastStep ? (
               <>
                 {t("continueBtn")} <ChevronRight className="w-5 h-5" />
               </>

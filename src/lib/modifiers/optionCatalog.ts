@@ -58,7 +58,33 @@ export function resolveDrinkOptionImage(option: ModifierOption, menuProducts: Me
     const pl = productLabel(p);
     return pl.includes(label) || label.includes(pl);
   });
-  return partial?.image ?? null;
+  if (partial?.image) return partial.image;
+
+  const brandPatterns: RegExp[] = [];
+  if (/coca/i.test(label)) brandPatterns.push(/coca/i);
+  if (/fanta/i.test(label)) brandPatterns.push(/fanta/i);
+  if (/sprite/i.test(label)) brandPatterns.push(/sprite/i);
+  if (/nestea/i.test(label)) brandPatterns.push(/nestea/i);
+  if (/aquarius/i.test(label)) brandPatterns.push(/aquarius/i);
+
+  for (const pattern of brandPatterns) {
+    const wants2L = /2\s*l|2l/i.test(label);
+    const wants33 = /33\s*cl|33cl|lata/i.test(label);
+    const match = menuProducts.find((p) => {
+      const pl = productLabel(p);
+      if (!pattern.test(pl)) return false;
+      if (wants2L) return /2\s*l|2l/i.test(pl);
+      if (wants33) return /33\s*cl|33cl|lata/i.test(pl);
+      return true;
+    });
+    if (match?.image) return match.image;
+  }
+
+  if (/2\s*l|2l|refresco|bebida/i.test(label)) {
+    return findMenuProduct(menuProducts, [/coca.*2/i, /refresco.*2/i, /beb-coca/i, /bebida/i])?.image ?? null;
+  }
+
+  return null;
 }
 
 export function enrichOptionWithMenuImage(

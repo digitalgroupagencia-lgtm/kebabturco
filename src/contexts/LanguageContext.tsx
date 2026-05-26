@@ -160,6 +160,12 @@ const translations: Translations = {
     es: "Añadir por +0,50€",
     fr: "Ajouter pour +0,50€",
   },
+  potatoStepHint: {
+    pt: "Patatas incluídas — ou melhore por +0,50€",
+    en: "Fries included — or upgrade for +€0.50",
+    es: "Patatas incluidas — o mejora por +0,50€",
+    fr: "Frites incluses — ou améliorez pour +0,50€",
+  },
   // Review screen
   yourOrder: { pt: "Seu pedido", en: "Your order", es: "Tu pedido", fr: "Votre commande" },
   review: { pt: "Revisão", en: "Review", es: "Revisión", fr: "Révision" },

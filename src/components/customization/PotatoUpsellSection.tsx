@@ -9,6 +9,7 @@ type Props = {
   unitIndex?: number | null;
   onChange: (next: SelectionState) => void;
   tName: (n: Record<string, string>) => string;
+  stepMode?: boolean;
 };
 
 function pickSingleOption(
@@ -23,7 +24,7 @@ function pickSingleOption(
   return next;
 }
 
-export default function PotatoUpsellSection({ group, state, unitIndex, onChange, tName }: Props) {
+export default function PotatoUpsellSection({ group, state, unitIndex, onChange, tName, stepMode }: Props) {
   const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const key = groupKey(group.id, unitIndex);
@@ -36,24 +37,28 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
     onChange(pickSingleOption(state, group, optionId, unitIndex));
   };
 
-  return (
-    <section className="rounded-[24px] border border-border/70 bg-card shadow-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-border/60 bg-secondary/30 flex items-center justify-between gap-3">
-        <h3 className="text-[17px] font-black text-foreground leading-tight">{tName(group.name)}</h3>
-        <span
-          className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-            group.isRequired && count === 0
-              ? "bg-red-500/10 text-red-600"
-              : count > 0
-                ? "bg-emerald-500/15 text-emerald-700"
-                : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {group.isRequired && count === 0 ? t("missingChoice") : t("required")}
-        </span>
-      </div>
+  const upgradeCols = upgrades.length >= 3 ? "grid-cols-3" : upgrades.length === 2 ? "grid-cols-2" : "grid-cols-1";
 
-      <div className="p-4 space-y-4">
+  return (
+    <section className={stepMode ? "space-y-4" : "rounded-[24px] border border-border/70 bg-card shadow-card overflow-hidden"}>
+      {!stepMode && (
+        <div className="px-4 py-3 border-b border-border/60 bg-secondary/30 flex items-center justify-between gap-3">
+          <h3 className="text-[17px] font-black text-foreground leading-tight">{tName(group.name)}</h3>
+          <span
+            className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+              group.isRequired && count === 0
+                ? "bg-red-500/10 text-red-600"
+                : count > 0
+                  ? "bg-emerald-500/15 text-emerald-700"
+                  : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {group.isRequired && count === 0 ? t("missingChoice") : t("required")}
+          </span>
+        </div>
+      )}
+
+      <div className={stepMode ? "space-y-4" : "p-4 space-y-4"}>
         {included.map((opt) => {
           const sel = (selected.get(opt.id) || 0) > 0;
           return (
@@ -71,10 +76,10 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
 
         {upgrades.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-0.5">
               {t("potatoUpsellTitle")}
             </p>
-            <div className={`grid gap-3 ${upgrades.length >= 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+            <div className={`grid gap-2 ${upgradeCols}`}>
               {upgrades.map((opt) => {
                 const sel = (selected.get(opt.id) || 0) > 0;
                 return (
@@ -87,6 +92,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
                     selected={sel}
                     onClick={() => pick(opt.id)}
                     layout="vertical"
+                    compact={upgrades.length >= 3}
                   />
                 );
               })}
