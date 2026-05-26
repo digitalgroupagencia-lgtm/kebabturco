@@ -776,6 +776,8 @@ export type Database = {
           store_id: string
           stripe_fee_cents: number
           stripe_payment_intent_id: string | null
+          stripe_connect_account_id: string | null
+          online_service_fee_cents: number
           subtotal: number
           table_customer_id: string | null
           table_number: string | null
@@ -816,6 +818,8 @@ export type Database = {
           store_id: string
           stripe_fee_cents?: number
           stripe_payment_intent_id?: string | null
+          stripe_connect_account_id?: string | null
+          online_service_fee_cents?: number
           subtotal?: number
           table_customer_id?: string | null
           table_number?: string | null
@@ -856,6 +860,8 @@ export type Database = {
           store_id?: string
           stripe_fee_cents?: number
           stripe_payment_intent_id?: string | null
+          stripe_connect_account_id?: string | null
+          online_service_fee_cents?: number
           subtotal?: number
           table_customer_id?: string | null
           table_number?: string | null
@@ -2646,6 +2652,11 @@ export type Database = {
           _store_id: string
           _stripe_payment_intent_id?: string
           _subtotal?: number
+          _online_service_fee_cents?: number
+          _platform_fee_cents?: number
+          _stripe_fee_cents?: number
+          _net_to_store_cents?: number
+          _stripe_connect_account_id?: string
           _table_id?: string
           _table_number?: string
           _total: number

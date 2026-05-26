@@ -11,8 +11,13 @@ import {
   provisionStripeConnect,
   type StoreFinancialProfile,
 } from "@/services/orderService";
-import { PLATFORM_FEE_EUR, estimateProcessingFeeEur } from "@/lib/processingFee";
-import { Loader2, Wallet, ArrowDownLeft, Building2, ShieldCheck } from "lucide-react";
+import {
+  PLATFORM_FEE_EUR,
+  computeOnlineServiceFeeEur,
+  ONLINE_SERVICE_FEE_LABEL,
+} from "@/lib/processingFee";
+import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
+import { Loader2, Wallet, ArrowDownLeft, Building2, ShieldCheck, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 
@@ -20,6 +25,7 @@ type LedgerRow = {
   id: string;
   description: string | null;
   gross_cents: number;
+  platform_fee_cents: number;
   processing_fee_cents: number;
   net_cents: number;
   created_at: string;
@@ -51,7 +57,7 @@ const FinancePage = () => {
       fetchStoreFinancialProfile(storeId),
       supabase
         .from("store_payment_ledger")
-        .select("id,description,gross_cents,processing_fee_cents,net_cents,created_at")
+        .select("id,description,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
         .eq("store_id", storeId)
         .order("created_at", { ascending: false })
         .limit(30),
@@ -77,7 +83,7 @@ const FinancePage = () => {
       searchParams.delete("onboarding");
       setSearchParams(searchParams, { replace: true });
       load();
-      toast.success("Dados bancários actualizados");
+      toast.success("Recebimentos actualizados");
     }
   }, [searchParams, setSearchParams, load]);
 
@@ -96,6 +102,7 @@ const FinancePage = () => {
   };
 
   const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
+  const exampleOnlineFee = computeOnlineServiceFeeEur(20);
 
   if (!storeId) {
     return <div className="p-6 text-sm text-muted-foreground">Sem loja vinculada</div>;
@@ -109,8 +116,8 @@ const FinancePage = () => {
     );
   }
 
-  const ready = profile?.stripe_charges_enabled && profile?.stripe_onboarding_completed;
-  const exampleFee = estimateProcessingFeeEur(20);
+  const ready = isStripeConnectReady(profile);
+  const connectStatus = stripeConnectStatusLabel(profile);
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
@@ -120,29 +127,50 @@ const FinancePage = () => {
           Recebimentos
         </h1>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          O sistema gere pagamentos e repasses. Taxa por pedido online: {PLATFORM_FEE_EUR.toFixed(2)}€ + custo de processamento (ex. 20€ ≈ {exampleFee.toFixed(2)}€ total).
+          O cliente paga uma {ONLINE_SERVICE_FEE_LABEL.toLowerCase()} no checkout. O restaurante recebe o valor
+          integral dos produtos e entrega — repasse automático para a conta bancária ligada.
         </p>
         <Link to={nav.admin("diagnostics")} className="text-xs text-primary font-semibold underline mt-2 inline-block">
-          Ver Estado do sistema (pagamentos e webhook)
+          Ver Estado do sistema
         </Link>
       </div>
 
+      <div className="rounded-xl border bg-muted/40 p-3 space-y-2 text-xs">
+        <div className="flex items-start gap-2">
+          <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1 text-muted-foreground leading-relaxed">
+            <p>
+              <strong className="text-foreground">Exemplo pedido 20,00€:</strong> cliente paga cerca de{" "}
+              {(20 + exampleOnlineFee).toFixed(2)}€ (inclui {exampleOnlineFee.toFixed(2)}€ de taxa online).
+            </p>
+            <p>O restaurante recebe <strong className="text-foreground">20,00€</strong> desse pedido.</p>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-5 text-primary-foreground shadow-lg">
-        <p className="text-xs opacity-90 uppercase tracking-wide font-semibold">Saldo registado</p>
+        <p className="text-xs opacity-90 uppercase tracking-wide font-semibold">Total recebido (pedidos online)</p>
         <p className="text-4xl font-black tabular-nums mt-1">{centsToEur(balanceNet)}€</p>
-        <p className="text-[11px] opacity-80 mt-2">Líquido após taxa de processamento online</p>
+        <p className="text-[11px] opacity-80 mt-2">Valor dos produtos + entrega — sem descontar taxa online ao cliente</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Estado</p>
-          <p className="text-sm font-bold mt-0.5">
-            {ready ? "Activo" : profile?.stripe_connect_account_id ? "Pendente" : "Por activar"}
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Conta Stripe</p>
+          <p className="text-sm font-bold mt-0.5 capitalize">
+            {connectStatus === "ready" ? "Activa" : connectStatus === "pending" ? "Pendente" : "Por ligar"}
           </p>
+          {profile?.stripe_connect_account_id && (
+            <p className="text-[9px] text-muted-foreground truncate mt-0.5" title={profile.stripe_connect_account_id}>
+              …{profile.stripe_connect_account_id.slice(-8)}
+            </p>
+          )}
         </div>
         <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Repasse</p>
-          <p className="text-sm font-bold mt-0.5 capitalize">{profile?.stripe_payout_status || "pending"}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Repasse bancário</p>
+          <p className="text-sm font-bold mt-0.5 capitalize">
+            {profile?.stripe_payouts_enabled ? "Activo" : profile?.stripe_payout_status || "Pendente"}
+          </p>
         </div>
       </div>
 
@@ -151,14 +179,14 @@ const FinancePage = () => {
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
             <div>
-              <p className="font-black text-base">Conta bancária Stripe — passo obrigatório</p>
+              <p className="font-black text-base">Ligar conta de recebimentos</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Sem completar este passo na Stripe, o cliente <strong>não consegue pagar com cartão</strong>, mesmo com
-                as chaves já configuradas.
+                Preencha dados da empresa e IBAN directamente na Stripe. Os dados bancários nunca passam pelo nosso
+                sistema.
               </p>
               {profile?.stripe_connect_account_id && !profile.stripe_charges_enabled && (
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-2">
-                  Conta criada — faltam dados ou validação na Stripe.
+                  Conta criada — falta concluir validação na Stripe.
                 </p>
               )}
             </div>
@@ -167,11 +195,11 @@ const FinancePage = () => {
             {activating ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              "Abrir Stripe e completar dados bancários"
+              "Conectar recebimentos do restaurante"
             )}
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            Abre a página oficial da Stripe num separador seguro. Volta aqui quando terminar.
+            Abre o formulário oficial da Stripe. Volta aqui quando terminar.
           </p>
         </div>
       )}
@@ -179,7 +207,7 @@ const FinancePage = () => {
       {ready && (
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 shrink-0" />
-          Recebimentos online activos — cartão e repasse automático.
+          Recebimentos online activos — cartão, Apple Pay e Google Pay.
         </div>
       )}
 
@@ -206,9 +234,9 @@ const FinancePage = () => {
           {ledger.map((row) => (
             <OpsCompactCard
               key={row.id}
-              title={row.description || "Pagamento"}
-              summary={`Bruto ${centsToEur(row.gross_cents)}€ · Taxa processamento ${centsToEur(row.processing_fee_cents)}€`}
-              meta={`Líquido ${centsToEur(row.net_cents)}€ · ${new Date(row.created_at).toLocaleString("pt-PT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}`}
+              title={row.description || "Pagamento online"}
+              summary={`Valor do pedido ${centsToEur(row.net_cents)}€`}
+              meta={`${new Date(row.created_at).toLocaleString("pt-PT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}`}
               editable={false}
             />
           ))}
@@ -222,7 +250,7 @@ const FinancePage = () => {
 
       {payouts.length > 0 && (
         <div>
-          <h2 className="text-sm font-bold mb-2">Repasses</h2>
+          <h2 className="text-sm font-bold mb-2">Repasses para o banco</h2>
           <div className="space-y-2">
             {payouts.map((p) => (
               <OpsCompactCard

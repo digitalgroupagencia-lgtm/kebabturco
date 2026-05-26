@@ -11,14 +11,22 @@ import {
   createStripePaymentIntent,
   buildPrintPayload,
   invokePrintOrder,
-  fetchStoreStripeSettings,
+  fetchStoreFinancialProfile,
   validateCoupon,
   verifyStripePaymentIntent,
+  PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
+import { isStripeConnectReady } from "@/lib/stripeConnectReady";
+import {
+  computeRestaurantPortionEur,
+  computeOnlineServiceFeeEur,
+  ONLINE_SERVICE_FEE_LABEL,
+} from "@/lib/processingFee";
 import {
   resolveCheckoutMethods,
+  requiresPrepayment,
   shouldPrintAfterCheckout,
   stripeConfigIssue,
 } from "@/lib/paymentPolicy";
@@ -100,6 +108,14 @@ const PaymentScreen = () => {
   const [processing, setProcessing] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
+  const [stripePaymentMeta, setStripePaymentMeta] = useState<{
+    amountCents: number;
+    restaurantPortionCents: number;
+    onlineServiceFeeCents: number;
+    platformFeeCents: number;
+    estimatedStripeFeeCents: number;
+    stripeConnectAccountId: string;
+  } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone">(null);
   const [couponCode, setCouponCode] = useState("");
@@ -129,7 +145,7 @@ const PaymentScreen = () => {
     totalPrice,
   );
   const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
-  const grandTotal = Math.max(0, totalPrice + deliveryFee - couponDiscount);
+  const restaurantPortionEur = computeRestaurantPortionEur(totalPrice, deliveryFee, couponDiscount);
 
   const applyCoupon = async () => {
     if (!couponCode.trim() || !storeId || isTableOrder) return;
@@ -163,8 +179,8 @@ const PaymentScreen = () => {
 
   useEffect(() => {
     if (!storeId) return;
-    fetchStoreStripeSettings(storeId)
-      .then((data) => setStripeEnabled(!!data?.stripe_charges_enabled))
+    fetchStoreFinancialProfile(storeId)
+      .then((profile) => setStripeEnabled(isStripeConnectReady(profile)))
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
@@ -179,6 +195,29 @@ const PaymentScreen = () => {
     });
     return METHOD_DEFS.filter((m) => ids.includes(m.id));
   }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
+
+  const showOnlineServiceFee =
+    stripeEnabled &&
+    stripePublishableKey &&
+    (prepaymentRequired || selected === "card");
+  const onlineServiceFeeEur = showOnlineServiceFee
+    ? computeOnlineServiceFeeEur(restaurantPortionEur)
+    : 0;
+  const grandTotal = restaurantPortionEur + onlineServiceFeeEur;
+
+  const cardOrderFinancials = () => {
+    const restaurantCents = Math.round(restaurantPortionEur * 100);
+    const serviceCents =
+      stripePaymentMeta?.onlineServiceFeeCents ?? Math.round(onlineServiceFeeEur * 100);
+    return {
+      onlineServiceFeeCents: serviceCents,
+      platformFeeCents: stripePaymentMeta?.platformFeeCents ?? PLATFORM_FEE_CENTS,
+      stripeFeeCents:
+        stripePaymentMeta?.estimatedStripeFeeCents ?? Math.max(0, serviceCents - PLATFORM_FEE_CENTS),
+      netToStoreCents: stripePaymentMeta?.restaurantPortionCents ?? restaurantCents,
+      stripeConnectAccountId: stripePaymentMeta?.stripeConnectAccountId ?? null,
+    };
+  };
 
   const tablePayReady = checkoutMethods.length > 0;
   const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing && !stripeClientSecret;
@@ -264,6 +303,8 @@ const PaymentScreen = () => {
           : opts.paymentMethod === "counter" || opts.paymentMethod === "link" ? null
             : opts.paymentMethod;
 
+    const fin = opts.paymentMethod === "card" ? cardOrderFinancials() : null;
+
     const result = await createCustomerOrder({
       storeId,
       orderType: orderTypeDb,
@@ -290,6 +331,11 @@ const PaymentScreen = () => {
       couponCode: couponId ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
+      onlineServiceFeeCents: fin?.onlineServiceFeeCents,
+      platformFeeCents: fin?.platformFeeCents,
+      stripeFeeCents: fin?.stripeFeeCents,
+      netToStoreCents: fin?.netToStoreCents,
+      stripeConnectAccountId: fin?.stripeConnectAccountId,
     });
 
     setPaymentMethod(opts.paymentMethod);
@@ -342,14 +388,26 @@ const PaymentScreen = () => {
   };
 
   const startCardPayment = async () => {
-    const amountCents = Math.round(grandTotal * 100);
-    const { clientSecret, paymentIntentId } = await createStripePaymentIntent({
+    const subtotalCents = Math.round(totalPrice * 100);
+    const deliveryCents = Math.round(deliveryFee * 100);
+    const discountCents = Math.round(couponDiscount * 100);
+    const pi = await createStripePaymentIntent({
       storeId,
-      amountCents,
+      subtotalCents,
+      deliveryCents,
+      discountCents,
       orderType: orderTypeDb,
     });
-    setStripePaymentIntentId(paymentIntentId);
-    setStripeClientSecret(clientSecret);
+    setStripePaymentIntentId(pi.paymentIntentId);
+    setStripePaymentMeta({
+      amountCents: pi.amountCents,
+      restaurantPortionCents: pi.restaurantPortionCents,
+      onlineServiceFeeCents: pi.onlineServiceFeeCents,
+      platformFeeCents: pi.platformFeeCents,
+      estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
+      stripeConnectAccountId: pi.stripeConnectAccountId,
+    });
+    setStripeClientSecret(pi.clientSecret);
   };
 
   const confirm = async () => {
@@ -422,6 +480,33 @@ const PaymentScreen = () => {
           </div>
         </div>
 
+        {!stripeClientSecret && (
+          <div className={`mt-3 bg-card rounded-2xl border border-border/80 ${compact ? "p-3 space-y-1.5 text-xs" : "p-4 space-y-2 text-sm"}`}>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-semibold tabular-nums">{totalPrice.toFixed(2)}€</span>
+            </div>
+            {deliveryFee > 0 && (
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Entrega</span>
+                <span className="font-semibold tabular-nums">{deliveryFee.toFixed(2)}€</span>
+              </div>
+            )}
+            {couponDiscount > 0 && (
+              <div className="flex justify-between gap-2 text-green-700 dark:text-green-400">
+                <span>Desconto</span>
+                <span className="font-semibold tabular-nums">−{couponDiscount.toFixed(2)}€</span>
+              </div>
+            )}
+            {onlineServiceFeeEur > 0 && (
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">{ONLINE_SERVICE_FEE_LABEL}</span>
+                <span className="font-semibold tabular-nums">{onlineServiceFeeEur.toFixed(2)}€</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {stripeClientSecret ? (
           <div className={`mt-3 bg-card rounded-2xl border border-border shadow-card ${compact ? "p-3" : "p-4 mt-5 rounded-[24px]"}`}>
             <p className="text-sm font-black text-foreground mb-2">Pagamento com cartão</p>
@@ -429,11 +514,16 @@ const PaymentScreen = () => {
               compact={compact}
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
-              onCancel={() => { setStripeClientSecret(null); setStripePaymentIntentId(null); }}
+              onCancel={() => {
+                setStripeClientSecret(null);
+                setStripePaymentIntentId(null);
+                setStripePaymentMeta(null);
+              }}
               onSuccess={async () => {
                 setProcessing(true);
                 try {
-                  const amountCents = Math.round(grandTotal * 100);
+                  const fin = cardOrderFinancials();
+                  const amountCents = stripePaymentMeta?.amountCents ?? Math.round(grandTotal * 100);
                   const result = await createCustomerOrder({
                     storeId,
                     orderType: orderTypeDb,
@@ -460,6 +550,11 @@ const PaymentScreen = () => {
                     couponCode: couponId ? couponCode.trim() : null,
                     discountAmount: couponDiscount,
                     couponId,
+                    onlineServiceFeeCents: fin.onlineServiceFeeCents,
+                    platformFeeCents: fin.platformFeeCents,
+                    stripeFeeCents: fin.stripeFeeCents,
+                    netToStoreCents: fin.netToStoreCents,
+                    stripeConnectAccountId: fin.stripeConnectAccountId,
                   });
 
                   await verifyStripePaymentIntent({

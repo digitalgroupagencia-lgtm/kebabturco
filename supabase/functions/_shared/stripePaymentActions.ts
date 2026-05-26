@@ -2,9 +2,8 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   PLATFORM_FEE_CENTS,
-  computeApplicationFeeCents,
   computeNetToStoreCents,
-  computeProcessingFeeCents,
+  estimatedStripeFeeInServiceFee,
 } from "./stripeFees.ts";
 import { getStripeSecretKey, getStripeWebhookSecret } from "./stripeEnv.ts";
 
@@ -143,7 +142,7 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("id, store_id, total, payment_status, stripe_payment_intent_id, order_number")
+    .select("id, store_id, total, subtotal, delivery_fee, discount_amount, payment_status, stripe_payment_intent_id, order_number")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -173,8 +172,19 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
     return json({ error: "Valor inválido" }, 400);
   }
 
-  let stripeFeeCents = Number(pi.metadata?.estimated_stripe_fee_cents || 0);
+  const restaurantPortionCents = Number(
+    pi.metadata?.restaurant_portion_cents ||
+      Math.round(
+        (Number(order.subtotal) + Number(order.delivery_fee ?? 0) - Number(order.discount_amount ?? 0)) * 100,
+      ),
+  );
+  const onlineServiceFeeCents = Number(
+    pi.metadata?.online_service_fee_cents || pi.application_fee_amount || 0,
+  );
   const platformFeeCents = Number(pi.metadata?.platform_fee_cents || PLATFORM_FEE_CENTS);
+  let stripeFeeCents = Number(
+    pi.metadata?.estimated_stripe_fee_cents || estimatedStripeFeeInServiceFee(onlineServiceFeeCents),
+  );
   try {
     const expanded = await stripe.paymentIntents.retrieve(pi.id, { expand: ["latest_charge.balance_transaction"] });
     const charge = expanded.latest_charge as Stripe.Charge | null;
@@ -184,15 +194,15 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
     /* estimate ok */
   }
 
-  const processingFeeCents = computeProcessingFeeCents(platformFeeCents, stripeFeeCents);
-  const netToStoreCents = computeNetToStoreCents(expectedCents, processingFeeCents);
+  const netToStoreCents = computeNetToStoreCents(restaurantPortionCents);
 
   const { data: settled, error: settleErr } = await supabase.rpc("record_payment_settlement", {
     _stripe_payment_intent_id: paymentIntentId,
     _platform_fee_cents: platformFeeCents,
     _stripe_fee_cents: stripeFeeCents,
-    _processing_fee_cents: processingFeeCents,
+    _processing_fee_cents: onlineServiceFeeCents,
     _net_to_store_cents: netToStoreCents,
+    _online_service_fee_cents: onlineServiceFeeCents,
   });
 
   if (settleErr) {
@@ -221,4 +231,10 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-export { computeApplicationFeeCents, PLATFORM_FEE_CENTS };
+export { PLATFORM_FEE_CENTS };
+export {
+  computeApplicationFeeCents,
+  computeCustomerTotalCents,
+  computeOnlineServiceFeeCents,
+  computeRestaurantPortionCents,
+} from "./stripeFees.ts";

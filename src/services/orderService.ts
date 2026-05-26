@@ -52,6 +52,11 @@ type CreateCustomerOrderArgs = {
   _coupon_code?: string;
   _discount_amount?: number;
   _coupon_id?: string;
+  _online_service_fee_cents?: number;
+  _platform_fee_cents?: number;
+  _stripe_fee_cents?: number;
+  _net_to_store_cents?: number;
+  _stripe_connect_account_id?: string;
 };
 
 export function cartItemsToRpcPayload(items: CartItem[]) {
@@ -100,6 +105,11 @@ export interface CreateCustomerOrderParams {
   couponCode?: string | null;
   discountAmount?: number;
   couponId?: string | null;
+  onlineServiceFeeCents?: number;
+  platformFeeCents?: number;
+  stripeFeeCents?: number;
+  netToStoreCents?: number;
+  stripeConnectAccountId?: string | null;
 }
 
 export type ValidateCouponResult = {
@@ -158,9 +168,6 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     _payment_method: params.paymentMethod || undefined,
     _payment_status: params.paymentStatus || "pending",
     _stripe_payment_intent_id: params.stripePaymentIntentId || undefined,
-    _application_fee_cents: params.paymentStatus === "paid" && params.paymentMethod === "card"
-      ? PLATFORM_FEE_CENTS
-      : 0,
     _delivery_street: params.deliveryStreet || undefined,
     _delivery_number: params.deliveryNumber || undefined,
     _delivery_complement: params.deliveryComplement || undefined,
@@ -173,6 +180,11 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     _coupon_code: params.couponCode || undefined,
     _discount_amount: params.discountAmount ?? 0,
     _coupon_id: params.couponId || undefined,
+    _online_service_fee_cents: params.onlineServiceFeeCents ?? 0,
+    _platform_fee_cents: params.platformFeeCents ?? 0,
+    _stripe_fee_cents: params.stripeFeeCents ?? 0,
+    _net_to_store_cents: params.netToStoreCents ?? undefined,
+    _stripe_connect_account_id: params.stripeConnectAccountId || undefined,
   };
 
   const { data, error } = await supabase.rpc("create_customer_order", args);
@@ -235,7 +247,9 @@ export async function invokePrintOrder(body: Record<string, unknown>) {
 
 export async function createStripePaymentIntent(params: {
   storeId: string;
-  amountCents: number;
+  subtotalCents: number;
+  deliveryCents: number;
+  discountCents: number;
   orderType: string;
   metadata?: Record<string, string>;
 }) {
@@ -244,7 +258,16 @@ export async function createStripePaymentIntent(params: {
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
-  return data as { clientSecret: string; paymentIntentId: string };
+  return data as {
+    clientSecret: string;
+    paymentIntentId: string;
+    amountCents: number;
+    restaurantPortionCents: number;
+    onlineServiceFeeCents: number;
+    platformFeeCents: number;
+    estimatedStripeFeeCents: number;
+    stripeConnectAccountId: string;
+  };
 }
 
 export async function provisionStripeConnect(storeId: string) {

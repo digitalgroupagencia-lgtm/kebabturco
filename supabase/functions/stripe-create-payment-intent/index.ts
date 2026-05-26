@@ -5,8 +5,12 @@ import {
   handleOperationalDiagnostics,
   handleVerifyPaymentIntent,
   computeApplicationFeeCents,
+  computeCustomerTotalCents,
+  computeOnlineServiceFeeCents,
+  computeRestaurantPortionCents,
   PLATFORM_FEE_CENTS,
 } from "../_shared/stripePaymentActions.ts";
+import { estimatedStripeFeeInServiceFee } from "../_shared/stripeFees.ts";
 import { getStripeSecretKey } from "../_shared/stripeEnv.ts";
 
 function json(data: unknown, status = 200) {
@@ -27,6 +31,7 @@ Deno.serve(async (req) => {
       ok: true,
       service: "stripe-create-payment-intent",
       stripeConfigured,
+      platformFeeCents: PLATFORM_FEE_CENTS,
     });
   }
 
@@ -39,6 +44,7 @@ Deno.serve(async (req) => {
         ok: true,
         service: "stripe-create-payment-intent",
         stripeConfigured,
+        platformFeeCents: PLATFORM_FEE_CENTS,
       });
     }
 
@@ -50,14 +56,15 @@ Deno.serve(async (req) => {
       return handleVerifyPaymentIntent(body);
     }
 
-    if (!body?.storeId && !body?.amountCents) {
+    if (!body?.storeId && !body?.amountCents && body?.subtotalCents == null) {
       const stripeConfigured = Boolean(getStripeSecretKey());
       return json({
         ok: true,
         service: "stripe-create-payment-intent",
         stripeConfigured,
+        platformFeeCents: PLATFORM_FEE_CENTS,
         message: stripeConfigured
-          ? "Serviço activo — envie storeId e amountCents para criar pagamento."
+          ? "Serviço activo — envie storeId e valores do pedido para criar pagamento."
           : "Stripe não configurada — adicione STRIPE_SECRET_KEY nos segredos Lovable Cloud.",
       });
     }
@@ -75,9 +82,26 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    const { storeId, amountCents, orderType, metadata = {} } = body;
+    const {
+      storeId,
+      orderType,
+      metadata = {},
+      subtotalCents = 0,
+      deliveryCents = 0,
+      discountCents = 0,
+    } = body;
 
-    if (!storeId || !amountCents || amountCents < 50 || amountCents > 1_000_00 * 10) {
+    const restaurantPortionCents = computeRestaurantPortionCents(
+      Number(subtotalCents) || 0,
+      Number(deliveryCents) || 0,
+      Number(discountCents) || 0,
+    );
+    const onlineServiceFeeCents = computeOnlineServiceFeeCents(restaurantPortionCents);
+    const amountCents = computeCustomerTotalCents(restaurantPortionCents);
+    const applicationFeeCents = computeApplicationFeeCents(restaurantPortionCents);
+    const estimatedStripeFeeCents = estimatedStripeFeeInServiceFee(onlineServiceFeeCents);
+
+    if (!storeId || restaurantPortionCents < 50 || amountCents < 50 || amountCents > 1_000_00 * 10) {
       return json({ error: "Parâmetros inválidos" }, 400);
     }
 
@@ -98,16 +122,20 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed")
+      .select(
+        "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
+      )
       .eq("id", storeId)
       .maybeSingle();
 
-    if (storeErr || !store?.stripe_connect_account_id || !store.stripe_charges_enabled) {
+    if (
+      storeErr ||
+      !store?.stripe_connect_account_id ||
+      !store.stripe_charges_enabled ||
+      !store.stripe_onboarding_completed
+    ) {
       return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
     }
-
-    const applicationFeeCents = computeApplicationFeeCents(amountCents);
-    const estimatedStripeFeeCents = applicationFeeCents - PLATFORM_FEE_CENTS;
 
     const intent = await stripe.paymentIntents.create({
       amount: amountCents,
@@ -119,16 +147,26 @@ Deno.serve(async (req) => {
         ...safeMeta,
         store_id: storeId,
         order_type: orderType || "dine_in",
+        stripe_connect_account_id: store.stripe_connect_account_id,
+        restaurant_portion_cents: String(restaurantPortionCents),
+        online_service_fee_cents: String(onlineServiceFeeCents),
         platform_fee_cents: String(PLATFORM_FEE_CENTS),
         estimated_stripe_fee_cents: String(estimatedStripeFeeCents),
+        subtotal_cents: String(subtotalCents),
+        delivery_cents: String(deliveryCents),
+        discount_cents: String(discountCents),
       },
     });
 
     return json({
       clientSecret: intent.client_secret,
       paymentIntentId: intent.id,
-      estimatedProcessingFeeCents: applicationFeeCents,
+      amountCents,
+      restaurantPortionCents,
+      onlineServiceFeeCents,
       platformFeeCents: PLATFORM_FEE_CENTS,
+      estimatedStripeFeeCents,
+      stripeConnectAccountId: store.stripe_connect_account_id,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento";
