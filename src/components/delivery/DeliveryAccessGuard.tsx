@@ -30,7 +30,7 @@ export default function DeliveryAccessGuard({ children }: Props) {
     }
 
     if (role && role !== "delivery" && role !== "admin_master") {
-      navigate(role === "admin_master" ? nav.admin() : nav.panel(), { replace: true });
+      navigate(nav.panel(), { replace: true });
       return;
     }
 
