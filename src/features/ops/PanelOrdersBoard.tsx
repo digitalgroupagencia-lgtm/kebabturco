@@ -175,6 +175,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     onOpenDetail: openOrderDetail,
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
+    onMarkPaid: markOrderPaid,
   });
 
   if (loading) {

@@ -138,7 +138,7 @@ export function auditExpectedDrinkCatalog(products: MenuProduct[]): CatalogAudit
   return issues;
 }
 
-export function mergeCatalogAudits(...lists: CatalogAuditIssue[]): CatalogAuditIssue[] {
+export function mergeCatalogAudits(lists: CatalogAuditIssue[][]): CatalogAuditIssue[] {
   const byKey = new Map<string, CatalogAuditIssue>();
   for (const issue of lists.flat()) {
     const key = `${issue.optionId}:${issue.problem}`;
@@ -173,7 +173,7 @@ export function buildProductPayloadFromOption(
       fr: option.name.fr || nameEs,
     },
     description: { pt: "", en: "", es: "", fr: "" },
-    price: option.price ?? 0,
+    price: (option as any).price ?? 0,
     image_url: option.imageUrl ?? null,
     is_active: true,
     is_bestseller: false,

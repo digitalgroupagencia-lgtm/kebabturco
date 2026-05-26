@@ -19,7 +19,7 @@ function product(name: string, image?: string): MenuProduct {
     isBestseller: false,
     isPromo: false,
     sortOrder: 0,
-  };
+  } as unknown as MenuProduct;
 }
 
 describe("menuCatalogAudit", () => {
@@ -30,10 +30,10 @@ describe("menuCatalogAudit", () => {
         name: { es: "Bebida 2L", pt: "Bebida 2L" },
         groupKind: "choice",
         options: [
-          { id: "o1", name: { es: "Coca-Cola 2L" }, price: 0 },
-          { id: "o2", name: { es: "Fanta Naranja 2L" }, price: 0 },
+          { id: "o1", name: { es: "Coca-Cola 2L" }, price: 0 } as any,
+          { id: "o2", name: { es: "Fanta Naranja 2L" }, price: 0 } as any,
         ],
-      },
+      } as any,
     ];
     const products = [product("Refresco Botella 2L")];
 
@@ -48,8 +48,8 @@ describe("menuCatalogAudit", () => {
         id: "g1",
         name: { es: "Bebida 2L", pt: "Bebida 2L" },
         groupKind: "choice",
-        options: [{ id: "o1", name: { es: "Refresco Botella 2L" }, price: 0 }],
-      },
+        options: [{ id: "o1", name: { es: "Refresco Botella 2L" }, price: 0 } as any],
+      } as any,
     ];
     const products = [product("Refresco Botella 2L", "")];
 
@@ -59,10 +59,10 @@ describe("menuCatalogAudit", () => {
 
   it("merges expected drink catalog gaps", () => {
     const products = [product("Refresco Botella 2L")];
-    const merged = mergeCatalogAudits(
+    const merged = mergeCatalogAudits([
       auditModifierOptionsAgainstCatalog([], products),
       auditExpectedDrinkCatalog(products),
-    );
+    ]);
     expect(merged.length).toBeGreaterThan(0);
   });
 });

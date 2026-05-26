@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone, AlertCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { markOrderPaidAtCounter } from "@/services/orderService";
 
 type CashRegister = Tables<"cash_registers">;
+type PendingOrder = Tables<"orders">;
 
 const CashierPage = () => {
   const { user } = useAuth();
@@ -26,13 +28,56 @@ const CashierPage = () => {
   const [openingBalance, setOpeningBalance] = useState("0");
   const [closingBalance, setClosingBalance] = useState("0");
   const [todaySales, setTodaySales] = useState({ total: 0, card: 0, cash: 0, pix: 0, count: 0 });
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const fetchPendingOrders = useCallback(async () => {
+    if (!storeId) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("store_id", storeId)
+      .eq("payment_status", "pending")
+      .neq("status", "cancelled")
+      .gte("created_at", today.toISOString())
+      .order("created_at", { ascending: false });
+    setPendingOrders((data ?? []) as PendingOrder[]);
+  }, [storeId]);
 
   useEffect(() => {
     if (storeId) {
       fetchCurrentRegister();
       fetchTodaySales();
+      fetchPendingOrders();
     }
-  }, [storeId]);
+  }, [storeId, fetchPendingOrders]);
+
+  useEffect(() => {
+    if (!storeId) return;
+    const channel = supabase
+      .channel(`cashier-orders-${storeId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` }, () => {
+        fetchPendingOrders();
+        fetchTodaySales();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [storeId, fetchPendingOrders]);
+
+  const confirmCashPayment = async (order: PendingOrder, method: "cash" | "card" = "cash") => {
+    setConfirmingId(order.id);
+    try {
+      await markOrderPaidAtCounter(order.id, method);
+      toast.success(`Pagamento registado — #${order.order_number}`);
+      await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   const fetchCurrentRegister = async () => {
     if (!storeId) return;
@@ -195,6 +240,65 @@ const CashierPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Payments */}
+      <Card className={pendingOrders.length > 0 ? "border-yellow-500/60 bg-yellow-500/5" : ""}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <AlertCircle className={`h-5 w-5 ${pendingOrders.length > 0 ? "text-yellow-600" : "text-muted-foreground"}`} />
+            Pagamentos pendentes
+            <Badge variant={pendingOrders.length > 0 ? "default" : "secondary"} className="ml-auto">
+              {pendingOrders.length}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pendingOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Sem pedidos aguardando pagamento.</p>
+          ) : (
+            <ul className="space-y-2">
+              {pendingOrders.map((o) => {
+                const modality = o.order_type === "delivery" ? "Entrega" : o.order_type === "dine_in" ? `Mesa ${o.table_number ?? ""}` : "Balcão";
+                return (
+                  <li key={o.id} className="flex items-center gap-2 rounded-lg border bg-card p-2.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm">#{o.order_number}</span>
+                        <Badge variant="outline" className="h-5 text-[10px]">{modality}</Badge>
+                        <span className="text-xs text-muted-foreground truncate">{o.customer_name || "Cliente"}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(o.created_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                        {" · "}Status: <span className="font-semibold">{o.status}</span>
+                      </p>
+                    </div>
+                    <span className="font-black text-primary text-base tabular-nums shrink-0">€{Number(o.total).toFixed(2)}</span>
+                    <Button
+                      size="sm"
+                      className="h-9 bg-green-600 hover:bg-green-700 text-white"
+                      disabled={confirmingId === o.id}
+                      onClick={() => void confirmCashPayment(o, "cash")}
+                    >
+                      <Banknote className="h-4 w-4 mr-1" />
+                      Dinheiro
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9"
+                      disabled={confirmingId === o.id}
+                      onClick={() => void confirmCashPayment(o, "card")}
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Cartão
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {currentRegister && (
         <Card>

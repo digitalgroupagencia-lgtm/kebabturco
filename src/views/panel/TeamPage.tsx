@@ -87,13 +87,13 @@ const TeamPage = () => {
       .in("user_id", userIds);
 
     const roleIds = roles.map((r) => r.id);
-    const { data: pinRows } = await supabase
-      .from("staff_access_pins")
+    const { data: pinRows } = await (supabase
+      .from("staff_access_pins" as any)
       .select("user_role_id, is_active")
-      .in("user_role_id", roleIds);
+      .in("user_role_id", roleIds) as any);
 
     const pinByRole = new Set(
-      (pinRows ?? []).filter((p) => p.is_active).map((p) => p.user_role_id),
+      ((pinRows ?? []) as any[]).filter((p: any) => p.is_active).map((p: any) => p.user_role_id),
     );
 
     const membersData: TeamMember[] = roles.map((r) => {
@@ -161,7 +161,7 @@ const TeamPage = () => {
         return;
       }
 
-      const { error: pinError } = await supabase.rpc("upsert_staff_access_pin", {
+      const { error: pinError } = await (supabase.rpc as any)("upsert_staff_access_pin", {
         _user_role_id: roleRow.id,
         _pin: newAccessPin,
       });
@@ -210,7 +210,7 @@ const TeamPage = () => {
     }
     setPinSaving(true);
     try {
-      const { error } = await supabase.rpc("upsert_staff_access_pin", {
+      const { error } = await (supabase.rpc as any)("upsert_staff_access_pin", {
         _user_role_id: pinDialogMember.id,
         _pin: editAccessPin,
       });

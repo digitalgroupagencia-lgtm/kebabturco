@@ -1,7 +1,7 @@
 import { memo, useState, type MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Clock, Bike, XCircle } from "lucide-react";
+import { ChevronRight, Clock, Bike, XCircle, Banknote } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
@@ -36,6 +36,7 @@ interface OpsOrderCardProps {
   onOpenDetail: (order: PanelOrder) => void;
   onRequestAccept: (order: PanelOrder) => void;
   onRequestAssignDriver: (order: PanelOrder) => void;
+  onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void> | Promise<boolean>;
 }
 
 const OpsOrderCard = memo(function OpsOrderCard({
@@ -49,6 +50,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onOpenDetail,
   onRequestAccept,
   onRequestAssignDriver,
+  onMarkPaid,
 }: OpsOrderCardProps) {
   const payment = getPanelPaymentBadge(order);
   const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
@@ -58,11 +60,14 @@ const OpsOrderCard = memo(function OpsOrderCard({
   const prepRemaining = formatPrepRemaining(order);
   const timeLabel = formatOrderClock(order.created_at);
   const [advancing, setAdvancing] = useState(false);
+  const [payingNow, setPayingNow] = useState(false);
   const isPending = order.status === "pending";
   const borderClass = compactCardBorderClass(order.status);
   const isDelivery = isDeliveryOrder(order);
   const awaitingDriver = isDelivery && order.status === "ready" && order.assigned_driver_id;
   const onTheWay = order.status === "out_for_delivery";
+  const paymentPending = order.payment_status !== "paid" && order.status !== "cancelled";
+  const canQuickPay = paymentPending && !!onMarkPaid;
 
   const handlePrimary = async (e: MouseEvent) => {
     e.stopPropagation();
@@ -135,30 +140,54 @@ const OpsOrderCard = memo(function OpsOrderCard({
         )}
       </button>
 
-      {action && order.status !== "cancelled" && (
-        <div className="px-2 pb-1.5 flex gap-1">
-          <Button
-            size="sm"
-            className={`flex-1 h-8 font-bold text-[11px] touch-action-manipulation ${
-              action.kind === "assign_driver" ? "bg-orange-600 hover:bg-orange-700" : ""
-            }`}
-            disabled={advancing}
-            onClick={(e) => void handlePrimary(e)}
-          >
-            {advancing ? "…" : actionLabel}
-          </Button>
-          {isPending && (
+      {(action || canQuickPay) && order.status !== "cancelled" && (
+        <div className="px-2 pb-1.5 space-y-1">
+          {action && (
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                className={`flex-1 h-8 font-bold text-[11px] touch-action-manipulation ${
+                  action.kind === "assign_driver" ? "bg-orange-600 hover:bg-orange-700" : ""
+                }`}
+                disabled={advancing}
+                onClick={(e) => void handlePrimary(e)}
+              >
+                {advancing ? "…" : actionLabel}
+              </Button>
+              {isPending && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCancel(order.id);
+                  }}
+                  aria-label="Cancelar pedido"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
+          {canQuickPay && (
             <Button
               size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive shrink-0"
-              onClick={(e) => {
+              variant="outline"
+              className="w-full h-8 font-bold text-[11px] touch-action-manipulation border-green-600/60 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400"
+              disabled={payingNow}
+              onClick={async (e) => {
                 e.stopPropagation();
-                onCancel(order.id);
+                setPayingNow(true);
+                try {
+                  await onMarkPaid!(order, "cash");
+                } finally {
+                  setPayingNow(false);
+                }
               }}
-              aria-label="Cancelar pedido"
             >
-              <XCircle className="h-3.5 w-3.5" />
+              <Banknote className="h-3 w-3 mr-1" />
+              {payingNow ? "A registar…" : `Confirmar pagamento €${Number(order.total).toFixed(2)}`}
             </Button>
           )}
         </div>
