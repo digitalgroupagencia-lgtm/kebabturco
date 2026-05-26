@@ -604,7 +604,7 @@ const PaymentScreen = () => {
                     stripeConnectAccountId: fin.stripeConnectAccountId,
                   });
 
-                  setOrderPaymentStatus("pending");
+                  setOrderPaymentStatus("paid");
                   await showCardOrderConfirmation(result);
 
                   try {
@@ -614,7 +614,6 @@ const PaymentScreen = () => {
                       orderId: result.order_id,
                       amountCents,
                     });
-                    setOrderPaymentStatus("paid");
                   } catch (verifyError) {
                     console.warn("Pagamento confirmado, pedido criado; verificação do servidor ainda pendente.", verifyError);
                     return;
