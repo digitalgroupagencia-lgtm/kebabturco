@@ -83,15 +83,13 @@ export function PanelSidebar() {
                           <RouterNavLink
                             to={nav.panel("live")}
                             onClick={handleNav}
-                            className={({ isActive }) =>
-                              cn(
+                            className={() => {
+                              const p = (typeof window !== "undefined" ? window.location.pathname : "").replace(/\/+$/, "") || "/";
+                              const isActive = p === "/panel" || p === "/panel/live";
+                              return cn(
                                 "hover:bg-muted/50 rounded-lg flex w-full items-center gap-2 px-2 py-1.5 text-sm",
                                 isActive && "bg-primary/10 text-primary font-semibold",
-                              )
-                            }
-                            isActive={(_, location) => {
-                              const p = location.pathname.replace(/\/+$/, "") || "/";
-                              return p === "/panel" || p === "/panel/live";
+                              );
                             }}
                           >
                             <Icon className="mr-2 h-4 w-4 shrink-0" />
