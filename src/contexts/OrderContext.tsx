@@ -11,10 +11,14 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearSavedMesaToken,
+  loadSavedCustomerName,
   loadSavedCustomerPhone,
+  loadSavedDeliveryAddress,
   loadSavedTableNumber,
   resolveScreenAfterLanguageSkip,
+  saveSavedCustomerName,
   saveSavedCustomerPhone,
+  saveSavedDeliveryAddress,
   saveSavedMesaToken,
   saveSavedTableNumber,
   shouldSkipLanguageScreen,
@@ -194,8 +198,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const [mesaLocked, setMesaLocked] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerNameState] = useState(() =>
+    typeof window === "undefined" ? "" : loadSavedCustomerName(),
+  );
+  const setCustomerName = (value: string) => {
+    setCustomerNameState(value);
+    saveSavedCustomerName(value);
+  };
   const savedPhone = typeof window !== "undefined" ? loadSavedCustomerPhone() : null;
+  const savedDelivery = typeof window !== "undefined" ? loadSavedDeliveryAddress() : null;
   const [phoneDialCode, setPhoneDialCodeState] = useState(savedPhone?.dialCode ?? DEFAULT_DIAL_CODE);
   const [customerPhone, setCustomerPhoneState] = useState(savedPhone?.local ?? "");
   const setPhoneDialCode = (code: string) => {
@@ -206,12 +217,79 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomerPhoneState(value);
     saveSavedCustomerPhone(phoneDialCode, value);
   };
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryNumber, setDeliveryNumber] = useState("");
-  const [deliveryComplement, setDeliveryComplement] = useState("");
-  const [deliveryPostalCode, setDeliveryPostalCode] = useState("");
-  const [deliveryCity, setDeliveryCity] = useState("");
-  const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [deliveryAddress, setDeliveryAddressState] = useState(savedDelivery?.street ?? "");
+  const [deliveryNumber, setDeliveryNumberState] = useState(savedDelivery?.number ?? "");
+  const [deliveryComplement, setDeliveryComplementState] = useState(savedDelivery?.complement ?? "");
+  const [deliveryPostalCode, setDeliveryPostalCodeState] = useState(savedDelivery?.postalCode ?? "");
+  const [deliveryCity, setDeliveryCityState] = useState(savedDelivery?.city ?? "");
+  const [deliveryNotes, setDeliveryNotesState] = useState(savedDelivery?.notes ?? "");
+
+  const setDeliveryAddress = (value: string) => {
+    setDeliveryAddressState(value);
+    saveSavedDeliveryAddress({
+      street: value,
+      number: deliveryNumber,
+      complement: deliveryComplement,
+      postalCode: deliveryPostalCode,
+      city: deliveryCity,
+      notes: deliveryNotes,
+    });
+  };
+  const setDeliveryNumber = (value: string) => {
+    setDeliveryNumberState(value);
+    saveSavedDeliveryAddress({
+      street: deliveryAddress,
+      number: value,
+      complement: deliveryComplement,
+      postalCode: deliveryPostalCode,
+      city: deliveryCity,
+      notes: deliveryNotes,
+    });
+  };
+  const setDeliveryComplement = (value: string) => {
+    setDeliveryComplementState(value);
+    saveSavedDeliveryAddress({
+      street: deliveryAddress,
+      number: deliveryNumber,
+      complement: value,
+      postalCode: deliveryPostalCode,
+      city: deliveryCity,
+      notes: deliveryNotes,
+    });
+  };
+  const setDeliveryPostalCode = (value: string) => {
+    setDeliveryPostalCodeState(value);
+    saveSavedDeliveryAddress({
+      street: deliveryAddress,
+      number: deliveryNumber,
+      complement: deliveryComplement,
+      postalCode: value,
+      city: deliveryCity,
+      notes: deliveryNotes,
+    });
+  };
+  const setDeliveryCity = (value: string) => {
+    setDeliveryCityState(value);
+    saveSavedDeliveryAddress({
+      street: deliveryAddress,
+      number: deliveryNumber,
+      complement: deliveryComplement,
+      postalCode: deliveryPostalCode,
+      city: value,
+      notes: deliveryNotes,
+    });
+  };
+  const setDeliveryNotes = (value: string) => {
+    setDeliveryNotesState(value);
+    saveSavedDeliveryAddress({
+      street: deliveryAddress,
+      number: deliveryNumber,
+      complement: deliveryComplement,
+      postalCode: deliveryPostalCode,
+      city: deliveryCity,
+      notes: value,
+    });
+  };
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
   const [orderPaymentStatus, setOrderPaymentStatus] = useState<"pending" | "paid">("pending");
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");

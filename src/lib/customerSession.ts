@@ -171,3 +171,62 @@ export function saveSavedCustomerPhone(dialCode: string, local: string) {
     /* ignore */
   }
 }
+
+export const KIOSK_CUSTOMER_NAME_KEY = "kiosk-customer-name";
+export const KIOSK_DELIVERY_KEY = "kiosk-delivery-address";
+
+export type SavedDeliveryAddress = {
+  street: string;
+  number: string;
+  complement: string;
+  postalCode: string;
+  city: string;
+  notes: string;
+};
+
+export function loadSavedCustomerName(): string {
+  try {
+    return localStorage.getItem(KIOSK_CUSTOMER_NAME_KEY)?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveSavedCustomerName(name: string) {
+  try {
+    const trimmed = name.trim();
+    if (trimmed) localStorage.setItem(KIOSK_CUSTOMER_NAME_KEY, trimmed);
+    else localStorage.removeItem(KIOSK_CUSTOMER_NAME_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadSavedDeliveryAddress(): SavedDeliveryAddress | null {
+  try {
+    const raw = localStorage.getItem(KIOSK_DELIVERY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedDeliveryAddress;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      street: parsed.street || "",
+      number: parsed.number || "",
+      complement: parsed.complement || "",
+      postalCode: parsed.postalCode || "",
+      city: parsed.city || "",
+      notes: parsed.notes || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function saveSavedDeliveryAddress(addr: SavedDeliveryAddress) {
+  try {
+    const hasData = Object.values(addr).some((v) => String(v).trim());
+    if (hasData) localStorage.setItem(KIOSK_DELIVERY_KEY, JSON.stringify(addr));
+    else localStorage.removeItem(KIOSK_DELIVERY_KEY);
+  } catch {
+    /* ignore */
+  }
+}

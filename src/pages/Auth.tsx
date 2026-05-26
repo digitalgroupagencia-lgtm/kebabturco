@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,33 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!active) return;
+      if (session?.user?.id) {
+        const dest = await resolvePostLoginDestination(session.user.id);
+        navigate(dest.path, { replace: true });
+        return;
+      }
+      setCheckingSession(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-secondary">
+        <p className="text-sm text-muted-foreground">A verificar sessão…</p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -7,6 +7,8 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ScreenHeader from "@/components/ScreenHeader";
 import PhoneInput from "@/components/PhoneInput";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
+import { loadLocalOrderHistory, type LocalOrderHistoryEntry } from "@/lib/customerOrderHistory";
+import { loadSavedCustomerName } from "@/lib/customerSession";
 import { Loader2, Package, RotateCcw, Gift } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,11 +31,14 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const CustomerAccountScreen = () => {
-  const { setScreen, setTrackingOrderId, customerPhone, setCustomerPhone, phoneDialCode, setPhoneDialCode } = useOrder();
+  const { setScreen, setTrackingOrderId, customerPhone, setCustomerPhone, phoneDialCode, setPhoneDialCode, setCustomerName } = useOrder();
   const { addItem } = useCart();
   const { t } = useLanguage();
   const { storeId, selectedStoreId } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? storeId;
+  const [localOrders, setLocalOrders] = useState<LocalOrderHistoryEntry[]>(() =>
+    effectiveStoreId ? loadLocalOrderHistory(effectiveStoreId) : loadLocalOrderHistory(),
+  );
   const [orders, setOrders] = useState<PastOrder[]>([]);
   const [loyalty, setLoyalty] = useState<{ stamps: number; stamps_needed: number; reward_ready: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,11 +62,21 @@ const CustomerAccountScreen = () => {
   };
 
   useEffect(() => {
+    const savedName = loadSavedCustomerName();
+    if (savedName) setCustomerName(savedName);
+    if (effectiveStoreId) {
+      setLocalOrders(loadLocalOrderHistory(effectiveStoreId));
+    }
     if (isValidCustomerPhone(phoneDialCode, customerPhone)) {
       search();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [effectiveStoreId]);
+
+  const trackLocalOrder = (entry: LocalOrderHistoryEntry) => {
+    setTrackingOrderId(entry.id);
+    setScreen("tracking");
+  };
 
   const reorder = (order: PastOrder) => {
     for (const item of order.items || []) {
@@ -107,6 +122,31 @@ const CustomerAccountScreen = () => {
             {t("searchMyOrders")}
           </button>
         </div>
+
+        {localOrders.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Pedidos neste dispositivo
+            </p>
+            {localOrders.slice(0, 5).map((entry) => (
+              <div key={entry.id} className="rounded-2xl border border-border/70 bg-card/80 p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-black">#{entry.orderNumber}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(entry.createdAt).toLocaleDateString()} · {STATUS_LABEL[entry.status] || entry.status}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => trackLocalOrder(entry)}
+                  className="shrink-0 rounded-xl bg-primary/10 px-3 py-2 text-xs font-black text-primary"
+                >
+                  {t("trackMyOrders")}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {loyalty && searched && (
           <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">

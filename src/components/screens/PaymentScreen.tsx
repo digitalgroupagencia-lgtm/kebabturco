@@ -17,7 +17,13 @@ import {
   PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
-import { loadSavedMesaToken } from "@/lib/customerSession";
+import {
+  loadSavedMesaToken,
+  loadSavedOrderType,
+  saveSavedCustomerName,
+  saveSavedDeliveryAddress,
+} from "@/lib/customerSession";
+import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
@@ -32,7 +38,6 @@ import {
   shouldPrintAfterCheckout,
   stripeConfigIssue,
 } from "@/lib/paymentPolicy";
-import { loadSavedOrderType } from "@/lib/customerSession";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import PhoneInput from "@/components/PhoneInput";
@@ -354,6 +359,28 @@ const PaymentScreen = () => {
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
     syncActiveOrderUrl(result.order_id, "confirmation");
+
+    if (customerName.trim()) saveSavedCustomerName(customerName.trim());
+    if (orderType === "delivery") {
+      saveSavedDeliveryAddress({
+        street: deliveryAddress.trim(),
+        number: deliveryNumber.trim(),
+        complement: deliveryComplement.trim(),
+        postalCode: deliveryPostalCode.trim(),
+        city: deliveryCity.trim(),
+        notes: deliveryNotes.trim(),
+      });
+    }
+    appendLocalOrderHistory({
+      id: result.order_id,
+      orderNumber: result.order_number,
+      storeId,
+      total: grandTotal,
+      orderType: orderTypeDb,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      itemCount: items.length,
+    });
 
     await subscribePush({
       storeId,

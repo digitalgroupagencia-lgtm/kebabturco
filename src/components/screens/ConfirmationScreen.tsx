@@ -10,6 +10,7 @@ import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { clearStoredActiveOrder } from "@/features/customer/useActiveOrderStorage";
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
+import { updateLocalOrderHistoryStatus } from "@/lib/customerOrderHistory";
 
 function minimalStepIndex(status: string): number {
   if (status === "cancelled") return -1;
@@ -54,7 +55,10 @@ const ConfirmationScreen = () => {
     activeOrderId ? hasCustomerAcknowledged(activeOrderId) : false,
   );
 
-  const onLiveOrder = useCallback((o: PublicOrderTrack | null) => setLiveOrder(o), []);
+  const onLiveOrder = useCallback((o: PublicOrderTrack | null) => {
+    setLiveOrder(o);
+    if (o?.id && o.status) updateLocalOrderHistoryStatus(o.id, o.status);
+  }, []);
   const onTrackingLoading = useCallback(() => {}, []);
   useOrderTracking(activeOrderId || null, onLiveOrder, onTrackingLoading);
 

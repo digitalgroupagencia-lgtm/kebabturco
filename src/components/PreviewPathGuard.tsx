@@ -4,6 +4,7 @@ import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
+import { resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 
 const LEGACY_PREVIEW_SEARCH = `?preview=1&tenant=${DEFAULT_TENANT_SLUG}`;
 
@@ -23,8 +24,9 @@ export default function PreviewPathGuard() {
       return;
     }
 
-    if (pathname === "/cashier") {
-      navigate(nav.panel("cashier"), { replace: true });
+    const legacyRedirect = resolveLegacyRouteRedirect(pathname);
+    if (legacyRedirect) {
+      navigate(legacyRedirect, { replace: true });
       return;
     }
 

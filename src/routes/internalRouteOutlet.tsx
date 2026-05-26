@@ -1,11 +1,12 @@
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
-import { useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
 import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import AdminLayout from "@/components/admin/AdminLayout.tsx";
 import SellerLayout from "@/components/seller/SellerLayout.tsx";
 import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/navPaths.ts";
+import { resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 
 const AREA_LAYOUT: Record<AppArea, ComponentType<{ page?: ComponentType<object> }>> = {
   panel: PanelLayout,
@@ -36,6 +37,11 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
 
   if (pathname === "/install") {
     return withSuspense(<Install />);
+  }
+
+  const legacyRedirect = resolveLegacyRouteRedirect(pathname);
+  if (legacyRedirect) {
+    return <Navigate to={legacyRedirect} replace />;
   }
 
   const def = resolveRoute(pathname);
