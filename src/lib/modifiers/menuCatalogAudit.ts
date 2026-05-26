@@ -204,7 +204,7 @@ export function buildProductPayloadFromIssue(
     name: { pt: label, en: label, es: label, fr: label },
     description: { pt: "", en: "", es: "", fr: "" },
     price: defaultDrinkPrice(issue.drinkRule),
-    image_url: "/placeholder.svg",
+    image_url: "/product-placeholder.svg",
     is_active: true,
     is_bestseller: false,
     is_promo: false,
