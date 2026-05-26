@@ -17,7 +17,8 @@ import {
 import { toast } from "sonner";
 
 async function fetchDrinkGroups(storeId: string): Promise<ModifierGroup[]> {
-  const { data: groups } = await supabase
+  const sb = supabase as any;
+  const { data: groups } = await sb
     .from("modifier_groups")
     .select("id, name, group_kind, sort_order, is_active")
     .eq("store_id", storeId)
@@ -26,27 +27,27 @@ async function fetchDrinkGroups(storeId: string): Promise<ModifierGroup[]> {
 
   if (!groups?.length) return [];
 
-  const ids = groups.map((g) => g.id);
-  const { data: options } = await supabase
+  const ids = groups.map((g: any) => g.id);
+  const { data: options } = await sb
     .from("modifier_options")
     .select("id, group_id, name, price, image_url, sort_order, is_active")
     .in("group_id", ids)
     .eq("is_active", true)
     .order("sort_order");
 
-  return groups.map((g) => ({
+  return groups.map((g: any) => ({
     id: g.id,
     name: g.name as ModifierGroup["name"],
     groupKind: g.group_kind as ModifierGroup["groupKind"],
     options: (options ?? [])
-      .filter((o) => o.group_id === g.id)
-      .map((o) => ({
+      .filter((o: any) => o.group_id === g.id)
+      .map((o: any) => ({
         id: o.id,
         name: o.name as ModifierGroup["options"][0]["name"],
         price: Number(o.price ?? 0),
         imageUrl: o.image_url ?? undefined,
       })),
-  }));
+  })) as unknown as ModifierGroup[];
 }
 
 async function findDrinksCategoryId(storeId: string): Promise<string | null> {
