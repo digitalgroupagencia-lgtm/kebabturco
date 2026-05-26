@@ -73,7 +73,7 @@ export function useDriverOrders(storeId?: string) {
       if (updatingRef.current.has(order.id)) return false;
       updatingRef.current.add(order.id);
       try {
-        const { data, error } = await supabase.rpc("confirm_delivery_with_code", {
+        const { data, error } = await (supabase.rpc as any)("confirm_delivery_with_code", {
           _order_id: order.id,
           _code: code,
         });
