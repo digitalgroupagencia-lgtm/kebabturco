@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -20,6 +20,21 @@ const HomeScreen = () => {
   const { settings } = useBranding();
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
+  const navigate = useNavigate();
+  const [logoTaps, setLogoTaps] = useState(0);
+  const tapResetRef = useRef<number | null>(null);
+  const handleLogoTap = () => {
+    setLogoTaps((c) => {
+      const next = c + 1;
+      if (next >= 5) {
+        navigate(nav.staff());
+        return 0;
+      }
+      return next;
+    });
+    if (tapResetRef.current) window.clearTimeout(tapResetRef.current);
+    tapResetRef.current = window.setTimeout(() => setLogoTaps(0), 1500);
+  };
   const isDark = theme === "dark";
   const headerLogo =
     (isDark && ((settings as any)?.logo_main_dark_url || (settings as any)?.logo_secondary_dark_url)) ||
@@ -113,7 +128,12 @@ const HomeScreen = () => {
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
 
         <div className="relative flex items-center justify-between gap-3 min-h-[48px]">
-          <div className="flex items-center min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={handleLogoTap}
+            aria-label="logo"
+            className="flex items-center min-w-0 flex-1 text-left bg-transparent border-0 p-0"
+          >
             {headerLogo ? (
               <img
                 src={headerLogo}
@@ -126,7 +146,7 @@ const HomeScreen = () => {
                 {settings?.company_name || ""}
               </span>
             )}
-          </div>
+          </button>
 
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -266,14 +286,6 @@ const HomeScreen = () => {
         </main>
       </div>
 
-      <div className="shrink-0 pb-2 pt-1 text-center">
-        <Link
-          to={nav.staff()}
-          className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-        >
-          Equipe
-        </Link>
-      </div>
     </div>
   );
 };
