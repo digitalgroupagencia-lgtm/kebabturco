@@ -51,7 +51,7 @@ const StaffLogin = () => {
       return;
     }
     if (!/^\d{6,8}$/.test(pin)) {
-      setError("Introduza entre 4 e 8 dígitos");
+      setError("Introduza entre 6 e 8 dígitos");
       return;
     }
 

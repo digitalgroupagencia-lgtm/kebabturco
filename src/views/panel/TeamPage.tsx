@@ -118,7 +118,7 @@ const TeamPage = () => {
       return;
     }
     if (!/^\d{6,8}$/.test(newAccessPin)) {
-      toast.error("Código de acesso deve ter entre 4 e 8 dígitos");
+      toast.error("Código de acesso deve ter entre 6 e 8 dígitos");
       return;
     }
     setSaving(true);
@@ -205,7 +205,7 @@ const TeamPage = () => {
   const saveMemberPin = async () => {
     if (!pinDialogMember) return;
     if (!/^\d{6,8}$/.test(editAccessPin)) {
-      toast.error("Código deve ter entre 4 e 8 dígitos");
+      toast.error("Código deve ter entre 6 e 8 dígitos");
       return;
     }
     setPinSaving(true);
