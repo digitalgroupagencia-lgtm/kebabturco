@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const store_id = body?.store_id as string | undefined;
     const pin = String(body?.pin ?? "").trim();
 
-    if (!store_id || !/^\d{4,8}$/.test(pin)) {
+    if (!store_id || !/^\d{6,8}$/.test(pin)) {
       return new Response(JSON.stringify({ error: "Loja e código inválidos" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

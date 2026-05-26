@@ -117,7 +117,7 @@ const TeamPage = () => {
       toast.error("Email é obrigatório");
       return;
     }
-    if (!/^\d{4,8}$/.test(newAccessPin)) {
+    if (!/^\d{6,8}$/.test(newAccessPin)) {
       toast.error("Código de acesso deve ter entre 4 e 8 dígitos");
       return;
     }
@@ -204,7 +204,7 @@ const TeamPage = () => {
 
   const saveMemberPin = async () => {
     if (!pinDialogMember) return;
-    if (!/^\d{4,8}$/.test(editAccessPin)) {
+    if (!/^\d{6,8}$/.test(editAccessPin)) {
       toast.error("Código deve ter entre 4 e 8 dígitos");
       return;
     }
