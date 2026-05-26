@@ -2,7 +2,11 @@ import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Extra } from "@/data/products";
 import type { ModifierGroup, ProductModifierConfig } from "./types";
 import { sortModifierGroups } from "./groupOrder";
-import { productDescriptionText } from "./comboProductRules";
+import {
+  DEFAULT_DRINK_LABELS,
+  drinkProductMatchesRule,
+  resolveDrinkSizeRuleForProduct,
+} from "./drinkSizeRules";
 
 const DRINK_CATEGORY_RE = /bebida|drink|boisson|refresco|boissons/i;
 const DRINK_NAME_RE = /refresco|lata\s*33|bebida|coca|fanta|sprite|nestea|aquarius|agua|zumo|cola/i;
@@ -17,28 +21,23 @@ export function isDrinkProduct(product: MenuProduct | undefined): boolean {
   return DRINK_NAME_RE.test(text);
 }
 
-function drinkProductLabel(product: MenuProduct): string {
-  return `${product.name.es || ""} ${product.name.pt || ""} ${product.name.en || ""}`.toLowerCase();
-}
-
 /** Prefer active drink products from the menu when synthesizing combo drink choices. */
 export function resolveDrinkExtrasFromMenu(product: MenuProduct, menuProducts: MenuProduct[]): Extra[] {
-  const desc = productDescriptionText(product);
-  const isLarge = /2l|2 l|litro|1\.5l|1,5l/i.test(desc);
-  const isSmall = /33cl|33 cl|lata/i.test(desc);
+  const rule = resolveDrinkSizeRuleForProduct(product);
+  if (!rule) return [];
 
-  const drinks = menuProducts.filter(
-    (item) => item.id !== product.id && isDrinkProduct(item),
-  );
+  const drinks = menuProducts.filter((item) => item.id !== product.id && isDrinkProduct(item));
+  const matched = drinks.filter((item) => drinkProductMatchesRule(item, rule));
 
-  const matched = drinks.filter((item) => {
-    const label = drinkProductLabel(item);
-    if (isLarge) return /2\s*l|2l|litro|1\.5|1,5/i.test(label);
-    if (isSmall) return /33\s*cl|33cl|lata/i.test(label);
-    return /coca|fanta|sprite|nestea|aquarius|refresco|cola|pepsi|7up|zumo|agua/i.test(label);
-  });
+  const pool =
+    matched.length > 0
+      ? matched
+      : DEFAULT_DRINK_LABELS[rule].map((label, index) => ({
+          id: `fallback-drink-${rule}-${index}`,
+          name: { es: label, pt: label, en: label, fr: label },
+          price: 0,
+        }));
 
-  const pool = matched.length >= 2 ? matched : drinks;
   return pool.slice(0, 8).map((item) => ({
     id: item.id,
     name: item.name,

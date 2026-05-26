@@ -5,6 +5,7 @@ import { sortModifierGroups } from "./groupOrder";
 import { sanitizeProductModifierConfig } from "./sanitizeGroups";
 import { parseRemovableIngredients } from "@/lib/parseProductCustomization";
 import { isDrinkProduct, resolveDrinkExtrasFromMenu } from "@/lib/modifiers/drinkProduct";
+import { drinkExtraMatchesRule, resolveDrinkSizeRuleForProduct, DEFAULT_DRINK_LABELS } from "@/lib/modifiers/drinkSizeRules";
 import {
   allowsIngredientRemoval,
   globalMeatChoiceVariants,
@@ -111,6 +112,8 @@ function variantsToOptions(productId: string, groupKey: string, variants: Varian
   }));
 }
 
+const COMBO_POTATO_UPGRADE_PRICE = 0.5;
+
 function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: Extra[]): ModifierGroup | null {
   const productId = product.id;
   let options: ModifierOption[] = substitutionExtras.map((e, i) => {
@@ -118,7 +121,12 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
       isDefault: i === 0 && e.price === 0,
       maxQty: 1,
     });
-    return { ...opt, name: cleanSideOptionName(e.name) };
+    const label = `${e.name.es || ""} ${e.name.pt || ""}`.toLowerCase();
+    const priceDelta =
+      e.price > 0 && productIncludesPotato(product) && /bravas|lux|deluxe|especial/.test(label)
+        ? COMBO_POTATO_UPGRADE_PRICE
+        : e.price || 0;
+    return { ...opt, name: cleanSideOptionName(e.name), priceDelta };
   });
 
   const upgradeExtra = (product.extras || []).find((e) => {
@@ -147,13 +155,34 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
     ];
   }
 
-  if (upgradeExtra && !options.some((o) => o.priceDelta === upgradeExtra.price)) {
+  if (upgradeExtra && !options.some((o) => /bravas/i.test(`${o.name.es} ${o.name.pt}`))) {
     const opt = optionFromExtra(productId, "substitution", upgradeExtra, options.length, {
       isDefault: false,
       maxQty: 1,
     });
-    options.push({ ...opt, name: cleanSideOptionName(upgradeExtra.name) });
-  } else if (productIncludesPotato(product) && !options.some((o) => o.priceDelta === 0.5)) {
+    options.push({
+      ...opt,
+      name: cleanSideOptionName(upgradeExtra.name),
+      priceDelta: COMBO_POTATO_UPGRADE_PRICE,
+    });
+  } else if (productIncludesPotato(product) && !options.some((o) => /bravas/i.test(`${o.name.es} ${o.name.pt}`))) {
+    options.push({
+      id: `${SYNTH_PREFIX}-${productId}-substitution-bravas`,
+      groupId: `${SYNTH_PREFIX}-${productId}-substitution`,
+      name: {
+        es: "Patatas bravas",
+        pt: "Patatas bravas",
+        en: "Patatas bravas",
+        fr: "Patatas bravas",
+      },
+      priceDelta: COMBO_POTATO_UPGRADE_PRICE,
+      maxQty: 1,
+      isDefault: false,
+      sortOrder: 98,
+    });
+  }
+
+  if (productIncludesPotato(product) && !options.some((o) => /lux|deluxe|especial/i.test(`${o.name.es} ${o.name.pt}`))) {
     options.push({
       id: `${SYNTH_PREFIX}-${productId}-substitution-lux`,
       groupId: `${SYNTH_PREFIX}-${productId}-substitution`,
@@ -163,7 +192,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
         en: "Deluxe fries",
         fr: "Frites deluxe",
       },
-      priceDelta: 0.5,
+      priceDelta: COMBO_POTATO_UPGRADE_PRICE,
       maxQty: 1,
       isDefault: false,
       sortOrder: 99,
@@ -279,7 +308,10 @@ function buildModifierConfigFromProduct(
       continue;
     }
     if (isDrinkOption(label)) {
-      drinkExtras.push(extra);
+      const rule = resolveDrinkSizeRuleForProduct(product);
+      if (!rule || drinkExtraMatchesRule(extra, rule)) {
+        drinkExtras.push(extra);
+      }
       continue;
     }
     paidExtras.push(extra);
@@ -314,11 +346,10 @@ function buildModifierConfigFromProduct(
   }
 
   if (isCombo && drinkExtras.length < 2 && descriptionIncludesDrink(product)) {
-    const isLarge = /2l|2 l|litro/i.test(descText);
-    const defaults = isLarge
-      ? ["Coca-Cola 2L", "Fanta Naranja 2L", "Sprite 2L", "Nestea 2L"]
-      : ["Coca-Cola", "Fanta Naranja", "Sprite", "Nestea"];
+    const rule = resolveDrinkSizeRuleForProduct(product);
+    const defaults = rule ? DEFAULT_DRINK_LABELS[rule] : ["Coca-Cola", "Fanta Naranja", "Sprite", "Nestea"];
     for (const label of defaults) {
+      if (drinkExtras.some((e) => (e.name.es || e.name.pt) === label)) continue;
       drinkExtras.push({
         id: slugifyLabel(label),
         name: { es: label, pt: label, en: label, fr: label },

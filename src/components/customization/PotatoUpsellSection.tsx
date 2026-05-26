@@ -1,7 +1,7 @@
-import { Check, Sparkles } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
-import { useLanguage } from "@/contexts/LanguageContext";
+import ProductChoiceCard from "@/components/customization/ProductChoiceCard";
 
 type Props = {
   group: ModifierGroup;
@@ -10,9 +10,6 @@ type Props = {
   onChange: (next: SelectionState) => void;
   tName: (n: Record<string, string>) => string;
 };
-
-const SELECTED = "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/25";
-const UPGRADE_SELECTED = "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30";
 
 function pickSingleOption(
   state: SelectionState,
@@ -60,61 +57,37 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
         {included.map((opt) => {
           const sel = (selected.get(opt.id) || 0) > 0;
           return (
-            <button
+            <ProductChoiceCard
               key={opt.id}
-              type="button"
+              title={tName(opt.name)}
+              subtitle={t("included")}
+              imageUrl={opt.imageUrl}
+              selected={sel}
               onClick={() => pick(opt.id)}
-              className={`w-full rounded-[20px] border px-4 py-4 text-left transition-all active:scale-[0.99] flex items-center gap-4 ${
-                sel ? SELECTED : "border-border/70 bg-background"
-              }`}
-            >
-              <span className="text-3xl shrink-0" aria-hidden>
-                🍟
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-base font-black text-foreground leading-tight">{tName(opt.name)}</p>
-                <p className="text-xs text-emerald-700 font-semibold mt-1">{t("included")}</p>
-              </div>
-              {sel && (
-                <span className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                  <Check className="w-4 h-4" strokeWidth={3} />
-                </span>
-              )}
-            </button>
+              layout="horizontal"
+            />
           );
         })}
 
         {upgrades.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
               {t("potatoUpsellTitle")}
             </p>
-            <div className={`grid gap-2 ${upgrades.length >= 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+            <div className={`grid gap-3 ${upgrades.length >= 2 ? "grid-cols-2" : "grid-cols-1"}`}>
               {upgrades.map((opt) => {
                 const sel = (selected.get(opt.id) || 0) > 0;
                 return (
-                  <button
+                  <ProductChoiceCard
                     key={opt.id}
-                    type="button"
+                    title={tName(opt.name)}
+                    priceLabel={`+${opt.priceDelta.toFixed(2)}€`}
+                    subtitle={t("potatoUpgradeHint")}
+                    imageUrl={opt.imageUrl}
+                    selected={sel}
                     onClick={() => pick(opt.id)}
-                    className={`relative rounded-[20px] border px-3 py-3 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.97] min-h-[88px] ${
-                      sel ? UPGRADE_SELECTED : "border-amber-500/40 bg-amber-500/5"
-                    }`}
-                  >
-                    <span className="text-2xl" aria-hidden>
-                      ✨
-                    </span>
-                    <span className="text-sm font-black text-center leading-tight">{tName(opt.name)}</span>
-                    <span className="text-xs font-black text-amber-700 tabular-nums">
-                      +{opt.priceDelta.toFixed(2)}€
-                    </span>
-                    {sel && (
-                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center">
-                        <Check className="w-3 h-3" strokeWidth={3} />
-                      </span>
-                    )}
-                  </button>
+                    layout="vertical"
+                  />
                 );
               })}
             </div>

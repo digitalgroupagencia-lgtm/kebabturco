@@ -12,6 +12,7 @@ import { safeSynthesizeModifierConfig } from "@/lib/modifiers/safeCustomization"
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
 import { adaptConfigForDrinkProduct, isDrinkProduct } from "@/lib/modifiers/drinkProduct";
+import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
 import { filterProductModifierConfig } from "@/lib/modifiers/proteinRules";
 
 const asName = (value: unknown): Record<string, string> => {
@@ -103,7 +104,10 @@ export function useEffectiveModifierConfig(
     const finalize = (cfg: ProductModifierConfig | null) => {
       if (!cfg) return null;
       const filtered = product ? filterProductModifierConfig(product, cfg) : cfg;
-      return sanitizeProductModifierConfig(filtered);
+      const comboApplied = product
+        ? applyComboDescriptionRules(product, filtered, allProducts)
+        : filtered;
+      return sanitizeProductModifierConfig(comboApplied);
     };
 
     try {

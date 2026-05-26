@@ -1,8 +1,9 @@
-import { Check, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import PotatoUpsellSection from "@/components/customization/PotatoUpsellSection";
+import ProductChoiceCard from "@/components/customization/ProductChoiceCard";
 
 type Props = {
   group: ModifierGroup;
@@ -14,11 +15,13 @@ type Props = {
   hideHeader?: boolean;
 };
 
-const SELECTED =
-  "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/25 text-emerald-950";
-const SELECTED_BADGE = "bg-emerald-500 text-white";
 const INCLUDED = "border-emerald-500/50 bg-emerald-500/10 text-emerald-900";
 const REMOVED = "border-red-500 bg-red-500/10";
+
+function extractSizeHint(label: string): string | null {
+  const match = label.match(/\b(2\s*l|2l|33\s*cl|33cl|1[\.,]25\s*l|500\s*ml|50\s*cl|lata)\b/i);
+  return match ? match[0].replace(/\s+/g, "") : null;
+}
 
 function updateOption(
   state: SelectionState,
@@ -190,17 +193,22 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
           })
         ) : (
           <div
-            className={`grid gap-2 ${
-              group.options.length >= 4 ? "grid-cols-2" : group.options.length === 3 ? "grid-cols-3" : "grid-cols-2"
+            className={`grid gap-3 ${
+              group.options.length >= 3 ? "grid-cols-2" : group.options.length === 1 ? "grid-cols-1" : "grid-cols-2"
             }`}
           >
             {group.options.map((opt) => {
               const qty = selected.get(opt.id) || 0;
               const sel = qty > 0;
+              const isDrink = /bebida|refresco|drink|boisson/i.test(`${group.name.es || ""} ${group.name.pt || ""}`);
               return (
-                <button
+                <ProductChoiceCard
                   key={opt.id}
-                  type="button"
+                  title={tName(opt.name)}
+                  subtitle={isDrink ? extractSizeHint(tName(opt.name)) : null}
+                  priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                  imageUrl={opt.imageUrl}
+                  selected={sel}
                   onClick={() => {
                     if (isSingle) {
                       if (sel && group.isRequired) return;
@@ -209,20 +217,7 @@ export default function ChoiceGroupSection({ group, state, unitIndex, onChange, 
                       onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex));
                     }
                   }}
-                  className={`relative rounded-2xl border px-2 py-3 flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.97] min-h-[56px] ${
-                    sel ? SELECTED : "border-border/70 bg-background"
-                  }`}
-                >
-                  {sel && (
-                    <span className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${SELECTED_BADGE}`}>
-                      <Check className="w-3 h-3" strokeWidth={3} />
-                    </span>
-                  )}
-                  <span className="text-sm font-black text-center leading-tight">{tName(opt.name)}</span>
-                  {opt.priceDelta > 0 && (
-                    <span className="text-[11px] font-bold text-price tabular-nums">+{opt.priceDelta.toFixed(2)}€</span>
-                  )}
-                </button>
+                />
               );
             })}
           </div>

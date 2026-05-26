@@ -12,6 +12,7 @@ export interface ModifierOption {
   maxQty: number;
   isDefault: boolean;
   sortOrder: number;
+  imageUrl?: string | null;
 }
 
 export interface ModifierGroup {

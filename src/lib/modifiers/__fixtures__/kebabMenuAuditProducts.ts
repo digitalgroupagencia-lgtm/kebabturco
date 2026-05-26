@@ -41,6 +41,11 @@ export const KEBAB_DRINK_CATALOG: MenuProduct[] = [
   drink("d-coca-33", "Coca-Cola Lata 33cl"),
   drink("d-fanta-33", "Fanta Naranja Lata 33cl"),
   drink("d-sprite-33", "Sprite Lata 33cl"),
+  drink("d-coca-125", "Refresco Botella 1.25L"),
+  drink("d-agua-peq", "Agua Pequeña"),
+  drink("d-agua-gr", "Agua Grande"),
+  drink("d-monster", "Monster Pequeño"),
+  drink("d-zumo", "Zumo Bi Frutas"),
   drink("d-agua", "Agua Mineral"),
 ];
 
@@ -102,7 +107,8 @@ export const KEBAB_AUDIT_PRODUCTS: MenuProduct[] = [
     comboUnitCount: 0,
   }),
   food("pz1", "Pizza Kebab", "Kebab y queso", { categorySlug: "pizzas" }),
-  food("pt1", "Patatas Bravas", "Patatas bravas con salsa", { categorySlug: "patatas" }),
-  food("pt2", "Patatas Fritas", "Ración de patatas", { categorySlug: "patatas" }),
+  food("pt1", "Patatas Bravas", "Patatas bravas con salsa", { categorySlug: "patatas", image: "/assets/patatas-bravas.png" }),
+  food("pt2", "Patatas Fritas", "Ración de patatas", { categorySlug: "patatas", image: "/assets/patatas-fritas.png" }),
+  food("pt3", "Patatas de lux", "Patatas especiales", { categorySlug: "patatas", image: "/assets/patatas-lux.png" }),
   food("sal1", "Ensalada Mixta", "Lechuga, tomate, cebolla", { categorySlug: "ensaladas" }),
 ];

@@ -1,6 +1,7 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ProductModifierConfig } from "./types";
 import { hasFixedProtein } from "./comboProductRules";
+import { applyComboDescriptionRules } from "./comboConfigFilter";
 import { synthesizeModifierConfigFromProduct } from "./synthesizeConfig";
 import { filterProductModifierConfig } from "./proteinRules";
 
@@ -20,7 +21,8 @@ export function safeSynthesizeModifierConfig(
   try {
     const synthesized = synthesizeModifierConfigFromProduct(product, menuProducts);
     if (!synthesized) return null;
-    return filterProductModifierConfig(product, synthesized);
+    const filtered = filterProductModifierConfig(product, synthesized);
+    return applyComboDescriptionRules(product, filtered, menuProducts);
   } catch (err) {
     console.error("[safeSynthesizeModifierConfig]", product.id, err);
     return null;

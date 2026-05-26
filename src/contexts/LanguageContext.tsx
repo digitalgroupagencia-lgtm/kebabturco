@@ -154,6 +154,12 @@ const translations: Translations = {
     es: "¿Quieres mejorar?",
     fr: "Envie d'améliorer ?",
   },
+  potatoUpgradeHint: {
+    pt: "Adicionar por +0,50€",
+    en: "Add for +€0.50",
+    es: "Añadir por +0,50€",
+    fr: "Ajouter pour +0,50€",
+  },
   // Review screen
   yourOrder: { pt: "Seu pedido", en: "Your order", es: "Tu pedido", fr: "Votre commande" },
   review: { pt: "Revisão", en: "Review", es: "Revisión", fr: "Révision" },
