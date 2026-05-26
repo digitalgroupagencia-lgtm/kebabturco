@@ -1,11 +1,33 @@
-import { type ElementType } from "react";
+import { useCallback, useState, useMemo, type ElementType } from "react";
 import { Link } from "react-router-dom";
-import { Activity, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
+import {
+  Activity,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Loader2,
+  ChefHat,
+  ShoppingBag,
+  CreditCard,
+  Truck,
+  QrCode,
+  Users,
+  Server,
+  Printer,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { APP_BUILD_ID } from "@/lib/appCacheBust";
-import { useOperationalDiagnostics, type DiagnosticStatus } from "@/features/ops/useOperationalDiagnostics";
-import { nav } from "@/lib/navPaths";
+import { useOperationalDiagnostics, type DiagnosticItem } from "@/features/ops/useOperationalDiagnostics";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import {
+  fetchAdminSystemAudit,
+  type AuditFinding,
+  type AuditCategory,
+  type AuditSeverity,
+} from "@/services/adminSystemAudit";
 
 function formatBuildStamp(id: string) {
   const n = Number(id);
@@ -18,187 +40,279 @@ function formatBuildStamp(id: string) {
   });
 }
 
-const statusStyle: Record<
-  DiagnosticStatus,
-  { icon: ElementType; ring: string; badge: string; label: string }
+const CATEGORY_META: Record<AuditCategory, { label: string; icon: ElementType }> = {
+  menu: { label: "Cardápio", icon: ChefHat },
+  orders: { label: "Pedidos", icon: ShoppingBag },
+  payments: { label: "Pagamentos", icon: CreditCard },
+  delivery: { label: "Delivery", icon: Truck },
+  tables: { label: "Mesas & QR", icon: QrCode },
+  team: { label: "Equipe & Permissões", icon: Users },
+  system: { label: "Sistema", icon: Server },
+  printing: { label: "Impressão", icon: Printer },
+};
+
+const SEVERITY_META: Record<
+  AuditSeverity,
+  { label: string; ring: string; badge: string; icon: ElementType; order: number }
 > = {
-  ok: {
-    icon: CheckCircle2,
-    ring: "border-success/40 bg-success/5",
-    badge: "text-success",
-    label: "OK",
-  },
-  warn: {
-    icon: AlertTriangle,
-    ring: "border-amber-500/40 bg-amber-500/5",
-    badge: "text-amber-600",
-    label: "Atenção",
-  },
-  fail: {
+  critical: {
+    label: "CRÍTICO",
+    ring: "border-destructive/50 bg-destructive/5",
+    badge: "bg-destructive text-destructive-foreground",
     icon: XCircle,
-    ring: "border-destructive/40 bg-destructive/5",
-    badge: "text-destructive",
-    label: "Problema",
+    order: 0,
   },
-  pending: {
-    icon: Loader2,
-    ring: "border-border bg-muted/30",
-    badge: "text-muted-foreground",
-    label: "…",
+  warning: {
+    label: "ATENÇÃO",
+    ring: "border-amber-500/50 bg-amber-500/5",
+    badge: "bg-amber-500 text-white",
+    icon: AlertTriangle,
+    order: 1,
+  },
+  suggestion: {
+    label: "SUGESTÃO",
+    ring: "border-sky-500/40 bg-sky-500/5",
+    badge: "bg-sky-500 text-white",
+    icon: Activity,
+    order: 2,
+  },
+  ok: {
+    label: "OK",
+    ring: "border-success/40 bg-success/5",
+    badge: "bg-success text-success-foreground",
+    icon: CheckCircle2,
+    order: 3,
   },
 };
 
-const DiagnosticsPage = () => {
-  const { items, running, lastRun, run, failCount, warnCount } = useOperationalDiagnostics();
+/** Converte item legado (pagamentos/sistema) em finding com severidade. */
+function legacyToFindings(items: DiagnosticItem[]): AuditFinding[] {
+  return items
+    .filter((i) => i.status !== "ok" && i.status !== "pending")
+    .map((i) => {
+      const sev: AuditSeverity =
+        i.status === "fail" ? (i.critical ? "critical" : "warning") : "warning";
+      // Classifica por id em categorias
+      const isPayment =
+        i.id.startsWith("stripe-") ||
+        i.id === "database" ||
+        i.id.includes("payment") ||
+        i.id.includes("webhook");
+      const cat: AuditCategory = isPayment ? "payments" : "system";
+      return {
+        id: `legacy-${i.id}`,
+        category: cat,
+        severity: sev,
+        label: i.label,
+        detail: i.detail,
+        action: i.action,
+        link: isPayment ? "/admin/finance" : undefined,
+        linkLabel: isPayment ? "Abrir Recebimentos" : undefined,
+      };
+    });
+}
 
-  const critical = items.filter((i) => i.critical && i.status === "fail");
-  const optional = items.filter((i) => i.id === "push" || i.id === "lovable-maps");
+const DiagnosticsPage = () => {
+  const { storeId } = useAdminStoreId();
+  const opsDiag = useOperationalDiagnostics();
+  const [audit, setAudit] = useState<AuditFinding[]>([]);
+  const [auditing, setAuditing] = useState(false);
+  const [lastFullRun, setLastFullRun] = useState<Date | null>(null);
+
+  const runFull = useCallback(async () => {
+    setAuditing(true);
+    try {
+      const [, extra] = await Promise.all([opsDiag.run(), fetchAdminSystemAudit(storeId)]);
+      setAudit(extra);
+      setLastFullRun(new Date());
+    } finally {
+      setAuditing(false);
+    }
+  }, [opsDiag, storeId]);
+
+  const running = opsDiag.running || auditing;
+
+  const allFindings = useMemo<AuditFinding[]>(() => {
+    return [...legacyToFindings(opsDiag.items), ...audit];
+  }, [opsDiag.items, audit]);
+
+  const byCategory = useMemo(() => {
+    const map = new Map<AuditCategory, AuditFinding[]>();
+    for (const f of allFindings) {
+      if (!map.has(f.category)) map.set(f.category, []);
+      map.get(f.category)!.push(f);
+    }
+    for (const [, arr] of map) {
+      arr.sort((a, b) => SEVERITY_META[a.severity].order - SEVERITY_META[b.severity].order);
+    }
+    return map;
+  }, [allFindings]);
+
+  const counts = useMemo(() => {
+    return {
+      critical: allFindings.filter((f) => f.severity === "critical").length,
+      warning: allFindings.filter((f) => f.severity === "warning").length,
+      suggestion: allFindings.filter((f) => f.severity === "suggestion").length,
+    };
+  }, [allFindings]);
+
+  const everythingOk = lastFullRun && allFindings.length === 0;
 
   return (
-    <div className="space-y-4 max-w-2xl">
-      <div className="flex items-start justify-between gap-3">
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
             Estado do sistema
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Clique em Verificar para analisar pagamentos, mesas, impressão e versão publicada.
+            Auditoria completa: cardápio, pedidos, pagamentos, delivery, mesas, equipe, sistema e impressão.
           </p>
-          {lastRun && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Última verificação:{" "}
-              {lastRun.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-              {" · "}
-              Versão: {formatBuildStamp(APP_BUILD_ID)}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground mt-2">
+            {lastFullRun
+              ? `Última verificação: ${lastFullRun.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} · Versão: ${formatBuildStamp(APP_BUILD_ID)}`
+              : `Nunca verificado. Versão: ${formatBuildStamp(APP_BUILD_ID)}`}
+          </p>
         </div>
-        <Button type="button" variant="outline" onClick={() => void run()} disabled={running} className="shrink-0">
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${running ? "animate-spin" : ""}`} />
-          Verificar
+        <Button type="button" onClick={() => void runFull()} disabled={running} className="shrink-0">
+          {running ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-1.5" />
+          )}
+          {running ? "Analisando…" : "Verificar agora"}
         </Button>
       </div>
 
-      {(failCount > 0 || warnCount > 0) && (
-        <div
-          className={`rounded-xl border-2 p-4 space-y-3 ${
-            failCount > 0 ? "border-destructive/50 bg-destructive/5" : "border-amber-500/50 bg-amber-500/5"
-          }`}
-        >
-          <p className="font-black text-base">
-            {failCount > 0
-              ? `${failCount} problema(s) — corrija antes de confiar em pagamentos online`
-              : `${warnCount} aviso(s) — reveja quando puder`}
-          </p>
-          {critical.length > 0 && (
-            <ul className="mt-2 space-y-1 text-sm">
-              {critical.slice(0, 3).map((c) => (
-                <li key={c.id}>• {c.label}</li>
-              ))}
-            </ul>
-          )}
-          {items.some((i) => i.id === "database" && i.status === "fail") && (
-            <div className="rounded-lg bg-background/80 border p-3 text-xs space-y-2">
-              <p className="font-bold">Base de dados incompleta:</p>
-              <p className="leading-relaxed">
-                Vá a Admin → Recebimentos → Copiar SQL → cole no editor da base de dados e execute.
-              </p>
-            </div>
-          )}
-          {items.some((i) => i.id === "edge-functions" && i.status === "fail") && (
-            <div className="rounded-lg bg-background/80 border p-3 text-xs space-y-2">
-              <p className="font-bold">Depois, no chat da Lovable:</p>
-              <p className="font-mono text-[11px] leading-relaxed select-all">
-                Deploy all edge functions, especially stripe-create-payment-intent and print-order.
-              </p>
-            </div>
-          )}
+      {lastFullRun && (
+        <div className="grid grid-cols-3 gap-3">
+          <SummaryTile
+            sev="critical"
+            count={counts.critical}
+            label="Críticos"
+            sub="impedem operação"
+          />
+          <SummaryTile
+            sev="warning"
+            count={counts.warning}
+            label="Atenção"
+            sub="podem causar erro"
+          />
+          <SummaryTile
+            sev="suggestion"
+            count={counts.suggestion}
+            label="Sugestões"
+            sub="melhorias"
+          />
         </div>
       )}
 
-      <div className="space-y-3">
-        {!running && items.length === 0 && (
-          <Card className="border-dashed">
-            <CardContent className="p-6 text-center text-sm text-muted-foreground">
-              Clique em <strong>Verificar</strong> para analisar o sistema. Nada é consultado automaticamente ao abrir
-              esta página.
-            </CardContent>
-          </Card>
-        )}
-        {items
-          .filter((i) => !optional.some((o) => o.id === i.id))
-          .map((item) => {
-            const style = statusStyle[item.status];
-            const Icon = style.icon;
-            return (
-              <Card key={item.id} className={`border-2 ${style.ring}`}>
-                <CardContent className="p-4 flex gap-3">
-                  <Icon
-                    className={`h-6 w-6 shrink-0 mt-0.5 ${style.badge} ${item.status === "pending" ? "animate-spin" : ""}`}
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-black text-base">{item.label}</p>
-                      <span className={`text-[10px] font-black uppercase tracking-wider ${style.badge}`}>
-                        {style.label}
-                      </span>
-                    </div>
-                    {item.detail && <p className="text-sm text-muted-foreground mt-1">{item.detail}</p>}
-                    {item.action && (
-                      <p className="text-sm font-semibold mt-2 text-foreground/90">O que fazer: {item.action}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-      </div>
-
-      {optional.length > 0 && (
-        <>
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground pt-2">Informação</p>
-          <div className="space-y-3">
-            {optional.map((item) => {
-              const style = statusStyle[item.status];
-              const Icon = style.icon;
-              return (
-                <Card key={item.id} className={`border ${style.ring}`}>
-                  <CardContent className="p-4 flex gap-3">
-                    <Icon className={`h-5 w-5 shrink-0 ${style.badge}`} />
-                    <div>
-                      <p className="font-bold text-sm">{item.label}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{item.detail}</p>
-                      {item.action && <p className="text-xs font-semibold mt-1">{item.action}</p>}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </>
+      {!lastFullRun && !running && (
+        <Card className="border-dashed">
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            Clique em <strong>Verificar agora</strong> para rodar a auditoria completa. Nada é
+            consultado automaticamente.
+          </CardContent>
+        </Card>
       )}
 
-      <div className="rounded-xl border bg-card p-4 space-y-2 text-sm">
-        <p className="font-bold">Fluxo ideal para si</p>
-        <ol className="list-decimal pl-5 space-y-1 text-muted-foreground text-xs">
-          <li>Eu envio alterações para o GitHub (automático).</li>
-          <li>Você faz <strong>Sync + Publish</strong> na Lovable.</li>
-          <li>Volta aqui e clique <strong>Verificar</strong> — todas as luzes verdes = pronto para operar.</li>
-        </ol>
-        <p className="text-xs text-muted-foreground pt-1">
-          Pagamentos e mesas:{" "}
-          <Link to={nav.admin("finance")} className="text-primary underline font-semibold">
-            Recebimentos
-          </Link>
-          {" · "}
-          <Link to={nav.panel("tables")} className="text-primary underline font-semibold">
-            Mesas
-          </Link>
-        </p>
-      </div>
+      {everythingOk && (
+        <Card className="border-2 border-success/40 bg-success/5">
+          <CardContent className="p-6 flex items-center gap-3">
+            <CheckCircle2 className="h-8 w-8 text-success" />
+            <div>
+              <p className="font-black text-lg">Tudo OK</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhum problema detectado. Sistema pronto para operar.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {Array.from(byCategory.entries()).map(([cat, findings]) => {
+        const meta = CATEGORY_META[cat];
+        const Icon = meta.icon;
+        const worstSev = findings[0]?.severity ?? "ok";
+        return (
+          <section key={cat} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Icon className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold">{meta.label}</h3>
+              <span className="text-xs text-muted-foreground">
+                ({findings.length} {findings.length === 1 ? "alerta" : "alertas"})
+              </span>
+            </div>
+            <div className="space-y-2">
+              {findings.map((f) => (
+                <FindingCard key={f.id} f={f} />
+              ))}
+            </div>
+            {worstSev === "critical" && null}
+          </section>
+        );
+      })}
     </div>
   );
 };
+
+function SummaryTile({
+  sev,
+  count,
+  label,
+  sub,
+}: {
+  sev: AuditSeverity;
+  count: number;
+  label: string;
+  sub: string;
+}) {
+  const meta = SEVERITY_META[sev];
+  return (
+    <Card className={`border-2 ${meta.ring}`}>
+      <CardContent className="p-4">
+        <p className="text-3xl font-black">{count}</p>
+        <p className="text-sm font-bold mt-1">{label}</p>
+        <p className="text-xs text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FindingCard({ f }: { f: AuditFinding }) {
+  const meta = SEVERITY_META[f.severity];
+  const Icon = meta.icon;
+  return (
+    <Card className={`border-2 ${meta.ring}`}>
+      <CardContent className="p-4 flex gap-3">
+        <Icon className="h-5 w-5 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-bold text-sm">{f.label}</p>
+            <span
+              className={`text-[10px] font-black px-1.5 py-0.5 rounded ${meta.badge}`}
+            >
+              {meta.label}
+            </span>
+          </div>
+          {f.detail && (
+            <p className="text-xs text-muted-foreground mt-1 break-words">{f.detail}</p>
+          )}
+          {f.action && <p className="text-xs font-medium mt-1.5">{f.action}</p>}
+          {f.link && (
+            <Link
+              to={f.link}
+              className="inline-flex items-center gap-1 text-xs font-bold text-primary mt-2 hover:underline"
+            >
+              {f.linkLabel ?? "Resolver"}
+              <ChevronRight className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default DiagnosticsPage;
