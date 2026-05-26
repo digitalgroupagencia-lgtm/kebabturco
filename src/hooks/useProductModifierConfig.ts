@@ -121,10 +121,11 @@ export function useProductModifierConfig(productId: string | undefined) {
           optionsByGroup.set(opt.group_id, list);
         }
 
-        const groupMap = new Map(groupsRes.data.map((g) => [g.id, g]));
+        const groupMap = new Map<string, any>((groupsRes.data as any[]).map((g: any) => [g.id, g]));
         const groups: ModifierGroup[] = links
-          .map((link) => {
-            const g = groupMap.get(link.group_id);
+          .map((link: any) => {
+            const g: any = groupMap.get(link.group_id);
+
             if (!g || !g.is_active) return null;
             return {
               id: g.id,

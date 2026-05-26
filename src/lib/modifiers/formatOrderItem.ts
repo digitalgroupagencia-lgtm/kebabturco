@@ -1,10 +1,11 @@
 import type { Tables } from "@/integrations/supabase/types";
 import type { ModifierSelection } from "./types";
 
-type OrderItem = Tables<"order_items">;
+type OrderItem = Tables<"order_items"> & { selections?: unknown };
 
 export function parseOrderItemSelections(item: OrderItem): ModifierSelection[] {
-  const raw = item.selections;
+  const raw = (item as any).selections;
+
   if (!Array.isArray(raw)) return [];
   return raw as unknown as ModifierSelection[];
 }

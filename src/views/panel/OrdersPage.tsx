@@ -109,7 +109,8 @@ const OrdersPage = () => {
             onAdvance={handleAdvance}
             onCancel={cancelOrder}
             onSetPrepMinutes={setPrepMinutes}
-            onMarkPaid={markOrderPaid}
+            onMarkPaid={(o, m) => { void markOrderPaid(o, m); }}
+
           />
         ))}
         {mobileOrders.length === 0 && (
@@ -141,7 +142,7 @@ const OrdersPage = () => {
                     onAdvance={handleAdvance}
                     onCancel={cancelOrder}
                     onSetPrepMinutes={setPrepMinutes}
-                    onMarkPaid={markOrderPaid}
+                    onMarkPaid={(o, m) => { void markOrderPaid(o, m); }}
                   />
                 ))}
                 {columnOrders.length === 0 && (
