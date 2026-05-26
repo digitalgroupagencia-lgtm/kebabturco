@@ -73,8 +73,14 @@ export function SelectedTenantProvider({ children }: { children: ReactNode }) {
       if (!t) return null;
 
       const { data: s } = await supabase
-        .from("stores").select("id").eq("tenant_id", t.id)
-        .order("created_at").limit(1).maybeSingle();
+        .from("stores")
+        .select("id")
+        .eq("tenant_id", t.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
       return { ...t, store_id: s?.id ?? null } as SelectedTenant;
     },
   });

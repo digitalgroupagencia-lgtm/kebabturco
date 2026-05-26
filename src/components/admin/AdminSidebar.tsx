@@ -28,6 +28,7 @@ import {
   DollarSign,
   Package,
   BarChart3,
+  ShoppingBag,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,6 +59,10 @@ const overviewItems = [
   { title: "Estado do sistema", url: nav.admin("diagnostics"), icon: Activity },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
+];
+
+const operationalItems = [
+  { title: "Painel do Restaurante", url: nav.panel(), icon: ShoppingBag, end: true },
 ];
 
 const storeItems = [
@@ -139,6 +144,17 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Painel operacional</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {operationalItems.map((item) => (
+                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
           <SidebarGroupContent>
