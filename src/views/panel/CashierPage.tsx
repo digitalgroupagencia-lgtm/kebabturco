@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone, AlertCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
+import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -70,6 +71,8 @@ const CashierPage = () => {
     setConfirmingId(order.id);
     try {
       await markOrderPaidAtCounter(order.id, method);
+      const { data: items } = await supabase.from("order_items").select("*").eq("order_id", order.id);
+      await tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid", payment_method: method } as any, (items ?? []) as any);
       toast.success(`Pagamento registado — #${order.order_number}`);
       await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
     } catch (e) {
