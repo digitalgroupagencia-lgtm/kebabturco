@@ -46,6 +46,7 @@ export function getPanelOrderAction(
     table_number?: string | null;
     delivery_street?: string | null;
     assigned_driver_id?: string | null;
+    payment_status?: string | null;
   },
   options?: { viewerUserId?: string | null; canAssignDriver?: boolean },
 ): PanelOrderAction | null {
@@ -55,6 +56,7 @@ export function getPanelOrderAction(
   const canAssignDriver = options?.canAssignDriver ?? true;
 
   if (status === "pending") {
+    if (type === "takeaway" && order.payment_status !== "paid") return null;
     return { kind: "accept_eta", label: "Aceitar" };
   }
   if (status === "preparing") {
