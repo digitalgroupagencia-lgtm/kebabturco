@@ -11,6 +11,8 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearSavedMesaToken,
+  loadSavedLang,
+  loadSavedOrderType,
   loadSavedCustomerName,
   loadSavedCustomerPhone,
   loadSavedDeliveryAddress,
