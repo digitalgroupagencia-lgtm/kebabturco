@@ -618,13 +618,19 @@ export type Database = {
           msg_paid: string
           pay_apple_enabled: boolean
           pay_card_enabled: boolean
+          pay_cash_delivery: boolean
+          pay_cash_dine_in: boolean
           pay_cash_enabled: boolean
+          pay_cash_takeaway: boolean
           pay_counter_enabled: boolean
           pay_google_enabled: boolean
           pay_link_enabled: boolean
           pay_pix_enabled: boolean
           payment_mode: string
+          print_pending_dine_in: boolean
           require_phone_takeaway: boolean
+          require_prepayment_delivery: boolean
+          require_prepayment_takeaway: boolean
           store_id: string
           updated_at: string
         }
@@ -638,13 +644,19 @@ export type Database = {
           msg_paid?: string
           pay_apple_enabled?: boolean
           pay_card_enabled?: boolean
+          pay_cash_delivery?: boolean
+          pay_cash_dine_in?: boolean
           pay_cash_enabled?: boolean
+          pay_cash_takeaway?: boolean
           pay_counter_enabled?: boolean
           pay_google_enabled?: boolean
           pay_link_enabled?: boolean
           pay_pix_enabled?: boolean
           payment_mode?: string
+          print_pending_dine_in?: boolean
           require_phone_takeaway?: boolean
+          require_prepayment_delivery?: boolean
+          require_prepayment_takeaway?: boolean
           store_id: string
           updated_at?: string
         }
@@ -658,13 +670,19 @@ export type Database = {
           msg_paid?: string
           pay_apple_enabled?: boolean
           pay_card_enabled?: boolean
+          pay_cash_delivery?: boolean
+          pay_cash_dine_in?: boolean
           pay_cash_enabled?: boolean
+          pay_cash_takeaway?: boolean
           pay_counter_enabled?: boolean
           pay_google_enabled?: boolean
           pay_link_enabled?: boolean
           pay_pix_enabled?: boolean
           payment_mode?: string
+          print_pending_dine_in?: boolean
           require_phone_takeaway?: boolean
+          require_prepayment_delivery?: boolean
+          require_prepayment_takeaway?: boolean
           store_id?: string
           updated_at?: string
         }
@@ -762,8 +780,10 @@ export type Database = {
           discount_amount: number
           estimated_ready_at: string | null
           id: string
+          kitchen_printed_at: string | null
           net_to_store_cents: number | null
           notes: string | null
+          online_service_fee_cents: number
           order_number: string
           order_type: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
@@ -774,14 +794,14 @@ export type Database = {
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
+          stripe_connect_account_id: string | null
           stripe_fee_cents: number
           stripe_payment_intent_id: string | null
-          stripe_connect_account_id: string | null
-          online_service_fee_cents: number
           subtotal: number
           table_customer_id: string | null
           table_number: string | null
           table_session_id: string | null
+          table_validated: boolean
           total: number
           updated_at: string
         }
@@ -804,8 +824,10 @@ export type Database = {
           discount_amount?: number
           estimated_ready_at?: string | null
           id?: string
+          kitchen_printed_at?: string | null
           net_to_store_cents?: number | null
           notes?: string | null
+          online_service_fee_cents?: number
           order_number: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
@@ -816,14 +838,14 @@ export type Database = {
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
+          stripe_connect_account_id?: string | null
           stripe_fee_cents?: number
           stripe_payment_intent_id?: string | null
-          stripe_connect_account_id?: string | null
-          online_service_fee_cents?: number
           subtotal?: number
           table_customer_id?: string | null
           table_number?: string | null
           table_session_id?: string | null
+          table_validated?: boolean
           total?: number
           updated_at?: string
         }
@@ -846,8 +868,10 @@ export type Database = {
           discount_amount?: number
           estimated_ready_at?: string | null
           id?: string
+          kitchen_printed_at?: string | null
           net_to_store_cents?: number | null
           notes?: string | null
+          online_service_fee_cents?: number
           order_number?: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
@@ -858,14 +882,14 @@ export type Database = {
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
+          stripe_connect_account_id?: string | null
           stripe_fee_cents?: number
           stripe_payment_intent_id?: string | null
-          stripe_connect_account_id?: string | null
-          online_service_fee_cents?: number
           subtotal?: number
           table_customer_id?: string | null
           table_number?: string | null
           table_session_id?: string | null
+          table_validated?: boolean
           total?: number
           updated_at?: string
         }
@@ -1889,6 +1913,8 @@ export type Database = {
           stripe_charges_enabled: boolean
           stripe_connect_account_id: string | null
           stripe_connect_created_at: string | null
+          stripe_connect_environment: string
+          stripe_connect_test_simulated: boolean
           stripe_iban_last4: string | null
           stripe_last_payout_at: string | null
           stripe_onboarding_completed: boolean
@@ -1914,6 +1940,8 @@ export type Database = {
           stripe_charges_enabled?: boolean
           stripe_connect_account_id?: string | null
           stripe_connect_created_at?: string | null
+          stripe_connect_environment?: string
+          stripe_connect_test_simulated?: boolean
           stripe_iban_last4?: string | null
           stripe_last_payout_at?: string | null
           stripe_onboarding_completed?: boolean
@@ -1939,6 +1967,8 @@ export type Database = {
           stripe_charges_enabled?: boolean
           stripe_connect_account_id?: string | null
           stripe_connect_created_at?: string | null
+          stripe_connect_environment?: string
+          stripe_connect_test_simulated?: boolean
           stripe_iban_last4?: string | null
           stripe_last_payout_at?: string | null
           stripe_onboarding_completed?: boolean
@@ -2101,6 +2131,7 @@ export type Database = {
           id: string
           is_active: boolean
           number: string
+          qr_token: string
           store_id: string
           updated_at: string
         }
@@ -2110,6 +2141,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           number: string
+          qr_token: string
           store_id: string
           updated_at?: string
         }
@@ -2119,6 +2151,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           number?: string
+          qr_token?: string
           store_id?: string
           updated_at?: string
         }
@@ -2614,6 +2647,7 @@ export type Database = {
         Args: { _name?: string; _session_id: string }
         Returns: string
       }
+      claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
       close_table_customer: {
         Args: { _customer_id: string; _payment_method: string }
         Returns: Json
@@ -2652,11 +2686,6 @@ export type Database = {
           _store_id: string
           _stripe_payment_intent_id?: string
           _subtotal?: number
-          _online_service_fee_cents?: number
-          _platform_fee_cents?: number
-          _stripe_fee_cents?: number
-          _net_to_store_cents?: number
-          _stripe_connect_account_id?: string
           _table_id?: string
           _table_number?: string
           _total: number
@@ -2739,6 +2768,10 @@ export type Database = {
           order_count: number
           revenue: number
         }[]
+      }
+      get_operational_diagnostics: {
+        Args: { _store_id?: string }
+        Returns: Json
       }
       get_order_public: {
         Args: { _order_id: string }
@@ -2873,6 +2906,10 @@ export type Database = {
       }
       is_seller: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
+      mark_order_paid_at_counter: {
+        Args: { _order_id: string; _payment_method?: string }
+        Returns: Json
+      }
       next_order_number: { Args: { _store_id: string }; Returns: string }
       open_or_get_table_session: {
         Args: { _store_id: string; _table_number: string }
@@ -2882,15 +2919,31 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
-      record_payment_settlement: {
-        Args: {
-          _net_to_store_cents: number
-          _platform_fee_cents: number
-          _processing_fee_cents: number
-          _stripe_fee_cents: number
-          _stripe_payment_intent_id: string
-        }
-        Returns: Json
+      record_payment_settlement:
+        | {
+            Args: {
+              _net_to_store_cents: number
+              _platform_fee_cents: number
+              _processing_fee_cents: number
+              _stripe_fee_cents: number
+              _stripe_payment_intent_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _net_to_store_cents: number
+              _online_service_fee_cents?: number
+              _platform_fee_cents: number
+              _processing_fee_cents: number
+              _stripe_fee_cents: number
+              _stripe_payment_intent_id: string
+            }
+            Returns: Json
+          }
+      regenerate_table_qr_token: {
+        Args: { _table_id: string }
+        Returns: string
       }
       register_push_subscription: {
         Args: {
