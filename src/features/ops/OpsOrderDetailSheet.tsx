@@ -48,7 +48,7 @@ type Props = {
   items: OrderItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void>;
+  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void> | Promise<boolean>;
   onRequestAccept: (order: PanelOrder) => void;
   onCancel: (orderId: string) => void;
   onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
