@@ -51,7 +51,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onRequestAssignDriver,
 }: OpsOrderCardProps) {
   const payment = getPanelPaymentBadge(order);
-  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole) });
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
   const actionLabel = getCompactActionLabel(order, viewerRole);
   const itemCount = orderItemCount(items);
   const itemSummary = summarizeOrderItems(items, 1);
