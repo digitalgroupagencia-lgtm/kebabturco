@@ -7,6 +7,8 @@ import {
   UserCog,
   BookOpen,
   Activity,
+  Settings,
+  UtensilsCrossed,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,8 +31,11 @@ const operacaoItems = [
   { title: "Pedidos", url: nav.panel(), icon: ShoppingBag, end: true },
   { title: "Resumo", url: nav.panel("dashboard"), icon: LayoutGrid },
   { title: "Caixa", url: nav.panel("cashier"), icon: DollarSign },
+  { title: "Recebimentos", url: nav.panel("finance"), icon: DollarSign },
+  { title: "Cardápio", url: nav.panel("menu"), icon: UtensilsCrossed },
   { title: "Mapa de mesas", url: nav.panel("table-map"), icon: LayoutGrid },
   { title: "Mesas & QR", url: nav.panel("tables"), icon: LayoutGrid },
+  { title: "Configurações", url: nav.panel("settings"), icon: Settings },
   { title: "Equipe", url: nav.panel("team"), icon: Users },
   { title: "Vendedores", url: nav.panel("sellers"), icon: UserCog },
   { title: "Guia", url: nav.panel("guide"), icon: BookOpen },
