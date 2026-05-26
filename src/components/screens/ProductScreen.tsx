@@ -86,6 +86,7 @@ const ProductScreen = () => {
         <ProductCustomizationFlow
           product={product}
           config={modifierConfig}
+          menuProducts={products}
           editingItem={editingItem}
           onBack={goBack}
         />

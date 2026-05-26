@@ -5,7 +5,7 @@ import {
   drinkProductMatchesRule,
 } from "./drinkSizeRules";
 import { safeSynthesizeModifierConfig } from "./safeCustomization";
-import { auditComboConfigurations } from "./comboConfigFilter";
+import { auditComboConfigurations, applyComboDescriptionRules } from "./comboConfigFilter";
 import {
   KEBAB_AUDIT_PRODUCTS,
   KEBAB_DRINK_CATALOG,
@@ -101,6 +101,48 @@ describe("combo drink and potato filtering", () => {
     const c10 = rows.find((r) => r.comboName.includes("Combo 10 Piezas"));
     expect(c10?.drinkRule).toBe("2l");
     expect(c10?.drinksShown.join(" ")).toMatch(/2L|2l/i);
+  });
+
+  it("rebuilds drink list from menu only when DB has all sizes mixed", () => {
+    const product: MenuProduct = {
+      ...byName("Combo 10 Piezas"),
+      extras: [...ALL_DRINK_EXTRAS],
+    };
+    const dbDrinkGroup = {
+      id: "db-drink",
+      storeId: "",
+      name: { es: "Bebida", pt: "Bebida", en: "Drink", fr: "Boisson" },
+      description: {},
+      groupKind: "choice" as const,
+      selectionMode: "single" as const,
+      minSelect: 1,
+      maxSelect: 1,
+      isRequired: true,
+      sortOrder: 1,
+      repeatPerUnit: false,
+      linkSortOrder: 1,
+      options: ALL_DRINK_EXTRAS.map((extra, index) => ({
+        id: extra.id,
+        groupId: "db-drink",
+        name: extra.name,
+        priceDelta: 0,
+        maxQty: 1,
+        isDefault: index === 0,
+        sortOrder: index,
+      })),
+    };
+    const raw = {
+      productId: product.id,
+      productType: "combo" as const,
+      comboUnitCount: 0,
+      unitLabel: { es: "Unidad", pt: "Unidade", en: "Unit", fr: "Unité" },
+      groups: [dbDrinkGroup],
+      hasStructuredModifiers: true,
+    };
+    const config = applyComboDescriptionRules(product, raw, KEBAB_AUDIT_PRODUCTS);
+    const labels = (config?.groups[0]?.options || []).map((o) => o.name.es).join(" | ");
+    expect(labels).toMatch(/2L|2l/i);
+    expect(labels).not.toMatch(/33cl|Pequeña|Monster|Zumo|Agua Grande/i);
   });
 });
 

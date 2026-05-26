@@ -21,9 +21,23 @@ function slugifyLabel(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
+function optionText(option: ModifierOption): string {
+  return `${option.name.es || ""} ${option.name.pt || ""} ${option.name.en || ""}`.toLowerCase();
+}
+
+function optionLooksLikeDrinkOption(option: ModifierOption): boolean {
+  return /coca|fanta|sprite|nestea|aquarius|refresco|agua|zumo|cola|monster|bebida|33\s*cl|2\s*l|lata/i.test(
+    optionText(option),
+  );
+}
+
 function isDrinkGroup(group: ModifierGroup): boolean {
   const label = `${group.name.es || ""} ${group.name.pt || ""}`.toLowerCase();
-  return group.groupKind === "choice" && /bebida|refresco|drink|boisson/i.test(label);
+  if (group.groupKind !== "choice") return false;
+  if (/bebida|refresco|drink|boisson/i.test(label)) return true;
+  if (group.options.length < 2) return false;
+  const drinkLike = group.options.filter(optionLooksLikeDrinkOption).length;
+  return drinkLike >= 2 && drinkLike >= Math.ceil(group.options.length * 0.5);
 }
 
 function isPotatoGroup(group: ModifierGroup): boolean {
@@ -68,14 +82,8 @@ function rebuildDrinkOptions(
     optionFromExtra(group.id, extra, index),
   );
 
-  const filteredExisting = group.options.filter((opt) => drinkOptionMatchesRule(opt, rule));
+  // Ignorar opções cruas da BD — reconstruir só a partir do cardápio + fallback do tamanho certo.
   const merged: ModifierOption[] = [...fromMenu];
-
-  for (const opt of filteredExisting) {
-    if (!merged.some((m) => m.id === opt.id || m.name.es === opt.name.es)) {
-      merged.push(opt);
-    }
-  }
 
   if (merged.length < 2) {
     for (const fallback of fallbackDrinkOptions(group.id, rule)) {

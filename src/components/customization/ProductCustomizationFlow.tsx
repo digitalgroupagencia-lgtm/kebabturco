@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ProductModifierConfig, SelectionState, CartConfiguration } from "@/lib/modifiers/types";
+import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
 import { buildSelectionsFromState, validateAllGroups } from "@/lib/modifiers/validation";
 import { computeUnitPrice } from "@/lib/modifiers/pricing";
 import { flattenConfiguration, selectionsToLegacyFields } from "@/lib/modifiers/legacyBridge";
@@ -19,6 +20,7 @@ import type { CartItem } from "@/contexts/CartContext";
 type Props = {
   product: MenuProduct;
   config: ProductModifierConfig;
+  menuProducts?: MenuProduct[];
   editingItem?: CartItem;
   onBack: () => void;
 };
@@ -27,11 +29,16 @@ import {
   comboUnitStepTitle,
 } from "@/lib/modifiers/comboProductRules";
 
-export default function ProductCustomizationFlow({ product, config, editingItem, onBack }: Props) {
+export default function ProductCustomizationFlow({ product, config, menuProducts = [], editingItem, onBack }: Props) {
   const { t, tProduct } = useLanguage();
   const { addItem, updateItem } = useCart();
 
-  const safeGroups = config.groups ?? [];
+  const effectiveConfig = useMemo(
+    () => applyComboDescriptionRules(product, config, menuProducts) ?? config,
+    [product, config, menuProducts],
+  );
+
+  const safeGroups = effectiveConfig.groups ?? [];
   const basePrice = Number(product.price) || 0;
   const productImage = product.image || "/placeholder.svg";
 
@@ -43,26 +50,26 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
     () => sortModifierGroups(safeGroups.filter((g) => g.repeatPerUnit)),
     [safeGroups],
   );
-  const isCombo = config.productType === "combo" && config.comboUnitCount > 1 && unitGroups.length > 0;
+  const isCombo = effectiveConfig.productType === "combo" && effectiveConfig.comboUnitCount > 1 && unitGroups.length > 0;
 
   const [quantity, setQuantity] = useState(1);
   const [globalState, setGlobalState] = useState<SelectionState>(() => new Map());
   const [unitStates, setUnitStates] = useState<SelectionState[]>(() =>
-    Array.from({ length: config.comboUnitCount || 0 }, () => new Map()),
+    Array.from({ length: effectiveConfig.comboUnitCount || 0 }, () => new Map()),
   );
   const [comboStep, setComboStep] = useState(0);
   const [note, setNote] = useState("");
 
-  const totalSteps = isCombo ? 1 + config.comboUnitCount : 1;
+  const totalSteps = isCombo ? 1 + effectiveConfig.comboUnitCount : 1;
   const onUnitStep = isCombo && comboStep > 0;
   const currentUnitIndex = onUnitStep ? comboStep - 1 : null;
 
   useEffect(() => {
     if (editingItem?.configuration) return;
     setGlobalState(buildDefaultSelectionState(globalGroups));
-    setUnitStates(buildDefaultUnitStates(unitGroups, config.comboUnitCount || 0));
+    setUnitStates(buildDefaultUnitStates(unitGroups, effectiveConfig.comboUnitCount || 0));
     setComboStep(0);
-  }, [product.id, config.groups, config.comboUnitCount, editingItem?.id, globalGroups, unitGroups]);
+  }, [product.id, effectiveConfig.groups, effectiveConfig.comboUnitCount, editingItem?.id, globalGroups, unitGroups]);
 
   useEffect(() => {
     if (!editingItem?.configuration) return;
@@ -112,7 +119,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
   const buildConfiguration = (): CartConfiguration => {
     const globalSelections = buildSelectionsFromState(globalGroups, globalState);
     const comboUnits = isCombo
-      ? Array.from({ length: config.comboUnitCount }, (_, i) => ({
+      ? Array.from({ length: effectiveConfig.comboUnitCount }, (_, i) => ({
           unitIndex: i,
           unitLabel: comboUnitStepTitle(product, i),
           selections: buildSelectionsFromState(
@@ -125,7 +132,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
       : undefined;
 
     return {
-      productType: config.productType,
+      productType: effectiveConfig.productType,
       globalSelections,
       comboUnits,
     };
@@ -162,7 +169,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
       return false;
     }
     if (isCombo) {
-      for (let i = 0; i < config.comboUnitCount; i++) {
+      for (let i = 0; i < effectiveConfig.comboUnitCount; i++) {
         if (!validateAllGroups(unitGroups, unitStates[i] || new Map(), i).valid) {
           toast.error(`${t("errRequiredUnit")} ${i + 1}`);
           setComboStep(i + 1);
@@ -204,7 +211,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
       totalPrice: unitPrice,
       selections: flat,
       configuration: cfg,
-      productType: config.productType,
+      productType: effectiveConfig.productType,
     };
 
     if (editingItem) {
