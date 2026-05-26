@@ -9,7 +9,7 @@ export function useAuth() {
 
   useEffect(() => {
     let active = true;
-    let initialSessionLoaded = false;
+    let initialSessionResolved = false;
 
     const applySession = (nextSession: Session | null) => {
       setSession(nextSession);
@@ -17,8 +17,8 @@ export function useAuth() {
     };
 
     const finishInitialLoad = (nextSession: Session | null) => {
-      if (!active || initialSessionLoaded) return;
-      initialSessionLoaded = true;
+      if (!active) return;
+      initialSessionResolved = true;
       applySession(nextSession);
       setLoading(false);
     };
@@ -32,7 +32,13 @@ export function useAuth() {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return;
       applySession(nextSession);
-      finishInitialLoad(nextSession);
+
+      // O evento inicial pode chegar como null antes do getSession() ler a sessão
+      // persistida no localStorage. Não finalizar o loading nesse caso evita o
+      // loop /panel → /auth → /panel → /admin visto no preview.
+      if (initialSessionResolved || nextSession) {
+        setLoading(false);
+      }
     });
 
     return () => {
