@@ -40,17 +40,7 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
   }
 
   const panelAlias = resolveAdminRestaurantPanelAlias(pathname);
-  if (panelAlias) {
-    const def = resolveRoute(panelAlias);
-    if (def) {
-      const Layout = AREA_LAYOUT[def.area];
-      const Page = lazyPage(def.loader);
-      return withSuspense(
-        <AdminErrorBoundary area={def.area}>
-          <Layout page={Page} />
-        </AdminErrorBoundary>,
-      );
-    }
+  if (panelAlias && panelAlias !== pathname) {
     return <Navigate to={panelAlias} replace />;
   }
 

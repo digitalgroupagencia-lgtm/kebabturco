@@ -68,6 +68,9 @@ export function redirectTargetForPanelPath(
   const segment = panelSegmentFromPathname(pathname);
   if (isPanelOperationalSegment(segment)) return null;
 
+  // Rotas do restaurante que nunca devem expulsar para o admin geral.
+  if (segment === "menu" || segment === "finance" || segment === "settings") return null;
+
   // admin_master pode usar o painel do restaurante completamente — não redireccionar
   // segmentos de configuração para /admin (causa "tudo abre admin geral").
   if (role === "admin_master") return null;
