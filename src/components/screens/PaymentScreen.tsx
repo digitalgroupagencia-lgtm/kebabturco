@@ -17,6 +17,7 @@ import {
   PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
+import { loadSavedMesaToken } from "@/lib/customerSession";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
@@ -321,6 +322,7 @@ const PaymentScreen = () => {
       total: grandTotal,
       tableNumber: mesaValidated ? tableNumber.trim() || null : null,
       tableId: mesaValidated ? mesaTableId : null,
+      qrToken: mesaValidated ? loadSavedMesaToken() : null,
       customerName: customerName.trim() || null,
       customerPhone: fullCustomerPhone || null,
       notes,
@@ -539,6 +541,7 @@ const PaymentScreen = () => {
                     total: grandTotal,
                     tableNumber: mesaValidated ? tableNumber.trim() || null : null,
                     tableId: mesaValidated ? mesaTableId : null,
+                    qrToken: mesaValidated ? loadSavedMesaToken() : null,
                     customerName: customerName.trim() || null,
                     customerPhone: fullCustomerPhone || null,
                     notes,

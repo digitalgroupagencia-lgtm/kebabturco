@@ -104,6 +104,7 @@ export interface CreateCustomerOrderParams {
   total: number;
   tableNumber?: string | null;
   tableId?: string | null;
+  qrToken?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
   notes?: string | null;
@@ -184,6 +185,7 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     _subtotal: params.subtotal,
     _table_number: params.tableNumber || undefined,
     _table_id: params.tableId || undefined,
+    _qr_token: params.qrToken || undefined,
     _customer_name: params.customerName || undefined,
     _customer_phone: params.customerPhone || undefined,
     _notes: params.notes || undefined,

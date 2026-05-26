@@ -64,12 +64,16 @@ export function getTenantTotemUrl(tenant: TenantUrlConfig, fallbackOrigin?: stri
 export function getTableQrUrl(
   tenant: TenantUrlConfig,
   table: { number: string; qr_token: string },
-  fallbackOrigin?: string,
+  options?: { lang?: string; fallbackOrigin?: string },
 ): string {
-  const url = new URL(buildTenantUrl(tenant, "", fallbackOrigin));
+  const url = new URL(buildTenantUrl(tenant, "", options?.fallbackOrigin));
   url.searchParams.set("mode", "table");
   url.searchParams.set("table", table.number);
   url.searchParams.set("t", table.qr_token);
+  const lang = options?.lang?.trim().toLowerCase();
+  if (lang && ["pt", "en", "es", "fr"].includes(lang)) {
+    url.searchParams.set("lang", lang);
+  }
   return url.href;
 }
 

@@ -12,9 +12,10 @@ const TEXT: Record<string, { install: string; iosTitle: string; s1: string; s2: 
 
 interface Props {
   lang?: string;
+  variant?: "primary" | "subtle";
 }
 
-const InstallAppButton = ({ lang = "es" }: Props) => {
+const InstallAppButton = ({ lang = "es", variant = "primary" }: Props) => {
   const { canInstall, isIOS, isStandalone, promptInstall } = useInstallPrompt();
   const [showIOS, setShowIOS] = useState(false);
   const t = TEXT[lang] || TEXT.es;
@@ -31,13 +32,19 @@ const InstallAppButton = ({ lang = "es" }: Props) => {
     }
   };
 
+  const isSubtle = variant === "subtle";
+
   return (
     <>
       <button
         onClick={handleClick}
-        className="flex items-center justify-center gap-2 w-full max-w-md mx-auto px-5 py-3 rounded-2xl bg-success text-success-foreground font-bold text-sm shadow-[0_8px_24px_-8px_hsl(var(--success)/0.5)] active:scale-[0.97] transition-transform touch-action-manipulation"
+        className={
+          isSubtle
+            ? "flex items-center justify-center gap-1.5 w-full max-w-md mx-auto px-4 py-2 rounded-xl border border-border/35 bg-transparent text-muted-foreground font-medium text-xs active:scale-[0.98] transition-transform touch-action-manipulation hover:bg-secondary/30"
+            : "flex items-center justify-center gap-2 w-full max-w-md mx-auto px-5 py-3 rounded-2xl bg-success text-success-foreground font-bold text-sm shadow-[0_8px_24px_-8px_hsl(var(--success)/0.5)] active:scale-[0.97] transition-transform touch-action-manipulation"
+        }
       >
-        <Download className="w-4 h-4" strokeWidth={2.5} />
+        <Download className={isSubtle ? "w-3.5 h-3.5 opacity-70" : "w-4 h-4"} strokeWidth={isSubtle ? 2 : 2.5} />
         {t.install}
       </button>
 

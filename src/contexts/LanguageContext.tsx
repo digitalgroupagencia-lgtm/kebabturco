@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedLang, isEmbedded } from "@/lib/embed-mode";
-import { loadSavedLang, saveSavedLang } from "@/lib/customerSession";
+import { loadSavedLang, readLangFromUrl, saveSavedLang } from "@/lib/customerSession";
 
 type Lang = "pt" | "en" | "es" | "fr";
 
@@ -235,6 +235,18 @@ const translations: Translations = {
   customerLabel: { pt: "Cliente", en: "Customer", es: "Cliente", fr: "Client" },
   phoneLabel: { pt: "Telefone", en: "Phone", es: "Teléfono", fr: "Téléphone" },
   tableLabel: { pt: "Mesa", en: "Table", es: "Mesa", fr: "Table" },
+  scanQrHint: {
+    pt: "Para pedir na mesa, escaneie o QR code da sua mesa.",
+    en: "To order at your table, scan the QR code on your table.",
+    es: "Para pedir en la mesa, escanea el código QR de tu mesa.",
+    fr: "Pour commander à table, scannez le QR code de votre table.",
+  },
+  poweredBy: {
+    pt: "Desenvolvido por Euro Business Group",
+    en: "Powered by Euro Business Group",
+    es: "Desarrollado por Euro Business Group",
+    fr: "Propulsé par Euro Business Group",
+  },
   modeLabel: { pt: "Modalidade", en: "Mode", es: "Modalidad", fr: "Mode" },
   paymentStatus: { pt: "Status do pagamento", en: "Payment status", es: "Estado de pago", fr: "État du paiement" },
   estTime: { pt: "Tempo estimado", en: "Estimated time", es: "Tiempo estimado", fr: "Temps estimé" },
@@ -274,7 +286,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   };
 
   useEffect(() => {
-    const fromUrl = getEmbedLang();
+    const fromUrl = getEmbedLang() ?? readLangFromUrl();
     if (fromUrl) setLang(fromUrl);
   }, []);
 
@@ -296,8 +308,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
       setActiveLangs(actives.length ? actives : [primary]);
       setLangIcons((data.language_icons as Partial<Record<Lang, string>>) || {});
       const fromEmbed = isEmbedded() ? getEmbedLang() : null;
+      const fromQr = readLangFromUrl();
       const remembered = loadSavedLang();
-      setLang(fromEmbed ?? remembered ?? primary);
+      setLang(fromEmbed ?? fromQr ?? remembered ?? primary);
     })();
     return () => {
       alive = false;

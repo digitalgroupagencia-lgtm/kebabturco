@@ -18,6 +18,8 @@ import {
   saveSavedMesaToken,
   saveSavedTableNumber,
   shouldSkipLanguageScreen,
+  readLangFromUrl,
+  saveSavedLang,
 } from "@/lib/customerSession";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 
@@ -222,6 +224,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setMesaLocked(true);
       saveSavedMesaToken(mesa.qrToken);
       setOrderType("here");
+      const qrLang = mesa.scanLang || readLangFromUrl();
+      if (qrLang && ["pt", "en", "es", "fr"].includes(qrLang)) {
+        saveSavedLang(qrLang as "pt" | "en" | "es" | "fr");
+      }
       return;
     }
     setMesaLocked(false);

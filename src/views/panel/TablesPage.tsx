@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,22 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Loader2, QrCode, Printer, LayoutGrid, Copy, Download, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Loader2,
+  QrCode,
+  Printer,
+  LayoutGrid,
+  Copy,
+  Download,
+  RefreshCw,
+  Layers,
+} from "lucide-react";
 import { getTableQrUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 import { regenerateTableQrToken } from "@/services/orderService";
+import PremiumTableQrPreview from "@/components/tableQr/PremiumTableQrPreview";
+import { downloadTableQrPng, printTableQrCards, type TableQrExportInput } from "@/lib/tableQr/exportTableQr";
+import { normalizeTableQrLang, type TableQrBranding } from "@/lib/tableQr/labels";
 
 type TableRow = {
   id: string;
@@ -24,36 +37,6 @@ type TableRow = {
   qr_token: string;
 };
 
-function tableQrUrl(tenantMeta: TenantUrlConfig, table: TableRow) {
-  return getTableQrUrl(tenantMeta, { number: table.number, qr_token: table.qr_token });
-}
-
-function svgToPngDownload(svg: SVGSVGElement, filename: string) {
-  const data = new XMLSerializer().serializeToString(svg);
-  const canvas = document.createElement("canvas");
-  const img = new Image();
-  const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
-  const objectUrl = URL.createObjectURL(blob);
-  img.onload = () => {
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, 512, 512);
-    ctx.drawImage(img, 0, 0, 512, 512);
-    canvas.toBlob((pngBlob) => {
-      if (!pngBlob) return;
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(pngBlob);
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(objectUrl);
-    }, "image/png");
-  };
-  img.src = objectUrl;
-}
-
 const TablesPage = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
@@ -61,14 +44,18 @@ const TablesPage = () => {
 
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { tenant: ctxTenant } = useSelectedTenant();
+  const { settings } = useBranding();
   const [tables, setTables] = useState<TableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [newNumber, setNewNumber] = useState("");
   const [newCapacity, setNewCapacity] = useState("4");
+  const [bulkFrom, setBulkFrom] = useState("1");
+  const [bulkTo, setBulkTo] = useState("30");
   const [qrTable, setQrTable] = useState<TableRow | null>(null);
-  const qrSvgRef = useRef<SVGSVGElement>(null);
+  const [primaryLang, setPrimaryLang] = useState("es");
   const [tenantMeta, setTenantMeta] = useState<TenantUrlConfig>({
     slug: "",
     custom_domain: null,
@@ -76,6 +63,15 @@ const TablesPage = () => {
     master_domain: null,
     use_master_domain: false,
   });
+
+  const branding: TableQrBranding = useMemo(
+    () => ({
+      restaurantName: settings?.company_name || "Restaurante",
+      logoUrl: settings?.logo_main_url || null,
+      primaryLang: normalizeTableQrLang(primaryLang),
+    }),
+    [settings?.company_name, settings?.logo_main_url, primaryLang],
+  );
 
   useEffect(() => {
     if (ctxTenant) {
@@ -113,6 +109,27 @@ const TablesPage = () => {
       });
   }, [storeId, ctxTenant]);
 
+  useEffect(() => {
+    if (!storeId) return;
+    supabase
+      .from("totem_config")
+      .select("primary_language")
+      .eq("store_id", storeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.primary_language) setPrimaryLang(String(data.primary_language));
+      });
+  }, [storeId]);
+
+  const tableQrUrl = (table: TableRow) =>
+    getTableQrUrl(tenantMeta, { number: table.number, qr_token: table.qr_token }, { lang: primaryLang });
+
+  const exportInput = (table: TableRow): TableQrExportInput => ({
+    tableNumber: table.number,
+    url: tableQrUrl(table),
+    branding,
+  });
+
   const load = async () => {
     if (!storeId) return;
     setLoading(true);
@@ -149,6 +166,34 @@ const TablesPage = () => {
     }
   };
 
+  const bulkCreateTables = async () => {
+    if (!canManage || !storeId) return;
+    const from = Math.max(1, parseInt(bulkFrom, 10) || 1);
+    const to = Math.max(from, parseInt(bulkTo, 10) || from);
+    if (to - from > 60) {
+      toast.error("Máximo 60 mesas por lote");
+      return;
+    }
+    setBulkSaving(true);
+    const existing = new Set(tables.map((t) => t.number));
+    let created = 0;
+    for (let n = from; n <= to; n++) {
+      const num = String(n);
+      if (existing.has(num)) continue;
+      const { error } = await supabase.from("tables").insert({
+        store_id: storeId,
+        number: num,
+        capacity: 4,
+        is_active: true,
+        qr_token: crypto.randomUUID(),
+      });
+      if (!error) created++;
+    }
+    setBulkSaving(false);
+    toast.success(created ? `${created} mesa(s) criada(s)` : "Todas as mesas do intervalo já existiam");
+    load();
+  };
+
   const toggleActive = async (t: TableRow, active: boolean) => {
     if (!canManage) return;
     const { error } = await supabase.from("tables").update({ is_active: active }).eq("id", t.id);
@@ -157,19 +202,21 @@ const TablesPage = () => {
   };
 
   const copyLink = async (table: TableRow) => {
-    const url = tableQrUrl(tenantMeta, table);
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(tableQrUrl(table));
       toast.success(`Link da mesa ${table.number} copiado`);
     } catch {
       toast.error("Não foi possível copiar o link");
     }
   };
 
-  const downloadQrPng = (table: TableRow, svgEl?: SVGSVGElement | null) => {
-    const svg = svgEl ?? qrSvgRef.current;
-    if (!svg) return;
-    svgToPngDownload(svg, `kebab-turco-mesa-${table.number}-qr.png`);
+  const downloadPremiumPng = async (table: TableRow) => {
+    try {
+      await downloadTableQrPng(exportInput(table), `${branding.restaurantName}-mesa-${table.number}.png`);
+      toast.success(`PNG da mesa ${table.number} descarregado`);
+    } catch {
+      toast.error("Erro ao gerar PNG");
+    }
   };
 
   const regenerateQr = async (table: TableRow) => {
@@ -189,41 +236,20 @@ const TablesPage = () => {
     }
   };
 
-  const printQr = () => {
-    if (!qrTable) return;
-    const url = tableQrUrl(tenantMeta, qrTable);
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(
-      `<html><head><title>Mesa ${qrTable.number} — Kebab Turco</title></head><body style="text-align:center;font-family:sans-serif;padding:40px"><h1>Kebab Turco</h1><h2>Mesa ${qrTable.number}</h2><p>Escaneie para pedir na mesa</p><div id="q"></div><p style="word-break:break-all;font-size:12px;margin-top:16px">${url}</p><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("q"),{text:${JSON.stringify(url)},width:256,height:256});setTimeout(()=>window.print(),500);<\/script></body></html>`,
-    );
-    w.document.close();
+  const printPremiumQr = async (table: TableRow) => {
+    await printTableQrCards([exportInput(table)], `Mesa ${table.number}`);
   };
 
-  const downloadAllQrs = () => {
+  const downloadAllPremium = async () => {
     const active = tables.filter((t) => t.is_active);
     if (!active.length) {
-      toast.error("Nenhuma mesa activa para exportar");
+      toast.error("Nenhuma mesa activa");
       return;
     }
-    const blocks = active
-      .map((t) => {
-        const url = tableQrUrl(tenantMeta, t);
-        return `<section style="page-break-inside:avoid;margin-bottom:48px;text-align:center"><h2 style="font-size:28px;margin:0">Mesa ${t.number}</h2><p style="color:#666">Escaneie para pedir na mesa</p><div id="q-${t.id}"></div><p style="font-size:11px;word-break:break-all;max-width:320px;margin:12px auto">${url}</p></section>`;
-      })
-      .join("");
-    const scripts = active
-      .map((t) => {
-        const url = tableQrUrl(tenantMeta, t);
-        return `new QRCode(document.getElementById("q-${t.id}"),{text:${JSON.stringify(url)},width:220,height:220});`;
-      })
-      .join("");
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(
-      `<html><head><title>QR Codes — Todas as mesas</title></head><body style="font-family:sans-serif;padding:32px">${blocks}<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>${scripts}setTimeout(()=>window.print(),700);<\/script></body></html>`,
+    await printTableQrCards(
+      active.map(exportInput),
+      `QR Codes — ${branding.restaurantName}`,
     );
-    w.document.close();
     toast.success(`${active.length} QR codes prontos para imprimir ou guardar em PDF`);
   };
 
@@ -247,85 +273,108 @@ const TablesPage = () => {
             <LayoutGrid className="h-6 w-6 text-primary" /> {isAdmin ? "Mesas & QR Codes" : "Mesas & QR"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            {isAdmin
-              ? "Crie mesas, gere QR codes definitivos e partilhe com os clientes. Cada QR abre o site já com a mesa correcta (domínio publicado do restaurante)."
-              : "Consulte mesas e descarregue QR codes. Para criar ou alterar mesas, use a administração principal."}
+            QR codes premium com número da mesa, idioma principal ({primaryLang.toUpperCase()}) e token único
+            de segurança. Disponível na administração e no painel do restaurante.
           </p>
         </div>
         {tables.some((t) => t.is_active) && (
-          <Button variant="outline" className="gap-2 shrink-0" onClick={downloadAllQrs}>
-            <Download className="h-4 w-4" /> Baixar todos os QR
+          <Button variant="outline" className="gap-2 shrink-0" onClick={downloadAllPremium}>
+            <Printer className="h-4 w-4" /> Imprimir / PDF — todas
           </Button>
         )}
       </div>
 
       {canManage && (
-        <Card className="p-4 space-y-3">
-          <h2 className="font-bold">Nova mesa</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <Label>Número / nome</Label>
-              <Input
-                value={newNumber}
-                onChange={(e) => setNewNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                placeholder="3"
-              />
+        <>
+          <Card className="p-4 space-y-3">
+            <h2 className="font-bold">Nova mesa</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label>Número / nome</Label>
+                <Input
+                  value={newNumber}
+                  onChange={(e) => setNewNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="3"
+                />
+              </div>
+              <div>
+                <Label>Lugares</Label>
+                <Input type="number" value={newCapacity} onChange={(e) => setNewCapacity(e.target.value)} />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={addTable} disabled={saving} className="w-full gap-2">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Adicionar
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label>Lugares</Label>
-              <Input type="number" value={newCapacity} onChange={(e) => setNewCapacity(e.target.value)} />
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <h2 className="font-bold flex items-center gap-2">
+              <Layers className="h-4 w-4" /> Criar lote de mesas
+            </h2>
+            <p className="text-xs text-muted-foreground">Ex.: Mesa 1 até Mesa 30 — só cria as que ainda não existem.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label>De</Label>
+                <Input value={bulkFrom} onChange={(e) => setBulkFrom(e.target.value.replace(/\D/g, "").slice(0, 3))} />
+              </div>
+              <div>
+                <Label>Até</Label>
+                <Input value={bulkTo} onChange={(e) => setBulkTo(e.target.value.replace(/\D/g, "").slice(0, 3))} />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={bulkCreateTables} disabled={bulkSaving} variant="secondary" className="w-full gap-2">
+                  {bulkSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers className="h-4 w-4" />}
+                  Gerar mesas
+                </Button>
+              </div>
             </div>
-            <div className="flex items-end">
-              <Button onClick={addTable} disabled={saving} className="w-full gap-2">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Adicionar
-              </Button>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tables.map((t) => {
-          const qrUrl = tableQrUrl(tenantMeta, t);
-          return (
-            <Card key={t.id} className={`p-4 space-y-3 ${!t.is_active ? "opacity-60" : ""}`}>
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-black text-primary">Mesa {t.number}</span>
-                {canManage ? (
-                  <Switch checked={t.is_active} onCheckedChange={(v) => toggleActive(t, v)} />
-                ) : (
-                  <span className="text-xs font-semibold text-muted-foreground">{t.is_active ? "Activa" : "Inactiva"}</span>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">{t.capacity} lugares</p>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="flex-1 gap-1 min-w-[100px]" onClick={() => setQrTable(t)}>
-                  <QrCode className="h-4 w-4" /> Ver QR
+        {tables.map((t) => (
+          <Card key={t.id} className={`p-4 space-y-3 ${!t.is_active ? "opacity-60" : ""}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-black tracking-tight">Mesa {t.number}</span>
+              {canManage ? (
+                <Switch checked={t.is_active} onCheckedChange={(v) => toggleActive(t, v)} />
+              ) : (
+                <span className="text-xs font-semibold text-muted-foreground">{t.is_active ? "Activa" : "Inactiva"}</span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{t.capacity} lugares</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="flex-1 gap-1 min-w-[100px]" onClick={() => setQrTable(t)}>
+                <QrCode className="h-4 w-4" /> Ver QR
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(t)}>
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => downloadPremiumPng(t)}>
+                <Download className="h-4 w-4" />
+              </Button>
+              {canManage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  disabled={regeneratingId === t.id}
+                  onClick={() => regenerateQr(t)}
+                >
+                  {regeneratingId === t.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(t)}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-                {canManage && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1"
-                    disabled={regeneratingId === t.id}
-                    onClick={() => regenerateQr(t)}
-                  >
-                    {regeneratingId === t.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
-              </div>
-              <p className="text-[10px] text-muted-foreground break-all">{qrUrl}</p>
-            </Card>
-          );
-        })}
+              )}
+            </div>
+          </Card>
+        ))}
       </div>
 
       {tables.length === 0 && (
@@ -335,23 +384,27 @@ const TablesPage = () => {
       )}
 
       <Dialog open={!!qrTable} onOpenChange={() => setQrTable(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Mesa {qrTable?.number}</DialogTitle>
+            <DialogTitle>QR premium — Mesa {qrTable?.number}</DialogTitle>
           </DialogHeader>
           {qrTable && (
             <div className="flex flex-col items-center gap-4">
-              <QRCodeSVG ref={qrSvgRef} value={tableQrUrl(tenantMeta, qrTable)} size={220} includeMargin />
-              <p className="text-xs text-muted-foreground text-center break-all">{tableQrUrl(tenantMeta, qrTable)}</p>
+              <PremiumTableQrPreview
+                tableNumber={qrTable.number}
+                url={tableQrUrl(qrTable)}
+                branding={branding}
+              />
+              <p className="text-[10px] text-muted-foreground text-center break-all">{tableQrUrl(qrTable)}</p>
               <div className="grid grid-cols-2 gap-2 w-full">
                 <Button variant="outline" onClick={() => copyLink(qrTable)} className="gap-2">
                   <Copy className="h-4 w-4" /> Copiar link
                 </Button>
-                <Button variant="outline" onClick={() => downloadQrPng(qrTable)} className="gap-2">
+                <Button variant="outline" onClick={() => downloadPremiumPng(qrTable)} className="gap-2">
                   <Download className="h-4 w-4" /> Baixar PNG
                 </Button>
-                <Button onClick={printQr} className="col-span-2 gap-2">
-                  <Printer className="h-4 w-4" /> Imprimir QR
+                <Button onClick={() => printPremiumQr(qrTable)} className="col-span-2 gap-2">
+                  <Printer className="h-4 w-4" /> Imprimir / PDF
                 </Button>
                 {canManage && (
                   <Button
@@ -365,7 +418,7 @@ const TablesPage = () => {
                     ) : (
                       <RefreshCw className="h-4 w-4" />
                     )}
-                    Regenerar QR (invalida o anterior)
+                    Regenerar token (invalida QR anterior)
                   </Button>
                 )}
               </div>

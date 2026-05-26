@@ -8,6 +8,7 @@ export interface MesaFromUrl {
   tableId: string;
   qrToken: string;
   locked: boolean;
+  scanLang: string | null;
 }
 
 function readUrlSearch(): string {
@@ -33,6 +34,7 @@ export function useMesaFromUrl(storeId: string | null) {
     const params = new URLSearchParams(searchKey);
     const mode = params.get("mode")?.trim().toLowerCase();
     const tableHint = params.get("table")?.trim() || null;
+    const scanLang = params.get("lang")?.trim() || null;
     const fromUrl = params.get("t")?.trim();
     const token = fromUrl || loadSavedMesaToken();
 
@@ -71,6 +73,7 @@ export function useMesaFromUrl(storeId: string | null) {
           tableId: data.id,
           qrToken: data.qr_token,
           locked: true,
+          scanLang,
         });
       } else {
         clearSavedMesaToken();

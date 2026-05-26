@@ -56,10 +56,32 @@ export function loadCartItemCount(): number {
   }
 }
 
-/** Salta idioma só com pedido activo ou carrinho em curso. */
+export function readLangFromUrl(): SavedLang | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("lang")?.trim().toLowerCase();
+    return raw && VALID_LANGS.has(raw) ? (raw as SavedLang) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hasMesaQrInUrl(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get("t")?.trim());
+  } catch {
+    return false;
+  }
+}
+
+/** Salta idioma com pedido activo, carrinho ou QR de mesa válido na URL. */
 export function shouldSkipLanguageScreen(): boolean {
   if (loadAnyStoredActiveOrder()?.orderId) return true;
   if (loadCartItemCount() > 0) return true;
+  if (hasMesaQrInUrl()) return true;
+  if (loadSavedMesaToken()) return true;
   return false;
 }
 
@@ -72,6 +94,7 @@ export function resolveScreenAfterLanguageSkip(): Screen {
   }
   if (loadCartItemCount() > 0) return "home";
   if (loadSavedOrderType()) return "home";
+  if (hasMesaQrInUrl() || loadSavedMesaToken()) return "orderType";
   return "language";
 }
 

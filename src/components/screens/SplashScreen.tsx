@@ -5,6 +5,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import InstallAppButton from "@/components/InstallAppButton";
+import { hasMesaQrInUrl } from "@/lib/customerSession";
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
@@ -27,8 +28,8 @@ const SplashScreen = () => {
     const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
     if (isPreview) return;
     const timer = setTimeout(() => {
-      // Se houver mais de 1 idioma ativo, abre seleção de idioma primeiro
-      setScreen(activeLangs.length > 1 ? "language" : "orderType");
+      const mesaQr = hasMesaQrInUrl();
+      setScreen(mesaQr ? "orderType" : activeLangs.length > 1 ? "language" : "orderType");
     }, 1800);
     return () => clearTimeout(timer);
   }, [setScreen, activeLangs.length]);
