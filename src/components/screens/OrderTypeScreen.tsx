@@ -17,7 +17,6 @@ type OrderOption = {
   sub: string;
   icon: string | null | undefined;
   Fallback: typeof UtensilsCrossed;
-  cardClass: string;
 };
 
 const OrderTypeScreen = () => {
@@ -87,7 +86,6 @@ const OrderTypeScreen = () => {
       sub: t("eatHereSub"),
       icon: iconDineIn,
       Fallback: UtensilsCrossed,
-      cardClass: "bg-primary text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55)]",
     });
   }
   if (opts.takeaway) {
@@ -97,7 +95,6 @@ const OrderTypeScreen = () => {
       sub: t("takeawaySub"),
       icon: iconTakeaway,
       Fallback: ShoppingBag,
-      cardClass: "bg-primary text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55)]",
     });
   }
   if (opts.delivery) {
@@ -107,27 +104,29 @@ const OrderTypeScreen = () => {
       sub: t("deliverySub"),
       icon: iconDelivery,
       Fallback: Bike,
-      cardClass: "bg-primary text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55)]",
     });
   }
 
   const premiumLayout = enabled.length <= 2;
 
-  const renderOptionIcon = (option: OrderOption, large: boolean) => {
-    const box = large ? "w-[58%] aspect-square" : "w-14 h-14 sm:w-16 sm:h-16";
-    const fallbackSize = large ? "w-16 h-16" : "w-7 h-7";
-    return (
-      <div className={`${box} flex items-center justify-center shrink-0`}>
-        {option.icon ? (
+  const renderOptionVisual = (option: OrderOption, large: boolean) => {
+    if (option.icon) {
+      return (
+        <div className={`w-full ${large ? "aspect-square" : "h-14 sm:h-16"} flex items-center justify-center`}>
           <img
             src={option.icon}
             alt={option.label}
             className="w-full h-full object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.25)]"
             draggable={false}
           />
-        ) : (
-          <option.Fallback className={fallbackSize} strokeWidth={2.2} />
-        )}
+        </div>
+      );
+    }
+    return (
+      <div
+        className={`${large ? "w-full aspect-square" : "w-14 h-14 sm:w-16 sm:h-16"} flex items-center justify-center rounded-3xl bg-secondary/50`}
+      >
+        <option.Fallback className={large ? "w-16 h-16 text-foreground/70" : "w-7 h-7"} strokeWidth={2.2} />
       </div>
     );
   };
@@ -174,7 +173,7 @@ const OrderTypeScreen = () => {
           <p className="text-sm text-muted-foreground text-center">Nenhuma opção de pedido ativa.</p>
         ) : premiumLayout ? (
           <div
-            className="flex flex-row items-stretch justify-center w-full max-w-lg flex-nowrap"
+            className="flex flex-row items-start justify-center w-full max-w-lg flex-nowrap"
             style={{ gap: enabled.length === 1 ? 0 : "1.5rem" }}
           >
             {enabled.map((option) => (
@@ -182,14 +181,12 @@ const OrderTypeScreen = () => {
                 key={option.key}
                 type="button"
                 onClick={() => handleSelect(option.key)}
-                className={`flex-1 min-w-0 max-w-[200px] aspect-square flex flex-col items-center justify-center gap-3 p-4 rounded-[32px] active:scale-95 transition-transform touch-action-manipulation ${option.cardClass} ${
-                  mesaLocked && option.key === "here" ? "ring-4 ring-primary-foreground/30" : ""
-                }`}
+                className="flex-1 min-w-0 max-w-[200px] flex flex-col items-center gap-2 active:scale-95 transition-transform touch-action-manipulation"
               >
-                {renderOptionIcon(option, true)}
-                <div className="text-center px-2 w-full">
-                  <span className="text-lg font-black block leading-tight">{option.label}</span>
-                  <span className="text-xs opacity-90 mt-1 block leading-snug">{option.sub}</span>
+                {renderOptionVisual(option, true)}
+                <div className="text-center w-full px-1">
+                  <span className="text-lg font-black text-foreground block leading-tight">{option.label}</span>
+                  <span className="text-sm text-muted-foreground mt-0.5 block leading-snug">{option.sub}</span>
                 </div>
               </button>
             ))}
@@ -208,7 +205,7 @@ const OrderTypeScreen = () => {
                   mesaLocked && option.key === "here" ? "border-primary ring-2 ring-primary/40" : "border-border/60"
                 }`}
               >
-                {renderOptionIcon(option, false)}
+                {renderOptionVisual(option, false)}
                 <div className="text-center w-full">
                   <span className="text-sm font-black text-foreground block leading-tight">{option.label}</span>
                   <span className="text-[10px] text-muted-foreground mt-0.5 block line-clamp-2 leading-snug">{option.sub}</span>

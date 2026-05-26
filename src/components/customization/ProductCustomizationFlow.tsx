@@ -23,10 +23,9 @@ type Props = {
   onBack: () => void;
 };
 
-function unitLabelFor(config: ProductModifierConfig, index: number, tName: (n: Record<string, string>) => string) {
-  const base = tName(config.unitLabel) || "Unidade";
-  return { es: `${base} ${index + 1}`, pt: `${base} ${index + 1}`, en: `${base} ${index + 1}`, fr: `${base} ${index + 1}` };
-}
+import {
+  comboUnitStepTitle,
+} from "@/lib/modifiers/comboProductRules";
 
 export default function ProductCustomizationFlow({ product, config, editingItem, onBack }: Props) {
   const { t, tProduct } = useLanguage();
@@ -115,8 +114,13 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
     const comboUnits = isCombo
       ? Array.from({ length: config.comboUnitCount }, (_, i) => ({
           unitIndex: i,
-          unitLabel: unitLabelFor(config, i, tProduct),
-          selections: buildSelectionsFromState(unitGroups, unitStates[i] || new Map(), i, unitLabelFor(config, i, tProduct)),
+          unitLabel: comboUnitStepTitle(product, i),
+          selections: buildSelectionsFromState(
+            unitGroups,
+            unitStates[i] || new Map(),
+            i,
+            comboUnitStepTitle(product, i),
+          ),
         }))
       : undefined;
 
@@ -214,10 +218,12 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
 
   const stepTitle = onUnitStep
-    ? `${tProduct(unitLabelFor(config, currentUnitIndex!, tProduct))}`
+    ? tProduct(comboUnitStepTitle(product, currentUnitIndex!))
     : isCombo
       ? t("comboChoices")
       : tProduct(product.name);
+
+  const stepHeading = onUnitStep ? stepTitle : null;
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
@@ -234,8 +240,12 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
             ))}
           </div>
           <p className="text-[11px] font-bold text-muted-foreground mt-2 uppercase tracking-wider">
-            {t("stepOf")} {comboStep + 1} {t("of")} {totalSteps} · {stepTitle}
+            {t("stepOf")} {comboStep + 1} {t("of")} {totalSteps}
+            {!onUnitStep && stepTitle ? ` · ${stepTitle}` : ""}
           </p>
+          {stepHeading && (
+            <h2 className="text-[22px] font-black text-foreground leading-tight mt-2">{stepHeading}</h2>
+          )}
         </div>
       )}
 

@@ -19,10 +19,7 @@ export function selectionsToLegacyFields(allSelections: ModifierSelection[]): {
       for (let i = 0; i < s.quantity; i++) removedIngredients.push(label);
       continue;
     }
-    if (
-      s.groupKind === "extra" ||
-      (s.groupKind === "choice" && s.priceDelta > 0)
-    ) {
+    if (s.groupKind === "extra" || (s.groupKind === "choice" && s.priceDelta > 0)) {
       extras.push({
         id: s.optionId,
         name: s.optionName,
@@ -30,7 +27,6 @@ export function selectionsToLegacyFields(allSelections: ModifierSelection[]): {
         quantity: s.quantity,
       });
     }
-    // substitution: preço via selections, nunca como extra adicionável
   }
 
   return { extras, removedIngredients };
@@ -44,23 +40,6 @@ export function flattenConfiguration(config: CartConfiguration): ModifierSelecti
   return [...global, ...units];
 }
 
-export function configurationSummaryLines(
-  config: CartConfiguration,
-  tName: (n: Record<string, string>) => string,
-): string[] {
-  const lines: string[] = [];
-  for (const s of config.globalSelections) {
-    lines.push(formatSelectionLine(s, tName));
-  }
-  for (const unit of config.comboUnits || []) {
-    const unitName = tName(unit.unitLabel);
-    for (const s of unit.selections) {
-      lines.push(`${unitName}: ${formatSelectionLine(s, tName)}`);
-    }
-  }
-  return lines;
-}
-
 function formatSelectionLine(s: ModifierSelection, tName: (n: Record<string, string>) => string): string {
   const opt = tName(s.optionName);
   if (s.groupKind === "removal") return `Sem ${opt}`;
@@ -70,4 +49,30 @@ function formatSelectionLine(s: ModifierSelection, tName: (n: Record<string, str
   }
   if (s.quantity > 1) return `${s.quantity}× ${opt}`;
   return opt;
+}
+
+/** Opções incluídas por defeito — não poluir o resumo do carrinho. */
+function isIncludedDefaultSelection(s: ModifierSelection): boolean {
+  if (s.groupKind !== "substitution" || s.priceDelta > 0) return false;
+  const label = pickLabel(s.optionName).toLowerCase();
+  return /incluid|included|tradicional|incluíd/.test(label);
+}
+
+export function configurationSummaryLines(
+  config: CartConfiguration,
+  tName: (n: Record<string, string>) => string,
+): string[] {
+  const lines: string[] = [];
+  for (const s of config.globalSelections || []) {
+    if (isIncludedDefaultSelection(s)) continue;
+    lines.push(formatSelectionLine(s, tName));
+  }
+  for (const unit of config.comboUnits || []) {
+    const unitName = tName(unit.unitLabel);
+    for (const s of unit.selections) {
+      if (isIncludedDefaultSelection(s)) continue;
+      lines.push(`${unitName}: ${formatSelectionLine(s, tName)}`);
+    }
+  }
+  return lines;
 }

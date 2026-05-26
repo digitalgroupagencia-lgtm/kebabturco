@@ -2,7 +2,6 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { OrderProvider, useOrder } from "@/contexts/OrderContext";
 import CustomerBottomDock from "@/components/CustomerBottomDock";
-import AppFooter from "@/components/AppFooter";
 import SplashScreen from "@/components/screens/SplashScreen";
 import LanguageScreen from "@/components/screens/LanguageScreen";
 import StoreSelectionScreen from "@/components/screens/StoreSelectionScreen";
@@ -71,7 +70,6 @@ const CustomerShell = () => {
         <div className="h-full min-h-0 flex-1">
           <ScreenRouter />
         </div>
-        {showChrome && <AppFooter />}
       </div>
       {showChrome && <CustomerBottomDock />}
     </div>
