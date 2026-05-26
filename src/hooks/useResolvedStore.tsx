@@ -4,6 +4,11 @@ import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { isReservedAppPath } from "@/lib/appPaths";
 import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
 import { getStoreTenantSlug } from "@/lib/tenantPreview";
+import {
+  KEBAB_FALLBACK_STORE_ID,
+  preferResolvedStores,
+  type StoreOption,
+} from "@/lib/storeResolution";
 
 /**
  * Resolve store_id para a loja pública:
@@ -11,16 +16,10 @@ import { getStoreTenantSlug } from "@/lib/tenantPreview";
  *   2. custom_domain (ex.: kebabturco.net)
  *   3. domínio mestre + path_slug
  *   4. contexto Kebab (localhost, Lovable, kebabturco.net) → slug kebab-turco
- *   5. fallback hardcoded de emergência
+ *   5. fallback hardcoded de emergência (só se não houver dados reais)
  */
 
-export interface StoreOption {
-  id: string;
-  name: string;
-  address: string | null;
-  image_url: string | null;
-  short_description: string | null;
-}
+export type { StoreOption };
 
 interface ResolvedStore {
   storeId: string | null;
@@ -49,7 +48,7 @@ const SELECTED_STORE_KEY = "totem.selectedStoreId";
 const KEBAB_FALLBACK = {
   tenantId: "11111111-1111-1111-1111-111111111111",
   tenantSlug: DEFAULT_TENANT_SLUG,
-  storeId: "22222222-2222-2222-2222-222222222222",
+  storeId: KEBAB_FALLBACK_STORE_ID,
 };
 
 type StorePublicRow = StoreOption & {
@@ -76,22 +75,50 @@ async function fetchActiveStores(filter: { tenantId?: string } = {}): Promise<St
     ? await publicQuery.eq("tenant_id", filter.tenantId)
     : await publicQuery;
 
-  if (!error && data?.length) {
-    return data as StorePublicRow[];
+  let rows = (!error && data?.length ? data : []) as StorePublicRow[];
+
+  if (!rows.length) {
+    const legacyQuery = supabase
+      .from("stores")
+      .select(select)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    const legacy = filter.tenantId
+      ? await legacyQuery.eq("tenant_id", filter.tenantId)
+      : await legacyQuery;
+
+    rows = (legacy.data || []) as StorePublicRow[];
   }
 
-  const legacyQuery = supabase
-    .from("stores")
-    .select(select)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+  if (rows.length && filter.tenantId) {
+    const missingImages = rows.some((row) => !row.image_url);
+    if (missingImages) {
+      const { data: enriched } = await supabase
+        .from("stores")
+        .select("id, name, address, image_url, short_description")
+        .eq("tenant_id", filter.tenantId)
+        .eq("is_active", true);
 
-  const legacy = filter.tenantId
-    ? await legacyQuery.eq("tenant_id", filter.tenantId)
-    : await legacyQuery;
+      if (enriched?.length) {
+        const byId = new Map(enriched.map((row) => [row.id, row]));
+        rows = rows.map((row) => {
+          const full = byId.get(row.id);
+          if (!full) return row;
+          return {
+            ...row,
+            name: row.name || full.name,
+            address: row.address ?? full.address,
+            image_url: row.image_url ?? full.image_url,
+            short_description: row.short_description ?? full.short_description,
+          };
+        });
+      }
+    }
+  }
 
-  return (legacy.data || []) as StorePublicRow[];
+  return rows;
 }
 
 function mapStoreOptions(rows: StorePublicRow[]): StoreOption[] {
@@ -147,6 +174,45 @@ function applyKebabFallback(host: string): {
   };
 }
 
+function resolveSelectedStoreId(stores: StoreOption[]): string | null {
+  try {
+    const saved = localStorage.getItem(SELECTED_STORE_KEY);
+    if (saved && stores.some((s) => s.id === saved)) return saved;
+  } catch {
+    // ignore
+  }
+  if (stores.length === 1) return stores[0].id;
+  return null;
+}
+
+type ResolvedPayload = Omit<ResolvedStore, "setSelectedStoreId">;
+
+function commitResolvedState(prev: ResolvedPayload, next: ResolvedPayload): ResolvedPayload {
+  const stores = preferResolvedStores(prev.stores, next.stores);
+  const storeId =
+    next.storeId && stores.some((s) => s.id === next.storeId)
+      ? next.storeId
+      : stores[0]?.id ?? next.storeId;
+
+  let selectedStoreId = next.selectedStoreId;
+  if (selectedStoreId && !stores.some((s) => s.id === selectedStoreId)) {
+    selectedStoreId = resolveSelectedStoreId(stores);
+  }
+  if (!selectedStoreId) {
+    selectedStoreId = resolveSelectedStoreId(stores);
+  }
+
+  return {
+    storeId,
+    selectedStoreId,
+    stores,
+    tenantId: next.tenantId ?? prev.tenantId,
+    tenantSlug: next.tenantSlug ?? prev.tenantSlug,
+    basePath: next.basePath || prev.basePath,
+    loading: next.loading,
+  };
+}
+
 export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<ResolvedStore, "setSelectedStoreId">>({
     storeId: null,
@@ -165,20 +231,22 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     const firstSeg = pathSegments[0] === "preview" ? pathSegments[1] || null : pathSegments[0] || null;
     const tenantParam = getStoreTenantSlug();
 
-    const timeout = window.setTimeout(() => {
-      if (!active) return;
-      if (!isDefaultKebabContextHost(host)) return;
-      const fb = applyKebabFallback(host);
-      setState({
-        storeId: fb.storeId,
-        selectedStoreId: fb.storeId,
-        stores: fb.stores,
-        tenantId: fb.tenant.id,
-        tenantSlug: fb.tenant.slug,
-        basePath: "",
-        loading: false,
+    const emergencyTimeout = window.setTimeout(() => {
+      if (!active || !isDefaultKebabContextHost(host)) return;
+      setState((prev) => {
+        if (!prev.loading || prev.stores.length > 0) return prev;
+        const fb = applyKebabFallback(host);
+        return commitResolvedState(prev, {
+          storeId: fb.storeId,
+          selectedStoreId: fb.storeId,
+          stores: fb.stores,
+          tenantId: fb.tenant.id,
+          tenantSlug: fb.tenant.slug,
+          basePath: "",
+          loading: false,
+        });
       });
-    }, 5000);
+    }, 10000);
 
     (async () => {
       let tenant: TenantRow | null = null;
@@ -239,60 +307,66 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        if (!storeId && isDefaultKebabContextHost(host)) {
+        if (!stores.length && isDefaultKebabContextHost(host)) {
+          const list = await fetchActiveStores({ tenantId: KEBAB_FALLBACK.tenantId });
+          if (list.length) {
+            stores = mapStoreOptions(list);
+            storeId = stores[0]?.id ?? null;
+            if (!tenant) {
+              tenant = applyKebabFallback(host).tenant;
+            }
+          }
+        }
+
+        if (!storeId && !stores.length && isDefaultKebabContextHost(host)) {
           const fb = applyKebabFallback(host);
           storeId = fb.storeId;
-          if (!tenant) tenant = fb.tenant;
-          if (!stores.length) {
-            const list = await fetchActiveStores({ tenantId: KEBAB_FALLBACK.tenantId });
-            stores = mapStoreOptions(
-              list.length
-                ? list
-                : [{
-                    id: fb.storeId,
-                    name: "Kebab Turco",
-                    address: null,
-                    image_url: null,
-                    short_description: null,
-                  }],
-            );
-          }
+          tenant = tenant ?? fb.tenant;
+          stores = fb.stores;
         }
       } catch (err) {
         console.error("[ResolvedStore] tenant/store resolution failed", err);
         if (isDefaultKebabContextHost(host)) {
-          const fb = applyKebabFallback(host);
-          storeId = fb.storeId;
-          tenant = fb.tenant;
-          stores = fb.stores;
+          setState((prev) => {
+            if (prev.stores.length > 0) {
+              return { ...prev, loading: false };
+            }
+            const fb = applyKebabFallback(host);
+            return commitResolvedState(prev, {
+              storeId: fb.storeId,
+              selectedStoreId: fb.storeId,
+              stores: fb.stores,
+              tenantId: fb.tenant.id,
+              tenantSlug: fb.tenant.slug,
+              basePath: "",
+              loading: false,
+            });
+          });
+          return;
         }
       }
 
       if (!active) return;
+      window.clearTimeout(emergencyTimeout);
 
-      let selected: string | null = null;
-      try {
-        const saved = localStorage.getItem(SELECTED_STORE_KEY);
-        if (saved && stores.some((s) => s.id === saved)) selected = saved;
-      } catch {
-        // ignore
-      }
-      if (!selected && stores.length === 1) selected = stores[0].id;
+      const selected = resolveSelectedStoreId(stores);
 
-      setState({
-        storeId,
-        selectedStoreId: selected,
-        stores,
-        tenantId: tenant?.id ?? null,
-        tenantSlug: tenant?.slug ?? null,
-        basePath,
-        loading: false,
-      });
+      setState((prev) =>
+        commitResolvedState(prev, {
+          storeId,
+          selectedStoreId: selected,
+          stores,
+          tenantId: tenant?.id ?? null,
+          tenantSlug: tenant?.slug ?? null,
+          basePath,
+          loading: false,
+        }),
+      );
     })();
 
     return () => {
       active = false;
-      window.clearTimeout(timeout);
+      window.clearTimeout(emergencyTimeout);
     };
   }, []);
 

@@ -5,8 +5,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
-import { MapPin, ChevronRight, Store as StoreIcon } from "lucide-react";
-
+import { MapPin, ChevronRight, Store as StoreIcon, Loader2 } from "lucide-react";
 
 const TITLE: Record<string, string> = {
   pt: "Escolha a unidade",
@@ -40,6 +39,18 @@ const StoreSelectionScreen = () => {
     setSelectedStoreId(id);
     setScreen("orderType");
   };
+
+  if (loading || stores.length === 0) {
+    return (
+      <div
+        className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-background"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar" />
+        <p className="text-sm text-muted-foreground font-semibold">{SUBTITLE[lang] || SUBTITLE.es}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background animate-fade-in">
