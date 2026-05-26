@@ -42,8 +42,9 @@ describe("opsOrderUi", () => {
     expect(ETA_QUICK_OPTIONS).toEqual([10, 15, 20, 25, 30]);
   });
 
-  it("shows compact accept label for pending orders", () => {
-    expect(getCompactActionLabel(baseOrder)).toBe("Aceitar");
+  it("blocks pending takeaway until payment is confirmed", () => {
+    expect(getCompactActionLabel(baseOrder)).toBe(null);
+    expect(getCompactActionLabel({ ...baseOrder, payment_status: "paid" } as PanelOrder)).toBe("Aceitar");
   });
 
   it("shows assign driver label for ready delivery orders", () => {
