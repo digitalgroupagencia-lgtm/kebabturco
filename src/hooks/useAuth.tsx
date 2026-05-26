@@ -2,48 +2,58 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+type AuthState = {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+};
+
+const listeners = new Set<(state: AuthState) => void>();
+let authState: AuthState = { user: null, session: null, loading: true };
+let authStarted = false;
+let initialSessionResolved = false;
+
+function publish(next: AuthState) {
+  authState = next;
+  listeners.forEach((listener) => listener(authState));
+}
+
+function applySession(nextSession: Session | null, loading = false) {
+  publish({
+    session: nextSession,
+    user: nextSession?.user ?? null,
+    loading,
+  });
+}
+
+function startAuthStore() {
+  if (authStarted) return;
+  authStarted = true;
+
+  supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
+    initialSessionResolved = true;
+    applySession(nextSession, false);
+  });
+
+  supabase.auth.onAuthStateChange((_event, nextSession) => {
+    // O evento inicial pode chegar como null antes do getSession() ler a sessão
+    // persistida no localStorage. Não finalizar o loading nesse caso evita o
+    // loop /panel → /auth → /panel → /admin visto no preview.
+    if (!initialSessionResolved && !nextSession) return;
+    applySession(nextSession, false);
+  });
+}
+
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<AuthState>(authState);
 
   useEffect(() => {
-    let active = true;
-    let initialSessionResolved = false;
-
-    const applySession = (nextSession: Session | null) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-    };
-
-    const finishInitialLoad = (nextSession: Session | null) => {
-      if (!active) return;
-      initialSessionResolved = true;
-      applySession(nextSession);
-      setLoading(false);
-    };
-
-    supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
-      finishInitialLoad(nextSession);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!active) return;
-      applySession(nextSession);
-
-      // O evento inicial pode chegar como null antes do getSession() ler a sessão
-      // persistida no localStorage. Não finalizar o loading nesse caso evita o
-      // loop /panel → /auth → /panel → /admin visto no preview.
-      if (initialSessionResolved || nextSession) {
-        setLoading(false);
-      }
-    });
+    startAuthStore();
+    listeners.add(setState);
+    setState(authState);
 
     return () => {
-      active = false;
-      subscription.unsubscribe();
+      listeners.delete(setState);
     };
   }, []);
 
@@ -51,5 +61,5 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, session, loading, signOut };
+  return { user: state.user, session: state.session, loading: state.loading, signOut };
 }
