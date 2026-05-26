@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Minus, Plus, X } from "lucide-react";
 import { useCart, type CartItem } from "@/contexts/CartContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { isDrinkProduct } from "@/lib/modifiers/drinkProduct";
 import { type Extra, type Size, type Variant } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import QuantitySelector from "@/components/QuantitySelector";
@@ -17,6 +17,7 @@ import {
   parseRemovableIngredients,
 } from "@/lib/parseProductCustomization";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ingredientMap: Record<string, string[]> = {
   "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
@@ -66,6 +67,8 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
   const descriptionText = tProduct(product.description);
   const nameText = tProduct(product.name);
 
+  const isDrink = isDrinkProduct(product);
+
   const effectiveVariants = useMemo(() => {
     if (product.variants?.length) return product.variants;
     const meat = inferVariantsFromText(descriptionText) || inferVariantsFromText(nameText);
@@ -74,9 +77,10 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
   }, [product, descriptionText, nameText]);
 
   const requiresVariant = effectiveVariants.length >= 2;
-  const isMeatChoice = isMeatVariantSet(effectiveVariants);
+  const isMeatChoice = !isDrink && isMeatVariantSet(effectiveVariants);
 
   const ingredientOptions = useMemo(() => {
+    if (isDrink) return [];
     const variantLabelKeys = new Set(effectiveVariants.map((v) => tProduct(v.name).toLowerCase()));
     const fromModifiers = (product.ingredients || []).filter(
       (ing) => !isMeatChoiceLabel(ing) && !variantLabelKeys.has(ing.toLowerCase()),
@@ -86,7 +90,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
     );
     const fromCategory = ingredientMap[product.category] || [];
     return mergeRemovableIngredients(fromModifiers, fromDescription, fromCategory);
-  }, [product, descriptionText, requiresVariant, effectiveVariants, tProduct]);
+  }, [product, descriptionText, requiresVariant, effectiveVariants, tProduct, isDrink]);
 
   const availableExtras = useMemo(
     () => product.extras ?? (extrasByCategory[product.category] || []),
@@ -214,7 +218,13 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
             {effectiveVariants.length > 0 && (
               <div>
                 <h3 className="text-[17px] font-black text-foreground mb-2.5">
-                  {requiresVariant ? (isMeatChoice ? "Elige la carne" : "Elige tu refresco") : t("choose")}
+                  {requiresVariant
+                    ? isMeatChoice
+                      ? "Elige la carne"
+                      : isDrink
+                        ? "Elige tu refresco"
+                        : "Elige tu opción"
+                    : t("choose")}
                 </h3>
                 <div className={`grid gap-2 ${effectiveVariants.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
                   {effectiveVariants.map((v) => {

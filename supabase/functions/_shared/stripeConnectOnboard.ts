@@ -14,6 +14,7 @@ import {
   resolveStripeConnectContext,
   type StripeConnectContext,
 } from "./stripePlatform.ts";
+import { provisionTestConnectAccount } from "./stripeConnectTestProvision.ts";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -307,6 +308,34 @@ export async function handleStripeConnectRequest(
   }
 
   const store = await assertStoreAccess(service, userId, storeId);
+
+  if (mode === "provision_test") {
+    const result = await provisionTestConnectAccount(service, store);
+    const testMeta = platformStatusPayload(
+      {
+        keyMode: "test",
+        connectLiveAllowed: false,
+        platformProfileComplete: true,
+        pendingVerification: true,
+        productionBlocked: true,
+        testKeysConfigured: true,
+        message: result.message,
+        adminMessage: result.message,
+      },
+      "test",
+    );
+    return json({
+      accountId: result.accountId,
+      provisioned: true,
+      simulated: result.simulated,
+      ready: result.status.chargesEnabled && result.status.onboardingCompleted,
+      connectEnvironment: "test",
+      message: result.message,
+      ...statusPayload(result.status, "test"),
+      ...testMeta,
+    });
+  }
+
   let ctx: StripeConnectContext;
   try {
     ctx = await loadConnectContext(store);
@@ -334,14 +363,31 @@ export async function handleStripeConnectRequest(
 
   if (mode === "embedded_onboarding" || mode === "embedded_management" || mode === "account_session") {
     const sessionMode = mode === "account_session" ? "embedded_onboarding" : mode;
-    const clientSecret = await createEmbeddedAccountSession(stripe, accountId, sessionMode);
-    return json({
-      clientSecret,
-      accountId,
-      mode: sessionMode,
-      connectEnvironment: environment,
-      ...meta,
-    });
+    try {
+      const clientSecret = await createEmbeddedAccountSession(stripe, accountId, sessionMode);
+      return json({
+        clientSecret,
+        accountId,
+        mode: sessionMode,
+        connectEnvironment: environment,
+        ...meta,
+      });
+    } catch (e) {
+      if (environment === "test" || ctx.platform.productionBlocked) {
+        return json(
+          {
+            error:
+              "Formulário embutido indisponível em modo teste — use «Activar recebimentos de teste» para continuar.",
+            code: "embedded_unavailable_use_test_provision",
+            connectEnvironment: "test",
+            useTestProvision: true,
+            ...meta,
+          },
+          503,
+        );
+      }
+      throw e;
+    }
   }
 
   return json({ error: "Modo inválido — use embedded_onboarding." }, 400);

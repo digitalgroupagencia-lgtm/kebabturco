@@ -9,10 +9,11 @@ export type StoreConnectPaymentRow = {
   stripe_charges_enabled: boolean;
   stripe_onboarding_completed: boolean;
   stripe_payouts_enabled: boolean;
+  stripe_connect_test_simulated?: boolean;
 };
 
 const STORE_CONNECT_SELECT =
-  "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled";
+  "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_connect_test_simulated";
 
 const STORE_CONNECT_SELECT_LEGACY =
   "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled";
@@ -42,9 +43,27 @@ export async function loadStoreConnectPaymentRow(
     }
     return {
       store: {
-        ...(legacy.data as Omit<StoreConnectPaymentRow, "stripe_connect_environment">),
+        ...(legacy.data as Omit<StoreConnectPaymentRow, "stripe_connect_environment" | "stripe_connect_test_simulated">),
         stripe_connect_environment: null,
+        stripe_connect_test_simulated: false,
       },
+      error: null,
+    };
+  }
+
+  if (String(error.message).includes("stripe_connect_test_simulated")) {
+    const partial = await supabase
+      .from("stores")
+      .select(
+        "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
+      )
+      .eq("id", storeId)
+      .maybeSingle();
+    if (partial.error || !partial.data) {
+      return { store: null, error: partial.error?.message ?? error.message };
+    }
+    return {
+      store: { ...(partial.data as StoreConnectPaymentRow), stripe_connect_test_simulated: false },
       error: null,
     };
   }

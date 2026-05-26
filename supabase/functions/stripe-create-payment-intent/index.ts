@@ -138,7 +138,8 @@ Deno.serve(async (req) => {
     }
 
     const connectEnv = await resolveStoreConnectEnvironment(store);
-    const stripeKey = pickStripeSecretForEnvironment(connectEnv);
+    const testSimulated = Boolean(store.stripe_connect_test_simulated);
+    const stripeKey = pickStripeSecretForEnvironment(connectEnv === "test" || testSimulated ? "test" : connectEnv);
     if (!stripeKey) {
       return json(
         {
@@ -168,26 +169,40 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    const intent = await stripe.paymentIntents.create({
-      amount: amountCents,
-      currency: "eur",
-      application_fee_amount: applicationFeeCents,
-      transfer_data: { destination: store.stripe_connect_account_id },
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        ...safeMeta,
-        store_id: storeId,
-        order_type: orderType || "dine_in",
-        stripe_connect_account_id: store.stripe_connect_account_id,
-        restaurant_portion_cents: String(restaurantPortionCents),
-        online_service_fee_cents: String(onlineServiceFeeCents),
-        platform_fee_cents: String(PLATFORM_FEE_CENTS),
-        estimated_stripe_fee_cents: String(estimatedStripeFeeCents),
-        subtotal_cents: String(subtotalCents),
-        delivery_cents: String(deliveryCents),
-        discount_cents: String(discountCents),
-      },
-    });
+
+    const baseMeta = {
+      ...safeMeta,
+      store_id: storeId,
+      order_type: orderType || "dine_in",
+      stripe_connect_account_id: store.stripe_connect_account_id ?? "",
+      restaurant_portion_cents: String(restaurantPortionCents),
+      online_service_fee_cents: String(onlineServiceFeeCents),
+      platform_fee_cents: String(PLATFORM_FEE_CENTS),
+      estimated_stripe_fee_cents: String(estimatedStripeFeeCents),
+      subtotal_cents: String(subtotalCents),
+      delivery_cents: String(deliveryCents),
+      discount_cents: String(discountCents),
+    };
+
+    const intent = testSimulated
+      ? await stripe.paymentIntents.create({
+          amount: amountCents,
+          currency: "eur",
+          automatic_payment_methods: { enabled: true },
+          metadata: {
+            ...baseMeta,
+            test_simulated: "true",
+            connect_mode: "test_simulated",
+          },
+        })
+      : await stripe.paymentIntents.create({
+          amount: amountCents,
+          currency: "eur",
+          application_fee_amount: applicationFeeCents,
+          transfer_data: { destination: store.stripe_connect_account_id! },
+          automatic_payment_methods: { enabled: true },
+          metadata: baseMeta,
+        });
 
     return json({
       clientSecret: intent.client_secret,
@@ -198,7 +213,8 @@ Deno.serve(async (req) => {
       platformFeeCents: PLATFORM_FEE_CENTS,
       estimatedStripeFeeCents,
       stripeConnectAccountId: store.stripe_connect_account_id,
-      connectEnvironment: connectEnv === "test" ? "test" : "live",
+      connectEnvironment: connectEnv === "test" || testSimulated ? "test" : "live",
+      testSimulated,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento";

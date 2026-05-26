@@ -8,13 +8,15 @@ import {
   ConnectPayouts,
 } from "@stripe/react-connect-js";
 import { loadConnectAndInitialize, type StripeConnectInstance } from "@stripe/connect-js";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   getStripePublishableKeyForEnvironment,
   type StripePublishableEnvironment,
 } from "@/lib/stripePublishableKey";
 import {
   createStripeConnectEmbeddedSession,
+  provisionTestStripeConnect,
   syncStripeConnectStatus,
 } from "@/services/orderService";
 
@@ -24,34 +26,55 @@ type Props = {
   storeId: string;
   variant: Variant;
   connectEnvironment?: StripePublishableEnvironment;
+  productionBlocked?: boolean;
   onComplete?: () => void;
+  onTestProvisioned?: (message: string) => void;
 };
 
 export default function StripeConnectEmbeddedPanel({
   storeId,
   variant,
   connectEnvironment = "live",
+  productionBlocked = false,
   onComplete,
+  onTestProvisioned,
 }: Props) {
-  const publishableKey = getStripePublishableKeyForEnvironment(connectEnvironment);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [busy, setBusy] = useState(false);
   const [sessionEnvironment, setSessionEnvironment] = useState<StripePublishableEnvironment>(connectEnvironment);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [useTestProvision, setUseTestProvision] = useState(false);
+  const [testProvisionBusy, setTestProvisionBusy] = useState(false);
 
   const sessionMode = variant === "onboarding" ? "embedded_onboarding" : "embedded_management";
+  const preferTest = connectEnvironment === "test" || productionBlocked;
+
+  const publishableKey = getStripePublishableKeyForEnvironment(sessionEnvironment);
 
   const connectInstance = useMemo((): StripeConnectInstance | null => {
+    if (loadError || useTestProvision) return null;
     const key = getStripePublishableKeyForEnvironment(sessionEnvironment);
     if (!key) return null;
     void refreshNonce;
     return loadConnectAndInitialize({
       publishableKey: key,
       fetchClientSecret: async () => {
-        const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
-        if (session.connectEnvironment) {
-          setSessionEnvironment(session.connectEnvironment);
+        try {
+          setLoadError(null);
+          const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
+          if (session.connectEnvironment) {
+            setSessionEnvironment(session.connectEnvironment);
+          }
+          return session.clientSecret;
+        } catch (e) {
+          const err = e as Error & { code?: string };
+          const msg = err.message || "Não foi possível abrir o formulário de recebimentos.";
+          setLoadError(msg);
+          if (preferTest || err.code === "embedded_unavailable_use_test_provision") {
+            setUseTestProvision(true);
+          }
+          throw e;
         }
-        return session.clientSecret;
       },
       appearance: {
         overlays: "dialog",
@@ -62,7 +85,7 @@ export default function StripeConnectEmbeddedPanel({
         },
       },
     });
-  }, [sessionEnvironment, storeId, sessionMode, refreshNonce]);
+  }, [sessionEnvironment, storeId, sessionMode, refreshNonce, loadError, useTestProvision, preferTest]);
 
   const finish = useCallback(async () => {
     setBusy(true);
@@ -74,15 +97,99 @@ export default function StripeConnectEmbeddedPanel({
     }
   }, [storeId, onComplete]);
 
-  const reloadSession = () => setRefreshNonce((n) => n + 1);
+  const activateTestReceivables = async () => {
+    setTestProvisionBusy(true);
+    try {
+      const result = await provisionTestStripeConnect(storeId);
+      onTestProvisioned?.(result.message);
+      onComplete?.();
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Erro ao activar recebimentos de teste.");
+    } finally {
+      setTestProvisionBusy(false);
+    }
+  };
+
+  const reloadSession = () => {
+    setLoadError(null);
+    setUseTestProvision(false);
+    setRefreshNonce((n) => n + 1);
+  };
+
+  if (!publishableKey && preferTest && (loadError || useTestProvision || variant === "onboarding")) {
+    return (
+      <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-3">
+        <div className="flex gap-2 items-start">
+          <AlertCircle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-sm">
+            <p className="font-black text-amber-900 dark:text-amber-200">
+              Modo teste activo — conta simulada para validação do checkout
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              O formulário embutido da Stripe não está disponível enquanto a plataforma aguarda aprovação. Pode activar
+              recebimentos de teste com um clique — sem dinheiro real.
+            </p>
+            {loadError && (
+              <p className="text-xs text-muted-foreground pt-1">{loadError}</p>
+            )}
+          </div>
+        </div>
+        <Button
+          type="button"
+          className="w-full h-11 font-black"
+          disabled={testProvisionBusy}
+          onClick={() => void activateTestReceivables()}
+        >
+          {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Activar recebimentos de teste
+        </Button>
+      </div>
+    );
+  }
 
   if (!publishableKey && !getStripePublishableKeyForEnvironment(sessionEnvironment)) {
     return (
-      <p className="text-sm text-muted-foreground p-4 border border-dashed rounded-xl">
-        {connectEnvironment === "test"
-          ? "Modo teste indisponível — falta a chave publicável de teste no site."
-          : "Recebimentos online indisponíveis neste momento."}
-      </p>
+      <div className="rounded-xl border border-dashed p-4 space-y-3">
+        <p className="text-sm text-muted-foreground">
+          {connectEnvironment === "test"
+            ? "Modo teste indisponível — falta a chave publicável de teste no site. Pode ainda activar recebimentos de teste pelo botão abaixo."
+            : "Recebimentos online indisponíveis neste momento."}
+        </p>
+        {preferTest && (
+          <Button
+            type="button"
+            className="w-full h-11 font-black"
+            disabled={testProvisionBusy}
+            onClick={() => void activateTestReceivables()}
+          >
+            {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Activar recebimentos de teste
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (useTestProvision && preferTest) {
+    return (
+      <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-3">
+        <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+          Modo teste activo. Conta de recebimentos simulada para validação do checkout.
+        </p>
+        {loadError && <p className="text-xs text-muted-foreground">{loadError}</p>}
+        <Button
+          type="button"
+          className="w-full h-11 font-black"
+          disabled={testProvisionBusy}
+          onClick={() => void activateTestReceivables()}
+        >
+          {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Activar recebimentos de teste
+        </Button>
+        <button type="button" onClick={reloadSession} className="text-xs text-primary font-semibold underline">
+          Tentar formulário Stripe novamente
+        </button>
+      </div>
     );
   }
 
@@ -101,13 +208,20 @@ export default function StripeConnectEmbeddedPanel({
           Modo teste — dados simulados, sem dinheiro real.
         </p>
       )}
+      {loadError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-muted-foreground">
+          {loadError}
+        </div>
+      )}
       {busy && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 rounded-xl">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       )}
       <ConnectComponentsProvider connectInstance={connectInstance}>
-        <ConnectNotificationBanner collectionOptions={{ fields: "currently_due", futureRequirements: "omit" }} />
+        {variant === "management" && (
+          <ConnectNotificationBanner collectionOptions={{ fields: "currently_due", futureRequirements: "omit" }} />
+        )}
         {variant === "onboarding" ? (
           <ConnectAccountOnboarding
             onExit={() => {

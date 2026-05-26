@@ -29,7 +29,7 @@ const ProductScreen = () => {
 
   const { items } = useCart();
   const { t } = useLanguage();
-  const { products } = useMenuData();
+  const { products, loading: menuLoading } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
   const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
     useEffectiveModifierConfig(product);
@@ -38,6 +38,14 @@ const ProductScreen = () => {
     () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
     [editingCartItemId, items],
   );
+
+  if (menuLoading || (selectedProductId && !product)) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center">
+        <PageSpinner />
+      </div>
+    );
+  }
 
   if (!product) {
     return (

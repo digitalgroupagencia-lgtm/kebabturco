@@ -11,6 +11,7 @@ export type StoreStripeSettings = {
 
 export type StoreFinancialProfile = StoreStripeSettings & {
   stripe_connect_environment?: "live" | "test" | null;
+  stripe_connect_test_simulated?: boolean;
   stripe_onboarding_completed: boolean;
   stripe_payouts_enabled: boolean;
   stripe_iban_last4: string | null;
@@ -148,15 +149,15 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
 
 export async function fetchStoreFinancialProfile(storeId: string): Promise<StoreFinancialProfile | null> {
   const withEnv =
-    "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
+    "stripe_connect_account_id, stripe_connect_environment, stripe_connect_test_simulated, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
   const legacy =
     "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
 
   let { data, error } = await supabase.from("stores").select(withEnv).eq("id", storeId).maybeSingle();
 
-  if (error?.message?.includes("stripe_connect_environment")) {
+  if (error?.message?.includes("stripe_connect_environment") || error?.message?.includes("stripe_connect_test_simulated")) {
     const retry = await supabase.from("stores").select(legacy).eq("id", storeId).maybeSingle();
-    data = retry.data ? { ...retry.data, stripe_connect_environment: null } : null;
+    data = retry.data ? { ...retry.data, stripe_connect_environment: null, stripe_connect_test_simulated: false } : null;
     error = retry.error;
   }
 
@@ -372,6 +373,20 @@ export async function fetchStripePlatformStatus(storeId?: string): Promise<Strip
 export async function syncStripeConnectStatus(storeId: string): Promise<StripeConnectStatus> {
   const data = await invokeConnectFunction({ storeId, mode: "sync_status" });
   return data as StripeConnectStatus;
+}
+
+export async function provisionTestStripeConnect(storeId: string) {
+  const data = await invokeConnectFunction({ storeId, mode: "provision_test" });
+  return data as {
+    accountId: string;
+    provisioned: boolean;
+    simulated: boolean;
+    ready: boolean;
+    connectEnvironment: "test";
+    message: string;
+    chargesEnabled?: boolean;
+    onboardingCompleted?: boolean;
+  };
 }
 
 /** @deprecated Usar createStripeConnectEmbeddedSession — onboarding embebido no painel */

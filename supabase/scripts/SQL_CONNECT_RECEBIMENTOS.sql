@@ -16,6 +16,12 @@ ALTER TABLE public.stores
 
 COMMENT ON COLUMN public.stores.stripe_connect_environment IS 'live ou test — ambiente da conta Connect do restaurante';
 
+ALTER TABLE public.stores
+  ADD COLUMN IF NOT EXISTS stripe_connect_test_simulated boolean NOT NULL DEFAULT false;
+
+COMMENT ON COLUMN public.stores.stripe_connect_test_simulated IS
+  'True quando recebimentos de teste foram activados sem onboarding completo — sem dinheiro real.';
+
 -- Garantir loja activa para o tenant kebab-turco
 UPDATE public.stores s
 SET is_active = true, updated_at = now()

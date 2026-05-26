@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   fetchStoreFinancialProfile,
   fetchStripePlatformStatus,
+  provisionTestStripeConnect,
   syncStripeConnectStatus,
   type StoreFinancialProfile,
   type StripePlatformStatus,
@@ -57,6 +58,7 @@ const FinancePage = () => {
   const [platformStatus, setPlatformStatus] = useState<StripePlatformStatus | null>(null);
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
+  const [testProvisionBusy, setTestProvisionBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!storeId) return;
@@ -107,6 +109,21 @@ const FinancePage = () => {
     await refreshStatus();
   }, [refreshStatus]);
 
+  const activateTestReceivables = useCallback(async () => {
+    if (!storeId) return;
+    setTestProvisionBusy(true);
+    try {
+      const result = await provisionTestStripeConnect(storeId);
+      await load();
+      toast.success(result.message || "Recebimentos de teste activos");
+      setEmbeddedMode("none");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos de teste");
+    } finally {
+      setTestProvisionBusy(false);
+    }
+  }, [storeId, load]);
+
   const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
   const exampleOnlineFee = computeOnlineServiceFeeEur(20);
 
@@ -131,6 +148,7 @@ const FinancePage = () => {
     "live";
   const productionBlocked = Boolean(platformStatus?.productionBlocked);
   const testModeActive = connectEnv === "test";
+  const testSimulated = Boolean(profile?.stripe_connect_test_simulated);
   const canStartConnect =
     !productionBlocked ||
     testModeActive ||
@@ -229,23 +247,43 @@ const FinancePage = () => {
             <div>
               <p className="font-black text-base">Conectar recebimentos</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Preencha aqui os dados da empresa, identidade e conta bancária. Tudo fica dentro deste painel — sem
-                sair para outro site.
+                {productionBlocked
+                  ? "A plataforma real ainda aguarda aprovação da Stripe. Use recebimentos de teste para validar pedidos e pagamento com cartão simulado."
+                  : "Preencha aqui os dados da empresa, identidade e conta bancária. Tudo fica dentro deste painel — sem sair para outro site."}
               </p>
               {connectBlockedMessage && (
                 <p className="text-sm text-amber-800 dark:text-amber-300 mt-2 font-semibold">{connectBlockedMessage}</p>
               )}
             </div>
           </div>
-          {canStartConnect ? (
+          {(productionBlocked || testModeActive || platformStatus?.testKeysConfigured) && (
+            <Button
+              className="w-full h-12 font-black text-base bg-amber-600 hover:bg-amber-700 text-white"
+              disabled={testProvisionBusy}
+              onClick={() => void activateTestReceivables()}
+            >
+              {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Activar recebimentos de teste
+            </Button>
+          )}
+          {canStartConnect && !productionBlocked && (
             <Button
               className="w-full h-12 font-black text-base"
               onClick={() => setEmbeddedMode("onboarding")}
             >
               Conectar recebimentos do restaurante
-              {productionBlocked && !testModeActive ? " (modo teste)" : ""}
             </Button>
-          ) : (
+          )}
+          {canStartConnect && productionBlocked && (
+            <Button
+              variant="outline"
+              className="w-full h-11 font-bold"
+              onClick={() => setEmbeddedMode("onboarding")}
+            >
+              Abrir formulário Stripe (opcional)
+            </Button>
+          )}
+          {!canStartConnect && !productionBlocked && (
             <p className="text-sm text-muted-foreground text-center py-2">
               Aguarde aprovação da plataforma ou configure chaves de teste para continuar.
             </p>
@@ -265,7 +303,9 @@ const FinancePage = () => {
             storeId={storeId}
             variant="onboarding"
             connectEnvironment={testModeActive || productionBlocked ? "test" : "live"}
+            productionBlocked={productionBlocked}
             onComplete={onEmbeddedComplete}
+            onTestProvisioned={(msg) => toast.success(msg)}
           />
         </div>
       )}
@@ -274,7 +314,9 @@ const FinancePage = () => {
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 shrink-0" />
           {testModeActive
-            ? "Recebimentos em modo teste — cartão simulado, sem dinheiro real."
+            ? testSimulated
+              ? "Recebimentos de teste simulados — checkout disponível, sem dinheiro real."
+              : "Recebimentos em modo teste — cartão simulado, sem dinheiro real."
             : "Recebimentos online activos — cartão, Apple Pay e Google Pay."}
         </div>
       )}
@@ -302,6 +344,7 @@ const FinancePage = () => {
             storeId={storeId}
             variant="management"
             connectEnvironment={connectEnv}
+            productionBlocked={productionBlocked}
             onComplete={onEmbeddedComplete}
           />
         </div>

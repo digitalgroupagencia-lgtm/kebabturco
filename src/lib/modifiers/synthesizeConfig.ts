@@ -8,6 +8,12 @@ import { parseRemovableIngredients } from "@/lib/parseProductCustomization";
 const SYNTH_PREFIX = "synth";
 
 const MEAT_CATEGORY_RE = /pita|kebab|rollo|menu|combo|box|plato|taco|bowl|pizza/i;
+function isDrinkCategoryProduct(product: MenuProduct): boolean {
+  const cat = `${product.category} ${product.categorySlug || ""}`.toLowerCase();
+  if (DRINK_CATEGORY_RE.test(cat)) return true;
+  const text = `${product.name.es || ""} ${product.name.pt || ""}`.toLowerCase();
+  return /refresco|lata 33|bebida|coca|fanta|sprite|nestea/.test(text);
+}
 
 const DEFAULT_MEAT_VARIANTS: Variant[] = [
   { id: "pollo", name: { es: "Pollo", pt: "Frango", en: "Chicken", fr: "Poulet" } },
@@ -89,12 +95,16 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
   const isCombo = product.productType === "combo" || comboUnits > 1;
   const unitCount = isCombo ? Math.max(2, product.comboUnitCount || comboUnits) : 0;
 
+  const isDrink = isDrinkCategoryProduct(product);
   const meatVariants =
-    product.variants?.length && product.variants.length >= 2
+    !isDrink && product.variants?.length && product.variants.length >= 2
       ? product.variants
-      : MEAT_CATEGORY_RE.test(`${product.categorySlug || ""} ${product.name.es || ""} ${product.name.pt || ""}`)
+      : !isDrink && MEAT_CATEGORY_RE.test(`${product.categorySlug || ""} ${product.name.es || ""} ${product.name.pt || ""}`)
         ? DEFAULT_MEAT_VARIANTS
         : [];
+
+  const drinkVariants =
+    isDrink && product.variants?.length && product.variants.length >= 2 ? product.variants : [];
 
   if (meatVariants.length >= 2) {
     groups.push(
@@ -122,9 +132,37 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
     );
   }
 
+  if (drinkVariants.length >= 2) {
+    groups.push(
+      makeGroup(product.id, "drink-flavor", {
+        name: { es: "Elige tu refresco", pt: "Escolhe o refresco", en: "Choose your drink", fr: "Choisissez votre boisson" },
+        description: {},
+        groupKind: "choice",
+        selectionMode: "single",
+        minSelect: 1,
+        maxSelect: 1,
+        isRequired: true,
+        sortOrder: 0,
+        repeatPerUnit: false,
+        linkSortOrder: 0,
+        options: drinkVariants.map((v, i) => ({
+          id: v.id,
+          groupId: `${SYNTH_PREFIX}-${product.id}-drink-flavor`,
+          name: asLabel(v.name),
+          priceDelta: 0,
+          maxQty: 1,
+          isDefault: i === 0,
+          sortOrder: i,
+        })),
+      }),
+    );
+  }
+
   const removalLabels = new Set<string>();
-  for (const ing of product.ingredients || []) {
-    if (ing && !isDrinkOption(ing) && !isSubstitutionOption(ing)) removalLabels.add(ing);
+  if (!isDrink) {
+    for (const ing of product.ingredients || []) {
+      if (ing && !isDrinkOption(ing) && !isSubstitutionOption(ing)) removalLabels.add(ing);
+    }
   }
 
   const substitutionExtras: Extra[] = [];
@@ -133,7 +171,7 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
 
   for (const extra of product.extras || []) {
     const label = extra.name.es || extra.name.pt || extra.name.en || "";
-    if (isRemovalLabel(label)) {
+    if (!isDrink && isRemovalLabel(label)) {
       removalLabels.add(stripRemovalPrefix(label));
       continue;
     }
@@ -149,13 +187,15 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
   }
 
   const descFull = product.description.es || product.description.pt || product.description.en || "";
-  for (const ing of parseRemovableIngredients(descFull, meatVariants.length >= 2)) {
-    removalLabels.add(ing);
+  if (!isDrink) {
+    for (const ing of parseRemovableIngredients(descFull, meatVariants.length >= 2)) {
+      removalLabels.add(ing);
+    }
   }
 
   const descText = descFull.toLowerCase();
 
-  if (isCombo && removalLabels.size === 0 && MEAT_CATEGORY_RE.test(`${product.categorySlug || ""} ${product.name.es || ""}`)) {
+  if (!isDrink && isCombo && removalLabels.size === 0 && MEAT_CATEGORY_RE.test(`${product.categorySlug || ""} ${product.name.es || ""}`)) {
     for (const label of ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"]) {
       removalLabels.add(label);
     }
@@ -171,7 +211,7 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
     }
   }
 
-  if (removalLabels.size > 0) {
+  if (!isDrink && removalLabels.size > 0) {
     groups.push(
       makeGroup(product.id, "removal", {
         name: { es: "Quitar ingredientes", pt: "Retirar ingredientes", en: "Remove ingredients", fr: "Retirer" },

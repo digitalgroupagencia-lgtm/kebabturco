@@ -12,6 +12,7 @@ import {
   buildPrintPayload,
   invokePrintOrder,
   fetchStoreFinancialProfile,
+  fetchStripePlatformStatus,
   validateCoupon,
   verifyStripePaymentIntent,
   PLATFORM_FEE_CENTS,
@@ -181,11 +182,14 @@ const PaymentScreen = () => {
 
   useEffect(() => {
     if (!storeId) return;
-    fetchStoreFinancialProfile(storeId)
-      .then((profile) => {
+    Promise.all([fetchStoreFinancialProfile(storeId), fetchStripePlatformStatus(storeId)])
+      .then(([profile, platform]) => {
         setStripeEnabled(isStripeConnectReady(profile));
-        const env = profile?.stripe_connect_environment === "test" ? "test" : "live";
-        setStripeConnectEnvironment(env);
+        const useTest =
+          profile?.stripe_connect_environment === "test" ||
+          Boolean(profile?.stripe_connect_test_simulated) ||
+          (Boolean(platform?.productionBlocked) && hasStripePublishableKey("test"));
+        setStripeConnectEnvironment(useTest ? "test" : "live");
       })
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
@@ -467,7 +471,7 @@ const PaymentScreen = () => {
         sticky
       />
 
-      <div className={`flex-1 overflow-y-auto overscroll-contain ${compact ? "px-3 pt-2 pb-24" : "px-4 pt-4 pb-28"}`}>
+      <div className={`flex-1 overflow-y-auto overscroll-contain ${compact ? "px-3 pt-2 pb-4" : "px-4 pt-4 pb-4"}`}>
         <div className={`relative bg-card border border-border shadow-card overflow-hidden ${compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"}`}>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -839,7 +843,7 @@ const PaymentScreen = () => {
       </div>
 
       {!stripeClientSecret && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-md border-t border-border px-3 pt-2 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={confirm}

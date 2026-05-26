@@ -218,15 +218,26 @@ export function useOperationalDiagnostics() {
     if (serverDiag && platform?.productionBlocked) {
       results.push({
         id: "stripe-platform-verification",
-        label: "Plataforma Stripe (verificação)",
+        label: "Plataforma live",
         status: "warn",
         critical: false,
-        detail:
-          platform.adminMessage ??
-          "Plataforma pendente de verificação — pagamentos reais e contas live bloqueados até aprovação.",
+        detail: "Pendente de validação de identidade na Stripe — pagamentos reais bloqueados.",
         action: testKeysOnServer
-          ? "Use modo teste em Admin → Recebimentos para experimentar. Produção activa-se quando a Stripe aprovar o perfil."
-          : "Aguarde aprovação da Stripe. Para testar antes, cole pk_test_... em config/stripe.public.env e sk_test nos Segredos do servidor.",
+          ? "Use «Activar recebimentos de teste» em Recebimentos para validar o checkout."
+          : "Configure chaves de teste no servidor e a chave publicável de teste no site.",
+      });
+      results.push({
+        id: "stripe-test-mode",
+        label: "Modo teste",
+        status: testKeysOnServer && hasTestPk ? "ok" : "warn",
+        detail: testKeysOnServer
+          ? hasTestPk
+            ? "Modo teste activo — chaves de teste configuradas."
+            : "Servidor pronto para teste — falta chave publicável de teste no site."
+          : "Chaves de teste em falta no servidor.",
+        action: !hasTestPk
+          ? "Cole pk_test_... em config/stripe.public.env e faça Sync + Publish."
+          : undefined,
       });
     } else if (serverDiag && platform && !platform.productionBlocked) {
       results.push({
@@ -284,6 +295,10 @@ export function useOperationalDiagnostics() {
 
     const payoutsOk = storeProfile?.stripe_payouts_enabled ?? serverDiag?.store?.stripe_payouts_enabled;
 
+    const testSimulated =
+      Boolean(storeProfile?.stripe_connect_test_simulated) ||
+      Boolean(serverDiag?.store?.stripe_connect_test_simulated);
+
     if (!hasConnect || !chargesOk || !onboardingOk) {
       results.push({
         id: "stripe-connect",
@@ -299,7 +314,7 @@ export function useOperationalDiagnostics() {
           : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
         action:
           productionBlocked && testKeysOnServer
-            ? "Admin → Recebimentos → Conectar recebimentos (modo teste, dentro do painel)."
+            ? "Admin → Recebimentos → Activar recebimentos de teste."
             : "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
       });
     } else if (!payoutsOk) {
@@ -316,7 +331,32 @@ export function useOperationalDiagnostics() {
         id: "stripe-connect",
         label: "Conta bancária (recebimentos)",
         status: "ok",
-        detail: "Recebimentos online e repasse bancário activos.",
+        detail: testSimulated
+          ? "Conta Connect de teste simulada — checkout disponível, sem dinheiro real."
+          : storeConnectEnv === "test"
+            ? "Conta Connect de teste criada — recebimentos simulados activos."
+            : "Recebimentos online e repasse bancário activos.",
+      });
+    }
+
+    if (productionBlocked && testKeysOnServer) {
+      const checkoutTestReady = hasConnect && chargesOk && onboardingOk && hasTestPk;
+      results.push({
+        id: "stripe-test-checkout",
+        label: "Checkout teste",
+        status: checkoutTestReady ? "ok" : "warn",
+        detail: checkoutTestReady
+          ? "Disponível — pode pagar com cartão 4242 4242 4242 4242."
+          : "Indisponível — active recebimentos de teste e configure pk_test no site.",
+        action: checkoutTestReady
+          ? undefined
+          : "Recebimentos → Activar recebimentos de teste + pk_test no site.",
+      });
+      results.push({
+        id: "stripe-production-blocked",
+        label: "Produção",
+        status: "warn",
+        detail: "Bloqueada até a Stripe aprovar a identidade da plataforma — dinheiro real não movimentado.",
       });
     }
 

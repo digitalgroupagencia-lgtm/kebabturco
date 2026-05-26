@@ -11,6 +11,7 @@ import {
 } from "@/lib/modifiers/synthesizeConfig";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
+import { adaptConfigForDrinkProduct, isDrinkProduct } from "@/lib/modifiers/drinkProduct";
 
 const asName = (value: unknown): Record<string, string> => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
@@ -103,8 +104,9 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
     const synthesized = synthesizeModifierConfigFromProduct(product);
 
     if (dbConfig?.hasStructuredModifiers) {
+      const isDrink = isDrinkProduct(product);
       const hasRemoval = dbConfig.groups.some((g) => g.groupKind === "removal");
-      const synthRemoval = synthesized?.groups.filter((g) => g.groupKind === "removal") || [];
+      const synthRemoval = !isDrink ? synthesized?.groups.filter((g) => g.groupKind === "removal") || [] : [];
       if (!hasRemoval && synthRemoval.length) {
         return finalize({
           ...dbConfig,
@@ -131,11 +133,17 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
     return finalize(synthesized ?? dbConfig);
   }, [product, dbConfig, storeGroups]);
 
+  const drinkAdapted = useMemo(
+    () => (product ? adaptConfigForDrinkProduct(product, config) : config),
+    [product, config],
+  );
+
   const loading = dbLoading || storeLoading;
 
   return {
-    config,
+    config: drinkAdapted,
     loading,
-    hasStructuredModifiers: Boolean(config?.hasStructuredModifiers),
+    hasStructuredModifiers: Boolean(drinkAdapted?.hasStructuredModifiers),
+    isDrink: isDrinkProduct(product),
   };
 }
