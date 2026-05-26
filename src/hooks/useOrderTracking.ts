@@ -42,7 +42,7 @@ export function useOrderTracking(
     }
     const { data, error } = await supabase.rpc("get_order_public", { _order_id: orderId });
     if (!error && data?.[0]) {
-      onOrderRef.current(data[0] as PublicOrderTrack);
+      onOrderRef.current(data[0] as unknown as PublicOrderTrack);
     } else {
       onOrderRef.current(null);
     }
