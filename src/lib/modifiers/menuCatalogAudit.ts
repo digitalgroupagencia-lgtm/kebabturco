@@ -138,7 +138,7 @@ export function auditExpectedDrinkCatalog(products: MenuProduct[]): CatalogAudit
   return issues;
 }
 
-export function mergeCatalogAudits(...lists: CatalogAuditIssue[]): CatalogAuditIssue[] {
+export function mergeCatalogAudits(...lists: CatalogAuditIssue[][]): CatalogAuditIssue[] {
   const byKey = new Map<string, CatalogAuditIssue>();
   for (const issue of lists.flat()) {
     const key = `${issue.optionId}:${issue.problem}`;
