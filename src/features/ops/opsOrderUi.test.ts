@@ -15,7 +15,7 @@ const baseOrder = {
   order_type: "takeaway",
   total: 10,
   created_at: new Date().toISOString(),
-} as PanelOrder;
+} as unknown as PanelOrder;
 
 describe("opsOrderUi", () => {
   it("counts items by quantity", () => {
