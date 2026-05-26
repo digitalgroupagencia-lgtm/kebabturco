@@ -131,7 +131,7 @@ export default function MenuCatalogAuditPanel() {
         (count ?? 0) + 1,
       );
 
-      const { error } = await supabase.from("products").insert(payload);
+      const { error } = await (supabase.from("products") as any).insert(payload);
       if (error) throw error;
 
       toast.success(`"${issue.optionName}" adicionado ao cardápio`);
