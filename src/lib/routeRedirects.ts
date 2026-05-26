@@ -22,18 +22,6 @@ const CUSTOMER_ROUTE_ALIASES: Readonly<Record<string, CustomerRouteAliasScreen>>
 
 /** Rotas antigas ou alias → destino canónico (sem 404). */
 const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
-  "/admin/panel": nav.panel(),
-  "/admin/panels": nav.panel(),
-  "/admin/orders": nav.panel(),
-  "/admin/order": nav.panel(),
-  "/admin/pedidos": nav.panel(),
-  "/admin/qrcodes": nav.panel("tables"),
-  "/admin/qrcode": nav.panel("tables"),
-  "/admin/qr-codes": nav.panel("tables"),
-  "/admin/qr": nav.panel("tables"),
-  "/admin/finance": nav.panel("finance"),
-  "/admin/settings": nav.panel("settings"),
-  "/admin/menu": nav.panel("menu"),
   "/admin/payments": nav.admin("operations"),
   "/admin/payment": nav.admin("operations"),
   "/admin/config": nav.admin("settings"),
@@ -59,18 +47,26 @@ const PREFIX_REDIRECTS: Readonly<
   Array<{ prefix: string; resolve: (rest: string) => string | null }>
 > = [
   {
-    prefix: "/admin/panel",
-    resolve: (rest) => {
-      if (!rest || rest === "/orders" || rest === "/pedidos") return nav.panel();
-      if (rest === "/qrcodes" || rest === "/qr-codes" || rest === "/tables") return nav.panel("tables");
-      return nav.panel();
-    },
-  },
-  {
     prefix: "/admin/projects",
     resolve: () => nav.home(),
   },
 ];
+
+/** Aliases do admin que devem ABRIR o painel do restaurante, sem trocar de volta para /admin. */
+const ADMIN_RESTAURANT_PANEL_ALIASES: Readonly<Record<string, string>> = {
+  "/admin/panel": nav.panel(),
+  "/admin/panels": nav.panel(),
+  "/admin/orders": nav.panel(),
+  "/admin/order": nav.panel(),
+  "/admin/pedidos": nav.panel(),
+  "/admin/qrcodes": nav.panel("tables"),
+  "/admin/qrcode": nav.panel("tables"),
+  "/admin/qr-codes": nav.panel("tables"),
+  "/admin/qr": nav.panel("tables"),
+  "/admin/finance": nav.panel("finance"),
+  "/admin/settings": nav.panel("settings"),
+  "/admin/menu": nav.panel("menu"),
+};
 
 export function normalizePathname(pathname: string): string {
   const p = pathname.replace(/\/+$/, "") || "/";
@@ -90,6 +86,21 @@ export function resolveLegacyRouteRedirect(pathname: string): string | null {
       const target = resolve(rest);
       if (target && target !== p) return target;
     }
+  }
+
+  return null;
+}
+
+export function resolveAdminRestaurantPanelAlias(pathname: string): string | null {
+  const p = normalizePathname(pathname);
+  const exact = ADMIN_RESTAURANT_PANEL_ALIASES[p];
+  if (exact) return exact;
+
+  if (p.startsWith("/admin/panel/")) {
+    const rest = p.slice("/admin/panel".length);
+    if (rest === "/orders" || rest === "/pedidos") return nav.panel();
+    if (rest === "/qrcodes" || rest === "/qr-codes" || rest === "/tables") return nav.panel("tables");
+    return nav.panel();
   }
 
   return null;

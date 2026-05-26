@@ -16,15 +16,21 @@ export function useUserRole(userId: string | undefined) {
 
   useEffect(() => {
     if (!userId) {
+      setRoleData(null);
       setLoading(false);
       return;
     }
+
+    let active = true;
+    setLoading(true);
 
     const fetchRole = async () => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role, tenant_id, store_id")
         .eq("user_id", userId);
+
+      if (!active) return;
 
       if (!error && data?.length) {
         const adminMaster = data.find((role) => role.role === "admin_master");
@@ -41,6 +47,9 @@ export function useUserRole(userId: string | undefined) {
     };
 
     fetchRole();
+    return () => {
+      active = false;
+    };
   }, [userId]);
 
   return { roleData, loading };
