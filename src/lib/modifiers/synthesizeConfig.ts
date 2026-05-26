@@ -19,7 +19,6 @@ import {
   productIncludesPotato,
   resolveUnitLabel,
 } from "./comboProductRules";
-import { filterProductModifierConfig } from "./proteinRules";
 
 const SYNTH_PREFIX = "synth";
 
@@ -167,7 +166,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
 }
 
 /** Converte o produto do cardápio (extras, variantes, ingredientes) em grupos de personalização. */
-export function synthesizeModifierConfigFromProduct(product: MenuProduct): ProductModifierConfig | null {
+function buildModifierConfigFromProduct(product: MenuProduct): ProductModifierConfig | null {
   const groups: ModifierGroup[] = [];
   const unitCount = inferComboUnitCount(product);
   const isMultiUnit = unitCount > 1;
@@ -396,17 +395,23 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
 
   if (!groups.length && !isCombo) return null;
 
-  return filterProductModifierConfig(
-    product,
-    sanitizeProductModifierConfig({
-      productId: product.id,
-      productType: isCombo ? "combo" : "simple",
-      comboUnitCount: isMultiUnit ? unitCount : 0,
-      unitLabel: resolveUnitLabel(product),
-      groups: sortModifierGroups(groups),
-      hasStructuredModifiers: groups.length > 0,
-    }),
-  );
+  return sanitizeProductModifierConfig({
+    productId: product.id,
+    productType: isCombo ? "combo" : "simple",
+    comboUnitCount: isMultiUnit ? unitCount : 0,
+    unitLabel: resolveUnitLabel(product),
+    groups: sortModifierGroups(groups),
+    hasStructuredModifiers: groups.length > 0,
+  });
+}
+
+export function synthesizeModifierConfigFromProduct(product: MenuProduct): ProductModifierConfig | null {
+  try {
+    return buildModifierConfigFromProduct(product);
+  } catch (err) {
+    console.error("[synthesizeModifierConfigFromProduct]", product.id, err);
+    return null;
+  }
 }
 
 /** Aplica grupos da loja a combos quando o produto ainda não tem ligações manuais. */

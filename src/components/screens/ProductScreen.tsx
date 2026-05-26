@@ -70,12 +70,26 @@ const ProductScreen = () => {
 
   const productContent =
     hasStructuredModifiers && modifierConfig ? (
-      <ProductCustomizationFlow
-        product={product}
-        config={modifierConfig}
-        editingItem={editingItem}
+      <ProductErrorBoundary
+        key={product.id}
         onBack={goBack}
-      />
+        productLabel={productLabel}
+        fallback={
+          <LegacyProductCustomizer
+            product={product}
+            editingItem={editingItem}
+            editingCartItemId={editingCartItemId}
+            onBack={goBack}
+          />
+        }
+      >
+        <ProductCustomizationFlow
+          product={product}
+          config={modifierConfig}
+          editingItem={editingItem}
+          onBack={goBack}
+        />
+      </ProductErrorBoundary>
     ) : (
       <LegacyProductCustomizer
         product={product}
@@ -85,11 +99,7 @@ const ProductScreen = () => {
       />
     );
 
-  return (
-    <ProductErrorBoundary key={product.id} onBack={goBack} productLabel={productLabel}>
-      {productContent}
-    </ProductErrorBoundary>
-  );
+  return productContent;
 };
 
 export default ProductScreen;

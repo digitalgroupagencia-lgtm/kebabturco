@@ -12,7 +12,7 @@ export default class TotemErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[TotemErrorBoundary]", error, info.componentStack);
+    console.error("[TotemErrorBoundary]", error.name, error.message, error.stack, info.componentStack);
   }
 
   render() {

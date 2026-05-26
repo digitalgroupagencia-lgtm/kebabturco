@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
+import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
 import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import AdminLayout from "@/components/admin/AdminLayout.tsx";
@@ -45,5 +46,9 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
   const Layout = AREA_LAYOUT[def.area];
   const Page = lazyPage(def.loader);
 
-  return withSuspense(<Layout page={Page} />);
+  return withSuspense(
+    <AdminErrorBoundary area={def.area}>
+      <Layout page={Page} />
+    </AdminErrorBoundary>,
+  );
 }

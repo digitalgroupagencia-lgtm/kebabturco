@@ -7,8 +7,8 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "@/lib/modifiers/types";
 import {
   mergeStoreGroupsForCombo,
-  synthesizeModifierConfigFromProduct,
 } from "@/lib/modifiers/synthesizeConfig";
+import { safeSynthesizeModifierConfig } from "@/lib/modifiers/safeCustomization";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
 import { adaptConfigForDrinkProduct, isDrinkProduct } from "@/lib/modifiers/drinkProduct";
@@ -106,7 +106,7 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
     try {
       if (!product) return finalize(dbConfig);
 
-      const synthesized = synthesizeModifierConfigFromProduct(product);
+      const synthesized = safeSynthesizeModifierConfig(product);
 
       if (dbConfig?.hasStructuredModifiers) {
         const isDrink = isDrinkProduct(product);

@@ -3,7 +3,7 @@ import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
-import { hasFixedProtein } from "@/lib/modifiers/comboProductRules";
+import { safeHasFixedProtein } from "@/lib/modifiers/safeCustomization";
 import type { Category, Extra, Product, Variant } from "@/data/products";
 
 type JsonName = Record<string, string>;
@@ -138,48 +138,58 @@ export function useMenuData() {
       );
 
       const categoryImage = new Map(mappedCategories.map((cat) => [cat.id, cat.image]));
-      const mappedProducts = productRows.map((prod: Record<string, unknown>) => {
-        const modifiers = Array.isArray(prod.price_modifiers) ? prod.price_modifiers : [];
-        const allExtras = modifiers.map((modifier: Record<string, unknown>, index: number) => ({
-          id: (modifier.id as string) || `modifier-${index}`,
-          name: asName(modifier.name),
-          price: Number(modifier.price || 0),
-        })) as Extra[];
-        const ingredients = allExtras.filter(isRemovalModifier).map(ingredientFromModifier).filter(Boolean);
-        const extras = allExtras.filter((extra) => !isRemovalModifier(extra));
+      let mappedProducts: MenuProduct[];
+      try {
+        mappedProducts = productRows.map((prod: Record<string, unknown>) => {
+          const modifiers = Array.isArray(prod.price_modifiers) ? prod.price_modifiers : [];
+          const allExtras = modifiers.map((modifier: Record<string, unknown>, index: number) => ({
+            id: (modifier.id as string) || `modifier-${index}`,
+            name: asName(modifier.name),
+            price: Number(modifier.price || 0),
+          })) as Extra[];
+          const ingredients = allExtras.filter(isRemovalModifier).map(ingredientFromModifier).filter(Boolean);
+          const extras = allExtras.filter((extra) => !isRemovalModifier(extra));
 
-        const name = asName(prod.name);
-        const description = asName(prod.description);
-        const descText = description.es || description.pt || description.en || "";
-        const nameText = name.es || name.pt || name.en || "";
-        const inferredMeat = inferVariantsFromText(descText) || inferVariantsFromText(nameText);
-        const inferredChoice =
-          inferredMeat.length >= 2
-            ? []
-            : inferChoiceVariantsFromDescription(descText) ||
-              inferChoiceVariantsFromDescription(nameText);
-        const inferredVariants = inferredMeat.length >= 2 ? inferredMeat : inferredChoice;
-        const draftProduct = {
-          id: prod.id as string,
-          name,
-          description,
-          price: Number(prod.price || 0),
-          image: (prod.image_url as string) || (categoryImage.get(prod.category_id as string) as string) || "",
-          category: prod.category_id as string,
-          categorySlug: (categorySlug.get(prod.category_id as string) as string) || "",
-          isBestseller: Boolean(prod.is_bestseller),
-          isPromo: Boolean(prod.is_promo),
-          extras,
-          ingredients,
-          variants: inferredVariants.length >= 2 ? inferredVariants : undefined,
-          productType: (prod.product_type as "simple" | "combo") || "simple",
-          comboUnitCount: Number(prod.combo_unit_count || 0),
-          unitLabel: asName(prod.unit_label),
-        } satisfies MenuProduct;
-        const variants =
-          hasFixedProtein(draftProduct) ? undefined : draftProduct.variants;
-        return { ...draftProduct, variants };
-      });
+          const name = asName(prod.name);
+          const description = asName(prod.description);
+          const descText = description.es || description.pt || description.en || "";
+          const nameText = name.es || name.pt || name.en || "";
+          const inferredMeat = inferVariantsFromText(descText) || inferVariantsFromText(nameText);
+          const inferredChoice =
+            inferredMeat.length >= 2
+              ? []
+              : inferChoiceVariantsFromDescription(descText) ||
+                inferChoiceVariantsFromDescription(nameText);
+          const inferredVariants = inferredMeat.length >= 2 ? inferredMeat : inferredChoice;
+          const draftProduct = {
+            id: prod.id as string,
+            name,
+            description,
+            price: Number(prod.price || 0),
+            image: (prod.image_url as string) || (categoryImage.get(prod.category_id as string) as string) || "",
+            category: prod.category_id as string,
+            categorySlug: (categorySlug.get(prod.category_id as string) as string) || "",
+            isBestseller: Boolean(prod.is_bestseller),
+            isPromo: Boolean(prod.is_promo),
+            extras,
+            ingredients,
+            variants: inferredVariants.length >= 2 ? inferredVariants : undefined,
+            productType: (prod.product_type as "simple" | "combo") || "simple",
+            comboUnitCount: Number(prod.combo_unit_count || 0),
+            unitLabel: asName(prod.unit_label),
+          } satisfies MenuProduct;
+          const variants = safeHasFixedProtein(draftProduct) ? undefined : draftProduct.variants;
+          return { ...draftProduct, variants };
+        });
+      } catch (err) {
+        console.error("[useMenuData] product mapping failed", err);
+        if (!active) return;
+        setCategories([]);
+        setProducts([]);
+        setError("network");
+        setLoading(false);
+        return;
+      }
 
       setCategories(mappedCategories);
       setProducts(mappedProducts);

@@ -4,6 +4,8 @@ type Props = {
   children: ReactNode;
   onBack: () => void;
   productLabel?: string;
+  /** Se a personalização avançada falhar, mostra isto em vez de bloquear o produto. */
+  fallback?: ReactNode;
 };
 
 type State = { error: Error | null };
@@ -28,6 +30,8 @@ export default class ProductErrorBoundary extends React.Component<Props, State> 
 
   render() {
     if (this.state.error) {
+      if (this.props.fallback) return this.props.fallback;
+
       return (
         <div className="flex h-full min-h-0 flex-col bg-background">
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">

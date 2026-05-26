@@ -1,6 +1,6 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ModifierGroup, ProductModifierConfig } from "./types";
-import { synthesizeModifierConfigFromProduct } from "./synthesizeConfig";
+import { safeSynthesizeModifierConfig } from "./safeCustomization";
 import {
   detectFixedProtein,
   hasFixedProtein,
@@ -47,7 +47,7 @@ export function auditProductCustomization(
   const issues: CustomizationAuditIssue[] = [];
   const label = displayName(product);
   const fixed = detectFixedProtein(product);
-  const synthesized = synthesizeModifierConfigFromProduct(product);
+  const synthesized = safeSynthesizeModifierConfig(product);
   const effective = effectiveConfig
     ? filterProductModifierConfig(product, effectiveConfig)
     : synthesized
