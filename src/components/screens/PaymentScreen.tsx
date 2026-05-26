@@ -424,6 +424,43 @@ const PaymentScreen = () => {
     setStripeClientSecret(pi.clientSecret);
   };
 
+  const verifyCardPaymentWithRetry = async (params: {
+    storeId: string;
+    paymentIntentId: string;
+    orderId: string;
+    amountCents: number;
+  }) => {
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await verifyStripePaymentIntent(params);
+      } catch (e) {
+        lastError = e;
+        if (attempt < 4) {
+          await new Promise((resolve) => window.setTimeout(resolve, 900));
+        }
+      }
+    }
+    throw lastError;
+  };
+
+  const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
+    setPaymentMethod("card");
+    setOrderNumber(result.order_number);
+    setActiveOrderId(result.order_id);
+    setTrackingOrderId(result.order_id);
+    syncActiveOrderUrl(result.order_id, "confirmation");
+
+    await subscribePush({
+      storeId,
+      orderId: result.order_id,
+      customerPhone: fullCustomerPhone || undefined,
+    });
+
+    clearCart();
+    setScreen("confirmation");
+  };
+
   const confirm = async () => {
     if (processing || !validate() || !selected) return;
 
@@ -567,25 +604,21 @@ const PaymentScreen = () => {
                     stripeConnectAccountId: fin.stripeConnectAccountId,
                   });
 
-                  await verifyStripePaymentIntent({
-                    storeId,
-                    paymentIntentId: stripePaymentIntentId!,
-                    orderId: result.order_id,
-                    amountCents,
-                  });
+                  setOrderPaymentStatus("pending");
+                  await showCardOrderConfirmation(result);
 
-                  setPaymentMethod("card");
-                  setOrderPaymentStatus("paid");
-                  setOrderNumber(result.order_number);
-                  setActiveOrderId(result.order_id);
-                  setTrackingOrderId(result.order_id);
-                  syncActiveOrderUrl(result.order_id, "confirmation");
-
-                  await subscribePush({
-                    storeId,
-                    orderId: result.order_id,
-                    customerPhone: fullCustomerPhone || undefined,
-                  });
+                  try {
+                    await verifyCardPaymentWithRetry({
+                      storeId,
+                      paymentIntentId: stripePaymentIntentId!,
+                      orderId: result.order_id,
+                      amountCents,
+                    });
+                    setOrderPaymentStatus("paid");
+                  } catch (verifyError) {
+                    console.warn("Pagamento confirmado, pedido criado; verificação do servidor ainda pendente.", verifyError);
+                    return;
+                  }
 
                   await invokePrintOrder(buildPrintPayload({
                     storeId,
@@ -609,8 +642,6 @@ const PaymentScreen = () => {
                     deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
                   }));
 
-                  clearCart();
-                  setScreen("confirmation");
                 } catch (e) {
                   console.error(e);
                   setShowError("method");
