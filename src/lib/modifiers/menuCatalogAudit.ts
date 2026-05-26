@@ -182,3 +182,33 @@ export function buildProductPayloadFromOption(
     product_type: "simple" as const,
   };
 }
+
+function defaultDrinkPrice(rule?: DrinkSizeRule | null): number {
+  if (rule === "2l") return 3;
+  if (rule === "125l") return 2.5;
+  if (rule === "33cl") return 1.8;
+  if (rule === "small_water") return 1;
+  return 0;
+}
+
+export function buildProductPayloadFromIssue(
+  issue: CatalogAuditIssue,
+  categoryId: string,
+  storeId: string,
+  sortOrder: number,
+) {
+  const label = issue.optionName || "Produto";
+  return {
+    store_id: storeId,
+    category_id: categoryId,
+    name: { pt: label, en: label, es: label, fr: label },
+    description: { pt: "", en: "", es: "", fr: "" },
+    price: defaultDrinkPrice(issue.drinkRule),
+    image_url: "/placeholder.svg",
+    is_active: true,
+    is_bestseller: false,
+    is_promo: false,
+    sort_order: sortOrder,
+    product_type: "simple" as const,
+  };
+}
