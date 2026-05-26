@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -40,6 +40,7 @@ const ReviewScreen = () => {
     setProductReturnScreen,
     setEditingCartItemId,
     setSelectedCategory,
+    tableNumber,
   } = useOrder();
   const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType } = useCart();
 
@@ -51,6 +52,11 @@ const ReviewScreen = () => {
   const confirmMsg = CONFIRM_CLEAR[lang] || CONFIRM_CLEAR.es;
 
   const [suggestionConfig, setSuggestionConfig] = useState<SuggestionConfig | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
 
   useEffect(() => {
     if (!effectiveStoreId) return;
@@ -146,8 +152,12 @@ const ReviewScreen = () => {
   };
 
 
+  const modalityLabel =
+    orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway");
+  const ModalityIcon = orderType === "here" ? Utensils : orderType === "delivery" ? Bike : ShoppingBag;
+
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
@@ -155,21 +165,36 @@ const ReviewScreen = () => {
         sticky
       />
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-4 pb-4 flex flex-col gap-3">
+      <div
+        ref={scrollRef}
+        className="relative z-0 flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-pt-4"
+      >
+        <div className="px-4 pt-5 pb-4 flex flex-col gap-4">
         {/* Tipo de pedido + Mesa */}
-        <div className="bg-card rounded-3xl border border-border shadow-card overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              {orderType === "here" ? <Utensils className="w-5 h-5" /> : orderType === "delivery" ? <Bike className="w-5 h-5" /> : <ShoppingBag className="w-5 h-5" />}
+        <section className="rounded-[28px] border border-border bg-card p-4 shadow-card">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <ModalityIcon className="w-6 h-6" />
             </div>
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">{t("modality")}</p>
-              <p className="text-sm font-black text-foreground">
-                {orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway")}
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
+                {t("modality")}
               </p>
+              <p className="text-base font-black text-foreground leading-tight mt-0.5">
+                {modalityLabel}
+              </p>
+              {orderType === "here" && tableNumber ? (
+                <p className="text-xs font-semibold text-muted-foreground mt-1">
+                  {t("tableLabel")} {tableNumber}
+                </p>
+              ) : orderType === "takeaway" ? (
+                <p className="text-xs font-semibold text-muted-foreground mt-1">{t("takeawaySub")}</p>
+              ) : orderType === "delivery" ? (
+                <p className="text-xs font-semibold text-muted-foreground mt-1">{t("deliverySub")}</p>
+              ) : null}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Items */}
         <div className="flex flex-col gap-2.5">
@@ -344,6 +369,7 @@ const ReviewScreen = () => {
           </div>
         )}
 
+        </div>
       </div>
 
       {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}

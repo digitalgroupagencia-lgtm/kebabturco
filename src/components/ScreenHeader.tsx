@@ -35,7 +35,7 @@ const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenH
   return (
     <header
       className={`relative bg-gradient-header text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] ${
-        sticky ? "sticky top-0 z-30" : ""
+        sticky ? "sticky top-0 z-40" : ""
       }`}
       style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
     >

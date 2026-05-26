@@ -508,7 +508,8 @@ const PaymentScreen = () => {
         sticky
       />
 
-      <div className={`flex-1 overflow-y-auto overscroll-contain ${compact ? "px-3 pt-2 pb-4" : "px-4 pt-4 pb-4"}`}>
+      <div className={`relative z-0 flex-1 overflow-y-auto overscroll-contain ${compact ? "px-3 pb-4" : "px-4 pb-4"}`}>
+        <div className={`flex flex-col ${compact ? "pt-3 gap-3" : "pt-5 gap-4"}`}>
         <div className={`relative bg-card border border-border shadow-card overflow-hidden ${compact ? "rounded-2xl p-4" : "rounded-[28px] p-6"}`}>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -865,6 +866,7 @@ const PaymentScreen = () => {
             )}
           </>
         )}
+        </div>
       </div>
 
       {!stripeClientSecret && (

@@ -1,38 +1,24 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
-import {
-  CheckCircle,
-  Clock,
-  RotateCcw,
-  Hash,
-  Store,
-  Utensils,
-  ShoppingBag,
-  User,
-  Phone,
-  Download,
-  MapPin,
-  Radio,
-  Loader2,
-  CheckCircle2,
-  Circle,
-} from "lucide-react";
+import { Check, Download, RotateCcw } from "lucide-react";
 import { toPng } from "html-to-image";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
-import {
-  canCustomerConfirmReceipt,
-  getCustomerTrackingSteps,
-  getLiveStatusHeadline,
-  getStatusLabel,
-} from "@/lib/orderStatusLabels";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { clearStoredActiveOrder } from "@/features/customer/useActiveOrderStorage";
-import { hasCustomerAcknowledged, markCustomerAcknowledged } from "@/lib/customerOrderUrl";
-import { formatFullPhone } from "@/lib/phoneNumber";
+import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
+
+function minimalStepIndex(status: string): number {
+  if (status === "cancelled") return -1;
+  if (status === "pending") return 0;
+  if (status === "preparing") return 1;
+  if (status === "ready") return 2;
+  if (status === "out_for_delivery" || status === "delivered") return 3;
+  return 0;
+}
 
 const ConfirmationScreen = () => {
   const {
@@ -41,9 +27,6 @@ const ConfirmationScreen = () => {
     tableNumber,
     paymentMethod,
     orderPaymentStatus,
-    customerName,
-    customerPhone,
-    phoneDialCode,
     setTableNumber,
     setPaymentMethod,
     setOrderPaymentStatus,
@@ -61,51 +44,70 @@ const ConfirmationScreen = () => {
   const isCounter = paymentMethod === "counter";
   const isCash = paymentMethod === "cash";
   const isPaidOnline = orderPaymentStatus === "paid";
-  const isHere = orderType === "here";
   const prepMin = (settings as { avg_prep_minutes?: number })?.avg_prep_minutes ?? 12;
   const cardRef = useRef<HTMLDivElement>(null);
   const [savedAt] = useState(() => new Date());
   const [downloading, setDownloading] = useState(false);
   const [liveOrder, setLiveOrder] = useState<PublicOrderTrack | null>(null);
-  const [trackingLoading, setTrackingLoading] = useState(!!activeOrderId);
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [customerAcked, setCustomerAcked] = useState(() =>
     activeOrderId ? hasCustomerAcknowledged(activeOrderId) : false,
   );
 
   const onLiveOrder = useCallback((o: PublicOrderTrack | null) => setLiveOrder(o), []);
-  const onTrackingLoading = useCallback((l: boolean) => setTrackingLoading(l), []);
+  const onTrackingLoading = useCallback(() => {}, []);
   useOrderTracking(activeOrderId || null, onLiveOrder, onTrackingLoading);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const liveStatus = liveOrder?.status || "pending";
   const liveOrderType = liveOrder?.order_type || (orderType === "here" ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway");
   const displayNumber = liveOrder?.order_number || orderNumber;
-  const steps = useMemo(() => getCustomerTrackingSteps(liveOrderType), [liveOrderType]);
-  const currentIdx = useMemo(() => {
-    const idx = steps.findIndex((s) => s.key === liveStatus);
-    if (idx >= 0) return idx;
-    if (liveStatus === "cancelled") return -1;
-    return 0;
-  }, [liveStatus, steps]);
+  const stepIdx = minimalStepIndex(liveStatus);
+  const isCancelled = liveStatus === "cancelled";
 
-  const showConfirmReceipt =
-    !customerAcked &&
-    liveOrder &&
-    canCustomerConfirmReceipt(liveStatus, liveOrderType);
-  const isTerminal =
-    liveStatus === "delivered" || liveStatus === "cancelled" || customerAcked;
+  const timelineSteps = useMemo(() => {
+    const last =
+      liveOrderType === "delivery" ? t("stepDelivered") : t("stepCollected");
+    return [t("stepReceived"), t("stepPreparing"), t("stepReady"), last];
+  }, [liveOrderType, t]);
 
-  const message = isPaidOnline
-    ? settings?.msg_paid || "Pago confirmado online"
+  const modalityLabel = useMemo(() => {
+    if (liveOrderType === "delivery") return t("delivery");
+    if (liveOrderType === "dine_in") {
+      return tableNumber ? `${t("eatHere")} · ${tableNumber}` : t("eatHere");
+    }
+    return t("takeaway");
+  }, [liveOrderType, tableNumber, t]);
+
+  const etaLabel = useMemo(() => {
+    if (isCancelled) return null;
+    if (liveOrder?.estimated_ready_at) {
+      const etaMs = new Date(liveOrder.estimated_ready_at).getTime();
+      const minsLeft = Math.max(0, Math.ceil((etaMs - nowTick) / 60_000));
+      if (minsLeft > 0) {
+        return t("etaMinutesLeft").replace("{n}", String(minsLeft));
+      }
+      const timeStr = new Date(liveOrder.estimated_ready_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return `${t("estimatedTime")}: ${timeStr}`;
+    }
+    if (liveStatus === "pending") return t("etaWaitingAccept");
+    return t("etaMinutesLeft").replace("{n}", String(prepMin));
+  }, [isCancelled, liveOrder?.estimated_ready_at, liveStatus, nowTick, prepMin, t]);
+
+  const paymentLabel = isPaidOnline
+    ? t("paymentConfirmedShort")
     : isCounter
-      ? settings?.msg_counter || "Pago pendiente en mostrador"
+      ? settings?.msg_counter || t("payAtCounterTitle")
       : isCash
-        ? "Pago en efectivo al recoger o recibir"
-        : "Pedido registrado — pago pendiente";
-
-  const statusHeadline =
-    liveStatus === "pending"
-      ? t("orderReceived")
-      : getLiveStatusHeadline(liveStatus, liveOrderType);
+        ? t("payAtCounterSub")
+        : null;
 
   const handleNewOrder = () => {
     setTableNumber("");
@@ -113,6 +115,7 @@ const ConfirmationScreen = () => {
     setOrderPaymentStatus("pending");
     setCustomerName("");
     setCustomerPhone("");
+    const isTerminal = liveStatus === "delivered" || liveStatus === "cancelled" || customerAcked;
     if (activeOrderId && !customerAcked && !isTerminal) {
       setScreen(shouldForceDeliveryOnly() ? "home" : "orderType");
       return;
@@ -123,13 +126,10 @@ const ConfirmationScreen = () => {
     setScreen(shouldForceDeliveryOnly() ? "home" : "orderType");
   };
 
-  const handleConfirmReceipt = () => {
+  const handleViewOrder = () => {
     if (!activeOrderId) return;
-    markCustomerAcknowledged(activeOrderId);
-    setCustomerAcked(true);
-    clearStoredActiveOrder();
-    setActiveOrderId("");
-    setTrackingOrderId("");
+    setTrackingOrderId(activeOrderId);
+    setScreen("tracking");
   };
 
   const handleDownload = async () => {
@@ -159,281 +159,147 @@ const ConfirmationScreen = () => {
     year: "numeric",
   });
   const logoUrl = brand?.logo_main_url || brand?.logo_secondary_url || null;
-  const companyName = brand?.company_name || "";
-
-  const bannerClass =
-    liveStatus === "preparing"
-      ? "bg-amber-500 text-white"
-      : liveStatus === "ready" || liveStatus === "delivered"
-        ? "bg-success text-success-foreground"
-        : liveStatus === "out_for_delivery"
-          ? "bg-blue-600 text-white"
-          : liveStatus === "cancelled"
-            ? "bg-destructive text-destructive-foreground"
-            : "bg-success text-success-foreground";
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <div
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
-        style={{ paddingTop: "max(8px, env(safe-area-inset-top))" }}
+        style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}
       >
-        <div ref={cardRef} className="flex flex-col gap-1.5 px-3 pt-1 pb-4 max-w-lg mx-auto w-full">
-          <div className="flex items-center justify-between gap-3 px-1">
-            <div className="flex items-center gap-2 min-w-0">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt={companyName}
-                  crossOrigin="anonymous"
-                  className="h-9 w-auto object-contain"
-                />
-              ) : (
-                <div className="h-9 px-3 rounded-lg bg-primary text-primary-foreground flex items-center font-black text-sm">
-                  {companyName || "BRAND"}
+        <div ref={cardRef} className="mx-auto flex w-full max-w-md flex-col px-6 pb-8 pt-2">
+          {/* Topo discreto */}
+          <div className="mb-10 flex items-center justify-between gap-4">
+            {logoUrl ? (
+              <img src={logoUrl} alt="" crossOrigin="anonymous" className="h-8 w-auto object-contain opacity-90" />
+            ) : (
+              <span className="text-sm font-bold text-foreground/80">{brand?.company_name || ""}</span>
+            )}
+            <p className="text-[11px] tabular-nums text-muted-foreground">
+              {dateStr} · {timeStr}
+            </p>
+          </div>
+
+          {/* Bloco principal */}
+          <div className="flex flex-col items-center text-center">
+            {!isCancelled ? (
+              <>
+                <div className="mb-6 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-success/12">
+                  <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-success text-success-foreground shadow-[0_8px_24px_-8px_hsl(var(--success)/0.55)]">
+                    <Check className="h-7 w-7" strokeWidth={2.8} />
+                  </div>
                 </div>
-              )}
-              {logoUrl && companyName && (
-                <span className="font-black text-foreground text-sm truncate">{companyName}</span>
-              )}
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-[8px] uppercase tracking-[0.22em] text-muted-foreground font-bold leading-none">
-                {t("orderTime")}
-              </p>
-              <p className="text-[12px] font-black text-foreground tabular-nums leading-tight mt-0.5">
-                {dateStr} · {timeStr}
-              </p>
-            </div>
-          </div>
-
-          <div className={`relative rounded-[20px] px-4 py-3 shadow-card overflow-hidden ${bannerClass}`}>
-            <div className="pointer-events-none absolute -top-12 -right-8 w-36 h-36 rounded-full bg-white/15 blur-3xl" />
-            <div className="relative flex items-center justify-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                {trackingLoading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.4} />
-                ) : (
-                  <CheckCircle className="w-6 h-6" strokeWidth={2.4} />
-                )}
-              </div>
-              <div className="text-left">
-                <p className="text-[9px] uppercase tracking-[0.28em] opacity-90 font-bold leading-tight">
-                  {liveStatus === "pending" ? t("confirmedEyebrow") : "Estado do pedido"}
+                <h1 className="text-[26px] font-black tracking-tight text-foreground leading-tight">
+                  {t("orderConfirmedTitle")}
+                </h1>
+                <p className="mt-2 max-w-[260px] text-[15px] leading-relaxed text-muted-foreground">
+                  {liveStatus === "pending" ? t("etaWaitingAccept") : t("preparingOrder")}
                 </p>
-                <h1 className="text-[17px] font-black tracking-tight leading-tight">{statusHeadline}</h1>
-              </div>
+              </>
+            ) : (
+              <>
+                <h1 className="text-[26px] font-black tracking-tight text-destructive leading-tight">
+                  Pedido cancelado
+                </h1>
+                <p className="mt-2 text-[15px] text-muted-foreground">Entre em contacto com o restaurante.</p>
+              </>
+            )}
+
+            <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">
+              {t("yourNumber")}
+            </p>
+            <p className="mt-1 text-[56px] font-black tabular-nums leading-none tracking-tighter text-foreground">
+              #{displayNumber}
+            </p>
+
+            {etaLabel && !isCancelled && (
+              <p className="mt-5 text-[17px] font-bold text-foreground">{etaLabel}</p>
+            )}
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+              <span>{modalityLabel}</span>
+              {paymentLabel && (
+                <>
+                  <span className="text-border">·</span>
+                  <span className={isPaidOnline ? "font-semibold text-success" : ""}>{paymentLabel}</span>
+                </>
+              )}
             </div>
           </div>
 
-          {activeOrderId && !trackingLoading && liveOrder && liveStatus !== "cancelled" && (
-            <div className="rounded-[20px] bg-card border border-border px-4 py-3 shadow-card space-y-3">
-              <p className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground font-bold uppercase tracking-wide">
-                <Radio className="h-3 w-3 text-success animate-pulse" />
-                Actualização automática · ~1s
-              </p>
-              <ol className="space-y-0">
-                {steps.map((step, i) => {
-                  const done = i < currentIdx;
-                  const active = i === currentIdx;
+          {/* Timeline minimalista */}
+          {!isCancelled && activeOrderId && (
+            <div className="mt-12 px-1">
+              <div className="relative flex items-start justify-between">
+                <div className="absolute left-[10%] right-[10%] top-[5px] h-px bg-border" aria-hidden />
+                {timelineSteps.map((label, i) => {
+                  const done = stepIdx > i;
+                  const active = stepIdx === i;
                   return (
-                    <li key={step.key} className="flex gap-3 pb-3 last:pb-0 relative">
-                      {i < steps.length - 1 && (
-                        <span
-                          className={`absolute left-[13px] top-7 w-0.5 h-[calc(100%-4px)] ${done ? "bg-success" : "bg-border"}`}
-                        />
-                      )}
+                    <div key={label} className="relative z-10 flex w-[22%] flex-col items-center gap-2">
                       <span
-                        className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs ${
+                        className={`h-2.5 w-2.5 rounded-full transition-colors ${
                           done
-                            ? "bg-success text-success-foreground"
+                            ? "bg-success"
                             : active
-                              ? "bg-primary text-primary-foreground ring-2 ring-primary/25"
-                              : "bg-muted text-muted-foreground"
+                              ? "bg-primary ring-4 ring-primary/15"
+                              : "bg-muted-foreground/25"
+                        }`}
+                      />
+                      <span
+                        className={`text-center text-[10px] font-bold leading-tight ${
+                          active ? "text-foreground" : done ? "text-success" : "text-muted-foreground"
                         }`}
                       >
-                        {done ? <CheckCircle2 className="w-3.5 h-3.5" /> : active ? step.icon : <Circle className="w-3.5 h-3.5" />}
+                        {label}
                       </span>
-                      <div className="pt-0.5 min-w-0">
-                        <p className={`text-sm font-bold leading-tight ${active ? "text-foreground" : done ? "text-success" : "text-muted-foreground"}`}>
-                          {step.label}
-                        </p>
-                        {active && (
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            {getStatusLabel(liveStatus, liveOrderType)}
-                          </p>
-                        )}
-                      </div>
-                    </li>
+                    </div>
                   );
                 })}
-              </ol>
+              </div>
             </div>
           )}
 
-          <div className="relative rounded-[20px] bg-card border-2 border-success/30 px-4 py-2.5 text-center shadow-card overflow-hidden">
-            <p className="text-[9px] uppercase tracking-[0.28em] text-muted-foreground font-bold">
-              {t("yourNumber")}
-            </p>
-            <p className="text-[42px] sm:text-[48px] leading-none font-black text-success mt-0.5 tabular-nums tracking-tighter">
-              #{displayNumber}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold">
-              {t("showAtPickup")}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5">
-            {customerName && (
-              <div className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-card min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0">
-                  <User className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-                    {t("customerLabel")}
-                  </p>
-                  <p className="font-black text-foreground text-[13px] truncate leading-tight">{customerName}</p>
-                </div>
-              </div>
-            )}
-
-            {isHere && tableNumber && (
-              <div className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-card min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                  <Hash className="w-4 h-4" strokeWidth={2.8} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-                    {t("tableLabel")}
-                  </p>
-                  <p className="font-black text-foreground text-base tabular-nums leading-tight">{tableNumber}</p>
-                </div>
-              </div>
-            )}
-
-            {customerPhone && (
-              <div className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-card min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-                    {t("phoneLabel")}
-                  </p>
-                  <p className="font-black text-foreground text-[12px] tabular-nums truncate leading-tight">
-                    {formatFullPhone(phoneDialCode, customerPhone)}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-card min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0">
-                {isHere ? <Utensils className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-                  {t("modeLabel")}
-                </p>
-                <p className="font-black text-foreground text-[13px] leading-tight truncate">
-                  {orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway")}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-card min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-                  {t("estTime")}
-                </p>
-                <p className="font-black text-foreground text-[13px] tabular-nums leading-tight">
-                  ~ {prepMin} {t("minutes")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`rounded-xl p-2.5 flex items-center gap-2 border-2 shadow-card ${
-              isPaidOnline
-                ? "bg-success/10 border-success"
-                : isCounter || isCash
-                  ? "bg-accent/10 border-accent"
-                  : "bg-secondary border-border"
-            }`}
-          >
-            <div
-              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                isPaidOnline
-                  ? "bg-success text-success-foreground"
-                  : isCounter || isCash
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-secondary text-foreground"
-              }`}
-            >
-              {isPaidOnline ? <CheckCircle className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.18em] font-bold">
-                {t("paymentStatus")}
-              </p>
-              <p className="font-black text-foreground text-[13px] truncate leading-tight">{message}</p>
-            </div>
-          </div>
-
-          <div className="pt-1 border-t border-dashed border-border text-center">
-            <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em]">{companyName || "—"}</p>
-            <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">
-              #{displayNumber} · {dateStr} {timeStr}
-            </p>
-          </div>
+          {customerAcked && (
+            <p className="mt-10 text-center text-sm font-semibold text-success">Obrigado! Pedido concluído.</p>
+          )}
         </div>
       </div>
 
-      <div className="shrink-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] flex flex-col gap-2 bg-background border-t border-border/60">
-        {showConfirmReceipt && (
+      {/* Rodapé fixo */}
+      <div
+        className="shrink-0 border-t border-border/40 bg-background/95 px-5 pt-4 backdrop-blur-md"
+        style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+      >
+        {activeOrderId && !customerAcked && !isCancelled && (
           <button
-            onClick={handleConfirmReceipt}
-            className="flex items-center justify-center gap-2 px-4 py-3.5 bg-success text-success-foreground rounded-2xl text-[14px] font-black active:scale-[0.98] transition-transform touch-action-manipulation uppercase tracking-wide shadow-md"
+            type="button"
+            onClick={handleViewOrder}
+            className="mb-3 w-full touch-manipulation rounded-[22px] bg-primary py-4 text-[15px] font-black uppercase tracking-wide text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)] transition-transform active:scale-[0.98]"
           >
-            <CheckCircle className="w-5 h-5" />
-            {liveOrderType === "delivery" ? "Confirmar que recebi a entrega" : "Confirmar que recebi o pedido"}
+            {t("viewOrder")}
           </button>
         )}
-        {customerAcked && (
-          <p className="text-center text-sm font-bold text-success py-2">Obrigado! Pedido concluído.</p>
-        )}
-        {activeOrderId && !customerAcked && (
+
+        <div className="flex items-center justify-center gap-6">
           <button
-            onClick={() => {
-              setTrackingOrderId(activeOrderId);
-              setScreen("tracking");
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl text-[14px] font-black active:scale-[0.98] transition-transform touch-action-manipulation uppercase tracking-wide"
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
           >
-            <MapPin className="w-4 h-4" />
-            Ver acompanhamento completo
+            <Download className="h-4 w-4" />
+            {t("saveImage")}
           </button>
-        )}
-        <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card border border-border rounded-2xl text-[12px] font-black text-foreground active:scale-[0.98] transition-transform touch-action-manipulation uppercase tracking-wide disabled:opacity-50"
-        >
-          <Download className="w-4 h-4" strokeWidth={2.5} />
-          {t("saveImage")}
-        </button>
-        <button
-          onClick={handleNewOrder}
-          className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-cta text-success-foreground rounded-2xl text-[14px] font-black active:scale-[0.98] transition-transform touch-action-manipulation shadow-cta uppercase tracking-wide"
-        >
-          <RotateCcw className="w-4 h-4" strokeWidth={3} />
-          {t("newOrder")}
-        </button>
+          <span className="h-4 w-px bg-border" aria-hidden />
+          <button
+            type="button"
+            onClick={handleNewOrder}
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <RotateCcw className="h-4 w-4" />
+            {t("newOrder")}
+          </button>
+        </div>
       </div>
     </div>
   );
