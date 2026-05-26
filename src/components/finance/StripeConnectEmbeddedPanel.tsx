@@ -9,7 +9,10 @@ import {
 } from "@stripe/react-connect-js";
 import { loadConnectAndInitialize, type StripeConnectInstance } from "@stripe/connect-js";
 import { Loader2 } from "lucide-react";
-import { getStripePublishableKey } from "@/lib/stripePublishableKey";
+import {
+  getStripePublishableKeyForEnvironment,
+  type StripePublishableEnvironment,
+} from "@/lib/stripePublishableKey";
 import {
   createStripeConnectEmbeddedSession,
   syncStripeConnectStatus,
@@ -20,24 +23,35 @@ type Variant = "onboarding" | "management";
 type Props = {
   storeId: string;
   variant: Variant;
+  connectEnvironment?: StripePublishableEnvironment;
   onComplete?: () => void;
 };
 
-export default function StripeConnectEmbeddedPanel({ storeId, variant, onComplete }: Props) {
-  const publishableKey = getStripePublishableKey();
+export default function StripeConnectEmbeddedPanel({
+  storeId,
+  variant,
+  connectEnvironment = "live",
+  onComplete,
+}: Props) {
+  const publishableKey = getStripePublishableKeyForEnvironment(connectEnvironment);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [sessionEnvironment, setSessionEnvironment] = useState<StripePublishableEnvironment>(connectEnvironment);
 
   const sessionMode = variant === "onboarding" ? "embedded_onboarding" : "embedded_management";
 
   const connectInstance = useMemo((): StripeConnectInstance | null => {
-    if (!publishableKey) return null;
+    const key = getStripePublishableKeyForEnvironment(sessionEnvironment);
+    if (!key) return null;
     void refreshNonce;
     return loadConnectAndInitialize({
-      publishableKey,
+      publishableKey: key,
       fetchClientSecret: async () => {
-        const { clientSecret } = await createStripeConnectEmbeddedSession(storeId, sessionMode);
-        return clientSecret;
+        const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
+        if (session.connectEnvironment) {
+          setSessionEnvironment(session.connectEnvironment);
+        }
+        return session.clientSecret;
       },
       appearance: {
         overlays: "dialog",
@@ -48,7 +62,7 @@ export default function StripeConnectEmbeddedPanel({ storeId, variant, onComplet
         },
       },
     });
-  }, [publishableKey, storeId, sessionMode, refreshNonce]);
+  }, [sessionEnvironment, storeId, sessionMode, refreshNonce]);
 
   const finish = useCallback(async () => {
     setBusy(true);
@@ -62,10 +76,12 @@ export default function StripeConnectEmbeddedPanel({ storeId, variant, onComplet
 
   const reloadSession = () => setRefreshNonce((n) => n + 1);
 
-  if (!publishableKey) {
+  if (!publishableKey && !getStripePublishableKeyForEnvironment(sessionEnvironment)) {
     return (
       <p className="text-sm text-muted-foreground p-4 border border-dashed rounded-xl">
-        Recebimentos online indisponíveis neste momento.
+        {connectEnvironment === "test"
+          ? "Modo teste indisponível — falta a chave publicável de teste no site."
+          : "Recebimentos online indisponíveis neste momento."}
       </p>
     );
   }
@@ -80,6 +96,11 @@ export default function StripeConnectEmbeddedPanel({ storeId, variant, onComplet
 
   return (
     <div className="relative space-y-3">
+      {sessionEnvironment === "test" && (
+        <p className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2">
+          Modo teste — dados simulados, sem dinheiro real.
+        </p>
+      )}
       {busy && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 rounded-xl">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />

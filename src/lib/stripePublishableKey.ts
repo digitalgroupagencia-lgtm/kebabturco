@@ -15,28 +15,60 @@ const ENV_CANDIDATES = [
   "STRIPE_PUBLISHABLE_KEY",
 ] as const;
 
+const TEST_ENV_CANDIDATES = [
+  "VITE_STRIPE_PUBLISHABLE_KEY_TEST",
+  "VITE_STRIPE_TEST_PUBLISHABLE_KEY",
+  "VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST",
+] as const;
+
+export type StripePublishableEnvironment = "live" | "test";
+
 function readEnvKey(name: string): string {
   const v = (import.meta.env as Record<string, string | undefined>)[name];
   return typeof v === "string" && v.trim().startsWith("pk_") ? v.trim() : "";
 }
 
-/** Chave publicável activa (variável de ambiente ou fallback Kebab Turco). */
-export function getStripePublishableKey(): string {
+function readLiveKeyFromEnv(): string {
   for (const name of ENV_CANDIDATES) {
+    const v = readEnvKey(name);
+    if (v && !v.includes("_test_")) return v;
+  }
+  return "";
+}
+
+function readTestKeyFromEnv(): string {
+  for (const name of TEST_ENV_CANDIDATES) {
     const v = readEnvKey(name);
     if (v) return v;
   }
-  return KEBAB_TURCO_STRIPE_PUBLISHABLE_FALLBACK;
+  for (const name of ENV_CANDIDATES) {
+    const v = readEnvKey(name);
+    if (v.includes("_test_")) return v;
+  }
+  return "";
 }
 
-export function hasStripePublishableKey(): boolean {
-  return getStripePublishableKey().length > 0;
+/** Chave publicável para o ambiente pedido (live ou teste). */
+export function getStripePublishableKeyForEnvironment(
+  environment: StripePublishableEnvironment = "live",
+): string {
+  if (environment === "test") {
+    return readTestKeyFromEnv();
+  }
+  return readLiveKeyFromEnv() || KEBAB_TURCO_STRIPE_PUBLISHABLE_FALLBACK;
+}
+
+/** Chave publicável activa (variável de ambiente ou fallback Kebab Turco). */
+export function getStripePublishableKey(): string {
+  return getStripePublishableKeyForEnvironment("live");
+}
+
+export function hasStripePublishableKey(environment: StripePublishableEnvironment = "live"): boolean {
+  return getStripePublishableKeyForEnvironment(environment).length > 0;
 }
 
 export function stripePublishableKeySource(): "env" | "fallback" | "none" {
-  for (const name of ENV_CANDIDATES) {
-    if (readEnvKey(name)) return "env";
-  }
+  if (readLiveKeyFromEnv()) return "env";
   if (KEBAB_TURCO_STRIPE_PUBLISHABLE_FALLBACK) return "fallback";
   return "none";
 }

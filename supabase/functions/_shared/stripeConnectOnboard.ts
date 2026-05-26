@@ -1,12 +1,20 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getStripeSecretKey } from "./stripeEnv.ts";
+import { getStripeSecretKey, getStripeSecretKeyTest } from "./stripeEnv.ts";
 import {
   fetchConnectAccountStatus,
-  persistConnectAccountStatus,
   syncConnectAccountById,
   type ConnectAccountStatus,
 } from "./stripeConnectSync.ts";
+import {
+  inspectPlatformConnectStatus,
+  isPlatformProfileBlockedError,
+  PlatformPendingError,
+  platformStatusPayload,
+  resolveStripeConnectContext,
+  type StripeConnectContext,
+} from "./stripePlatform.ts";
+import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +33,7 @@ export type ConnectStoreRow = {
   name: string | null;
   tenant_id: string;
   stripe_connect_account_id: string | null;
+  stripe_connect_environment: StripeKeyMode | null;
 };
 
 export async function assertStoreAccess(
@@ -34,12 +43,12 @@ export async function assertStoreAccess(
 ): Promise<ConnectStoreRow> {
   const { data: store, error: storeErr } = await service
     .from("stores")
-    .select("id, name, tenant_id, stripe_connect_account_id")
+    .select("id, name, tenant_id, stripe_connect_account_id, stripe_connect_environment")
     .eq("id", storeId)
     .maybeSingle();
 
   if (storeErr || !store) {
-    throw new ConnectError("Restaurante não encontrado.", 404);
+    throw new ConnectError("Restaurante não encontrado.", 404, "store_not_found");
   }
 
   const { data: roles, error: rolesErr } = await service
@@ -48,7 +57,7 @@ export async function assertStoreAccess(
     .eq("user_id", userId);
 
   if (rolesErr) {
-    throw new ConnectError("Não foi possível verificar permissões.", 500);
+    throw new ConnectError("Não foi possível verificar permissões.", 500, "roles_error");
   }
 
   const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
@@ -61,7 +70,7 @@ export async function assertStoreAccess(
     tenantIds.includes(store.tenant_id);
 
   if (!ownsStore) {
-    throw new ConnectError("Sem permissão para gerir recebimentos deste restaurante.", 403);
+    throw new ConnectError("Sem permissão para gerir recebimentos deste restaurante.", 403, "forbidden");
   }
 
   return store as ConnectStoreRow;
@@ -69,57 +78,80 @@ export async function assertStoreAccess(
 
 export class ConnectError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code: string;
+  platform?: ReturnType<typeof platformStatusPayload>;
+  constructor(message: string, status: number, code = "connect_error") {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
+async function loadConnectContext(store: ConnectStoreRow): Promise<StripeConnectContext> {
+  const env = (store.stripe_connect_environment as StripeKeyMode | null) ?? null;
+  return resolveStripeConnectContext(env, store.stripe_connect_account_id);
+}
+
 export async function ensureConnectAccount(
-  stripe: Stripe,
+  ctx: StripeConnectContext,
   service: SupabaseClient,
   store: ConnectStoreRow,
-): Promise<string> {
-  if (store.stripe_connect_account_id) return store.stripe_connect_account_id;
-
-  const account = await stripe.accounts.create({
-    type: "express",
-    country: "ES",
-    capabilities: {
-      card_payments: { requested: true },
-      transfers: { requested: true },
-    },
-    business_profile: {
-      name: store.name || "Restaurante",
-    },
-    metadata: {
-      store_id: store.id,
-      platform: "snaporder",
-    },
-    settings: {
-      payouts: { schedule: { interval: "daily" } },
-    },
-  });
-
-  const { error: updErr } = await service
-    .from("stores")
-    .update({
-      stripe_connect_account_id: account.id,
-      stripe_connect_created_at: new Date().toISOString(),
-      stripe_payout_status: "pending",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", store.id);
-
-  if (updErr) {
-    console.error("[connect] store update", updErr);
-    throw new ConnectError(
-      "Conta de recebimentos criada mas não foi possível guardar — actualize a base de dados.",
-      500,
-    );
+): Promise<{ accountId: string; environment: StripeKeyMode }> {
+  if (store.stripe_connect_account_id) {
+    return {
+      accountId: store.stripe_connect_account_id,
+      environment: (store.stripe_connect_environment as StripeKeyMode) ?? ctx.environment,
+    };
   }
 
-  return account.id;
+  try {
+    const account = await ctx.stripe.accounts.create({
+      type: "express",
+      country: "ES",
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      business_profile: {
+        name: store.name || "Restaurante",
+      },
+      metadata: {
+        store_id: store.id,
+        platform: "snaporder",
+        environment: ctx.environment,
+      },
+      settings: {
+        payouts: { schedule: { interval: "daily" } },
+      },
+    });
+
+    const { error: updErr } = await service
+      .from("stores")
+      .update({
+        stripe_connect_account_id: account.id,
+        stripe_connect_environment: ctx.environment,
+        stripe_connect_created_at: new Date().toISOString(),
+        stripe_payout_status: "pending",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", store.id);
+
+    if (updErr) {
+      console.error("[connect] store update", updErr);
+      throw new ConnectError(
+        "Conta de recebimentos criada mas não foi possível guardar — actualize a base de dados.",
+        500,
+        "store_update_failed",
+      );
+    }
+
+    return { accountId: account.id, environment: ctx.environment };
+  } catch (e) {
+    if (ctx.environment === "live" && isPlatformProfileBlockedError(e)) {
+      throw new PlatformPendingError(ctx.platform);
+    }
+    throw e;
+  }
 }
 
 function embeddedSessionComponents(mode: string): Stripe.AccountSessionCreateParams.Components {
@@ -156,7 +188,7 @@ export async function createEmbeddedAccountSession(
     components: embeddedSessionComponents(mode),
   });
   if (!session.client_secret) {
-    throw new ConnectError("Não foi possível iniciar o formulário de recebimentos.", 502);
+    throw new ConnectError("Não foi possível iniciar o formulário de recebimentos.", 502, "session_failed");
   }
   return session.client_secret;
 }
@@ -164,7 +196,7 @@ export async function createEmbeddedAccountSession(
 export async function resolveAuthUserId(req: Request): Promise<string> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    throw new ConnectError("Sessão expirada — faça login novamente.", 401);
+    throw new ConnectError("Sessão expirada — faça login novamente.", 401, "unauthorized");
   }
 
   const userClient = createClient(
@@ -175,13 +207,13 @@ export async function resolveAuthUserId(req: Request): Promise<string> {
 
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData.user?.id) {
-    throw new ConnectError("Sessão inválida — faça login novamente.", 401);
+    throw new ConnectError("Sessão inválida — faça login novamente.", 401, "unauthorized");
   }
 
   return userData.user.id;
 }
 
-function statusPayload(status: ConnectAccountStatus) {
+function statusPayload(status: ConnectAccountStatus, environment: StripeKeyMode) {
   return {
     accountId: status.accountId,
     chargesEnabled: status.chargesEnabled,
@@ -192,15 +224,19 @@ function statusPayload(status: ConnectAccountStatus) {
     ibanLast4: status.ibanLast4,
     requirementsDue: status.requirementsDue,
     ready: status.chargesEnabled && status.onboardingCompleted,
+    connectEnvironment: environment,
   };
+}
+
+function connectMeta(ctx: StripeConnectContext) {
+  return platformStatusPayload(ctx.platform, ctx.environment);
 }
 
 export async function handleStripeConnectRequest(
   req: Request,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  const stripeKey = getStripeSecretKey();
-  if (!stripeKey) {
+  if (!getStripeSecretKey() && !getStripeSecretKeyTest()) {
     return json(
       {
         error: "Recebimentos indisponíveis — configuração do servidor incompleta.",
@@ -210,12 +246,8 @@ export async function handleStripeConnectRequest(
     );
   }
 
-  const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
-  if (!storeId) {
-    return json({ error: "Restaurante em falta." }, 400);
-  }
-
   const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
+  const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
 
   const userId = await resolveAuthUserId(req);
   const service = createClient(
@@ -223,44 +255,130 @@ export async function handleStripeConnectRequest(
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  if (mode === "platform_status") {
+    try {
+      if (storeId) {
+        const store = await assertStoreAccess(service, userId, storeId);
+        const ctx = await loadConnectContext(store);
+        const probed = await inspectPlatformConnectStatus(
+          ctx.stripe,
+          ctx.environment === "test" ? "test" : "live",
+          { probe: ctx.environment === "live" },
+        );
+        return json({
+          ...platformStatusPayload({ ...ctx.platform, ...probed }, ctx.environment),
+          hasConnectAccount: Boolean(store.stripe_connect_account_id),
+        });
+      }
+      const liveKey = getStripeSecretKey();
+      if (liveKey) {
+        const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+        const platform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
+        return json({
+          ...platformStatusPayload(platform, "live"),
+          hasConnectAccount: false,
+        });
+      }
+      const testKey = getStripeSecretKeyTest();
+      if (testKey) {
+        const testStripe = new Stripe(testKey, { apiVersion: "2023-10-16" });
+        const platform = await inspectPlatformConnectStatus(testStripe, "test");
+        return json({
+          ...platformStatusPayload(platform, "test"),
+          hasConnectAccount: false,
+        });
+      }
+      return json({ error: "Nenhuma chave Stripe configurada." }, 503);
+    } catch (e) {
+      if (e instanceof PlatformPendingError) {
+        return json({
+          ...platformStatusPayload(e.platform, "live"),
+          hasConnectAccount: false,
+          connectEnvironment: "live",
+          productionBlocked: true,
+        });
+      }
+      throw e;
+    }
+  }
+
+  if (!storeId) {
+    return json({ error: "Restaurante em falta." }, 400);
+  }
+
   const store = await assertStoreAccess(service, userId, storeId);
-  const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-  const accountId = await ensureConnectAccount(stripe, service, store);
+  let ctx: StripeConnectContext;
+  try {
+    ctx = await loadConnectContext(store);
+  } catch (e) {
+    if (e instanceof PlatformPendingError) {
+      const err = new ConnectError(e.message, 503, e.code);
+      err.platform = platformStatusPayload(e.platform, "live");
+      throw err;
+    }
+    throw e;
+  }
+
+  const { accountId, environment } = await ensureConnectAccount(ctx, service, store);
+  const stripe = ctx.stripe;
+  const meta = connectMeta(ctx);
 
   if (mode === "provision") {
-    return json({ accountId, provisioned: true });
+    return json({ accountId, provisioned: true, ...meta });
   }
 
   if (mode === "sync_status") {
     const status = await syncConnectAccountById(stripe, service, accountId);
-    return json(statusPayload(status));
+    return json({ ...statusPayload(status, environment), ...meta });
   }
 
   if (mode === "embedded_onboarding" || mode === "embedded_management" || mode === "account_session") {
     const sessionMode = mode === "account_session" ? "embedded_onboarding" : mode;
     const clientSecret = await createEmbeddedAccountSession(stripe, accountId, sessionMode);
-    return json({ clientSecret, accountId, mode: sessionMode });
+    return json({
+      clientSecret,
+      accountId,
+      mode: sessionMode,
+      connectEnvironment: environment,
+      ...meta,
+    });
   }
 
-  // Legacy redirect — apenas fallback de emergência
-  const returnUrl = typeof body.returnUrl === "string" ? body.returnUrl.trim() : "";
-  if (!returnUrl) {
-    return json({ error: "Modo inválido — use embedded_onboarding." }, 400);
-  }
-
-  const link = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: returnUrl,
-    return_url: returnUrl,
-    type: "account_onboarding",
-  });
-
-  return json({ url: link.url, accountId, legacy: true });
+  return json({ error: "Modo inválido — use embedded_onboarding." }, 400);
 }
 
 export function connectErrorResponse(e: unknown): Response {
   if (e instanceof ConnectError) {
-    return json({ error: e.message, code: "connect_error" }, e.status);
+    return json(
+      {
+        error: e.message,
+        code: e.code,
+        platform: e.platform ?? undefined,
+      },
+      e.status,
+    );
+  }
+  if (e instanceof PlatformPendingError) {
+    return json(
+      {
+        error: e.message,
+        code: e.code,
+        platform: platformStatusPayload(e.platform, "live"),
+        productionBlocked: true,
+      },
+      503,
+    );
+  }
+  if (isPlatformProfileBlockedError(e)) {
+    return json(
+      {
+        error:
+          "Plataforma pendente de verificação — pagamentos reais bloqueados até a Stripe aprovar o perfil da plataforma.",
+        code: "platform_pending_verification",
+        productionBlocked: true,
+      },
+      503,
+    );
   }
   const stripeMsg = e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "";
   if (stripeMsg.includes("signed up for Connect")) {
@@ -277,4 +395,4 @@ export function connectErrorResponse(e: unknown): Response {
   return json({ error: msg, code: "connect_failed" }, 500);
 }
 
-export { syncConnectAccountById, persistConnectAccountStatus, fetchConnectAccountStatus };
+export { syncConnectAccountById };

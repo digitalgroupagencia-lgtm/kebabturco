@@ -11,8 +11,14 @@ import {
   PLATFORM_FEE_CENTS,
 } from "../_shared/stripePaymentActions.ts";
 import { estimatedStripeFeeInServiceFee } from "../_shared/stripeFees.ts";
-import { getStripeSecretKey } from "../_shared/stripeEnv.ts";
+import {
+  getStripeSecretKey,
+  getStripeSecretKeyTest,
+  pickStripeSecretForEnvironment,
+  stripeKeyMode,
+} from "../_shared/stripeEnv.ts";
 import { connectErrorResponse, handleStripeConnectRequest } from "../_shared/stripeConnectOnboard.ts";
+import { buildLivePlatformStatus } from "../_shared/stripePlatform.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -78,19 +84,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const stripeKey = getStripeSecretKey();
-    if (!stripeKey) {
-      return json(
-        {
-          error: "Pagamentos online indisponíveis",
-          code: "stripe_secret_missing",
-          hint: "Configure STRIPE_SECRET_KEY nos segredos Lovable Cloud (Integrações → Stripe).",
-        },
-        503,
-      );
-    }
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const {
       storeId,
       orderType,
@@ -132,7 +125,7 @@ Deno.serve(async (req) => {
     const { data: store, error: storeErr } = await supabase
       .from("stores")
       .select(
-        "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
+        "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
       )
       .eq("id", storeId)
       .maybeSingle();
@@ -146,6 +139,37 @@ Deno.serve(async (req) => {
       return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
     }
 
+    const connectEnv = (store.stripe_connect_environment as string) || "live";
+    const stripeKey = pickStripeSecretForEnvironment(connectEnv === "test" ? "test" : "live");
+    if (!stripeKey) {
+      return json(
+        {
+          error:
+            connectEnv === "test"
+              ? "Pagamentos de teste indisponíveis — falta chave secreta de teste no servidor."
+              : "Pagamentos online indisponíveis — falta chave secreta no servidor.",
+          code: "stripe_secret_missing",
+        },
+        503,
+      );
+    }
+
+    if (connectEnv === "live" && stripeKeyMode(stripeKey) === "live") {
+      const livePlatform = await buildLivePlatformStatus();
+      if (livePlatform?.productionBlocked) {
+        return json(
+          {
+            error:
+              "Produção bloqueada — plataforma pendente de verificação. Use modo teste ou aguarde aprovação.",
+            code: "platform_pending_verification",
+            productionBlocked: true,
+          },
+          503,
+        );
+      }
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const intent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency: "eur",
@@ -176,6 +200,7 @@ Deno.serve(async (req) => {
       platformFeeCents: PLATFORM_FEE_CENTS,
       estimatedStripeFeeCents,
       stripeConnectAccountId: store.stripe_connect_account_id,
+      connectEnvironment: connectEnv === "test" ? "test" : "live",
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento";

@@ -2,17 +2,21 @@ import { useMemo, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
-import { getStripePublishableKey, hasStripePublishableKey } from "@/lib/stripePublishableKey";
+import {
+  getStripePublishableKeyForEnvironment,
+  hasStripePublishableKey,
+  type StripePublishableEnvironment,
+} from "@/lib/stripePublishableKey";
 
-let stripePromiseCache: Promise<Stripe | null> | null = null;
+const stripePromiseCache: Partial<Record<StripePublishableEnvironment, Promise<Stripe | null>>> = {};
 
-function getStripePromise() {
-  const key = getStripePublishableKey();
+function getStripePromise(environment: StripePublishableEnvironment = "live") {
+  const key = getStripePublishableKeyForEnvironment(environment);
   if (!key) return null;
-  if (!stripePromiseCache) {
-    stripePromiseCache = loadStripe(key);
+  if (!stripePromiseCache[environment]) {
+    stripePromiseCache[environment] = loadStripe(key);
   }
-  return stripePromiseCache;
+  return stripePromiseCache[environment]!;
 }
 
 function CheckoutForm({
@@ -87,10 +91,12 @@ export default function StripePaymentForm(props: {
   onSuccess: () => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
+  connectEnvironment?: StripePublishableEnvironment;
 }) {
-  const stripePromise = useMemo(() => getStripePromise(), []);
+  const environment = props.connectEnvironment ?? "live";
+  const stripePromise = useMemo(() => getStripePromise(environment), [environment]);
 
-  if (!hasStripePublishableKey() || !stripePromise) {
+  if (!hasStripePublishableKey(environment) || !stripePromise) {
     return (
       <p className="text-sm text-destructive font-bold p-4 bg-destructive/10 rounded-2xl">
         Pagamento online ainda não está disponível neste site. Peça ao restaurante para activar os recebimentos.

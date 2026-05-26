@@ -16,7 +16,18 @@ export type DbDiagnostics = {
 
 export type ServerDiagnostics = {
   stripeSecretKey: boolean;
+  stripeSecretKeyTest?: boolean;
   stripeWebhookSecret: boolean;
+  stripeWebhookSecretTest?: boolean;
+  platform?: {
+    keyMode: "live" | "test";
+    connectLiveAllowed: boolean;
+    platformProfileComplete: boolean;
+    pendingVerification: boolean;
+    productionBlocked: boolean;
+    testKeysConfigured: boolean;
+    adminMessage: string | null;
+  } | null;
   webhookConfigured: boolean;
   webhookUrl: string | null;
   webhookExpectedUrl: string;
@@ -24,6 +35,7 @@ export type ServerDiagnostics = {
   edgeFunctions: Record<string, boolean>;
   store: {
     stripe_connect_account_id: string | null;
+    stripe_connect_environment?: "live" | "test" | null;
     stripe_charges_enabled: boolean;
     stripe_onboarding_completed: boolean;
     stripe_payouts_enabled: boolean;

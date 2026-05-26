@@ -17,7 +17,7 @@ import {
   PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
+import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
   computeRestaurantPortionEur,
@@ -115,8 +115,10 @@ const PaymentScreen = () => {
     platformFeeCents: number;
     estimatedStripeFeeCents: number;
     stripeConnectAccountId: string;
+    connectEnvironment?: StripePublishableEnvironment;
   } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
   const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone">(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -126,7 +128,7 @@ const PaymentScreen = () => {
 
   const isTableOrder = orderType === "here";
   const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
-  const stripePublishableKey = hasStripePublishableKey();
+  const stripePublishableKey = hasStripePublishableKey(stripeConnectEnvironment);
   const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
   const stripeIssue = stripeConfigIssue(stripeEnabled, stripePublishableKey);
 
@@ -180,7 +182,11 @@ const PaymentScreen = () => {
   useEffect(() => {
     if (!storeId) return;
     fetchStoreFinancialProfile(storeId)
-      .then((profile) => setStripeEnabled(isStripeConnectReady(profile)))
+      .then((profile) => {
+        setStripeEnabled(isStripeConnectReady(profile));
+        const env = profile?.stripe_connect_environment === "test" ? "test" : "live";
+        setStripeConnectEnvironment(env);
+      })
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
@@ -406,7 +412,11 @@ const PaymentScreen = () => {
       platformFeeCents: pi.platformFeeCents,
       estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
       stripeConnectAccountId: pi.stripeConnectAccountId,
+      connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
     });
+    if (pi.connectEnvironment) {
+      setStripeConnectEnvironment(pi.connectEnvironment);
+    }
     setStripeClientSecret(pi.clientSecret);
   };
 
@@ -514,6 +524,7 @@ const PaymentScreen = () => {
               compact={compact}
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
+              connectEnvironment={stripePaymentMeta?.connectEnvironment ?? stripeConnectEnvironment}
               onCancel={() => {
                 setStripeClientSecret(null);
                 setStripePaymentIntentId(null);

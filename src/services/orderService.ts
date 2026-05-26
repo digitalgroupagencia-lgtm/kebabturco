@@ -10,12 +10,28 @@ export type StoreStripeSettings = {
 };
 
 export type StoreFinancialProfile = StoreStripeSettings & {
+  stripe_connect_environment?: "live" | "test" | null;
   stripe_onboarding_completed: boolean;
   stripe_payouts_enabled: boolean;
   stripe_iban_last4: string | null;
   stripe_business_name: string | null;
   stripe_payout_status: string;
   stripe_last_payout_at: string | null;
+};
+
+export type StripePlatformStatus = {
+  keyMode: "live" | "test";
+  connectEnvironment: "live" | "test";
+  connectLiveAllowed: boolean;
+  platformProfileComplete: boolean;
+  pendingVerification: boolean;
+  productionBlocked: boolean;
+  testKeysConfigured: boolean;
+  message: string | null;
+  adminMessage: string | null;
+  canUseEmbeddedTest: boolean;
+  canUseEmbeddedLive: boolean;
+  hasConnectAccount?: boolean;
 };
 
 export type CreateCustomerOrderResult = {
@@ -134,7 +150,7 @@ export async function fetchStoreFinancialProfile(storeId: string): Promise<Store
   const { data, error } = await supabase
     .from("stores")
     .select(
-      "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at",
+      "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at",
     )
     .eq("id", storeId)
     .maybeSingle();
@@ -267,6 +283,7 @@ export async function createStripePaymentIntent(params: {
     platformFeeCents: number;
     estimatedStripeFeeCents: number;
     stripeConnectAccountId: string;
+    connectEnvironment?: "live" | "test";
   };
 }
 
@@ -280,7 +297,19 @@ export type StripeConnectStatus = {
   ibanLast4: string | null;
   requirementsDue: string[];
   ready: boolean;
+  connectEnvironment?: "live" | "test";
 };
+
+function throwConnectError(data: Record<string, unknown>): never {
+  const err = new Error(String(data.error ?? "Erro nos recebimentos"));
+  (err as Error & { code?: string; platform?: StripePlatformStatus }).code =
+    typeof data.code === "string" ? data.code : undefined;
+  (err as Error & { platform?: StripePlatformStatus }).platform =
+    data.platform && typeof data.platform === "object"
+      ? (data.platform as StripePlatformStatus)
+      : undefined;
+  throw err;
+}
 
 async function invokeConnectFunction(payload: Record<string, unknown>) {
   const invoke = async (functionName: string, body: Record<string, unknown>) => {
@@ -295,7 +324,7 @@ async function invokeConnectFunction(payload: Record<string, unknown>) {
       throw new Error(msg);
     }
     if (data && typeof data === "object" && "error" in data && data.error) {
-      throw new Error(String(data.error));
+      throwConnectError(data as Record<string, unknown>);
     }
     return data;
   };
@@ -316,7 +345,23 @@ export async function createStripeConnectEmbeddedSession(
   mode: "embedded_onboarding" | "embedded_management",
 ) {
   const data = await invokeConnectFunction({ storeId, mode });
-  return data as { clientSecret: string; accountId: string };
+  return data as {
+    clientSecret: string;
+    accountId: string;
+    connectEnvironment?: "live" | "test";
+  };
+}
+
+export async function fetchStripePlatformStatus(storeId?: string): Promise<StripePlatformStatus | null> {
+  try {
+    const data = await invokeConnectFunction({
+      storeId: storeId ?? "",
+      mode: "platform_status",
+    });
+    return data as StripePlatformStatus;
+  } catch {
+    return null;
+  }
 }
 
 export async function syncStripeConnectStatus(storeId: string): Promise<StripeConnectStatus> {

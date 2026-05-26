@@ -6,7 +6,12 @@ import {
   estimatedStripeFeeInServiceFee,
 } from "../_shared/stripeFees.ts";
 import { syncConnectAccountById } from "../_shared/stripeConnectSync.ts";
-import { getStripeSecretKey, getStripeWebhookSecret } from "../_shared/stripeEnv.ts";
+import {
+  getStripeSecretKey,
+  getStripeSecretKeyTest,
+  getStripeWebhookSecret,
+  stripeKeyMode,
+} from "../_shared/stripeEnv.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,32 +58,58 @@ async function upsertPayout(
   }
 }
 
+function resolveWebhookContext(body: string, signature: string): {
+  stripe: Stripe;
+  event: Stripe.Event;
+  mode: "live" | "test";
+} | null {
+  const candidates: Array<{ key: string; secret: string }> = [];
+  const liveKey = getStripeSecretKey();
+  const testKey = getStripeSecretKeyTest();
+  const liveSecret = getStripeWebhookSecret("live");
+  const testSecret = getStripeWebhookSecret("test");
+
+  if (liveKey && liveSecret) candidates.push({ key: liveKey, secret: liveSecret });
+  if (testKey && testSecret && testKey !== liveKey) {
+    candidates.push({ key: testKey, secret: testSecret });
+  }
+
+  for (const { key, secret } of candidates) {
+    const stripe = new Stripe(key, { apiVersion: "2023-10-16" });
+    try {
+      const event = stripe.webhooks.constructEvent(body, signature, secret);
+      return { stripe, event, mode: stripeKeyMode(key) };
+    } catch {
+      /* try next secret */
+    }
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeKey = getStripeSecretKey();
-  const webhookSecret = getStripeWebhookSecret();
-  if (!stripeKey || !webhookSecret) {
+  const hasAnyWebhook =
+    Boolean(getStripeWebhookSecret("live")) || Boolean(getStripeWebhookSecret("test"));
+  if (!hasAnyWebhook || (!getStripeSecretKey() && !getStripeSecretKeyTest())) {
     return new Response("Webhook não configurado", { status: 503 });
   }
 
-  const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
     return new Response("Missing signature", { status: 400 });
   }
 
   const body = await req.text();
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Invalid signature";
-    return new Response(`Webhook Error: ${msg}`, { status: 400 });
+  const resolved = resolveWebhookContext(body, signature);
+  if (!resolved) {
+    return new Response("Webhook Error: Invalid signature", { status: 400 });
   }
+
+  const { stripe, event } = resolved;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

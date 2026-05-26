@@ -170,6 +170,74 @@ export function useOperationalDiagnostics() {
       });
     }
 
+    const platform = serverDiag?.platform;
+    const storeConnectEnv =
+      (storeProfile?.stripe_connect_environment as "live" | "test" | undefined) ??
+      (serverDiag?.store?.stripe_connect_environment as "live" | "test" | undefined) ??
+      "live";
+    const productionBlocked = Boolean(platform?.productionBlocked);
+    const testKeysOnServer = Boolean(serverDiag?.stripeSecretKeyTest ?? platform?.testKeysConfigured);
+
+    if (serverDiag && platform?.productionBlocked) {
+      results.push({
+        id: "stripe-platform-verification",
+        label: "Plataforma Stripe (verificação)",
+        status: "warn",
+        critical: false,
+        detail:
+          platform.adminMessage ??
+          "Plataforma pendente de verificação — pagamentos reais e contas live bloqueados até aprovação.",
+        action: testKeysOnServer
+          ? "Use modo teste em Admin → Recebimentos para experimentar. Produção activa-se quando a Stripe aprovar o perfil."
+          : "Aguarde aprovação da Stripe. Para testar antes, peça chaves de teste (sk_test + pk_test) nos segredos Lovable.",
+      });
+    } else if (serverDiag && platform && !platform.productionBlocked) {
+      results.push({
+        id: "stripe-platform-verification",
+        label: "Plataforma Stripe (verificação)",
+        status: "ok",
+        detail: "Plataforma aprovada — contas live e pagamentos reais permitidos.",
+      });
+    }
+
+    if (serverDiag) {
+      if (storeConnectEnv === "test") {
+        results.push({
+          id: "stripe-connect-mode",
+          label: "Modo Stripe Connect",
+          status: "warn",
+          detail: "Modo teste — checkout e split simulados, sem dinheiro real.",
+          action: productionBlocked
+            ? "Produção bloqueada até a Stripe aprovar a plataforma."
+            : undefined,
+        });
+      } else if (productionBlocked && testKeysOnServer) {
+        results.push({
+          id: "stripe-connect-mode",
+          label: "Modo Stripe Connect",
+          status: "warn",
+          detail: "Produção bloqueada — testes disponíveis com chaves de teste.",
+          action: "Admin → Recebimentos → Conectar recebimentos (modo teste).",
+        });
+      } else if (!productionBlocked) {
+        results.push({
+          id: "stripe-connect-mode",
+          label: "Modo Stripe Connect",
+          status: "ok",
+          detail: "Modo produção — pagamentos reais activos.",
+        });
+      }
+    }
+
+    if (serverDiag?.stripeSecretKey || serverDiag?.stripeSecretKeyTest) {
+      results.push({
+        id: "stripe-connect-configured",
+        label: "Stripe Connect configurado",
+        status: "ok",
+        detail: "Servidor preparado para onboarding embebido, checkout com split e taxa online.",
+      });
+    }
+
     // STRIPE Connect — conta restaurante
     const chargesOk = storeProfile?.stripe_charges_enabled ?? serverDiag?.store?.stripe_charges_enabled;
     const onboardingOk =
@@ -183,12 +251,19 @@ export function useOperationalDiagnostics() {
       results.push({
         id: "stripe-connect",
         label: "Conta bancária (recebimentos)",
-        status: "fail",
-        critical: true,
+        status: productionBlocked && testKeysOnServer ? "warn" : "fail",
+        critical: !(productionBlocked && testKeysOnServer),
         detail: !hasConnect
-          ? "Recebimentos online ainda não foram activados."
+          ? productionBlocked && testKeysOnServer
+            ? "Conta do restaurante ainda não criada — pode activar em modo teste."
+            : productionBlocked
+              ? "Conta do restaurante não criada — produção bloqueada até aprovação da plataforma."
+              : "Recebimentos online ainda não foram activados."
           : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
-        action: "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
+        action:
+          productionBlocked && testKeysOnServer
+            ? "Admin → Recebimentos → Conectar recebimentos (modo teste, dentro do painel)."
+            : "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
       });
     } else if (!payoutsOk) {
       results.push({
@@ -210,21 +285,40 @@ export function useOperationalDiagnostics() {
 
     // WEBHOOK
     if (serverDiag) {
+      const needsTestWebhook = storeConnectEnv === "test" || (productionBlocked && testKeysOnServer);
       if (!serverDiag.stripeWebhookSecret) {
         results.push({
           id: "stripe-webhook-secret",
           label: "Webhook Stripe (servidor)",
           status: "fail",
           critical: true,
-          detail: "Segredo do webhook em falta — pagamentos podem não confirmar automaticamente.",
-          action: "No Supabase → Secrets → adicione STRIPE_WEBHOOK_SECRET (valor da Stripe).",
+          detail: "Segredo do webhook live em falta — pagamentos reais podem não confirmar automaticamente.",
+          action: "No Supabase → Secrets → adicione STRIPE_WEBHOOK_SECRET (valor da Stripe, modo live).",
         });
       } else {
         results.push({
           id: "stripe-webhook-secret",
           label: "Webhook Stripe (servidor)",
           status: "ok",
-          detail: "Segredo do webhook configurado.",
+          detail: "Segredo do webhook live configurado.",
+        });
+      }
+
+      if (needsTestWebhook && !serverDiag.stripeWebhookSecretTest) {
+        results.push({
+          id: "stripe-webhook-secret-test",
+          label: "Webhook Stripe (teste)",
+          status: "warn",
+          detail: "Segredo do webhook de teste em falta — pagamentos simulados podem não confirmar sozinhos.",
+          action:
+            "Na Stripe (modo teste) → Webhooks → mesma URL → copie o segredo para STRIPE_WEBHOOK_SECRET_TEST nos Segredos Lovable.",
+        });
+      } else if (needsTestWebhook && serverDiag.stripeWebhookSecretTest) {
+        results.push({
+          id: "stripe-webhook-secret-test",
+          label: "Webhook Stripe (teste)",
+          status: "ok",
+          detail: "Segredo do webhook de teste configurado.",
         });
       }
 
@@ -237,7 +331,7 @@ export function useOperationalDiagnostics() {
           status: "fail",
           critical: true,
           detail: "A Stripe ainda não avisa o servidor quando um pagamento é confirmado.",
-          action: `Na Stripe → Developers → Webhooks → Add endpoint → URL: ${webhookUrl} → eventos: payment_intent.succeeded, account.updated, payout.paid`,
+          action: `Na Stripe → Developers → Webhooks → Add endpoint → URL: ${webhookUrl} → eventos: payment_intent.succeeded, account.updated, payout.paid, payout.failed`,
         });
       } else {
         results.push({

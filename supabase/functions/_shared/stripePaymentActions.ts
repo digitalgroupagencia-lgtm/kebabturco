@@ -5,7 +5,8 @@ import {
   computeNetToStoreCents,
   estimatedStripeFeeInServiceFee,
 } from "./stripeFees.ts";
-import { getStripeSecretKey, getStripeWebhookSecret } from "./stripeEnv.ts";
+import { getStripeSecretKey, getStripeSecretKeyTest, getStripeWebhookSecret } from "./stripeEnv.ts";
+import { buildLivePlatformStatus } from "./stripePlatform.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,18 +65,38 @@ export async function handleOperationalDiagnostics(
 
   const storeId = typeof body.storeId === "string" ? body.storeId : null;
   const stripeSecret = getStripeSecretKey() ?? "";
-  const webhookSecret = getStripeWebhookSecret() ?? "";
+  const stripeSecretTest = getStripeSecretKeyTest() ?? "";
+  const webhookSecret = getStripeWebhookSecret("live") ?? "";
+  const webhookSecretTest = getStripeWebhookSecret("test") ?? "";
 
   let storeProfile: Record<string, unknown> | null = null;
   if (storeId) {
     const { data } = await service
       .from("stores")
       .select(
-        "id, stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
+        "id, stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
       )
       .eq("id", storeId)
       .maybeSingle();
     storeProfile = data;
+  }
+
+  let platform: Record<string, unknown> | null = null;
+  try {
+    const livePlatform = await buildLivePlatformStatus();
+    if (livePlatform) {
+      platform = {
+        keyMode: livePlatform.keyMode,
+        connectLiveAllowed: livePlatform.connectLiveAllowed,
+        platformProfileComplete: livePlatform.platformProfileComplete,
+        pendingVerification: livePlatform.pendingVerification,
+        productionBlocked: livePlatform.productionBlocked,
+        testKeysConfigured: livePlatform.testKeysConfigured,
+        adminMessage: livePlatform.adminMessage,
+      };
+    }
+  } catch (e) {
+    console.error("[diagnostics] platform status", e);
   }
 
   const functions: Record<string, boolean> = {};
@@ -108,7 +129,10 @@ export async function handleOperationalDiagnostics(
 
   return json({
     stripeSecretKey: Boolean(stripeSecret),
+    stripeSecretKeyTest: Boolean(stripeSecretTest),
     stripeWebhookSecret: Boolean(webhookSecret),
+    stripeWebhookSecretTest: Boolean(webhookSecretTest),
+    platform,
     webhookConfigured,
     webhookUrl,
     webhookExpectedUrl: expectedWebhookUrl,

@@ -11,7 +11,10 @@ ALTER TABLE public.stores
   ADD COLUMN IF NOT EXISTS stripe_business_name text,
   ADD COLUMN IF NOT EXISTS stripe_payout_status text NOT NULL DEFAULT 'pending',
   ADD COLUMN IF NOT EXISTS stripe_last_payout_at timestamptz,
-  ADD COLUMN IF NOT EXISTS stripe_connect_created_at timestamptz;
+  ADD COLUMN IF NOT EXISTS stripe_connect_created_at timestamptz,
+  ADD COLUMN IF NOT EXISTS stripe_connect_environment text NOT NULL DEFAULT 'live';
+
+COMMENT ON COLUMN public.stores.stripe_connect_environment IS 'live ou test — ambiente da conta Connect do restaurante';
 
 -- Garantir loja activa para o tenant kebab-turco
 UPDATE public.stores s
