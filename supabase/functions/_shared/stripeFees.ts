@@ -20,25 +20,24 @@ export function computeRestaurantPortionCents(
 }
 
 /**
- * Taxa de serviço/pagamento online cobrada ao cliente.
- * Contém €1 plataforma + cobertura estimada da taxa Stripe sobre o total cobrado.
+ * Taxa retida do repasse do restaurante (€1 plataforma + estimativa Stripe).
+ * O cliente paga apenas o valor dos produtos + entrega − desconto.
  */
-export function computeOnlineServiceFeeCents(restaurantPortionCents: number): number {
-  if (restaurantPortionCents <= 0) return 0;
-  let fee = PLATFORM_FEE_CENTS + estimateStripeFeeCents(restaurantPortionCents + PLATFORM_FEE_CENTS);
-  for (let i = 0; i < 5; i++) {
-    fee = PLATFORM_FEE_CENTS + estimateStripeFeeCents(restaurantPortionCents + fee);
-  }
-  return fee;
-}
-
-export function computeCustomerTotalCents(restaurantPortionCents: number): number {
-  return restaurantPortionCents + computeOnlineServiceFeeCents(restaurantPortionCents);
-}
-
-/** application_fee_amount = taxa online inteira (plataforma retém; Stripe sai daqui). */
 export function computeApplicationFeeCents(restaurantPortionCents: number): number {
-  return computeOnlineServiceFeeCents(restaurantPortionCents);
+  if (restaurantPortionCents <= 0) return 0;
+  const raw = PLATFORM_FEE_CENTS + estimateStripeFeeCents(restaurantPortionCents);
+  const maxFee = Math.max(0, restaurantPortionCents - 1);
+  return Math.min(raw, maxFee);
+}
+
+/** Alias interno — taxa descontada do restaurante, não cobrada ao cliente. */
+export function computeOnlineServiceFeeCents(restaurantPortionCents: number): number {
+  return computeApplicationFeeCents(restaurantPortionCents);
+}
+
+/** Total cobrado ao cliente = apenas valor do restaurante. */
+export function computeCustomerTotalCents(restaurantPortionCents: number): number {
+  return restaurantPortionCents;
 }
 
 export function estimatedStripeFeeInServiceFee(onlineServiceFeeCents: number): number {
@@ -51,5 +50,5 @@ export function computeProcessingFeeCents(platformFeeCents: number, stripeFeeCen
 }
 
 export function computeNetToStoreCents(restaurantPortionCents: number): number {
-  return Math.max(0, restaurantPortionCents);
+  return Math.max(0, restaurantPortionCents - computeApplicationFeeCents(restaurantPortionCents));
 }

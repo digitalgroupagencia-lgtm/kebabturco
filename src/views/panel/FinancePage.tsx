@@ -13,9 +13,14 @@ import {
   type StripePlatformStatus,
 } from "@/services/orderService";
 import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
-import { computeOnlineServiceFeeEur, ONLINE_SERVICE_FEE_LABEL } from "@/lib/processingFee";
+import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
 import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbeddedPanel";
+import TestCheckoutReadiness from "@/components/finance/TestCheckoutReadiness";
+import {
+  fetchServerOperationalDiagnostics,
+  probeSchemaFallback,
+} from "@/services/operationalDiagnosticsService";
 import {
   Loader2,
   Wallet,
@@ -59,13 +64,17 @@ const FinancePage = () => {
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
+  const [serverDiag, setServerDiag] = useState<Awaited<ReturnType<typeof fetchServerOperationalDiagnostics>>>(null);
+  const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!storeId) return;
-    setLoading(true);
-    const [prof, platform, { data: lg }, { data: po }] = await Promise.all([
+    if (!options?.silent) setLoading(true);
+    const [prof, platform, diag, schema, { data: lg }, { data: po }] = await Promise.all([
       fetchStoreFinancialProfile(storeId),
       fetchStripePlatformStatus(storeId),
+      fetchServerOperationalDiagnostics(storeId),
+      probeSchemaFallback(),
       supabase
         .from("store_payment_ledger")
         .select("id,description,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
@@ -81,9 +90,11 @@ const FinancePage = () => {
     ]);
     setProfile(prof);
     setPlatformStatus(platform);
+    setServerDiag(diag);
+    setSchemaProbe(schema);
     setLedger((lg as LedgerRow[]) || []);
     setPayouts((po as PayoutRow[]) || []);
-    setLoading(false);
+    if (!options?.silent) setLoading(false);
   }, [storeId]);
 
   useEffect(() => {
@@ -114,8 +125,8 @@ const FinancePage = () => {
     setTestProvisionBusy(true);
     try {
       const result = await provisionTestStripeConnect(storeId);
-      await load();
-      toast.success(result.message || "Recebimentos de teste activos");
+      await load({ silent: true });
+      toast.success(result.message || "Modo teste activo — recebimentos de teste activos");
       setEmbeddedMode("none");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos de teste");
@@ -125,7 +136,7 @@ const FinancePage = () => {
   }, [storeId, load]);
 
   const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
-  const exampleOnlineFee = computeOnlineServiceFeeEur(20);
+  const exampleDeduction = computePlatformDeductionEur(20);
 
   if (!storeId) {
     return <div className="p-6 text-sm text-muted-foreground">Sem restaurante vinculado</div>;
@@ -169,8 +180,7 @@ const FinancePage = () => {
         </h1>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
           Sistema financeiro do restaurante — ligue a conta bancária, acompanhe pedidos pagos online e repasses.
-          O cliente paga a {ONLINE_SERVICE_FEE_LABEL.toLowerCase()} no checkout; o restaurante recebe o valor integral
-          dos produtos e entrega.
+          O cliente paga o total do pedido; a taxa da plataforma sai do repasse ao restaurante.
         </p>
         <Link to={nav.admin("diagnostics")} className="text-xs text-primary font-semibold underline mt-2 inline-block">
           Ver Estado do sistema
@@ -194,6 +204,18 @@ const FinancePage = () => {
         </div>
       )}
 
+      {(testModeActive || productionBlocked) && (
+        <TestCheckoutReadiness
+          profile={profile}
+          platformStatus={platformStatus}
+          schemaStripeEnv={schemaProbe?.schema_stripe_connect_environment ?? true}
+          schemaTestSimulated={schemaProbe?.schema_stripe_connect_test_simulated ?? true}
+          serverTestKey={serverDiag?.stripeSecretKeyTest}
+          serverTestWebhook={serverDiag?.stripeWebhookSecretTest}
+          edgeFunctionsOk={serverDiag?.edgeFunctions?.["stripe-create-payment-intent"] !== false}
+        />
+      )}
+
       {(testModeActive || (productionBlocked && canStartConnect)) && (
         <div className="rounded-lg border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300 bg-amber-500/10">
           {testModeActive ? "Modo teste activo" : "Testes disponíveis — produção bloqueada"}
@@ -211,10 +233,12 @@ const FinancePage = () => {
           <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <div className="space-y-1 text-muted-foreground leading-relaxed">
             <p>
-              <strong className="text-foreground">Exemplo pedido 20,00€:</strong> cliente paga cerca de{" "}
-              {(20 + exampleOnlineFee).toFixed(2)}€ (inclui {exampleOnlineFee.toFixed(2)}€ de taxa online).
+              <strong className="text-foreground">Exemplo pedido 20,00€:</strong> o cliente paga{" "}
+              <strong className="text-foreground">20,00€</strong> (total simples, sem taxa extra).
             </p>
-            <p>O restaurante recebe <strong className="text-foreground">20,00€</strong>.</p>
+            <p>
+              A taxa da plataforma (cerca de {PLATFORM_FEE_EUR.toFixed(2)}€ + processamento, ~{exampleDeduction.toFixed(2)}€ neste exemplo) sai do repasse do restaurante — o restaurante recebe ~{(20 - exampleDeduction).toFixed(2)}€ líquidos.
+            </p>
           </div>
         </div>
       </div>
@@ -229,7 +253,13 @@ const FinancePage = () => {
         <div className="rounded-xl border bg-card p-3">
           <p className="text-[10px] text-muted-foreground uppercase font-bold">Pagamentos online</p>
           <p className="text-sm font-bold mt-0.5 capitalize">
-            {connectStatus === "ready" ? "Activos" : connectStatus === "pending" ? "Pendentes" : "Por activar"}
+            {connectStatus === "ready"
+              ? testModeActive
+                ? "Modo teste activo"
+                : "Activos"
+              : connectStatus === "pending"
+                ? "Pendentes"
+                : "Por activar"}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-3">

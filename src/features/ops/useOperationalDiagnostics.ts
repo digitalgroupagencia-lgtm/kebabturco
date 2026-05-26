@@ -48,6 +48,7 @@ export function useOperationalDiagnostics() {
     const schemaQr = dbDiag?.schema_qr_token ?? schemaProbe.schema_qr_token;
     const schemaPrint = dbDiag?.schema_kitchen_print ?? schemaProbe.schema_kitchen_print;
     const schemaStripeEnv = schemaProbe.schema_stripe_connect_environment;
+    const schemaTestSimulated = schemaProbe.schema_stripe_connect_test_simulated;
     const schemaValidated = dbDiag?.schema_table_validated ?? true;
     const rpcReady =
       dbDiag != null &&
@@ -107,6 +108,24 @@ export function useOperationalDiagnostics() {
         label: "Modo teste/produção (base de dados)",
         status: "ok",
         detail: "Base de dados preparada para alternar teste e produção por restaurante.",
+      });
+    }
+
+    if (!schemaTestSimulated) {
+      results.push({
+        id: "stripe-connect-test-simulated-col",
+        label: "Recebimentos simulados (base de dados)",
+        status: "fail",
+        critical: true,
+        detail: "Falta actualização para activar recebimentos de teste com um clique.",
+        action: "Na Lovable: «Apply all pending Supabase migrations».",
+      });
+    } else {
+      results.push({
+        id: "stripe-connect-test-simulated-col",
+        label: "Recebimentos simulados (base de dados)",
+        status: "ok",
+        detail: "Base de dados preparada para recebimentos de teste simulados.",
       });
     }
 

@@ -101,6 +101,8 @@ export default function StripeConnectEmbeddedPanel({
     setTestProvisionBusy(true);
     try {
       const result = await provisionTestStripeConnect(storeId);
+      setLoadError(null);
+      setUseTestProvision(false);
       onTestProvisioned?.(result.message);
       onComplete?.();
     } catch (e) {

@@ -39,7 +39,7 @@ const ProductScreen = () => {
     [editingCartItemId, items],
   );
 
-  if (menuLoading || (selectedProductId && !product)) {
+  if (menuLoading || modifierLoading || (selectedProductId && !product)) {
     return (
       <div className="h-[100dvh] flex items-center justify-center">
         <PageSpinner />
@@ -61,14 +61,6 @@ const ProductScreen = () => {
             {t("back")}
           </button>
         </div>
-      </div>
-    );
-  }
-
-  if (modifierLoading) {
-    return (
-      <div className="h-[100dvh] flex items-center justify-center">
-        <PageSpinner />
       </div>
     );
   }

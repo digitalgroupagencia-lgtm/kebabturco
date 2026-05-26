@@ -36,10 +36,12 @@ export type ServerDiagnostics = {
   store: {
     stripe_connect_account_id: string | null;
     stripe_connect_environment?: "live" | "test" | null;
+    stripe_connect_test_simulated?: boolean;
     stripe_charges_enabled: boolean;
     stripe_onboarding_completed: boolean;
     stripe_payouts_enabled: boolean;
   } | null;
+  webhookConfiguredTest?: boolean;
 };
 
 export async function fetchDbOperationalDiagnostics(storeId: string | null): Promise<DbDiagnostics | null> {
@@ -55,10 +57,12 @@ export async function probeSchemaFallback(): Promise<{
   schema_qr_token: boolean;
   schema_kitchen_print: boolean;
   schema_stripe_connect_environment: boolean;
+  schema_stripe_connect_test_simulated: boolean;
 }> {
   let schema_qr_token = true;
   let schema_kitchen_print = true;
   let schema_stripe_connect_environment = true;
+  let schema_stripe_connect_test_simulated = true;
 
   const { error: qrErr } = await supabase.from("tables").select("qr_token").limit(1);
   if (qrErr?.message?.includes("qr_token")) schema_qr_token = false;
@@ -69,7 +73,15 @@ export async function probeSchemaFallback(): Promise<{
   const { error: envErr } = await supabase.from("stores").select("stripe_connect_environment").limit(1);
   if (envErr?.message?.includes("stripe_connect_environment")) schema_stripe_connect_environment = false;
 
-  return { schema_qr_token, schema_kitchen_print, schema_stripe_connect_environment };
+  const { error: simErr } = await supabase.from("stores").select("stripe_connect_test_simulated").limit(1);
+  if (simErr?.message?.includes("stripe_connect_test_simulated")) schema_stripe_connect_test_simulated = false;
+
+  return {
+    schema_qr_token,
+    schema_kitchen_print,
+    schema_stripe_connect_environment,
+    schema_stripe_connect_test_simulated,
+  };
 }
 
 export async function fetchServerOperationalDiagnostics(storeId: string | null): Promise<ServerDiagnostics | null> {

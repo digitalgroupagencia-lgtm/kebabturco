@@ -22,8 +22,9 @@ import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/li
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
   computeRestaurantPortionEur,
-  computeOnlineServiceFeeEur,
-  ONLINE_SERVICE_FEE_LABEL,
+  computeRestaurantPortionEur,
+  computePlatformDeductionEur,
+  PLATFORM_FEE_EUR,
 } from "@/lib/processingFee";
 import {
   resolveCheckoutMethods,
@@ -131,7 +132,10 @@ const PaymentScreen = () => {
   const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
   const stripePublishableKey = hasStripePublishableKey(stripeConnectEnvironment);
   const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
-  const stripeIssue = stripeConfigIssue(stripeEnabled, stripePublishableKey);
+  const stripeIssue =
+    stripeConnectEnvironment === "test" && !stripePublishableKey && stripeEnabled
+      ? "Pagamento com cartão de teste indisponível — falta a chave publicável de teste (pk_test) no site publicado."
+      : stripeConfigIssue(stripeEnabled, stripePublishableKey);
 
   useEffect(() => {
     if (isTableOrder && !mesaValidated) {
@@ -206,19 +210,13 @@ const PaymentScreen = () => {
     return METHOD_DEFS.filter((m) => ids.includes(m.id));
   }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
 
-  const showOnlineServiceFee =
-    stripeEnabled &&
-    stripePublishableKey &&
-    (prepaymentRequired || selected === "card");
-  const onlineServiceFeeEur = showOnlineServiceFee
-    ? computeOnlineServiceFeeEur(restaurantPortionEur)
-    : 0;
-  const grandTotal = restaurantPortionEur + onlineServiceFeeEur;
+  const grandTotal = restaurantPortionEur;
 
   const cardOrderFinancials = () => {
     const restaurantCents = Math.round(restaurantPortionEur * 100);
     const serviceCents =
-      stripePaymentMeta?.onlineServiceFeeCents ?? Math.round(onlineServiceFeeEur * 100);
+      stripePaymentMeta?.onlineServiceFeeCents ??
+      Math.round(computePlatformDeductionEur(restaurantPortionEur) * 100);
     return {
       onlineServiceFeeCents: serviceCents,
       platformFeeCents: stripePaymentMeta?.platformFeeCents ?? PLATFORM_FEE_CENTS,
@@ -510,12 +508,6 @@ const PaymentScreen = () => {
               <div className="flex justify-between gap-2 text-green-700 dark:text-green-400">
                 <span>Desconto</span>
                 <span className="font-semibold tabular-nums">−{couponDiscount.toFixed(2)}€</span>
-              </div>
-            )}
-            {onlineServiceFeeEur > 0 && (
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">{ONLINE_SERVICE_FEE_LABEL}</span>
-                <span className="font-semibold tabular-nums">{onlineServiceFeeEur.toFixed(2)}€</span>
               </div>
             )}
           </div>

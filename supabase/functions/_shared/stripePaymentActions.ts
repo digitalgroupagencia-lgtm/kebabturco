@@ -82,7 +82,7 @@ export async function handleOperationalDiagnostics(
     const { data } = await service
       .from("stores")
       .select(
-        "id, stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
+        "id, stripe_connect_account_id, stripe_connect_environment, stripe_connect_test_simulated, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
       )
       .eq("id", storeId)
       .maybeSingle();
@@ -114,25 +114,43 @@ export async function handleOperationalDiagnostics(
   functions["stripe-create-payment-intent"] = true;
 
   let webhookConfigured = false;
+  let webhookConfiguredTest = false;
   let webhookUrl: string | null = null;
   let webhookEvents: string[] = [];
   const expectedWebhookUrl = `${supabaseUrl}/functions/v1/stripe-webhook`;
 
-  if (stripeSecret) {
+  const listWebhooks = async (secret: string) => {
     try {
-      const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
+      const stripe = new Stripe(secret, { apiVersion: "2023-10-16" });
       const list = await stripe.webhookEndpoints.list({ limit: 30 });
       const match = list.data.find(
         (w) => w.url === expectedWebhookUrl || w.url.includes("/stripe-webhook"),
       );
       if (match) {
-        webhookConfigured = match.status === "enabled";
-        webhookUrl = match.url;
-        webhookEvents = match.enabled_events ?? [];
+        return {
+          configured: match.status === "enabled",
+          url: match.url,
+          events: match.enabled_events ?? [],
+        };
       }
     } catch (e) {
       console.error("[diagnostics] stripe webhooks", e);
     }
+    return null;
+  };
+
+  if (stripeSecret) {
+    const live = await listWebhooks(stripeSecret);
+    if (live) {
+      webhookConfigured = live.configured;
+      webhookUrl = live.url;
+      webhookEvents = live.events;
+    }
+  }
+
+  if (stripeSecretTest) {
+    const test = await listWebhooks(stripeSecretTest);
+    if (test) webhookConfiguredTest = test.configured;
   }
 
   return json({
@@ -142,6 +160,7 @@ export async function handleOperationalDiagnostics(
     stripeWebhookSecretTest: webhookSecretTest,
     platform,
     webhookConfigured,
+    webhookConfiguredTest,
     webhookUrl,
     webhookExpectedUrl: expectedWebhookUrl,
     webhookEvents,
@@ -169,11 +188,13 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
   let preferredMode: "live" | "test" = "live";
   const { data: store, error: storeErr } = await supabase
     .from("stores")
-    .select("stripe_connect_environment")
+    .select("stripe_connect_environment, stripe_connect_test_simulated")
     .eq("id", storeId)
     .maybeSingle();
 
   if (!storeErr && store?.stripe_connect_environment === "test") {
+    preferredMode = "test";
+  } else if (!storeErr && store?.stripe_connect_test_simulated) {
     preferredMode = "test";
   }
 
