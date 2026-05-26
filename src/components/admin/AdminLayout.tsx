@@ -24,13 +24,17 @@ const AdminLayout = ({ page: Page }: Props) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("[AdminLayout] auth check", { authLoading, hasUser: !!user });
     if (!authLoading && !user) {
+      console.log("[AdminLayout] → /auth (no user)");
       navigate(nav.auth());
     }
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
+    console.log("[AdminLayout] role check", { authLoading, roleLoading, role: roleData?.role });
     if (!authLoading && !roleLoading && roleData && !canAccessGeneralAdmin(roleData.role)) {
+      console.log("[AdminLayout] → /panel (role not allowed)");
       navigate(nav.panel());
     }
   }, [authLoading, roleLoading, roleData, navigate]);
