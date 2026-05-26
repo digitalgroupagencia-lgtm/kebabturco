@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -10,6 +11,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
+import { nav } from "@/lib/navPaths";
 
 
 const HomeScreen = () => {
@@ -262,6 +264,15 @@ const HomeScreen = () => {
 
           </div>
         </main>
+      </div>
+
+      <div className="shrink-0 pb-2 pt-1 text-center">
+        <Link
+          to={nav.staff()}
+          className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+        >
+          Equipe
+        </Link>
       </div>
     </div>
   );

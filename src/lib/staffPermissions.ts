@@ -8,6 +8,7 @@ export type AppArea = "admin" | "panel" | "seller" | "delivery";
 const ALL_PANEL_SEGMENTS = new Set([
   "",
   "live",
+  "kitchen",
   "dashboard",
   "cashier",
   "table-map",
@@ -27,7 +28,7 @@ const PANEL_SEGMENTS_BY_ROLE: Partial<Record<StaffRole, ReadonlySet<string>>> = 
   restaurant_admin: ALL_PANEL_SEGMENTS,
   manager: ALL_PANEL_SEGMENTS,
   operator: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
-  kitchen: new Set(["", "live", "guide"]),
+  kitchen: new Set(["", "live", "kitchen", "guide"]),
   cashier: new Set(["", "cashier", "guide"]),
   attendant: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
   seller: new Set([]),

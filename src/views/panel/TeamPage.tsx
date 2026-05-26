@@ -23,6 +23,7 @@ interface TeamMember {
   email?: string;
   full_name?: string;
   preferred_language?: string;
+  hasAccessPin?: boolean;
 }
 
 const LANGUAGES = [
@@ -58,7 +59,11 @@ const TeamPage = () => {
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
   const [newLanguage, setNewLanguage] = useState<string>("pt");
+  const [newAccessPin, setNewAccessPin] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pinDialogMember, setPinDialogMember] = useState<TeamMember | null>(null);
+  const [editAccessPin, setEditAccessPin] = useState("");
+  const [pinSaving, setPinSaving] = useState(false);
 
   useEffect(() => {
     if (storeId) fetchMembers();
@@ -81,6 +86,16 @@ const TeamPage = () => {
       .select("user_id, full_name, preferred_language")
       .in("user_id", userIds);
 
+    const roleIds = roles.map((r) => r.id);
+    const { data: pinRows } = await supabase
+      .from("staff_access_pins")
+      .select("user_role_id, is_active")
+      .in("user_role_id", roleIds);
+
+    const pinByRole = new Set(
+      (pinRows ?? []).filter((p) => p.is_active).map((p) => p.user_role_id),
+    );
+
     const membersData: TeamMember[] = roles.map((r) => {
       const profile = profiles?.find((p) => p.user_id === r.user_id);
       return {
@@ -89,6 +104,7 @@ const TeamPage = () => {
         role: r.role,
         full_name: profile?.full_name || undefined,
         preferred_language: (profile as any)?.preferred_language || "pt",
+        hasAccessPin: pinByRole.has(r.id),
       };
     });
 
@@ -99,6 +115,10 @@ const TeamPage = () => {
   const addMember = async () => {
     if (!storeId || !tenantId || !newEmail.trim()) {
       toast.error("Email é obrigatório");
+      return;
+    }
+    if (!/^\d{4,8}$/.test(newAccessPin)) {
+      toast.error("Código de acesso deve ter entre 4 e 8 dígitos");
       return;
     }
     setSaving(true);
@@ -128,15 +148,26 @@ const TeamPage = () => {
       }
 
       // Create user_role
-      const { error: roleError } = await supabase.from("user_roles").insert({
+      const { data: roleRow, error: roleError } = await supabase.from("user_roles").insert({
         user_id: userId,
         role: newRole as any,
         tenant_id: tenantId,
         store_id: storeId,
-      } as any);
+      } as any).select("id").single();
 
-      if (roleError) {
-        toast.error("Erro ao atribuir papel: " + roleError.message);
+      if (roleError || !roleRow?.id) {
+        toast.error("Erro ao atribuir papel: " + (roleError?.message ?? "desconhecido"));
+        setSaving(false);
+        return;
+      }
+
+      const { error: pinError } = await supabase.rpc("upsert_staff_access_pin", {
+        _user_role_id: roleRow.id,
+        _pin: newAccessPin,
+      });
+
+      if (pinError) {
+        toast.error("Erro ao definir código: " + pinError.message);
         setSaving(false);
         return;
       }
@@ -154,6 +185,7 @@ const TeamPage = () => {
       setNewName("");
       setNewRole("operator");
       setNewLanguage("pt");
+      setNewAccessPin("");
       fetchMembers();
     } catch (e: any) {
       toast.error(e.message || "Erro inesperado");
@@ -168,6 +200,30 @@ const TeamPage = () => {
     if (error) { toast.error("Erro ao atualizar idioma"); return; }
     toast.success("Idioma atualizado!");
     fetchMembers();
+  };
+
+  const saveMemberPin = async () => {
+    if (!pinDialogMember) return;
+    if (!/^\d{4,8}$/.test(editAccessPin)) {
+      toast.error("Código deve ter entre 4 e 8 dígitos");
+      return;
+    }
+    setPinSaving(true);
+    try {
+      const { error } = await supabase.rpc("upsert_staff_access_pin", {
+        _user_role_id: pinDialogMember.id,
+        _pin: editAccessPin,
+      });
+      if (error) throw error;
+      toast.success("Código actualizado!");
+      setPinDialogMember(null);
+      setEditAccessPin("");
+      fetchMembers();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao guardar código");
+    } finally {
+      setPinSaving(false);
+    }
   };
 
   const removeMember = async (member: TeamMember) => {
@@ -229,6 +285,7 @@ const TeamPage = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Papel</TableHead>
+                <TableHead>Código</TableHead>
                 <TableHead>Idioma</TableHead>
                 {canManage && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
@@ -259,6 +316,27 @@ const TeamPage = () => {
                     )}
                   </TableCell>
                   <TableCell>
+                    {m.hasAccessPin ? (
+                      <Badge variant="secondary" className="font-mono">Activo</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-600 border-amber-500/40">Sem código</Badge>
+                    )}
+                    {canManage && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 ml-2 text-xs"
+                        onClick={() => {
+                          setPinDialogMember(m);
+                          setEditAccessPin("");
+                        }}
+                      >
+                        {m.hasAccessPin ? "Alterar" : "Definir"}
+                      </Button>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     {canManage ? (
                       <Select value={m.preferred_language || "pt"} onValueChange={(v) => updateLanguage(m.user_id, v)}>
                         <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
@@ -283,7 +361,7 @@ const TeamPage = () => {
               ))}
               {members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     Nenhum membro cadastrado.
                   </TableCell>
                 </TableRow>
@@ -315,6 +393,19 @@ const TeamPage = () => {
               <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
             </div>
             <div>
+              <Label>Código de acesso *</Label>
+              <Input
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={newAccessPin}
+                onChange={(e) => setNewAccessPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="Ex: 123456"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                O funcionário usa este código na Área da equipe do app — não confundir com Meus pedidos do cliente.
+              </p>
+            </div>
+            <div>
               <Label>Papel</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -342,6 +433,29 @@ const TeamPage = () => {
             <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
             <Button onClick={addMember} disabled={saving}>
               {saving ? "Criando..." : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!pinDialogMember} onOpenChange={(open) => !open && setPinDialogMember(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Código de acesso — {pinDialogMember?.full_name || "Membro"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Novo código (4 a 8 dígitos)</Label>
+            <Input
+              inputMode="numeric"
+              value={editAccessPin}
+              onChange={(e) => setEditAccessPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+              placeholder="Ex: 456789"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+            <Button onClick={() => void saveMemberPin()} disabled={pinSaving}>
+              {pinSaving ? "A guardar…" : "Guardar código"}
             </Button>
           </DialogFooter>
         </DialogContent>

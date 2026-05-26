@@ -16,7 +16,7 @@ import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
-import { Auth, Index, NotFound } from "@/routes/appRouteRegistry.ts";
+import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
 
 export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
 
@@ -43,6 +43,7 @@ const LovablePreviewRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
+    <Route path="/staff" element={withSuspense(<StaffLogin />)} />
     <Route path="*" element={internal} />
   </Routes>
 );

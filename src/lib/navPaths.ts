@@ -14,6 +14,7 @@ export const nav = {
   admin: (...rest: string[]) => joinPath("admin", ...rest),
   seller: (...rest: string[]) => joinPath("seller", ...rest),
   delivery: (...rest: string[]) => joinPath("delivery", ...rest),
+  staff: () => joinPath("staff"),
 } as const;
 
 /** Lista curada — dropdown preview Lovable (só loja + login). */
@@ -32,6 +33,7 @@ export type RouteSegmentDef = {
 export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "panel", segments: [], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
   { area: "panel", segments: ["live"], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
+  { area: "panel", segments: ["kitchen"], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
   { area: "panel", segments: ["dashboard"], loader: () => import("@/views/panel/Dashboard.tsx") },
   { area: "panel", segments: ["table-map"], loader: () => import("@/views/panel/TableMapPage.tsx") },
   { area: "panel", segments: ["cashier"], loader: () => import("@/views/panel/CashierPage.tsx") },

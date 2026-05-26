@@ -9,6 +9,7 @@ import {
 export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "",
   "live",
+  "kitchen",
   "dashboard",
   "cashier",
   "table-map",

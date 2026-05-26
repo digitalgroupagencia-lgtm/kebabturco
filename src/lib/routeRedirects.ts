@@ -31,6 +31,8 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/panel/pedidos": nav.panel("live"),
   "/panel/cozinha": nav.panel("live"),
   "/panel/operacao": nav.panel("live"),
+  "/panel/kitchen": nav.panel("kitchen"),
+  "/equipe": nav.staff(),
   "/panel/qrcodes": nav.panel("tables"),
   "/panel/qrcode": nav.panel("tables"),
   "/panel/qr-codes": nav.panel("tables"),

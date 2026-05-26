@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { clearStaffSessionFlag } from "@/lib/staffLogin";
 
 type AuthState = {
   user: User | null;
@@ -58,6 +59,7 @@ export function useAuth() {
   }, []);
 
   const signOut = async () => {
+    clearStaffSessionFlag();
     await supabase.auth.signOut();
   };
 

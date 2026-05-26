@@ -5,6 +5,7 @@ import { lazy } from "react";
 
 export const Index = lazy(() => import("@/pages/Index.tsx"));
 export const Auth = lazy(() => import("@/pages/Auth.tsx"));
+export const StaffLogin = lazy(() => import("@/pages/StaffLogin.tsx"));
 export const NotFound = lazy(() => import("@/pages/NotFound.tsx"));
 
 export const OrdersPage = lazy(() => import("@/views/panel/OrdersPage.tsx"));

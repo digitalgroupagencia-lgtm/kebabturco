@@ -7,6 +7,8 @@ export const RESERVED_APP_PATHS = new Set([
   "seller",
   "cashier",
   "delivery",
+  "staff",
+  "equipe",
   "preview",
 ]);
 

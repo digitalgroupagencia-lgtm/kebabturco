@@ -42,7 +42,7 @@ const PanelLayout = ({ page: Page }: Props) => {
   if (!user) return null;
 
   const panelSegment = panelSegmentFromPathname(location.pathname);
-  const isLiveOps = panelSegment === "" || panelSegment === "live";
+  const isLiveOps = panelSegment === "" || panelSegment === "live" || panelSegment === "kitchen";
   const headerTitle = isLiveOps ? "Operação ao vivo" : "Painel do Restaurante";
 
   return (
