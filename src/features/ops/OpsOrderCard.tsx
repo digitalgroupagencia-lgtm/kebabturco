@@ -31,7 +31,7 @@ interface OpsOrderCardProps {
   needsAttention?: boolean;
   viewerRole?: string | null;
   driverName?: string | null;
-  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void>;
+  onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void> | Promise<boolean>;
   onCancel: (orderId: string) => void;
   onOpenDetail: (order: PanelOrder) => void;
   onRequestAccept: (order: PanelOrder) => void;
