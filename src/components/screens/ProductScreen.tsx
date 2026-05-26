@@ -33,7 +33,7 @@ const ProductScreen = () => {
   const { products, loading: menuLoading } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
   const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
-    useEffectiveModifierConfig(product);
+    useEffectiveModifierConfig(product, products);
 
   const editingItem = useMemo(
     () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),

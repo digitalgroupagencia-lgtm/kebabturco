@@ -13,9 +13,12 @@ export function safeHasFixedProtein(product: MenuProduct): boolean {
   }
 }
 
-export function safeSynthesizeModifierConfig(product: MenuProduct): ProductModifierConfig | null {
+export function safeSynthesizeModifierConfig(
+  product: MenuProduct,
+  menuProducts: MenuProduct[] = [],
+): ProductModifierConfig | null {
   try {
-    const synthesized = synthesizeModifierConfigFromProduct(product);
+    const synthesized = synthesizeModifierConfigFromProduct(product, menuProducts);
     if (!synthesized) return null;
     return filterProductModifierConfig(product, synthesized);
   } catch (err) {

@@ -72,7 +72,10 @@ async function fetchStoreModifierGroups(storeId: string): Promise<ModifierGroup[
 }
 
 /** Configuração efectiva: grupos ligados na BD → senão dados do produto → senão grupos da loja (combos). */
-export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
+export function useEffectiveModifierConfig(
+  product: MenuProduct | undefined,
+  allProducts: MenuProduct[] = [],
+) {
   const { config: dbConfig, loading: dbLoading } = useProductModifierConfig(product?.id);
   const { storeId } = useResolvedStore();
   const [storeGroups, setStoreGroups] = useState<ModifierGroup[]>([]);
@@ -106,7 +109,7 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
     try {
       if (!product) return finalize(dbConfig);
 
-      const synthesized = safeSynthesizeModifierConfig(product);
+      const synthesized = safeSynthesizeModifierConfig(product, allProducts);
 
       if (dbConfig?.hasStructuredModifiers) {
         const isDrink = isDrinkProduct(product);
@@ -143,7 +146,7 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
       console.error("[useEffectiveModifierConfig]", err);
       return finalize(dbConfig);
     }
-  }, [product, dbConfig, storeGroups]);
+  }, [product, dbConfig, storeGroups, allProducts]);
 
   const drinkAdapted = useMemo(
     () => (product ? adaptConfigForDrinkProduct(product, config) : config),

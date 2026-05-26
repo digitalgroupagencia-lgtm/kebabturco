@@ -9,6 +9,7 @@ import {
   productText,
 } from "./comboProductRules";
 import { isDrinkProduct } from "./drinkProduct";
+import { descriptionIncludesDrink, resolveIsComboProduct } from "./productClassification";
 import { filterProductModifierConfig, isMeatChoiceGroup } from "./proteinRules";
 
 export type CustomizationAuditIssue = {
@@ -40,14 +41,23 @@ function findDuplicateOptions(groups: ModifierGroup[]): string[] {
   return dupes;
 }
 
+function findDrinkGroup(groups: ModifierGroup[]): ModifierGroup | undefined {
+  return groups.find(
+    (g) =>
+      g.groupKind === "choice" &&
+      /bebida|refresco|drink|boisson/i.test(`${g.name.es || ""} ${g.name.pt || ""}`),
+  );
+}
+
 export function auditProductCustomization(
   product: MenuProduct,
   effectiveConfig?: ProductModifierConfig | null,
+  menuProducts: MenuProduct[] = [],
 ): CustomizationAuditIssue[] {
   const issues: CustomizationAuditIssue[] = [];
   const label = displayName(product);
   const fixed = detectFixedProtein(product);
-  const synthesized = safeSynthesizeModifierConfig(product);
+  const synthesized = safeSynthesizeModifierConfig(product, menuProducts);
   const effective = effectiveConfig
     ? filterProductModifierConfig(product, effectiveConfig)
     : synthesized
@@ -121,7 +131,7 @@ export function auditProductCustomization(
     });
   }
 
-  if (!effective?.hasStructuredModifiers && !isDrinkProduct(product) && /combo/i.test(productText(product))) {
+  if (!effective?.hasStructuredModifiers && !isDrinkProduct(product) && resolveIsComboProduct(product)) {
     issues.push({
       productId: product.id,
       productName: label,
@@ -131,11 +141,27 @@ export function auditProductCustomization(
     });
   }
 
+  if (resolveIsComboProduct(product) && descriptionIncludesDrink(product)) {
+    const drinkGroup = findDrinkGroup(effective?.groups ?? []);
+    if (!drinkGroup || (drinkGroup.options?.length ?? 0) < 2) {
+      issues.push({
+        productId: product.id,
+        productName: label,
+        severity: "error",
+        problem: "Combo ou menú com bebida na descrição mas sem escolha de refresco",
+        suggestion: "Garantir grupo bebida com pelo menos duas opções (2L ou lata 33cl conforme descrição)",
+      });
+    }
+  }
+
   return issues;
 }
 
-export function auditMenuProducts(products: MenuProduct[]): CustomizationAuditIssue[] {
-  return products.flatMap((p) => auditProductCustomization(p));
+export function auditMenuProducts(
+  products: MenuProduct[],
+  menuProducts: MenuProduct[] = products,
+): CustomizationAuditIssue[] {
+  return products.flatMap((p) => auditProductCustomization(p, undefined, menuProducts));
 }
 
 export function auditSummary(issues: CustomizationAuditIssue[]) {

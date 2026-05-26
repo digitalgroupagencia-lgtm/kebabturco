@@ -148,6 +148,12 @@ const translations: Translations = {
     es: "Sustituye el acompañamiento — elige solo una opción",
     fr: "Remplace l'accompagnement — un seul choix",
   },
+  potatoUpsellTitle: {
+    pt: "Quer melhorar?",
+    en: "Want to upgrade?",
+    es: "¿Quieres mejorar?",
+    fr: "Envie d'améliorer ?",
+  },
   // Review screen
   yourOrder: { pt: "Seu pedido", en: "Your order", es: "Tu pedido", fr: "Votre commande" },
   review: { pt: "Revisão", en: "Review", es: "Revisión", fr: "Révision" },

@@ -285,6 +285,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
             onChange={setActiveState}
             tName={tProduct}
             tDesc={tProduct}
+            hideHeader={onUnitStep && group.repeatPerUnit}
           />
         ))}
 

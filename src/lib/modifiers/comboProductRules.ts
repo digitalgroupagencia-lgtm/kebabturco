@@ -2,6 +2,7 @@ import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Variant } from "@/data/products";
 import { inferVariantsFromText, isMeatVariantSet } from "@/lib/parseProductCustomization";
 import { isDrinkProduct } from "./drinkProduct";
+import { inferComboUnitCountFromName, normalizeProductClassification } from "./productClassification";
 
 export type ComboUnitKind = "pita" | "rollo" | "pizza" | "piece" | null;
 export type FixedProtein = "pollo" | "ternera" | "mixto" | "crispy";
@@ -28,24 +29,53 @@ export function productDescriptionText(product: MenuProduct): string {
 }
 
 export function detectFixedProtein(product: MenuProduct): FixedProtein | null {
+  if (isDrinkProduct(product)) return null;
+
+  const unitCount = inferComboUnitCount(product);
+  if (unitCount > 1) return null;
+
+  const classification = normalizeProductClassification(product);
+  if (classification.productType === "combo" && classification.comboUnitCount > 1) return null;
+
+  if (isClosedProteinCombo(product)) return "crispy";
+
   const name = productText(product);
   const desc = productDescriptionText(product);
-  if (isDrinkProduct(product)) return null;
-  if (isClosedProteinCombo(product)) return "crispy";
-  if (/\bde\s+pollo\b|\bpollo\s+crispy\b|\bcrispy\s+chicken\b|\bpizza\s+kebab\s+pollo\b|\bburger.*pollo\b|\bpan\s+.*pita\s+.*pollo\b|\brollo\s+.*pollo\b|\bde\s+frango\b/i.test(name)) {
-    return "pollo";
-  }
-  if (/\bde\s+ternera\b|\bpan\s+.*pita\s+.*ternera\b|\brollo\s+.*ternera\b|\bde\s+vaca\b/i.test(name) && !/\bmixto\b/i.test(name)) {
-    return "ternera";
-  }
-  if (/\bde\s+mixto\b|\bpita\s+mixto\b|\brollo\s+mixto\b/i.test(name) && !/combo\s+\d+/i.test(name)) {
+
+  if (/\bpollo\s+o\s+ternera\b|\bo\s+ternera\b|\bo\s+pollo\b|\bpollo\s+o\b/i.test(desc)) return null;
+  if (/\bsolo\s+carne\b/i.test(name) && !/\bde\s+(pollo|ternera)\b/i.test(name)) return null;
+  if (/vegetal|falafel/i.test(name) || /falafel/i.test(desc)) return null;
+
+  if (
+    !/^combo\s/i.test(name) &&
+    (/\bde\s+mixto\b|\bpita\s+de\s+mixto\b|\brollo\s+de\s+mixto\b|\bpan\s+de\s+pita\s+mixto\b|\brollo\s+mixto\b/i.test(name) ||
+      (/\bpollo\s+y\s+ternera\b/i.test(desc) && !/\bo\s+/i.test(desc)))
+  ) {
     return "mixto";
   }
-  if (/\bcrispy\b|\bpiezas?\s+\d*|\d+\s*piezas?\s+pollo|\bnuggets\b|\balitas\b|\bwings\b|\broaster\b/i.test(name)) {
+
+  if (
+    /\bde\s+pollo\b|\bpan\s+de\s+pita\s+de\s+pollo\b|\brollo\s+de\s+pollo\b|\bde\s+frango\b/i.test(name) &&
+    (/carne\s+de\s+pollo/i.test(desc) || /\bde\s+pollo\b/i.test(name))
+  ) {
+    return "pollo";
+  }
+
+  if (
+    /\bde\s+ternera\b|\bpan\s+de\s+pita\s+de\s+ternera\b|\brollo\s+de\s+ternera\b|\bde\s+vaca\b/i.test(name) &&
+    !/\bmixto\b/i.test(name) &&
+    (/carne\s+de\s+ternera/i.test(desc) || /\bde\s+ternera\b/i.test(name))
+  ) {
+    return "ternera";
+  }
+
+  if (
+    /\bcrispy\b|\bpiezas?\s+\d*|\d+\s*piezas?\s+pollo|\bnuggets\b|\balitas\b|\bwings\b|\broaster\b/i.test(name) &&
+    !/pita|rollo/i.test(name)
+  ) {
     return "crispy";
   }
-  if (/carne\s+de\s+pollo/i.test(desc) && /\bde\s+pollo\b|pita.*pollo|rollo.*pollo/i.test(name)) return "pollo";
-  if (/carne\s+de\s+ternera/i.test(desc) && /\bde\s+ternera\b|pita.*ternera|rollo.*ternera/i.test(name)) return "ternera";
+
   return null;
 }
 
@@ -92,14 +122,12 @@ export function inferComboUnitKind(product: MenuProduct): ComboUnitKind {
 }
 
 export function inferComboUnitCount(product: MenuProduct): number {
-  if (product.comboUnitCount && product.comboUnitCount > 1) return product.comboUnitCount;
+  if (product.comboUnitCount && product.comboUnitCount > 0) return product.comboUnitCount;
+  const normalized = normalizeProductClassification(product);
+  if (normalized.comboUnitCount > 0) return normalized.comboUnitCount;
   const text = productText(product);
   if (isClosedProteinCombo(product)) return 0;
-
-  const match = text.match(/\b(\d+)\s*(?:pan\s*)?(pita|pitas|rollo|rollos|pizza|pizzas)\b/i);
-  if (match) return Math.max(2, Number(match[1]) || 2);
-
-  return 0;
+  return inferComboUnitCountFromName(product);
 }
 
 /** Só perguntar carne quando o produto realmente permite variação por unidade. */
@@ -124,6 +152,12 @@ export function perUnitChoiceVariants(product: MenuProduct): Variant[] {
     return product.variants && product.variants.length >= 2 ? product.variants : DEFAULT_MEAT_VARIANTS;
   }
   return [];
+}
+
+export function globalMeatChoiceVariants(product: MenuProduct): Variant[] {
+  if (!allowsGlobalMeatChoice(product)) return [];
+  if (product.variants && product.variants.length >= 2) return product.variants;
+  return DEFAULT_MEAT_VARIANTS;
 }
 
 export function allowsGlobalMeatChoice(product: MenuProduct): boolean {

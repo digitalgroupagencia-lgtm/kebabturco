@@ -8,6 +8,7 @@ import {
   allowsPerUnitMeatChoice,
 } from "./comboProductRules";
 import { isMeatChoiceGroup } from "./proteinRules";
+import { synthesizeModifierConfigFromProduct } from "./synthesizeConfig";
 
 const p = (name: string, desc = "", extra: Partial<MenuProduct> = {}): MenuProduct =>
   ({
@@ -42,10 +43,33 @@ describe("protein detection", () => {
     expect(isVariableProteinProduct(product)).toBe(true);
   });
 
+  it("Pan de Pita Solo Carne offers global meat choice", () => {
+    const product = p("Pan de Pita Solo Carne", "Elige pollo o ternera, lechuga, patatas fritas");
+    expect(allowsGlobalMeatChoice(product)).toBe(true);
+    const config = synthesizeModifierConfigFromProduct(product);
+    const meat = config?.groups.find((g) => /carne/i.test(`${g.name.es} ${g.name.pt}`));
+    expect(meat?.options.length).toBeGreaterThanOrEqual(2);
+  });
+
   it("Combo 4 Pan Pita allows per-unit meat", () => {
-    const product = p("Combo 4 Pan Pita Mixto");
+    const product = p("Combo 4 Pan Pita Mixto", "", { productType: "combo", comboUnitCount: 4 });
     expect(allowsPerUnitMeatChoice(product)).toBe(true);
     expect(hasFixedProtein(product)).toBe(false);
+  });
+
+  it("Pan de Pita Mixto single product fixes mixto protein", () => {
+    const product = p("Pan de Pita Mixto", "Pollo y ternera");
+    expect(detectFixedProtein(product)).toBe("mixto");
+    expect(allowsPerUnitMeatChoice(product)).toBe(false);
+  });
+
+  it("Combo 10 Piezas with drink description synthesizes as combo", () => {
+    const product = p("Combo 10 Piezas Pollo Crispy", "Bebida 2L incluida", {
+      categorySlug: "ofertas-combo",
+      productType: "combo",
+      comboUnitCount: 0,
+    });
+    expect(hasFixedProtein(product)).toBe(true);
   });
 
   it("detects meat choice groups", () => {

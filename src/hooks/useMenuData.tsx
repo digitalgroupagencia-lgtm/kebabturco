@@ -4,6 +4,7 @@ const supabase = _supabaseRaw as unknown as any;
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
 import { safeHasFixedProtein } from "@/lib/modifiers/safeCustomization";
+import { normalizeProductClassification } from "@/lib/modifiers/productClassification";
 import type { Category, Extra, Product, Variant } from "@/data/products";
 
 type JsonName = Record<string, string>;
@@ -174,12 +175,18 @@ export function useMenuData() {
             extras,
             ingredients,
             variants: inferredVariants.length >= 2 ? inferredVariants : undefined,
-            productType: (prod.product_type as "simple" | "combo") || "simple",
-            comboUnitCount: Number(prod.combo_unit_count || 0),
+            productType: (prod.product_type as "simple" | "combo") || undefined,
+            comboUnitCount: Number(prod.combo_unit_count || 0) || undefined,
             unitLabel: asName(prod.unit_label),
           } satisfies MenuProduct;
-          const variants = safeHasFixedProtein(draftProduct) ? undefined : draftProduct.variants;
-          return { ...draftProduct, variants };
+          const classified = normalizeProductClassification(draftProduct);
+          const normalizedProduct = {
+            ...draftProduct,
+            productType: classified.productType,
+            comboUnitCount: classified.comboUnitCount,
+          };
+          const variants = safeHasFixedProtein(normalizedProduct) ? undefined : normalizedProduct.variants;
+          return { ...normalizedProduct, variants };
         });
       } catch (err) {
         console.error("[useMenuData] product mapping failed", err);
