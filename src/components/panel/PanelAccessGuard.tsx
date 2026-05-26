@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { nav } from "@/lib/navPaths.ts";
 import { canUseRestaurantPanel, redirectTargetForPanelPath } from "@/lib/panelAccess";
-import { nav } from "@/lib/navPaths.ts";
 import { Loader2 } from "lucide-react";
 
 type Props = {
