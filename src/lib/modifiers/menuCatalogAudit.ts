@@ -173,7 +173,7 @@ export function buildProductPayloadFromOption(
       fr: option.name.fr || nameEs,
     },
     description: { pt: "", en: "", es: "", fr: "" },
-    price: option.price ?? 0,
+    price: (option as any).price ?? (option as any).priceDelta ?? 0,
     image_url: option.imageUrl ?? null,
     is_active: true,
     is_bestseller: false,
