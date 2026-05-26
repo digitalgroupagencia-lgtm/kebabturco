@@ -270,6 +270,37 @@ export async function createStripePaymentIntent(params: {
   };
 }
 
+export async function startStripeConnectOnboarding(storeId: string, returnUrl: string) {
+  const body = { storeId, returnUrl, mode: "start_onboarding" };
+
+  const invoke = async (functionName: string, payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke(functionName, { body: payload });
+    if (error) {
+      const msg = error.message || String(error);
+      const notFound =
+        msg.includes("404") ||
+        msg.toLowerCase().includes("not found") ||
+        msg.toLowerCase().includes("failed to send");
+      if (notFound) return null;
+      throw new Error(msg);
+    }
+    if (data && typeof data === "object" && "error" in data && data.error) {
+      throw new Error(String(data.error));
+    }
+    return data as { url: string; accountId: string };
+  };
+
+  const direct = await invoke("stripe-connect-onboard", body);
+  if (direct?.url) return direct;
+
+  const fallback = await invoke("stripe-create-payment-intent", { action: "connect_onboard", ...body });
+  if (fallback?.url) return fallback;
+
+  throw new Error(
+    "Serviço de recebimentos indisponível — peça na Lovable: «Deploy stripe-connect-onboard and stripe-create-payment-intent».",
+  );
+}
+
 export async function provisionStripeConnect(storeId: string) {
   const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
     body: { storeId, mode: "provision" },

@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import {
-  createStripeConnectLink,
   fetchStoreFinancialProfile,
-  provisionStripeConnect,
+  startStripeConnectOnboarding,
   type StoreFinancialProfile,
 } from "@/services/orderService";
 import {
@@ -88,15 +87,17 @@ const FinancePage = () => {
   }, [searchParams, setSearchParams, load]);
 
   const activatePayouts = async () => {
-    if (!storeId) return;
+    if (!storeId) {
+      toast.error("Loja não encontrada — recarregue a página.");
+      return;
+    }
     setActivating(true);
     try {
-      await provisionStripeConnect(storeId);
       const returnUrl = `${window.location.origin}${window.location.pathname}?onboarding=done`;
-      const { url } = await createStripeConnectLink(storeId, returnUrl);
+      const { url } = await startStripeConnectOnboarding(storeId, returnUrl);
       window.location.href = url;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos");
+      toast.error(e instanceof Error ? e.message : "Erro ao conectar recebimentos");
       setActivating(false);
     }
   };

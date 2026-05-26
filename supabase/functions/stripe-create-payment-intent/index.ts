@@ -12,6 +12,7 @@ import {
 } from "../_shared/stripePaymentActions.ts";
 import { estimatedStripeFeeInServiceFee } from "../_shared/stripeFees.ts";
 import { getStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { connectErrorResponse, handleStripeConnectRequest } from "../_shared/stripeConnectOnboard.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -54,6 +55,14 @@ Deno.serve(async (req) => {
 
     if (body?.action === "verify") {
       return handleVerifyPaymentIntent(body);
+    }
+
+    if (body?.action === "connect_onboard") {
+      try {
+        return await handleStripeConnectRequest(req, body);
+      } catch (e) {
+        return connectErrorResponse(e);
+      }
     }
 
     if (!body?.storeId && !body?.amountCents && body?.subtotalCents == null) {
