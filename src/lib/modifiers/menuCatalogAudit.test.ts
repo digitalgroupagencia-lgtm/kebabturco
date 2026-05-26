@@ -19,7 +19,7 @@ function product(name: string, image?: string): MenuProduct {
     isBestseller: false,
     isPromo: false,
     sortOrder: 0,
-  };
+  } as unknown as MenuProduct;
 }
 
 describe("menuCatalogAudit", () => {
