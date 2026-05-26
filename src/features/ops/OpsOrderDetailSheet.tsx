@@ -248,7 +248,7 @@ const OpsOrderDetailSheet = ({
             <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wide">Pagamento pendente</p>
               {blockedUntilPaid && (
-                <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">
+                <p className="text-xs font-semibold text-foreground">
                   Pedido de balcão só é impresso e preparado depois do pagamento confirmado.
                 </p>
               )}
