@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 
 async function firstActiveStoreForTenant(tenantId: string): Promise<string | null> {
@@ -42,6 +43,7 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
   const { slug } = useParams<{ slug?: string }>();
   const { user } = useAuth();
   const { tenantId: hostTenantId } = useResolvedStore();
+  const { tenant, loading: tenantLoading } = useSelectedTenant();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +62,14 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
         if (t?.id) {
           resolved = await firstActiveStoreForTenant(t.id);
         }
+      }
+
+      if (!resolved && tenant?.store_id) {
+        resolved = tenant.store_id;
+      }
+
+      if (!resolved && tenant?.id) {
+        resolved = await firstActiveStoreForTenant(tenant.id);
       }
 
       if (!resolved && user?.id) {
@@ -102,7 +112,7 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
     return () => {
       active = false;
     };
-  }, [slug, user?.id, hostTenantId]);
+  }, [slug, user?.id, hostTenantId, tenant?.id, tenant?.store_id, tenantLoading]);
 
-  return { storeId, loading };
+  return { storeId, loading: loading || tenantLoading };
 }

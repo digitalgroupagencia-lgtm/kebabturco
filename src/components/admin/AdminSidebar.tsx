@@ -61,6 +61,10 @@ const overviewItems = [
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
 ];
 
+const operationalItems = [
+  { title: "Painel do Restaurante", url: nav.panel(), icon: ShoppingBag, end: true },
+];
+
 const storeItems = [
   { title: "Cardápio", url: nav.admin("menu"), icon: UtensilsCrossed },
   { title: "Personalização", url: nav.admin("modifiers"), icon: Layers },
@@ -144,11 +148,9 @@ export function AdminSidebar() {
           <SidebarGroupLabel>Painel operacional</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <NavItem
-                item={{ title: "Painel do Restaurante", url: nav.admin("panel"), icon: ShoppingBag, end: true }}
-                collapsed={collapsed}
-                onNav={handleNav}
-              />
+              {operationalItems.map((item) => (
+                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

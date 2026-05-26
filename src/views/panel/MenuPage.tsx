@@ -286,7 +286,7 @@ const MenuPage = () => {
         <h2 className="text-2xl font-bold">Cardápio</h2>
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
-            Você não está associado a nenhuma loja. Peça ao administrador para vincular sua conta.
+            Nenhuma unidade activa encontrada para editar o cardápio. Verifique em Administração → Unidades se Gandia e Playa Gandia estão activas.
           </CardContent>
         </Card>
       </div>

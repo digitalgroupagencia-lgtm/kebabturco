@@ -25,7 +25,7 @@ interface Store {
 
 const TenantStoresPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { tenant: ctxTenant } = useSelectedTenant();
+  const { tenant: ctxTenant, loading: tenantLoading } = useSelectedTenant();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,10 @@ const TenantStoresPage = () => {
 
 
   const addStore = async () => {
-    if (!tenantId) return;
+    if (!tenantId) {
+      toast.error("Não foi possível identificar o cliente. Recarregue a página ou volte a entrar.");
+      return;
+    }
     const { data, error } = await supabase.from("stores").insert({
       tenant_id: tenantId, name: "Nova unidade", is_active: true, sort_order: stores.length,
     }).select().single();
@@ -105,7 +108,24 @@ const TenantStoresPage = () => {
     toast.success("Imagem atualizada");
   };
 
-  if (loading) return <div className="p-8 flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Carregando...</div>;
+  if (loading || (tenantLoading && !tenantId)) {
+    return (
+      <div className="p-8 flex items-center gap-2">
+        <Loader2 className="animate-spin h-4 w-4" /> Carregando unidades…
+      </div>
+    );
+  }
+
+  if (!tenantId) {
+    return (
+      <div className="p-8 max-w-lg space-y-2">
+        <p className="font-bold text-foreground">Não foi possível carregar o cliente Kebab Turco.</p>
+        <p className="text-sm text-muted-foreground">
+          Saia e entre novamente. Se o problema continuar, confirme que a sua conta tem acesso ao tenant Kebab Turco.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
