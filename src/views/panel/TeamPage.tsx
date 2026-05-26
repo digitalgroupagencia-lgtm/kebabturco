@@ -130,10 +130,10 @@ const TeamPage = () => {
       // Create user_role
       const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: userId,
-        role: newRole,
+        role: newRole as any,
         tenant_id: tenantId,
         store_id: storeId,
-      });
+      } as any);
 
       if (roleError) {
         toast.error("Erro ao atribuir papel: " + roleError.message);
