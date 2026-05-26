@@ -9,7 +9,8 @@ import { syncConnectAccountById } from "../_shared/stripeConnectSync.ts";
 import {
   getStripeSecretKey,
   getStripeSecretKeyTest,
-  getStripeWebhookSecret,
+  getStripeWebhookSecretCandidates,
+  hasAnyStripeWebhookSecret,
   stripeKeyMode,
 } from "../_shared/stripeEnv.ts";
 
@@ -66,12 +67,16 @@ function resolveWebhookContext(body: string, signature: string): {
   const candidates: Array<{ key: string; secret: string }> = [];
   const liveKey = getStripeSecretKey();
   const testKey = getStripeSecretKeyTest();
-  const liveSecret = getStripeWebhookSecret("live");
-  const testSecret = getStripeWebhookSecret("test");
 
-  if (liveKey && liveSecret) candidates.push({ key: liveKey, secret: liveSecret });
-  if (testKey && testSecret && testKey !== liveKey) {
-    candidates.push({ key: testKey, secret: testSecret });
+  if (liveKey) {
+    for (const secret of getStripeWebhookSecretCandidates("live")) {
+      candidates.push({ key: liveKey, secret });
+    }
+  }
+  if (testKey && testKey !== liveKey) {
+    for (const secret of getStripeWebhookSecretCandidates("test")) {
+      candidates.push({ key: testKey, secret });
+    }
   }
 
   for (const { key, secret } of candidates) {
@@ -92,9 +97,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const hasAnyWebhook =
-    Boolean(getStripeWebhookSecret("live")) || Boolean(getStripeWebhookSecret("test"));
-  if (!hasAnyWebhook || (!getStripeSecretKey() && !getStripeSecretKeyTest())) {
+  if (!hasAnyStripeWebhookSecret() || (!getStripeSecretKey() && !getStripeSecretKeyTest())) {
     return new Response("Webhook não configurado", { status: 503 });
   }
 

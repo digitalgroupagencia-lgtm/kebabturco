@@ -147,13 +147,18 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
 }
 
 export async function fetchStoreFinancialProfile(storeId: string): Promise<StoreFinancialProfile | null> {
-  const { data, error } = await supabase
-    .from("stores")
-    .select(
-      "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at",
-    )
-    .eq("id", storeId)
-    .maybeSingle();
+  const withEnv =
+    "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
+  const legacy =
+    "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
+
+  let { data, error } = await supabase.from("stores").select(withEnv).eq("id", storeId).maybeSingle();
+
+  if (error?.message?.includes("stripe_connect_environment")) {
+    const retry = await supabase.from("stores").select(legacy).eq("id", storeId).maybeSingle();
+    data = retry.data ? { ...retry.data, stripe_connect_environment: null } : null;
+    error = retry.error;
+  }
 
   if (error) throw error;
   if (!data) return null;

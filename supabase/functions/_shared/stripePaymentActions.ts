@@ -5,7 +5,14 @@ import {
   computeNetToStoreCents,
   estimatedStripeFeeInServiceFee,
 } from "./stripeFees.ts";
-import { getStripeSecretKey, getStripeSecretKeyTest, getStripeWebhookSecret } from "./stripeEnv.ts";
+import {
+  getStripeSecretKey,
+  getStripeSecretKeyTest,
+  getStripeWebhookSecret,
+  getStripeWebhookSecretCandidates,
+  pickStripeSecretForEnvironment,
+  retrievePaymentIntentWithFallback,
+} from "./stripeEnv.ts";
 import { buildLivePlatformStatus } from "./stripePlatform.ts";
 
 export const corsHeaders = {
@@ -67,7 +74,8 @@ export async function handleOperationalDiagnostics(
   const stripeSecret = getStripeSecretKey() ?? "";
   const stripeSecretTest = getStripeSecretKeyTest() ?? "";
   const webhookSecret = getStripeWebhookSecret("live") ?? "";
-  const webhookSecretTest = getStripeWebhookSecret("test") ?? "";
+  const webhookSecretTest =
+    getStripeWebhookSecretCandidates("test").length > 0;
 
   let storeProfile: Record<string, unknown> | null = null;
   if (storeId) {
@@ -131,7 +139,7 @@ export async function handleOperationalDiagnostics(
     stripeSecretKey: Boolean(stripeSecret),
     stripeSecretKeyTest: Boolean(stripeSecretTest),
     stripeWebhookSecret: Boolean(webhookSecret),
-    stripeWebhookSecretTest: Boolean(webhookSecretTest),
+    stripeWebhookSecretTest: webhookSecretTest,
     platform,
     webhookConfigured,
     webhookUrl,
@@ -144,11 +152,6 @@ export async function handleOperationalDiagnostics(
 }
 
 export async function handleVerifyPaymentIntent(body: Record<string, unknown>): Promise<Response> {
-  const stripeKey = getStripeSecretKey();
-  if (!stripeKey) {
-    return json({ error: "Pagamentos online indisponíveis" }, 503);
-  }
-
   const storeId = body.storeId as string;
   const paymentIntentId = body.paymentIntentId as string;
   const orderId = body.orderId as string;
@@ -158,11 +161,25 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
     return json({ error: "Parâmetros inválidos" }, 400);
   }
 
-  const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  let preferredMode: "live" | "test" = "live";
+  const { data: store, error: storeErr } = await supabase
+    .from("stores")
+    .select("stripe_connect_environment")
+    .eq("id", storeId)
+    .maybeSingle();
+
+  if (!storeErr && store?.stripe_connect_environment === "test") {
+    preferredMode = "test";
+  }
+
+  if (!pickStripeSecretForEnvironment(preferredMode) && !getStripeSecretKeyTest() && !getStripeSecretKey()) {
+    return json({ error: "Pagamentos online indisponíveis" }, 503);
+  }
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
@@ -178,7 +195,7 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
     return json({ success: true, alreadyPaid: true });
   }
 
-  const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const { pi } = await retrievePaymentIntentWithFallback(paymentIntentId, preferredMode);
   if (pi.status !== "succeeded") {
     return json({ error: "Pagamento ainda não confirmado" }, 402);
   }
@@ -210,7 +227,8 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
     pi.metadata?.estimated_stripe_fee_cents || estimatedStripeFeeInServiceFee(onlineServiceFeeCents),
   );
   try {
-    const expanded = await stripe.paymentIntents.retrieve(pi.id, { expand: ["latest_charge.balance_transaction"] });
+    const { stripe, pi: expandedPi } = await retrievePaymentIntentWithFallback(paymentIntentId, preferredMode);
+    const expanded = await stripe.paymentIntents.retrieve(expandedPi.id, { expand: ["latest_charge.balance_transaction"] });
     const charge = expanded.latest_charge as Stripe.Charge | null;
     const bt = charge?.balance_transaction as Stripe.BalanceTransaction | null;
     if (bt?.fee != null) stripeFeeCents = bt.fee;

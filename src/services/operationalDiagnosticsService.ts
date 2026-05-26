@@ -54,9 +54,11 @@ export async function fetchDbOperationalDiagnostics(storeId: string | null): Pro
 export async function probeSchemaFallback(): Promise<{
   schema_qr_token: boolean;
   schema_kitchen_print: boolean;
+  schema_stripe_connect_environment: boolean;
 }> {
   let schema_qr_token = true;
   let schema_kitchen_print = true;
+  let schema_stripe_connect_environment = true;
 
   const { error: qrErr } = await supabase.from("tables").select("qr_token").limit(1);
   if (qrErr?.message?.includes("qr_token")) schema_qr_token = false;
@@ -64,7 +66,10 @@ export async function probeSchemaFallback(): Promise<{
   const { error: printErr } = await supabase.from("orders").select("kitchen_printed_at").limit(1);
   if (printErr?.message?.includes("kitchen_printed_at")) schema_kitchen_print = false;
 
-  return { schema_qr_token, schema_kitchen_print };
+  const { error: envErr } = await supabase.from("stores").select("stripe_connect_environment").limit(1);
+  if (envErr?.message?.includes("stripe_connect_environment")) schema_stripe_connect_environment = false;
+
+  return { schema_qr_token, schema_kitchen_print, schema_stripe_connect_environment };
 }
 
 export async function fetchServerOperationalDiagnostics(storeId: string | null): Promise<ServerDiagnostics | null> {

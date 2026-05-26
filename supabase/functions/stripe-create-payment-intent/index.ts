@@ -19,6 +19,10 @@ import {
 } from "../_shared/stripeEnv.ts";
 import { connectErrorResponse, handleStripeConnectRequest } from "../_shared/stripeConnectOnboard.ts";
 import { buildLivePlatformStatus } from "../_shared/stripePlatform.ts";
+import {
+  loadStoreConnectPaymentRow,
+  resolveStoreConnectEnvironment,
+} from "../_shared/stripeStoreConnect.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -122,16 +126,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: store, error: storeErr } = await supabase
-      .from("stores")
-      .select(
-        "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled",
-      )
-      .eq("id", storeId)
-      .maybeSingle();
+    const { store, error: storeLoadErr } = await loadStoreConnectPaymentRow(supabase, storeId);
 
     if (
-      storeErr ||
+      storeLoadErr ||
       !store?.stripe_connect_account_id ||
       !store.stripe_charges_enabled ||
       !store.stripe_onboarding_completed
@@ -139,8 +137,8 @@ Deno.serve(async (req) => {
       return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
     }
 
-    const connectEnv = (store.stripe_connect_environment as string) || "live";
-    const stripeKey = pickStripeSecretForEnvironment(connectEnv === "test" ? "test" : "live");
+    const connectEnv = await resolveStoreConnectEnvironment(store);
+    const stripeKey = pickStripeSecretForEnvironment(connectEnv);
     if (!stripeKey) {
       return json(
         {

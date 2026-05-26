@@ -47,6 +47,7 @@ export function useOperationalDiagnostics() {
 
     const schemaQr = dbDiag?.schema_qr_token ?? schemaProbe.schema_qr_token;
     const schemaPrint = dbDiag?.schema_kitchen_print ?? schemaProbe.schema_kitchen_print;
+    const schemaStripeEnv = schemaProbe.schema_stripe_connect_environment;
     const schemaValidated = dbDiag?.schema_table_validated ?? true;
     const rpcReady =
       dbDiag != null &&
@@ -86,6 +87,26 @@ export function useOperationalDiagnostics() {
         label: "Base de dados",
         status: "ok",
         detail: "Actualizações de mesa, pagamento e impressão estão aplicadas.",
+      });
+    }
+
+    if (!schemaStripeEnv) {
+      results.push({
+        id: "stripe-connect-environment-col",
+        label: "Modo teste/produção (base de dados)",
+        status: "fail",
+        critical: true,
+        detail:
+          "Falta actualização que guarda se a conta do restaurante está em teste ou produção — pagamentos podem usar a chave errada.",
+        action:
+          "Na Lovable, escreva no chat: «Apply all pending Supabase migrations for Kebab Turco». Ou cole o SQL de stripe_connect_environment no editor SQL.",
+      });
+    } else {
+      results.push({
+        id: "stripe-connect-environment-col",
+        label: "Modo teste/produção (base de dados)",
+        status: "ok",
+        detail: "Base de dados preparada para alternar teste e produção por restaurante.",
       });
     }
 
