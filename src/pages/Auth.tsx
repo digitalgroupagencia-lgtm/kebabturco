@@ -10,6 +10,7 @@ import { Mail, Lock, User, ChefHat } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
 import { nav } from "@/lib/navPaths.ts";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,14 +22,15 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const nextParam = searchParams.get("next");
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      if (authLoading) return;
       if (!active) return;
-      if (session?.user?.id) {
-        const dest = await resolvePostLoginDestination(session.user.id, nextParam);
+      if (user?.id) {
+        const dest = await resolvePostLoginDestination(user.id, nextParam);
         navigate(dest.path, { replace: true });
         return;
       }
@@ -37,7 +39,7 @@ const Auth = () => {
     return () => {
       active = false;
     };
-  }, [navigate, nextParam]);
+  }, [authLoading, user?.id, navigate, nextParam]);
 
   if (checkingSession) {
     return (

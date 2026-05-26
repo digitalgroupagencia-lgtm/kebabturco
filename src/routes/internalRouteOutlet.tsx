@@ -39,11 +39,6 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
     return withSuspense(<Install />);
   }
 
-  const panelAlias = resolveAdminRestaurantPanelAlias(pathname);
-  if (panelAlias && panelAlias !== pathname) {
-    return <Navigate to={panelAlias} replace />;
-  }
-
   const legacyRedirect = resolveLegacyRouteRedirect(pathname);
   if (legacyRedirect) {
     return <Navigate to={legacyRedirect} replace />;
@@ -54,7 +49,8 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
     return <Navigate to={{ pathname: customerRedirect.pathname, search: customerRedirect.search }} replace />;
   }
 
-  const def = resolveRoute(pathname);
+  const routePathname = resolveAdminRestaurantPanelAlias(pathname) ?? pathname;
+  const def = resolveRoute(routePathname);
   if (!def) {
     return notFound;
   }
