@@ -705,6 +705,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          configuration: Json | null
           extras: Json | null
           id: string
           notes: string | null
@@ -713,11 +714,13 @@ export type Database = {
           product_name: string
           quantity: number
           removed: Json
+          selections: Json
           size_name: string | null
           total_price: number
           unit_price: number
         }
         Insert: {
+          configuration?: Json | null
           extras?: Json | null
           id?: string
           notes?: string | null
@@ -726,11 +729,13 @@ export type Database = {
           product_name: string
           quantity?: number
           removed?: Json
+          selections?: Json
           size_name?: string | null
           total_price: number
           unit_price: number
         }
         Update: {
+          configuration?: Json | null
           extras?: Json | null
           id?: string
           notes?: string | null
@@ -739,6 +744,7 @@ export type Database = {
           product_name?: string
           quantity?: number
           removed?: Json
+          selections?: Json
           size_name?: string | null
           total_price?: number
           unit_price?: number
