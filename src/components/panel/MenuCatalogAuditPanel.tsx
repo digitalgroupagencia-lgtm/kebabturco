@@ -9,6 +9,7 @@ import type { ModifierGroup } from "@/lib/modifiers/types";
 import {
   auditExpectedDrinkCatalog,
   auditModifierOptionsAgainstCatalog,
+  buildProductPayloadFromIssue,
   buildProductPayloadFromOption,
   catalogAuditSummary,
   mergeCatalogAudits,
@@ -102,8 +103,7 @@ export default function MenuCatalogAuditPanel() {
   const loading = menuLoading || loadingGroups;
 
   const createProductForOption = async (issue: CatalogAuditIssue) => {
-    if (!storeId || issue.optionId.startsWith("expected-")) {
-      toast.message("Adicione manualmente na categoria Bebidas");
+    if (!storeId) {
       return;
     }
 
@@ -111,7 +111,8 @@ export default function MenuCatalogAuditPanel() {
       (g.options ?? []).some((o) => o.id === issue.optionId),
     );
     const option = group?.options?.find((o) => o.id === issue.optionId);
-    if (!option) return;
+    const isExpectedCatalogItem = issue.optionId.startsWith("expected-");
+    if (!option && !isExpectedCatalogItem) return;
 
     setCreatingId(issue.optionId);
     try {
@@ -126,19 +127,17 @@ export default function MenuCatalogAuditPanel() {
         .select("id", { count: "exact", head: true })
         .eq("category_id", categoryId);
 
-      const payload = buildProductPayloadFromOption(
-        option,
-        categoryId,
-        storeId,
-        (count ?? 0) + 1,
-      );
+      const payload = option
+        ? buildProductPayloadFromOption(option, categoryId, storeId, (count ?? 0) + 1)
+        : buildProductPayloadFromIssue(issue, categoryId, storeId, (count ?? 0) + 1);
+      if (!(payload as any).image_url) (payload as any).image_url = "/product-placeholder.svg";
 
       const { error } = await supabase.from("products").insert(payload as any);
       if (error) throw error;
 
       toast.success(`"${issue.optionName}" adicionado ao cardápio`);
       await loadGroups();
-      window.dispatchEvent(new CustomEvent("menu-catalog-audit-refresh"));
+      window.dispatchEvent(new CustomEvent("menu-catalog-audit-product-created", { detail: { categoryId } }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao criar produto");
     } finally {
@@ -219,7 +218,7 @@ export default function MenuCatalogAuditPanel() {
                       <span className="font-semibold text-foreground">Sugestão:</span>{" "}
                       {issue.suggestion}
                     </p>
-                    {issue.severity === "error" && !issue.optionId.startsWith("expected-") && (
+                    {(issue.severity === "error" || issue.optionId.startsWith("expected-")) && (
                       <Button
                         type="button"
                         size="sm"
