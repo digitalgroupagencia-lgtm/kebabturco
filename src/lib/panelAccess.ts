@@ -8,6 +8,7 @@ import {
 /** Segmentos permitidos no painel operacional do restaurante (/panel). */
 export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "",
+  "live",
   "dashboard",
   "cashier",
   "table-map",

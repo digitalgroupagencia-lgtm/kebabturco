@@ -30,7 +30,8 @@ export type RouteSegmentDef = {
 
 /** Rotas internas — caminhos calculados em runtime via joinPath. */
 export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
-  { area: "panel", segments: [], loader: () => import("@/views/panel/OrdersPage.tsx") },
+  { area: "panel", segments: [], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
+  { area: "panel", segments: ["live"], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
   { area: "panel", segments: ["dashboard"], loader: () => import("@/views/panel/Dashboard.tsx") },
   { area: "panel", segments: ["table-map"], loader: () => import("@/views/panel/TableMapPage.tsx") },
   { area: "panel", segments: ["cashier"], loader: () => import("@/views/panel/CashierPage.tsx") },

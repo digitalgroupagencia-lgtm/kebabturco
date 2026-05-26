@@ -6,6 +6,7 @@ export type AppArea = "admin" | "panel" | "seller" | "delivery";
 
 const ALL_PANEL_SEGMENTS = new Set([
   "",
+  "live",
   "dashboard",
   "cashier",
   "table-map",
@@ -24,10 +25,10 @@ const PANEL_SEGMENTS_BY_ROLE: Partial<Record<StaffRole, ReadonlySet<string>>> = 
   admin_master: ALL_PANEL_SEGMENTS,
   restaurant_admin: ALL_PANEL_SEGMENTS,
   manager: ALL_PANEL_SEGMENTS,
-  operator: new Set(["", "dashboard", "cashier", "table-map", "tables", "guide"]),
-  kitchen: new Set(["", "guide"]),
+  operator: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
+  kitchen: new Set(["", "live", "guide"]),
   cashier: new Set(["", "cashier", "guide"]),
-  attendant: new Set(["", "dashboard", "cashier", "table-map", "tables", "guide"]),
+  attendant: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
   seller: new Set([]),
   delivery: new Set([]),
 };
@@ -76,23 +77,69 @@ export function panelSegmentAllowed(role: StaffRole | null | undefined, segment:
   return allowed.has(segment);
 }
 
-export function panelNavItemsForRole(role: StaffRole | null | undefined) {
-  const all = [
-    { key: "orders", segment: "", label: "Pedidos" },
-    { key: "dashboard", segment: "dashboard", label: "Resumo" },
-    { key: "cashier", segment: "cashier", label: "Caixa" },
-    { key: "finance", segment: "finance", label: "Recebimentos" },
-    { key: "menu", segment: "menu", label: "Cardápio" },
-    { key: "table-map", segment: "table-map", label: "Mapa de mesas" },
-    { key: "tables", segment: "tables", label: "Mesas & QR" },
-    { key: "settings", segment: "settings", label: "Configurações" },
-    { key: "team", segment: "team", label: "Equipe" },
-    { key: "sellers", segment: "sellers", label: "Vendedores" },
-    { key: "guide", segment: "guide", label: "Guia" },
-    { key: "diagnostics", segment: "diagnostics", label: "Diagnóstico" },
-  ] as const;
+export type PanelNavItem = {
+  key: string;
+  segment: string;
+  label: string;
+  /** Rota absoluta opcional (ex.: relatórios no admin). */
+  href?: string;
+};
 
-  return all.filter((item) => panelSegmentAllowed(role, item.segment));
+export type PanelNavGroup = {
+  id: string;
+  label: string;
+  items: PanelNavItem[];
+};
+
+const PANEL_NAV_CATALOG: PanelNavGroup[] = [
+  {
+    id: "ops",
+    label: "Operação",
+    items: [
+      { key: "live", segment: "live", label: "Pedidos ao vivo" },
+      { key: "dashboard", segment: "dashboard", label: "Resumo" },
+      { key: "cashier", segment: "cashier", label: "Caixa" },
+      { key: "table-map", segment: "table-map", label: "Mapa de mesas" },
+    ],
+  },
+  {
+    id: "mgmt",
+    label: "Gestão",
+    items: [
+      { key: "menu", segment: "menu", label: "Cardápio" },
+      { key: "tables", segment: "tables", label: "Mesas & QR" },
+      { key: "team", segment: "team", label: "Equipe" },
+      { key: "sellers", segment: "sellers", label: "Vendedores" },
+    ],
+  },
+  {
+    id: "finance",
+    label: "Financeiro",
+    items: [
+      { key: "finance", segment: "finance", label: "Recebimentos" },
+    ],
+  },
+  {
+    id: "config",
+    label: "Configuração",
+    items: [
+      { key: "settings", segment: "settings", label: "Configurações" },
+      { key: "diagnostics", segment: "diagnostics", label: "Diagnóstico" },
+      { key: "guide", segment: "guide", label: "Guia" },
+    ],
+  },
+];
+
+export function panelNavGroupsForRole(role: StaffRole | null | undefined): PanelNavGroup[] {
+  return PANEL_NAV_CATALOG.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => panelSegmentAllowed(role, item.segment)),
+  })).filter((group) => group.items.length > 0);
+}
+
+/** @deprecated Use panelNavGroupsForRole */
+export function panelNavItemsForRole(role: StaffRole | null | undefined) {
+  return panelNavGroupsForRole(role).flatMap((g) => g.items);
 }
 
 export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {

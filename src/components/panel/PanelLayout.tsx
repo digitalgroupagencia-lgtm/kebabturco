@@ -11,6 +11,7 @@ import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
+import { panelSegmentFromPathname } from "@/lib/panelAccess";
 
 type Props = {
   page?: ComponentType<object>;
@@ -40,6 +41,10 @@ const PanelLayout = ({ page: Page }: Props) => {
 
   if (!user) return null;
 
+  const panelSegment = panelSegmentFromPathname(location.pathname);
+  const isLiveOps = panelSegment === "" || panelSegment === "live";
+  const headerTitle = isLiveOps ? "Operação ao vivo" : "Painel do Restaurante";
+
   return (
     <SelectedTenantProvider>
       <SidebarProvider>
@@ -48,11 +53,11 @@ const PanelLayout = ({ page: Page }: Props) => {
           <div className="flex-1 flex flex-col min-w-0">
             <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
               <SidebarTrigger className="mr-2 sm:mr-4" />
-              <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">Painel do Restaurante</h1>
+              <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">{headerTitle}</h1>
               <AdminThemeToggle />
             </header>
             <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-              <OperationalDiagnosticsBanner area="panel" />
+              {!isLiveOps && <OperationalDiagnosticsBanner area="panel" />}
               <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
             </main>
           </div>

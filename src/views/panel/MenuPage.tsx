@@ -13,6 +13,8 @@ import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Sparkles, Loader2 } from
 import type { Tables } from "@/integrations/supabase/types";
 import ProductModifierEditor, { saveProductModifierLinks } from "@/components/panel/ProductModifierEditor";
 import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
+import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
+import PanelPageHeader from "@/components/panel/PanelPageHeader";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
@@ -295,10 +297,12 @@ const MenuPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Cardápio</h2>
-      </div>
+      <PanelPageHeader
+        title="Cardápio"
+        description="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
+      />
 
+      <MenuCatalogAuditPanel />
       <MenuCustomizationAuditPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

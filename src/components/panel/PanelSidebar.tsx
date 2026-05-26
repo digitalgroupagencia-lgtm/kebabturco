@@ -9,11 +9,16 @@ import {
   Activity,
   Settings,
   UtensilsCrossed,
+  Map,
+  QrCode,
+  Wallet,
+  Radio,
 } from "lucide-react";
+import { NavLink as RouterNavLink } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { panelNavItemsForRole } from "@/lib/staffPermissions";
+import { panelNavGroupsForRole } from "@/lib/staffPermissions";
 import {
   Sidebar,
   SidebarContent,
@@ -28,15 +33,17 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { nav } from "@/lib/navPaths.ts";
+import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, typeof ShoppingBag> = {
+  live: Radio,
   orders: ShoppingBag,
   dashboard: LayoutGrid,
-  cashier: DollarSign,
+  cashier: Wallet,
   finance: DollarSign,
   menu: UtensilsCrossed,
-  "table-map": LayoutGrid,
-  tables: LayoutGrid,
+  "table-map": Map,
+  tables: QrCode,
   settings: Settings,
   team: Users,
   sellers: UserCog,
@@ -49,7 +56,7 @@ export function PanelSidebar() {
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const navItems = panelNavItemsForRole(roleData?.role);
+  const navGroups = panelNavGroupsForRole(roleData?.role);
 
   const handleNav = () => {
     if (isMobile) setOpenMobile(false);
@@ -57,37 +64,62 @@ export function PanelSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Operação do dia</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => {
-                const Icon = ICONS[item.key] || ShoppingBag;
-                const url = item.segment ? nav.panel(item.segment) : nav.panel();
-                return (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={url}
-                        end={item.segment === ""}
-                        className="hover:bg-muted/50"
-                        activeClassName="bg-primary/10 text-primary font-semibold"
-                        onClick={handleNav}
-                      >
-                        <Icon className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>{item.label}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="gap-1">
+        {navGroups.map((group) => (
+          <SidebarGroup key={group.id}>
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const Icon = ICONS[item.key] || ShoppingBag;
+                  const url = item.href ?? (item.segment ? nav.panel(item.segment) : nav.panel("live"));
+                  const isLive = item.segment === "live";
+                  return (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton asChild>
+                        {isLive ? (
+                          <RouterNavLink
+                            to={nav.panel("live")}
+                            onClick={handleNav}
+                            className={({ isActive }) =>
+                              cn(
+                                "hover:bg-muted/50 rounded-lg flex w-full items-center gap-2 px-2 py-1.5 text-sm",
+                                isActive && "bg-primary/10 text-primary font-semibold",
+                              )
+                            }
+                            isActive={(_, location) => {
+                              const p = location.pathname.replace(/\/+$/, "") || "/";
+                              return p === "/panel" || p === "/panel/live";
+                            }}
+                          >
+                            <Icon className="mr-2 h-4 w-4 shrink-0" />
+                            {!collapsed && <span>{item.label}</span>}
+                          </RouterNavLink>
+                        ) : (
+                          <NavLink
+                            to={url}
+                            end
+                            className="hover:bg-muted/50 rounded-lg"
+                            activeClassName="bg-primary/10 text-primary font-semibold"
+                            onClick={handleNav}
+                          >
+                            <Icon className="mr-2 h-4 w-4 shrink-0" />
+                            {!collapsed && <span>{item.label}</span>}
+                          </NavLink>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
-        <Button variant="ghost" className="w-full justify-start" onClick={() => void signOut()}>
+        <Button variant="ghost" className="w-full justify-start rounded-lg" onClick={() => void signOut()}>
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && "Sair"}
         </Button>

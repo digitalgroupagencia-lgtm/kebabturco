@@ -22,6 +22,8 @@ interface OpsOrdersLayoutProps {
   refreshing?: boolean;
   connectionStatus?: PanelConnectionStatus;
   headerExtra?: ReactNode;
+  /** live = monitor cozinha (sem cartões de métricas) */
+  variant?: "live" | "default";
 }
 
 const connectionLabel: Record<PanelConnectionStatus, { text: string; className: string }> = {
@@ -38,9 +40,12 @@ const OpsOrdersLayout = ({
   refreshing,
   connectionStatus = "connecting",
   headerExtra,
+  variant = "default",
 }: OpsOrdersLayoutProps) => {
   const countByStatus = (status: OrderStatus) =>
     orders.filter((o) => panelColumnStatus(o.status) === status).length;
+
+  const title = variant === "live" ? "Pedidos ao vivo" : "Pedidos activos";
 
   return (
     <div className="space-y-4">
@@ -48,7 +53,7 @@ const OpsOrdersLayout = ({
         {headerExtra}
       </div>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">Pedidos activos</h2>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight">{title}</h2>
         <div className="flex items-center gap-2">
           <span
             className={`hidden sm:flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${connectionLabel[connectionStatus].className}`}
@@ -72,24 +77,26 @@ const OpsOrdersLayout = ({
         </div>
       </div>
 
-      <div
-        className="hidden md:grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${Math.min(columns.length, 6)}, minmax(0, 1fr))` }}
-      >
-        {columns.map((status) => {
-          const Icon = statusIcons[status] || Clock;
-          return (
-            <Card key={status}>
-              <CardContent className="p-3">
-                <p className="text-2xl font-bold">{countByStatus(status)}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Icon className="w-3 h-3" /> {getStatusLabel(status)}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {variant !== "live" && (
+        <div
+          className="hidden md:grid gap-3"
+          style={{ gridTemplateColumns: `repeat(${Math.min(columns.length, 6)}, minmax(0, 1fr))` }}
+        >
+          {columns.map((status) => {
+            const Icon = statusIcons[status] || Clock;
+            return (
+              <Card key={status}>
+                <CardContent className="p-3">
+                  <p className="text-2xl font-bold">{countByStatus(status)}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Icon className="w-3 h-3" /> {getStatusLabel(status)}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {children}
     </div>
