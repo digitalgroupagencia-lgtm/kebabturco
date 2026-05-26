@@ -28,6 +28,7 @@ import {
   DollarSign,
   Package,
   BarChart3,
+  ShoppingBag,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -139,6 +140,19 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Painel operacional</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <NavItem
+                item={{ title: "Painel do Restaurante", url: nav.panel(), icon: ShoppingBag, end: true }}
+                collapsed={collapsed}
+                onNav={handleNav}
+              />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
           <SidebarGroupContent>
