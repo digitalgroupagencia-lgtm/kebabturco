@@ -376,6 +376,30 @@ export async function syncStripeConnectStatus(storeId: string): Promise<StripeCo
 }
 
 export async function provisionTestStripeConnectLocal(storeId: string) {
+  const { data: rpcData, error: rpcErr } = await supabase.rpc("activate_test_receivables", {
+    _store_id: storeId,
+  });
+
+  if (!rpcErr && rpcData && typeof rpcData === "object" && (rpcData as { success?: boolean }).success) {
+    const row = rpcData as {
+      success: boolean;
+      account_id?: string;
+      message?: string;
+    };
+    return {
+      accountId: row.account_id ?? `simulated-${storeId.replace(/-/g, "").slice(0, 12)}`,
+      provisioned: true,
+      simulated: true,
+      ready: true,
+      connectEnvironment: "test" as const,
+      chargesEnabled: true,
+      onboardingCompleted: true,
+      message:
+        row.message ??
+        "Modo teste simulado activo. Para pagar com cartão 4242, configure também as chaves de teste da Stripe.",
+    };
+  }
+
   const { data: store, error: loadErr } = await supabase
     .from("stores")
     .select("name")
@@ -384,12 +408,13 @@ export async function provisionTestStripeConnectLocal(storeId: string) {
   if (loadErr) throw loadErr;
 
   const label = store?.name ? `${store.name} (teste simulado)` : "Kebab Turco (teste simulado)";
+  const accountId = `simulated-${storeId.replace(/-/g, "").slice(0, 12)}`;
   const { error } = await supabase
     .from("stores")
     .update({
       stripe_connect_environment: "test",
       stripe_connect_test_simulated: true,
-      stripe_connect_account_id: `simulated-${storeId.replace(/-/g, "").slice(0, 12)}`,
+      stripe_connect_account_id: accountId,
       stripe_charges_enabled: true,
       stripe_onboarding_completed: true,
       stripe_payouts_enabled: true,
@@ -399,10 +424,14 @@ export async function provisionTestStripeConnectLocal(storeId: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", storeId);
-  if (error) throw error;
+  if (error) {
+    throw new Error(
+      "Não foi possível activar na base de dados. Confirme que correu o script SQL completo em Recebimentos.",
+    );
+  }
 
   return {
-    accountId: `simulated-${storeId.replace(/-/g, "").slice(0, 12)}`,
+    accountId,
     provisioned: true,
     simulated: true,
     ready: true,
@@ -414,29 +443,41 @@ export async function provisionTestStripeConnectLocal(storeId: string) {
   };
 }
 
-export async function provisionTestStripeConnect(storeId: string) {
-  try {
-    const data = await invokeConnectFunction({ storeId, mode: "provision_test" });
-    if (data) {
-      return data as {
-        accountId: string;
-        provisioned: boolean;
-        simulated: boolean;
-        ready: boolean;
-        connectEnvironment: "test";
-        message: string;
-        chargesEnabled?: boolean;
-        onboardingCompleted?: boolean;
-      };
+async function tryProvisionTestViaEdge(storeId: string) {
+  const attempt = async (functionName: string, body: Record<string, unknown>) => {
+    try {
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
+      if (error) return null;
+      if (data && typeof data === "object" && "error" in data && data.error) return null;
+      return data;
+    } catch {
+      return null;
     }
-  } catch (e) {
-    const code = (e as Error & { code?: string }).code;
-    const msg = e instanceof Error ? e.message : String(e);
-    const missingKey =
-      code === "test_key_missing" ||
-      msg.toLowerCase().includes("stripe_secret_key_test") ||
-      msg.toLowerCase().includes("chave secreta de teste");
-    if (!missingKey) throw e;
+  };
+
+  const direct = await attempt("stripe-connect-onboard", { storeId, mode: "provision_test" });
+  if (direct) return direct;
+
+  return attempt("stripe-create-payment-intent", {
+    action: "connect_onboard",
+    storeId,
+    mode: "provision_test",
+  });
+}
+
+export async function provisionTestStripeConnect(storeId: string) {
+  const edge = await tryProvisionTestViaEdge(storeId);
+  if (edge && typeof edge === "object") {
+    return edge as {
+      accountId: string;
+      provisioned: boolean;
+      simulated: boolean;
+      ready: boolean;
+      connectEnvironment: "test";
+      message: string;
+      chargesEnabled?: boolean;
+      onboardingCompleted?: boolean;
+    };
   }
 
   return provisionTestStripeConnectLocal(storeId);

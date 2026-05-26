@@ -437,6 +437,60 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_operational_diagnostics(uuid) TO authenticated;
 
+-- Activar recebimentos de teste (um clique no painel — não depende do servidor)
+CREATE OR REPLACE FUNCTION public.activate_test_receivables(_store_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_name text;
+  v_account text;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Autenticação necessária';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.stores s
+    WHERE s.id = _store_id
+      AND (
+        public.has_role(auth.uid(), 'admin_master'::app_role)
+        OR s.tenant_id = public.get_user_tenant_id(auth.uid())
+      )
+  ) THEN
+    RAISE EXCEPTION 'Sem permissão';
+  END IF;
+
+  SELECT name INTO v_name FROM public.stores WHERE id = _store_id;
+  v_account := 'simulated-' || replace(_store_id::text, '-', '');
+  v_account := left(v_account, 32);
+
+  UPDATE public.stores
+  SET
+    stripe_connect_environment = 'test',
+    stripe_connect_test_simulated = true,
+    stripe_connect_account_id = v_account,
+    stripe_charges_enabled = true,
+    stripe_onboarding_completed = true,
+    stripe_payouts_enabled = true,
+    stripe_payout_status = 'active',
+    stripe_business_name = COALESCE(v_name, 'Kebab Turco') || ' (teste simulado)',
+    stripe_iban_last4 = '0000',
+    updated_at = now()
+  WHERE id = _store_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'account_id', v_account,
+    'message', 'Modo teste simulado activo.'
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.activate_test_receivables(uuid) TO authenticated;
+
 -- Loja Kebab Turco activa
 UPDATE public.stores s
 SET is_active = true, updated_at = now()
