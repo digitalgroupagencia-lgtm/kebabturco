@@ -29,7 +29,7 @@ describe("resolveLegacyRouteRedirect", () => {
 
   it("returns null for canonical routes", () => {
     expect(resolveLegacyRouteRedirect("/panel")).toBeNull();
-    expect(resolveLegacyRouteRedirect("/admin/finance")).toBeNull();
+    expect(resolveLegacyRouteRedirect("/admin/routes")).toBeNull();
     expect(resolveLegacyRouteRedirect("/")).toBeNull();
   });
 
