@@ -3044,6 +3044,10 @@ export type Database = {
         Args: { _feature_key: string; _tenant_id: string }
         Returns: boolean
       }
+      upsert_staff_access_pin: {
+        Args: { _pin: string; _user_role_id: string }
+        Returns: undefined
+      }
       user_can_access_store: { Args: { _store_id: string }; Returns: boolean }
       user_can_access_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       validate_coupon: {
