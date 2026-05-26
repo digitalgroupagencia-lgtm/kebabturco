@@ -1,10 +1,13 @@
 import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabase } from "@/integrations/supabase/client";
 import type { TicketOrder } from "@/services/escPosTicketBuilder";
 import { fetchPrinterConfig, printOrder } from "@/services/printerService";
+import type { Tables } from "@/integrations/supabase/types";
 
+const supabase = _supabase as unknown as any;
 type OrderItem = Tables<"order_items">;
-type PanelOrder = Tables<"orders">;
+type PanelOrder = Tables<"orders"> & { kitchen_printed_at?: string | null };
+
 
 export function panelOrderToTicket(
   order: PanelOrder,

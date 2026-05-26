@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
+const supabase = _supabaseRaw as unknown as any;
 import type { ModifierGroup, ModifierOption, ProductModifierConfig, ProductType } from "@/lib/modifiers/types";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 

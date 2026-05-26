@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
+const supabase = _supabaseRaw as unknown as any;
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
 import type { Category, Extra, Product, Variant } from "@/data/products";

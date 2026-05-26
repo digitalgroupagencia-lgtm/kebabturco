@@ -37,16 +37,32 @@ const tenantStore = withSuspense(
   </MobileFrame>,
 );
 
+const internal = withSuspense(<CatchAllResolver notFound={<NotFound />} />);
+
 /**
  * Rotas do dropdown Lovable — manter `<Route path="...">` literais NESTE ficheiro.
  * Não mover para outro módulo: o scanner do preview lê App.tsx directamente.
+ * Todas as rotas internas (panel/*, admin/*, seller, cashier) delegam ao
+ * CatchAllResolver, que faz o despacho via resolveRoute(pathname).
  */
 const LovablePreviewRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
-    <Route path="/panel" element={withSuspense(panelPage(OrdersPage))} />
-    <Route path="*" element={withSuspense(<CatchAllResolver notFound={<NotFound />} />)} />
+    <Route path="/panel" element={internal} />
+    <Route path="/panel/menu" element={internal} />
+    <Route path="/panel/cashier" element={internal} />
+    <Route path="/panel/modifiers" element={internal} />
+    <Route path="/panel/branding" element={internal} />
+    <Route path="/panel/banners" element={internal} />
+    <Route path="/panel/delivery-zones" element={internal} />
+    <Route path="/panel/payments" element={internal} />
+    <Route path="/admin" element={internal} />
+    <Route path="/admin/routes" element={internal} />
+    <Route path="/admin/plans" element={internal} />
+    <Route path="/cashier" element={internal} />
+    <Route path="/seller" element={internal} />
+    <Route path="*" element={internal} />
   </Routes>
 );
 
