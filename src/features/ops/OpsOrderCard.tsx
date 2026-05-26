@@ -141,7 +141,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
           <p className="mt-0.5 text-[9px] text-muted-foreground truncate">{itemSummary}</p>
         )}
         {blockedUntilPaid && (
-          <p className="mt-0.5 text-[9px] font-semibold text-yellow-700 dark:text-yellow-400">
+          <p className="mt-0.5 text-[9px] font-semibold text-foreground">
             Balcão só vai para cozinha após confirmar pagamento.
           </p>
         )}
