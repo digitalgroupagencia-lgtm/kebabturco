@@ -12,11 +12,11 @@ import {
   type StoreFinancialProfile,
   type StripePlatformStatus,
 } from "@/services/orderService";
-import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
 import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
 import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbeddedPanel";
 import TestCheckoutReadiness from "@/components/finance/TestCheckoutReadiness";
+import ManualDatabaseSqlPanel from "@/components/finance/ManualDatabaseSqlPanel";
 import {
   fetchServerOperationalDiagnostics,
   probeSchemaFallback,
@@ -54,12 +54,44 @@ type PayoutRow = {
 
 const centsToEur = (c: number) => (c / 100).toFixed(2);
 
+async function fetchLedgerSafe(storeId: string): Promise<{ rows: LedgerRow[]; ok: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from("store_payment_ledger")
+      .select("id,description,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (error) return { rows: [], ok: false };
+    return { rows: (data as LedgerRow[]) || [], ok: true };
+  } catch {
+    return { rows: [], ok: false };
+  }
+}
+
+async function fetchPayoutsSafe(storeId: string): Promise<PayoutRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("store_payouts")
+      .select("id,amount_cents,status,arrival_date,created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (error) return [];
+    return (data as PayoutRow[]) || [];
+  } catch {
+    return [];
+  }
+}
+
 const FinancePage = () => {
   const { storeId } = useAdminStoreId();
   const [profile, setProfile] = useState<StoreFinancialProfile | null>(null);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [ledgerTableOk, setLedgerTableOk] = useState(true);
   const [platformStatus, setPlatformStatus] = useState<StripePlatformStatus | null>(null);
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
@@ -69,36 +101,35 @@ const FinancePage = () => {
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!storeId) return;
-    if (!options?.silent) setLoading(true);
-    const [prof, platform, diag, schema, { data: lg }, { data: po }] = await Promise.all([
-      fetchStoreFinancialProfile(storeId),
-      fetchStripePlatformStatus(storeId),
-      fetchServerOperationalDiagnostics(storeId),
-      probeSchemaFallback(),
-      supabase
-        .from("store_payment_ledger")
-        .select("id,description,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(30),
-      supabase
-        .from("store_payouts")
-        .select("id,amount_cents,status,arrival_date,created_at")
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(10),
-    ]);
-    setProfile(prof);
-    setPlatformStatus(platform);
-    setServerDiag(diag);
-    setSchemaProbe(schema);
-    setLedger((lg as LedgerRow[]) || []);
-    setPayouts((po as PayoutRow[]) || []);
-    if (!options?.silent) setLoading(false);
+    if (!options?.silent) {
+      setLoading(true);
+      setLoadError(null);
+    }
+    try {
+      const [prof, platform, diag, schema, ledgerRes, po] = await Promise.all([
+        fetchStoreFinancialProfile(storeId).catch(() => null),
+        fetchStripePlatformStatus(storeId).catch(() => null),
+        fetchServerOperationalDiagnostics(storeId).catch(() => null),
+        probeSchemaFallback().catch(() => null),
+        fetchLedgerSafe(storeId),
+        fetchPayoutsSafe(storeId),
+      ]);
+      setProfile(prof);
+      setPlatformStatus(platform);
+      setServerDiag(diag);
+      setSchemaProbe(schema);
+      setLedger(ledgerRes.rows);
+      setLedgerTableOk(ledgerRes.ok);
+      setPayouts(po);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Erro ao carregar recebimentos");
+    } finally {
+      if (!options?.silent) setLoading(false);
+    }
   }, [storeId]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const refreshStatus = useCallback(async () => {
@@ -106,7 +137,7 @@ const FinancePage = () => {
     setSyncing(true);
     try {
       await syncStripeConnectStatus(storeId);
-      await load();
+      await load({ silent: true });
       toast.success("Estado dos recebimentos actualizado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao actualizar");
@@ -135,9 +166,6 @@ const FinancePage = () => {
     }
   }, [storeId, load]);
 
-  const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
-  const exampleDeduction = computePlatformDeductionEur(20);
-
   if (!storeId) {
     return <div className="p-6 text-sm text-muted-foreground">Sem restaurante vinculado</div>;
   }
@@ -158,18 +186,19 @@ const FinancePage = () => {
     platformStatus?.connectEnvironment ??
     "live";
   const productionBlocked = Boolean(platformStatus?.productionBlocked);
-  const testModeActive = connectEnv === "test";
+  const pendingVerification = Boolean(platformStatus?.pendingVerification);
+  const testModeActive = connectEnv === "test" || Boolean(profile?.stripe_connect_test_simulated);
   const testSimulated = Boolean(profile?.stripe_connect_test_simulated);
-  const canStartConnect =
-    !productionBlocked ||
-    testModeActive ||
-    Boolean(platformStatus?.canUseEmbeddedTest) ||
-    Boolean(platformStatus?.testKeysConfigured) ||
-    hasStripePublishableKey("test");
-  const connectBlockedMessage =
-    productionBlocked && !canStartConnect
-      ? "Produção bloqueada — a plataforma aguarda verificação da Stripe. Configure chaves de teste para experimentar o fluxo."
-      : null;
+  const serverHasTestKey = Boolean(serverDiag?.stripeSecretKeyTest ?? platformStatus?.testKeysConfigured);
+  const schemaStripeEnv = schemaProbe?.schema_stripe_connect_environment ?? true;
+  const schemaTestSimulated = schemaProbe?.schema_stripe_connect_test_simulated ?? true;
+  const schemaIncomplete = !schemaStripeEnv || !schemaTestSimulated || !ledgerTableOk;
+
+  /** Modo teste visível sempre que recebimentos não estão prontos ou produção está pendente. */
+  const showTestModeUi = !ready || testModeActive || productionBlocked || pendingVerification || schemaIncomplete;
+
+  const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
+  const exampleDeduction = computePlatformDeductionEur(20);
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
@@ -187,38 +216,48 @@ const FinancePage = () => {
         </Link>
       </div>
 
-      {productionBlocked && (
+      {loadError && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+          {loadError}
+        </div>
+      )}
+
+      <ManualDatabaseSqlPanel
+        schemaStripeEnv={schemaStripeEnv}
+        schemaTestSimulated={schemaTestSimulated}
+        ledgerOk={ledgerTableOk}
+      />
+
+      {(productionBlocked || pendingVerification || schemaIncomplete) && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed">
-              <p className="font-black text-amber-900 dark:text-amber-200">Plataforma Stripe pendente de verificação</p>
+              <p className="font-black text-amber-900 dark:text-amber-200">Plataforma real pendente de aprovação</p>
               <p className="text-muted-foreground mt-1">
-                Pagamentos reais e contas live ficam bloqueados até a Stripe aprovar o perfil da plataforma.
-                {canStartConnect
-                  ? " Pode usar o modo teste para experimentar checkout, split e taxa online."
-                  : " Peça ao suporte para activar chaves de teste enquanto aguarda aprovação."}
+                Pagamentos reais ficam bloqueados até a Stripe aprovar. Use o modo teste abaixo — não depende dessa
+                aprovação.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {(testModeActive || productionBlocked) && (
+      {showTestModeUi && (
         <TestCheckoutReadiness
           profile={profile}
           platformStatus={platformStatus}
-          schemaStripeEnv={schemaProbe?.schema_stripe_connect_environment ?? true}
-          schemaTestSimulated={schemaProbe?.schema_stripe_connect_test_simulated ?? true}
-          serverTestKey={serverDiag?.stripeSecretKeyTest}
+          schemaStripeEnv={schemaStripeEnv}
+          schemaTestSimulated={schemaTestSimulated}
+          serverTestKey={serverHasTestKey}
           serverTestWebhook={serverDiag?.stripeWebhookSecretTest}
           edgeFunctionsOk={serverDiag?.edgeFunctions?.["stripe-create-payment-intent"] !== false}
         />
       )}
 
-      {(testModeActive || (productionBlocked && canStartConnect)) && (
+      {showTestModeUi && (
         <div className="rounded-lg border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300 bg-amber-500/10">
-          {testModeActive ? "Modo teste activo" : "Testes disponíveis — produção bloqueada"}
+          {testModeActive ? "Modo teste activo" : "Modo teste disponível — produção pendente"}
         </div>
       )}
 
@@ -275,36 +314,43 @@ const FinancePage = () => {
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
             <div>
-              <p className="font-black text-base">Conectar recebimentos</p>
+              <p className="font-black text-base">Modo teste — recebimentos simulados</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                {productionBlocked
-                  ? "A plataforma real ainda aguarda aprovação da Stripe. Use recebimentos de teste para validar pedidos e pagamento com cartão simulado."
-                  : "Preencha aqui os dados da empresa, identidade e conta bancária. Tudo fica dentro deste painel — sem sair para outro site."}
+                Active recebimentos de teste para validar pedidos e pagamento com cartão 4242. Sem dinheiro real. Não
+                depende da aprovação da plataforma Stripe.
               </p>
-              {connectBlockedMessage && (
-                <p className="text-sm text-amber-800 dark:text-amber-300 mt-2 font-semibold">{connectBlockedMessage}</p>
+              {schemaIncomplete && (
+                <p className="text-sm text-destructive font-semibold mt-2">
+                  Primeiro aplique o SQL da base de dados (caixa vermelha acima), depois clique no botão laranja.
+                </p>
+              )}
+              {!serverHasTestKey && (
+                <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold mt-2">
+                  Confirme que STRIPE_SECRET_KEY_TEST está nos Segredos do servidor Lovable Cloud.
+                </p>
               )}
             </div>
           </div>
-          {(productionBlocked || testModeActive || platformStatus?.testKeysConfigured) && (
-            <Button
-              className="w-full h-12 font-black text-base bg-amber-600 hover:bg-amber-700 text-white"
-              disabled={testProvisionBusy}
-              onClick={() => void activateTestReceivables()}
-            >
-              {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Activar recebimentos de teste
-            </Button>
-          )}
-          {canStartConnect && !productionBlocked && (
+
+          <Button
+            className="w-full h-12 font-black text-base bg-amber-600 hover:bg-amber-700 text-white"
+            disabled={testProvisionBusy || schemaIncomplete || !serverHasTestKey}
+            onClick={() => void activateTestReceivables()}
+          >
+            {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Activar recebimentos de teste
+          </Button>
+
+          {!productionBlocked && (
             <Button
               className="w-full h-12 font-black text-base"
               onClick={() => setEmbeddedMode("onboarding")}
             >
-              Conectar recebimentos do restaurante
+              Conectar recebimentos do restaurante (produção)
             </Button>
           )}
-          {canStartConnect && productionBlocked && (
+
+          {(productionBlocked || pendingVerification) && (
             <Button
               variant="outline"
               className="w-full h-11 font-bold"
@@ -312,11 +358,6 @@ const FinancePage = () => {
             >
               Abrir formulário Stripe (opcional)
             </Button>
-          )}
-          {!canStartConnect && !productionBlocked && (
-            <p className="text-sm text-muted-foreground text-center py-2">
-              Aguarde aprovação da plataforma ou configure chaves de teste para continuar.
-            </p>
           )}
         </div>
       )}
@@ -332,8 +373,8 @@ const FinancePage = () => {
           <StripeConnectEmbeddedPanel
             storeId={storeId}
             variant="onboarding"
-            connectEnvironment={testModeActive || productionBlocked ? "test" : "live"}
-            productionBlocked={productionBlocked}
+            connectEnvironment={testModeActive || productionBlocked || pendingVerification ? "test" : "live"}
+            productionBlocked={productionBlocked || pendingVerification}
             onComplete={onEmbeddedComplete}
             onTestProvisioned={(msg) => toast.success(msg)}
           />
@@ -374,7 +415,7 @@ const FinancePage = () => {
             storeId={storeId}
             variant="management"
             connectEnvironment={connectEnv}
-            productionBlocked={productionBlocked}
+            productionBlocked={productionBlocked || pendingVerification}
             onComplete={onEmbeddedComplete}
           />
         </div>

@@ -64,8 +64,7 @@ export function useOperationalDiagnostics() {
         status: "fail",
         critical: true,
         detail: "Faltam actualizações na base de dados — mesas QR, impressão única e caixa podem falhar.",
-        action:
-          "Na Lovable, escreva no chat exactamente: «Apply all pending Supabase migrations». Depois Sync + Publish e clique Verificar aqui.",
+        action: "Lovable → Database → SQL editor → cole o SQL completo (Admin → Recebimentos → Copiar SQL). Depois actualize esta página.",
       });
     } else if (!schemaQr || !schemaPrint || !schemaValidated || !rpcReady) {
       const missing: string[] = [];
@@ -80,7 +79,7 @@ export function useOperationalDiagnostics() {
         critical: true,
         detail: `Actualização incompleta: falta ${missing.join(", ")}.`,
         action:
-          "Na Lovable, escreva no chat: «Apply all pending Supabase migrations». Se persistir, contacte o suporte Lovable Cloud.",
+          "Lovable → Database → SQL editor → cole o SQL de Admin → Recebimentos (botão Copiar SQL). Depois Sync + Publish.",
       });
     } else {
       results.push({
@@ -100,7 +99,7 @@ export function useOperationalDiagnostics() {
         detail:
           "Falta actualização que guarda se a conta do restaurante está em teste ou produção — pagamentos podem usar a chave errada.",
         action:
-          "Na Lovable, escreva no chat: «Apply all pending Supabase migrations for Kebab Turco». Ou cole o SQL de stripe_connect_environment no editor SQL.",
+          "Lovable → Database → SQL editor → cole o SQL completo de Admin → Recebimentos.",
       });
     } else {
       results.push({
@@ -118,7 +117,7 @@ export function useOperationalDiagnostics() {
         status: "fail",
         critical: true,
         detail: "Falta actualização para activar recebimentos de teste com um clique.",
-        action: "Na Lovable: «Apply all pending Supabase migrations».",
+        action: "Lovable → Database → SQL editor → cole o SQL completo de Admin → Recebimentos.",
       });
     } else {
       results.push({
@@ -462,7 +461,7 @@ export function useOperationalDiagnostics() {
           critical: true,
           detail: `Serviços em falta: ${missingFns.join(", ")}.`,
           action:
-            "Na Lovable, escreva no chat: «Apply all pending Supabase migrations» e depois «Deploy all edge functions». Depois Sync + Publish.",
+            "Lovable → Deploy edge functions. Para a base de dados, cole o SQL em Admin → Recebimentos. Depois Sync + Publish.",
         });
       } else {
         results.push({

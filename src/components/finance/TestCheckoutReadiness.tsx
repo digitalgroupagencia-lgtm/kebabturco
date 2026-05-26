@@ -43,12 +43,12 @@ export default function TestCheckoutReadiness({
     {
       ok: schemaStripeEnv,
       label: "Base de dados: modo teste/produção",
-      fix: "Lovable → «Apply all pending Supabase migrations»",
+      fix: "Lovable → Database → SQL editor → cole o SQL da caixa vermelha em Recebimentos",
     },
     {
       ok: schemaTestSimulated,
       label: "Base de dados: recebimentos simulados",
-      fix: "Aplicar migrations pendentes (stripe_connect_test_simulated)",
+      fix: "Lovable → Database → SQL editor → cole o SQL da caixa vermelha em Recebimentos",
     },
     {
       ok: connectReady || testSimulated,
