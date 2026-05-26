@@ -23,7 +23,7 @@ const SUBTITLE: Record<string, string> = {
 
 const StoreSelectionScreen = () => {
   const { setScreen } = useOrder();
-  const { stores, setSelectedStoreId } = useResolvedStore();
+  const { stores, setSelectedStoreId, loading } = useResolvedStore();
   const { lang } = useLanguage();
   const { settings } = useBranding();
   const { theme } = useTheme();
