@@ -1,4 +1,4 @@
-import { useEffect, type ElementType } from "react";
+import { type ElementType } from "react";
 import { Link } from "react-router-dom";
 import { Activity, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,10 +51,6 @@ const statusStyle: Record<
 const DiagnosticsPage = () => {
   const { items, running, lastRun, run, failCount, warnCount } = useOperationalDiagnostics();
 
-  useEffect(() => {
-    void run();
-  }, [run]);
-
   const critical = items.filter((i) => i.critical && i.status === "fail");
   const optional = items.filter((i) => i.id === "push" || i.id === "lovable-maps");
 
@@ -67,7 +63,7 @@ const DiagnosticsPage = () => {
             Estado do sistema
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Verificação automática — pagamentos, mesas, impressão e versão publicada.
+            Clique em Verificar para analisar pagamentos, mesas, impressão e versão publicada.
           </p>
           {lastRun && (
             <p className="text-xs text-muted-foreground mt-2">
@@ -104,9 +100,9 @@ const DiagnosticsPage = () => {
           )}
           {items.some((i) => i.id === "database" && i.status === "fail") && (
             <div className="rounded-lg bg-background/80 border p-3 text-xs space-y-2">
-              <p className="font-bold">Copie e cole no chat da Lovable:</p>
-              <p className="font-mono text-[11px] leading-relaxed select-all">
-                Apply all pending Supabase migrations for Kebab Turco operational bootstrap.
+              <p className="font-bold">Base de dados incompleta:</p>
+              <p className="leading-relaxed">
+                Vá a Admin → Recebimentos → Copiar SQL → cole no editor da base de dados e execute.
               </p>
             </div>
           )}
@@ -122,6 +118,14 @@ const DiagnosticsPage = () => {
       )}
 
       <div className="space-y-3">
+        {!running && items.length === 0 && (
+          <Card className="border-dashed">
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Clique em <strong>Verificar</strong> para analisar o sistema. Nada é consultado automaticamente ao abrir
+              esta página.
+            </CardContent>
+          </Card>
+        )}
         {items
           .filter((i) => !optional.some((o) => o.id === i.id))
           .map((item) => {

@@ -12,16 +12,15 @@ import {
   buildPrintPayload,
   invokePrintOrder,
   fetchStoreFinancialProfile,
-  fetchStripePlatformStatus,
   validateCoupon,
   verifyStripePaymentIntent,
   PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
+import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
-  computeRestaurantPortionEur,
   computeRestaurantPortionEur,
   computePlatformDeductionEur,
   PLATFORM_FEE_EUR,
@@ -186,9 +185,10 @@ const PaymentScreen = () => {
 
   useEffect(() => {
     if (!storeId) return;
-    Promise.all([fetchStoreFinancialProfile(storeId), fetchStripePlatformStatus(storeId)])
-      .then(([profile, platform]) => {
+    fetchStoreFinancialProfile(storeId)
+      .then((profile) => {
         setStripeEnabled(isStripeConnectReady(profile));
+        const platform = inferStripePlatformStatus(profile);
         const useTest =
           profile?.stripe_connect_environment === "test" ||
           Boolean(profile?.stripe_connect_test_simulated) ||

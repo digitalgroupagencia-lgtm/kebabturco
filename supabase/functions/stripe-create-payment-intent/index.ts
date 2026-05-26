@@ -75,8 +75,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!body?.storeId && !body?.amountCents && body?.subtotalCents == null) {
-      const stripeConfigured = Boolean(getStripeSecretKey());
+    const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";
+    const subtotalCents = Number(body?.subtotalCents) || 0;
+    const deliveryCents = Number(body?.deliveryCents) || 0;
+    const discountCents = Number(body?.discountCents) || 0;
+    const amountCentsDirect = Number(body?.amountCents) || 0;
+    const looksLikePayment =
+      body?.createPayment === true ||
+      body?.intent === "payment" ||
+      amountCentsDirect >= 50 ||
+      subtotalCents >= 50;
+
+    if (!looksLikePayment) {
+      const stripeConfigured = Boolean(getStripeSecretKey()) || Boolean(getStripeSecretKeyTest());
       return json({
         ok: true,
         service: "stripe-create-payment-intent",
@@ -89,12 +100,8 @@ Deno.serve(async (req) => {
     }
 
     const {
-      storeId,
       orderType,
       metadata = {},
-      subtotalCents = 0,
-      deliveryCents = 0,
-      discountCents = 0,
     } = body;
 
     const restaurantPortionCents = computeRestaurantPortionCents(

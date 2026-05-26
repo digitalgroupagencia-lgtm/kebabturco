@@ -317,29 +317,46 @@ function throwConnectError(data: Record<string, unknown>): never {
   throw err;
 }
 
-async function invokeConnectFunction(payload: Record<string, unknown>) {
+async function invokeConnectFunction(
+  payload: Record<string, unknown>,
+  options?: { silent?: boolean; allowPaymentIntentFallback?: boolean },
+) {
+  const mode = typeof payload.mode === "string" ? payload.mode : "";
+  const readOnly = mode === "platform_status";
+
   const invoke = async (functionName: string, body: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke(functionName, { body });
-    if (error) {
-      const msg = error.message || String(error);
-      const notFound =
-        msg.includes("404") ||
-        msg.toLowerCase().includes("not found") ||
-        msg.toLowerCase().includes("failed to send");
-      if (notFound) return null;
-      throw new Error(msg);
+    try {
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
+      if (error) {
+        if (options?.silent || readOnly) return null;
+        const msg = error.message || String(error);
+        const notFound =
+          msg.includes("404") ||
+          msg.toLowerCase().includes("not found") ||
+          msg.toLowerCase().includes("failed to send");
+        if (notFound) return null;
+        throw new Error(msg);
+      }
+      if (data && typeof data === "object" && "error" in data && data.error) {
+        if (options?.silent || readOnly) return null;
+        throwConnectError(data as Record<string, unknown>);
+      }
+      return data;
+    } catch (e) {
+      if (options?.silent || readOnly) return null;
+      throw e;
     }
-    if (data && typeof data === "object" && "error" in data && data.error) {
-      throwConnectError(data as Record<string, unknown>);
-    }
-    return data;
   };
 
   const direct = await invoke("stripe-connect-onboard", payload);
   if (direct) return direct;
 
-  const fallback = await invoke("stripe-create-payment-intent", { action: "connect_onboard", ...payload });
-  if (fallback) return fallback;
+  if (options?.allowPaymentIntentFallback && mode !== "platform_status" && mode !== "sync_status") {
+    const fallback = await invoke("stripe-create-payment-intent", { action: "connect_onboard", ...payload });
+    if (fallback) return fallback;
+  }
+
+  if (options?.silent || readOnly) return null;
 
   throw new Error(
     "Serviço de recebimentos indisponível — peça na Lovable para actualizar as funções do servidor.",
@@ -350,7 +367,10 @@ export async function createStripeConnectEmbeddedSession(
   storeId: string,
   mode: "embedded_onboarding" | "embedded_management",
 ) {
-  const data = await invokeConnectFunction({ storeId, mode });
+  const data = await invokeConnectFunction({ storeId, mode }, { allowPaymentIntentFallback: true });
+  if (!data) {
+    throw new Error("Não foi possível abrir o formulário de recebimentos — tente modo teste.");
+  }
   return data as {
     clientSecret: string;
     accountId: string;
@@ -358,20 +378,20 @@ export async function createStripeConnectEmbeddedSession(
   };
 }
 
+/** Só usar quando o utilizador pedir actualização explícita — nunca no carregamento do painel. */
 export async function fetchStripePlatformStatus(storeId?: string): Promise<StripePlatformStatus | null> {
-  try {
-    const data = await invokeConnectFunction({
-      storeId: storeId ?? "",
-      mode: "platform_status",
-    });
-    return data as StripePlatformStatus;
-  } catch {
-    return null;
-  }
+  const data = await invokeConnectFunction(
+    { storeId: storeId ?? "", mode: "platform_status" },
+    { silent: true },
+  );
+  return data ? (data as StripePlatformStatus) : null;
 }
 
 export async function syncStripeConnectStatus(storeId: string): Promise<StripeConnectStatus> {
-  const data = await invokeConnectFunction({ storeId, mode: "sync_status" });
+  const data = await invokeConnectFunction({ storeId, mode: "sync_status" }, { allowPaymentIntentFallback: true });
+  if (!data) {
+    throw new Error("Não foi possível actualizar — use modo teste ou tente mais tarde.");
+  }
   return data as StripeConnectStatus;
 }
 
@@ -485,7 +505,10 @@ export async function provisionTestStripeConnect(storeId: string) {
 
 /** @deprecated Usar createStripeConnectEmbeddedSession — onboarding embebido no painel */
 export async function startStripeConnectOnboarding(storeId: string, returnUrl: string) {
-  const data = await invokeConnectFunction({ storeId, returnUrl, mode: "start_onboarding" });
+  const data = await invokeConnectFunction(
+    { storeId, returnUrl, mode: "start_onboarding" },
+    { allowPaymentIntentFallback: true },
+  );
   return data as { url: string; accountId: string };
 }
 

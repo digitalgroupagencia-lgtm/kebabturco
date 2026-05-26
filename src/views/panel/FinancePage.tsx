@@ -6,21 +6,18 @@ import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import {
   fetchStoreFinancialProfile,
-  fetchStripePlatformStatus,
   provisionTestStripeConnect,
   syncStripeConnectStatus,
   type StoreFinancialProfile,
   type StripePlatformStatus,
 } from "@/services/orderService";
+import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
 import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbeddedPanel";
 import TestCheckoutReadiness from "@/components/finance/TestCheckoutReadiness";
 import ManualDatabaseSqlPanel from "@/components/finance/ManualDatabaseSqlPanel";
-import {
-  fetchServerOperationalDiagnostics,
-  probeSchemaFallback,
-} from "@/services/operationalDiagnosticsService";
+import { probeSchemaFallback } from "@/services/operationalDiagnosticsService";
 import {
   Loader2,
   Wallet,
@@ -96,7 +93,6 @@ const FinancePage = () => {
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
-  const [serverDiag, setServerDiag] = useState<Awaited<ReturnType<typeof fetchServerOperationalDiagnostics>>>(null);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
@@ -106,17 +102,14 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, platform, diag, schema, ledgerRes, po] = await Promise.all([
+      const [prof, schema, ledgerRes, po] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
-        fetchStripePlatformStatus(storeId).catch(() => null),
-        fetchServerOperationalDiagnostics(storeId).catch(() => null),
         probeSchemaFallback().catch(() => null),
         fetchLedgerSafe(storeId),
         fetchPayoutsSafe(storeId),
       ]);
       setProfile(prof);
-      setPlatformStatus(platform);
-      setServerDiag(diag);
+      setPlatformStatus(inferStripePlatformStatus(prof));
       setSchemaProbe(schema);
       setLedger(ledgerRes.rows);
       setLedgerTableOk(ledgerRes.ok);
@@ -189,7 +182,7 @@ const FinancePage = () => {
   const pendingVerification = Boolean(platformStatus?.pendingVerification);
   const testModeActive = connectEnv === "test" || Boolean(profile?.stripe_connect_test_simulated);
   const testSimulated = Boolean(profile?.stripe_connect_test_simulated);
-  const serverHasTestKey = Boolean(serverDiag?.stripeSecretKeyTest ?? platformStatus?.testKeysConfigured);
+  const serverHasTestKey = false;
   const schemaStripeEnv = schemaProbe?.schema_stripe_connect_environment ?? true;
   const schemaTestSimulated = schemaProbe?.schema_stripe_connect_test_simulated ?? true;
   const schemaIncomplete = !schemaStripeEnv || !schemaTestSimulated || !ledgerTableOk;
@@ -250,8 +243,7 @@ const FinancePage = () => {
           schemaStripeEnv={schemaStripeEnv}
           schemaTestSimulated={schemaTestSimulated}
           serverTestKey={serverHasTestKey}
-          serverTestWebhook={serverDiag?.stripeWebhookSecretTest}
-          edgeFunctionsOk={serverDiag?.edgeFunctions?.["stripe-create-payment-intent"] !== false}
+          edgeFunctionsOk
         />
       )}
 

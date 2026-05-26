@@ -260,6 +260,34 @@ export async function handleStripeConnectRequest(
     try {
       if (storeId) {
         const store = await assertStoreAccess(service, userId, storeId);
+        const storeIsTest =
+          store.stripe_connect_environment === "test" ||
+          !store.stripe_connect_account_id ||
+          store.stripe_connect_account_id.startsWith("simulated-");
+
+        if (storeIsTest) {
+          const testKey = getStripeSecretKeyTest();
+          const testPlatform = testKey
+            ? await inspectPlatformConnectStatus(
+                new Stripe(testKey, { apiVersion: "2023-10-16" }),
+                "test",
+              )
+            : {
+                keyMode: "test" as const,
+                connectLiveAllowed: false,
+                platformProfileComplete: true,
+                pendingVerification: true,
+                productionBlocked: true,
+                testKeysConfigured: false,
+                message: null,
+                adminMessage: "Modo teste — configure chaves de teste para checkout 4242.",
+              };
+          return json({
+            ...platformStatusPayload({ ...testPlatform, productionBlocked: true }, "test"),
+            hasConnectAccount: Boolean(store.stripe_connect_account_id),
+          });
+        }
+
         const ctx = await loadConnectContext(store);
         const probed = await inspectPlatformConnectStatus(
           ctx.stripe,
@@ -271,21 +299,30 @@ export async function handleStripeConnectRequest(
           hasConnectAccount: Boolean(store.stripe_connect_account_id),
         });
       }
+      const testKey = getStripeSecretKeyTest();
+      if (testKey) {
+        const testStripe = new Stripe(testKey, { apiVersion: "2023-10-16" });
+        const platform = await inspectPlatformConnectStatus(testStripe, "test");
+        return json({
+          ...platformStatusPayload(
+            {
+              ...platform,
+              productionBlocked: true,
+              pendingVerification: true,
+              connectLiveAllowed: false,
+              adminMessage: "Produção bloqueada até aprovação da Stripe — use modo teste.",
+            },
+            "test",
+          ),
+          hasConnectAccount: false,
+        });
+      }
       const liveKey = getStripeSecretKey();
       if (liveKey) {
         const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
         const platform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
         return json({
           ...platformStatusPayload(platform, "live"),
-          hasConnectAccount: false,
-        });
-      }
-      const testKey = getStripeSecretKeyTest();
-      if (testKey) {
-        const testStripe = new Stripe(testKey, { apiVersion: "2023-10-16" });
-        const platform = await inspectPlatformConnectStatus(testStripe, "test");
-        return json({
-          ...platformStatusPayload(platform, "test"),
           hasConnectAccount: false,
         });
       }
@@ -297,6 +334,20 @@ export async function handleStripeConnectRequest(
           hasConnectAccount: false,
           connectEnvironment: "live",
           productionBlocked: true,
+        });
+      }
+      if (isPlatformProfileBlockedError(e)) {
+        return json({
+          keyMode: "live",
+          connectEnvironment: "live",
+          connectLiveAllowed: false,
+          platformProfileComplete: false,
+          pendingVerification: true,
+          productionBlocked: true,
+          testKeysConfigured: Boolean(getStripeSecretKeyTest()),
+          message: "Produção bloqueada até aprovação da Stripe.",
+          adminMessage: "Produção bloqueada até aprovação da Stripe — use modo teste.",
+          hasConnectAccount: false,
         });
       }
       throw e;
