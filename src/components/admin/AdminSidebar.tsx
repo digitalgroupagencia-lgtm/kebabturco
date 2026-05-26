@@ -145,7 +145,7 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <NavItem
-                item={{ title: "Painel do Restaurante", url: nav.panel(), icon: ShoppingBag, end: true }}
+                item={{ title: "Painel do Restaurante", url: nav.admin("panel"), icon: ShoppingBag, end: true }}
                 collapsed={collapsed}
                 onNav={handleNav}
               />
