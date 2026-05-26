@@ -79,7 +79,7 @@ const OpsOrderDetailSheet = ({
 
   const modality = getOrderModalityBanner(order);
   const payment = getPanelPaymentBadge(order);
-  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole) });
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
   const etaLabel = formatOrderEta(order);
   const prepRemaining = formatPrepRemaining(order);
   const itemCount = orderItemCount(items);
