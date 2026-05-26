@@ -6,7 +6,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const supabase = _supabase as unknown as any;
 type OrderItem = Tables<"order_items">;
-type PanelOrder = Tables<"orders">;
+type PanelOrder = Tables<"orders"> & { kitchen_printed_at?: string | null };
 
 
 export function panelOrderToTicket(
