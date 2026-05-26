@@ -12,7 +12,7 @@ type Props = {
 
 const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
   const { criticalIssues, failCount, warnCount, running, run, lastRun } = useOperationalDiagnostics();
-  const diagnosticsPath = area === "admin" ? nav.admin("diagnostics") : nav.panel("diagnostics");
+  const diagnosticsPath = nav.admin("diagnostics");
 
   useEffect(() => {
     if (!lastRun) void run();
