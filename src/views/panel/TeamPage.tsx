@@ -183,7 +183,7 @@ const TeamPage = () => {
   };
 
   const updateRole = async (memberId: string, role: AppRole) => {
-    const { error } = await supabase.from("user_roles").update({ role }).eq("id", memberId);
+    const { error } = await supabase.from("user_roles").update({ role: role as any }).eq("id", memberId);
     if (error) { toast.error("Erro ao atualizar papel"); return; }
     toast.success("Papel atualizado!");
     fetchMembers();
