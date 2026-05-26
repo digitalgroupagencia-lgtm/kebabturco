@@ -53,9 +53,9 @@ const OperationsPage = () => {
       pay_card_enabled: s.pay_card_enabled,
       pay_cash_enabled: s.pay_cash_enabled,
       pay_cash_dine_in: (s as any).pay_cash_dine_in ?? true,
-      pay_cash_takeaway: (s as any).pay_cash_takeaway ?? false,
-      pay_cash_delivery: (s as any).pay_cash_delivery ?? false,
-      require_prepayment_takeaway: (s as any).require_prepayment_takeaway ?? true,
+      pay_cash_takeaway: true,
+      pay_cash_delivery: false,
+      require_prepayment_takeaway: false,
       require_prepayment_delivery: (s as any).require_prepayment_delivery ?? true,
       print_pending_dine_in: (s as any).print_pending_dine_in ?? true,
       pay_pix_enabled: s.pay_pix_enabled,
@@ -149,9 +149,6 @@ const OperationsPage = () => {
         <CardContent className="space-y-3">
           {[
             { key: "pay_cash_dine_in", label: "Dinheiro na mesa (QR)", desc: "Permite pagar em dinheiro num pedido de mesa validado." },
-            { key: "pay_cash_takeaway", label: "Dinheiro ao recolher (takeaway)", desc: "Desligado por defeito — só active se quiser cobrar na recolha." },
-            { key: "pay_cash_delivery", label: "Dinheiro na entrega", desc: "Desligado por defeito — só active se quiser cobrar na entrega." },
-            { key: "require_prepayment_takeaway", label: "Takeaway: pagar antes de enviar", desc: "Cliente só conclui após pagamento online confirmado." },
             { key: "require_prepayment_delivery", label: "Entrega: pagar antes de enviar", desc: "Cliente só conclui após pagamento online confirmado." },
             { key: "print_pending_dine_in", label: "Imprimir mesa QR mesmo pendente", desc: "Envia para cozinha após pedido de mesa validado, mesmo sem pagamento." },
           ].map((f) => (
