@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
 
   useEffect(() => {
     let active = true;
@@ -26,7 +28,7 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!active) return;
       if (session?.user?.id) {
-        const dest = await resolvePostLoginDestination(session.user.id);
+        const dest = await resolvePostLoginDestination(session.user.id, nextParam);
         navigate(dest.path, { replace: true });
         return;
       }
@@ -35,7 +37,7 @@ const Auth = () => {
     return () => {
       active = false;
     };
-  }, [navigate]);
+  }, [navigate, nextParam]);
 
   if (checkingSession) {
     return (
@@ -55,7 +57,7 @@ const Auth = () => {
         if (error) throw error;
         const userId = data.user?.id;
         if (userId) {
-          const dest = await resolvePostLoginDestination(userId);
+          const dest = await resolvePostLoginDestination(userId, nextParam);
           navigate(dest.path);
         } else {
           navigate(nav.panel());
@@ -78,6 +80,7 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary p-4">

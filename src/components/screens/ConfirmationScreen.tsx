@@ -31,8 +31,6 @@ const ConfirmationScreen = () => {
     setTableNumber,
     setPaymentMethod,
     setOrderPaymentStatus,
-    setCustomerName,
-    setCustomerPhone,
     activeOrderId,
     setActiveOrderId,
     setTrackingOrderId,
@@ -117,8 +115,6 @@ const ConfirmationScreen = () => {
     setTableNumber("");
     setPaymentMethod(null);
     setOrderPaymentStatus("pending");
-    setCustomerName("");
-    setCustomerPhone("");
     const isTerminal = liveStatus === "delivered" || liveStatus === "cancelled" || customerAcked;
     if (activeOrderId && !customerAcked && !isTerminal) {
       setScreen(shouldForceDeliveryOnly() ? "home" : "orderType");

@@ -4,11 +4,25 @@ import { nav } from "@/lib/navPaths.ts";
 
 type RoleRow = { role: string; tenant_id: string | null };
 
-/** Destino após login — admin geral vs painel do restaurante. */
-export async function resolvePostLoginDestination(userId: string): Promise<{
-  type: "internal";
-  path: string;
-}> {
+/** Caminhos seguros para usar como `next` após login. */
+function sanitizeNextPath(next: string | null | undefined): string | null {
+  if (!next) return null;
+  if (!next.startsWith("/")) return null;
+  if (next.startsWith("//")) return null;
+  if (next === "/auth" || next.startsWith("/auth/")) return null;
+  return next;
+}
+
+/** Destino após login — respeita `next` quando válido; senão usa papel do utilizador. */
+export async function resolvePostLoginDestination(
+  userId: string,
+  next?: string | null,
+): Promise<{ type: "internal"; path: string }> {
+  const safeNext = sanitizeNextPath(next);
+  if (safeNext) {
+    return { type: "internal", path: safeNext };
+  }
+
   const { data: roles } = await supabase
     .from("user_roles")
     .select("role, tenant_id")

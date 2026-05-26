@@ -11,6 +11,8 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearSavedMesaToken,
+  loadSavedLang,
+  loadSavedOrderType,
   loadSavedCustomerName,
   loadSavedCustomerPhone,
   loadSavedDeliveryAddress,
@@ -25,6 +27,7 @@ import {
   readLangFromUrl,
   saveSavedLang,
 } from "@/lib/customerSession";
+import { customerScreenFromPathname } from "@/lib/routeRedirects";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
@@ -101,6 +104,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const stored = loadAnyStoredActiveOrder();
     const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation", "tracking", "account"];
 
+    const routeScreen = customerScreenFromPathname(window.location.pathname);
+    if (routeScreen && valid.includes(routeScreen as Screen)) return routeScreen as Screen;
+
     if (isPreview && valid.includes(p as Screen)) {
       return p as Screen;
     }
@@ -117,7 +123,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return resolveScreenAfterLanguageSkip();
     }
 
-    return valid.includes(p as Screen) ? (p as Screen) : "language";
+    if (valid.includes(p as Screen)) return p as Screen;
+
+    if (loadSavedOrderType()) return "home";
+    if (loadSavedLang()) return "orderType";
+
+    return "language";
   })();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);

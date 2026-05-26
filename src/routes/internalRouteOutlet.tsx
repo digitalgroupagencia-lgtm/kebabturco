@@ -6,7 +6,7 @@ import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import AdminLayout from "@/components/admin/AdminLayout.tsx";
 import SellerLayout from "@/components/seller/SellerLayout.tsx";
 import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/navPaths.ts";
-import { resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
+import { resolveAdminRestaurantPanelAlias, resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 
 const AREA_LAYOUT: Record<AppArea, ComponentType<{ page?: ComponentType<object> }>> = {
   panel: PanelLayout,
@@ -39,9 +39,29 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
     return withSuspense(<Install />);
   }
 
+  const panelAlias = resolveAdminRestaurantPanelAlias(pathname);
+  if (panelAlias) {
+    const def = resolveRoute(panelAlias);
+    if (def) {
+      const Layout = AREA_LAYOUT[def.area];
+      const Page = lazyPage(def.loader);
+      return withSuspense(
+        <AdminErrorBoundary area={def.area}>
+          <Layout page={Page} />
+        </AdminErrorBoundary>,
+      );
+    }
+    return <Navigate to={panelAlias} replace />;
+  }
+
   const legacyRedirect = resolveLegacyRouteRedirect(pathname);
   if (legacyRedirect) {
     return <Navigate to={legacyRedirect} replace />;
+  }
+
+  const customerRedirect = resolveCustomerRouteRedirect(pathname, location.search);
+  if (customerRedirect) {
+    return <Navigate to={{ pathname: customerRedirect.pathname, search: customerRedirect.search }} replace />;
   }
 
   const def = resolveRoute(pathname);
