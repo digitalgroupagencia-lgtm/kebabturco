@@ -12,10 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Users, Plus, Trash2, Shield } from "lucide-react";
-import type { Database } from "@/integrations/supabase/types";
-import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam } from "@/lib/staffPermissions";
+import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
 
-type AppRole = Database["public"]["Enums"]["app_role"];
+type AppRole = StaffRole;
 
 interface TeamMember {
   id: string;
