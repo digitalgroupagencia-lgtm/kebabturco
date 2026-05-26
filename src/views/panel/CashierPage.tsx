@@ -241,6 +241,65 @@ const CashierPage = () => {
         </Card>
       </div>
 
+      {/* Pending Payments */}
+      <Card className={pendingOrders.length > 0 ? "border-yellow-500/60 bg-yellow-500/5" : ""}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <AlertCircle className={`h-5 w-5 ${pendingOrders.length > 0 ? "text-yellow-600" : "text-muted-foreground"}`} />
+            Pagamentos pendentes
+            <Badge variant={pendingOrders.length > 0 ? "default" : "secondary"} className="ml-auto">
+              {pendingOrders.length}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pendingOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Sem pedidos aguardando pagamento.</p>
+          ) : (
+            <ul className="space-y-2">
+              {pendingOrders.map((o) => {
+                const modality = o.order_type === "delivery" ? "Entrega" : o.order_type === "dine_in" ? `Mesa ${o.table_number ?? ""}` : "Balcão";
+                return (
+                  <li key={o.id} className="flex items-center gap-2 rounded-lg border bg-card p-2.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm">#{o.order_number}</span>
+                        <Badge variant="outline" className="h-5 text-[10px]">{modality}</Badge>
+                        <span className="text-xs text-muted-foreground truncate">{o.customer_name || "Cliente"}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(o.created_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                        {" · "}Status: <span className="font-semibold">{o.status}</span>
+                      </p>
+                    </div>
+                    <span className="font-black text-primary text-base tabular-nums shrink-0">€{Number(o.total).toFixed(2)}</span>
+                    <Button
+                      size="sm"
+                      className="h-9 bg-green-600 hover:bg-green-700 text-white"
+                      disabled={confirmingId === o.id}
+                      onClick={() => void confirmCashPayment(o, "cash")}
+                    >
+                      <Banknote className="h-4 w-4 mr-1" />
+                      Dinheiro
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9"
+                      disabled={confirmingId === o.id}
+                      onClick={() => void confirmCashPayment(o, "card")}
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Cartão
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       {currentRegister && (
         <Card>
           <CardHeader>
