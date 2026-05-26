@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
+const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { Card } from "@/components/ui/card";

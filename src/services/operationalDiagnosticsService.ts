@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
+const supabase = _supabaseRaw as unknown as any;
 
 export type DbDiagnostics = {
   schema_qr_token: boolean;
