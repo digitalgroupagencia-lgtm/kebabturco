@@ -51,7 +51,7 @@ const LanguageScreen = () => {
   if (storeLoading) {
     return (
       <div
-        className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-3"
+        className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-background"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar" />
@@ -62,7 +62,7 @@ const LanguageScreen = () => {
 
   return (
     <div
-      className="h-[100dvh] flex flex-col bg-background animate-fade-in relative overflow-hidden"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div

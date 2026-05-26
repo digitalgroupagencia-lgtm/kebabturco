@@ -37,7 +37,7 @@ const OrderTrackingScreen = () => {
 
   if (!orderId) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center p-6 text-center">
         <p className="text-muted-foreground">Pedido não encontrado</p>
         <button onClick={() => setScreen("home")} className="mt-4 text-primary font-bold">
           Voltar ao menu
@@ -47,7 +47,7 @@ const OrderTrackingScreen = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col bg-background animate-fade-in">
       <ScreenHeader
         eyebrow={t("menu")}
         title={`Pedido #${order?.order_number || orderNumber || "..."}`}

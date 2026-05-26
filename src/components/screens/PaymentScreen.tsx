@@ -461,7 +461,7 @@ const PaymentScreen = () => {
   const compact = isTableOrder;
 
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
       <ScreenHeader
         eyebrow={t("finalStep")}
         title={isTableOrder ? "Pagamento na mesa" : t("pay")}

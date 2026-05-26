@@ -147,7 +147,7 @@ const ReviewScreen = () => {
 
 
   return (
-    <div className="relative h-[100dvh] md:h-full min-h-0 bg-secondary/20 animate-fade-in flex flex-col overflow-hidden">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}

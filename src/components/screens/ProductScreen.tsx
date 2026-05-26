@@ -41,7 +41,7 @@ const ProductScreen = () => {
 
   if (menuLoading || modifierLoading || (selectedProductId && !product)) {
     return (
-      <div className="h-[100dvh] flex items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <PageSpinner />
       </div>
     );
@@ -49,7 +49,7 @@ const ProductScreen = () => {
 
   if (!product) {
     return (
-      <div className="h-[100dvh] flex flex-col bg-background">
+      <div className="flex h-full flex-col bg-background">
         <ScreenHeader eyebrow={t("menu")} title={t("productUnavailable")} onBack={goBack} sticky />
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
           <p className="text-muted-foreground text-sm">{t("productUnavailable")}</p>

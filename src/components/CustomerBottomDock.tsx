@@ -13,8 +13,7 @@ const TRACK_LABEL = {
 };
 
 /**
- * Barra fixa em baixo — pedido activo (prioridade) e carrinho.
- * Evita sobrepor bandeiras de idioma e ícones nos ecrãs iniciais.
+ * Barra inferior do carrinho / pedido activo — dentro da moldura mobile (não fixed ao viewport).
  */
 const CustomerBottomDock = () => {
   const { screen, setScreen } = useOrder();
@@ -31,40 +30,37 @@ const CustomerBottomDock = () => {
 
   return (
     <div
-      className="fixed left-0 right-0 z-50 pointer-events-none"
-      style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="customer-bottom-dock shrink-0 z-50 border-t border-border/50 bg-background/95 px-3 pt-2 backdrop-blur-md"
+      style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}
     >
-      <div
-        className="max-w-md mx-auto px-3 flex flex-col gap-2 pointer-events-auto"
-        style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}
-      >
+      <div className="mx-auto flex w-full max-w-md flex-col gap-2">
         {showActiveOrder && (
           <button
             type="button"
             onClick={trackOrder}
-            className="w-full flex items-center gap-3 px-4 h-[56px] rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-[0.98] transition-transform touch-action-manipulation"
+            className="flex h-[56px] w-full touch-manipulation items-center gap-3 rounded-full bg-primary px-4 text-primary-foreground shadow-lg transition-transform active:scale-[0.98]"
           >
-            <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary-foreground/15 shrink-0">
-              {isLoadingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+              {isLoadingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
             </span>
-            <span className="flex-1 text-left min-w-0">
-              <span className="block text-[10px] font-bold uppercase tracking-wider opacity-85 truncate">
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block truncate text-[10px] font-bold uppercase tracking-wider opacity-85">
                 {trackCta}
               </span>
-              <span className="block font-black text-sm truncate">
+              <span className="block truncate text-sm font-black">
                 #{displayNumber}
                 {statusLabel ? ` · ${statusLabel}` : ""}
               </span>
             </span>
-            <ChevronRight className="w-5 h-5 shrink-0 opacity-80" />
+            <ChevronRight className="h-5 w-5 shrink-0 opacity-80" />
           </button>
         )}
 
         {showCart && (
-          <div className="flex items-center justify-between bg-foreground text-background rounded-full pl-5 pr-2 h-[56px] shadow-2xl">
-            <div className="flex items-center gap-2 min-w-0">
-              <ShoppingCart className="w-5 h-5 shrink-0" />
-              <span className="font-bold text-sm truncate">
+          <div className="flex h-[56px] items-center justify-between rounded-full bg-foreground pl-5 pr-2 text-background shadow-lg">
+            <div className="flex min-w-0 items-center gap-2">
+              <ShoppingCart className="h-5 w-5 shrink-0" />
+              <span className="truncate text-sm font-bold">
                 {totalItems} {totalItems === 1 ? "item" : t("items")}
               </span>
               <span className="text-sm opacity-70">|</span>
@@ -73,7 +69,7 @@ const CustomerBottomDock = () => {
             <button
               type="button"
               onClick={() => setScreen("review")}
-              className="bg-success text-success-foreground px-4 h-[44px] rounded-full text-sm font-black active:scale-95 transition-transform touch-action-manipulation shadow-md shrink-0"
+              className="h-[44px] shrink-0 touch-manipulation rounded-full bg-success px-4 text-sm font-black text-success-foreground shadow-md transition-transform active:scale-95"
             >
               {t("finishOrder")}
             </button>

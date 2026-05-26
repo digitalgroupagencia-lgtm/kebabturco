@@ -195,7 +195,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
 
   return (
-    <div className="relative h-[100dvh] md:h-full min-h-0 bg-background animate-fade-in flex flex-col overflow-hidden">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <ScreenHeader eyebrow={t("menu")} title={productCleanName} onBack={onBack} sticky />
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-4 space-y-5 pb-5">
         <section className="relative rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">

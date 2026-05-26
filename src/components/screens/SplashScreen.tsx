@@ -40,7 +40,7 @@ const SplashScreen = () => {
   }, [tapCount, navigate]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background animate-fade-in px-6 relative overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col items-center justify-center animate-fade-in bg-background px-6 relative overflow-hidden">
       <button
         aria-hidden
         tabIndex={-1}

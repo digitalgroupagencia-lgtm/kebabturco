@@ -173,7 +173,7 @@ const ConfirmationScreen = () => {
             : "bg-success text-success-foreground";
 
   return (
-    <div className="h-[100dvh] min-h-0 max-h-[100dvh] bg-background animate-fade-in flex flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <div
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
         style={{ paddingTop: "max(8px, env(safe-area-inset-top))" }}

@@ -7,7 +7,6 @@ import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
 import { Plus, Package, Loader2, RefreshCw } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useCustomerBottomInset } from "@/hooks/useCustomerBottomInset";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
@@ -16,7 +15,6 @@ import { shouldHideHeader } from "@/lib/embed-mode";
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
   const { t, tProduct } = useLanguage();
-  const bottomInset = useCustomerBottomInset();
   const { settings } = useBranding();
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
@@ -71,7 +69,7 @@ const HomeScreen = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-3">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar menu" />
         <p className="text-sm text-muted-foreground font-semibold">A carregar menu…</p>
       </div>
@@ -87,7 +85,7 @@ const HomeScreen = () => {
           : { title: "Erro ao carregar menu", body: "Verifique a ligação e tente novamente." };
 
     return (
-      <div className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center gap-4">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <p className="text-lg font-black text-foreground">{copy.title}</p>
         <p className="text-sm text-muted-foreground max-w-xs">{copy.body}</p>
         <button
@@ -103,10 +101,7 @@ const HomeScreen = () => {
   }
 
   return (
-    <div
-      className="h-[100dvh] md:h-full flex flex-col bg-background overflow-hidden"
-      style={{ paddingBottom: bottomInset }}
-    >
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {!shouldHideHeader() && (
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-4 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"

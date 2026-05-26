@@ -216,7 +216,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
       : tProduct(product.name);
 
   return (
-    <div className="relative h-[100dvh] md:h-full min-h-0 bg-background animate-fade-in flex flex-col overflow-hidden">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <ScreenHeader eyebrow={t("menu")} title={productCleanName} onBack={onBack} sticky />
 
       {isCombo && (

@@ -1,23 +1,17 @@
 import { ReactNode } from "react";
 
 /**
- * MobileFrame
- * Envolve o conteúdo do TOTEM (cliente final) e força aparência mobile no desktop.
- * - No mobile real (< 768px): renderiza fullscreen normal, com proteção contra a barra
- *   de endereço do navegador (cobre o topo com cor primária para o header não ficar
- *   cortado quando a barra retrai).
- * - No desktop (>= 768px): mostra moldura de celular centralizada.
+ * Moldura mobile no desktop + ecrã completo no telemóvel real.
+ * Todo o conteúdo (incluindo barras inferiores) fica dentro desta área.
  */
 export default function MobileFrame({ children }: { children: ReactNode }) {
   return (
     <>
-      {/* Mobile real */}
-      <div className="md:hidden min-h-screen min-h-[100dvh] w-full bg-background relative">
-        {/* Camada que pinta a área da safe-area-top (atrás da barra do navegador / notch)
-            com a cor do header, evitando "corte" visual quando a URL bar aparece. */}
+      {/* Telemóvel real */}
+      <div className="md:hidden flex h-[100dvh] w-full flex-col overflow-hidden bg-background relative">
         <div
           aria-hidden
-          className="fixed top-0 left-0 right-0 z-[60] pointer-events-none"
+          className="fixed top-0 left-0 right-0 z-[60] pointer-events-none md:hidden"
           style={{
             height: "env(safe-area-inset-top)",
             background: "var(--gradient-header)",
@@ -26,19 +20,19 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
         {children}
       </div>
 
-      {/* Desktop: moldura de celular */}
-      <div className="hidden md:flex h-[100dvh] w-full items-center justify-center bg-neutral-900 p-6 overflow-hidden">
+      {/* Desktop: moldura de telemóvel */}
+      <div className="hidden md:flex h-[100dvh] w-full items-center justify-center bg-neutral-900 p-4 sm:p-6 overflow-hidden">
         <div
-          className="relative bg-black rounded-[3rem] shadow-2xl"
-          style={{ width: "420px", height: "min(880px, calc(100dvh - 3rem))", padding: "14px" }}
+          className="relative flex flex-col bg-black rounded-[3rem] shadow-2xl shrink-0"
+          style={{
+            width: "min(420px, calc(100vw - 2rem))",
+            height: "min(880px, calc(100dvh - 2rem))",
+            padding: "14px",
+          }}
         >
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20" />
-          <div className="relative w-full h-full overflow-hidden rounded-[2.3rem] bg-background">
-            {/* Scroll externo de segurança no desktop: garante acesso a qualquer tela
-                mesmo quando uma tela interna não possui seu próprio container rolável. */}
-            <div className="w-full h-full overflow-y-auto overscroll-contain">
-              {children}
-            </div>
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20 pointer-events-none" />
+          <div className="relative flex flex-1 min-h-0 w-full overflow-hidden rounded-[2.3rem] bg-background">
+            {children}
           </div>
         </div>
       </div>

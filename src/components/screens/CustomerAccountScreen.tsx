@@ -85,7 +85,7 @@ const CustomerAccountScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       <ScreenHeader eyebrow={t("trackMyOrders")} title={t("myOrdersTitle")} onBack={() => setScreen("home")} sticky />
 
       <div className="flex-1 px-4 py-4 space-y-4 pb-8">

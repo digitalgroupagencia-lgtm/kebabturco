@@ -3,7 +3,7 @@ import { Globe } from "lucide-react";
 type Props = { hostname: string };
 
 const DomainNotConfiguredScreen = ({ hostname }: Props) => (
-  <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background px-6 text-center gap-4">
+  <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-background px-6 text-center">
     <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
       <Globe className="w-8 h-8 text-primary" />
     </div>

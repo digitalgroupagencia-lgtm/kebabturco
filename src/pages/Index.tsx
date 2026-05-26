@@ -26,16 +26,6 @@ const PreviewBootstrap = () => {
   return null;
 };
 
-const CustomerChrome = () => {
-  if (isAdminPreviewMode()) return null;
-  return (
-    <>
-      <CustomerBottomDock />
-      <AppFooter />
-    </>
-  );
-};
-
 const ScreenRouter = () => {
   const { screen } = useOrder();
   const { storeId, loading } = useResolvedStore();
@@ -72,20 +62,33 @@ const ScreenRouter = () => {
   }
 };
 
+const CustomerShell = () => {
+  const showChrome = !isAdminPreviewMode();
+
+  return (
+    <div className="customer-shell relative mx-auto flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden bg-background md:shadow-lg">
+      <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="h-full min-h-0 flex-1">
+          <ScreenRouter />
+        </div>
+        {showChrome && <AppFooter />}
+      </div>
+      {showChrome && <CustomerBottomDock />}
+    </div>
+  );
+};
+
 // Kiosk Self-Service App
 const Index = () => (
   <TotemErrorBoundary>
-  <LanguageProvider>
-    <CartProvider>
-      <OrderProvider>
-        <PreviewBootstrap />
-        <div className="max-w-md mx-auto min-h-screen min-h-[100dvh] md:h-full md:min-h-0 bg-background relative shadow-lg">
-          <ScreenRouter />
-          <CustomerChrome />
-        </div>
-      </OrderProvider>
-    </CartProvider>
-  </LanguageProvider>
+    <LanguageProvider>
+      <CartProvider>
+        <OrderProvider>
+          <PreviewBootstrap />
+          <CustomerShell />
+        </OrderProvider>
+      </CartProvider>
+    </LanguageProvider>
   </TotemErrorBoundary>
 );
 

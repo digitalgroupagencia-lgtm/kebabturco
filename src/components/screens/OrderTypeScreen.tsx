@@ -70,7 +70,7 @@ const OrderTypeScreen = () => {
 
   return (
     <div
-      className="h-[100dvh] flex flex-col bg-background animate-fade-in relative overflow-hidden"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div
