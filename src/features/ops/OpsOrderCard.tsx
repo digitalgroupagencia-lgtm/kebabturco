@@ -5,6 +5,7 @@ import { ChevronRight, Clock, Bike, XCircle, Banknote } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
+import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
@@ -68,6 +69,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   const onTheWay = order.status === "out_for_delivery";
   const paymentPending = order.payment_status !== "paid" && order.status !== "cancelled";
   const canQuickPay = paymentPending && !!onMarkPaid;
+  const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
 
   const handlePrimary = async (e: MouseEvent) => {
     e.stopPropagation();
@@ -137,6 +139,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
 
         {order.status === "preparing" && itemSummary && (
           <p className="mt-0.5 text-[9px] text-muted-foreground truncate">{itemSummary}</p>
+        )}
+        {blockedUntilPaid && (
+          <p className="mt-0.5 text-[9px] font-semibold text-foreground">
+            Balcão só vai para cozinha após confirmar pagamento.
+          </p>
         )}
       </button>
 

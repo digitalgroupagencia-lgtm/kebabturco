@@ -6,6 +6,7 @@ import { User, Phone, MapPin, Clock, XCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
+import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
@@ -83,6 +84,7 @@ const OpsOrderDetailSheet = ({
   const etaLabel = formatOrderEta(order);
   const prepRemaining = formatPrepRemaining(order);
   const itemCount = orderItemCount(items);
+  const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
   const showDeliveryCode =
     isDeliveryOrder(order) &&
     (order.status === "ready" || order.status === "out_for_delivery") &&
@@ -245,6 +247,11 @@ const OpsOrderDetailSheet = ({
           {order.payment_status === "pending" && onMarkPaid && (
             <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wide">Pagamento pendente</p>
+              {blockedUntilPaid && (
+                <p className="text-xs font-semibold text-foreground">
+                  Pedido de balcão só é impresso e preparado depois do pagamento confirmado.
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   size="sm"

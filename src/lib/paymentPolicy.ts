@@ -38,12 +38,11 @@ export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethod
   if (cardAllowed) methods.push("card");
 
   if (orderType === "takeaway") {
-    if (opsFlag(settings, "pay_cash_takeaway", false)) methods.push("cash");
-    if (opsFlag(settings, "pay_counter_enabled", false)) methods.push("counter");
+    methods.push("cash");
   }
 
   if (orderType === "delivery") {
-    if (opsFlag(settings, "pay_cash_delivery", false)) methods.push("cash");
+    return methods;
   }
 
   return methods;
@@ -53,7 +52,7 @@ export function requiresPrepayment(
   orderType: CustomerOrderType,
   settings: OperationsSettings | null,
 ): boolean {
-  if (orderType === "takeaway") return opsFlag(settings, "require_prepayment_takeaway", true);
+  if (orderType === "takeaway") return false;
   if (orderType === "delivery") return opsFlag(settings, "require_prepayment_delivery", true);
   return false;
 }
