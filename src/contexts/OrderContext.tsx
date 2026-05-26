@@ -121,7 +121,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return resolveScreenAfterLanguageSkip();
     }
 
-    return valid.includes(p as Screen) ? (p as Screen) : "language";
+    if (valid.includes(p as Screen)) return p as Screen;
+
+    if (loadSavedOrderType()) return "home";
+    if (loadSavedLang()) return "orderType";
+
+    return "language";
   })();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
