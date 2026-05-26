@@ -1,43 +1,41 @@
 import type { Database } from "@/integrations/supabase/types";
+import { getPanelOrderAction, isDeliveryOrder, resolveOrderType } from "@/lib/orderOperationalFlow";
 
 export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
 
-export function getStatusFlow(orderType: string | null | undefined): OrderStatus[] {
-  if (orderType === "delivery") {
-    return ["pending", "preparing", "ready", "out_for_delivery", "delivered"];
-  }
-  if (orderType === "takeaway") {
-    return ["pending", "preparing", "ready", "delivered"];
-  }
+export function getStatusFlow(_orderType?: string | null): OrderStatus[] {
   return ["pending", "preparing", "ready", "delivered"];
 }
 
 export function getStatusLabel(status: string, orderType?: string | null): string {
-  const isDelivery = orderType === "delivery";
-  const isTakeaway = orderType === "takeaway";
+  const type = orderType ? resolveOrderType({ order_type: orderType }) : null;
   const map: Record<string, string> = {
     pending: "Pedido recebido",
     preparing: "Em preparação",
-    ready: isTakeaway ? "Pronto para recolher" : isDelivery ? "Pronto — a aguardar estafeta" : "Pronto para servir",
-    out_for_delivery: "A caminho",
-    delivered: isDelivery ? "Entregue" : isTakeaway ? "Recolhido" : "Entregue na mesa",
+    ready: "Pronto para entrega",
+    out_for_delivery: "Pronto para entrega",
+    delivered: "Pedido entregue",
     cancelled: "Cancelado",
   };
+  if (status === "delivered" && type === "takeaway") {
+    return "Pedido entregue";
+  }
   return map[status] || status;
 }
 
-export function getNextAction(status: string, orderType?: string | null): { next: OrderStatus; label: string } | null {
-  const flow = getStatusFlow(orderType);
-  const idx = flow.indexOf(status as OrderStatus);
-  if (idx < 0 || idx >= flow.length - 1) return null;
-  const next = flow[idx + 1];
-  const labels: Record<string, string> = {
-    preparing: "Aceitar → Em preparação",
-    ready: "Marcar pronto",
-    out_for_delivery: "Saiu para entrega",
-    delivered: orderType === "delivery" ? "Entregue" : orderType === "takeaway" ? "Recolhido" : "Entregue na mesa",
-  };
-  return { next, label: labels[next] || "Avançar" };
+export function getNextAction(
+  status: string,
+  orderType?: string | null,
+  order?: { table_number?: string | null; delivery_street?: string | null },
+): { next: OrderStatus; label: string } | null {
+  const action = getPanelOrderAction({
+    status,
+    order_type: orderType,
+    table_number: order?.table_number,
+    delivery_street: order?.delivery_street,
+  });
+  if (!action || action.kind !== "advance") return null;
+  return { next: action.next, label: action.label };
 }
 
 export function getOrderModalityBanner(order: {
@@ -46,9 +44,7 @@ export function getOrderModalityBanner(order: {
   delivery_street?: string | null;
   source?: string | null;
 }) {
-  const resolvedType =
-    order.order_type ||
-    (order.delivery_street ? "delivery" : order.table_number ? "dine_in" : "takeaway");
+  const resolvedType = resolveOrderType(order);
 
   if (resolvedType === "delivery") {
     return { label: "ENTREGA", detail: "Delivery a domicílio", tone: "delivery" as const };
@@ -83,35 +79,24 @@ export function getPanelPaymentBadge(order: {
 }
 
 export function getCustomerTrackingSteps(orderType: string | null | undefined) {
-  if (orderType === "delivery") {
-    return [
-      { key: "pending", label: "Recebido", icon: "📥" },
-      { key: "preparing", label: "A preparar", icon: "👨‍🍳" },
-      { key: "ready", label: "Pronto", icon: "✅" },
-      { key: "out_for_delivery", label: "A caminho", icon: "🛵" },
-      { key: "delivered", label: "Entregue", icon: "🎉" },
-    ];
-  }
-  if (orderType === "takeaway") {
-    return [
-      { key: "pending", label: "Recebido", icon: "📥" },
-      { key: "preparing", label: "A preparar", icon: "👨‍🍳" },
-      { key: "ready", label: "Pronto", icon: "✅" },
-      { key: "delivered", label: "Recolhido", icon: "🎉" },
-    ];
-  }
+  const isDelivery = orderType === "delivery";
+  const readyLabel = isDelivery ? "Pronto para entrega" : "Pronto para entrega";
+  const deliveredLabel = isDelivery ? "Entregue" : orderType === "takeaway" ? "Recolhido" : "Servido";
+
   return [
     { key: "pending", label: "Recebido", icon: "📥" },
     { key: "preparing", label: "A preparar", icon: "👨‍🍳" },
-    { key: "ready", label: "Pronto", icon: "✅" },
-    { key: "delivered", label: "Servido", icon: "🎉" },
+    { key: "ready", label: readyLabel, icon: "📦" },
+    { key: "delivered", label: deliveredLabel, icon: "🎉" },
   ];
 }
 
 /** Cliente pode confirmar recepção quando o restaurante avançou o pedido o suficiente. */
 export function canCustomerConfirmReceipt(status: string, orderType?: string | null): boolean {
   if (status === "delivered") return true;
-  if (orderType === "delivery" && status === "out_for_delivery") return true;
+  if (isDeliveryOrder({ order_type: orderType }) && (status === "ready" || status === "out_for_delivery")) {
+    return true;
+  }
   if (orderType === "takeaway" && status === "ready") return true;
   if (orderType === "dine_in" && status === "ready") return true;
   return false;

@@ -1,13 +1,13 @@
-import { Clock, ChefHat, CheckCircle, Truck, Bike, XCircle } from "lucide-react";
+import { Clock, ChefHat, Package, CheckCircle2, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
+import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import type { PanelOrder } from "./usePanelOrders";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
   preparing: ChefHat,
-  ready: CheckCircle,
-  out_for_delivery: Bike,
-  delivered: Truck,
+  ready: Package,
+  delivered: CheckCircle2,
   cancelled: XCircle,
 };
 
@@ -19,7 +19,8 @@ interface OpsStatusTabsProps {
 }
 
 const OpsStatusTabs = ({ columns, orders, selected, onSelect }: OpsStatusTabsProps) => {
-  const countByStatus = (status: OrderStatus) => orders.filter((o) => o.status === status).length;
+  const countByStatus = (status: OrderStatus) =>
+    orders.filter((o) => panelColumnStatus(o.status) === status).length;
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none md:hidden">

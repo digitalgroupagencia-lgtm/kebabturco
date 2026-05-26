@@ -3,6 +3,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { getCustomerTrackingSteps } from "@/lib/orderStatusLabels";
+import { customerTrackingStepIndex } from "@/lib/orderOperationalFlow";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
@@ -27,11 +28,8 @@ const OrderTrackingScreen = () => {
 
   const currentIdx = useMemo(() => {
     if (!order) return 0;
-    const idx = steps.findIndex((s) => s.key === order.status);
-    if (idx >= 0) return idx;
-    if (order.status === "cancelled") return -1;
-    return 0;
-  }, [order, steps]);
+    return customerTrackingStepIndex(order.status);
+  }, [order]);
 
   const prepMin = (settings as { avg_prep_minutes?: number })?.avg_prep_minutes ?? 12;
 
@@ -98,6 +96,21 @@ const OrderTrackingScreen = () => {
                     )}
                   </p>
                 </div>
+
+                {order.delivery_confirmation_code &&
+                  (order.status === "ready" || order.status === "out_for_delivery") && (
+                    <div className="rounded-2xl border border-orange-500/40 bg-orange-500/10 p-5 text-center space-y-2">
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+                        Código para o estafeta
+                      </p>
+                      <p className="text-4xl font-black tracking-[0.3em] tabular-nums text-orange-600">
+                        {order.delivery_confirmation_code}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Mostre este código quando receber o pedido
+                      </p>
+                    </div>
+                  )}
 
                 <ol className="space-y-0 relative">
                   {steps.map((step, i) => {

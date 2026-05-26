@@ -45,4 +45,16 @@ describe("opsOrderUi", () => {
   it("shows compact accept label for pending orders", () => {
     expect(getCompactActionLabel(baseOrder)).toBe("Aceitar");
   });
+
+  it("shows delivery confirm label for ready delivery orders", () => {
+    expect(
+      getCompactActionLabel({ ...baseOrder, status: "ready", order_type: "delivery" } as PanelOrder),
+    ).toBe("Confirmar entrega");
+  });
+
+  it("shows mark ready label for preparing orders", () => {
+    expect(
+      getCompactActionLabel({ ...baseOrder, status: "preparing" } as PanelOrder),
+    ).toBe("Marcar pronto");
+  });
 });

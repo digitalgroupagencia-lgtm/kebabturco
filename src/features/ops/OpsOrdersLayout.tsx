@@ -1,16 +1,16 @@
 import { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ChefHat, CheckCircle, Truck, Bike, RefreshCw, Radio, XCircle } from "lucide-react";
+import { Clock, ChefHat, Package, CheckCircle2, RefreshCw, Radio, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
+import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import type { PanelOrder, PanelConnectionStatus } from "./usePanelOrders";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
   preparing: ChefHat,
-  ready: CheckCircle,
-  out_for_delivery: Bike,
-  delivered: Truck,
+  ready: Package,
+  delivered: CheckCircle2,
   cancelled: XCircle,
 };
 
@@ -39,7 +39,8 @@ const OpsOrdersLayout = ({
   connectionStatus = "connecting",
   headerExtra,
 }: OpsOrdersLayoutProps) => {
-  const countByStatus = (status: OrderStatus) => orders.filter((o) => o.status === status).length;
+  const countByStatus = (status: OrderStatus) =>
+    orders.filter((o) => panelColumnStatus(o.status) === status).length;
 
   return (
     <div className="space-y-4">

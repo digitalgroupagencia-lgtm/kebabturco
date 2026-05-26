@@ -229,6 +229,19 @@ export async function markOrderPaidAtCounter(orderId: string, paymentMethod: "ca
   return data as { success: boolean; order_id?: string; order_number?: string };
 }
 
+export async function confirmDeliveryWithCode(orderId: string, code: string) {
+  const { data, error } = await supabase.rpc("confirm_delivery_with_code", {
+    _order_id: orderId,
+    _code: code,
+  });
+  if (error) throw error;
+  const result = data as { success?: boolean; error?: string; order_number?: string };
+  if (!result?.success) {
+    throw new Error(result?.error || "Código incorrecto");
+  }
+  return result as { success: true; order_number?: string };
+}
+
 export async function regenerateTableQrToken(tableId: string) {
   const { data, error } = await supabase.rpc("regenerate_table_qr_token", { _table_id: tableId });
   if (error) throw error;

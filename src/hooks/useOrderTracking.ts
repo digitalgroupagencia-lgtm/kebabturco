@@ -11,6 +11,7 @@ export type PublicOrderTrack = {
   estimated_ready_at: string | null;
   delivery_street: string | null;
   delivery_city: string | null;
+  delivery_confirmation_code: string | null;
 };
 
 const POLL_MS = 1_000;

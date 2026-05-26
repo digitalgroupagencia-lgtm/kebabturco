@@ -776,6 +776,7 @@ export type Database = {
           customer_phone: string | null
           delivery_city: string | null
           delivery_complement: string | null
+          delivery_confirmation_code: string | null
           delivery_fee: number
           delivery_notes: string | null
           delivery_number: string | null
@@ -820,6 +821,7 @@ export type Database = {
           customer_phone?: string | null
           delivery_city?: string | null
           delivery_complement?: string | null
+          delivery_confirmation_code?: string | null
           delivery_fee?: number
           delivery_notes?: string | null
           delivery_number?: string | null
@@ -864,6 +866,7 @@ export type Database = {
           customer_phone?: string | null
           delivery_city?: string | null
           delivery_complement?: string | null
+          delivery_confirmation_code?: string | null
           delivery_fee?: number
           delivery_notes?: string | null
           delivery_number?: string | null
@@ -2821,6 +2824,7 @@ export type Database = {
         Returns: {
           created_at: string
           delivery_city: string
+          delivery_confirmation_code: string
           delivery_fee: number
           delivery_number: string
           delivery_postal_code: string
@@ -2951,6 +2955,10 @@ export type Database = {
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
       mark_order_paid_at_counter: {
         Args: { _order_id: string; _payment_method?: string }
+        Returns: Json
+      }
+      confirm_delivery_with_code: {
+        Args: { _order_id: string; _code: string }
         Returns: Json
       }
       next_order_number: { Args: { _store_id: string }; Returns: string }

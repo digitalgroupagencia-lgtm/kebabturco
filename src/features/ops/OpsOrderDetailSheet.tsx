@@ -4,17 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { User, Phone, MapPin, Clock, XCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import {
-  getNextAction,
-  getOrderModalityBanner,
-  getPanelPaymentBadge,
-  getStatusLabel,
-} from "@/lib/orderStatusLabels";
+import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
+import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
 import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   ETA_QUICK_OPTIONS,
   formatOrderEta,
+  formatPrepRemaining,
   getModalityShortLabel,
   orderItemCount,
   requiresEtaBeforeAccept,
@@ -55,6 +52,7 @@ type Props = {
   onCancel: (orderId: string) => void;
   onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
   onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void>;
+  onRequestDeliveryConfirm?: (order: PanelOrder) => void;
 };
 
 const OpsOrderDetailSheet = ({
@@ -67,6 +65,7 @@ const OpsOrderDetailSheet = ({
   onCancel,
   onSetPrepMinutes,
   onMarkPaid,
+  onRequestDeliveryConfirm,
 }: Props) => {
   const [advancing, setAdvancing] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
@@ -75,19 +74,32 @@ const OpsOrderDetailSheet = ({
 
   const modality = getOrderModalityBanner(order);
   const payment = getPanelPaymentBadge(order);
-  const next = getNextAction(order.status, order.order_type);
+  const action = getPanelOrderAction(order);
   const etaLabel = formatOrderEta(order);
+  const prepRemaining = formatPrepRemaining(order);
   const itemCount = orderItemCount(items);
+  const showDeliveryCode =
+    isDeliveryOrder(order) &&
+    (order.status === "ready" || order.status === "out_for_delivery") &&
+    order.delivery_confirmation_code;
 
   const handlePrimary = async () => {
-    if (!next) return;
-    if (requiresEtaBeforeAccept(order.status, next.next)) {
+    if (!action) return;
+    if (action.kind === "accept_eta") {
+      onRequestAccept(order);
+      return;
+    }
+    if (action.kind === "delivery_code") {
+      onRequestDeliveryConfirm?.(order);
+      return;
+    }
+    if (requiresEtaBeforeAccept(order.status, action.next)) {
       onRequestAccept(order);
       return;
     }
     setAdvancing(true);
     try {
-      await onAdvance(order, next.next);
+      await onAdvance(order, action.next);
     } finally {
       setAdvancing(false);
     }
@@ -116,12 +128,28 @@ const OpsOrderDetailSheet = ({
             <Badge variant="outline">{getSourceLabel(order.source || "totem")}</Badge>
             <Badge variant="outline">{getModalityShortLabel(order)}</Badge>
             <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
-            {etaLabel && (
+            {prepRemaining && (
+              <Badge variant="secondary" className="gap-1 bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">
+                <Clock className="h-3 w-3" /> {prepRemaining}
+              </Badge>
+            )}
+            {!prepRemaining && etaLabel && (
               <Badge variant="secondary" className="gap-1">
                 <Clock className="h-3 w-3" /> ~{etaLabel}
               </Badge>
             )}
           </div>
+
+          {showDeliveryCode && (
+            <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+                Código para o estafeta
+              </p>
+              <p className="text-3xl font-black tracking-[0.25em] tabular-nums text-orange-600">
+                {order.delivery_confirmation_code}
+              </p>
+            </div>
+          )}
 
           {(order.customer_name || order.customer_phone) && (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5 text-sm">
@@ -245,13 +273,19 @@ const OpsOrderDetailSheet = ({
             </div>
           )}
 
-          {next && order.status !== "cancelled" && (
+          {action && order.status !== "cancelled" && (
             <Button
-              className="w-full h-11 font-bold touch-action-manipulation"
+              className={`w-full h-11 font-bold touch-action-manipulation ${
+                action.kind === "delivery_code" ? "bg-orange-600 hover:bg-orange-700" : ""
+              }`}
               disabled={advancing}
               onClick={() => void handlePrimary()}
             >
-              {advancing ? "A actualizar…" : requiresEtaBeforeAccept(order.status, next.next) ? "Aceitar pedido" : next.label}
+              {advancing
+                ? "A actualizar…"
+                : action.kind === "accept_eta"
+                  ? "Aceitar pedido"
+                  : action.label}
             </Button>
           )}
 

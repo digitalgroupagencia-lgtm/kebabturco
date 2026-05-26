@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Clock, ChefHat, CheckCircle, Truck, Bike, XCircle } from "lucide-react";
+import { Loader2, Clock, ChefHat, Package, CheckCircle2, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
+import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { usePanelOrders } from "@/features/ops/usePanelOrders";
 import OpsOrdersLayout from "@/features/ops/OpsOrdersLayout";
 import OpsStatusTabs from "@/features/ops/OpsStatusTabs";
 import OpsOrderCard from "@/features/ops/OpsOrderCard";
 import OpsOrderDetailSheet from "@/features/ops/OpsOrderDetailSheet";
 import OpsAcceptEtaDialog from "@/features/ops/OpsAcceptEtaDialog";
+import OpsDeliveryConfirmDialog from "@/features/ops/OpsDeliveryConfirmDialog";
 import OpsModeFilter, { filterOrdersByMode, type OpsViewMode } from "@/features/ops/OpsModeFilter";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
+import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import {
   acknowledgePendingOrderAlert,
   isPendingOrderAlerting,
@@ -23,9 +26,8 @@ import {
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
   preparing: ChefHat,
-  ready: CheckCircle,
-  out_for_delivery: Bike,
-  delivered: Truck,
+  ready: Package,
+  delivered: CheckCircle2,
   cancelled: XCircle,
 };
 
@@ -33,15 +35,28 @@ const BASE_COLUMNS: OrderStatus[] = ["pending", "preparing", "ready", "delivered
 
 const OrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
-  const { orders, itemsByOrder, loading, connectionStatus, updateStatus, cancelOrder, setPrepMinutes, markOrderPaid, refresh } =
-    usePanelOrders(storeId);
+  const {
+    orders,
+    itemsByOrder,
+    loading,
+    connectionStatus,
+    updateStatus,
+    cancelOrder,
+    setPrepMinutes,
+    markOrderPaid,
+    confirmDelivery,
+    ensureDeliveryCode,
+    refresh,
+  } = usePanelOrders(storeId);
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
   const [viewMode, setViewMode] = useState<OpsViewMode>("all");
   const [refreshing, setRefreshing] = useState(false);
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [etaDialogOrder, setEtaDialogOrder] = useState<PanelOrder | null>(null);
+  const [deliveryConfirmOrder, setDeliveryConfirmOrder] = useState<PanelOrder | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [confirmingDelivery, setConfirmingDelivery] = useState(false);
   const [, setUnackTick] = useState(0);
 
   useEffect(() => {
@@ -60,6 +75,16 @@ const OrdersPage = () => {
     setEtaDialogOrder(order);
   }, []);
 
+  const openDeliveryConfirmDialog = useCallback(
+    (order: PanelOrder) => {
+      void (async () => {
+        const withCode = await ensureDeliveryCode(order);
+        setDeliveryConfirmOrder(withCode);
+      })();
+    },
+    [ensureDeliveryCode],
+  );
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -73,7 +98,7 @@ const OrdersPage = () => {
     async (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => {
       const ok = await updateStatus(order, status, prepMinutes);
       if (ok) {
-        setMobileTab(status);
+        setMobileTab(panelColumnStatus(status));
         if (detailOrderId === order.id && status !== "pending") {
           setDetailOrderId(null);
         }
@@ -99,21 +124,29 @@ const OrdersPage = () => {
     [handleAdvance],
   );
 
+  const handleConfirmDelivery = useCallback(
+    async (order: PanelOrder, code: string) => {
+      setConfirmingDelivery(true);
+      try {
+        const ok = await confirmDelivery(order, code);
+        if (ok) {
+          setDeliveryConfirmOrder(null);
+          setDetailOrderId(null);
+          setMobileTab("delivered");
+        }
+      } finally {
+        setConfirmingDelivery(false);
+      }
+    },
+    [confirmDelivery],
+  );
+
   const filteredOrders = useMemo(() => filterOrdersByMode(orders, viewMode), [orders, viewMode]);
 
-  const visibleColumns = useMemo(() => {
-    const cols = [...BASE_COLUMNS];
-    const showDelivery =
-      filteredOrders.some(
-        (o) => o.status === "out_for_delivery" || (o.order_type === "delivery" && o.status === "ready"),
-      );
-    if (showDelivery) {
-      cols.splice(3, 0, "out_for_delivery");
-    }
-    return cols;
-  }, [filteredOrders]);
+  const visibleColumns = BASE_COLUMNS;
 
-  const getOrdersByStatus = (status: OrderStatus) => filteredOrders.filter((o) => o.status === status);
+  const getOrdersByStatus = (status: OrderStatus) =>
+    filteredOrders.filter((o) => panelColumnStatus(o.status) === status);
 
   const detailOrder = detailOrderId ? orders.find((o) => o.id === detailOrderId) ?? null : null;
 
@@ -134,9 +167,10 @@ const OrdersPage = () => {
   const renderColumn = (status: OrderStatus) => {
     const Icon = statusIcons[status] || Clock;
     const columnOrders = getOrdersByStatus(status);
+    const accent = columnHeaderAccentClass(status);
     return (
       <div key={status} className="flex flex-col min-w-0 min-h-0 max-h-[calc(100vh-16rem)] xl:max-h-[calc(100vh-14rem)]">
-        <h3 className="font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2 shrink-0 text-muted-foreground">
+        <h3 className={`font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2 shrink-0 ${accent}`}>
           <Icon className="h-3.5 w-3.5" /> {getStatusLabel(status)}
           <Badge variant="secondary" className="ml-auto h-5 min-w-[20px] px-1.5 text-[10px]">
             {columnOrders.length}
@@ -153,6 +187,7 @@ const OrdersPage = () => {
               onCancel={cancelOrder}
               onOpenDetail={openOrderDetail}
               onRequestAccept={openAcceptDialog}
+              onRequestDeliveryConfirm={openDeliveryConfirmDialog}
             />
           ))}
           {columnOrders.length === 0 && (
@@ -199,6 +234,7 @@ const OrdersPage = () => {
               onCancel={cancelOrder}
               onOpenDetail={openOrderDetail}
               onRequestAccept={openAcceptDialog}
+              onRequestDeliveryConfirm={openDeliveryConfirmDialog}
             />
           ))}
           {mobileOrders.length === 0 && (
@@ -226,6 +262,7 @@ const OrdersPage = () => {
         }}
         onAdvance={handleAdvance}
         onRequestAccept={openAcceptDialog}
+        onRequestDeliveryConfirm={openDeliveryConfirmDialog}
         onCancel={cancelOrder}
         onSetPrepMinutes={setPrepMinutes}
         onMarkPaid={(o, m) => {
@@ -241,6 +278,16 @@ const OrdersPage = () => {
         }}
         onConfirm={handleAcceptWithEta}
         confirming={accepting}
+      />
+
+      <OpsDeliveryConfirmDialog
+        order={deliveryConfirmOrder}
+        open={!!deliveryConfirmOrder}
+        onOpenChange={(open) => {
+          if (!open) setDeliveryConfirmOrder(null);
+        }}
+        onConfirm={handleConfirmDelivery}
+        confirming={confirmingDelivery}
       />
     </>
   );

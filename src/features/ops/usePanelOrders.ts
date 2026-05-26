@@ -9,15 +9,20 @@ import {
   playNewOrderAlert,
 } from "@/lib/panelAlerts";
 import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
-import { markOrderPaidAtCounter } from "@/services/orderService";
+import { markOrderPaidAtCounter, confirmDeliveryWithCode } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
+import {
+  generateDeliveryConfirmationCode,
+  isDeliveryOrder,
+} from "@/lib/orderOperationalFlow";
 
 export type PanelOrder = Tables<"orders"> & {
   delivery_street?: string | null;
   delivery_city?: string | null;
   delivery_number?: string | null;
+  delivery_confirmation_code?: string | null;
   kitchen_printed_at?: string | null;
 };
 
@@ -259,10 +264,15 @@ export function usePanelOrders(storeId: string | undefined) {
       eta.setMinutes(eta.getMinutes() + prepMinutes);
       patch.estimated_ready_at = eta.toISOString();
     }
+    if (newStatus === "ready" && isDeliveryOrder(order) && !order.delivery_confirmation_code) {
+      patch.delivery_confirmation_code = generateDeliveryConfirmationCode();
+    }
 
     const optimisticPatch = {
       status: newStatus as PanelOrder["status"],
       estimated_ready_at: (patch.estimated_ready_at as string) ?? order.estimated_ready_at,
+      delivery_confirmation_code:
+        (patch.delivery_confirmation_code as string) ?? order.delivery_confirmation_code,
     };
 
     setOrders((prev) =>
@@ -350,6 +360,49 @@ export function usePanelOrders(storeId: string | undefined) {
     [storeId, itemsByOrder],
   );
 
+  const ensureDeliveryCode = useCallback(async (order: PanelOrder): Promise<PanelOrder> => {
+    if (order.delivery_confirmation_code) return order;
+    const code = generateDeliveryConfirmationCode();
+    const { error } = await supabase
+      .from("orders")
+      .update({ delivery_confirmation_code: code })
+      .eq("id", order.id);
+    if (error) return order;
+    const updated = { ...order, delivery_confirmation_code: code };
+    setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
+    return updated;
+  }, []);
+
+  const confirmDelivery = useCallback(async (order: PanelOrder, code: string): Promise<boolean> => {
+    if (updatingRef.current.has(order.id)) return false;
+
+    updatingRef.current.add(order.id);
+    const prevStatus = order.status;
+
+    setOrders((prev) =>
+      prev.map((o) => (o.id === order.id ? { ...o, status: "delivered" as const } : o)),
+    );
+
+    try {
+      const result = await confirmDeliveryWithCode(order.id, code);
+      if (!result.success) {
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
+        throw new Error(result.error || "Código incorrecto");
+      }
+
+      toast.success(`Entrega confirmada — #${order.order_number}`);
+      void notifyOrderStatusChange(order.id, "delivered", order.order_number);
+      return true;
+    } catch (e) {
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
+      const message = e instanceof Error ? e.message : "Código incorrecto";
+      toast.error(message);
+      throw e;
+    } finally {
+      updatingRef.current.delete(order.id);
+    }
+  }, []);
+
   return {
     orders,
     itemsByOrder,
@@ -359,6 +412,8 @@ export function usePanelOrders(storeId: string | undefined) {
     cancelOrder,
     setPrepMinutes,
     markOrderPaid,
+    confirmDelivery,
+    ensureDeliveryCode,
     refresh: fetchOrders,
   };
 }

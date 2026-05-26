@@ -12,13 +12,10 @@ import { clearStoredActiveOrder } from "@/features/customer/useActiveOrderStorag
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
 import { updateLocalOrderHistoryStatus } from "@/lib/customerOrderHistory";
 
+import { customerTrackingStepIndex } from "@/lib/orderOperationalFlow";
+
 function minimalStepIndex(status: string): number {
-  if (status === "cancelled") return -1;
-  if (status === "pending") return 0;
-  if (status === "preparing") return 1;
-  if (status === "ready") return 2;
-  if (status === "out_for_delivery" || status === "delivered") return 3;
-  return 0;
+  return customerTrackingStepIndex(status);
 }
 
 const ConfirmationScreen = () => {

@@ -3,16 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, Clock, XCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { getNextAction, getPanelPaymentBadge } from "@/lib/orderStatusLabels";
+import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
+import { getPanelOrderAction } from "@/lib/orderOperationalFlow";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   compactCardBorderClass,
   formatOrderClock,
   formatOrderEta,
+  formatPrepRemaining,
   getCompactActionLabel,
   getModalityShortLabel,
   orderItemCount,
   requiresEtaBeforeAccept,
+  summarizeOrderItems,
 } from "./opsOrderUi";
 
 type OrderItem = Tables<"order_items">;
@@ -30,6 +33,7 @@ interface OpsOrderCardProps {
   onCancel: (orderId: string) => void;
   onOpenDetail: (order: PanelOrder) => void;
   onRequestAccept: (order: PanelOrder) => void;
+  onRequestDeliveryConfirm: (order: PanelOrder) => void;
 }
 
 const OpsOrderCard = memo(function OpsOrderCard({
@@ -40,12 +44,15 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onCancel,
   onOpenDetail,
   onRequestAccept,
+  onRequestDeliveryConfirm,
 }: OpsOrderCardProps) {
   const payment = getPanelPaymentBadge(order);
-  const next = getNextAction(order.status, order.order_type);
+  const action = getPanelOrderAction(order);
   const actionLabel = getCompactActionLabel(order);
   const itemCount = orderItemCount(items);
+  const itemSummary = summarizeOrderItems(items);
   const etaLabel = formatOrderEta(order);
+  const prepRemaining = formatPrepRemaining(order);
   const timeLabel = formatOrderClock(order.created_at);
   const [advancing, setAdvancing] = useState(false);
 
@@ -54,14 +61,22 @@ const OpsOrderCard = memo(function OpsOrderCard({
 
   const handlePrimary = async (e: MouseEvent) => {
     e.stopPropagation();
-    if (!next) return;
-    if (requiresEtaBeforeAccept(order.status, next.next)) {
+    if (!action) return;
+    if (action.kind === "accept_eta") {
+      onRequestAccept(order);
+      return;
+    }
+    if (action.kind === "delivery_code") {
+      onRequestDeliveryConfirm(order);
+      return;
+    }
+    if (requiresEtaBeforeAccept(order.status, action.next)) {
       onRequestAccept(order);
       return;
     }
     setAdvancing(true);
     try {
-      await onAdvance(order, next.next);
+      await onAdvance(order, action.next);
     } finally {
       setAdvancing(false);
     }
@@ -95,9 +110,18 @@ const OpsOrderCard = memo(function OpsOrderCard({
           <span className="font-black text-primary tabular-nums shrink-0">€{Number(order.total).toFixed(2)}</span>
         </div>
 
+        {order.status === "preparing" && itemSummary && (
+          <p className="mt-0.5 text-[10px] text-muted-foreground truncate">{itemSummary}</p>
+        )}
+
         <div className="mt-1 flex flex-wrap items-center gap-1">
           <Badge className={`h-5 px-1.5 ${paymentBadgeClass[payment.tone]}`}>{payment.label}</Badge>
-          {etaLabel && (
+          {prepRemaining && (
+            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5 bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">
+              <Clock className="h-2.5 w-2.5" /> {prepRemaining}
+            </Badge>
+          )}
+          {!prepRemaining && etaLabel && (
             <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5">
               <Clock className="h-2.5 w-2.5" /> {etaLabel}
             </Badge>
@@ -105,11 +129,13 @@ const OpsOrderCard = memo(function OpsOrderCard({
         </div>
       </button>
 
-      {next && order.status !== "cancelled" && (
+      {action && order.status !== "cancelled" && (
         <div className="px-2 pb-2 flex gap-1.5">
           <Button
             size="sm"
-            className="flex-1 h-9 font-bold text-xs touch-action-manipulation"
+            className={`flex-1 h-9 font-bold text-xs touch-action-manipulation ${
+              action.kind === "delivery_code" ? "bg-orange-600 hover:bg-orange-700" : ""
+            }`}
             disabled={advancing}
             onClick={(e) => void handlePrimary(e)}
           >
