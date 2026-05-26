@@ -59,7 +59,7 @@ export function getModalityShortLabel(order: PanelOrder): string {
 }
 
 export function getCompactActionLabel(order: PanelOrder, viewerRole?: string | null): string | null {
-  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole) });
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
   if (!action) return null;
   return action.label;
 }
