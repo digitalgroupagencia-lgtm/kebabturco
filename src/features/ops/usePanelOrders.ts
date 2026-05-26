@@ -8,7 +8,7 @@ import {
   acknowledgePendingOrderAlert,
   playNewOrderAlert,
 } from "@/lib/panelAlerts";
-import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
+import { blocksOperationalProgressUntilPaid, orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
@@ -247,6 +247,11 @@ export function usePanelOrders(storeId: string | undefined) {
 
   const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number): Promise<boolean> => {
     if (updatingRef.current.has(order.id)) return false;
+
+    if (blocksOperationalProgressUntilPaid(order)) {
+      toast.error("Balcão só avança depois de confirmar o pagamento.");
+      return false;
+    }
 
     const prevStatus = order.status;
     if (
