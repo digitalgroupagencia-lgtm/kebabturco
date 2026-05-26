@@ -147,19 +147,39 @@ const FinancePage = () => {
       </div>
 
       {!ready && (
-        <div className="rounded-2xl border bg-card p-4 space-y-3">
+        <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
             <div>
-              <p className="font-bold text-sm">Activar recebimentos online</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Confirme dados da empresa e IBAN. O processo é guiado e demora poucos minutos.
+              <p className="font-black text-base">Conta bancária Stripe — passo obrigatório</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Sem completar este passo na Stripe, o cliente <strong>não consegue pagar com cartão</strong>, mesmo com
+                as chaves já configuradas.
               </p>
+              {profile?.stripe_connect_account_id && !profile.stripe_charges_enabled && (
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-2">
+                  Conta criada — faltam dados ou validação na Stripe.
+                </p>
+              )}
             </div>
           </div>
-          <Button className="w-full h-11 font-bold" onClick={activatePayouts} disabled={activating}>
-            {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Completar dados bancários"}
+          <Button className="w-full h-12 font-black text-base" onClick={activatePayouts} disabled={activating}>
+            {activating ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              "Abrir Stripe e completar dados bancários"
+            )}
           </Button>
+          <p className="text-[11px] text-muted-foreground text-center">
+            Abre a página oficial da Stripe num separador seguro. Volta aqui quando terminar.
+          </p>
+        </div>
+      )}
+
+      {ready && (
+        <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 shrink-0" />
+          Recebimentos online activos — cartão e repasse automático.
         </div>
       )}
 

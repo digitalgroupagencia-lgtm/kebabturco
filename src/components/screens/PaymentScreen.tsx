@@ -16,8 +16,8 @@ import {
   verifyStripePaymentIntent,
 } from "@/services/orderService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
 import {
-  requiresPrepayment,
   resolveCheckoutMethods,
   shouldPrintAfterCheckout,
   stripeConfigIssue,
@@ -110,7 +110,7 @@ const PaymentScreen = () => {
 
   const isTableOrder = orderType === "here";
   const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
-  const stripePublishableKey = Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  const stripePublishableKey = hasStripePublishableKey();
   const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
   const stripeIssue = stripeConfigIssue(stripeEnabled, stripePublishableKey);
 

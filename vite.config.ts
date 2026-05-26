@@ -1,3 +1,4 @@
+import { loadEnv } from "vite";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -72,7 +73,15 @@ const emitVersionJson = () => ({
 });
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const stripePublishableFromEnv =
+    env.VITE_STRIPE_PUBLISHABLE_KEY ||
+    env.STRIPE_PUBLISHABLE_KEY ||
+    env.VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    "";
+
+  return {
   server: {
     host: "::",
     port: 8082,
@@ -87,6 +96,9 @@ export default defineConfig(({ mode }) => ({
     emitVersionJson(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
+  define: stripePublishableFromEnv
+    ? { "import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY": JSON.stringify(stripePublishableFromEnv) }
+    : {},
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -100,4 +112,5 @@ export default defineConfig(({ mode }) => ({
       "@tanstack/query-core",
     ],
   },
-}));
+};
+});

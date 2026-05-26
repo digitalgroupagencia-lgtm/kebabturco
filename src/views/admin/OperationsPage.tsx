@@ -12,6 +12,7 @@ import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { fetchStoreFinancialProfile } from "@/services/orderService";
+import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
 import { stripeAdminConfigIssue } from "@/lib/paymentPolicy";
 import { nav } from "@/lib/navPaths";
 
@@ -74,7 +75,7 @@ const OperationsPage = () => {
 
   if (!s) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
-  const stripePublishableKey = Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  const stripePublishableKey = hasStripePublishableKey();
   const stripeIssue = stripeAdminConfigIssue(onlineReady, stripePublishableKey);
 
   return (

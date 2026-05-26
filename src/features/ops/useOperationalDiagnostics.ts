@@ -26,7 +26,7 @@ function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-const STRIPE_PUBLISHABLE = Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
 
 export function useOperationalDiagnostics() {
   const { storeId } = useAdminStoreId();
@@ -122,22 +122,21 @@ export function useOperationalDiagnostics() {
     }
 
     // STRIPE — chave pública no site (Lovable)
-    if (!STRIPE_PUBLISHABLE) {
+    if (!hasStripePublishableKey()) {
       results.push({
         id: "stripe-site-key",
         label: "Pagamentos online (site)",
         status: "fail",
         critical: true,
-        detail: "O site publicado não tem a chave pública da Stripe — o cliente não vê cartão.",
-        action:
-          "Na Lovable: Definições do projecto → Variáveis → adicione VITE_STRIPE_PUBLISHABLE_KEY com a chave publicável da Stripe. Depois Sync + Publish.",
+        detail: "Chave publicável da Stripe em falta no site — o cliente não vê cartão.",
+        action: "Sync + Publish na Lovable. A chave já está no projecto; se persistir, peça na Lovable para activar variáveis de ambiente do frontend.",
       });
     } else {
       results.push({
         id: "stripe-site-key",
         label: "Pagamentos online (site)",
         status: "ok",
-        detail: "Chave pública da Stripe presente no site.",
+        detail: "Chave publicável da Stripe activa — cartão e Apple/Google Pay podem aparecer no checkout.",
       });
     }
 
@@ -219,13 +218,15 @@ export function useOperationalDiagnostics() {
       }
 
       if (!serverDiag.webhookConfigured) {
+        const supaUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+        const webhookUrl = supaUrl ? `${supaUrl}/functions/v1/stripe-webhook` : serverDiag.webhookExpectedUrl;
         results.push({
           id: "stripe-webhook-active",
           label: "Webhook Stripe (ligação)",
           status: "fail",
           critical: true,
-          detail: "A Stripe não tem webhook activo apontando para este projecto.",
-          action: `Na Stripe → Developers → Webhooks → Add endpoint → URL: ${serverDiag.webhookExpectedUrl} → eventos payment_intent.succeeded e account.updated.`,
+          detail: "A Stripe ainda não avisa o servidor quando um pagamento é confirmado.",
+          action: `Na Stripe → Developers → Webhooks → Add endpoint → URL: ${webhookUrl} → eventos: payment_intent.succeeded, account.updated, payout.paid`,
         });
       } else {
         results.push({

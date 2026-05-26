@@ -101,7 +101,7 @@ export function stripeAdminConfigIssue(
   if (!hasPublishableKey) {
     return {
       message: "Chave pública da Stripe em falta no site publicado.",
-      action: "Lovable → Variáveis → VITE_STRIPE_PUBLISHABLE_KEY → Sync + Publish. Ver também Estado do sistema.",
+      action: "Sync + Publish na Lovable. A chave publicável já está incluída no projecto Kebab Turco.",
     };
   }
   if (!stripeReady) {

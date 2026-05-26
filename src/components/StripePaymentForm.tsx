@@ -1,11 +1,26 @@
-import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+import { useMemo, useState } from "react";
+import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
+import { getStripePublishableKey, hasStripePublishableKey } from "@/lib/stripePublishableKey";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+let stripePromiseCache: Promise<Stripe | null> | null = null;
 
-function CheckoutForm({ amountLabel, onSuccess, onCancel, compact }: {
+function getStripePromise() {
+  const key = getStripePublishableKey();
+  if (!key) return null;
+  if (!stripePromiseCache) {
+    stripePromiseCache = loadStripe(key);
+  }
+  return stripePromiseCache;
+}
+
+function CheckoutForm({
+  amountLabel,
+  onSuccess,
+  onCancel,
+  compact,
+}: {
   amountLabel: string;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
@@ -37,7 +52,12 @@ function CheckoutForm({ amountLabel, onSuccess, onCancel, compact }: {
 
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
-      <PaymentElement options={{ layout: compact ? "accordion" : "tabs" }} />
+      <PaymentElement
+        options={{
+          layout: compact ? "accordion" : "tabs",
+          wallets: { applePay: "auto", googlePay: "auto" },
+        }}
+      />
       {err && <p className="text-xs font-bold text-destructive">{err}</p>}
       <div className="flex gap-2">
         <button
@@ -68,17 +88,30 @@ export default function StripePaymentForm(props: {
   onCancel: () => void;
   compact?: boolean;
 }) {
-  if (!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
+  const stripePromise = useMemo(() => getStripePromise(), []);
+
+  if (!hasStripePublishableKey() || !stripePromise) {
     return (
       <p className="text-sm text-destructive font-bold p-4 bg-destructive/10 rounded-2xl">
-        Pagamento online não configurado (VITE_STRIPE_PUBLISHABLE_KEY).
+        Pagamento online ainda não está disponível neste site. Peça ao restaurante para activar os recebimentos.
       </p>
     );
   }
 
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret: props.clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#D62300" } } }}>
-      <CheckoutForm amountLabel={props.amountLabel} onSuccess={props.onSuccess} onCancel={props.onCancel} compact={props.compact} />
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret: props.clientSecret,
+        appearance: { theme: "stripe", variables: { colorPrimary: "#D62300" } },
+      }}
+    >
+      <CheckoutForm
+        amountLabel={props.amountLabel}
+        onSuccess={props.onSuccess}
+        onCancel={props.onCancel}
+        compact={props.compact}
+      />
     </Elements>
   );
 }
