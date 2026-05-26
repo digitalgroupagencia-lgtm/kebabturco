@@ -447,12 +447,12 @@ WHERE s.tenant_id = t.id
   AND t.slug = 'kebab-turco'
   AND s.is_active IS NOT TRUE;
 
-INSERT INTO public.stores (tenant_id, name, slug, is_active, sort_order)
-SELECT t.id, 'Kebab Turco', 'kebab-turco', true, 0
+INSERT INTO public.stores (tenant_id, name, is_active)
+SELECT t.id, COALESCE(t.name, 'Kebab Turco'), true
 FROM public.tenants t
 WHERE t.slug = 'kebab-turco'
   AND NOT EXISTS (
-    SELECT 1 FROM public.stores s WHERE s.tenant_id = t.id AND s.is_active = true
+    SELECT 1 FROM public.stores s WHERE s.tenant_id = t.id
   );
 
 -- ─── FIM — Actualize a página Recebimentos no painel admin ───
