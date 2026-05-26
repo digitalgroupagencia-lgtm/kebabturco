@@ -270,11 +270,21 @@ export async function createStripePaymentIntent(params: {
   };
 }
 
-export async function startStripeConnectOnboarding(storeId: string, returnUrl: string) {
-  const body = { storeId, returnUrl, mode: "start_onboarding" };
+export type StripeConnectStatus = {
+  accountId: string;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  onboardingCompleted: boolean;
+  payoutStatus: string;
+  businessName: string | null;
+  ibanLast4: string | null;
+  requirementsDue: string[];
+  ready: boolean;
+};
 
-  const invoke = async (functionName: string, payload: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke(functionName, { body: payload });
+async function invokeConnectFunction(payload: Record<string, unknown>) {
+  const invoke = async (functionName: string, body: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke(functionName, { body });
     if (error) {
       const msg = error.message || String(error);
       const notFound =
@@ -287,18 +297,37 @@ export async function startStripeConnectOnboarding(storeId: string, returnUrl: s
     if (data && typeof data === "object" && "error" in data && data.error) {
       throw new Error(String(data.error));
     }
-    return data as { url: string; accountId: string };
+    return data;
   };
 
-  const direct = await invoke("stripe-connect-onboard", body);
-  if (direct?.url) return direct;
+  const direct = await invoke("stripe-connect-onboard", payload);
+  if (direct) return direct;
 
-  const fallback = await invoke("stripe-create-payment-intent", { action: "connect_onboard", ...body });
-  if (fallback?.url) return fallback;
+  const fallback = await invoke("stripe-create-payment-intent", { action: "connect_onboard", ...payload });
+  if (fallback) return fallback;
 
   throw new Error(
-    "Serviço de recebimentos indisponível — peça na Lovable: «Deploy stripe-connect-onboard and stripe-create-payment-intent».",
+    "Serviço de recebimentos indisponível — peça na Lovable para actualizar as funções do servidor.",
   );
+}
+
+export async function createStripeConnectEmbeddedSession(
+  storeId: string,
+  mode: "embedded_onboarding" | "embedded_management",
+) {
+  const data = await invokeConnectFunction({ storeId, mode });
+  return data as { clientSecret: string; accountId: string };
+}
+
+export async function syncStripeConnectStatus(storeId: string): Promise<StripeConnectStatus> {
+  const data = await invokeConnectFunction({ storeId, mode: "sync_status" });
+  return data as StripeConnectStatus;
+}
+
+/** @deprecated Usar createStripeConnectEmbeddedSession — onboarding embebido no painel */
+export async function startStripeConnectOnboarding(storeId: string, returnUrl: string) {
+  const data = await invokeConnectFunction({ storeId, returnUrl, mode: "start_onboarding" });
+  return data as { url: string; accountId: string };
 }
 
 export async function provisionStripeConnect(storeId: string) {

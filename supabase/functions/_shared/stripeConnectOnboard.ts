@@ -1,6 +1,12 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getStripeSecretKey } from "./stripeEnv.ts";
+import {
+  fetchConnectAccountStatus,
+  persistConnectAccountStatus,
+  syncConnectAccountById,
+  type ConnectAccountStatus,
+} from "./stripeConnectSync.ts";
 
 export const connectCorsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,12 +39,12 @@ export async function assertStoreAccess(
     .maybeSingle();
 
   if (storeErr || !store) {
-    throw new ConnectError("Loja não encontrada — verifique se a loja Kebab Turco está activa.", 404);
+    throw new ConnectError("Restaurante não encontrado.", 404);
   }
 
   const { data: roles, error: rolesErr } = await service
     .from("user_roles")
-    .select("role, tenant_id")
+    .select("role, tenant_id, store_id")
     .eq("user_id", userId);
 
   if (rolesErr) {
@@ -46,10 +52,16 @@ export async function assertStoreAccess(
   }
 
   const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
+  const storeIds = (roles ?? []).map((r) => r.store_id).filter(Boolean) as string[];
   const tenantIds = (roles ?? []).map((r) => r.tenant_id).filter(Boolean) as string[];
 
-  if (!isAdminMaster && !tenantIds.includes(store.tenant_id)) {
-    throw new ConnectError("Sem permissão para gerir recebimentos desta loja.", 403);
+  const ownsStore =
+    isAdminMaster ||
+    storeIds.includes(store.id) ||
+    tenantIds.includes(store.tenant_id);
+
+  if (!ownsStore) {
+    throw new ConnectError("Sem permissão para gerir recebimentos deste restaurante.", 403);
   }
 
   return store as ConnectStoreRow;
@@ -78,11 +90,11 @@ export async function ensureConnectAccount(
       transfers: { requested: true },
     },
     business_profile: {
-      name: store.name || "Kebab Turco",
+      name: store.name || "Restaurante",
     },
     metadata: {
       store_id: store.id,
-      platform: "kebabturco",
+      platform: "snaporder",
     },
     settings: {
       payouts: { schedule: { interval: "daily" } },
@@ -102,7 +114,7 @@ export async function ensureConnectAccount(
   if (updErr) {
     console.error("[connect] store update", updErr);
     throw new ConnectError(
-      "Conta Stripe criada mas não foi possível guardar na loja — aplique as actualizações da base de dados.",
+      "Conta de recebimentos criada mas não foi possível guardar — actualize a base de dados.",
       500,
     );
   }
@@ -110,44 +122,43 @@ export async function ensureConnectAccount(
   return account.id;
 }
 
-export function validateReturnUrl(returnUrl: string): void {
-  try {
-    const u = new URL(returnUrl);
-    const host = u.hostname.toLowerCase();
-    const allowedLocal = host === "localhost" || host === "127.0.0.1";
-    const allowedPreview =
-      host.endsWith(".lovable.app") ||
-      host.endsWith(".lovableproject.com") ||
-      host === "lovable.app" ||
-      host.endsWith(".kebabturco.net") ||
-      host === "kebabturco.net";
-    if (u.protocol === "https:") return;
-    if (allowedLocal || allowedPreview) return;
-    throw new Error("protocol");
-  } catch {
-    throw new ConnectError(
-      "URL de retorno inválida — abra Recebimentos a partir do site publicado (https).",
-      400,
-    );
+function embeddedSessionComponents(mode: string): Stripe.AccountSessionCreateParams.Components {
+  const notification = {
+    enabled: true,
+    features: { external_account_collection: true },
+  };
+
+  if (mode === "embedded_onboarding") {
+    return {
+      account_onboarding: { enabled: true },
+      notification_banner: notification,
+    };
   }
+
+  return {
+    account_management: {
+      enabled: true,
+      features: { external_account_collection: true },
+    },
+    payouts: { enabled: true },
+    documents: { enabled: true },
+    notification_banner: notification,
+  };
 }
 
-export async function createOnboardingLink(
+export async function createEmbeddedAccountSession(
   stripe: Stripe,
   accountId: string,
-  returnUrl: string,
+  mode: string,
 ): Promise<string> {
-  validateReturnUrl(returnUrl);
-  const link = await stripe.accountLinks.create({
+  const session = await stripe.accountSessions.create({
     account: accountId,
-    refresh_url: returnUrl,
-    return_url: returnUrl,
-    type: "account_onboarding",
+    components: embeddedSessionComponents(mode),
   });
-  if (!link.url) {
-    throw new ConnectError("A Stripe não devolveu o link de onboarding.", 502);
+  if (!session.client_secret) {
+    throw new ConnectError("Não foi possível iniciar o formulário de recebimentos.", 502);
   }
-  return link.url;
+  return session.client_secret;
 }
 
 export async function resolveAuthUserId(req: Request): Promise<string> {
@@ -170,6 +181,20 @@ export async function resolveAuthUserId(req: Request): Promise<string> {
   return userData.user.id;
 }
 
+function statusPayload(status: ConnectAccountStatus) {
+  return {
+    accountId: status.accountId,
+    chargesEnabled: status.chargesEnabled,
+    payoutsEnabled: status.payoutsEnabled,
+    onboardingCompleted: status.onboardingCompleted,
+    payoutStatus: status.payoutStatus,
+    businessName: status.businessName,
+    ibanLast4: status.ibanLast4,
+    requirementsDue: status.requirementsDue,
+    ready: status.chargesEnabled && status.onboardingCompleted,
+  };
+}
+
 export async function handleStripeConnectRequest(
   req: Request,
   body: Record<string, unknown>,
@@ -178,7 +203,7 @@ export async function handleStripeConnectRequest(
   if (!stripeKey) {
     return json(
       {
-        error: "Pagamentos indisponíveis — chave secreta Stripe em falta nos segredos do servidor.",
+        error: "Recebimentos indisponíveis — configuração do servidor incompleta.",
         code: "stripe_secret_missing",
       },
       503,
@@ -187,11 +212,10 @@ export async function handleStripeConnectRequest(
 
   const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
   if (!storeId) {
-    return json({ error: "Loja em falta (storeId)." }, 400);
+    return json({ error: "Restaurante em falta." }, 400);
   }
 
-  const mode = typeof body.mode === "string" ? body.mode : "start_onboarding";
-  const returnUrl = typeof body.returnUrl === "string" ? body.returnUrl.trim() : "";
+  const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
 
   const userId = await resolveAuthUserId(req);
   const service = createClient(
@@ -207,21 +231,31 @@ export async function handleStripeConnectRequest(
     return json({ accountId, provisioned: true });
   }
 
-  if (mode === "account_session") {
-    const session = await stripe.accountSessions.create({
-      account: accountId,
-      components: { account_onboarding: { enabled: true } },
-    });
-    return json({ clientSecret: session.client_secret, accountId });
+  if (mode === "sync_status") {
+    const status = await syncConnectAccountById(stripe, service, accountId);
+    return json(statusPayload(status));
   }
 
-  // start_onboarding | onboarding_link | account_link — devolve URL Stripe numa só chamada
+  if (mode === "embedded_onboarding" || mode === "embedded_management" || mode === "account_session") {
+    const sessionMode = mode === "account_session" ? "embedded_onboarding" : mode;
+    const clientSecret = await createEmbeddedAccountSession(stripe, accountId, sessionMode);
+    return json({ clientSecret, accountId, mode: sessionMode });
+  }
+
+  // Legacy redirect — apenas fallback de emergência
+  const returnUrl = typeof body.returnUrl === "string" ? body.returnUrl.trim() : "";
   if (!returnUrl) {
-    return json({ error: "URL de retorno em falta." }, 400);
+    return json({ error: "Modo inválido — use embedded_onboarding." }, 400);
   }
 
-  const url = await createOnboardingLink(stripe, accountId, returnUrl);
-  return json({ url, accountId, provisioned: !store.stripe_connect_account_id });
+  const link = await stripe.accountLinks.create({
+    account: accountId,
+    refresh_url: returnUrl,
+    return_url: returnUrl,
+    type: "account_onboarding",
+  });
+
+  return json({ url: link.url, accountId, legacy: true });
 }
 
 export function connectErrorResponse(e: unknown): Response {
@@ -232,7 +266,7 @@ export function connectErrorResponse(e: unknown): Response {
   if (stripeMsg.includes("signed up for Connect")) {
     return json(
       {
-        error: "A conta Stripe da plataforma ainda não tem Stripe Connect activo.",
+        error: "Recebimentos online ainda não activos na plataforma.",
         code: "connect_not_enabled",
       },
       503,
@@ -242,3 +276,5 @@ export function connectErrorResponse(e: unknown): Response {
   console.error("[stripe-connect]", e);
   return json({ error: msg, code: "connect_failed" }, 500);
 }
+
+export { syncConnectAccountById, persistConnectAccountStatus, fetchConnectAccountStatus };

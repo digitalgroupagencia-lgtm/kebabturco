@@ -177,23 +177,34 @@ export function useOperationalDiagnostics() {
     const hasConnect =
       Boolean(storeProfile?.stripe_connect_account_id ?? serverDiag?.store?.stripe_connect_account_id);
 
+    const payoutsOk = storeProfile?.stripe_payouts_enabled ?? serverDiag?.store?.stripe_payouts_enabled;
+
     if (!hasConnect || !chargesOk || !onboardingOk) {
       results.push({
         id: "stripe-connect",
-        label: "Conta bancária (Stripe)",
+        label: "Conta bancária (recebimentos)",
         status: "fail",
         critical: true,
         detail: !hasConnect
           ? "Recebimentos online ainda não foram activados."
-          : "Dados bancários incompletos — pagamentos online bloqueados.",
-        action: "Admin → Recebimentos → Completar dados bancários e seguir o processo da Stripe.",
+          : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
+        action: "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
+      });
+    } else if (!payoutsOk) {
+      results.push({
+        id: "stripe-connect",
+        label: "Conta bancária (recebimentos)",
+        status: "warn",
+        critical: false,
+        detail: "Pagamentos online activos — repasse bancário ainda em validação.",
+        action: "Admin → Recebimentos → Gerir conta bancária e documentos.",
       });
     } else {
       results.push({
         id: "stripe-connect",
-        label: "Conta bancária (Stripe)",
+        label: "Conta bancária (recebimentos)",
         status: "ok",
-        detail: "Conta Stripe activa — pode receber pagamentos online.",
+        detail: "Recebimentos online e repasse bancário activos.",
       });
     }
 

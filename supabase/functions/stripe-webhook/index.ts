@@ -5,38 +5,52 @@ import {
   computeNetToStoreCents,
   estimatedStripeFeeInServiceFee,
 } from "../_shared/stripeFees.ts";
+import { syncConnectAccountById } from "../_shared/stripeConnectSync.ts";
+import { getStripeSecretKey, getStripeWebhookSecret } from "../_shared/stripeEnv.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-async function syncAccountProfile(stripe: Stripe, supabase: ReturnType<typeof createClient>, account: Stripe.Account) {
-  let ibanLast4: string | null = null;
-  try {
-    const external = await stripe.accounts.listExternalAccounts(account.id, { object: "bank_account", limit: 1 });
-    const bank = external.data[0] as Stripe.BankAccount | undefined;
-    if (bank?.last4) ibanLast4 = bank.last4;
-  } catch {
-    // optional
+async function upsertPayout(
+  supabase: ReturnType<typeof createClient>,
+  storeId: string,
+  payout: Stripe.Payout,
+) {
+  await supabase.from("store_payouts").upsert(
+    {
+      store_id: storeId,
+      stripe_payout_id: payout.id,
+      amount_cents: payout.amount,
+      status: payout.status,
+      arrival_date: payout.arrival_date
+        ? new Date(payout.arrival_date * 1000).toISOString().slice(0, 10)
+        : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "stripe_payout_id" },
+  );
+
+  if (payout.status === "paid") {
+    await supabase
+      .from("stores")
+      .update({
+        stripe_last_payout_at: new Date().toISOString(),
+        stripe_payout_status: "active",
+      })
+      .eq("id", storeId);
   }
 
-  const onboardingDone = account.details_submitted === true;
-  const payoutStatus = account.payouts_enabled
-    ? "active"
-    : onboardingDone
-      ? "review"
-      : "pending";
-
-  await supabase.rpc("sync_store_stripe_profile", {
-    _stripe_account_id: account.id,
-    _charges_enabled: account.charges_enabled === true,
-    _payouts_enabled: account.payouts_enabled === true,
-    _onboarding_completed: onboardingDone,
-    _business_name: account.business_profile?.name ?? account.company?.name ?? null,
-    _iban_last4: ibanLast4,
-    _payout_status: payoutStatus,
-  });
+  if (payout.status === "failed") {
+    await supabase
+      .from("stores")
+      .update({
+        stripe_payout_status: "failed",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", storeId);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -44,8 +58,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const stripeKey = getStripeSecretKey();
+  const webhookSecret = getStripeWebhookSecret();
   if (!stripeKey || !webhookSecret) {
     return new Response("Webhook não configurado", { status: 503 });
   }
@@ -88,7 +102,7 @@ Deno.serve(async (req) => {
       const bt = charge?.balance_transaction as Stripe.BalanceTransaction | null;
       if (bt?.fee != null) stripeFeeCents = bt.fee;
     } catch {
-      // keep estimate
+      /* keep estimate */
     }
 
     const netToStoreCents = computeNetToStoreCents(
@@ -107,10 +121,14 @@ Deno.serve(async (req) => {
 
   if (event.type === "account.updated") {
     const account = event.data.object as Stripe.Account;
-    await syncAccountProfile(stripe, supabase, account);
+    await syncConnectAccountById(stripe, supabase, account.id);
   }
 
-  if (event.type === "payout.paid" || event.type === "payout.updated") {
+  if (
+    event.type === "payout.paid" ||
+    event.type === "payout.updated" ||
+    event.type === "payout.failed"
+  ) {
     const payout = event.data.object as Stripe.Payout;
     const accountId = event.account as string | undefined;
     if (accountId) {
@@ -121,29 +139,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (store?.id) {
-        await supabase.from("store_payouts").upsert(
-          {
-            store_id: store.id,
-            stripe_payout_id: payout.id,
-            amount_cents: payout.amount,
-            status: payout.status,
-            arrival_date: payout.arrival_date
-              ? new Date(payout.arrival_date * 1000).toISOString().slice(0, 10)
-              : null,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "stripe_payout_id" },
-        );
-
-        if (payout.status === "paid") {
-          await supabase
-            .from("stores")
-            .update({
-              stripe_last_payout_at: new Date().toISOString(),
-              stripe_payout_status: "active",
-            })
-            .eq("id", store.id);
-        }
+        await upsertPayout(supabase, store.id, payout);
       }
     }
   }

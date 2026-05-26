@@ -107,7 +107,7 @@ export function stripeAdminConfigIssue(
   if (!stripeReady) {
     return {
       message: "Conta Stripe do restaurante incompleta.",
-      action: "Admin → Recebimentos → Completar dados bancários.",
+      action: "Admin → Recebimentos → Conectar recebimentos do restaurante.",
     };
   }
   return null;
