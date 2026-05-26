@@ -6,6 +6,8 @@ import { MANUAL_STRIPE_DB_SQL } from "@/lib/manualStripeDbSql";
 
 export { MANUAL_STRIPE_DB_SQL };
 
+const PREVIEW_LINE_COUNT = 16;
+
 type Props = {
   schemaStripeEnv: boolean;
   schemaTestSimulated: boolean;
@@ -18,16 +20,17 @@ export default function ManualDatabaseSqlPanel({ schemaStripeEnv, schemaTestSimu
 
   if (!needsSql) return null;
 
-  const preview =
-    MANUAL_STRIPE_DB_SQL.length > 1200
-      ? `${MANUAL_STRIPE_DB_SQL.slice(0, 1200)}\n\n-- … (SQL completo ao copiar — ${MANUAL_STRIPE_DB_SQL.split("\n").length} linhas)`
-      : MANUAL_STRIPE_DB_SQL;
+  const lines = MANUAL_STRIPE_DB_SQL.trim().split("\n");
+  const hasMore = lines.length > PREVIEW_LINE_COUNT;
+  const preview = hasMore
+    ? `${lines.slice(0, PREVIEW_LINE_COUNT).join("\n")}\n\n-- …`
+    : MANUAL_STRIPE_DB_SQL.trim();
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(MANUAL_STRIPE_DB_SQL);
+      await navigator.clipboard.writeText(MANUAL_STRIPE_DB_SQL.trim());
       setCopied(true);
-      toast.success("SQL completo copiado — cole no SQL Editor da base de dados");
+      toast.success("SQL copiado — cole no editor da base de dados e execute");
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
       toast.error("Não foi possível copiar — seleccione o texto manualmente");
@@ -41,8 +44,8 @@ export default function ManualDatabaseSqlPanel({ schemaStripeEnv, schemaTestSimu
         <div className="space-y-1">
           <p className="text-sm font-black text-destructive">Base de dados incompleta</p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Cole o SQL abaixo em <strong>Lovable → Database → SQL editor → Run</strong>. Não precisa do chat da
-            Lovable. Depois actualize esta página.
+            Clique em <strong>Copiar SQL</strong>, cole no editor da base de dados e execute. Depois actualize esta
+            página.
           </p>
           <ul className="text-xs text-muted-foreground list-disc pl-4 pt-1">
             {!schemaStripeEnv && <li>Falta coluna modo teste/produção</li>}
@@ -52,15 +55,17 @@ export default function ManualDatabaseSqlPanel({ schemaStripeEnv, schemaTestSimu
         </div>
       </div>
       <pre className="text-[10px] leading-relaxed bg-background border rounded-lg p-3 overflow-x-auto max-h-48 whitespace-pre-wrap">
-        {preview.trim()}
+        {preview}
       </pre>
+      {hasMore && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          Pré-visualização — o botão abaixo copia o script completo ({lines.length} linhas)
+        </p>
+      )}
       <Button type="button" variant="outline" size="sm" className="w-full font-bold" onClick={() => void copy()}>
         {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-        {copied ? "Copiado!" : "Copiar SQL completo para colar na base de dados"}
+        {copied ? "Copiado!" : "Copiar SQL"}
       </Button>
-      <p className="text-[10px] text-muted-foreground">
-        Também disponível no GitHub: ficheiro <strong>COPIAR_COLAR_SQL_RECEBIMENTOS_TESTE_COMPLETO.sql</strong>
-      </p>
     </div>
   );
 }

@@ -1,11 +1,7 @@
-/** SQL completo — colar no SQL Editor da Lovable Database (idempotente). */
 export const MANUAL_STRIPE_DB_SQL = `
--- =============================================================================
--- KEBAB TURCO — SQL COMPLETO (colar UMA VEZ no SQL Editor da Lovable Database)
--- Não precisa do chat da Lovable. Idempotente: pode correr várias vezes.
--- =============================================================================
+-- Kebab Turco — actualização base de dados (idempotente, pode correr várias vezes)
 
--- ─── 1. STORES — colunas Stripe Connect + modo teste ───
+-- Colunas Stripe na loja
 ALTER TABLE public.stores
   ADD COLUMN IF NOT EXISTS stripe_connect_account_id text,
   ADD COLUMN IF NOT EXISTS stripe_charges_enabled boolean NOT NULL DEFAULT false,
@@ -22,7 +18,7 @@ ALTER TABLE public.stores
 COMMENT ON COLUMN public.stores.stripe_connect_environment IS 'live ou test — ambiente da conta Connect do restaurante';
 COMMENT ON COLUMN public.stores.stripe_connect_test_simulated IS 'Recebimentos de teste simulados — sem dinheiro real';
 
--- ─── 2. ORDERS — pagamentos online + operacional ───
+-- Colunas de pagamento nos pedidos
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS platform_fee_cents integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS stripe_fee_cents integer NOT NULL DEFAULT 0,
@@ -36,7 +32,7 @@ ALTER TABLE public.orders
 
 CREATE INDEX IF NOT EXISTS idx_orders_kitchen_print ON public.orders (store_id, kitchen_printed_at);
 
--- ─── 3. TABLES — QR mesas ───
+-- QR das mesas
 ALTER TABLE public.tables
   ADD COLUMN IF NOT EXISTS qr_token text;
 
@@ -55,7 +51,7 @@ END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tables_qr_token ON public.tables (qr_token);
 
--- ─── 4. OPERATIONS — política de pagamento ───
+-- Políticas de pagamento
 ALTER TABLE public.operations_settings
   ADD COLUMN IF NOT EXISTS pay_cash_dine_in boolean NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS pay_cash_takeaway boolean NOT NULL DEFAULT false,
@@ -64,7 +60,7 @@ ALTER TABLE public.operations_settings
   ADD COLUMN IF NOT EXISTS require_prepayment_delivery boolean NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS print_pending_dine_in boolean NOT NULL DEFAULT true;
 
--- ─── 5. LEDGER + PAYOUTS ───
+-- Movimentos e repasses
 CREATE TABLE IF NOT EXISTS public.store_payment_ledger (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
@@ -142,7 +138,7 @@ CREATE POLICY "Admin master manage store payouts"
   USING (public.has_role(auth.uid(), 'admin_master'::app_role))
   WITH CHECK (public.has_role(auth.uid(), 'admin_master'::app_role));
 
--- ─── 6. FUNÇÕES — recebimentos ───
+-- Funções de recebimentos e diagnóstico
 CREATE OR REPLACE FUNCTION public.sync_store_stripe_profile(
   _stripe_account_id text,
   _charges_enabled boolean,
@@ -441,7 +437,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_operational_diagnostics(uuid) TO authenticated;
 
--- ─── 7. LOJA KEBAB TURCO activa ───
+-- Loja Kebab Turco activa
 UPDATE public.stores s
 SET is_active = true, updated_at = now()
 FROM public.tenants t
@@ -456,6 +452,4 @@ WHERE t.slug = 'kebab-turco'
   AND NOT EXISTS (
     SELECT 1 FROM public.stores s WHERE s.tenant_id = t.id
   );
-
--- ─── FIM — Actualize a página Recebimentos no painel admin ───
 `;
