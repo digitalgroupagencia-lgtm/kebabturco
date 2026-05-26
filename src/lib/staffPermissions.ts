@@ -126,7 +126,6 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
     label: "Configuração",
     items: [
       { key: "settings", segment: "settings", label: "Configurações" },
-      { key: "diagnostics", segment: "diagnostics", label: "Diagnóstico" },
       { key: "guide", segment: "guide", label: "Guia" },
     ],
   },
