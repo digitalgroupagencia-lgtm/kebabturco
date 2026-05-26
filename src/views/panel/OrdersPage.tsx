@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, ChefHat, CheckCircle, Truck, Bike, XCircle } from "lucide-react";
@@ -14,6 +14,11 @@ import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
+import {
+  acknowledgePendingOrderAlert,
+  isPendingOrderAlerting,
+  PANEL_UNACK_CHANGED_EVENT,
+} from "@/lib/panelAlerts";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
@@ -37,6 +42,23 @@ const OrdersPage = () => {
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [etaDialogOrder, setEtaDialogOrder] = useState<PanelOrder | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [, setUnackTick] = useState(0);
+
+  useEffect(() => {
+    const sync = () => setUnackTick((t) => t + 1);
+    window.addEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
+  }, []);
+
+  const openOrderDetail = useCallback((order: PanelOrder) => {
+    acknowledgePendingOrderAlert(order.id);
+    setDetailOrderId(order.id);
+  }, []);
+
+  const openAcceptDialog = useCallback((order: PanelOrder) => {
+    acknowledgePendingOrderAlert(order.id);
+    setEtaDialogOrder(order);
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -126,10 +148,11 @@ const OrdersPage = () => {
               key={order.id}
               order={order}
               items={itemsByOrder[order.id] || []}
+              needsAttention={isPendingOrderAlerting(order.id)}
               onAdvance={handleAdvance}
               onCancel={cancelOrder}
-              onOpenDetail={(o) => setDetailOrderId(o.id)}
-              onRequestAccept={(o) => setEtaDialogOrder(o)}
+              onOpenDetail={openOrderDetail}
+              onRequestAccept={openAcceptDialog}
             />
           ))}
           {columnOrders.length === 0 && (
@@ -171,10 +194,11 @@ const OrdersPage = () => {
               key={order.id}
               order={order}
               items={itemsByOrder[order.id] || []}
+              needsAttention={isPendingOrderAlerting(order.id)}
               onAdvance={handleAdvance}
               onCancel={cancelOrder}
-              onOpenDetail={(o) => setDetailOrderId(o.id)}
-              onRequestAccept={(o) => setEtaDialogOrder(o)}
+              onOpenDetail={openOrderDetail}
+              onRequestAccept={openAcceptDialog}
             />
           ))}
           {mobileOrders.length === 0 && (
@@ -201,7 +225,7 @@ const OrdersPage = () => {
           if (!open) setDetailOrderId(null);
         }}
         onAdvance={handleAdvance}
-        onRequestAccept={(o) => setEtaDialogOrder(o)}
+        onRequestAccept={openAcceptDialog}
         onCancel={cancelOrder}
         onSetPrepMinutes={setPrepMinutes}
         onMarkPaid={(o, m) => {

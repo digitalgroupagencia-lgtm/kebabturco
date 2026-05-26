@@ -4,8 +4,13 @@ const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
 export const PANEL_ALERT_FLASH_EVENT = "panel-alert-flash";
 const STATIC_BEEP_URL = "/alert-beep.wav";
-const REPEAT_MS = 2000;
 const ALERT_DIAG_KEY = "panel-alert-diag";
+const ALERT_VOLUME = 0.42;
+
+/** Pedidos recebidos ainda não vistos/aceites — som só uma vez por pedido. */
+const unacknowledgedPending = new Set<string>();
+
+export const PANEL_UNACK_CHANGED_EVENT = "panel-unack-changed";
 
 let audioCtx: AudioContext | null = null;
 let beepBlobUrl: string | null = null;
@@ -46,6 +51,43 @@ export function getLastAlertDiagnostic(): AlertDiagnostic | null {
   } catch {
     return null;
   }
+}
+
+function dispatchUnackChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(PANEL_UNACK_CHANGED_EVENT));
+}
+
+export function countUnacknowledgedPendingOrders(): number {
+  return unacknowledgedPending.size;
+}
+
+export function isPendingOrderAlerting(orderId: string): boolean {
+  return unacknowledgedPending.has(orderId);
+}
+
+export function acknowledgePendingOrderAlert(orderId: string) {
+  if (!unacknowledgedPending.delete(orderId)) return;
+  dispatchUnackChanged();
+}
+
+/** Para todos os alertas de pedidos recebidos (botão silenciar). */
+export function silenceAllPendingAlerts() {
+  if (unacknowledgedPending.size === 0) return;
+  unacknowledgedPending.clear();
+  stopPendingOrderAlertLoop();
+  dispatchUnackChanged();
+}
+
+/** Regista pedido novo — toca som curto uma única vez (sem loop). */
+export function registerNewPendingOrderAlert(orderId: string): boolean {
+  const isNew = !unacknowledgedPending.has(orderId);
+  if (isNew) {
+    unacknowledgedPending.add(orderId);
+    dispatchUnackChanged();
+    if (isPanelAlertsEnabled()) void playAlertSoundOnce();
+  }
+  return isPanelAlertsEnabled();
 }
 
 function flashVisualAlert() {
@@ -169,13 +211,13 @@ async function ensureAudioReady(): Promise<boolean> {
 
 async function generateBeepBlobUrl(): Promise<string> {
   const sampleRate = 44100;
-  const duration = 0.55;
+  const duration = 0.28;
   const offline = new OfflineAudioContext(1, Math.ceil(sampleRate * duration), sampleRate);
   const osc = offline.createOscillator();
   const gain = offline.createGain();
-  osc.type = "square";
-  osc.frequency.value = 880;
-  gain.gain.setValueAtTime(0.55, 0);
+  osc.type = "sine";
+  osc.frequency.value = 660;
+  gain.gain.setValueAtTime(0.35, 0);
   gain.gain.exponentialRampToValueAtTime(0.01, duration);
   osc.connect(gain);
   gain.connect(offline.destination);
@@ -250,7 +292,7 @@ async function playHtmlBeep(isUnlock = false): Promise<boolean> {
       audio.pause();
       audio.currentTime = 0;
       audio.src = src;
-      audio.volume = 1;
+      audio.volume = ALERT_VOLUME;
       audio.muted = false;
       audio.load();
 
@@ -305,27 +347,19 @@ function playWebBeep(): boolean {
 
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
+  osc.type = "sine";
   osc.connect(gain);
   gain.connect(ctx.destination);
-  osc.frequency.value = 880;
-  gain.gain.setValueAtTime(0.35, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+  osc.frequency.value = 660;
+  gain.gain.setValueAtTime(0.22, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.28);
   osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.35);
-
-  const osc2 = ctx.createOscillator();
-  const gain2 = ctx.createGain();
-  osc2.connect(gain2);
-  gain2.connect(ctx.destination);
-  osc2.frequency.value = 1100;
-  gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.12);
-  gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-  osc2.start(ctx.currentTime + 0.12);
-  osc2.stop(ctx.currentTime + 0.5);
+  osc.stop(ctx.currentTime + 0.28);
   return true;
 }
 
-async function playAlertSound(): Promise<boolean> {
+/** Som curto único — sem loop, vibração suave. */
+async function playAlertSoundOnce(): Promise<boolean> {
   if (!isPanelAlertsEnabled()) return false;
 
   flashVisualAlert();
@@ -347,18 +381,22 @@ async function playAlertSound(): Promise<boolean> {
   }
 
   if (typeof navigator !== "undefined" && navigator.vibrate) {
-    navigator.vibrate(soundOk ? [200, 80, 200, 80, 200] : [400, 100, 400]);
+    navigator.vibrate(soundOk ? [80] : [120]);
   }
 
   deployDebugLog({
     hypothesisId: "H-iOS-C",
-    location: "panelAlerts.ts:playAlertSound",
-    message: "alert sound attempt",
+    location: "panelAlerts.ts:playAlertSoundOnce",
+    message: "single alert sound",
     data: { soundOk, path, isIOS: isIOSLike(), iosAudioUnlocked },
-    runId: "alert-ios-v2",
+    runId: "alert-once-v1",
   });
 
   return soundOk;
+}
+
+async function playAlertSound(): Promise<boolean> {
+  return playAlertSoundOnce();
 }
 
 export async function playTestAlert(): Promise<boolean> {
@@ -371,23 +409,13 @@ export async function playTestAlert(): Promise<boolean> {
   return playAlertSound();
 }
 
-export function playNewOrderAlert() {
-  void playAlertSound();
-  return isPanelAlertsEnabled();
+export function playNewOrderAlert(orderId: string) {
+  return registerNewPendingOrderAlert(orderId);
 }
 
-function tickPendingLoop() {
-  void playAlertSound();
-}
-
-export function syncPendingOrderAlertLoop(hasPendingOrders: boolean) {
-  if (!hasPendingOrders || !isPanelAlertsEnabled()) {
-    stopPendingOrderAlertLoop();
-    return;
-  }
-  if (repeatTimer !== null) return;
-  void playAlertSound();
-  repeatTimer = window.setInterval(tickPendingLoop, REPEAT_MS);
+/** @deprecated Loop removido — alertas são por pedido, uma vez só. */
+export function syncPendingOrderAlertLoop(_hasPendingOrders: boolean) {
+  if (!_hasPendingOrders) stopPendingOrderAlertLoop();
 }
 
 export function stopPendingOrderAlertLoop() {

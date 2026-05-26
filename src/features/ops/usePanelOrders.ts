@@ -5,10 +5,8 @@ import type { Tables, Database } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import {
   isPanelAlertsEnabled,
-  PANEL_ALERTS_CHANGED_EVENT,
+  acknowledgePendingOrderAlert,
   playNewOrderAlert,
-  stopPendingOrderAlertLoop,
-  syncPendingOrderAlertLoop,
 } from "@/lib/panelAlerts";
 import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter } from "@/services/orderService";
@@ -64,7 +62,7 @@ export function usePanelOrders(storeId: string | undefined) {
   const notifyNewPending = useCallback(
     async (row: PanelOrder, items: OrderItem[], withPrint = true) => {
       if (!storeId) return;
-      const sound = playNewOrderAlert();
+      const sound = playNewOrderAlert(row.id);
       toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
       if (!sound && !isPanelAlertsEnabled()) {
         toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
@@ -184,6 +182,9 @@ export function usePanelOrders(storeId: string | undefined) {
             const row = payload.new as PanelOrder;
             const old = payload.old as PanelOrder;
             setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
+            if (old?.status === "pending" && row.status !== "pending") {
+              acknowledgePendingOrderAlert(row.id);
+            }
             if (
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
@@ -237,19 +238,6 @@ export function usePanelOrders(storeId: string | undefined) {
     };
   }, [storeId, fetchOrders, notifyNewPending]);
 
-  const hasPendingOrders = orders.some((o) => o.status === "pending");
-
-  useEffect(() => {
-    syncPendingOrderAlertLoop(hasPendingOrders);
-    return () => stopPendingOrderAlertLoop();
-  }, [hasPendingOrders]);
-
-  useEffect(() => {
-    const resync = () => syncPendingOrderAlertLoop(orders.some((o) => o.status === "pending"));
-    window.addEventListener(PANEL_ALERTS_CHANGED_EVENT, resync);
-    return () => window.removeEventListener(PANEL_ALERTS_CHANGED_EVENT, resync);
-  }, [orders]);
-
   const updateStatus = useCallback(async (order: PanelOrder, newStatus: OrderStatus, prepMinutes?: number): Promise<boolean> => {
     if (updatingRef.current.has(order.id)) return false;
 
@@ -298,6 +286,9 @@ export function usePanelOrders(storeId: string | undefined) {
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...(updated as PanelOrder) } : o)));
       toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
       void notifyOrderStatusChange(order.id, newStatus, order.order_number);
+      if (prevStatus === "pending") {
+        acknowledgePendingOrderAlert(order.id);
+      }
       return true;
     } finally {
       updatingRef.current.delete(order.id);
@@ -322,6 +313,7 @@ export function usePanelOrders(storeId: string | undefined) {
     }
 
     toast.success("Pedido cancelado");
+    acknowledgePendingOrderAlert(orderId);
     await notifyOrderStatusChange(orderId, "cancelled", order.order_number);
   }, [orders]);
 

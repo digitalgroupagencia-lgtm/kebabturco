@@ -25,6 +25,7 @@ const paymentBadgeClass = {
 interface OpsOrderCardProps {
   order: PanelOrder;
   items: OrderItem[];
+  needsAttention?: boolean;
   onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void>;
   onCancel: (orderId: string) => void;
   onOpenDetail: (order: PanelOrder) => void;
@@ -34,6 +35,7 @@ interface OpsOrderCardProps {
 const OpsOrderCard = memo(function OpsOrderCard({
   order,
   items,
+  needsAttention = false,
   onAdvance,
   onCancel,
   onOpenDetail,
@@ -68,7 +70,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   return (
     <article
       className={`rounded-lg border bg-card shadow-sm overflow-hidden ${borderClass} ${
-        isPending ? "ring-1 ring-red-500/20" : ""
+        needsAttention ? "ring-2 ring-red-500/50 animate-pulse" : ""
       }`}
     >
       <button
