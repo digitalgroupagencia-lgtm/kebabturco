@@ -5,7 +5,6 @@ import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 import {
-  resolveAdminRestaurantPanelAlias,
   resolveCustomerRouteRedirect,
   resolveLegacyRouteRedirect,
 } from "@/lib/routeRedirects.ts";
@@ -25,12 +24,6 @@ export default function PreviewPathGuard() {
     if (isBrokenEditorPath(pathname)) {
       const { pathname: fixed, search } = fixBrokenEditorLocation(pathname);
       navigate({ pathname: fixed, search }, { replace: true });
-      return;
-    }
-
-    const panelAlias = resolveAdminRestaurantPanelAlias(pathname);
-    if (panelAlias && panelAlias !== pathname) {
-      navigate(panelAlias, { replace: true });
       return;
     }
 
