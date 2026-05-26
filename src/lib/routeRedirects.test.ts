@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "./routeRedirects";
+import { resolveAdminRestaurantPanelAlias, resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "./routeRedirects";
 
 describe("resolveLegacyRouteRedirect", () => {
-  it("redirects /admin/panel to restaurant orders panel", () => {
-    expect(resolveLegacyRouteRedirect("/admin/panel")).toBe("/panel");
+  it("resolves /admin/panel aliases as restaurant panel without legacy navigation", () => {
+    expect(resolveLegacyRouteRedirect("/admin/panel")).toBeNull();
+    expect(resolveAdminRestaurantPanelAlias("/admin/panel")).toBe("/panel");
   });
 
-  it("redirects /admin/orders to /panel", () => {
-    expect(resolveLegacyRouteRedirect("/admin/orders")).toBe("/panel");
+  it("resolves /admin/orders to /panel", () => {
+    expect(resolveLegacyRouteRedirect("/admin/orders")).toBeNull();
+    expect(resolveAdminRestaurantPanelAlias("/admin/orders")).toBe("/panel");
   });
 
-  it("redirects /admin/qrcodes to tables QR page", () => {
-    expect(resolveLegacyRouteRedirect("/admin/qrcodes")).toBe("/panel/tables");
+  it("resolves /admin/qrcodes to tables QR page", () => {
+    expect(resolveAdminRestaurantPanelAlias("/admin/qrcodes")).toBe("/panel/tables");
   });
 
   it("redirects legacy panel config paths to admin", () => {
@@ -20,9 +22,9 @@ describe("resolveLegacyRouteRedirect", () => {
   });
 
   it("keeps restaurant-admin paths inside the restaurant panel", () => {
-    expect(resolveLegacyRouteRedirect("/admin/menu")).toBe("/panel/menu");
-    expect(resolveLegacyRouteRedirect("/admin/finance")).toBe("/panel/finance");
-    expect(resolveLegacyRouteRedirect("/admin/settings")).toBe("/panel/settings");
+    expect(resolveAdminRestaurantPanelAlias("/admin/menu")).toBe("/panel/menu");
+    expect(resolveAdminRestaurantPanelAlias("/admin/finance")).toBe("/panel/finance");
+    expect(resolveAdminRestaurantPanelAlias("/admin/settings")).toBe("/panel/settings");
     expect(resolveLegacyRouteRedirect("/panel/menu")).toBeNull();
     expect(resolveLegacyRouteRedirect("/panel/finance")).toBeNull();
   });
