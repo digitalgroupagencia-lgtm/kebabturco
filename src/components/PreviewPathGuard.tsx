@@ -4,7 +4,7 @@ import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
-import { resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
+import { resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 
 const LEGACY_PREVIEW_SEARCH = `?preview=1&tenant=${DEFAULT_TENANT_SLUG}`;
 
@@ -14,7 +14,7 @@ const LEGACY_ADMIN_SEGMENTS = new Set(["tenants", "domains", "billing"]);
  * Corrige endereços inválidos ou legados do preview (wildcards, SnapOrder multi-cliente).
  */
 export default function PreviewPathGuard() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,6 +27,12 @@ export default function PreviewPathGuard() {
     const legacyRedirect = resolveLegacyRouteRedirect(pathname);
     if (legacyRedirect) {
       navigate(legacyRedirect, { replace: true });
+      return;
+    }
+
+    const customerRedirect = resolveCustomerRouteRedirect(pathname, search);
+    if (customerRedirect) {
+      navigate(customerRedirect, { replace: true });
       return;
     }
 
@@ -73,7 +79,7 @@ export default function PreviewPathGuard() {
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {
       navigate(nav.home(), { replace: true });
     }
-  }, [pathname, navigate]);
+  }, [pathname, search, navigate]);
 
   return null;
 }
