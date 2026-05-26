@@ -143,7 +143,9 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
     return sum + (extra ? extra.price * qty : 0);
   }, 0);
 
-  const unitPrice = product.price + (selectedSize?.priceAdd || 0) + extrasTotal;
+  const basePrice = Number(product.price) || 0;
+
+  const unitPrice = basePrice + (selectedSize?.priceAdd || 0) + extrasTotal;
   const totalPrice = unitPrice * quantity;
 
   const handleAdd = () => {
@@ -173,7 +175,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
       productId: product.id,
       productName: finalName,
       productImage: product.image,
-      basePrice: product.price,
+      basePrice,
       sizeName: selectedSize?.name || null,
       sizeAdd: selectedSize?.priceAdd || 0,
       extras: selectedExtras,
@@ -205,13 +207,18 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
             </span>
           )}
           <div className="aspect-square bg-secondary/40">
-            <img src={product.image} alt={productCleanName} className="w-full h-full object-cover rounded-[24px]" loading="lazy" />
+            <img
+              src={product.image || "/placeholder.svg"}
+              alt={productCleanName}
+              className="w-full h-full object-cover rounded-[24px]"
+              loading="lazy"
+            />
           </div>
         </section>
         <section className="space-y-2">
           <h1 className="text-[30px] leading-[1.02] font-black text-foreground">{productCleanName}</h1>
           <p className="text-[15px] leading-relaxed text-muted-foreground">{tProduct(product.description)}</p>
-          <p className="text-[34px] font-black text-price pt-1 tabular-nums tracking-tight">{product.price.toFixed(2)}€</p>
+          <p className="text-[34px] font-black text-price pt-1 tabular-nums tracking-tight">{basePrice.toFixed(2)}€</p>
         </section>
         {(effectiveVariants.length > 0 || product.sizes?.length) && (
           <section className="space-y-5">

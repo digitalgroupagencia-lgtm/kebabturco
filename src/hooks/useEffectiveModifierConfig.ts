@@ -99,38 +99,46 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
     const finalize = (cfg: ProductModifierConfig | null) =>
       cfg ? sanitizeProductModifierConfig(cfg) : null;
 
-    if (!product) return finalize(dbConfig);
+    try {
+      if (!product) return finalize(dbConfig);
 
-    const synthesized = synthesizeModifierConfigFromProduct(product);
+      const synthesized = synthesizeModifierConfigFromProduct(product);
 
-    if (dbConfig?.hasStructuredModifiers) {
-      const isDrink = isDrinkProduct(product);
-      const hasRemoval = dbConfig.groups.some((g) => g.groupKind === "removal");
-      const synthRemoval = !isDrink ? synthesized?.groups.filter((g) => g.groupKind === "removal") || [] : [];
-      if (!hasRemoval && synthRemoval.length) {
-        return finalize({
-          ...dbConfig,
-          groups: sortModifierGroups([...dbConfig.groups, ...synthRemoval]),
-        });
+      if (dbConfig?.hasStructuredModifiers) {
+        const isDrink = isDrinkProduct(product);
+        const dbGroups = dbConfig.groups ?? [];
+        const hasRemoval = dbGroups.some((g) => g.groupKind === "removal");
+        const synthRemoval = !isDrink
+          ? synthesized?.groups?.filter((g) => g.groupKind === "removal") || []
+          : [];
+        if (!hasRemoval && synthRemoval.length) {
+          return finalize({
+            ...dbConfig,
+            groups: sortModifierGroups([...dbGroups, ...synthRemoval]),
+          });
+        }
+        return finalize(dbConfig);
       }
+
+      if (synthesized?.hasStructuredModifiers) return finalize(synthesized);
+
+      if (synthesized?.productType === "combo" && storeGroups.length) {
+        const merged = mergeStoreGroupsForCombo(
+          {
+            ...synthesized,
+            groups: [],
+            hasStructuredModifiers: false,
+          },
+          storeGroups,
+        );
+        if (merged.hasStructuredModifiers) return finalize(merged);
+      }
+
+      return finalize(synthesized ?? dbConfig);
+    } catch (err) {
+      console.error("[useEffectiveModifierConfig]", err);
       return finalize(dbConfig);
     }
-
-    if (synthesized?.hasStructuredModifiers) return finalize(synthesized);
-
-    if (synthesized?.productType === "combo" && storeGroups.length) {
-      const merged = mergeStoreGroupsForCombo(
-        {
-          ...synthesized,
-          groups: [],
-          hasStructuredModifiers: false,
-        },
-        storeGroups,
-      );
-      if (merged.hasStructuredModifiers) return finalize(merged);
-    }
-
-    return finalize(synthesized ?? dbConfig);
   }, [product, dbConfig, storeGroups]);
 
   const drinkAdapted = useMemo(

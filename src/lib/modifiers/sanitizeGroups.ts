@@ -53,7 +53,7 @@ export function sanitizeModifierGroups(groups: ModifierGroup[]): ModifierGroup[]
 }
 
 export function sanitizeProductModifierConfig(config: ProductModifierConfig): ProductModifierConfig {
-  const groups = sanitizeModifierGroups(config.groups);
+  const groups = sanitizeModifierGroups(config.groups ?? []);
   return {
     ...config,
     groups,

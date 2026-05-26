@@ -17,6 +17,9 @@ export function getSelectedOptionIds(state: SelectionState, groupId: string, uni
 }
 
 export function validateGroupSelection(group: ModifierGroup, state: SelectionState, unitIndex?: number | null): string | null {
+  const options = group.options ?? [];
+  if (options.length === 0) return null;
+
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const min = group.isRequired ? Math.max(1, group.minSelect) : group.minSelect;
   const isSingle = group.groupKind === "substitution" || group.selectionMode === "single";
@@ -37,11 +40,13 @@ export function validateAllGroups(
   state: SelectionState,
   unitIndex?: number | null,
 ): { valid: boolean; groupId?: string; error?: string } {
-  for (const group of groups) {
+  for (const group of groups ?? []) {
+    const options = group.options ?? [];
+    if (options.length === 0) continue;
     const err = validateGroupSelection(group, state, unitIndex);
     if (err) return { valid: false, groupId: group.id, error: err };
     for (const [optionId, qty] of state.get(groupKey(group.id, unitIndex)) || []) {
-      const opt = group.options.find((o) => o.id === optionId);
+      const opt = options.find((o) => o.id === optionId);
       if (opt && qty > opt.maxQty) return { valid: false, groupId: group.id, error: "max_qty" };
     }
   }
@@ -55,12 +60,13 @@ export function buildSelectionsFromState(
   unitLabel?: Record<string, string> | null,
 ): ModifierSelection[] {
   const out: ModifierSelection[] = [];
-  for (const group of groups) {
+  for (const group of groups ?? []) {
+    const options = group.options ?? [];
     const map = state.get(groupKey(group.id, unitIndex));
     if (!map) continue;
     for (const [optionId, qty] of map) {
       if (qty <= 0) continue;
-      const opt = group.options.find((o) => o.id === optionId);
+      const opt = options.find((o) => o.id === optionId);
       if (!opt) continue;
       out.push({
         groupId: group.id,

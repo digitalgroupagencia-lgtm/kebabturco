@@ -126,7 +126,7 @@ export function adaptConfigForDrinkProduct(
     hasStructuredModifiers: false,
   };
 
-  let groups = base.groups.filter((g) => g.groupKind !== "removal");
+  let groups = (base.groups ?? []).filter((g) => g.groupKind !== "removal");
 
   groups = groups.map((g) => {
     const meatLabel = MEAT_LABEL_RE.test(groupLabel(g));

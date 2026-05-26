@@ -4,16 +4,11 @@ import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "./typ
 import { sortModifierGroups } from "./groupOrder";
 import { sanitizeProductModifierConfig } from "./sanitizeGroups";
 import { parseRemovableIngredients } from "@/lib/parseProductCustomization";
+import { isDrinkProduct } from "@/lib/modifiers/drinkProduct";
 
 const SYNTH_PREFIX = "synth";
 
 const MEAT_CATEGORY_RE = /pita|kebab|rollo|menu|combo|box|plato|taco|bowl|pizza/i;
-function isDrinkCategoryProduct(product: MenuProduct): boolean {
-  const cat = `${product.category} ${product.categorySlug || ""}`.toLowerCase();
-  if (DRINK_CATEGORY_RE.test(cat)) return true;
-  const text = `${product.name.es || ""} ${product.name.pt || ""}`.toLowerCase();
-  return /refresco|lata 33|bebida|coca|fanta|sprite|nestea/.test(text);
-}
 
 const DEFAULT_MEAT_VARIANTS: Variant[] = [
   { id: "pollo", name: { es: "Pollo", pt: "Frango", en: "Chicken", fr: "Poulet" } },
@@ -95,7 +90,7 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
   const isCombo = product.productType === "combo" || comboUnits > 1;
   const unitCount = isCombo ? Math.max(2, product.comboUnitCount || comboUnits) : 0;
 
-  const isDrink = isDrinkCategoryProduct(product);
+  const isDrink = isDrinkProduct(product);
   const meatVariants =
     !isDrink && product.variants?.length && product.variants.length >= 2
       ? product.variants
@@ -186,7 +181,8 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
     paidExtras.push(extra);
   }
 
-  const descFull = product.description.es || product.description.pt || product.description.en || "";
+  const descFull =
+    product.description?.es || product.description?.pt || product.description?.en || "";
   if (!isDrink) {
     for (const ing of parseRemovableIngredients(descFull, meatVariants.length >= 2)) {
       removalLabels.add(ing);

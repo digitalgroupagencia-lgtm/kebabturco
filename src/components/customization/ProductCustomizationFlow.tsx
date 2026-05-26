@@ -32,13 +32,17 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
   const { t, tProduct } = useLanguage();
   const { addItem, updateItem } = useCart();
 
+  const safeGroups = config.groups ?? [];
+  const basePrice = Number(product.price) || 0;
+  const productImage = product.image || "/placeholder.svg";
+
   const globalGroups = useMemo(
-    () => sortModifierGroups(config.groups.filter((g) => !g.repeatPerUnit)),
-    [config.groups],
+    () => sortModifierGroups(safeGroups.filter((g) => !g.repeatPerUnit)),
+    [safeGroups],
   );
   const unitGroups = useMemo(
-    () => sortModifierGroups(config.groups.filter((g) => g.repeatPerUnit)),
-    [config.groups],
+    () => sortModifierGroups(safeGroups.filter((g) => g.repeatPerUnit)),
+    [safeGroups],
   );
   const isCombo = config.productType === "combo" && config.comboUnitCount > 1 && unitGroups.length > 0;
 
@@ -125,7 +129,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
 
   const configuration = buildConfiguration();
   const allSelections = flattenConfiguration(configuration);
-  const unitPrice = computeUnitPrice(product.price, 0, allSelections);
+  const unitPrice = computeUnitPrice(basePrice, 0, allSelections);
 
   const validateStep = (): boolean => {
     const groups = activeGroups;
@@ -185,7 +189,7 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
       productId: product.id,
       productName: product.name,
       productImage: product.image,
-      basePrice: product.price,
+      basePrice,
       quantity: 1,
       sizeName: null,
       sizeAdd: 0,
@@ -245,10 +249,10 @@ export default function ProductCustomizationFlow({ product, config, editingItem,
                 </span>
               )}
               <div className="aspect-[4/3] bg-secondary/40">
-                <img src={product.image} alt={productCleanName} className="w-full h-full object-cover" loading="lazy" />
+                <img src={productImage} alt={productCleanName} className="w-full h-full object-cover" loading="lazy" />
               </div>
               <div className="p-4 space-y-1">
-                <p className="text-[28px] font-black text-price tabular-nums">{product.price.toFixed(2)}€</p>
+                <p className="text-[28px] font-black text-price tabular-nums">{basePrice.toFixed(2)}€</p>
                 <p className="text-sm text-muted-foreground leading-relaxed">{tProduct(product.description)}</p>
               </div>
             </section>

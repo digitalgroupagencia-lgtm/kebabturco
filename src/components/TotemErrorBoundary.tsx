@@ -22,9 +22,9 @@ export default class TotemErrorBoundary extends React.Component<Props, State> {
           className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center"
           style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-          <p className="text-lg font-bold text-foreground">Não foi possível carregar o menu</p>
+          <p className="text-lg font-bold text-foreground">Ocorreu um erro inesperado</p>
           <p className="text-sm text-muted-foreground max-w-sm">
-            Tente actualizar a página. Se continuar em branco, limpe o cache do Safari (Definições → Safari → Limpar histórico).
+            Tente actualizar a página. Se continuar, limpe o cache do Safari (Definições → Safari → Limpar histórico).
           </p>
           <button
             type="button"

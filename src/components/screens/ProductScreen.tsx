@@ -5,6 +5,7 @@ import { useMenuData } from "@/hooks/useMenuData";
 import { useEffectiveModifierConfig } from "@/hooks/useEffectiveModifierConfig";
 import ProductCustomizationFlow from "@/components/customization/ProductCustomizationFlow";
 import LegacyProductCustomizer from "@/components/screens/LegacyProductCustomizer";
+import ProductErrorBoundary from "@/components/ProductErrorBoundary";
 import PageSpinner from "@/components/PageSpinner";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,7 +29,7 @@ const ProductScreen = () => {
   };
 
   const { items } = useCart();
-  const { t } = useLanguage();
+  const { t, tProduct } = useLanguage();
   const { products, loading: menuLoading } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
   const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
@@ -38,6 +39,8 @@ const ProductScreen = () => {
     () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
     [editingCartItemId, items],
   );
+
+  const productLabel = product ? tProduct(product.name) : undefined;
 
   if (menuLoading || modifierLoading || (selectedProductId && !product)) {
     return (
@@ -65,24 +68,27 @@ const ProductScreen = () => {
     );
   }
 
-  if (hasStructuredModifiers && modifierConfig) {
-    return (
+  const productContent =
+    hasStructuredModifiers && modifierConfig ? (
       <ProductCustomizationFlow
         product={product}
         config={modifierConfig}
         editingItem={editingItem}
         onBack={goBack}
       />
+    ) : (
+      <LegacyProductCustomizer
+        product={product}
+        editingItem={editingItem}
+        editingCartItemId={editingCartItemId}
+        onBack={goBack}
+      />
     );
-  }
 
   return (
-    <LegacyProductCustomizer
-      product={product}
-      editingItem={editingItem}
-      editingCartItemId={editingCartItemId}
-      onBack={goBack}
-    />
+    <ProductErrorBoundary key={product.id} onBack={goBack} productLabel={productLabel}>
+      {productContent}
+    </ProductErrorBoundary>
   );
 };
 
