@@ -66,6 +66,11 @@ const LovablePreviewRoutes = () => (
     <Route path="/panel" element={internal} />
     <Route path="/panel/menu" element={internal} />
     <Route path="/panel/cashier" element={internal} />
+    <Route path="/panel/finance" element={internal} />
+    <Route path="/panel/settings" element={internal} />
+    <Route path="/panel/orders" element={internal} />
+    <Route path="/panel/qrcodes" element={internal} />
+    <Route path="/panel/tables" element={internal} />
     <Route path="/panel/modifiers" element={internal} />
     <Route path="/panel/branding" element={internal} />
     <Route path="/panel/banners" element={internal} />
