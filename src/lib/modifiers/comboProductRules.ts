@@ -1,7 +1,10 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Variant } from "@/data/products";
+import { inferVariantsFromText, isMeatVariantSet } from "@/lib/parseProductCustomization";
+import { isDrinkProduct } from "./drinkProduct";
 
 export type ComboUnitKind = "pita" | "rollo" | "pizza" | "piece" | null;
+export type FixedProtein = "pollo" | "ternera" | "mixto" | "crispy";
 
 const DEFAULT_MEAT_VARIANTS: Variant[] = [
   { id: "pollo", name: { es: "Pollo", pt: "Frango", en: "Chicken", fr: "Poulet" } },
@@ -22,6 +25,50 @@ export function productText(product: MenuProduct): string {
 
 export function productDescriptionText(product: MenuProduct): string {
   return `${product.description?.es || ""} ${product.description?.pt || ""} ${product.description?.en || ""}`.toLowerCase();
+}
+
+export function detectFixedProtein(product: MenuProduct): FixedProtein | null {
+  const name = productText(product);
+  const desc = productDescriptionText(product);
+  if (isDrinkProduct(product)) return null;
+  if (isClosedProteinCombo(product)) return "crispy";
+  if (/\bde\s+pollo\b|\bpollo\s+crispy\b|\bcrispy\s+chicken\b|\bpizza\s+kebab\s+pollo\b|\bburger.*pollo\b|\bpan\s+.*pita\s+.*pollo\b|\brollo\s+.*pollo\b|\bde\s+frango\b/i.test(name)) {
+    return "pollo";
+  }
+  if (/\bde\s+ternera\b|\bpan\s+.*pita\s+.*ternera\b|\brollo\s+.*ternera\b|\bde\s+vaca\b/i.test(name) && !/\bmixto\b/i.test(name)) {
+    return "ternera";
+  }
+  if (/\bde\s+mixto\b|\bpita\s+mixto\b|\brollo\s+mixto\b/i.test(name) && !/combo\s+\d+/i.test(name)) {
+    return "mixto";
+  }
+  if (/\bcrispy\b|\bpiezas?\s+\d*|\d+\s*piezas?\s+pollo|\bnuggets\b|\balitas\b|\bwings\b|\broaster\b/i.test(name)) {
+    return "crispy";
+  }
+  if (/carne\s+de\s+pollo/i.test(desc) && /\bde\s+pollo\b|pita.*pollo|rollo.*pollo/i.test(name)) return "pollo";
+  if (/carne\s+de\s+ternera/i.test(desc) && /\bde\s+ternera\b|pita.*ternera|rollo.*ternera/i.test(name)) return "ternera";
+  return null;
+}
+
+export function hasFixedProtein(product: MenuProduct): boolean {
+  return detectFixedProtein(product) !== null;
+}
+
+export function isVariableProteinProduct(product: MenuProduct): boolean {
+  if (isDrinkProduct(product) || hasFixedProtein(product) || isClosedProteinCombo(product)) return false;
+  const name = productText(product);
+  const desc = productDescriptionText(product);
+  const inferred = inferVariantsFromText(desc) || inferVariantsFromText(name);
+  if (inferred.length >= 2 && isMeatVariantSet(inferred)) return true;
+  if (product.variants && product.variants.length >= 2 && isMeatVariantSet(product.variants)) return true;
+  if (inferComboUnitCount(product) > 1) {
+    if (/combo\s+\d+\s+(pan\s*)?pita/i.test(name) && !/\bde\s+(pollo|ternera)\b/i.test(name)) return true;
+    if (/combo\s+\d+\s+rollos?/i.test(name) && !/\bde\s+(pollo|ternera)\b/i.test(name)) return true;
+  }
+  if (/\bpan\s*(de\s*)?pita\b/i.test(name) && !/\bde\s+(pollo|ternera|mixto|crispy)\b/i.test(name) && !/\bpollo\b|\bternera\b|\bcrispy\b/i.test(name)) {
+    return true;
+  }
+  if (/\brollo\s*(de\s*)?kebab\b/i.test(name) && !/\bde\s+(pollo|ternera)\b/i.test(name)) return true;
+  return false;
 }
 
 /** Combo fechado — proteína já definida no nome (ex.: 10 piezas pollo crispy, 3 pizzas). */
@@ -57,7 +104,7 @@ export function inferComboUnitCount(product: MenuProduct): number {
 
 /** Só perguntar carne quando o produto realmente permite variação por unidade. */
 export function allowsPerUnitMeatChoice(product: MenuProduct): boolean {
-  if (isClosedProteinCombo(product)) return false;
+  if (hasFixedProtein(product) || isClosedProteinCombo(product)) return false;
   const kind = inferComboUnitKind(product);
   if (kind !== "pita" && kind !== "rollo") return false;
   const unitCount = inferComboUnitCount(product);
@@ -80,13 +127,17 @@ export function perUnitChoiceVariants(product: MenuProduct): Variant[] {
 }
 
 export function allowsGlobalMeatChoice(product: MenuProduct): boolean {
-  if (isClosedProteinCombo(product)) return false;
+  if (hasFixedProtein(product) || isClosedProteinCombo(product)) return false;
   if (allowsPerUnitMeatChoice(product) || allowsPerUnitPizzaFlavor(product)) return false;
-  if (product.variants && product.variants.length >= 2) {
-    const text = productText(product);
-    if (/pizza|piezas?|crispy|bebida|refresco/i.test(text)) return false;
-    return true;
-  }
+
+  const name = productText(product);
+  const desc = productDescriptionText(product);
+  const inferred = inferVariantsFromText(desc) || inferVariantsFromText(name);
+  if (inferred.length >= 2 && isMeatVariantSet(inferred)) return true;
+
+  if (isVariableProteinProduct(product)) return true;
+
+  if (product.variants && product.variants.length >= 2 && isMeatVariantSet(product.variants)) return true;
   return false;
 }
 

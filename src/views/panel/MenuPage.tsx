@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ProductModifierEditor, { saveProductModifierLinks } from "@/components/panel/ProductModifierEditor";
+import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
@@ -297,6 +298,8 @@ const MenuPage = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Cardápio</h2>
       </div>
+
+      <MenuCustomizationAuditPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Categories sidebar */}

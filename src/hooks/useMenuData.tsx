@@ -3,6 +3,7 @@ import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
+import { hasFixedProtein } from "@/lib/modifiers/comboProductRules";
 import type { Category, Extra, Product, Variant } from "@/data/products";
 
 type JsonName = Record<string, string>;
@@ -158,10 +159,7 @@ export function useMenuData() {
             : inferChoiceVariantsFromDescription(descText) ||
               inferChoiceVariantsFromDescription(nameText);
         const inferredVariants = inferredMeat.length >= 2 ? inferredMeat : inferredChoice;
-        const variants: Variant[] | undefined =
-          inferredVariants.length >= 2 ? inferredVariants : undefined;
-
-        return {
+        const draftProduct = {
           id: prod.id as string,
           name,
           description,
@@ -169,16 +167,18 @@ export function useMenuData() {
           image: (prod.image_url as string) || (categoryImage.get(prod.category_id as string) as string) || "",
           category: prod.category_id as string,
           categorySlug: (categorySlug.get(prod.category_id as string) as string) || "",
-
           isBestseller: Boolean(prod.is_bestseller),
           isPromo: Boolean(prod.is_promo),
           extras,
           ingredients,
-          variants,
+          variants: inferredVariants.length >= 2 ? inferredVariants : undefined,
           productType: (prod.product_type as "simple" | "combo") || "simple",
           comboUnitCount: Number(prod.combo_unit_count || 0),
           unitLabel: asName(prod.unit_label),
         } satisfies MenuProduct;
+        const variants =
+          hasFixedProtein(draftProduct) ? undefined : draftProduct.variants;
+        return { ...draftProduct, variants };
       });
 
       setCategories(mappedCategories);

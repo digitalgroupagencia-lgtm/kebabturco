@@ -12,6 +12,7 @@ import {
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
 import { adaptConfigForDrinkProduct, isDrinkProduct } from "@/lib/modifiers/drinkProduct";
+import { filterProductModifierConfig } from "@/lib/modifiers/proteinRules";
 
 const asName = (value: unknown): Record<string, string> => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
@@ -96,8 +97,11 @@ export function useEffectiveModifierConfig(product: MenuProduct | undefined) {
   }, [storeId, dbConfig?.hasStructuredModifiers]);
 
   const config = useMemo((): ProductModifierConfig | null => {
-    const finalize = (cfg: ProductModifierConfig | null) =>
-      cfg ? sanitizeProductModifierConfig(cfg) : null;
+    const finalize = (cfg: ProductModifierConfig | null) => {
+      if (!cfg) return null;
+      const filtered = product ? filterProductModifierConfig(product, cfg) : cfg;
+      return sanitizeProductModifierConfig(filtered);
+    };
 
     try {
       if (!product) return finalize(dbConfig);

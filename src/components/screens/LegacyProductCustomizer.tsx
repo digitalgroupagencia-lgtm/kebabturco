@@ -9,13 +9,13 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";
 import {
-  inferChoiceVariantsFromDescription,
-  inferVariantsFromText,
   isMeatChoiceLabel,
   isMeatVariantSet,
   mergeRemovableIngredients,
   parseRemovableIngredients,
+  inferChoiceVariantsFromDescription,
 } from "@/lib/parseProductCustomization";
+import { resolveCustomerVariants } from "@/lib/modifiers/proteinRules";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -70,11 +70,11 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
   const isDrink = isDrinkProduct(product);
 
   const effectiveVariants = useMemo(() => {
-    if (product.variants?.length) return product.variants;
-    const meat = inferVariantsFromText(descriptionText) || inferVariantsFromText(nameText);
-    if (meat.length >= 2) return meat;
-    return inferChoiceVariantsFromDescription(descriptionText) || inferChoiceVariantsFromDescription(nameText);
-  }, [product, descriptionText, nameText]);
+    if (isDrink) {
+      return inferChoiceVariantsFromDescription(descriptionText) || inferChoiceVariantsFromDescription(nameText);
+    }
+    return resolveCustomerVariants(product, descriptionText, nameText);
+  }, [product, descriptionText, nameText, isDrink]);
 
   const requiresVariant = effectiveVariants.length >= 2;
   const isMeatChoice = !isDrink && isMeatVariantSet(effectiveVariants);

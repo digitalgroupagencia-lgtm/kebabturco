@@ -17,9 +17,9 @@ import {
   perUnitChoiceVariants,
   productDescriptionText,
   productIncludesPotato,
-  productDescriptionText,
   resolveUnitLabel,
 } from "./comboProductRules";
+import { filterProductModifierConfig } from "./proteinRules";
 
 const SYNTH_PREFIX = "synth";
 
@@ -396,14 +396,17 @@ export function synthesizeModifierConfigFromProduct(product: MenuProduct): Produ
 
   if (!groups.length && !isCombo) return null;
 
-  return sanitizeProductModifierConfig({
-    productId: product.id,
-    productType: isCombo ? "combo" : "simple",
-    comboUnitCount: isMultiUnit ? unitCount : 0,
-    unitLabel: resolveUnitLabel(product),
-    groups: sortModifierGroups(groups),
-    hasStructuredModifiers: groups.length > 0,
-  });
+  return filterProductModifierConfig(
+    product,
+    sanitizeProductModifierConfig({
+      productId: product.id,
+      productType: isCombo ? "combo" : "simple",
+      comboUnitCount: isMultiUnit ? unitCount : 0,
+      unitLabel: resolveUnitLabel(product),
+      groups: sortModifierGroups(groups),
+      hasStructuredModifiers: groups.length > 0,
+    }),
+  );
 }
 
 /** Aplica grupos da loja a combos quando o produto ainda não tem ligações manuais. */
