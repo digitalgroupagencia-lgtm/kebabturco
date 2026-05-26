@@ -130,6 +130,14 @@ export const ROUTE_MAP_SECTIONS: RouteMapSection[] = [
         href: () => nav.admin("menu"),
       },
       {
+        id: "admin-tables",
+        label: "Mesas & QR",
+        description: "Criar mesas, gerar QR codes e links para pedidos na mesa.",
+        role: "admin_master",
+        kind: "real",
+        href: () => nav.admin("tables"),
+      },
+      {
         id: "admin-branding",
         label: "Identidade visual",
         description: "Cores, logo e tema.",

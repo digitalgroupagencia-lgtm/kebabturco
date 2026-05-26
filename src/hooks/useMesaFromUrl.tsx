@@ -10,24 +10,37 @@ export interface MesaFromUrl {
   locked: boolean;
 }
 
-/** Valida sessão de mesa via token do QR code (?t=...). */
+function readUrlSearch(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.search;
+}
+
+/** Valida sessão de mesa via token do QR code (?t=...). O número na URL é informativo — o token é obrigatório. */
 export function useMesaFromUrl(storeId: string | null) {
   const [mesa, setMesa] = useState<MesaFromUrl | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchKey, setSearchKey] = useState(readUrlSearch);
+
+  useEffect(() => {
+    const sync = () => setSearchKey(readUrlSearch());
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    const resolveToken = (): string | null => {
-      const params = new URLSearchParams(window.location.search);
-      const fromUrl = params.get("t")?.trim();
-      if (fromUrl) return fromUrl;
-      return loadSavedMesaToken();
-    };
+    const params = new URLSearchParams(searchKey);
+    const mode = params.get("mode")?.trim().toLowerCase();
+    const tableHint = params.get("table")?.trim() || null;
+    const fromUrl = params.get("t")?.trim();
+    const token = fromUrl || loadSavedMesaToken();
 
-    const token = resolveToken();
-
+    // mode=table sem token válido nunca activa mesa (evita escolha manual por URL)
     if (!token || !storeId) {
+      if (mode === "table" && tableHint && !fromUrl) {
+        clearSavedMesaToken();
+      }
       setMesa(null);
       setLoading(false);
       return;
@@ -46,6 +59,12 @@ export function useMesaFromUrl(storeId: string | null) {
       if (!active) return;
 
       if (data) {
+        if (tableHint && tableHint !== data.number) {
+          clearSavedMesaToken();
+          setMesa(null);
+          setLoading(false);
+          return;
+        }
         saveSavedMesaToken(token);
         setMesa({
           mesaNumber: data.number,
@@ -63,7 +82,7 @@ export function useMesaFromUrl(storeId: string | null) {
     return () => {
       active = false;
     };
-  }, [storeId]);
+  }, [storeId, searchKey]);
 
   return { mesa, loading };
 }

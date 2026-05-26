@@ -69,6 +69,7 @@ const storeItems = [
   { title: "Cupões", url: nav.admin("coupons"), icon: Wallet },
   { title: "Fidelidade", url: nav.admin("loyalty"), icon: Heart },
   { title: "Unidades", url: nav.admin("stores"), icon: Store },
+  { title: "Mesas & QR", url: nav.admin("tables"), icon: LayoutGrid },
   { title: "Telas do totem", url: nav.admin("screens"), icon: Monitor },
   { title: "Idiomas", url: nav.admin("languages"), icon: Globe },
   { title: "Recebimentos", url: nav.admin("finance"), icon: DollarSign },

@@ -67,6 +67,8 @@ export function getTableQrUrl(
   fallbackOrigin?: string,
 ): string {
   const url = new URL(buildTenantUrl(tenant, "", fallbackOrigin));
+  url.searchParams.set("mode", "table");
+  url.searchParams.set("table", table.number);
   url.searchParams.set("t", table.qr_token);
   return url.href;
 }
