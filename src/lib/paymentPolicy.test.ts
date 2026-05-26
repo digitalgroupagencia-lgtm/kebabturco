@@ -13,7 +13,7 @@ const baseSettings = {
 } as any;
 
 describe("paymentPolicy", () => {
-  it("takeaway default: só cartão quando Stripe activo", () => {
+  it("takeaway default: cartão e dinheiro, sem delivery dinheiro", () => {
     const methods = resolveCheckoutMethods({
       orderType: "takeaway",
       mesaValidated: false,
@@ -21,18 +21,14 @@ describe("paymentPolicy", () => {
       stripeReady: true,
       stripePublishableKey: true,
     });
-    expect(methods).toEqual(["card"]);
-  });
-
-  it("takeaway com dinheiro activo no admin", () => {
-    const methods = resolveCheckoutMethods({
-      orderType: "takeaway",
+    expect(methods).toEqual(["card", "cash"]);
+    expect(resolveCheckoutMethods({
+      orderType: "delivery",
       mesaValidated: false,
-      settings: { ...baseSettings, pay_cash_takeaway: true },
+      settings: { ...baseSettings, pay_cash_delivery: true },
       stripeReady: true,
       stripePublishableKey: true,
-    });
-    expect(methods).toContain("cash");
+    })).toEqual(["card"]);
   });
 
   it("mesa sem QR validado: nenhum método", () => {
@@ -59,8 +55,8 @@ describe("paymentPolicy", () => {
     expect(methods).toContain("card");
   });
 
-  it("prepayment default para takeaway e delivery", () => {
-    expect(requiresPrepayment("takeaway", baseSettings)).toBe(true);
+  it("prepayment default: balcão não exige online; delivery exige", () => {
+    expect(requiresPrepayment("takeaway", baseSettings)).toBe(false);
     expect(requiresPrepayment("delivery", baseSettings)).toBe(true);
     expect(requiresPrepayment("here", baseSettings)).toBe(false);
   });
