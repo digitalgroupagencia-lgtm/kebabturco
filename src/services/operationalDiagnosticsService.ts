@@ -86,6 +86,8 @@ export async function probeSchemaFallback(): Promise<{
 
 export async function fetchServerOperationalDiagnostics(storeId: string | null): Promise<ServerDiagnostics | null> {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
     const { data, error } = await supabase.functions.invoke("operational-diagnostics", {
       body: { storeId },
     });
@@ -95,3 +97,4 @@ export async function fetchServerOperationalDiagnostics(storeId: string | null):
     return null;
   }
 }
+
