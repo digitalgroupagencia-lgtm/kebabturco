@@ -1,0 +1,34 @@
+---
+description: Português simples, commit+push main, fluxo Lovable/GitHub
+alwaysApply: true
+---
+
+# Fluxo de trabalho — Lovable + GitHub + Cursor
+
+## Idioma e resumos
+
+- Escrever sempre em **português**.
+- Resumos finais para o utilizador: **português simples**, como se explicasses a alguém que não programa.
+- Nos resumos, dizer só **o que a pessoa vê ou sente** ao usar a app.
+- Evitar: nomes de ficheiros, pastas, código, jargão técnico e palavras em inglês de programação (salvo nomes próprios como Lovable, GitHub, Stripe).
+
+## Git — commit e push
+
+- Depois de alterações de código concluídas: **commit + push para `main`** automaticamente.
+- **Não criar branch** separada, salvo se o utilizador pedir explicitamente.
+- **Não fazer push** só se o utilizador disser para não enviar.
+- Mensagem de commit: 1–2 frases, foco no **porquê**, em português ou inglês claro (seguir estilo do repositório).
+- Após push: avisar **«Sync + Publish na Lovable»** para ver em produção.
+
+## Lovable
+
+- GitHub **não publica sozinho** no site. Fluxo:
+  1. Cursor → commit → push → **GitHub (`main`)**
+  2. Lovable → **Sync** (puxa código do GitHub)
+  3. Lovable → **Publish** (coloca online no domínio)
+- Alterações feitas **dentro da Lovable** também podem ir para o GitHub ao fazer Sync — manter uma direcção principal (`main`) para não divergir.
+
+## Escopo de código
+
+- Alterações **mínimas** e focadas no pedido.
+- Não criar ficheiros markdown/documentação extra sem pedido explícito.
