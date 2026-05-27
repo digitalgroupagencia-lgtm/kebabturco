@@ -34,6 +34,8 @@
         "@radix-ui/react-toggle": "^1.1.9",
         "@radix-ui/react-toggle-group": "^1.1.10",
         "@radix-ui/react-tooltip": "^1.2.7",
+        "@stripe/connect-js": "^3.4.4",
+        "@stripe/react-connect-js": "^3.4.2",
         "@stripe/react-stripe-js": "^6.4.0",
         "@stripe/stripe-js": "^9.6.0",
         "@supabase/supabase-js": "^2.103.0",
@@ -564,6 +566,10 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.60.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.60.4.tgz", { "os": "win32", "cpu": "x64" }, "sha512-DRS4G7mi9lJxqEDezIkKCaUIKCrLUUDCUaCsTPCi/rtqaC6D/jjwslMQyiDU50Ka0JKpeXeRBFBAXwArY52vBw=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.24.0", "", { "os": "win32", "cpu": "x64" }, "sha512-fbMkAF7fufku0N2dE5TBXcNlg0pt0cJue4xBRE2Qc5Vqikxr4VCgKj/ht6SMdFcOacVA9rqF70APJ8RN/4vMJw=="],
+
+    "@stripe/connect-js": ["@stripe/connect-js@3.4.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@stripe/connect-js/-/connect-js-3.4.5.tgz", {}, "sha512-2GZYc1pO2gYtq5rooZei483oSqeNROTD4XwnKXK8GXILvrLVJjMUCLDXi8Rmu8ojL5DWMnEOtXdnZxs8xxZecQ=="],
+
+    "@stripe/react-connect-js": ["@stripe/react-connect-js@3.4.3", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@stripe/react-connect-js/-/react-connect-js-3.4.3.tgz", { "peerDependencies": { "@stripe/connect-js": ">=3.4.5", "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-UNckvWpmVdkUQ4lhPmwAKpB8QD1LNnDz7SDz0qQabdTfk5sLhhOYnN/SRQGhAe57Z6PLuyidaIUzjvDSw2/pYA=="],
 
     "@stripe/react-stripe-js": ["@stripe/react-stripe-js@6.4.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@stripe/react-stripe-js/-/react-stripe-js-6.4.0.tgz", { "dependencies": { "prop-types": "^15.7.2" }, "peerDependencies": { "@stripe/stripe-js": ">=9.5.0 <10.0.0", "react": ">=16.8.0 <20.0.0", "react-dom": ">=16.8.0 <20.0.0" } }, "sha512-5cAf7GAqf8VHPoPLVnJQ2MHtDWLdiEPs5GW/loU7iDEue3xf620v11skrk5HICUraDOhODPYpttgFC5N579NxA=="],
 
