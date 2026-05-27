@@ -25,6 +25,20 @@ BEGIN
     RETURN jsonb_build_object('active', false, 'reason', 'invalid_token');
   END IF;
 
+  IF _known_session_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.table_sessions
+      WHERE id = _known_session_id AND store_id = _store_id AND status = 'open'
+    ) THEN
+      RETURN jsonb_build_object(
+        'active', false,
+        'reason', 'session_closed',
+        'table_number', v_table.number,
+        'table_id', v_table.id
+      );
+    END IF;
+  END IF;
+
   SELECT * INTO v_session
   FROM public.table_sessions
   WHERE store_id = _store_id AND table_number = v_table.number AND status = 'open'
@@ -40,22 +54,7 @@ BEGIN
     );
   END IF;
 
-  IF _known_session_id IS NOT NULL THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM public.table_sessions
-      WHERE id = _known_session_id AND store_id = _store_id AND status = 'open'
-    ) THEN
-      RETURN jsonb_build_object(
-        'active', false,
-        'reason', 'session_closed',
-        'table_number', v_table.number,
-        'table_id', v_table.id
-      );
-    END IF;
-  END IF;
-
-  IF v_session.id IS NOT NULL THEN
-    SELECT COUNT(*) INTO v_pending
+  SELECT COUNT(*) INTO v_pending
     FROM public.orders o
     WHERE o.table_session_id = v_session.id
       AND o.payment_status = 'pending'::public.payment_status

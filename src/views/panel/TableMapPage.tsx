@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, LayoutGrid, X, CreditCard, Receipt, Unlock } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import { closeTableByNumber, closeTableSessionUnified, markTableSessionPaid } from "@/services/tableSessionService";
+import { closeTableByNumber, closeTableSessionUnified, listStoreOpenTableSessions, markTableSessionPaid, type OpenTableSessionRow } from "@/services/tableSessionService";
 import { toast } from "sonner";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -38,7 +38,8 @@ type TableVisualState =
   | "pending"
   | "preparing"
   | "open_account"
-  | "payment_pending";
+  | "payment_pending"
+  | "waiting_order";
 
 const stateStyles: Record<TableVisualState, string> = {
   free: "bg-green-500/15 border-green-500 text-green-700 dark:text-green-400",
@@ -46,6 +47,7 @@ const stateStyles: Record<TableVisualState, string> = {
   preparing: "bg-yellow-500/20 border-yellow-500 text-yellow-800 dark:text-yellow-300",
   open_account: "bg-blue-500/15 border-blue-500 text-blue-800 dark:text-blue-300",
   payment_pending: "bg-orange-500/20 border-orange-500 text-orange-800 dark:text-orange-300",
+  waiting_order: "bg-violet-500/15 border-violet-500 text-violet-800 dark:text-violet-300",
 };
 
 const stateLabels: Record<TableVisualState, string> = {
@@ -54,19 +56,23 @@ const stateLabels: Record<TableVisualState, string> = {
   preparing: "Em preparação",
   open_account: "Conta aberta",
   payment_pending: "Falta pagamento",
+  waiting_order: "Cliente no QR",
 };
 
 function resolveTableState(
   tableNumber: string,
   orders: OrderRow[],
   session: SessionRow | undefined,
+  openMeta?: OpenTableSessionRow,
 ): TableVisualState {
   const tableOrders = orders.filter((o) => o.table_number === tableNumber);
   if (tableOrders.some((o) => o.status === "pending")) return "pending";
   if (tableOrders.some((o) => o.status === "preparing" || o.status === "ready")) return "preparing";
-  if (session) {
+  if (session || openMeta) {
+    if (openMeta && openMeta.order_count === 0) return "waiting_order";
+    const sessionId = session?.id || openMeta?.session_id;
     const sessionOrders = tableOrders.filter(
-      (o) => o.table_session_id === session.id || !o.table_session_id,
+      (o) => !sessionId || o.table_session_id === sessionId || !o.table_session_id,
     );
     if (sessionOrders.some((o) => o.payment_status === "pending" && o.status !== "cancelled")) {
       return "payment_pending";
@@ -81,6 +87,7 @@ const TableMapPage = () => {
   const [tables, setTables] = useState<TableRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [openSessionRows, setOpenSessionRows] = useState<OpenTableSessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -91,7 +98,7 @@ const TableMapPage = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [tablesRes, ordersRes, sessionsRes] = await Promise.all([
+    const [tablesRes, ordersRes, sessionsRes, openSessionsRpc] = await Promise.all([
       supabase.from("tables").select("id, number, capacity, is_active").eq("store_id", storeId).eq("is_active", true).order("number"),
       supabase
         .from("orders")
@@ -104,11 +111,13 @@ const TableMapPage = () => {
         .select("id, table_number, status, total_amount, opened_at")
         .eq("store_id", storeId)
         .eq("status", "open"),
+      listStoreOpenTableSessions(storeId).catch(() => [] as OpenTableSessionRow[]),
     ]);
 
     setTables(tablesRes.data || []);
     setOrders(ordersRes.data || []);
     setSessions(sessionsRes.data || []);
+    setOpenSessionRows(openSessionsRpc);
     setLoading(false);
   };
 
@@ -130,6 +139,49 @@ const TableMapPage = () => {
     for (const s of sessions) map.set(s.table_number, s);
     return map;
   }, [sessions]);
+
+  const openMetaByTable = useMemo(() => {
+    const map = new Map<string, OpenTableSessionRow>();
+    for (const row of openSessionRows) map.set(row.table_number, row);
+    return map;
+  }, [openSessionRows]);
+
+  const openAccounts = useMemo(() => {
+    const seen = new Set<string>();
+    const rows: OpenTableSessionRow[] = [];
+    for (const row of openSessionRows) {
+      if (!seen.has(row.table_number)) {
+        seen.add(row.table_number);
+        rows.push(row);
+      }
+    }
+    for (const s of sessions) {
+      if (!seen.has(s.table_number)) {
+        seen.add(s.table_number);
+        rows.push({
+          session_id: s.id,
+          table_number: s.table_number,
+          table_id: null,
+          opened_at: s.opened_at,
+          total_amount: Number(s.total_amount || 0),
+          order_count: orders.filter((o) => o.table_session_id === s.id).length,
+          pending_payment_count: orders.filter(
+            (o) => o.table_session_id === s.id && o.payment_status === "pending" && o.status !== "cancelled",
+          ).length,
+          active_kitchen_count: orders.filter(
+            (o) =>
+              o.table_session_id === s.id &&
+              o.status !== "delivered" &&
+              o.status !== "cancelled",
+          ).length,
+          pending_payment_total: orders
+            .filter((o) => o.table_session_id === s.id && o.payment_status === "pending" && o.status !== "cancelled")
+            .reduce((sum, o) => sum + Number(o.total || 0), 0),
+        });
+      }
+    }
+    return rows.sort((a, b) => new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime());
+  }, [openSessionRows, sessions, orders]);
 
   const selectedSession = selected ? sessionByTable.get(selected) : undefined;
 
@@ -198,6 +250,21 @@ const TableMapPage = () => {
     }
   };
 
+  const handleCloseSession = async (sessionId: string, tableNumber: string) => {
+    if (!storeId) return;
+    setActionLoading(true);
+    try {
+      await closeTableSessionUnified(sessionId, "cash");
+      toast.success(`Mesa ${tableNumber} fechada — cliente desvinculado`);
+      if (selected === tableNumber) setSelected(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao fechar conta");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleCloseAccount = async () => {
     if (!storeId || !selected) return;
     setActionLoading(true);
@@ -237,17 +304,78 @@ const TableMapPage = () => {
       </div>
 
       <div className="flex flex-wrap gap-3 text-xs">
-        {(["free", "pending", "preparing", "open_account", "payment_pending"] as TableVisualState[]).map((k) => (
+        {(["free", "waiting_order", "pending", "preparing", "open_account", "payment_pending"] as TableVisualState[]).map((k) => (
           <span key={k} className={`px-2 py-1 rounded-full border ${stateStyles[k]}`}>
             {stateLabels[k]}
           </span>
         ))}
       </div>
 
+      {openAccounts.length > 0 && (
+        <Card className="p-4 border-primary/40 bg-primary/5 space-y-3">
+          <div>
+            <h2 className="text-lg font-black text-primary">Contas abertas agora ({openAccounts.length})</h2>
+            <p className="text-sm text-muted-foreground">
+              Mesas com cliente ligado ou conta em aberto. Feche aqui para libertar o telemóvel do cliente.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {openAccounts.map((row) => (
+              <div key={row.session_id} className="rounded-xl border bg-card p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xl font-black">Mesa {row.table_number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Aberta às {new Date(row.opened_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <Badge variant="outline">
+                    {row.order_count === 0
+                      ? "Cliente no QR"
+                      : row.pending_payment_count > 0
+                        ? "Falta pagamento"
+                        : "Conta aberta"}
+                  </Badge>
+                </div>
+                <p className="text-sm">
+                  {row.order_count === 0
+                    ? "Cliente ligado — ainda sem pedido"
+                    : `${row.order_count} pedido(s) · €${Number(row.total_amount || 0).toFixed(2)}`}
+                  {row.pending_payment_total > 0 && (
+                    <span className="text-orange-600 dark:text-orange-400 font-semibold block">
+                      Falta pagar €{Number(row.pending_payment_total).toFixed(2)}
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 font-bold"
+                    onClick={() => setSelected(row.table_number)}
+                  >
+                    Ver conta
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 font-bold"
+                    disabled={actionLoading}
+                    onClick={() => handleCloseSession(row.session_id, row.table_number)}
+                  >
+                    Fechar conta
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {tables.map((t) => {
           const session = sessionByTable.get(t.number);
-          const state = resolveTableState(t.number, orders, session);
+          const openMeta = openMetaByTable.get(t.number);
+          const state = resolveTableState(t.number, orders, session, openMeta);
           return (
             <button
               key={t.id}
@@ -280,6 +408,11 @@ const TableMapPage = () => {
               {selectedSession ? (
                 <p className="text-sm text-muted-foreground">
                   Conta aberta · €{accountTotal.toFixed(2)}
+                  {selectedOrders.length === 0 && accountOrders.length === 0 && (
+                    <span className="text-violet-600 dark:text-violet-400 font-semibold ml-2">
+                      · Cliente ligado ao QR (sem pedido ainda)
+                    </span>
+                  )}
                   {pendingPaymentTotal > 0 && (
                     <span className="text-orange-600 dark:text-orange-400 font-semibold ml-2">
                       · Falta pagar €{pendingPaymentTotal.toFixed(2)}
@@ -321,7 +454,7 @@ const TableMapPage = () => {
           )}
 
           {selectedSession && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 variant="outline"
                 className="h-11 font-bold"
@@ -343,7 +476,24 @@ const TableMapPage = () => {
             </div>
           )}
 
-          {!selectedSession && (
+          {!selectedSession && openMetaByTable.has(selected) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                variant="default"
+                className="h-11 font-bold"
+                disabled={actionLoading}
+                onClick={() => {
+                  const row = openMetaByTable.get(selected);
+                  if (row) void handleCloseSession(row.session_id, row.table_number);
+                }}
+              >
+                <Unlock className="h-4 w-4 mr-2" />
+                Fechar conta / Libertar mesa
+              </Button>
+            </div>
+          )}
+
+          {!selectedSession && !openMetaByTable.has(selected) && (
             <Button
               variant="outline"
               className="w-full h-11 font-bold"

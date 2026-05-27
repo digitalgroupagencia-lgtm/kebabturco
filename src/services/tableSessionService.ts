@@ -66,3 +66,23 @@ export async function closeTableSessionUnified(sessionId: string, paymentMethod 
   if (error) throw new Error(error.message);
   return data;
 }
+
+export type OpenTableSessionRow = {
+  session_id: string;
+  table_number: string;
+  table_id: string | null;
+  opened_at: string;
+  total_amount: number;
+  order_count: number;
+  pending_payment_count: number;
+  active_kitchen_count: number;
+  pending_payment_total: number;
+};
+
+export async function listStoreOpenTableSessions(storeId: string): Promise<OpenTableSessionRow[]> {
+  const { data, error } = await supabase.rpc("list_store_open_table_sessions", {
+    _store_id: storeId,
+  });
+  if (error) throw new Error(error.message);
+  return Array.isArray(data) ? (data as OpenTableSessionRow[]) : [];
+}

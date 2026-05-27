@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
-import { loadSavedMesaToken, saveSavedMesaToken, clearSavedMesaToken, saveSavedMesaSessionId, loadSavedMesaSessionId } from "@/lib/customerSession";
+import {
+  loadSavedMesaToken,
+  saveSavedMesaToken,
+  clearSavedMesaToken,
+  clearSavedMesaSessionId,
+  saveSavedMesaSessionId,
+  loadSavedMesaSessionId,
+  clearMesaBindingStorage,
+} from "@/lib/customerSession";
 import { openTableSessionOnScan, fetchPublicTableBinding } from "@/services/tableSessionService";
 
 export interface MesaFromUrl {
@@ -15,6 +23,38 @@ export interface MesaFromUrl {
 function readUrlSearch(): string {
   if (typeof window === "undefined") return "";
   return window.location.search;
+}
+
+async function syncTableSession(storeId: string, token: string, fromUrl: boolean): Promise<"ok" | "closed" | "failed"> {
+  const knownSessionId = loadSavedMesaSessionId();
+
+  try {
+    const binding = await fetchPublicTableBinding(storeId, token, knownSessionId);
+    if (!binding.active) {
+      if (binding.reason === "session_closed" || binding.reason === "no_open_session") {
+        if (fromUrl && binding.reason === "no_open_session") {
+          const opened = await openTableSessionOnScan(storeId, token);
+          if (opened?.session_id) saveSavedMesaSessionId(opened.session_id);
+          return "ok";
+        }
+        return "closed";
+      }
+      return "closed";
+    }
+    if (binding.session_id) saveSavedMesaSessionId(binding.session_id);
+    return "ok";
+  } catch {
+    if (fromUrl) {
+      try {
+        const opened = await openTableSessionOnScan(storeId, token);
+        if (opened?.session_id) saveSavedMesaSessionId(opened.session_id);
+        return "ok";
+      } catch {
+        return "failed";
+      }
+    }
+    return "failed";
+  }
 }
 
 /** Valida sessão de mesa via token do QR code (?t=...). O número na URL é informativo — o token é obrigatório. */
@@ -39,7 +79,6 @@ export function useMesaFromUrl(storeId: string | null) {
     const fromUrl = params.get("t")?.trim();
     const token = fromUrl || loadSavedMesaToken();
 
-    // mode=table sem token válido nunca activa mesa (evita escolha manual por URL)
     if (!token || !storeId) {
       if (mode === "table" && tableHint && !fromUrl) {
         clearSavedMesaToken();
@@ -63,37 +102,24 @@ export function useMesaFromUrl(storeId: string | null) {
 
       if (data) {
         if (tableHint && tableHint !== data.number) {
-          clearSavedMesaToken();
+          clearMesaBindingStorage();
           setMesa(null);
           setLoading(false);
           return;
         }
+
         saveSavedMesaToken(token);
-        if (fromUrl) {
-          try {
-            const opened = await openTableSessionOnScan(storeId, token);
-            if (opened?.session_id) saveSavedMesaSessionId(opened.session_id);
-          } catch {
-            /* rede — sessão abre no próximo pedido ou nova leitura do QR */
-          }
-        } else {
-          try {
-            const binding = await fetchPublicTableBinding(
-              storeId,
-              token,
-              loadSavedMesaSessionId(),
-            );
-            if (!binding.active) {
-              clearSavedMesaToken();
-              setMesa(null);
-              setLoading(false);
-              return;
-            }
-            if (binding.session_id) saveSavedMesaSessionId(binding.session_id);
-          } catch {
-            /* mantém vínculo local se rede falhar */
-          }
+        const sessionResult = await syncTableSession(storeId, token, Boolean(fromUrl));
+
+        if (!active) return;
+
+        if (sessionResult === "closed" || (sessionResult === "failed" && !fromUrl)) {
+          clearMesaBindingStorage();
+          setMesa(null);
+          setLoading(false);
+          return;
         }
+
         setMesa({
           mesaNumber: data.number,
           tableId: data.id,
@@ -102,7 +128,7 @@ export function useMesaFromUrl(storeId: string | null) {
           scanLang,
         });
       } else {
-        clearSavedMesaToken();
+        clearMesaBindingStorage();
         setMesa(null);
       }
       setLoading(false);
