@@ -137,7 +137,8 @@ const OrderTypeScreen = () => {
   };
 
   const enabled: OrderOption[] = [];
-  if (opts.dine_in) {
+  // Mesa só aparece quando o cliente leu o QR da mesa
+  if (opts.dine_in && mesaLocked) {
     enabled.push({
       key: "here",
       label: t("eatHere"),
