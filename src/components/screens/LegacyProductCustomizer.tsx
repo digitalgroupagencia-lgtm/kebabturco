@@ -192,7 +192,6 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
     }
 
     addItem({ ...basePayload, quantity, totalPrice });
-    toast.success(t("addToOrder"));
     (onFinishAfterAdd ?? onBack)();
   };
 
