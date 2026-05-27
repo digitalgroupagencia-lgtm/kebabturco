@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
+import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
 
 type OrderOption = {
   key: "here" | "takeaway" | "delivery";
