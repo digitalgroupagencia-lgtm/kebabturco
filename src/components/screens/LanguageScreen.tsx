@@ -80,12 +80,7 @@ const LanguageScreen = () => {
         {logo && (
           <div
             className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
-            onTouchStart={startLogoPress}
-            onTouchEnd={endLogoPress}
-            onTouchCancel={endLogoPress}
-            onMouseDown={startLogoPress}
-            onMouseUp={endLogoPress}
-            onMouseLeave={endLogoPress}
+            {...logoGesture}
           >
             <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
           </div>
