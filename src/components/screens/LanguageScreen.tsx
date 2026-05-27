@@ -32,17 +32,7 @@ const LanguageScreen = () => {
   const { settings } = useBranding();
   const { stores, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
-  const navigate = useNavigate();
-  const longPressRef = useRef<number | null>(null);
-  const startLogoPress = () => {
-    longPressRef.current = window.setTimeout(() => navigate(nav.staff()), 5000);
-  };
-  const endLogoPress = () => {
-    if (longPressRef.current) {
-      window.clearTimeout(longPressRef.current);
-      longPressRef.current = null;
-    }
-  };
+  const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
 
   const logo =
