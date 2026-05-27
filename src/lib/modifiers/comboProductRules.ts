@@ -2,7 +2,7 @@ import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Variant } from "@/data/products";
 import { inferVariantsFromText, isMeatVariantSet } from "@/lib/parseProductCustomization";
 import { isDrinkProduct } from "./drinkProduct";
-import { inferComboUnitCountFromName, normalizeProductClassification } from "./productClassification";
+import { inferComboUnitCountFromName, normalizeProductClassification, resolveIsComboProduct } from "./productClassification";
 
 export type ComboUnitKind = "pita" | "rollo" | "pizza" | "piece" | null;
 export type FixedProtein = "pollo" | "ternera" | "mixto" | "crispy";
@@ -182,6 +182,7 @@ export function allowsIngredientRemoval(product: MenuProduct): boolean {
 }
 
 export function productIncludesPotato(product: MenuProduct): boolean {
+  if (!resolveIsComboProduct(product)) return false;
   const blob = `${productText(product)} ${productDescriptionText(product)}`;
   return /patata|batata|fritas|fries/i.test(blob);
 }

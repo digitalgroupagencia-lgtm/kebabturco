@@ -115,6 +115,9 @@ function variantsToOptions(productId: string, groupKey: string, variants: Varian
 const COMBO_POTATO_UPGRADE_PRICE = 0.5;
 
 function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: Extra[]): ModifierGroup | null {
+  const isCombo = resolveIsComboProduct(product);
+  if (!isCombo && substitutionExtras.length === 0) return null;
+
   const productId = product.id;
   let options: ModifierOption[] = substitutionExtras.map((e, i) => {
     const opt = optionFromExtra(productId, "substitution", e, i, {
@@ -135,7 +138,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
   });
 
   const hasIncluded = options.some((o) => o.priceDelta === 0);
-  if (!hasIncluded && (productIncludesPotato(product) || options.length > 0)) {
+  if (isCombo && !hasIncluded && (productIncludesPotato(product) || options.length > 0)) {
     options = [
       {
         id: `${SYNTH_PREFIX}-${productId}-substitution-included`,
@@ -165,7 +168,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
       name: cleanSideOptionName(upgradeExtra.name),
       priceDelta: COMBO_POTATO_UPGRADE_PRICE,
     });
-  } else if (productIncludesPotato(product) && !options.some((o) => /bravas/i.test(`${o.name.es} ${o.name.pt}`))) {
+  } else if (isCombo && productIncludesPotato(product) && !options.some((o) => /bravas/i.test(`${o.name.es} ${o.name.pt}`))) {
     options.push({
       id: `${SYNTH_PREFIX}-${productId}-substitution-bravas`,
       groupId: `${SYNTH_PREFIX}-${productId}-substitution`,
@@ -182,7 +185,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
     });
   }
 
-  if (productIncludesPotato(product) && !options.some((o) => /lux|deluxe|especial/i.test(`${o.name.es} ${o.name.pt}`))) {
+  if (isCombo && productIncludesPotato(product) && !options.some((o) => /lux|deluxe|especial/i.test(`${o.name.es} ${o.name.pt}`))) {
     options.push({
       id: `${SYNTH_PREFIX}-${productId}-substitution-lux`,
       groupId: `${SYNTH_PREFIX}-${productId}-substitution`,
@@ -384,7 +387,10 @@ function buildModifierConfigFromProduct(
     );
   }
 
-  const potatoGroup = buildPotatoSubstitutionGroup(product, substitutionExtras);
+  const potatoGroup =
+    isCombo || substitutionExtras.length > 0
+      ? buildPotatoSubstitutionGroup(product, substitutionExtras)
+      : null;
   if (potatoGroup) {
     groups.push(potatoGroup);
   } else if (substitutionExtras.length >= 2) {

@@ -30,10 +30,14 @@ const ProductScreen = () => {
 
   const { items } = useCart();
   const { t, tProduct } = useLanguage();
-  const { products, loading: menuLoading } = useMenuData();
+  const { products, loading: menuLoading, categories } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
   const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
     useEffectiveModifierConfig(product, products);
+
+  const openSuggestedProduct = (productId: string) => {
+    setSelectedProductId(productId);
+  };
 
   const editingItem = useMemo(
     () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
@@ -87,8 +91,10 @@ const ProductScreen = () => {
           product={product}
           config={modifierConfig}
           menuProducts={products}
+          menuCategories={categories}
           editingItem={editingItem}
           onBack={goBack}
+          onOpenProduct={openSuggestedProduct}
         />
       </ProductErrorBoundary>
     ) : (

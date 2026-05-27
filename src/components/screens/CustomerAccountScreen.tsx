@@ -100,10 +100,10 @@ const CustomerAccountScreen = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
       <ScreenHeader eyebrow={t("trackMyOrders")} title={t("myOrdersTitle")} onBack={() => setScreen("home")} sticky />
 
-      <div className="flex-1 px-4 py-4 space-y-4 pb-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 pb-24">
         <p className="text-sm text-muted-foreground">{t("phoneSearchHint")}</p>
 
         <div className="space-y-2">
@@ -197,14 +197,18 @@ const CustomerAccountScreen = () => {
             </div>
           </div>
         ))}
-        <div className="pt-6 pb-2 text-center">
-          <a
-            href="/staff-login"
-            className="text-[11px] text-foreground/40 hover:text-foreground/70 transition-colors tracking-wide"
-          >
-            Equipe
-          </a>
-        </div>
+      </div>
+
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-6"
+        style={{ background: "linear-gradient(to top, hsl(var(--background)) 40%, transparent)" }}
+      >
+        <a
+          href="/staff-login"
+          className="pointer-events-auto text-[9px] font-medium text-foreground/18 hover:text-foreground/35 transition-colors tracking-[0.2em] uppercase select-none"
+        >
+          Equipe
+        </a>
       </div>
     </div>
   );

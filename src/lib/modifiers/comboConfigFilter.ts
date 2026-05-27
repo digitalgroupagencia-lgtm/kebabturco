@@ -132,13 +132,35 @@ function enrichGroupOptions(group: ModifierGroup, menuProducts: MenuProduct[]): 
   };
 }
 
-/** Aplica regras do combo (tamanho bebida, preço batata, imagens reais) sobre qualquer config. */
+/** Produtos simples: só enriquece imagens — sem injectar bebidas/batatas. */
+export function applySimpleProductRules(
+  product: MenuProduct,
+  config: ProductModifierConfig | null,
+  menuProducts: MenuProduct[] = [],
+): ProductModifierConfig | null {
+  if (!config) return null;
+
+  const groups = config.groups
+    .filter((group) => group.options.length > 0)
+    .map((group) => enrichGroupOptions(group, menuProducts));
+
+  return {
+    ...config,
+    groups,
+    hasStructuredModifiers: groups.length > 0,
+  };
+}
+
+/** Aplica regras do combo (tamanho bebida, preço batata, imagens reais). Apenas para combos. */
 export function applyComboDescriptionRules(
   product: MenuProduct,
   config: ProductModifierConfig | null,
   menuProducts: MenuProduct[] = [],
 ): ProductModifierConfig | null {
   if (!config) return null;
+  if (!resolveIsComboProduct(product)) {
+    return applySimpleProductRules(product, config, menuProducts);
+  }
 
   let groups = config.groups.map((group) => {
     let next = group;
@@ -151,7 +173,7 @@ export function applyComboDescriptionRules(
     return enrichGroupOptions(next, menuProducts);
   });
 
-  if (descriptionIncludesDrink(product) && resolveIsComboProduct(product) && !groups.some(isDrinkGroup)) {
+  if (descriptionIncludesDrink(product) && !groups.some(isDrinkGroup)) {
     const rule = resolveDrinkSizeRuleForProduct(product);
     if (rule) {
       const drinkGroup: ModifierGroup = {

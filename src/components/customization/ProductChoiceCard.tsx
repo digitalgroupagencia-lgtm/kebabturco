@@ -27,18 +27,18 @@ export default function ProductChoiceCard({
 
   const imageBlock = (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-xl bg-secondary/50 ${
+      className={`relative shrink-0 overflow-hidden bg-secondary/30 ${
         layout === "horizontal"
-          ? "w-20 h-20"
+          ? "w-20 h-20 rounded-[14px]"
           : compact
-            ? "w-full aspect-square"
-            : "w-full aspect-[4/3]"
+            ? "w-full aspect-[5/4] rounded-t-[16px]"
+            : "w-full aspect-[5/4] rounded-t-[18px]"
       }`}
     >
       <img
         src={src}
         alt=""
-        className="w-full h-full object-contain p-1"
+        className="w-full h-full object-cover"
         loading="lazy"
         draggable={false}
         onError={() => setBroken(true)}
@@ -64,7 +64,7 @@ export default function ProductChoiceCard({
 
       {layout === "vertical" ? (
         <>
-          <div className={`${compact ? "p-2 pb-0" : "p-3 pb-0"}`}>{imageBlock}</div>
+          {imageBlock}
           <div className={`${compact ? "p-2 pt-1.5" : "p-3 pt-2"} space-y-0.5`}>
             <p
               className={`font-black text-foreground leading-tight line-clamp-2 ${

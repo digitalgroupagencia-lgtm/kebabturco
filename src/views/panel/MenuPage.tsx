@@ -48,6 +48,7 @@ const MenuPage = () => {
   const [prodType, setProdType] = useState<"simple" | "combo">("simple");
   const [comboUnits, setComboUnits] = useState(1);
   const [modifierLinks, setModifierLinks] = useState<{ group_id: string; sort_order: number; repeat_per_unit: boolean }[]>([]);
+  const [afterAddSuggestionIds, setAfterAddSuggestionIds] = useState("");
 
   useEffect(() => {
     if (storeId) {
@@ -183,6 +184,8 @@ const MenuPage = () => {
       const p = prod as Product & { product_type?: string; combo_unit_count?: number };
       setProdType(p.product_type === "combo" ? "combo" : "simple");
       setComboUnits(Math.max(1, p.combo_unit_count || 1));
+      const suggestions = (prod as Product & { after_add_suggestions?: string[] }).after_add_suggestions;
+      setAfterAddSuggestionIds(Array.isArray(suggestions) ? suggestions.join(", ") : "");
     } else {
       setEditingProduct(null);
       setProdNamePt("");
@@ -196,6 +199,7 @@ const MenuPage = () => {
       setProdType("simple");
       setComboUnits(1);
       setModifierLinks([]);
+      setAfterAddSuggestionIds("");
     }
     setProdDialogOpen(true);
   };
@@ -232,6 +236,10 @@ const MenuPage = () => {
       price_modifiers: priceModifiers as unknown as import("@/integrations/supabase/types").Json,
       product_type: prodType,
       combo_unit_count: prodType === "combo" ? comboUnits : 0,
+      after_add_suggestions: afterAddSuggestionIds
+        .split(/[,\s]+/)
+        .map((id) => id.trim())
+        .filter(Boolean) as unknown as import("@/integrations/supabase/types").Json,
     };
 
     if (editingProduct) {
@@ -452,6 +460,17 @@ const MenuPage = () => {
                       onComboUnitCountChange={setComboUnits}
                       onLinksChange={setModifierLinks}
                     />
+                    <div>
+                      <Label>Sugestões após adicionar (IDs de produto, separados por vírgula)</Label>
+                      <Input
+                        value={afterAddSuggestionIds}
+                        onChange={(e) => setAfterAddSuggestionIds(e.target.value)}
+                        placeholder="uuid-bebida, uuid-sobremesa"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Opcional. Ex.: kebab → bebidas; combo → sobremesa. Deixe vazio para regra automática.
+                      </p>
+                    </div>
                     <div>
                       <Label>Extras legado (1 por linha: Nome|preço)</Label>
                       <textarea

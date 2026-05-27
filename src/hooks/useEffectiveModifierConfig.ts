@@ -1,167 +1,54 @@
-import { useEffect, useMemo, useState } from "react";
-import { supabase as _supabase } from "@/integrations/supabase/client";
-const supabase = _supabase as unknown as any;
+import { useMemo } from "react";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import { useProductModifierConfig } from "@/hooks/useProductModifierConfig";
-import { useResolvedStore } from "@/hooks/useResolvedStore";
-import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "@/lib/modifiers/types";
-import {
-  mergeStoreGroupsForCombo,
-} from "@/lib/modifiers/synthesizeConfig";
+import type { ProductModifierConfig } from "@/lib/modifiers/types";
 import { safeSynthesizeModifierConfig } from "@/lib/modifiers/safeCustomization";
-import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
 import { adaptConfigForDrinkProduct, isDrinkProduct } from "@/lib/modifiers/drinkProduct";
-import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
+import { applyComboDescriptionRules, applySimpleProductRules } from "@/lib/modifiers/comboConfigFilter";
 import { filterProductModifierConfig } from "@/lib/modifiers/proteinRules";
+import { resolveIsComboProduct } from "@/lib/modifiers/productClassification";
 
-const asName = (value: unknown): Record<string, string> => {
-  if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
-  return { es: "", pt: "", en: "", fr: "" };
-};
-
-async function fetchStoreModifierGroups(storeId: string): Promise<ModifierGroup[]> {
-  const { data: groups } = await supabase
-    .from("modifier_groups")
-    .select("*")
-    .eq("store_id", storeId)
-    .eq("is_active", true)
-    .order("sort_order");
-
-  if (!groups?.length) return [];
-
-  const groupIds = groups.map((g) => g.id);
-  const { data: options } = await supabase
-    .from("modifier_options")
-    .select("*")
-    .in("group_id", groupIds)
-    .eq("is_active", true)
-    .order("sort_order");
-
-  const optionsByGroup = new Map<string, ModifierOption[]>();
-  for (const opt of options || []) {
-    const list = optionsByGroup.get(opt.group_id) || [];
-    list.push({
-      id: opt.id,
-      groupId: opt.group_id,
-      name: asName(opt.name),
-      priceDelta: Number(opt.price_delta || 0),
-      maxQty: opt.max_qty || 1,
-      isDefault: opt.is_default ?? false,
-      sortOrder: opt.sort_order ?? 0,
-    });
-    optionsByGroup.set(opt.group_id, list);
-  }
-
-  return groups
-    .map((g) => ({
-      id: g.id,
-      storeId: g.store_id,
-      name: asName(g.name),
-      description: asName(g.description),
-      groupKind: g.group_kind as ModifierGroup["groupKind"],
-      selectionMode: g.selection_mode as ModifierGroup["selectionMode"],
-      minSelect: g.min_select ?? 0,
-      maxSelect: g.max_select ?? 1,
-      isRequired: g.is_required ?? false,
-      sortOrder: g.sort_order ?? 0,
-      repeatPerUnit: false,
-      linkSortOrder: g.sort_order ?? 0,
-      options: optionsByGroup.get(g.id) || [],
-    }))
-    .filter((g) => g.options.length > 0);
-}
-
-/** Configuração efectiva: grupos ligados na BD → senão dados do produto → senão grupos da loja (combos). */
+/** Configuração efectiva: apenas grupos ligados ao product_id na BD, ou dados próprios do produto (sem globais). */
 export function useEffectiveModifierConfig(
   product: MenuProduct | undefined,
   allProducts: MenuProduct[] = [],
 ) {
   const { config: dbConfig, loading: dbLoading } = useProductModifierConfig(product?.id);
-  const { storeId } = useResolvedStore();
-  const [storeGroups, setStoreGroups] = useState<ModifierGroup[]>([]);
-  const [storeLoading, setStoreLoading] = useState(false);
-
-  useEffect(() => {
-    if (!storeId || dbConfig?.hasStructuredModifiers) {
-      setStoreGroups([]);
-      return;
-    }
-    let active = true;
-    setStoreLoading(true);
-    fetchStoreModifierGroups(storeId).then((groups) => {
-      if (active) {
-        setStoreGroups(groups);
-        setStoreLoading(false);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [storeId, dbConfig?.hasStructuredModifiers]);
 
   const config = useMemo((): ProductModifierConfig | null => {
     const finalize = (cfg: ProductModifierConfig | null) => {
-      if (!cfg) return null;
-      const filtered = product ? filterProductModifierConfig(product, cfg) : cfg;
-      const comboApplied = product
+      if (!cfg || !product) return cfg;
+      const filtered = filterProductModifierConfig(product, cfg);
+      const rulesApplied = resolveIsComboProduct(product)
         ? applyComboDescriptionRules(product, filtered, allProducts)
-        : filtered;
-      return sanitizeProductModifierConfig(comboApplied);
+        : applySimpleProductRules(product, filtered, allProducts);
+      return sanitizeProductModifierConfig(rulesApplied);
     };
 
     try {
       if (!product) return finalize(dbConfig);
 
-      const synthesized = safeSynthesizeModifierConfig(product, allProducts);
-
       if (dbConfig?.hasStructuredModifiers) {
-        const isDrink = isDrinkProduct(product);
-        const dbGroups = dbConfig.groups ?? [];
-        const hasRemoval = dbGroups.some((g) => g.groupKind === "removal");
-        const synthRemoval = !isDrink
-          ? synthesized?.groups?.filter((g) => g.groupKind === "removal") || []
-          : [];
-        if (!hasRemoval && synthRemoval.length) {
-          return finalize({
-            ...dbConfig,
-            groups: sortModifierGroups([...dbGroups, ...synthRemoval]),
-          });
-        }
         return finalize(dbConfig);
       }
 
-      if (synthesized?.hasStructuredModifiers) return finalize(synthesized);
-
-      if (synthesized?.productType === "combo" && storeGroups.length) {
-        const merged = mergeStoreGroupsForCombo(
-          {
-            ...synthesized,
-            groups: [],
-            hasStructuredModifiers: false,
-          },
-          storeGroups,
-        );
-        if (merged.hasStructuredModifiers) return finalize(merged);
-      }
-
-      return finalize(synthesized ?? dbConfig);
+      const synthesized = safeSynthesizeModifierConfig(product, allProducts);
+      return finalize(synthesized);
     } catch (err) {
       console.error("[useEffectiveModifierConfig]", err);
       return finalize(dbConfig);
     }
-  }, [product, dbConfig, storeGroups, allProducts]);
+  }, [product, dbConfig, allProducts]);
 
   const drinkAdapted = useMemo(
     () => (product ? adaptConfigForDrinkProduct(product, config) : config),
     [product, config],
   );
 
-  const loading = dbLoading || storeLoading;
-
   return {
     config: drinkAdapted,
-    loading,
+    loading: dbLoading,
     hasStructuredModifiers: Boolean(drinkAdapted?.hasStructuredModifiers),
     isDrink: isDrinkProduct(product),
   };

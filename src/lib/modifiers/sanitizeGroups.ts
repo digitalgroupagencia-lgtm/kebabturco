@@ -1,12 +1,5 @@
 import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "./types";
 
-const INCLUDED_SIDE_NAMES: Record<string, string> = {
-  es: "Patatas fritas (incluidas)",
-  pt: "Batatas fritas (incluídas)",
-  en: "Fries (included)",
-  fr: "Frites (incluses)",
-};
-
 export type ModifierConfigWarning = {
   groupId: string;
   groupName: string;
@@ -22,24 +15,6 @@ export function sanitizeModifierGroup(group: ModifierGroup): ModifierGroup {
   }
 
   const mustSelect = group.isRequired || group.minSelect >= 1;
-
-  if (group.groupKind === "substitution" && mustSelect) {
-    const hasIncluded = options.some((o) => o.priceDelta === 0);
-    if (!hasIncluded) {
-      options = [
-        {
-          id: `${group.id}-included-side`,
-          groupId: group.id,
-          name: { ...INCLUDED_SIDE_NAMES },
-          priceDelta: 0,
-          maxQty: 1,
-          isDefault: true,
-          sortOrder: -1,
-        },
-        ...options.map((o) => ({ ...o, isDefault: false })),
-      ];
-    }
-  }
 
   if (mustSelect && !options.some((o) => o.isDefault)) {
     options = options.map((o, i) => ({ ...o, isDefault: i === 0 }));

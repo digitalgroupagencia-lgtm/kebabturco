@@ -6,7 +6,10 @@ import QuantitySelector from "@/components/QuantitySelector";
 import ChoiceGroupSection from "@/components/customization/ChoiceGroupSection";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { Category } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
+import ProductUpsellSheet from "@/components/customization/ProductUpsellSheet";
+import { afterAddSuggestionTitle, resolveAfterAddSuggestions } from "@/lib/modifiers/afterAddSuggestions";
 import type { ModifierGroup, ProductModifierConfig, SelectionState, CartConfiguration } from "@/lib/modifiers/types";
 import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
 import { buildSelectionsFromState, validateAllGroups } from "@/lib/modifiers/validation";
@@ -22,8 +25,10 @@ type Props = {
   product: MenuProduct;
   config: ProductModifierConfig;
   menuProducts?: MenuProduct[];
+  menuCategories?: Category[];
   editingItem?: CartItem;
   onBack: () => void;
+  onOpenProduct?: (productId: string) => void;
 };
 
 type WizardStep =
@@ -31,7 +36,15 @@ type WizardStep =
   | { kind: "global"; group: ModifierGroup }
   | { kind: "unit"; unitIndex: number };
 
-export default function ProductCustomizationFlow({ product, config, menuProducts = [], editingItem, onBack }: Props) {
+export default function ProductCustomizationFlow({
+  product,
+  config,
+  menuProducts = [],
+  menuCategories = [],
+  editingItem,
+  onBack,
+  onOpenProduct,
+}: Props) {
   const { t, tProduct } = useLanguage();
   const { addItem, updateItem } = useCart();
 
@@ -77,6 +90,17 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
   );
   const [comboStep, setComboStep] = useState(0);
   const [note, setNote] = useState("");
+  const [upsellOpen, setUpsellOpen] = useState(false);
+
+  const upsellSuggestions = useMemo(
+    () =>
+      resolveAfterAddSuggestions(product, menuProducts, menuCategories, new Set([product.id])).slice(0, 4),
+    [product, menuProducts, menuCategories],
+  );
+  const upsellTitle = useMemo(
+    () => afterAddSuggestionTitle(product, menuCategories) || "¿Te apetece algo más?",
+    [product, menuCategories],
+  );
 
   const totalSteps = useStepWizard ? wizardSteps.length : 1;
   const currentWizardStep = useStepWizard ? wizardSteps[comboStep] : null;
@@ -250,8 +274,15 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
 
     if (editingItem) {
       updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity });
-    } else {
-      for (let i = 0; i < quantity; i++) addItem(payload);
+      onBack();
+      return;
+    }
+
+    for (let i = 0; i < quantity; i++) addItem(payload);
+
+    if (upsellSuggestions.length > 0) {
+      setUpsellOpen(true);
+      return;
     }
     onBack();
   };
@@ -401,6 +432,22 @@ export default function ProductCustomizationFlow({ product, config, menuProducts
           </button>
         </div>
       </div>
+
+      {upsellOpen && (
+        <ProductUpsellSheet
+          title={upsellTitle}
+          suggestions={upsellSuggestions}
+          onPick={(id) => {
+            setUpsellOpen(false);
+            if (onOpenProduct) onOpenProduct(id);
+            else onBack();
+          }}
+          onSkip={() => {
+            setUpsellOpen(false);
+            onBack();
+          }}
+        />
+      )}
     </div>
   );
 }

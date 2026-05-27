@@ -15,6 +15,7 @@ export type MenuProduct = Product & {
   comboUnitCount?: number;
   unitLabel?: Record<string, string>;
   categorySlug?: string;
+  afterAddSuggestions?: string[];
 };
 
 export type MenuLoadError = "network" | "empty" | "no_store";
@@ -75,7 +76,7 @@ export function useMenuData() {
           .order("created_at", { ascending: true }),
         supabase
           .from("products")
-          .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order, created_at, price_modifiers, product_type, combo_unit_count, unit_label")
+          .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order, created_at, price_modifiers, product_type, combo_unit_count, unit_label, after_add_suggestions")
           .eq("store_id", effectiveStoreId)
           .eq("is_active", true)
           .order("sort_order", { ascending: true })
@@ -178,6 +179,9 @@ export function useMenuData() {
             productType: (prod.product_type as "simple" | "combo") || undefined,
             comboUnitCount: Number(prod.combo_unit_count || 0) || undefined,
             unitLabel: asName(prod.unit_label),
+            afterAddSuggestions: Array.isArray(prod.after_add_suggestions)
+              ? (prod.after_add_suggestions as string[])
+              : [],
           } satisfies MenuProduct;
           const classified = normalizeProductClassification(draftProduct);
           const normalizedProduct = {
