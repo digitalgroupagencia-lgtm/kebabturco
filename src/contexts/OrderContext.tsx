@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
@@ -11,8 +11,9 @@ import {
 } from "@/features/customer/useActiveOrderStorage";
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
-  clearSavedMesaToken,
+  clearMesaBindingStorage,
   loadSavedLang,
+  loadSavedMesaToken,
   loadSavedOrderType,
   loadSavedCustomerName,
   loadSavedCustomerPhone,
@@ -28,6 +29,7 @@ import {
   readLangFromUrl,
   saveSavedLang,
 } from "@/lib/customerSession";
+import { useTableSessionBinding } from "@/hooks/useTableSessionBinding";
 import { customerScreenFromPathname } from "@/lib/routeRedirects";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 
@@ -212,8 +214,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTableNumberState(value);
     saveSavedTableNumber(value);
   };
-  const [mesaLocked, setMesaLocked] = useState(false);
+  const [mesaLocked, setMesaLocked] = useState(() => Boolean(loadSavedMesaToken()));
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
+  const [mesaQrToken, setMesaQrToken] = useState<string | null>(() => loadSavedMesaToken());
   const [customerName, setCustomerNameState] = useState(() =>
     typeof window === "undefined" ? "" : loadSavedCustomerName(),
   );
@@ -314,8 +317,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (mesaLoading) return;
     if (mesa?.locked) {
       setTableNumber(mesa.mesaNumber);
+      saveSavedTableNumber(mesa.mesaNumber);
       setMesaTableId(mesa.tableId);
       setMesaLocked(true);
+      setMesaQrToken(mesa.qrToken);
       saveSavedMesaToken(mesa.qrToken);
       setOrderType("here");
       const qrLang = mesa.scanLang || readLangFromUrl();
@@ -324,23 +329,36 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return;
     }
-    setMesaLocked(false);
-    setMesaTableId(null);
+    if (!loadSavedMesaToken()) {
+      setMesaLocked(false);
+      setMesaTableId(null);
+      setMesaQrToken(null);
+    }
   }, [mesa, mesaLoading, setOrderType]);
 
-  useEffect(() => {
-    if (mesaLoading) return;
-    if (orderType === "here" && !mesaLocked) {
-      clearOrderType();
-    }
-  }, [mesaLoading, mesaLocked, orderType, clearOrderType]);
-
-  const clearMesaLock = () => {
+  const handleMesaSessionClosed = useCallback(() => {
     setMesaLocked(false);
     setMesaTableId(null);
+    setMesaQrToken(null);
     setTableNumber("");
-    clearSavedMesaToken();
-  };
+    if (orderType === "here") clearOrderType();
+  }, [orderType, clearOrderType]);
+
+  useTableSessionBinding(
+    effectiveStoreId,
+    mesaQrToken,
+    mesaLocked,
+    handleMesaSessionClosed,
+  );
+
+  const clearMesaLock = useCallback(() => {
+    setMesaLocked(false);
+    setMesaTableId(null);
+    setMesaQrToken(null);
+    setTableNumber("");
+    clearMesaBindingStorage();
+    if (orderType === "here") clearOrderType();
+  }, [orderType, clearOrderType]);
 
   const generateOrderNumber = () => {
     setOrderNumber(String(Math.floor(100 + Math.random() * 900)));

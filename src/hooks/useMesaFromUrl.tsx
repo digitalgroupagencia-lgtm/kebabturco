@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
-import { loadSavedMesaToken, saveSavedMesaToken, clearSavedMesaToken } from "@/lib/customerSession";
+import { loadSavedMesaToken, saveSavedMesaToken, clearSavedMesaToken, saveSavedMesaSessionId, loadSavedMesaSessionId } from "@/lib/customerSession";
+import { openTableSessionOnScan, fetchPublicTableBinding } from "@/services/tableSessionService";
 
 export interface MesaFromUrl {
   mesaNumber: string;
@@ -68,6 +69,31 @@ export function useMesaFromUrl(storeId: string | null) {
           return;
         }
         saveSavedMesaToken(token);
+        if (fromUrl) {
+          try {
+            const opened = await openTableSessionOnScan(storeId, token);
+            if (opened?.session_id) saveSavedMesaSessionId(opened.session_id);
+          } catch {
+            /* rede — sessão abre no próximo pedido ou nova leitura do QR */
+          }
+        } else {
+          try {
+            const binding = await fetchPublicTableBinding(
+              storeId,
+              token,
+              loadSavedMesaSessionId(),
+            );
+            if (!binding.active) {
+              clearSavedMesaToken();
+              setMesa(null);
+              setLoading(false);
+              return;
+            }
+            if (binding.session_id) saveSavedMesaSessionId(binding.session_id);
+          } catch {
+            /* mantém vínculo local se rede falhar */
+          }
+        }
         setMesa({
           mesaNumber: data.number,
           tableId: data.id,

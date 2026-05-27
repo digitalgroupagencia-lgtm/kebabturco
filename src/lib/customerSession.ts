@@ -100,6 +100,42 @@ export function resolveScreenAfterLanguageSkip(): Screen {
 
 export const KIOSK_TABLE_KEY = "kiosk-table-number";
 export const KIOSK_MESA_TOKEN_KEY = "kiosk-mesa-token";
+export const KIOSK_MESA_SESSION_KEY = "kiosk-mesa-session-id";
+
+export function loadSavedMesaSessionId(): string | null {
+  try {
+    const raw = localStorage.getItem(KIOSK_MESA_SESSION_KEY);
+    return raw?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSavedMesaSessionId(sessionId: string) {
+  try {
+    localStorage.setItem(KIOSK_MESA_SESSION_KEY, sessionId.trim());
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearSavedMesaSessionId() {
+  try {
+    localStorage.removeItem(KIOSK_MESA_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearMesaBindingStorage() {
+  clearSavedMesaToken();
+  clearSavedMesaSessionId();
+  try {
+    localStorage.removeItem(KIOSK_TABLE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function loadSavedMesaToken(): string | null {
   try {
