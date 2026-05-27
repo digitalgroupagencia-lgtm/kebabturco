@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function ProductUpsellSheet({ title, suggestions, onPick, onSkip }: Props) {
-  const { tProduct } = useLanguage();
+  const { t, tProduct } = useLanguage();
 
   if (suggestions.length === 0) return null;
 
@@ -21,14 +21,16 @@ export default function ProductUpsellSheet({ title, suggestions, onPick, onSkip 
       <div className="bg-background rounded-t-[28px] border-t border-border/60 shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.35)] max-h-[78vh] flex flex-col animate-in slide-in-from-bottom duration-300">
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-2">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Sugestão</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {t("upsellEyebrow")}
+            </p>
             <h2 className="text-xl font-black text-foreground leading-tight mt-1">{title}</h2>
           </div>
           <button
             type="button"
             onClick={onSkip}
             className="w-9 h-9 rounded-full border border-border/70 flex items-center justify-center text-muted-foreground"
-            aria-label="Fechar"
+            aria-label={t("close")}
           >
             <X className="w-4 h-4" />
           </button>
@@ -78,7 +80,7 @@ export default function ProductUpsellSheet({ title, suggestions, onPick, onSkip 
             onClick={onSkip}
             className="w-full h-12 rounded-2xl border border-border font-bold text-muted-foreground"
           >
-            Continuar sem adicionar
+            {t("upsellSkip")}
           </button>
         </div>
       </div>

@@ -8,6 +8,8 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Category } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
+import ProductUpsellSheet from "@/components/customization/ProductUpsellSheet";
+import { afterAddSuggestionTitleKey, resolveAfterAddSuggestions } from "@/lib/modifiers/afterAddSuggestions";
 import type { ModifierGroup, ProductModifierConfig, SelectionState, CartConfiguration } from "@/lib/modifiers/types";
 import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
 import { buildSelectionsFromState, validateAllGroups } from "@/lib/modifiers/validation";
@@ -90,6 +92,17 @@ export default function ProductCustomizationFlow({
   );
   const [comboStep, setComboStep] = useState(0);
   const [note, setNote] = useState("");
+  const [upsellOpen, setUpsellOpen] = useState(false);
+
+  const upsellSuggestions = useMemo(
+    () =>
+      resolveAfterAddSuggestions(product, menuProducts, menuCategories, new Set([product.id])).slice(0, 4),
+    [product, menuProducts, menuCategories],
+  );
+  const upsellTitle = useMemo(() => {
+    const key = afterAddSuggestionTitleKey(product, menuCategories);
+    return key ? t(key) : t("upsellTitle");
+  }, [product, menuCategories, t]);
 
   const totalSteps = useStepWizard ? wizardSteps.length : 1;
   const currentWizardStep = useStepWizard ? wizardSteps[comboStep] : null;
@@ -272,9 +285,15 @@ export default function ProductCustomizationFlow({
       }
 
       addItem(payload);
+
+      if (upsellSuggestions.length > 0) {
+        setUpsellOpen(true);
+        return;
+      }
       finishFlow();
     } catch (err) {
       console.error("[ProductCustomizationFlow] add to cart failed", err);
+      toast.error(t("errVerifyChoices"));
     }
   };
 
@@ -423,6 +442,22 @@ export default function ProductCustomizationFlow({
           </button>
         </div>
       </div>
+
+      {upsellOpen && (
+        <ProductUpsellSheet
+          title={upsellTitle}
+          suggestions={upsellSuggestions}
+          onPick={(id) => {
+            setUpsellOpen(false);
+            if (onOpenProduct) onOpenProduct(id);
+            else onBack();
+          }}
+          onSkip={() => {
+            setUpsellOpen(false);
+            finishFlow();
+          }}
+        />
+      )}
     </div>
   );
 }

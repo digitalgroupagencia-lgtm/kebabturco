@@ -67,10 +67,21 @@ export function resolveAfterAddSuggestions(
   return allProducts.filter((p) => p.isBestseller && !excludeIds.has(p.id)).slice(0, 3);
 }
 
-export function afterAddSuggestionTitle(product: MenuProduct, categories: Category[]): string {
-  if (product.afterAddSuggestions?.length) return "";
+export function afterAddSuggestionTitleKey(
+  product: MenuProduct,
+  _categories: Category[],
+): "upsellComboSide" | "addDrink" | "upsellTitle" | null {
+  if (product.afterAddSuggestions?.length) return null;
   const name = productName(product);
-  if (resolveIsComboProduct(product)) return "¿Algo para acompañar?";
-  if (/kebab|pita|rollo|durum|burger|hamburg/i.test(name)) return "¿Quieres bebida?";
-  return "¿Te apetece algo más?";
+  if (resolveIsComboProduct(product)) return "upsellComboSide";
+  if (/kebab|pita|rollo|durum|burger|hamburg/i.test(name)) return "addDrink";
+  return "upsellTitle";
+}
+
+export function afterAddSuggestionTitle(product: MenuProduct, categories: Category[]): string {
+  const key = afterAddSuggestionTitleKey(product, categories);
+  if (key === "upsellComboSide") return "¿Algo para acompañar?";
+  if (key === "addDrink") return "¿Quieres bebida?";
+  if (key === "upsellTitle") return "¿Te apetece algo más?";
+  return "";
 }
