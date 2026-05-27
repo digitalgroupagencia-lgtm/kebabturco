@@ -83,6 +83,7 @@ const OrderTypeScreen = () => {
   const { t, lang } = useLanguage();
   const { theme } = useTheme();
   const { storeId } = useResolvedStore();
+  const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
 
   const logo =
