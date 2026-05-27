@@ -28,6 +28,7 @@ type Props = {
   menuCategories?: Category[];
   editingItem?: CartItem;
   onBack: () => void;
+  onFinishAfterAdd?: () => void;
   onOpenProduct?: (productId: string) => void;
 };
 
@@ -43,6 +44,7 @@ export default function ProductCustomizationFlow({
   menuCategories = [],
   editingItem,
   onBack,
+  onFinishAfterAdd,
   onOpenProduct,
 }: Props) {
   const { t, tProduct } = useLanguage();
@@ -243,6 +245,8 @@ export default function ProductCustomizationFlow({
     if (comboStep < totalSteps - 1) setComboStep((s) => s + 1);
   };
 
+  const finishFlow = onFinishAfterAdd ?? onBack;
+
   const handleAdd = () => {
     if (useStepWizard && !isLastStep) {
       handleNext();
@@ -250,41 +254,48 @@ export default function ProductCustomizationFlow({
     }
     if (!validateAll()) return;
 
-    const cfg = buildConfiguration();
-    const flat = flattenConfiguration(cfg);
-    const { extras, removedIngredients } = selectionsToLegacyFields(flat);
+    try {
+      const cfg = buildConfiguration();
+      const flat = flattenConfiguration(cfg);
+      const { extras, removedIngredients } = selectionsToLegacyFields(flat);
+      const orderQty = editingItem ? editingItem.quantity : quantity;
 
-    const payload = {
-      productId: product.id,
-      productName: product.name,
-      productImage: product.image,
-      basePrice,
-      quantity: 1,
-      sizeName: null,
-      sizeAdd: 0,
-      extras,
-      removedIngredients,
-      note: note.trim() || undefined,
-      unitPrice,
-      totalPrice: unitPrice,
-      selections: flat,
-      configuration: cfg,
-      productType: effectiveConfig.productType,
-    };
+      const payload = {
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+        basePrice,
+        quantity: orderQty,
+        sizeName: null,
+        sizeAdd: 0,
+        extras,
+        removedIngredients,
+        note: note.trim() || undefined,
+        unitPrice,
+        totalPrice: unitPrice * orderQty,
+        selections: flat,
+        configuration: cfg,
+        productType: effectiveConfig.productType,
+      };
 
-    if (editingItem) {
-      updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity });
-      onBack();
-      return;
+      if (editingItem) {
+        updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity, totalPrice: unitPrice * editingItem.quantity });
+        onBack();
+        return;
+      }
+
+      addItem(payload);
+      toast.success(t("addToOrder"));
+
+      if (upsellSuggestions.length > 0) {
+        setUpsellOpen(true);
+        return;
+      }
+      finishFlow();
+    } catch (err) {
+      console.error("[ProductCustomizationFlow] add to cart failed", err);
+      toast.error(t("errVerifyChoices"));
     }
-
-    for (let i = 0; i < quantity; i++) addItem(payload);
-
-    if (upsellSuggestions.length > 0) {
-      setUpsellOpen(true);
-      return;
-    }
-    onBack();
   };
 
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
@@ -444,7 +455,7 @@ export default function ProductCustomizationFlow({
           }}
           onSkip={() => {
             setUpsellOpen(false);
-            onBack();
+            finishFlow();
           }}
         />
       )}

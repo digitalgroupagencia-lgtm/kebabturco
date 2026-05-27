@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const ProductScreen = () => {
   const {
     selectedProductId,
+    setSelectedProductId,
     setScreen,
     productReturnScreen,
     setProductReturnScreen,
@@ -26,6 +27,12 @@ const ProductScreen = () => {
     setProductReturnScreen("home");
     setEditingCartItemId(null);
     setScreen(target);
+  };
+
+  const finishAfterAdd = () => {
+    setProductReturnScreen("home");
+    setEditingCartItemId(null);
+    setScreen("review");
   };
 
   const { items } = useCart();
@@ -84,6 +91,7 @@ const ProductScreen = () => {
             editingItem={editingItem}
             editingCartItemId={editingCartItemId}
             onBack={goBack}
+            onFinishAfterAdd={finishAfterAdd}
           />
         }
       >
@@ -94,6 +102,7 @@ const ProductScreen = () => {
           menuCategories={categories}
           editingItem={editingItem}
           onBack={goBack}
+          onFinishAfterAdd={finishAfterAdd}
           onOpenProduct={openSuggestedProduct}
         />
       </ProductErrorBoundary>
@@ -103,6 +112,7 @@ const ProductScreen = () => {
         editingItem={editingItem}
         editingCartItemId={editingCartItemId}
         onBack={goBack}
+        onFinishAfterAdd={finishAfterAdd}
       />
     );
 

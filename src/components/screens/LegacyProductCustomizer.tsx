@@ -58,9 +58,10 @@ type Props = {
   editingItem?: CartItem;
   editingCartItemId: string | null;
   onBack: () => void;
+  onFinishAfterAdd?: () => void;
 };
 
-export default function LegacyProductCustomizer({ product, editingItem, editingCartItemId, onBack }: Props) {
+export default function LegacyProductCustomizer({ product, editingItem, editingCartItemId, onBack, onFinishAfterAdd }: Props) {
   const { addItem, updateItem } = useCart();
   const { t, tProduct } = useLanguage();
 
@@ -186,12 +187,13 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
 
     if (editingCartItemId) {
       updateItem(editingCartItemId, { ...basePayload, quantity, totalPrice });
-    } else {
-      for (let i = 0; i < quantity; i++) {
-        addItem({ ...basePayload, quantity: 1, totalPrice: unitPrice });
-      }
+      onBack();
+      return;
     }
-    onBack();
+
+    addItem({ ...basePayload, quantity, totalPrice });
+    toast.success(t("addToOrder"));
+    (onFinishAfterAdd ?? onBack)();
   };
 
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));

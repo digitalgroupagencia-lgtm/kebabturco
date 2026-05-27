@@ -56,6 +56,17 @@ const shouldKeepGrouped = (item: Omit<CartItem, "id">) =>
   Boolean(item.configuration?.comboUnits?.length) ||
   (item.selections?.length ?? 0) > 0;
 
+function createCartItemId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* fallback abaixo */
+  }
+  return `cart-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 const splitIntoSingleItems = (item: Omit<CartItem, "id">, firstId?: string): CartItem[] => {
   const quantity = Math.max(1, Math.trunc(Number(item.quantity) || 1));
   const unitPrice = Number.isFinite(item.unitPrice)
@@ -65,7 +76,7 @@ const splitIntoSingleItems = (item: Omit<CartItem, "id">, firstId?: string): Car
   if (shouldKeepGrouped(item)) {
     return [{
       ...item,
-      id: firstId || crypto.randomUUID(),
+      id: firstId || createCartItemId(),
       quantity: 1,
       unitPrice,
       totalPrice: unitPrice,
@@ -74,7 +85,7 @@ const splitIntoSingleItems = (item: Omit<CartItem, "id">, firstId?: string): Car
 
   return Array.from({ length: quantity }, (_, index) => ({
     ...item,
-    id: index === 0 && firstId ? firstId : crypto.randomUUID(),
+    id: index === 0 && firstId ? firstId : createCartItemId(),
     quantity: 1,
     unitPrice,
     totalPrice: unitPrice,
@@ -124,7 +135,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const addItem = (item: Omit<CartItem, "id">) => {
-    setItems(prev => [...prev, ...splitIntoSingleItems(item)]);
+    const rows = splitIntoSingleItems(item);
+    if (!rows.length) return;
+    setItems((prev) => [...prev, ...rows]);
   };
 
   const updateItem = (id: string, item: Omit<CartItem, "id">) => {
