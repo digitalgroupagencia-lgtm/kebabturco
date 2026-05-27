@@ -61,7 +61,7 @@ const CustomerBottomDock = () => {
             <div className="flex min-w-0 items-center gap-2">
               <ShoppingCart className="h-5 w-5 shrink-0" />
               <span className="truncate text-sm font-bold">
-                {totalItems} {totalItems === 1 ? "item" : t("items")}
+                {totalItems} {totalItems === 1 ? t("oneItem") : t("items")}
               </span>
               <span className="text-sm opacity-70">|</span>
               <span className="text-base font-black tabular-nums">{totalPrice.toFixed(2)}€</span>

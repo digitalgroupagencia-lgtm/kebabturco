@@ -11,7 +11,6 @@ import CustomerScreenErrorBoundary from "@/components/CustomerScreenErrorBoundar
 import DomainNotConfiguredScreen from "@/components/screens/DomainNotConfiguredScreen";
 import PageSpinner from "@/components/PageSpinner";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import { isAdminPreviewMode } from "@/lib/tenantPreview";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 
 const HomeScreen = lazy(() => import("@/components/screens/HomeScreen"));
@@ -139,24 +138,18 @@ const ScreenRouter = () => {
   }
 };
 
-const CustomerShell = () => {
-  const showChrome = !isAdminPreviewMode();
-
-  return (
+const CustomerShell = () => (
     <div className="customer-shell relative mx-auto flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden bg-background md:shadow-lg">
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         <div className="h-full min-h-0 flex-1">
           <ScreenRouter />
         </div>
       </div>
-      {showChrome && (
-        <CustomerScreenErrorBoundary scope="bootstrap">
-          <CustomerBottomDock />
-        </CustomerScreenErrorBoundary>
-      )}
+      <CustomerScreenErrorBoundary scope="bootstrap">
+        <CustomerBottomDock />
+      </CustomerScreenErrorBoundary>
     </div>
-  );
-};
+);
 
 // Kiosk Self-Service App
 const Index = () => (

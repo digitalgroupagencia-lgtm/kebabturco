@@ -218,6 +218,12 @@ const translations: Translations = {
   emptyCart: { pt: "Carrinho vazio", en: "Empty cart", es: "Carrito vacío", fr: "Panier vide" },
   viewMenu: { pt: "Ver cardápio", en: "View menu", es: "Ver menú", fr: "Voir le menu" },
   addMore: { pt: "Quer adicionar algo mais?", en: "Want to add anything else?", es: "¿Quieres añadir algo más?", fr: "Voulez-vous ajouter ?" },
+  addMoreItems: {
+    pt: "Adicionar mais produtos",
+    en: "Add more items",
+    es: "Añadir más productos",
+    fr: "Ajouter d'autres produits",
+  },
   addDrink: { pt: "Que tal uma bebida?", en: "How about a drink?", es: "¿Y una bebida?", fr: "Une boisson ?" },
   taxesIncluded: { pt: "Impostos incluídos", en: "Taxes included", es: "Impuestos incluidos", fr: "Taxes incluses" },
   enterName: { pt: "Indique seu nome", en: "Enter your name", es: "Indica tu nombre", fr: "Entrez votre prénom" },

@@ -374,7 +374,7 @@ const ReviewScreen = () => {
 
       {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}
       {items.length > 0 && (
-        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] space-y-2.5">
           <div className="flex items-end justify-between mb-2.5 px-1">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("total")}</p>
@@ -391,10 +391,15 @@ const ReviewScreen = () => {
             disabled={!canCheckout}
             className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
           >
-            <span>
-              {t("goToPayment")}
-            </span>
+            <span>{t("goToPayment")}</span>
             <ChevronRight className="w-5 h-5" strokeWidth={3} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setScreen("home")}
+            className="w-full py-3.5 px-5 rounded-[22px] border-2 border-border bg-card text-[14px] font-black text-foreground active:scale-[0.98] transition-transform touch-action-manipulation"
+          >
+            {t("addMoreItems")}
           </button>
         </div>
       )}
