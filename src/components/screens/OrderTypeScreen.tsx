@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
+import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
 
 type OrderOption = {
   key: "here" | "takeaway" | "delivery";
@@ -82,6 +83,7 @@ const OrderTypeScreen = () => {
   const { t, lang } = useLanguage();
   const { theme } = useTheme();
   const { storeId } = useResolvedStore();
+  const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
 
   const logo =
@@ -135,7 +137,8 @@ const OrderTypeScreen = () => {
   };
 
   const enabled: OrderOption[] = [];
-  if (opts.dine_in) {
+  // Mesa só aparece quando o cliente leu o QR da mesa
+  if (opts.dine_in && mesaLocked) {
     enabled.push({
       key: "here",
       label: t("eatHere"),
@@ -181,8 +184,11 @@ const OrderTypeScreen = () => {
 
       <div className="flex flex-col items-center px-6 pt-3 shrink-0">
         {!brandingLoading && logo && (
-          <div className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-            <img src={logo} alt={brandName} className="w-full h-full object-contain" draggable={false} />
+          <div
+            className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
+            {...logoGesture}
+          >
+            <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
           </div>
         )}
 
