@@ -1,4 +1,4 @@
-export type CustomerOrderScreen = "confirmation" | "tracking";
+export type CustomerOrderScreen = "confirmation" | "tracking" | "cashPending";
 
 /** Mantém ?order= e ?screen= na URL para o cliente recuperar o pedido após refresh. */
 export function syncActiveOrderUrl(orderId: string | null, screen?: CustomerOrderScreen | null) {
@@ -25,7 +25,7 @@ export function readOrderIdFromUrl(): string | null {
 export function readCustomerScreenFromUrl(): CustomerOrderScreen | null {
   if (typeof window === "undefined") return null;
   const s = new URLSearchParams(window.location.search).get("screen");
-  return s === "confirmation" || s === "tracking" ? s : null;
+  return s === "confirmation" || s === "tracking" || s === "cashPending" ? s : null;
 }
 
 const CUSTOMER_ACK_PREFIX = "kiosk-order-ack-";

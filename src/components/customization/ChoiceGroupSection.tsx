@@ -4,6 +4,8 @@ import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import PotatoUpsellSection from "@/components/customization/PotatoUpsellSection";
 import ProductChoiceCard from "@/components/customization/ProductChoiceCard";
+import InfoChoiceRow from "@/components/customization/InfoChoiceRow";
+import { isInformationalModifierGroup } from "@/lib/modifiers/informationalGroups";
 
 type Props = {
   group: ModifierGroup;
@@ -65,6 +67,7 @@ export default function ChoiceGroupSection({
   const isRemoval = group.groupKind === "removal";
   const isExtra = group.groupKind === "extra";
   const isSubstitution = group.groupKind === "substitution";
+  const isInformational = isInformationalModifierGroup(group);
   const isSingle = isSubstitution || group.selectionMode === "single";
   const key = groupKey(group.id, unitIndex);
   const selected = state.get(key) || new Map();
@@ -205,6 +208,28 @@ export default function ChoiceGroupSection({
               </div>
             );
           })
+        ) : isInformational ? (
+          <div className="flex flex-col gap-2">
+            {group.options.map((opt) => {
+              const qty = selected.get(opt.id) || 0;
+              const sel = qty > 0;
+              return (
+                <InfoChoiceRow
+                  key={opt.id}
+                  title={tName(opt.name)}
+                  selected={sel}
+                  onClick={() => {
+                    if (isSingle) {
+                      if (sel && group.isRequired) return;
+                      onChange(updateOption(state, group, opt.id, sel && !group.isRequired ? 0 : 1, unitIndex));
+                    } else {
+                      onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex));
+                    }
+                  }}
+                />
+              );
+            })}
+          </div>
         ) : (
           <div className={`grid gap-2 ${choiceGridCols(group.options.length)}`}>
             {group.options.map((opt) => {

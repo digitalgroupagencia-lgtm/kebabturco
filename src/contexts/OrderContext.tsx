@@ -33,7 +33,7 @@ import { useTableSessionBinding } from "@/hooks/useTableSessionBinding";
 import { customerScreenFromPathname } from "@/lib/routeRedirects";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 
-type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "confirmation" | "tracking" | "account";
+type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "cashPending" | "confirmation" | "tracking" | "account";
 export type { Screen };
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
 
@@ -103,7 +103,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const params = new URLSearchParams(window.location.search);
     const isPreview = params.get("preview") === "1";
     const p = params.get("screen");
-    const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "confirmation", "tracking", "account"];
+    const valid: Screen[] = ["splash", "language", "storeSelect", "orderType", "home", "product", "review", "payment", "cashPending", "confirmation", "tracking", "account"];
 
     if (isLovableEditorPreview()) {
       if (isPreview && valid.includes(p as Screen)) return p as Screen;
@@ -122,6 +122,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (orderParam || stored?.orderId) {
       const urlScreen = readCustomerScreenFromUrl();
+      if (urlScreen === "cashPending" || p === "cashPending") return "cashPending";
       if (urlScreen === "tracking" || p === "tracking") return "tracking";
       if (urlScreen === "confirmation" || stored?.screen === "confirmation" || p === "confirmation") return "confirmation";
       return "confirmation";
@@ -191,7 +192,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         orderId: activeOrderId,
         orderNumber,
         storeId: effectiveStoreId,
-        screen: screen === "confirmation" || screen === "tracking" ? screen : undefined,
+        screen: screen === "confirmation" || screen === "tracking" || screen === "cashPending" ? screen : undefined,
       });
     }
   }, [activeOrderId, orderNumber, effectiveStoreId, screen]);

@@ -5,6 +5,7 @@ export type PublicOrderTrack = {
   id: string;
   order_number: string;
   status: string;
+  payment_status?: string;
   order_type: string;
   total: number;
   created_at: string;

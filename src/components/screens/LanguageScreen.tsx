@@ -10,7 +10,6 @@ import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
 import flagFr from "@/assets/flag-fr.png";
-import { Loader2 } from "lucide-react";
 
 const FALLBACK_FLAG: Record<string, string> = {
   pt: flagBr,
@@ -30,7 +29,7 @@ const LanguageScreen = () => {
   const { setScreen } = useOrder();
   const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
   const { settings } = useBranding();
-  const { stores, loading: storeLoading } = useResolvedStore();
+  const { stores, setSelectedStoreId } = useResolvedStore();
   const { theme } = useTheme();
   const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
@@ -49,18 +48,6 @@ const LanguageScreen = () => {
     setLang(code);
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
-
-  if (storeLoading) {
-    return (
-      <div
-        className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-background"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
-      >
-        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar" />
-        <p className="text-sm text-muted-foreground font-semibold">A carregar menu…</p>
-      </div>
-    );
-  }
 
   return (
     <div

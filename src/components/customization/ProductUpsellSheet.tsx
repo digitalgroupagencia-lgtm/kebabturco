@@ -17,7 +17,7 @@ export default function ProductUpsellSheet({ title, suggestions, onPick, onSkip 
   if (suggestions.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-[2px]">
+    <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-[2px]">
       <div className="bg-background rounded-t-[28px] border-t border-border/60 shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.35)] max-h-[78vh] flex flex-col animate-in slide-in-from-bottom duration-300">
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-2">
           <div>

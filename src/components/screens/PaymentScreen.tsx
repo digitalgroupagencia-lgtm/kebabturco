@@ -237,6 +237,12 @@ const PaymentScreen = () => {
   const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing && !stripeClientSecret;
 
   useEffect(() => {
+    if (checkoutMethods.length === 0) return;
+    const cardMethod = checkoutMethods.find((m) => m.id === "card");
+    if (cardMethod) {
+      setSelected("card");
+      return;
+    }
     if (checkoutMethods.length === 1) {
       setSelected(checkoutMethods[0].id);
       return;
@@ -358,7 +364,9 @@ const PaymentScreen = () => {
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
-    syncActiveOrderUrl(result.order_id, "confirmation");
+    const awaitsCounterPayment =
+      (opts.paymentMethod === "cash" || opts.paymentMethod === "counter") && opts.paymentStatus !== "paid";
+    syncActiveOrderUrl(result.order_id, awaitsCounterPayment ? "cashPending" : "confirmation");
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
     if (orderType === "delivery") {
@@ -420,6 +428,10 @@ const PaymentScreen = () => {
     }
 
     clearCart();
+    if (awaitsCounterPayment) {
+      setScreen("cashPending");
+      return result;
+    }
     setScreen("confirmation");
     return result;
   };
@@ -864,17 +876,31 @@ const PaymentScreen = () => {
                 <div className="flex flex-col gap-1.5">
                   {checkoutMethods.map((pm) => {
                     const isSel = selected === pm.id;
+                    const cardBlocked = pm.id === "card" && !stripeEnabled;
                     return (
                       <button
                         key={pm.id}
                         type="button"
                         onClick={() => { setSelected(pm.id); setShowError(null); }}
-                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${isSel ? "border-success bg-success/5" : "border-border bg-card"}`}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${
+                          isSel ? "border-success bg-success/5" : "border-border bg-card"
+                        } ${cardBlocked ? "opacity-90" : ""}`}
                       >
                         <pm.icon className="w-5 h-5 shrink-0" />
                         <div className="flex-1 text-left min-w-0">
-                          <p className="font-black text-sm">{tProduct(METHOD_LABELS[pm.id])}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{tProduct(METHOD_SUBS[pm.id])}</p>
+                          <p className="font-black text-sm">
+                            {tProduct(METHOD_LABELS[pm.id])}
+                            {pm.id === "card" ? (
+                              <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                                {t("recommended")}
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {cardBlocked && pm.id === "card" && stripeIssue
+                              ? stripeIssue
+                              : tProduct(METHOD_SUBS[pm.id])}
+                          </p>
                         </div>
                         {isSel && <Check className="w-5 h-5 text-success shrink-0" />}
                       </button>

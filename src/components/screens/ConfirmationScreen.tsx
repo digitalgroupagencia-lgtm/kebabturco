@@ -62,6 +62,14 @@ const ConfirmationScreen = () => {
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    const awaitsCounter =
+      (paymentMethod === "cash" || paymentMethod === "counter") &&
+      orderPaymentStatus !== "paid" &&
+      activeOrderId;
+    if (awaitsCounter) setScreen("cashPending");
+  }, [paymentMethod, orderPaymentStatus, activeOrderId, setScreen]);
+
   const liveStatus = liveOrder?.status || "pending";
   const liveOrderType = liveOrder?.order_type || (orderType === "here" ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway");
   const displayNumber = liveOrder?.order_number || orderNumber;

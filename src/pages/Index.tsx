@@ -18,6 +18,7 @@ const HomeScreen = lazy(() => import("@/components/screens/HomeScreen"));
 const ProductScreen = lazy(() => import("@/components/screens/ProductScreen"));
 const ReviewScreen = lazy(() => import("@/components/screens/ReviewScreen"));
 const PaymentScreen = lazy(() => import("@/components/screens/PaymentScreen"));
+const CashPendingScreen = lazy(() => import("@/components/screens/CashPendingScreen"));
 const ConfirmationScreen = lazy(() => import("@/components/screens/ConfirmationScreen"));
 const OrderTrackingScreen = lazy(() => import("@/components/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/components/screens/CustomerAccountScreen"));
@@ -94,6 +95,14 @@ const ScreenRouter = () => {
         <CustomerScreenErrorBoundary scope="checkout">
           <LazyScreen>
             <PaymentScreen />
+          </LazyScreen>
+        </CustomerScreenErrorBoundary>
+      );
+    case "cashPending":
+      return (
+        <CustomerScreenErrorBoundary scope="checkout">
+          <LazyScreen>
+            <CashPendingScreen />
           </LazyScreen>
         </CustomerScreenErrorBoundary>
       );

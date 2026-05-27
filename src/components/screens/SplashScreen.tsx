@@ -37,7 +37,7 @@ const SplashScreen = () => {
     const timer = setTimeout(() => {
       const mesaQr = hasMesaQrInUrl();
       setScreen(mesaQr ? "orderType" : activeLangs.length > 1 ? "language" : "orderType");
-    }, 1800);
+    }, 900);
     return () => clearTimeout(timer);
   }, [setScreen, activeLangs.length]);
 

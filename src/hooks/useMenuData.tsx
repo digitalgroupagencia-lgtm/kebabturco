@@ -4,6 +4,7 @@ const supabase = _supabaseRaw as unknown as any;
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
 import { safeHasFixedProtein } from "@/lib/modifiers/safeCustomization";
+import { readMenuCache, writeMenuCache } from "@/lib/menuCache";
 import { normalizeProductClassification } from "@/lib/modifiers/productClassification";
 import type { Category, Extra, Product, Variant } from "@/data/products";
 
@@ -62,8 +63,16 @@ export function useMenuData() {
       return;
     }
 
+    const cached = readMenuCache(effectiveStoreId);
+    if (cached) {
+      setCategories(cached.categories);
+      setProducts(cached.products);
+      setError(null);
+      setLoading(false);
+    }
+
     (async () => {
-      setLoading(true);
+      if (!cached) setLoading(true);
       setError(null);
 
       const [catRes, prodRes] = await Promise.all([
@@ -204,6 +213,7 @@ export function useMenuData() {
 
       setCategories(mappedCategories);
       setProducts(mappedProducts);
+      writeMenuCache(effectiveStoreId, mappedCategories, mappedProducts);
       setError(null);
       setLoading(false);
     })();
