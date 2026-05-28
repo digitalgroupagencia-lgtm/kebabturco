@@ -2,6 +2,8 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createStaffMember } from "./createStaffMember";
 
 const mockSignUp = vi.fn();
+const mockSignInWithPassword = vi.fn();
+const mockSignOut = vi.fn();
 const mockFrom = vi.fn();
 const mockRpc = vi.fn();
 
@@ -21,6 +23,8 @@ vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(() => ({
     auth: {
       signUp: (...args: unknown[]) => mockSignUp(...args),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
     },
   })),
 }));
@@ -42,6 +46,11 @@ describe("createStaffMember", () => {
       data: { user: { id: "user-new-1" } },
       error: null,
     });
+    mockSignInWithPassword.mockResolvedValue({
+      data: { session: { access_token: "test" } },
+      error: null,
+    });
+    mockSignOut.mockResolvedValue({ error: null });
     mockFrom.mockImplementation((table: string) => {
       if (table === "user_roles") {
         return {
@@ -84,6 +93,7 @@ describe("createStaffMember", () => {
     expect(result.success).toBe(true);
     expect(result.user_id).toBe("user-new-1");
     expect(result.created_new_user).toBe(true);
+    expect(typeof result.login_ready).toBe("boolean");
     expect(mockSignUp).toHaveBeenCalledWith(
       expect.objectContaining({ email: "entregador@teste.com" }),
     );

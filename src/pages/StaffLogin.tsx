@@ -10,6 +10,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { markStaffSession, resolveStaffLoginDestination } from "@/lib/staffLogin";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
+import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 
@@ -54,8 +55,8 @@ const StaffLogin = () => {
       });
       if (signInError) throw signInError;
       markStaffSession();
-    } catch {
-      setError(copy.loginFailed);
+    } catch (e) {
+      setError(translateAppErrorFromException(e, lang));
     } finally {
       setSubmitting(false);
     }

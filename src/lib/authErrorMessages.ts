@@ -75,10 +75,22 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     pt: "Não foi possível concluir. Tente novamente.",
     es: "No se pudo completar. Inténtelo de nuevo.",
   },
+  invalid_credentials: {
+    pt: "E-mail ou senha incorrectos. Se acabou de criar o membro na Equipe, edite-o e guarde a senha outra vez.",
+    es: "Correo o contraseña incorrectos. Si acaba de crear al miembro en Equipo, edítelo y guarde la contraseña otra vez.",
+  },
+  email_not_confirmed: {
+    pt: "Conta ainda não confirmada. Peça ao gerente para republicar a app na Lovable.",
+    es: "Cuenta aún no confirmada. Pida al gerente que vuelva a publicar la app en Lovable.",
+  },
 };
 
 function detectKey(raw: string): keyof typeof MESSAGES {
   const m = raw.toLowerCase();
+  if (m.includes("invalid login credentials") || m.includes("invalid email or password")) {
+    return "invalid_credentials";
+  }
+  if (m.includes("email not confirmed") || m.includes("not confirmed")) return "email_not_confirmed";
   if (m.includes("weak") && m.includes("password")) return "weak_password";
   if (m.includes("known to be weak") || m.includes("easy to guess")) return "weak_password";
   if (m.includes("password") && (m.includes("short") || m.includes("least"))) return "password_too_short";

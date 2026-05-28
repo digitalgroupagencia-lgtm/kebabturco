@@ -18,7 +18,7 @@ import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
-import { createStaffMember } from "@/services/createStaffMember";
+import { createStaffMember, verifyStaffMemberLogin } from "@/services/createStaffMember";
 import { updateStaffMember } from "@/services/updateStaffMember";
 import {
   loadTeamOnboardingCache,
@@ -270,6 +270,11 @@ const TeamPage = () => {
         password: editPassword.trim() || undefined,
       });
 
+      let loginReady = true;
+      if (editPassword.trim() && editMember.email) {
+        loginReady = await verifyStaffMemberLogin(editMember.email, editPassword.trim());
+      }
+
       const cache = loadTeamOnboardingCache(storeId, editMember.id);
       persistOnboardingCache(editMember.id, {
         name: editName.trim(),
@@ -280,6 +285,14 @@ const TeamPage = () => {
       });
 
       toast.success(lang === "es" ? "Miembro actualizado" : "Membro actualizado");
+      if (editPassword.trim() && !loginReady) {
+        toast.warning(
+          lang === "es"
+            ? "Perfil guardado, pero el login aún no responde. Publique create-staff-member en Lovable e intente de nuevo."
+            : "Perfil guardado, mas o login ainda não responde. Publique create-staff-member na Lovable e tente outra vez.",
+          { duration: 8000 },
+        );
+      }
       setEditMember(null);
       await fetchMembers();
 
@@ -332,6 +345,14 @@ const TeamPage = () => {
           uiLang === "es"
             ? "Este correo ya existía: se añadió al equipo, pero la contraseña anterior se mantiene."
             : "Este e-mail já existia: foi adicionado à equipa, mas a senha anterior mantém-se.",
+        );
+      }
+      if (!result.login_ready) {
+        toast.warning(
+          uiLang === "es"
+            ? "El miembro fue creado, pero el login aún no funciona. Edítelo, vuelva a escribir la contraseña y guarde."
+            : "O membro foi criado, mas o login ainda não funciona. Edite-o, volte a escrever a senha e guarde.",
+          { duration: 8000 },
         );
       }
       setWelcomeData({

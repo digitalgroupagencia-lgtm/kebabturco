@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import { isNetworkOrEdgeUnavailable } from "@/lib/networkErrors";
 import type { StaffRole } from "@/lib/staffPermissions";
+import type { UpdateStaffMemberInput } from "@/services/updateStaffMember";
 
 export type CreateStaffMemberInput = {
   email: string;
@@ -17,8 +18,10 @@ export type CreateStaffMemberInput = {
 export type CreateStaffMemberResult = {
   success: true;
   user_id: string;
+  user_role_id?: string;
   created_new_user: boolean;
   password_unchanged?: boolean;
+  login_ready: boolean;
 };
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -84,15 +87,46 @@ async function invokeEdgeFunction(
     success: true,
     user_id: payload.user_id,
     created_new_user: Boolean(payload.created_new_user),
+    login_ready: false,
   };
+}
+
+async function invokeUpdateEdge(input: UpdateStaffMemberInput): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token ?? SUPABASE_KEY;
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/update-staff-member`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: SUPABASE_KEY,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok || payload.error) {
+    throw new Error(payload.error || `Erro ao actualizar membro (${res.status})`);
+  }
 }
 
 async function lookupExistingUserId(email: string): Promise<string | null> {
   const { data, error } = await (supabase.rpc as any)("lookup_staff_user_by_email", {
     _email: email.trim().toLowerCase(),
   });
-  if (error) throw error;
+  if (error) return null;
   return (data as string | null) ?? null;
+}
+
+async function fetchUserRoleId(userId: string, storeId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return data?.id ?? null;
 }
 
 async function upsertStaffProfileByManager(input: CreateStaffMemberInput, userId: string) {
@@ -103,13 +137,60 @@ async function upsertStaffProfileByManager(input: CreateStaffMemberInput, userId
   });
 
   if (error) {
-    // Compatibilidade: se a função ainda não existir na BD, não falha a criação da equipa.
     const msg = extractErrorMessage(error).toLowerCase();
     if (msg.includes("could not find the function") || msg.includes("schema cache")) {
       return;
     }
     throw error;
   }
+}
+
+async function canSignInWithPassword(email: string, password: string): Promise<boolean> {
+  const ephemeral = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storage: memoryStorage,
+    },
+  });
+
+  const { data, error } = await ephemeral.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+
+  if (error || !data.session) return false;
+
+  await ephemeral.auth.signOut();
+  return true;
+}
+
+/** Garante que e-mail + senha funcionam — usa o servidor (admin) se necessário. */
+async function ensureStaffLoginReady(
+  input: CreateStaffMemberInput,
+  userId: string,
+  userRoleId: string,
+): Promise<boolean> {
+  if (await canSignInWithPassword(input.email, input.password)) {
+    return true;
+  }
+
+  try {
+    await invokeUpdateEdge({
+      user_id: userId,
+      user_role_id: userRoleId,
+      store_id: input.store_id,
+      full_name: input.full_name,
+      role: input.role,
+      preferred_language: input.preferred_language,
+      password: input.password,
+    });
+  } catch {
+    return false;
+  }
+
+  return canSignInWithPassword(input.email, input.password);
 }
 
 async function createStaffMemberLocally(
@@ -204,44 +285,56 @@ async function createStaffMemberLocally(
 
   await upsertStaffProfileByManager(input, userId);
 
+  const loginReady = await ensureStaffLoginReady(input, userId, roleRow.id);
+  if (!loginReady && !passwordUnchanged) {
+    passwordUnchanged = false;
+  } else if (!loginReady) {
+    passwordUnchanged = true;
+  } else {
+    passwordUnchanged = false;
+  }
+
   return {
     success: true,
     user_id: userId,
+    user_role_id: roleRow.id,
     created_new_user: createdNewUser,
     password_unchanged: passwordUnchanged,
+    login_ready: loginReady,
   };
 }
 
-/** Edge indisponível ou erro técnico — tenta criar directo na base de dados. */
+/** Só usa fallback local quando o servidor remoto está mesmo indisponível. */
 function shouldFallbackToLocalAfterEdge(message: string, httpStatus: number): boolean {
-  if (httpStatus === 401) return false;
+  if (httpStatus === 401 || httpStatus === 403) return false;
 
   const m = message.toLowerCase();
   const definitive =
     m.includes("já faz parte") ||
-    m.includes("already") && m.includes("equipa") ||
+    (m.includes("already") && m.includes("equipa")) ||
     m.includes("invalid email") ||
     m.includes("correo inválido") ||
     m.includes("código deve ter") ||
     m.includes("codigo deve ter") ||
-    m.includes("codigo invalido") ||
+    m.includes("access_pin") ||
     (m.includes("weak") && m.includes("password")) ||
     m.includes("senha precisa") ||
     m.includes("signup is disabled") ||
-    m.includes("signups not allowed");
+    m.includes("signups not allowed") ||
+    m.includes("forbidden") ||
+    m.includes("sem permissão");
   if (definitive) return false;
 
   if (isNetworkOrEdgeUnavailable(message)) return true;
-  if (httpStatus === 404 || httpStatus === 502 || httpStatus === 503 || httpStatus === 504 || httpStatus === 500) {
+  if (httpStatus === 404 || httpStatus === 502 || httpStatus === 503 || httpStatus === 504) {
     return true;
   }
-  if (m.includes("erro ao criar membro (404)")) return true;
-  if (m.includes("resposta inválida")) return true;
-  if (httpStatus === 400 || httpStatus === 403 || httpStatus === 0) return true;
+  if (httpStatus === 500 && !m.includes("já")) return true;
+  if (httpStatus === 0) return true;
   return false;
 }
 
-/** Cria membro da equipa — tenta servidor remoto e, se falhar, usa registo directo. */
+/** Cria membro da equipa com conta de login activa (e-mail + senha). */
 export async function createStaffMember(
   input: CreateStaffMemberInput,
 ): Promise<CreateStaffMemberResult> {
@@ -251,7 +344,17 @@ export async function createStaffMember(
   try {
     const edge = await invokeEdgeFunction(input);
     if (!("error" in edge)) {
-      return edge;
+      const userRoleId = (await fetchUserRoleId(edge.user_id, input.store_id)) ?? undefined;
+      const loginReady = userRoleId
+        ? await ensureStaffLoginReady(input, edge.user_id, userRoleId)
+        : await canSignInWithPassword(input.email, input.password);
+
+      return {
+        ...edge,
+        user_role_id: userRoleId,
+        login_ready: loginReady,
+        password_unchanged: !loginReady,
+      };
     }
     edgeError = edge.error;
     edgeStatus = edge.httpStatus;
@@ -266,4 +369,22 @@ export async function createStaffMember(
   }
 
   return createStaffMemberLocally(input);
+}
+
+/** Confirma se e-mail + senha entram na app. */
+export async function verifyStaffMemberLogin(email: string, password: string): Promise<boolean> {
+  return canSignInWithPassword(email, password);
+}
+
+/** Repõe a senha via servidor e confirma se o login funciona. */
+export async function repairStaffMemberLogin(
+  input: UpdateStaffMemberInput & { email: string },
+): Promise<boolean> {
+  if (!input.password?.trim() || !input.email.trim()) return false;
+  try {
+    await invokeUpdateEdge(input);
+  } catch {
+    return false;
+  }
+  return canSignInWithPassword(input.email, input.password);
 }
