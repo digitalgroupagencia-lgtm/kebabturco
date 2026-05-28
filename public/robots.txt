@@ -1,14 +1,15 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /delete-account
+Allow: /support
+
+Disallow: /admin
+Disallow: /panel
+Disallow: /auth
+Disallow: /staff
+Disallow: /seller
+Disallow: /delivery
+
+Sitemap: https://kebabturco.net/sitemap.xml

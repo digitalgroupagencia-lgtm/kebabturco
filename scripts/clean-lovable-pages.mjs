@@ -9,6 +9,7 @@ import path from "node:path";
 
 const pagesRoot = path.join(process.cwd(), "src", "pages");
 const allowedFiles = new Set(["Index.tsx", "Auth.tsx", "StaffLogin.tsx", "Install.tsx", "NotFound.tsx", "README.md"]);
+const allowedDirs = new Set(["legal"]);
 
 if (!fs.existsSync(pagesRoot)) {
   process.exit(0);
@@ -18,6 +19,7 @@ for (const name of fs.readdirSync(pagesRoot)) {
   const full = path.join(pagesRoot, name);
   const stat = fs.statSync(full);
   if (stat.isDirectory()) {
+    if (allowedDirs.has(name)) continue;
     fs.rmSync(full, { recursive: true, force: true });
     console.log(`[clean-lovable-pages] removed folder ${full}`);
   } else if (!allowedFiles.has(name)) {

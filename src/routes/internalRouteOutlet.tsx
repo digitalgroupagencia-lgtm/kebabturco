@@ -7,6 +7,7 @@ import AdminLayout from "@/components/admin/AdminLayout.tsx";
 import SellerLayout from "@/components/seller/SellerLayout.tsx";
 import DeliveryLayout from "@/components/delivery/DeliveryLayout.tsx";
 import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/navPaths.ts";
+import { legalPageLoader } from "@/lib/legalRoutes.ts";
 import { resolveAdminRestaurantPanelAlias, resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 
 const AREA_LAYOUT: Record<AppArea, ComponentType<{ page?: ComponentType<object> }>> = {
@@ -39,6 +40,12 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
 
   if (pathname === "/install") {
     return withSuspense(<Install />);
+  }
+
+  const legalLoader = legalPageLoader(pathname);
+  if (legalLoader) {
+    const LegalPage = lazy(legalLoader);
+    return withSuspense(<LegalPage />);
   }
 
   const legacyRedirect = resolveLegacyRouteRedirect(pathname);

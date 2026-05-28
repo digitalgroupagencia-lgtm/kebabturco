@@ -15,6 +15,10 @@ export const nav = {
   seller: (...rest: string[]) => joinPath("seller", ...rest),
   delivery: (...rest: string[]) => joinPath("delivery", ...rest),
   staff: () => joinPath("staff"),
+  privacy: () => joinPath("privacy"),
+  terms: () => joinPath("terms"),
+  deleteAccount: () => joinPath("delete-account"),
+  support: () => joinPath("support"),
 } as const;
 
 /** Lista curada — dropdown preview Lovable (só loja + login). */

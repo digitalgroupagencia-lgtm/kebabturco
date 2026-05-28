@@ -10,6 +10,10 @@ export const RESERVED_APP_PATHS = new Set([
   "staff",
   "equipe",
   "preview",
+  "privacy",
+  "terms",
+  "delete-account",
+  "support",
 ]);
 
 export function isReservedAppPath(segment: string | null | undefined): boolean {
