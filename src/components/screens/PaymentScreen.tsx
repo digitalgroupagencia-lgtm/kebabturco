@@ -23,6 +23,7 @@ import {
   saveSavedCustomerPhone,
   saveSavedDeliveryAddress,
   hasCustomerProfile,
+  formatDeliveryComplement,
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -101,8 +102,10 @@ const PaymentScreen = () => {
     setDeliveryAddress,
     deliveryNumber,
     setDeliveryNumber,
-    deliveryComplement,
-    setDeliveryComplement,
+    deliveryFloor,
+    setDeliveryFloor,
+    deliveryDoor,
+    setDeliveryDoor,
     deliveryPostalCode,
     setDeliveryPostalCode,
     deliveryCity,
@@ -312,9 +315,12 @@ const PaymentScreen = () => {
   }
   const notes = notesParts.length ? notesParts.join(" | ") : null;
 
+  const deliveryComplementText =
+    orderType === "delivery" ? formatDeliveryComplement(deliveryFloor, deliveryDoor) : "";
+
   const deliveryFullAddress =
     orderType === "delivery"
-      ? `${deliveryAddress.trim()}${deliveryNumber.trim() ? ` ${deliveryNumber.trim()}` : ""}${deliveryCity.trim() ? `, ${deliveryCity.trim()}` : ""}${deliveryPostalCode.trim() ? ` ${deliveryPostalCode.trim()}` : ""}`
+      ? `${deliveryAddress.trim()}${deliveryNumber.trim() ? ` ${deliveryNumber.trim()}` : ""}${deliveryComplementText ? `, ${deliveryComplementText}` : ""}${deliveryCity.trim() ? `, ${deliveryCity.trim()}` : ""}${deliveryPostalCode.trim() ? ` ${deliveryPostalCode.trim()}` : ""}`
       : null;
 
   const enqueueCheckoutPrint = async (
@@ -393,7 +399,7 @@ const PaymentScreen = () => {
       stripePaymentIntentId: opts.stripePi || null,
       deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
       deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
-      deliveryComplement: orderType === "delivery" ? deliveryComplement.trim() : null,
+      deliveryComplement: orderType === "delivery" ? deliveryComplementText || null : null,
       deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
       deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
       deliveryNotes: orderType === "delivery" ? deliveryNotes.trim() : null,
@@ -425,7 +431,8 @@ const PaymentScreen = () => {
       saveSavedDeliveryAddress({
         street: deliveryAddress.trim(),
         number: deliveryNumber.trim(),
-        complement: deliveryComplement.trim(),
+        floor: deliveryFloor.trim(),
+        door: deliveryDoor.trim(),
         postalCode: deliveryPostalCode.trim(),
         city: deliveryCity.trim(),
         notes: deliveryNotes.trim(),
@@ -668,7 +675,7 @@ const PaymentScreen = () => {
                     stripePaymentIntentId: stripePaymentIntentId,
                     deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
                     deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
-                    deliveryComplement: orderType === "delivery" ? deliveryComplement.trim() : null,
+                    deliveryComplement: orderType === "delivery" ? deliveryComplementText || null : null,
                     deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
                     deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
                     deliveryNotes: orderType === "delivery" ? deliveryNotes.trim() : null,
@@ -843,8 +850,13 @@ const PaymentScreen = () => {
                     <input type="text" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value.slice(0, 120))} className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={t("addressNumber")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
-                    <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={t("addressPostal")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                    <input type="text" value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value.slice(0, 10))} placeholder={`${t("addressNumber")} *`} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                    <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={`${t("addressPostal")} *`} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">{t("addressFloorDoorHint")}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" value={deliveryFloor} onChange={(e) => setDeliveryFloor(e.target.value.slice(0, 20))} placeholder={t("addressFloorPh")} aria-label={t("addressFloor")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                    <input type="text" value={deliveryDoor} onChange={(e) => setDeliveryDoor(e.target.value.slice(0, 20))} placeholder={t("addressDoorPh")} aria-label={t("addressDoor")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
                   </div>
                   <input
                     type="text"

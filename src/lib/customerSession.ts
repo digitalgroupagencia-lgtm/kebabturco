@@ -214,11 +214,60 @@ export const KIOSK_DELIVERY_KEY = "kiosk-delivery-address";
 export type SavedDeliveryAddress = {
   street: string;
   number: string;
-  complement: string;
+  floor: string;
+  door: string;
   postalCode: string;
   city: string;
   notes: string;
 };
+
+/** Combines optional floor/door for orders and legacy `delivery_complement` column. */
+export function formatDeliveryComplement(floor: string, door: string): string {
+  const parts: string[] = [];
+  const f = floor.trim();
+  const d = door.trim();
+  if (f) parts.push(/^piso\b/i.test(f) ? f : `Piso ${f}`);
+  if (d) parts.push(/^porta\b/i.test(d) ? d : `Porta ${d}`);
+  return parts.join(", ");
+}
+
+function normalizeSavedDelivery(parsed: Record<string, unknown>): SavedDeliveryAddress {
+  const floor = String(parsed.floor ?? "").trim();
+  const door = String(parsed.door ?? "").trim();
+  const legacyComplement = String(parsed.complement ?? "").trim();
+  if (!floor && !door && legacyComplement) {
+    const split = legacyComplement.match(/^(\d+\s*º?\s*)\s*(.+)$/i);
+    if (split) {
+      return {
+        street: String(parsed.street ?? ""),
+        number: String(parsed.number ?? ""),
+        floor: split[1].trim(),
+        door: split[2].trim(),
+        postalCode: String(parsed.postalCode ?? ""),
+        city: String(parsed.city ?? ""),
+        notes: String(parsed.notes ?? ""),
+      };
+    }
+    return {
+      street: String(parsed.street ?? ""),
+      number: String(parsed.number ?? ""),
+      floor: "",
+      door: legacyComplement,
+      postalCode: String(parsed.postalCode ?? ""),
+      city: String(parsed.city ?? ""),
+      notes: String(parsed.notes ?? ""),
+    };
+  }
+  return {
+    street: String(parsed.street ?? ""),
+    number: String(parsed.number ?? ""),
+    floor,
+    door,
+    postalCode: String(parsed.postalCode ?? ""),
+    city: String(parsed.city ?? ""),
+    notes: String(parsed.notes ?? ""),
+  };
+}
 
 export function loadSavedCustomerName(): string {
   try {
@@ -242,16 +291,9 @@ export function loadSavedDeliveryAddress(): SavedDeliveryAddress | null {
   try {
     const raw = localStorage.getItem(KIOSK_DELIVERY_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as SavedDeliveryAddress;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (!parsed || typeof parsed !== "object") return null;
-    return {
-      street: parsed.street || "",
-      number: parsed.number || "",
-      complement: parsed.complement || "",
-      postalCode: parsed.postalCode || "",
-      city: parsed.city || "",
-      notes: parsed.notes || "",
-    };
+    return normalizeSavedDelivery(parsed);
   } catch {
     return null;
   }
@@ -270,7 +312,8 @@ export function saveSavedDeliveryAddress(addr: SavedDeliveryAddress) {
 const EMPTY_DELIVERY: SavedDeliveryAddress = {
   street: "",
   number: "",
-  complement: "",
+  floor: "",
+  door: "",
   postalCode: "",
   city: "",
   notes: "",
@@ -318,7 +361,8 @@ export function applyCustomerProfileToOrderContext(
     setCustomerPhone: (v: string) => void;
     setDeliveryAddress: (v: string) => void;
     setDeliveryNumber: (v: string) => void;
-    setDeliveryComplement: (v: string) => void;
+    setDeliveryFloor: (v: string) => void;
+    setDeliveryDoor: (v: string) => void;
     setDeliveryPostalCode: (v: string) => void;
     setDeliveryCity: (v: string) => void;
     setDeliveryNotes: (v: string) => void;
@@ -332,7 +376,8 @@ export function applyCustomerProfileToOrderContext(
   const d = profile.delivery;
   if (d.street.trim()) setters.setDeliveryAddress(d.street.trim());
   if (d.number.trim()) setters.setDeliveryNumber(d.number.trim());
-  if (d.complement.trim()) setters.setDeliveryComplement(d.complement.trim());
+  if (d.floor.trim()) setters.setDeliveryFloor(d.floor.trim());
+  if (d.door.trim()) setters.setDeliveryDoor(d.door.trim());
   if (d.postalCode.trim()) setters.setDeliveryPostalCode(d.postalCode.trim());
   if (d.city.trim()) setters.setDeliveryCity(d.city.trim());
   if (d.notes.trim()) setters.setDeliveryNotes(d.notes.trim());

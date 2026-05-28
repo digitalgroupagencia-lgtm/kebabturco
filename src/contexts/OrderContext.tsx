@@ -24,6 +24,7 @@ import {
   saveSavedCustomerName,
   saveSavedCustomerPhone,
   saveSavedDeliveryAddress,
+  type SavedDeliveryAddress,
   saveSavedMesaToken,
   saveSavedTableNumber,
   shouldSkipLanguageScreen,
@@ -73,8 +74,10 @@ interface OrderContextType {
   setDeliveryAddress: (v: string) => void;
   deliveryNumber: string;
   setDeliveryNumber: (v: string) => void;
-  deliveryComplement: string;
-  setDeliveryComplement: (v: string) => void;
+  deliveryFloor: string;
+  setDeliveryFloor: (v: string) => void;
+  deliveryDoor: string;
+  setDeliveryDoor: (v: string) => void;
   deliveryPostalCode: string;
   setDeliveryPostalCode: (v: string) => void;
   deliveryCity: string;
@@ -244,76 +247,51 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const [deliveryAddress, setDeliveryAddressState] = useState(savedDelivery?.street ?? "");
   const [deliveryNumber, setDeliveryNumberState] = useState(savedDelivery?.number ?? "");
-  const [deliveryComplement, setDeliveryComplementState] = useState(savedDelivery?.complement ?? "");
+  const [deliveryFloor, setDeliveryFloorState] = useState(savedDelivery?.floor ?? "");
+  const [deliveryDoor, setDeliveryDoorState] = useState(savedDelivery?.door ?? "");
   const [deliveryPostalCode, setDeliveryPostalCodeState] = useState(savedDelivery?.postalCode ?? "");
   const [deliveryCity, setDeliveryCityState] = useState(savedDelivery?.city ?? "");
   const [deliveryNotes, setDeliveryNotesState] = useState(savedDelivery?.notes ?? "");
 
+  const persistDeliveryAddress = (patch: Partial<SavedDeliveryAddress>) => {
+    saveSavedDeliveryAddress({
+      street: patch.street ?? deliveryAddress,
+      number: patch.number ?? deliveryNumber,
+      floor: patch.floor ?? deliveryFloor,
+      door: patch.door ?? deliveryDoor,
+      postalCode: patch.postalCode ?? deliveryPostalCode,
+      city: patch.city ?? deliveryCity,
+      notes: patch.notes ?? deliveryNotes,
+    });
+  };
+
   const setDeliveryAddress = (value: string) => {
     setDeliveryAddressState(value);
-    saveSavedDeliveryAddress({
-      street: value,
-      number: deliveryNumber,
-      complement: deliveryComplement,
-      postalCode: deliveryPostalCode,
-      city: deliveryCity,
-      notes: deliveryNotes,
-    });
+    persistDeliveryAddress({ street: value });
   };
   const setDeliveryNumber = (value: string) => {
     setDeliveryNumberState(value);
-    saveSavedDeliveryAddress({
-      street: deliveryAddress,
-      number: value,
-      complement: deliveryComplement,
-      postalCode: deliveryPostalCode,
-      city: deliveryCity,
-      notes: deliveryNotes,
-    });
+    persistDeliveryAddress({ number: value });
   };
-  const setDeliveryComplement = (value: string) => {
-    setDeliveryComplementState(value);
-    saveSavedDeliveryAddress({
-      street: deliveryAddress,
-      number: deliveryNumber,
-      complement: value,
-      postalCode: deliveryPostalCode,
-      city: deliveryCity,
-      notes: deliveryNotes,
-    });
+  const setDeliveryFloor = (value: string) => {
+    setDeliveryFloorState(value);
+    persistDeliveryAddress({ floor: value });
+  };
+  const setDeliveryDoor = (value: string) => {
+    setDeliveryDoorState(value);
+    persistDeliveryAddress({ door: value });
   };
   const setDeliveryPostalCode = (value: string) => {
     setDeliveryPostalCodeState(value);
-    saveSavedDeliveryAddress({
-      street: deliveryAddress,
-      number: deliveryNumber,
-      complement: deliveryComplement,
-      postalCode: value,
-      city: deliveryCity,
-      notes: deliveryNotes,
-    });
+    persistDeliveryAddress({ postalCode: value });
   };
   const setDeliveryCity = (value: string) => {
     setDeliveryCityState(value);
-    saveSavedDeliveryAddress({
-      street: deliveryAddress,
-      number: deliveryNumber,
-      complement: deliveryComplement,
-      postalCode: deliveryPostalCode,
-      city: value,
-      notes: deliveryNotes,
-    });
+    persistDeliveryAddress({ city: value });
   };
   const setDeliveryNotes = (value: string) => {
     setDeliveryNotesState(value);
-    saveSavedDeliveryAddress({
-      street: deliveryAddress,
-      number: deliveryNumber,
-      complement: deliveryComplement,
-      postalCode: deliveryPostalCode,
-      city: deliveryCity,
-      notes: value,
-    });
+    persistDeliveryAddress({ notes: value });
   };
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
   const [orderPaymentStatus, setOrderPaymentStatus] = useState<"pending" | "paid">("pending");
@@ -406,8 +384,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setDeliveryAddress,
         deliveryNumber,
         setDeliveryNumber,
-        deliveryComplement,
-        setDeliveryComplement,
+        deliveryFloor,
+        setDeliveryFloor,
+        deliveryDoor,
+        setDeliveryDoor,
         deliveryPostalCode,
         setDeliveryPostalCode,
         deliveryCity,

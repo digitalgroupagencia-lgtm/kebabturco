@@ -1,39 +1,43 @@
 # Print Bridge — Impressão LAN ESC/POS
 
-Pequeno script Node.js que roda **no PC do restaurante**, escuta a fila
-`print_jobs` no Supabase e envia tickets ESC/POS para a impressora térmica
-via TCP na rede local.
+Pequeno programa Node.js que corre **no PC do restaurante**, consulta a fila de impressão na nuvem (Supabase) e envia tickets para a impressora térmica via rede local (TCP porta 9100).
 
-## Instalação
+**Instalação Windows (passo a passo para técnico):** veja **[README-WINDOWS.md](./README-WINDOWS.md)**
+
+## Instalação rápida (qualquer SO)
 
 1. Instale Node.js 18+ no PC.
-2. Copie esta pasta inteira para o PC.
-3. No painel admin → **Impressora**, clique em **Descargar configuración (.env)**
-   e salve o arquivo `print-bridge.env` dentro desta pasta, renomeando para `.env`.
+2. Copie esta pasta para o PC (Windows: `C:\kebab-print-bridge`).
+3. Copie `.env.example` → `.env` e preencha (ou use **Copiar .env** no painel Admin).
 4. Terminal nesta pasta:
    ```bash
    npm install
    npm start
    ```
 
-## Como serviço Windows (auto-start)
+## Scripts Windows
 
-```bash
-npm install -g pm2
-pm2 start print-bridge.js --name print-bridge
-pm2 save
-pm2 startup
-```
+| Ficheiro | Função |
+|----------|--------|
+| `install-windows.bat` | Instala dependências, cria `.env` |
+| `start-bridge.bat` | Teste manual |
+| `install-service-windows.bat` | Serviço automático via PM2 |
+| `uninstall-service-windows.bat` | Remove serviço PM2 |
 
 ## Variáveis (.env)
 
 | Variável | Descrição |
 |----------|-----------|
-| `SUPABASE_URL` | URL do projeto |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Recomendado** — chave service role (só neste PC, nunca no browser) |
-| `SUPABASE_ANON_KEY` | Fallback legado (pode falhar após hardening de segurança) |
-| `STORE_ID` | UUID da loja (deixe vazio para escutar todas) |
-| `DEFAULT_PRINTER_IP` | Fallback se o job não trouxer IP |
-| `DEFAULT_PRINTER_PORT` | Padrão 9100 |
+| `SUPABASE_URL` | URL do projecto Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Obrigatório** — chave service role (só neste PC) |
+| `STORE_ID` | **Obrigatório** — UUID da loja/unidade |
+| `PRINTER_IP` | IP da impressora na rede local |
+| `PRINTER_PORT` | Porta (normalmente 9100) |
+| `DEFAULT_PRINTER_IP` / `DEFAULT_PRINTER_PORT` | Aliases legados (opcional) |
+| `SUPABASE_ANON_KEY` | Fallback legado — não recomendado |
 
-Obtenha a **service role key** em Supabase → Project Settings → API. Use apenas no PC da cozinha.
+Obtenha a **service role key** em Supabase → Project Settings → API.
+
+## Multi-loja
+
+Cada unidade precisa do **seu** PC, **seu** `.env` com `STORE_ID` único e **sua** impressora.

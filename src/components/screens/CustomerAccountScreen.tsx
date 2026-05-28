@@ -48,7 +48,8 @@ const CustomerAccountScreen = () => {
     setCustomerName,
     setDeliveryAddress,
     setDeliveryNumber,
-    setDeliveryComplement,
+    setDeliveryFloor,
+    setDeliveryDoor,
     setDeliveryPostalCode,
     setDeliveryCity,
     setDeliveryNotes,
@@ -83,7 +84,8 @@ const CustomerAccountScreen = () => {
     setCustomerPhone(next.phoneLocal);
     setDeliveryAddress(next.delivery.street);
     setDeliveryNumber(next.delivery.number);
-    setDeliveryComplement(next.delivery.complement);
+    setDeliveryFloor(next.delivery.floor);
+    setDeliveryDoor(next.delivery.door);
     setDeliveryPostalCode(next.delivery.postalCode);
     setDeliveryCity(next.delivery.city);
     setDeliveryNotes(next.delivery.notes);
@@ -255,13 +257,25 @@ const CustomerAccountScreen = () => {
                 className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
               />
             </div>
-            <input
-              type="text"
-              value={profile.delivery.complement}
-              onChange={(e) => updateProfile({ delivery: { ...profile.delivery, complement: e.target.value.slice(0, 60) } })}
-              placeholder={t("addressFloorPh")}
-              className="mt-2 w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
-            />
+            <p className="text-[10px] text-muted-foreground mt-2 mb-1">{t("addressFloorDoorHint")}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={profile.delivery.floor}
+                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, floor: e.target.value.slice(0, 20) } })}
+                placeholder={t("addressFloorPh")}
+                aria-label={t("addressFloor")}
+                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+              />
+              <input
+                type="text"
+                value={profile.delivery.door}
+                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, door: e.target.value.slice(0, 20) } })}
+                placeholder={t("addressDoorPh")}
+                aria-label={t("addressDoor")}
+                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+              />
+            </div>
           </div>
 
           <button

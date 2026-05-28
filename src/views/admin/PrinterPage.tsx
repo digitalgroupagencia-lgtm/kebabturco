@@ -13,10 +13,36 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
   Printer, Wifi, WifiOff, HelpCircle, Loader2, FileText, Network,
-  Save, Download, AlertTriangle,
+  Save, Download, AlertTriangle, Copy, Monitor,
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
+
+const BRIDGE_ZIP_URL = "/downloads/kebab-print-bridge.zip";
+
+function buildEnvTemplate(
+  activeStoreName: string,
+  storeId: string,
+  ip: string,
+  port: number,
+  supabaseUrl: string,
+) {
+  return `# Kebab Print Bridge — ${activeStoreName}
+# Uma instância por loja. Cole no PC: C:\\kebab-print-bridge\\.env
+
+SUPABASE_URL=${supabaseUrl}
+SUPABASE_SERVICE_ROLE_KEY=<cole_a_service_role_key_do_supabase>
+
+STORE_ID=${storeId}
+
+PRINTER_IP=${ip}
+PRINTER_PORT=${port}
+
+# Aliases legados (opcional):
+# DEFAULT_PRINTER_IP=${ip}
+# DEFAULT_PRINTER_PORT=${port}
+`;
+}
 
 const PrinterPage = () => {
   const { storeId } = useAdminStoreId();
@@ -27,6 +53,7 @@ const PrinterPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
+  const [copyingEnv, setCopyingEnv] = useState(false);
   const [bridge, setBridge] = useState<"active" | "inactive" | "unknown" | "checking">("checking");
   const [bridgeLastSeen, setBridgeLastSeen] = useState<string | null>(null);
 
@@ -79,6 +106,37 @@ const PrinterPage = () => {
     } finally { setSaving(false); }
   };
 
+  const envTemplate = buildEnvTemplate(
+    activeStoreName,
+    storeId || "",
+    cfg.ip_address,
+    cfg.port,
+    import.meta.env.VITE_SUPABASE_URL || "",
+  );
+
+  const downloadEnvFile = () => {
+    const blob = new Blob([envTemplate], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "print-bridge.env";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Ficheiro .env descarregado");
+  };
+
+  const copyEnvToClipboard = async () => {
+    setCopyingEnv(true);
+    try {
+      await navigator.clipboard.writeText(envTemplate);
+      toast.success(".env copiado — cole no Bloco de notas em C:\\kebab-print-bridge\\.env");
+    } catch {
+      toast.error("Não foi possível copiar. Use Descarregar .env.");
+    } finally {
+      setCopyingEnv(false);
+    }
+  };
+
   const runTest = async (type: "basic" | "sample") => {
     if (!storeId) return;
     setTesting(type);
@@ -88,30 +146,11 @@ const PrinterPage = () => {
     setTesting(null);
     if (result.success) {
       toast.success(type === "basic"
-        ? "Job de prueba enviado — aguarda impresión"
-        : "Ticket de muestra enviado — aguarda impresión");
+        ? "Teste enviado — aguarde impressão no PC da loja"
+        : "Ticket exemplo enviado — aguarde impressão");
     } else {
-      toast.error("Error: " + (result.error || "Falló al crear job"));
+      toast.error("Erro: " + (result.error || "Falha ao criar job"));
     }
-  };
-
-  const downloadBridge = () => {
-    const env = `# print-bridge config — ${activeStoreName}
-# OBRIGATÓRIO: uma instância por loja com STORE_ID único
-SUPABASE_URL=${import.meta.env.VITE_SUPABASE_URL}
-SUPABASE_SERVICE_ROLE_KEY=<cole_a_service_role_key_do_supabase>
-# Fallback (não recomendado após hardening RLS):
-# SUPABASE_ANON_KEY=${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}
-STORE_ID=${storeId || ""}
-DEFAULT_PRINTER_IP=${cfg.ip_address}
-DEFAULT_PRINTER_PORT=${cfg.port}
-`;
-    const blob = new Blob([env], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "print-bridge.env";
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const statusMap = {
@@ -223,13 +262,59 @@ DEFAULT_PRINTER_PORT=${cfg.port}
       </Card>
 
       <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Monitor className="h-5 w-5" /> Instalação no restaurante (Windows)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <ol className="list-decimal pl-5 space-y-1.5 text-muted-foreground">
+            <li>Escolha a <strong>unidade</strong> no selector acima e guarde IP/porta da impressora.</li>
+            <li>Descarregue o pacote ZIP e extraia em <span className="font-mono">C:\kebab-print-bridge</span>.</li>
+            <li>Copie o <span className="font-mono">.env</span> e cole a chave <strong>service_role</strong> do Supabase.</li>
+            <li>No PC: duplo clique em <span className="font-mono">install-windows.bat</span>, depois <span className="font-mono">start-bridge.bat</span>.</li>
+            <li>Aqui no painel: clique <strong>Imprimir teste</strong> — deve sair papel na cozinha.</li>
+            <li>Se OK: no PC corra <span className="font-mono">install-service-windows.bat</span> (arranca com Windows).</li>
+            <li>Confirme abaixo: <strong>Bridge activo</strong> e hora do último sinal.</li>
+            <li>Repita tudo na <strong>outra loja</strong> com outro <span className="font-mono">STORE_ID</span> e outra impressora.</li>
+          </ol>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <Button variant="default" className="w-full" asChild>
+              <a href={BRIDGE_ZIP_URL} download="kebab-print-bridge.zip">
+                <Download className="w-4 h-4 mr-2" /> Baixar bridge Windows
+              </a>
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => void copyEnvToClipboard()} disabled={copyingEnv}>
+              {copyingEnv
+                ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                : <Copy className="w-4 h-4 mr-2" />}
+              Copiar .env
+            </Button>
+            <Button variant="outline" className="w-full" onClick={downloadEnvFile}>
+              <Download className="w-4 h-4 mr-2" /> Descarregar .env
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => runTest("basic")}
+              disabled={!!testing}
+            >
+              {testing === "basic"
+                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> A enviar...</>
+                : <><Printer className="w-4 h-4 mr-2" /> Imprimir teste</>}
+            </Button>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Guia completo dentro do ZIP: <span className="font-mono">README-WINDOWS.md</span>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle className="text-lg">Probar impresión</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <Button onClick={() => runTest("basic")} disabled={!!testing} variant="outline" className="w-full">
-            {testing === "basic"
-              ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Enviando...</>
-              : <><Printer className="w-4 h-4 mr-2" /> Probar impresora LAN</>}
-          </Button>
           <Button onClick={() => runTest("sample")} disabled={!!testing} variant="outline" className="w-full">
             {testing === "sample"
               ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Enviando...</>
@@ -244,28 +329,21 @@ DEFAULT_PRINTER_PORT=${cfg.port}
       <Card className="border-accent/40 bg-accent/5">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-accent-foreground" /> Cómo funciona
+            <AlertTriangle className="w-5 h-5 text-accent-foreground" /> Como funciona
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            Como las impresoras térmicas usan IPs internas de la red local (ej. <span className="font-mono">192.168.x.x</span>),
-            no se puede imprimir directamente desde la nube. Por eso usamos un <b>Print Bridge</b>: un script de Node.js
-            que corre en un PC dentro de la misma red de la impresora, escucha la fila <span className="font-mono">print_jobs</span>
-            y envía los tickets ESC/POS vía TCP.
+            As impressoras térmicas usam moradas internas da rede (ex. <span className="font-mono">192.168.x.x</span>).
+            O site na nuvem não alcança a impressora directamente — por isso um PC na loja corre o
+            <b> Print Bridge</b>, consulta a fila na nuvem e envia o ticket por cabo/rede local.
           </p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Cliente/vendedor cria pedido → <span className="font-mono">orders.store_id</span> da unidade escolhida.</li>
-            <li>Sistema chama <span className="font-mono">enqueue_print_job</span> → fila <span className="font-mono">print_jobs</span> (pending).</li>
-            <li>Print Bridge no PC desta loja (com <span className="font-mono">STORE_ID</span> correcto) processa só jobs desta unidade.</li>
-            <li>Bridge envia bytes ESC/POS 80mm por TCP ({cfg.ip_address}:{cfg.port}).</li>
+            <li>Cliente/vendedor cria pedido → fica associado à unidade escolhida.</li>
+            <li>O sistema coloca o ticket na fila de impressão dessa unidade.</li>
+            <li>O Print Bridge no PC (com identificador da loja correcto) processa só jobs dessa unidade.</li>
+            <li>O bridge envia o ticket 80 mm por TCP ({cfg.ip_address}:{cfg.port}).</li>
           </ol>
-          <p className="text-xs text-muted-foreground">
-            Tabelas <span className="font-mono">printers</span> / <span className="font-mono">printer_category_map</span> são legado — use apenas <span className="font-mono">printer_settings</span> por loja.
-          </p>
-          <Button variant="outline" size="sm" onClick={downloadBridge}>
-            <Download className="w-4 h-4 mr-2" /> Descargar configuración (.env) para el Bridge
-          </Button>
         </CardContent>
       </Card>
     </div>
