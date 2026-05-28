@@ -1,4 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import bcrypt from "npm:bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,74 @@ const corsHeaders = {
 const PIN_PATTERN = /^(?=.*\d)(?=.*#).{6,10}$/;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type VerifiedRow = { user_id: string; role: string };
+
+async function verifyPinViaBcrypt(
+  admin: SupabaseClient,
+  pin: string,
+  storeId?: string,
+): Promise<VerifiedRow | null> {
+  let query = admin
+    .from("staff_access_pins")
+    .select("user_id, pin_hash, user_role_id, store_id")
+    .eq("is_active", true);
+
+  if (storeId) {
+    query = query.eq("store_id", storeId);
+  }
+
+  const { data: rows, error } = await query;
+  if (error || !rows?.length) return null;
+
+  for (const row of rows) {
+    const hash = String(row.pin_hash ?? "");
+    if (!hash.startsWith("$2")) continue;
+
+    try {
+      if (!bcrypt.compareSync(pin, hash)) continue;
+    } catch {
+      continue;
+    }
+
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("id", row.user_role_id)
+      .maybeSingle();
+
+    if (!roleRow?.role) continue;
+
+    return { user_id: row.user_id as string, role: roleRow.role as string };
+  }
+
+  return null;
+}
+
+async function verifyPinViaRpc(
+  admin: SupabaseClient,
+  pin: string,
+  storeId?: string,
+): Promise<VerifiedRow | null> {
+  if (storeId && UUID_PATTERN.test(storeId)) {
+    const scoped = await admin.rpc("verify_staff_access_pin", {
+      _store_id: storeId,
+      _pin: pin,
+    });
+    const scopedRow = Array.isArray(scoped.data) ? scoped.data[0] : scoped.data;
+    if (!scoped.error && scopedRow?.user_id) {
+      return { user_id: scopedRow.user_id, role: scopedRow.role };
+    }
+  }
+
+  const anyResult = await admin.rpc("verify_staff_access_pin_any", { _pin: pin });
+  if (anyResult.error) return null;
+
+  const anyRow = Array.isArray(anyResult.data) ? anyResult.data[0] : anyResult.data;
+  if (!anyRow?.user_id) return null;
+
+  return { user_id: anyRow.user_id, role: anyRow.role };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -19,6 +88,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const store_id = String(body?.store_id ?? "").trim();
     const pin = String(body?.pin ?? "").trim();
+    const scopedStoreId = store_id && UUID_PATTERN.test(store_id) ? store_id : undefined;
 
     if (!PIN_PATTERN.test(pin)) {
       return new Response(JSON.stringify({ error: "Código inválido", code: "INVALID_PIN" }), {
@@ -29,31 +99,11 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    let verified: unknown;
-    let verifyErr: { message: string } | null = null;
+    let row =
+      (await verifyPinViaRpc(admin, pin, scopedStoreId)) ??
+      (await verifyPinViaBcrypt(admin, pin, scopedStoreId)) ??
+      (scopedStoreId ? await verifyPinViaBcrypt(admin, pin) : null);
 
-    if (store_id && UUID_PATTERN.test(store_id)) {
-      const result = await admin.rpc("verify_staff_access_pin", {
-        _store_id: store_id,
-        _pin: pin,
-      });
-      verified = result.data;
-      verifyErr = result.error;
-    }
-
-    const rowFromStore = Array.isArray(verified) ? verified[0] : verified;
-    if (verifyErr || !rowFromStore?.user_id) {
-      const anyResult = await admin.rpc("verify_staff_access_pin_any", { _pin: pin });
-      if (anyResult.error) {
-        return new Response(JSON.stringify({ error: anyResult.error.message, code: "VERIFY_FAILED" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      verified = anyResult.data;
-    }
-
-    const row = Array.isArray(verified) ? verified[0] : verified;
     if (!row?.user_id) {
       return new Response(JSON.stringify({ error: "Código incorrecto", code: "PIN_MISMATCH" }), {
         status: 401,
