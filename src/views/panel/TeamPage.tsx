@@ -25,6 +25,7 @@ import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember } from "@/services/createStaffMember";
+import { usePanelStore } from "@/contexts/PanelStoreContext";
 
 type AppRole = StaffRole;
 
@@ -60,7 +61,7 @@ const roleLabels: Record<AppRole, { label: string; color: string }> = {
 const TeamPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const storeId = roleData?.store_id;
+  const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
   const { primaryLang } = useStoreLanguages(storeId);
 
@@ -82,7 +83,11 @@ const TeamPage = () => {
   const [pinSaving, setPinSaving] = useState(false);
 
   useEffect(() => {
-    if (storeId) fetchMembers();
+    if (storeId) {
+      void fetchMembers();
+    } else {
+      setLoading(false);
+    }
   }, [storeId]);
 
   useEffect(() => {
@@ -262,7 +267,13 @@ const TeamPage = () => {
     return (
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Equipe</h2>
-        <Card><CardContent className="p-8 text-center text-muted-foreground">Nenhuma loja vinculada.</CardContent></Card>
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            {canSwitchStore && stores.length > 1
+              ? "Escolha a unidade no topo da página para ver a equipa."
+              : "Nenhuma loja vinculada."}
+          </CardContent>
+        </Card>
       </div>
     );
   }

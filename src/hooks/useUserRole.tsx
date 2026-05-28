@@ -10,47 +10,78 @@ interface UserRoleData {
   store_id: string | null;
 }
 
+function pickRoleData(rows: { role: AppRole; tenant_id: string | null; store_id: string | null }[]): UserRoleData | null {
+  if (!rows.length) return null;
+  const adminMaster = rows.find((role) => role.role === "admin_master");
+  const scopedRole = rows.find((role) => role.store_id || role.tenant_id);
+  return {
+    role: adminMaster?.role ?? rows[0].role,
+    tenant_id: scopedRole?.tenant_id ?? adminMaster?.tenant_id ?? rows[0].tenant_id,
+    store_id: scopedRole?.store_id ?? adminMaster?.store_id ?? rows[0].store_id,
+  };
+}
+
+async function fetchRoleViaRpc(): Promise<UserRoleData | null> {
+  const { data, error } = await supabase.rpc("get_my_staff_context" as never);
+  if (error || !data || typeof data !== "object") return null;
+  const row = data as { role?: AppRole; tenant_id?: string | null; store_id?: string | null };
+  if (!row.role) return null;
+  return {
+    role: row.role,
+    tenant_id: row.tenant_id ?? null,
+    store_id: row.store_id ?? null,
+  };
+}
+
 export function useUserRole(userId: string | undefined) {
   const [roleData, setRoleData] = useState<UserRoleData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
       setRoleData(null);
+      setError(null);
       setLoading(false);
       return;
     }
 
     let active = true;
     setLoading(true);
+    setError(null);
 
     const fetchRole = async () => {
-      const { data, error } = await supabase
+      const { data, error: queryError } = await supabase
         .from("user_roles")
         .select("role, tenant_id, store_id")
         .eq("user_id", userId);
 
       if (!active) return;
 
-      if (!error && data?.length) {
-        const adminMaster = data.find((role) => role.role === "admin_master");
-        const scopedRole = data.find((role) => role.store_id || role.tenant_id);
-        setRoleData({
-          role: adminMaster?.role ?? data[0].role,
-          tenant_id: scopedRole?.tenant_id ?? adminMaster?.tenant_id ?? data[0].tenant_id,
-          store_id: scopedRole?.store_id ?? adminMaster?.store_id ?? data[0].store_id,
-        });
+      if (!queryError && data?.length) {
+        setRoleData(pickRoleData(data as UserRoleData[]));
+        setLoading(false);
+        return;
+      }
+
+      const rpcRole = await fetchRoleViaRpc();
+      if (!active) return;
+
+      if (rpcRole) {
+        setRoleData(rpcRole);
+        setError(null);
       } else {
         setRoleData(null);
+        setError(queryError?.message ?? "Perfil de acesso não encontrado.");
       }
       setLoading(false);
     };
 
-    fetchRole();
+    void fetchRole();
     return () => {
       active = false;
     };
   }, [userId]);
 
-  return { roleData, loading };
+  return { roleData, loading, error };
 }

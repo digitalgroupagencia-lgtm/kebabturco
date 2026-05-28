@@ -6,16 +6,16 @@ import PanelOrdersBoard from "@/features/ops/PanelOrdersBoard";
 const LiveOrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
 
-  if (!storeId) {
-    return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
-  }
-
   if (storeLoading) {
     return (
       <div className="p-8 flex items-center gap-2">
         <Loader2 className="animate-spin h-4 w-4" /> A carregar...
       </div>
     );
+  }
+
+  if (!storeId) {
+    return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
   }
 
   return (

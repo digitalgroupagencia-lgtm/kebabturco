@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
+import { useOptionalPanelStore } from "@/contexts/PanelStoreContext";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 
 async function firstActiveStoreForTenant(tenantId: string): Promise<string | null> {
@@ -44,10 +45,15 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
   const { user } = useAuth();
   const { tenantId: hostTenantId } = useResolvedStore();
   const { tenant, loading: tenantLoading } = useSelectedTenant();
+  const panelStore = useOptionalPanelStore();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const inPanel = typeof window !== "undefined" && window.location.pathname.startsWith("/panel");
+
   useEffect(() => {
+    if (inPanel && panelStore) return;
+
     let active = true;
     (async () => {
       setLoading(true);
@@ -112,7 +118,21 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
     return () => {
       active = false;
     };
-  }, [slug, user?.id, hostTenantId, tenant?.id, tenant?.store_id, tenantLoading]);
+  }, [
+    slug,
+    user?.id,
+    hostTenantId,
+    tenant?.id,
+    tenant?.store_id,
+    tenantLoading,
+    inPanel,
+    panelStore?.storeId,
+    panelStore?.loading,
+  ]);
+
+  if (inPanel && panelStore) {
+    return { storeId: panelStore.storeId, loading: panelStore.loading };
+  }
 
   return { storeId, loading: loading || tenantLoading };
 }

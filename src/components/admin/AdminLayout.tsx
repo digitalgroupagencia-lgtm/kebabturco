@@ -1,5 +1,5 @@
 import { useEffect, type ComponentType } from "react";
-import { useNavigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -21,30 +21,36 @@ type Props = {
 
 const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
-  const { roleData, loading: roleLoading } = useUserRole(user?.id);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate(nav.auth());
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (!authLoading && !roleLoading && roleData && !canAccessGeneralAdmin(roleData.role)) {
-      navigate(nav.panel());
-    }
-  }, [authLoading, roleLoading, roleData, navigate]);
+  const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
 
   if (authLoading || roleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!user || !canAccessGeneralAdmin(roleData?.role)) return null;
+  if (!user) {
+    return <Navigate to={nav.auth()} replace />;
+  }
+
+  if (!roleData || !canAccessGeneralAdmin(roleData.role)) {
+    if (roleData && !canAccessGeneralAdmin(roleData.role)) {
+      return <Navigate to={nav.panel()} replace />;
+    }
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
+        <p className="text-lg font-bold">Sem acesso de administrador geral</p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {roleError ?? "A sua conta não tem perfil de admin geral. Use o painel do restaurante ou peça ao suporte."}
+        </p>
+        <a href={nav.panel()} className="text-sm font-semibold text-primary underline">
+          Ir para o painel do restaurante
+        </a>
+      </div>
+    );
+  }
 
   return (
     <SelectedTenantProvider>

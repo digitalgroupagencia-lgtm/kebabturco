@@ -12,6 +12,8 @@ import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
+import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
+import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 
 type Props = {
@@ -49,23 +51,26 @@ const PanelLayout = ({ page: Page }: Props) => {
 
   return (
     <SelectedTenantProvider>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
-          <PanelSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-              <SidebarTrigger className="mr-2 sm:mr-4" />
-              <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">{headerTitle}</h1>
-              <StaffLanguageToggle defaultLang={primaryLang} compact />
-              <AdminThemeToggle />
-            </header>
-            <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-              <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
-            </main>
+      <PanelStoreProvider>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
+            <PanelSidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-2">
+                <SidebarTrigger className="mr-1 sm:mr-2 shrink-0" />
+                <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1 min-w-0">{headerTitle}</h1>
+                <PanelStoreSwitcher />
+                <StaffLanguageToggle defaultLang={primaryLang} compact />
+                <AdminThemeToggle />
+              </header>
+              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
+              </main>
+            </div>
+            {roleData?.role === "admin_master" && <AdminAssistant />}
           </div>
-          {roleData?.role === "admin_master" && <AdminAssistant />}
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </PanelStoreProvider>
     </SelectedTenantProvider>
   );
 };

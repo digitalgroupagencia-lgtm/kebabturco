@@ -1,10 +1,11 @@
 import { useEffect, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { nav } from "@/lib/navPaths.ts";
 import { canUseRestaurantPanel, redirectTargetForPanelPath } from "@/lib/panelAccess";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   children: ReactNode;
@@ -19,7 +20,7 @@ export default function PanelAccessGuard({ children }: Props) {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { roleData, loading: roleLoading } = useUserRole(user?.id);
+  const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
   const returnPath = `${pathname}${search}`;
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function PanelAccessGuard({ children }: Props) {
     }
   }, [authLoading, roleLoading, user, roleData?.role, pathname, returnPath, navigate]);
 
-  if (authLoading || roleLoading || !user) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-[40vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -56,11 +57,19 @@ export default function PanelAccessGuard({ children }: Props) {
     );
   }
 
+  if (!user) return null;
+
   const role = roleData?.role;
   if (!role || !canUseRestaurantPanel(role)) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-lg font-bold">Sem acesso ao painel</p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {roleError ?? "A sua conta não tem perfil de equipa. Peça ao administrador para o adicionar em Equipe."}
+        </p>
+        <Button asChild variant="outline">
+          <Link to={nav.auth()}>Entrar com outra conta</Link>
+        </Button>
       </div>
     );
   }
