@@ -247,7 +247,7 @@ const HomeScreen = () => {
             </div>
           </div>
 
-          <div className="px-3 pb-20 grid grid-cols-2 gap-2.5">
+          <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);

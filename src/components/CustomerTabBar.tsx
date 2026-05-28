@@ -57,16 +57,16 @@ const CustomerTabBar = () => {
 
   return (
     <nav
-      className="customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-6px_20px_-16px_rgba(0,0,0,0.16)]"
-      style={{ paddingBottom: "max(4px, env(safe-area-inset-bottom))" }}
+      className="customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label={t("navHome")}
     >
       {showActiveOrderBanner && (
-        <div className="px-3 pt-1.5">
+        <div className="px-3 pt-1">
           <button
             type="button"
             onClick={trackOrder}
-            className="flex h-10 w-full touch-manipulation items-center gap-2.5 rounded-xl bg-gradient-primary px-2.5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
+            className="flex h-9 w-full touch-manipulation items-center gap-2 rounded-xl bg-gradient-primary px-2.5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
               {isLoadingOrder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Package className="h-3.5 w-3.5" />}
@@ -85,7 +85,7 @@ const CustomerTabBar = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-around px-1 pt-1 pb-0.5">
+      <div className="flex items-end justify-around px-0.5 pt-0.5">
         {tabs.map(({ id, label, icon: Icon, onClick }) => {
           const active = activeTab === id;
           const showCartBadge = id === "cart" && totalItems > 0 && !active;
@@ -95,26 +95,26 @@ const CustomerTabBar = () => {
               key={id}
               type="button"
               onClick={onClick}
-              className="relative flex min-w-0 flex-1 flex-col items-center touch-manipulation py-0.5"
+              className="relative flex min-w-0 flex-1 flex-col items-center touch-manipulation pb-0.5"
               aria-current={active ? "page" : undefined}
               aria-label={label}
             >
               <span
                 className={`relative flex items-center justify-center rounded-full transition-all ${
                   active
-                    ? "h-9 w-9 bg-gradient-primary text-primary-foreground shadow-primary"
-                    : "h-8 w-8 text-muted-foreground"
+                    ? "h-8 w-8 bg-gradient-primary text-primary-foreground shadow-primary"
+                    : "h-7 w-7 text-muted-foreground"
                 }`}
               >
-                <Icon className={active ? "h-[18px] w-[18px]" : "h-[18px] w-[18px]"} strokeWidth={active ? 2.25 : 2} />
+                <Icon className="h-4 w-4" strokeWidth={active ? 2.25 : 2} />
                 {showCartBadge && (
-                  <span className="absolute -right-1 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-black text-primary-foreground">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-primary px-0.5 text-[7px] font-black text-primary-foreground">
                     {totalItems > 99 ? "99+" : totalItems}
                   </span>
                 )}
               </span>
               <span
-                className={`mt-0.5 max-w-[72px] truncate text-[9px] font-bold leading-tight ${
+                className={`mt-px max-w-[68px] truncate text-[8px] font-bold leading-none ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
