@@ -10,10 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical, AlertTriangle, Download } from "lucide-react";
 import type { ModifierGroupKind, SelectionMode, ModifierGroup } from "@/lib/modifiers/types";
 import { GROUP_KIND_META, groupKindLabel, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
 import { getModifierConfigWarnings } from "@/lib/modifiers/sanitizeGroups";
+import { importStoreModifiersFromCatalog } from "@/lib/modifiers/importStoreModifiersFromCatalog";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { LANG_LABELS } from "@/contexts/LanguageContext";
 import { buildPrimaryLanguagePayload, pickSourceText } from "@/lib/localizedText";
@@ -66,6 +67,8 @@ export default function ModifierGroupsPage() {
   const [editingOption, setEditingOption] = useState<Partial<OptionRow> | null>(null);
   const [groupName, setGroupName] = useState("");
   const [optionName, setOptionName] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [autoImportDone, setAutoImportDone] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!storeId) {
@@ -111,6 +114,35 @@ export default function ModifierGroupsPage() {
   useEffect(() => {
     if (storeId) fetchAll();
   }, [storeId, fetchAll]);
+
+  useEffect(() => {
+    setAutoImportDone(false);
+  }, [storeId]);
+
+  const runImport = useCallback(
+    async (replaceExisting = false) => {
+      if (!storeId) return;
+      setImporting(true);
+      try {
+        const result = await importStoreModifiersFromCatalog(storeId, { replaceExisting });
+        toast.success(
+          `Personalizações importadas: ${result.groupsCreated} grupos, ${result.optionsCreated} opções`,
+        );
+        await fetchAll();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro ao importar personalizações");
+      } finally {
+        setImporting(false);
+      }
+    },
+    [storeId, fetchAll],
+  );
+
+  useEffect(() => {
+    if (!storeId || loading || loadingStore || groups.length > 0 || autoImportDone || importing) return;
+    setAutoImportDone(true);
+    void runImport(false);
+  }, [storeId, loading, loadingStore, groups.length, autoImportDone, importing, runImport]);
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
   const groupOptions = options.filter((o) => o.group_id === selectedGroupId);
@@ -274,7 +306,25 @@ export default function ModifierGroupsPage() {
         </Button>
       </div>
 
-      <AdminStoreSwitcher hint="Grupos de personalização são por unidade — escolha a loja correcta se estiver vazio." />
+      <AdminStoreSwitcher hint="Grupos de personalização são por unidade — escolha Gandia para ver as que já existem no site." />
+
+      {!loading && groups.length === 0 && (
+        <Card className="border-dashed border-primary/40 bg-primary/5">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-semibold">
+              As personalizações já funcionam no site — importe-as aqui para editar.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Escolhas de carne, extras, remoções de ingredientes e acompanhamentos passam a aparecer como
+              grupos editáveis. Confirme que está em <strong>Gandia</strong> se o cardápio completo está lá.
+            </p>
+            <Button type="button" disabled={importing || !storeId} onClick={() => void runImport(false)}>
+              {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+              Importar personalizações do cardápio
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {configWarnings.length > 0 && (
         <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
@@ -308,7 +358,9 @@ export default function ModifierGroupsPage() {
           </CardHeader>
           <CardContent className="space-y-1 p-2">
             {groups.length === 0 && (
-              <p className="text-sm text-muted-foreground p-3">Cria o primeiro grupo de escolhas.</p>
+              <p className="text-sm text-muted-foreground p-3">
+                A importar ou ainda sem grupos — use o botão acima se necessário.
+              </p>
             )}
             {groups.map((g) => (
               <button
