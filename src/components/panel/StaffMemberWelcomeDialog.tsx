@@ -19,13 +19,22 @@ type Props = {
   open: boolean;
   data: StaffOnboardingInput | null;
   onOpenChange: (open: boolean) => void;
+  mode?: "create" | "review";
 };
 
-const StaffMemberWelcomeDialog = ({ open, data, onOpenChange }: Props) => {
+const StaffMemberWelcomeDialog = ({ open, data, onOpenChange, mode = "create" }: Props) => {
   if (!data) return null;
 
   const summary = buildStaffOnboardingSummary(data);
   const isEs = data.lang === "es";
+  const title =
+    mode === "review"
+      ? isEs
+        ? "Instrucciones para el miembro"
+        : "Instruções para o membro"
+      : isEs
+        ? "Resumen para el nuevo miembro"
+        : "Resumo para o novo membro";
 
   const copyAll = async () => {
     try {
@@ -44,7 +53,7 @@ const StaffMemberWelcomeDialog = ({ open, data, onOpenChange }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{isEs ? "Resumen para el nuevo miembro" : "Resumo para o novo membro"}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {isEs
               ? "Copie o envíe por WhatsApp. Incluye acceso, código y guía según el perfil."

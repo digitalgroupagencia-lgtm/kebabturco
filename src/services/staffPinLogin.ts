@@ -76,9 +76,7 @@ export async function loginWithStaffPin(storeId: string, pin: string) {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/crypt|gen_salt|pgcrypto/i.test(msg)) {
-      throw new Error(
-        "Verificação do código indisponível na base de dados. Peça ao gerente para executar o SQL LOVABLE_FIX_VERIFY_PIN_BLOCO3.",
-      );
+      throw new Error("Verificação do código indisponível. Tente de novo dentro de momentos.");
     }
     throw e instanceof Error ? e : new Error("Código incorrecto");
   }

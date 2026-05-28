@@ -19,7 +19,8 @@ const staffLoginCopy = {
     submitting: "Entrando…",
     storeMissing: "Tienda no identificada. Actualice la página.",
     storeLoading: "Esperando la tienda…",
-    fallbackStore: "No se pudo cargar la tienda. Compruebe la conexión e intente de nuevo.",
+    fallbackStore: "No se pudo conectar con el restaurante. Compruebe la red e intente de nuevo.",
+    storeRetry: "Reintentar",
     pinInvalid: "Código inválido — use 6–10 caracteres con # y números",
     pinWrong: "Código incorrecto",
     serverUnavailable:
@@ -38,7 +39,8 @@ const staffLoginCopy = {
     submitting: "A entrar…",
     storeMissing: "Loja não identificada. Actualize a página.",
     storeLoading: "A carregar loja…",
-    fallbackStore: "Não foi possível carregar a loja. Verifique a ligação e tente novamente.",
+    fallbackStore: "Não foi possível ligar ao restaurante. Verifique a rede e tente novamente.",
+    storeRetry: "Tentar de novo",
     pinInvalid: "Código inválido — use 6–10 caracteres com # e números",
     pinWrong: "Código incorrecto",
     serverUnavailable:
@@ -57,7 +59,8 @@ const staffLoginCopy = {
     submitting: "Signing in…",
     storeMissing: "Store not identified. Refresh the page.",
     storeLoading: "Loading store…",
-    fallbackStore: "Could not load the store. Check your connection and try again.",
+    fallbackStore: "Could not connect to the restaurant. Check your network and try again.",
+    storeRetry: "Try again",
     pinInvalid: "Invalid code — use 6–10 characters with # and numbers",
     pinWrong: "Incorrect code",
     serverUnavailable:

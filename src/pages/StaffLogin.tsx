@@ -4,16 +4,15 @@ import { Loader2, Shield, Delete, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
+import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
 import {
   loginWithStaffPin,
   resolveStaffLoginDestination,
 } from "@/lib/staffLogin";
 import { STAFF_PIN_PATTERN } from "@/lib/staffAccessPin";
 import { getStaffLoginCopy, mapStaffPinError } from "@/lib/staffUiCopy";
-import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 
@@ -21,10 +20,10 @@ const StaffLogin = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
-  const { storeId, selectedStoreId, loading: storeLoading } = useResolvedStore();
+  const { storeId: loginStoreId, loading: storeLoading, refresh: refreshStore } = useStaffLoginStore();
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
-  const loginStoreId = selectedStoreId ?? storeId;
+  const storeUnavailable = !storeLoading && !loginStoreId;
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +52,11 @@ const StaffLogin = () => {
   };
 
   const handleSubmit = async () => {
-    if (!loginStoreId) {
-      setError(copy.storeMissing);
-      return;
+    let storeId = loginStoreId;
+    if (!storeId) {
+      storeId = await refreshStore();
     }
-    if (isEmergencyFallbackStoreId(loginStoreId)) {
+    if (!storeId) {
       setError(copy.fallbackStore);
       return;
     }
@@ -69,7 +68,7 @@ const StaffLogin = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const { role } = await loginWithStaffPin(loginStoreId, pin);
+      const { role } = await loginWithStaffPin(storeId, pin);
       navigate(resolveStaffLoginDestination(role), { replace: true });
     } catch (e) {
       const raw = e instanceof Error ? e.message : copy.pinWrong;
@@ -117,6 +116,21 @@ const StaffLogin = () => {
 
       <main className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-6 py-6">
         <p className="mb-5 text-center text-sm text-muted-foreground">{copy.instruction}</p>
+
+        {storeUnavailable && (
+          <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center">
+            <p className="text-sm text-amber-900 dark:text-amber-100">{copy.fallbackStore}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => void refreshStore()}
+            >
+              {copy.storeRetry}
+            </Button>
+          </div>
+        )}
 
         <Input
           readOnly
@@ -179,7 +193,7 @@ const StaffLogin = () => {
           type="button"
           className="h-12 w-full text-base font-bold"
           onClick={() => void handleSubmit()}
-          disabled={submitting || !STAFF_PIN_PATTERN.test(pin)}
+          disabled={submitting || !STAFF_PIN_PATTERN.test(pin) || storeUnavailable}
         >
           {submitting ? (
             <>
