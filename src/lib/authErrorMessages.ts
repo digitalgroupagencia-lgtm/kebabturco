@@ -2,12 +2,12 @@ type UiLang = "pt" | "es";
 
 const MESSAGES: Record<string, Record<UiLang, string>> = {
   weak_password: {
-    pt: "Esta senha é fraca ou muito comum. O funcionário entra pelo código de acesso — não precisa definir senha aqui.",
-    es: "Esta contraseña es débil o muy común. El empleado entra con el código de acceso — no hace falta definir contraseña aquí.",
+    pt: "Esta senha é muito comum ou fácil de adivinhar. Use pelo menos 8 caracteres com letras e números, ou clique em «Sugerir senha».",
+    es: "Esta contraseña es muy común o fácil de adivinar. Use al menos 8 caracteres con letras y números, o pulse «Sugerir contraseña».",
   },
   password_too_short: {
-    pt: "A senha precisa ter pelo menos 6 caracteres.",
-    es: "La contraseña debe tener al menos 6 caracteres.",
+    pt: "A senha precisa ter pelo menos 8 caracteres.",
+    es: "La contraseña debe tener al menos 8 caracteres.",
   },
   email_in_use: {
     pt: "Este e-mail já está registado. Se a pessoa já existir, adiciona-a à equipa com o mesmo e-mail.",
@@ -62,6 +62,7 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
 function detectKey(raw: string): keyof typeof MESSAGES {
   const m = raw.toLowerCase();
   if (m.includes("weak") && m.includes("password")) return "weak_password";
+  if (m.includes("known to be weak") || m.includes("easy to guess")) return "weak_password";
   if (m.includes("password") && (m.includes("short") || m.includes("least"))) return "password_too_short";
   if (m.includes("already") && (m.includes("registered") || m.includes("exists"))) return "email_in_use";
   if (m.includes("invalid") && m.includes("email")) return "invalid_email";

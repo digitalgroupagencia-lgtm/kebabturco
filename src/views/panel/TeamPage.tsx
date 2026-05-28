@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Users, Plus, Trash2, Shield } from "lucide-react";
 import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
+import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
 
 type AppRole = StaffRole;
 
@@ -56,6 +57,8 @@ const TeamPage = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
   const [newLanguage, setNewLanguage] = useState<string>("pt");
@@ -123,12 +126,18 @@ const TeamPage = () => {
       toast.error(translateAppError("Código deve ter entre 6 e 8 dígitos", uiLang));
       return;
     }
+    const passwordError = validateStaffPassword(newPassword, uiLang);
+    if (passwordError) {
+      toast.error(passwordError);
+      return;
+    }
     setSaving(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("create-staff-member", {
         body: {
           email: newEmail.trim(),
+          password: newPassword,
           full_name: newName.trim() || null,
           role: newRole,
           store_id: storeId,
@@ -158,6 +167,8 @@ const TeamPage = () => {
       );
       setDialogOpen(false);
       setNewEmail("");
+      setNewPassword("");
+      setShowPassword(false);
       setNewName("");
       setNewRole("operator");
       setNewLanguage("pt");
@@ -363,8 +374,35 @@ const TeamPage = () => {
             <div>
               <Label>Email *</Label>
               <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
-              <p className="text-xs text-muted-foreground mt-1">
-                Só para registo interno — o funcionário entra na app com o código de acesso, não precisa de senha.
+            </div>
+            <div>
+              <Label>Senha *</Label>
+              <div className="flex gap-2">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setNewPassword(suggestStaffPassword());
+                    setShowPassword(true);
+                  }}
+                >
+                  Sugerir senha
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(uiLang)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {uiLang === "es"
+                  ? "Anote la contraseña y entréguela al empleado. También puede entrar con el código de acceso en el móvil."
+                  : "Anote a senha e entregue ao funcionário. Ele também pode entrar com o código de acesso no telemóvel."}
               </p>
             </div>
             <div>

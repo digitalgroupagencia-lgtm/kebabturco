@@ -15,10 +15,11 @@ const RESTAURANT_ROLES = [
   "delivery",
 ] as const;
 
-function generateSecurePassword(): string {
-  const partA = crypto.randomUUID().replace(/-/g, "");
-  const partB = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  return `Kt9!${partA}Zq2${partB}`;
+function validatePassword(password: string): string | null {
+  const p = String(password ?? "").trim();
+  if (p.length < 8) return "A senha precisa ter pelo menos 8 caracteres.";
+  if (!/[a-zA-Z]/.test(p) || !/\d/.test(p)) return "Use letras e números na senha.";
+  return null;
 }
 
 async function findUserIdByEmail(
@@ -73,6 +74,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       email,
+      password,
       full_name,
       role,
       store_id,
@@ -81,8 +83,16 @@ Deno.serve(async (req) => {
       preferred_language,
     } = body ?? {};
 
-    if (!email?.trim() || !store_id || !tenant_id || !access_pin) {
-      return new Response(JSON.stringify({ error: "email, store_id, tenant_id e access_pin são obrigatórios" }), {
+    if (!email?.trim() || !store_id || !tenant_id || !access_pin || !password?.trim()) {
+      return new Response(JSON.stringify({ error: "email, password, store_id, tenant_id e access_pin são obrigatórios" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return new Response(JSON.stringify({ error: passwordError }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -135,12 +145,13 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = String(password).trim();
     let userId: string | null = null;
     let createdNewUser = false;
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: normalizedEmail,
-      password: generateSecurePassword(),
+      password: normalizedPassword,
       email_confirm: true,
       user_metadata: { full_name: full_name?.trim() || normalizedEmail.split("@")[0] },
     });
@@ -151,6 +162,15 @@ Deno.serve(async (req) => {
         userId = await findUserIdByEmail(SUPABASE_URL, SERVICE_KEY, ANON_KEY, normalizedEmail);
         if (!userId) {
           return new Response(JSON.stringify({ error: "Este e-mail já está registado, mas não foi possível associá-lo." }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
+          password: normalizedPassword,
+        });
+        if (updateErr) {
+          return new Response(JSON.stringify({ error: updateErr.message }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
