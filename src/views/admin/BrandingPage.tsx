@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  Palette, Image as ImageIcon, Save, Upload,
+  Palette, Image as ImageIcon, Save,
   Languages, ListOrdered, Sparkles, Loader2, Monitor, UtensilsCrossed, CreditCard, Globe,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -16,6 +16,7 @@ import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import TenantLivePreview from "@/components/admin/TenantLivePreview";
 import type { TenantPreviewScreen } from "@/lib/tenantPreview";
+import ImageUploadField from "@/components/panel/ImageUploadField";
 
 type Settings = Tables<"company_settings">;
 
@@ -37,6 +38,7 @@ const BrandingPage = () => {
   const { tenant } = useSelectedTenant();
   const [s, setS] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState<keyof Settings | null>(null);
   const [tab, setTab] = useState("splash");
   const [sampleProductId, setSampleProductId] = useState<string | null>(null);
   const draftPreview = useDebouncedValue(s, 180);
@@ -84,13 +86,18 @@ const BrandingPage = () => {
 
   const upload = async (field: keyof Settings, file: File) => {
     if (!STORE_ID) return;
-    const ext = file.name.split(".").pop();
-    const path = `${STORE_ID}/${String(field)}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
-    if (error) { toast.error("Erro ao subir: " + error.message); return; }
-    const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
-    update(field, pub.publicUrl);
-    toast.success("Imagem carregada — lembra de salvar");
+    setUploadingField(field);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${STORE_ID}/${String(field)}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
+      if (error) { toast.error("Erro ao subir: " + error.message); return; }
+      const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
+      update(field, pub.publicUrl);
+      toast.success("Imagem carregada — lembra de salvar");
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   const save = async () => {
@@ -134,35 +141,15 @@ const BrandingPage = () => {
   }
 
   const ImageField = ({ label, field, dimensions }: { label: string; field: keyof Settings; dimensions?: string }) => {
-    const ref = useRef<HTMLInputElement>(null);
     const url = (s as any)[field] as string | null;
     return (
-      <div className="space-y-2">
-        <Label className="flex items-center gap-2 flex-wrap">
-          <ImageIcon className="h-4 w-4" /> {label}
-          {dimensions && (
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-              {dimensions}
-            </span>
-          )}
-        </Label>
-        <div className="flex items-center gap-3 p-3 rounded-2xl border bg-muted/30">
-          <div className="w-20 h-20 rounded-2xl bg-background overflow-hidden flex items-center justify-center border shrink-0">
-            {url ? <img src={url} alt={label} className="w-full h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
-          </div>
-          <div className="flex-1 space-y-2">
-            <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden
-              onChange={(e) => e.target.files?.[0] && upload(field, e.target.files[0])} />
-            <Button type="button" variant="outline" size="sm" onClick={() => ref.current?.click()}>
-              <Upload className="w-4 h-4 mr-2" /> Subir imagem
-            </Button>
-            {dimensions && (
-              <p className="text-[11px] text-muted-foreground">Tamanho recomendado: <strong>{dimensions}</strong> · PNG / JPG / WEBP</p>
-            )}
-            <Input value={url || ""} onChange={(e) => update(field, e.target.value)} placeholder="https://..." className="text-xs" />
-          </div>
-        </div>
-      </div>
+      <ImageUploadField
+        label={label}
+        dimensions={dimensions}
+        value={url || ""}
+        uploading={uploadingField === field}
+        onPickFile={(file) => upload(field, file)}
+      />
     );
   };
 

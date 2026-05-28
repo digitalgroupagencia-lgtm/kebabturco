@@ -18,6 +18,7 @@ import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAud
 import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
 import ImageUploadField from "@/components/panel/ImageUploadField";
+import { uploadCategoryImage } from "@/lib/uploadImage";
 import { uploadProductImage } from "@/lib/uploadProductImage";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { LANG_LABELS } from "@/contexts/LanguageContext";
@@ -41,6 +42,7 @@ const MenuPage = () => {
   const [loading, setLoading] = useState(true);
   const [genImageId, setGenImageId] = useState<string | null>(null);
   const [prodImageUploading, setProdImageUploading] = useState(false);
+  const [catImageUploading, setCatImageUploading] = useState(false);
 
   // Category form
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -210,6 +212,23 @@ const MenuPage = () => {
       setAfterAddSuggestionIds("");
     }
     setProdDialogOpen(true);
+  };
+
+  const handleCategoryImageUpload = async (file: File) => {
+    if (!storeId) {
+      toast.error("Loja não carregada");
+      return;
+    }
+    setCatImageUploading(true);
+    try {
+      const url = await uploadCategoryImage(storeId, file, editingCategory?.id);
+      setCatImageUrl(url);
+      toast.success("Imagem enviada");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+    } finally {
+      setCatImageUploading(false);
+    }
   };
 
   const handleProductImageUpload = async (file: File) => {
@@ -388,10 +407,14 @@ const MenuPage = () => {
                       Idioma principal do restaurante. Traduções para o cliente são automáticas.
                     </p>
                   </div>
-                  <div>
-                    <Label>URL da Imagem <span className="text-xs text-muted-foreground ml-1">(512×512 px, quadrada)</span></Label>
-                    <Input value={catImageUrl} onChange={(e) => setCatImageUrl(e.target.value)} placeholder="https://..." />
-                  </div>
+                  <ImageUploadField
+                    label="Imagem da categoria"
+                    dimensions="512×512 px, quadrada"
+                    value={catImageUrl}
+                    uploading={catImageUploading}
+                    disabled={!storeId}
+                    onPickFile={handleCategoryImageUpload}
+                  />
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>

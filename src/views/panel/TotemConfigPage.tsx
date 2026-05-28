@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Monitor, Palette, Globe, Save, Upload, Sparkles } from "lucide-react";
+import { Monitor, Palette, Globe, Save, Sparkles, Upload } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import ImageUploadField from "@/components/panel/ImageUploadField";
+import { uploadBrandingImage } from "@/lib/uploadImage";
 
 type TotemConfig = Tables<"totem_config">;
 
@@ -41,6 +43,8 @@ const TotemConfigPage = () => {
   // Form state
   const [logoUrl, setLogoUrl] = useState("");
   const [bgImageUrl, setBgImageUrl] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [bgUploading, setBgUploading] = useState(false);
   const [primaryColor, setPrimaryColor] = useState("#D62300");
   const [secondaryColor, setSecondaryColor] = useState("#F5F5F5");
   const [accentColor, setAccentColor] = useState("#FFC72C");
@@ -138,6 +142,34 @@ const TotemConfigPage = () => {
     const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
     setLangIcons((prev) => ({ ...prev, [code]: pub.publicUrl }));
     toast.success("Ícono cargado — recuerda guardar");
+  };
+
+  const uploadTotemLogo = async (file: File) => {
+    if (!storeId) return;
+    setLogoUploading(true);
+    try {
+      const url = await uploadBrandingImage(storeId, "totem-logo", file);
+      setLogoUrl(url);
+      toast.success("Logo enviado — lembre de salvar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao enviar logo");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const uploadTotemBackground = async (file: File) => {
+    if (!storeId) return;
+    setBgUploading(true);
+    try {
+      const url = await uploadBrandingImage(storeId, "totem-bg", file);
+      setBgImageUrl(url);
+      toast.success("Imagem de fundo enviada — lembre de salvar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+    } finally {
+      setBgUploading(false);
+    }
   };
 
   const toggleActiveLang = (code: string) => {
@@ -247,16 +279,22 @@ const TotemConfigPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>URL do Logo <span className="text-xs text-muted-foreground ml-1">(512×512 px)</span></Label>
-              <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
-            </div>
-            <div>
-              <Label>Imagem de Fundo <span className="text-xs text-muted-foreground ml-1">(1080×1920 px)</span></Label>
-              <Input value={bgImageUrl} onChange={(e) => setBgImageUrl(e.target.value)} placeholder="https://..." />
-            </div>
-          </div>
+          <ImageUploadField
+            label="Logo do totem"
+            dimensions="512×512 px, fundo transparente"
+            value={logoUrl}
+            uploading={logoUploading}
+            disabled={!storeId}
+            onPickFile={uploadTotemLogo}
+          />
+          <ImageUploadField
+            label="Imagem de fundo"
+            dimensions="1080×1920 px, vertical (ecrã totem)"
+            value={bgImageUrl}
+            uploading={bgUploading}
+            disabled={!storeId}
+            onPickFile={uploadTotemBackground}
+          />
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
