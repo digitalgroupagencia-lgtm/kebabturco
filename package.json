@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/clean-lovable-pages.mjs",
-    "prebuild": "node scripts/clean-lovable-pages.mjs && node scripts/package-print-bridge.mjs",
+    "predev": "node scripts/clean-lovable-pages.mjs && node scripts/ensure-staff-email-login.mjs",
+    "prebuild": "node scripts/clean-lovable-pages.mjs && node scripts/ensure-staff-email-login.mjs && node scripts/package-print-bridge.mjs",
     "package:bridge": "node scripts/package-print-bridge.mjs",
     "generate:vapid": "node scripts/generate-vapid-keys.mjs",
     "generate:assetlinks": "node scripts/generate-assetlinks.mjs",
