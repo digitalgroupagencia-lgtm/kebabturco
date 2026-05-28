@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { applyBrowserChromeColor, applyStaffAppChrome } from "./lib/brandTokens";
 import { isStaffAppPath } from "./lib/appRouteKind";
+import { dismissBootShell } from "./lib/bootShell";
 
 if (isStaffAppPath()) {
   applyStaffAppChrome();
@@ -22,8 +23,6 @@ if (typeof window !== "undefined") {
   markStandalone();
   window.matchMedia("(display-mode: standalone)").addEventListener("change", markStandalone);
 }
-
-import { dismissBootShell } from "./lib/bootShell";
 
 function showBootError(message: string) {
   dismissBootShell();
@@ -47,6 +46,9 @@ if (!rootEl) {
   try {
     createRoot(rootEl).render(<App />);
     window.__SNAPORDER_APP_READY__ = true;
+    if (isStaffAppPath()) {
+      dismissBootShell();
+    }
   } catch (error) {
     console.error("[boot]", error);
     showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
