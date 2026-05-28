@@ -769,6 +769,7 @@ export type Database = {
       orders: {
         Row: {
           application_fee_cents: number
+          assigned_driver_id: string | null
           coupon_code: string | null
           created_at: string
           customer_id: string | null
@@ -776,10 +777,12 @@ export type Database = {
           customer_phone: string | null
           delivery_city: string | null
           delivery_complement: string | null
+          delivery_confirmation_code: string | null
           delivery_fee: number
           delivery_notes: string | null
           delivery_number: string | null
           delivery_postal_code: string | null
+          delivery_started_at: string | null
           delivery_street: string | null
           delivery_zone_id: string | null
           delivery_zone_name: string | null
@@ -813,6 +816,7 @@ export type Database = {
         }
         Insert: {
           application_fee_cents?: number
+          assigned_driver_id?: string | null
           coupon_code?: string | null
           created_at?: string
           customer_id?: string | null
@@ -820,10 +824,12 @@ export type Database = {
           customer_phone?: string | null
           delivery_city?: string | null
           delivery_complement?: string | null
+          delivery_confirmation_code?: string | null
           delivery_fee?: number
           delivery_notes?: string | null
           delivery_number?: string | null
           delivery_postal_code?: string | null
+          delivery_started_at?: string | null
           delivery_street?: string | null
           delivery_zone_id?: string | null
           delivery_zone_name?: string | null
@@ -857,6 +863,7 @@ export type Database = {
         }
         Update: {
           application_fee_cents?: number
+          assigned_driver_id?: string | null
           coupon_code?: string | null
           created_at?: string
           customer_id?: string | null
@@ -864,10 +871,12 @@ export type Database = {
           customer_phone?: string | null
           delivery_city?: string | null
           delivery_complement?: string | null
+          delivery_confirmation_code?: string | null
           delivery_fee?: number
           delivery_notes?: string | null
           delivery_number?: string | null
           delivery_postal_code?: string | null
+          delivery_started_at?: string | null
           delivery_street?: string | null
           delivery_zone_id?: string | null
           delivery_zone_name?: string | null
@@ -1084,6 +1093,27 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_push_config: {
+        Row: {
+          functions_base_url: string
+          id: number
+          staff_push_secret: string
+          updated_at: string
+        }
+        Insert: {
+          functions_base_url: string
+          id?: number
+          staff_push_secret?: string
+          updated_at?: string
+        }
+        Update: {
+          functions_base_url?: string
+          id?: number
+          staff_push_secret?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           ai_auto_images: boolean
@@ -1198,50 +1228,15 @@ export type Database = {
         }
         Relationships: []
       }
-      print_bridge_heartbeats: {
-        Row: {
-          bridge_version: string | null
-          last_seen_at: string
-          printer_ip: string | null
-          store_id: string
-          updated_at: string
-        }
-        Insert: {
-          bridge_version?: string | null
-          last_seen_at?: string
-          printer_ip?: string | null
-          store_id: string
-          updated_at?: string
-        }
-        Update: {
-          bridge_version?: string | null
-          last_seen_at?: string
-          printer_ip?: string | null
-          store_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "print_bridge_heartbeats_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: true
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       print_jobs: {
         Row: {
           copies: number
           created_at: string
           error_message: string | null
           id: string
-          max_retries: number
-          next_retry_at: string | null
           order_id: string | null
           printer_ip: string
           printer_port: number
-          retry_count: number
           status: Database["public"]["Enums"]["print_job_status"]
           store_id: string | null
           ticket_data: string
@@ -1252,12 +1247,9 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
-          max_retries?: number
-          next_retry_at?: string | null
           order_id?: string | null
           printer_ip?: string
           printer_port?: number
-          retry_count?: number
           status?: Database["public"]["Enums"]["print_job_status"]
           store_id?: string | null
           ticket_data: string
@@ -1268,12 +1260,9 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
-          max_retries?: number
-          next_retry_at?: string | null
           order_id?: string | null
           printer_ip?: string
           printer_port?: number
-          retry_count?: number
           status?: Database["public"]["Enums"]["print_job_status"]
           store_id?: string | null
           ticket_data?: string
@@ -1778,6 +1767,61 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      staff_access_pins: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          pin_hash: string
+          store_id: string
+          updated_at: string
+          user_id: string
+          user_role_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pin_hash: string
+          store_id: string
+          updated_at?: string
+          user_id: string
+          user_role_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pin_hash?: string
+          store_id?: string
+          updated_at?: string
+          user_id?: string
+          user_role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_access_pins_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_access_pins_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_access_pins_user_role_id_fkey"
+            columns: ["user_role_id"]
+            isOneToOne: true
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_items: {
         Row: {
@@ -2694,6 +2738,10 @@ export type Database = {
         Args: { _name?: string; _session_id: string }
         Returns: string
       }
+      assign_delivery_driver: {
+        Args: { _driver_user_id: string; _order_id: string }
+        Returns: Json
+      }
       claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
       close_table_customer: {
         Args: { _customer_id: string; _payment_method: string }
@@ -2701,6 +2749,10 @@ export type Database = {
       }
       close_table_session_unified: {
         Args: { _payment_method: string; _session_id: string }
+        Returns: Json
+      }
+      confirm_delivery_with_code: {
+        Args: { _code: string; _order_id: string }
         Returns: Json
       }
       confirm_order_payment: {
@@ -2786,6 +2838,10 @@ export type Database = {
         }
         Returns: Json
       }
+      dispatch_staff_new_order_push: {
+        Args: { _order_id: string; _order_number: string; _store_id: string }
+        Returns: undefined
+      }
       duplicate_tenant: {
         Args: {
           _copy_banners?: boolean
@@ -2800,22 +2856,11 @@ export type Database = {
       enqueue_print_job: {
         Args: {
           _copies_override?: number
-          _force_reprint?: boolean
           _order_id?: string
           _store_id: string
           _ticket_data: string
         }
         Returns: string
-      }
-      mark_kitchen_printed: { Args: { _order_id: string }; Returns: boolean }
-      retry_failed_print_jobs: { Args: { _store_id: string }; Returns: number }
-      upsert_print_bridge_heartbeat: {
-        Args: {
-          _bridge_version?: string
-          _printer_ip?: string
-          _store_id: string
-        }
-        Returns: undefined
       }
       get_admin_dashboard_stats: {
         Args: never
@@ -2843,6 +2888,27 @@ export type Database = {
           total: number
         }[]
       }
+      get_driver_deliveries: {
+        Args: { _store_id?: string }
+        Returns: {
+          assigned_driver_id: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          delivery_city: string
+          delivery_confirmation_code: string
+          delivery_notes: string
+          delivery_number: string
+          delivery_started_at: string
+          delivery_street: string
+          estimated_ready_at: string
+          id: string
+          notes: string
+          order_number: string
+          status: string
+          total: number
+        }[]
+      }
       get_hourly_sales: {
         Args: { _since: string; _store_id: string }
         Returns: {
@@ -2864,6 +2930,7 @@ export type Database = {
           revenue: number
         }[]
       }
+      get_my_staff_context: { Args: never; Returns: Json }
       get_operational_diagnostics: {
         Args: { _store_id?: string }
         Returns: Json
@@ -3001,6 +3068,14 @@ export type Database = {
       }
       is_seller: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
+      list_store_drivers: {
+        Args: { _store_id: string }
+        Returns: {
+          full_name: string
+          user_id: string
+        }[]
+      }
+      lookup_staff_user_by_email: { Args: { _email: string }; Returns: string }
       mark_order_paid_at_counter: {
         Args: { _order_id: string; _payment_method?: string }
         Returns: Json
@@ -3080,6 +3155,11 @@ export type Database = {
         Args: { _is_beta?: boolean; _plan_key: string; _tenant_id: string }
         Returns: undefined
       }
+      staff_pin_in_use: {
+        Args: { _exclude_role_id?: string; _pin: string; _store_id: string }
+        Returns: boolean
+      }
+      start_delivery: { Args: { _order_id: string }; Returns: Json }
       sync_store_stripe_profile: {
         Args: {
           _business_name?: string
@@ -3100,11 +3180,24 @@ export type Database = {
         Args: { _pin: string; _user_role_id: string }
         Returns: undefined
       }
-      user_can_access_store: { Args: { _store_id: string }; Returns: boolean }
+      user_can_access_store:
+        | { Args: { _store_id: string }; Returns: boolean }
+        | { Args: { _store_id: string; _user_id: string }; Returns: boolean }
       user_can_access_tenant: { Args: { _tenant_id: string }; Returns: boolean }
+      user_is_delivery_driver: {
+        Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
         Returns: Json
+      }
+      verify_staff_access_pin: {
+        Args: { _pin: string; _store_id: string }
+        Returns: {
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
       }
     }
     Enums: {
@@ -3114,6 +3207,10 @@ export type Database = {
         | "operator"
         | "kitchen"
         | "seller"
+        | "manager"
+        | "cashier"
+        | "attendant"
+        | "delivery"
       order_source: "totem" | "ifood" | "counter" | "delivery" | "waiter"
       order_status:
         | "pending"
@@ -3258,6 +3355,10 @@ export const Constants = {
         "operator",
         "kitchen",
         "seller",
+        "manager",
+        "cashier",
+        "attendant",
+        "delivery",
       ],
       order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: [
