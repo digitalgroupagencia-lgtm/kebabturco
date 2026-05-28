@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { nav } from "@/lib/navPaths";
 import type { StaffRole } from "@/lib/staffPermissions";
+export { loginWithStaffPin } from "@/services/staffPinLogin";
 
 export const STAFF_SESSION_FLAG = "kebabturco.staffSession";
 
@@ -50,39 +51,4 @@ export function resolveStaffLoginDestination(role: StaffRole | string | null | u
     default:
       return nav.panel("live");
   }
-}
-
-export async function loginWithStaffPin(storeId: string, pin: string) {
-  const { data, error } = await supabase.functions.invoke("staff-pin-login", {
-    body: { store_id: storeId, pin },
-  });
-
-  if (error) {
-    throw new Error(error.message || "Não foi possível validar o código");
-  }
-
-  if (data?.error) {
-    throw new Error(String(data.error));
-  }
-
-  const tokenHash = data?.token_hash as string | undefined;
-  if (!tokenHash) {
-    throw new Error("Resposta inválida do servidor");
-  }
-
-  const { error: otpError } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: "magiclink",
-  });
-
-  if (otpError) {
-    throw new Error(otpError.message || "Não foi possível iniciar sessão");
-  }
-
-  markStaffSession();
-
-  return {
-    role: (data?.role as StaffRole | undefined) ?? null,
-    userId: (data?.user_id as string | undefined) ?? null,
-  };
 }

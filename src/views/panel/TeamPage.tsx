@@ -24,6 +24,7 @@ import {
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
+import { createStaffMember } from "@/services/createStaffMember";
 
 type AppRole = StaffRole;
 
@@ -156,37 +157,29 @@ const TeamPage = () => {
     setSaving(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("create-staff-member", {
-        body: {
-          email: newEmail.trim(),
-          password: newPassword,
-          full_name: newName.trim() || null,
-          role: newRole,
-          store_id: storeId,
-          tenant_id: tenantId,
-          access_pin: newAccessPin,
-          preferred_language: newLanguage,
-        },
+      const result = await createStaffMember({
+        email: newEmail.trim(),
+        password: newPassword,
+        full_name: newName.trim() || null,
+        role: newRole,
+        store_id: storeId,
+        tenant_id: tenantId,
+        access_pin: newAccessPin,
+        preferred_language: newLanguage,
       });
-
-      if (error) {
-        toast.error(translateAppErrorFromException(error, uiLang));
-        setSaving(false);
-        return;
-      }
-
-      const payload = data as { error?: string; success?: boolean } | null;
-      if (payload?.error) {
-        toast.error(translateAppError(payload.error, uiLang));
-        setSaving(false);
-        return;
-      }
 
       toast.success(
         uiLang === "es"
           ? `Miembro añadido como ${roleLabels[newRole].label}`
           : `Membro adicionado como ${roleLabels[newRole].label}!`,
       );
+      if (result.password_unchanged) {
+        toast.info(
+          uiLang === "es"
+            ? "Este correo ya existía: se añadió al equipo, pero la contraseña anterior se mantiene."
+            : "Este e-mail já existia: foi adicionado à equipa, mas a senha anterior mantém-se.",
+        );
+      }
       setWelcomeData({
         name: newName.trim(),
         email: newEmail.trim(),

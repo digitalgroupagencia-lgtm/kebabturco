@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.create-staff-member]
+verify_jwt = true
+
+[functions.staff-pin-login]
+verify_jwt = false

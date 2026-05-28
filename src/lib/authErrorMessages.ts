@@ -53,6 +53,10 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     pt: "Esta pessoa já faz parte da equipa desta loja.",
     es: "Esta persona ya forma parte del equipo de esta tienda.",
   },
+  edge_function_unavailable: {
+    pt: "Serviço temporariamente indisponível. A app tentou criar o membro por outro caminho — se o erro persistir, contacte o suporte.",
+    es: "Servicio temporalmente no disponible. La app intentó crear el miembro por otra vía — si el error continúa, contacte con soporte.",
+  },
   generic: {
     pt: "Não foi possível concluir. Tente novamente.",
     es: "No se pudo completar. Inténtelo de nuevo.",
@@ -75,6 +79,7 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("membro da equipe não encontrado") || m.includes("equipe não encontrado")) return "member_not_found";
   if (m.includes("loja inválida")) return "store_invalid";
   if (m.includes("já faz parte") || m.includes("already on team")) return "role_exists";
+  if (m.includes("failed to send a request") || m.includes("edge function")) return "edge_function_unavailable";
   return "generic";
 }
 

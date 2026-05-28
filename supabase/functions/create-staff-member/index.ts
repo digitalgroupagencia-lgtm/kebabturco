@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: roleRow, error: roleError } = await userClient
+    const { data: roleRow, error: roleError } = await admin
       .from("user_roles")
       .insert({
         user_id: userId,
@@ -226,13 +226,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { error: pinError } = await userClient.rpc("upsert_staff_access_pin", {
+    const { error: pinError } = await admin.rpc("upsert_staff_access_pin", {
       _user_role_id: roleRow.id,
       _pin: String(access_pin),
     });
 
     if (pinError) {
-      await userClient.from("user_roles").delete().eq("id", roleRow.id);
+      await admin.from("user_roles").delete().eq("id", roleRow.id);
       if (createdNewUser) await admin.auth.admin.deleteUser(userId);
       return new Response(JSON.stringify({ error: pinError.message }), {
         status: 400,
@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    await userClient.from("profiles").upsert(
+    await admin.from("profiles").upsert(
       {
         user_id: userId,
         full_name: full_name?.trim() || null,
