@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import { isNetworkOrEdgeUnavailable } from "@/lib/networkErrors";
 import type { StaffRole } from "@/lib/staffPermissions";
 
@@ -30,15 +31,14 @@ const memoryStorage = {
   removeItem: () => undefined,
 };
 
-function isEdgeFunctionUnavailable(message: string): boolean {
-  return /failed to send a request|edge function|functions\/v1|fetch failed|networkerror|network request failed/i.test(
-    message,
-  );
-}
-
 function isAlreadyRegistered(message: string): boolean {
   const m = message.toLowerCase();
-  return m.includes("already") && (m.includes("registered") || m.includes("exists"));
+  return (
+    (m.includes("already") && (m.includes("registered") || m.includes("exists"))) ||
+    m.includes("user already registered") ||
+    m.includes("email address is already") ||
+    m.includes("duplicate")
+  );
 }
 
 async function invokeEdgeFunction(
@@ -59,8 +59,7 @@ async function invokeEdgeFunction(
       body: JSON.stringify(input),
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { error: msg };
+    return { error: extractErrorMessage(e) };
   }
 
   const payload = (await res.json().catch(() => ({}))) as {
@@ -95,6 +94,23 @@ async function lookupExistingUserId(email: string): Promise<string | null> {
   });
   if (error) throw error;
   return (data as string | null) ?? null;
+}
+
+async function upsertStaffProfileByManager(input: CreateStaffMemberInput, userId: string) {
+  const { error } = await (supabase.rpc as any)("upsert_staff_profile_by_manager", {
+    _user_id: userId,
+    _full_name: input.full_name?.trim() || null,
+    _preferred_language: input.preferred_language || "es",
+  });
+
+  if (error) {
+    // Compatibilidade: se a função ainda não existir na BD, não falha a criação da equipa.
+    const msg = extractErrorMessage(error).toLowerCase();
+    if (msg.includes("could not find the function") || msg.includes("schema cache")) {
+      return;
+    }
+    throw error;
+  }
 }
 
 async function createStaffMemberLocally(
@@ -173,19 +189,12 @@ async function createStaffMemberLocally(
       _pin: input.access_pin,
     });
     if (pinError) throw pinError;
-
-    await supabase.from("profiles").upsert(
-      {
-        user_id: userId,
-        full_name: input.full_name?.trim() || null,
-        preferred_language: input.preferred_language || "es",
-      } as any,
-      { onConflict: "user_id" },
-    );
   } catch (e) {
     await supabase.from("user_roles").delete().eq("id", roleRow.id);
     throw e;
   }
+
+  await upsertStaffProfileByManager(input, userId);
 
   return {
     success: true,
@@ -209,7 +218,7 @@ export async function createStaffMember(
       return edge;
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = extractErrorMessage(e);
     if (!isNetworkOrEdgeUnavailable(msg)) throw e;
   }
 

@@ -71,7 +71,12 @@ describe("createStaffMember", () => {
       }
       return {};
     });
-    mockRpc.mockResolvedValue({ error: null });
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === "upsert_staff_access_pin" || fn === "upsert_staff_profile_by_manager") {
+        return Promise.resolve({ error: null });
+      }
+      return Promise.resolve({ error: null });
+    });
   });
 
   afterEach(() => {

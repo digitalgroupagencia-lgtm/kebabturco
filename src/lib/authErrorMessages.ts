@@ -1,3 +1,5 @@
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
+
 type UiLang = "pt" | "es";
 
 const MESSAGES: Record<string, Record<UiLang, string>> = {
@@ -57,6 +59,14 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     pt: "Serviço temporariamente indisponível. A app tentou criar o membro por outro caminho — se o erro persistir, contacte o suporte.",
     es: "Servicio temporalmente no disponible. La app intentó crear el miembro por otra vía — si el error continúa, contacte con soporte.",
   },
+  db_function_missing: {
+    pt: "Falta actualizar a base de dados da loja. Contacte o suporte ou execute o SQL de equipa na Lovable.",
+    es: "Falta actualizar la base de datos de la tienda. Contacte con soporte o ejecute el SQL de equipo en Lovable.",
+  },
+  rls_denied: {
+    pt: "Sem permissão para concluir esta acção. Verifique se está logado como gerente ou dono.",
+    es: "Sin permiso para completar esta acción. Compruebe que inició sesión como gerente o dueño.",
+  },
   generic: {
     pt: "Não foi possível concluir. Tente novamente.",
     es: "No se pudo completar. Inténtelo de nuevo.",
@@ -74,7 +84,11 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("unauthorized") || m.includes("invalid token")) return "unauthorized";
   if (m.includes("forbidden") || m.includes("sem permissão")) return "forbidden";
   if (m.includes("código já está em uso") || m.includes("already in use")) return "pin_in_use";
+  if (m.includes("4 e 8 dígitos") || m.includes("4 e 8 digitos")) return "pin_format";
+  if (m.includes("código deve ter") || m.includes("codigo deve ter")) return "pin_format";
   if (m.includes("incluir #") || m.includes("6–10") || m.includes("6-10")) return "pin_format";
+  if (m.includes("could not find the function") || m.includes("schema cache")) return "db_function_missing";
+  if (m.includes("row-level security") || m.includes("rls")) return "rls_denied";
   if (m.includes("sem permissão para definir código")) return "pin_permission";
   if (m.includes("membro da equipe não encontrado") || m.includes("equipe não encontrado")) return "member_not_found";
   if (m.includes("loja inválida")) return "store_invalid";
@@ -104,7 +118,5 @@ export function translateAppError(message: string | null | undefined, lang: UiLa
 }
 
 export function translateAppErrorFromException(err: unknown, lang: UiLang = "pt"): string {
-  if (err instanceof Error) return translateAppError(err.message, lang);
-  if (typeof err === "string") return translateAppError(err, lang);
-  return MESSAGES.generic[lang];
+  return translateAppError(extractErrorMessage(err), lang);
 }
