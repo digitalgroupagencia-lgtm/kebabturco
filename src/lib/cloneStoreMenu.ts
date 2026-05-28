@@ -95,9 +95,7 @@ async function cloneStoreMenuClientSide(
 
   const { data: products, error: prodErr } = await supabase
     .from("products")
-    .select(
-      "id, category_id, name, description, price, image_url, is_active, is_bestseller, is_promo, sort_order, price_modifiers, product_type, combo_unit_count, unit_label, after_add_suggestions",
-    )
+    .select("*")
     .eq("store_id", sourceStoreId)
     .order("sort_order")
     .order("created_at");
@@ -116,12 +114,12 @@ async function cloneStoreMenuClientSide(
         image_url: copyImages ? cat.image_url : null,
         is_active: cat.is_active,
         sort_order: cat.sort_order ?? 0,
-      })
+      } as never)
       .select("id")
       .single();
 
     if (error) throw new Error(error.message);
-    categoryIdMap.set(cat.id, inserted.id);
+    categoryIdMap.set(cat.id, (inserted as { id: string }).id);
     categoriesCopied += 1;
   }
 
@@ -151,7 +149,7 @@ async function cloneStoreMenuClientSide(
     if (prod.unit_label != null) payload.unit_label = prod.unit_label;
     if (prod.after_add_suggestions != null) payload.after_add_suggestions = prod.after_add_suggestions;
 
-    const { error } = await supabase.from("products").insert(payload);
+    const { error } = await supabase.from("products").insert(payload as never);
     if (error) throw new Error(error.message);
     productsCopied += 1;
   }
