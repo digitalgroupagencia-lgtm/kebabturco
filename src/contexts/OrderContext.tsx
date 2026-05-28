@@ -200,7 +200,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         orderId: activeOrderId,
         orderNumber,
         storeId: effectiveStoreId,
-        screen: screen === "confirmation" || screen === "tracking" || screen === "cashPending" ? screen : undefined,
+        screen: screen === "confirmation" || screen === "tracking" ? screen : undefined,
       });
     }
   }, [activeOrderId, orderNumber, effectiveStoreId, screen]);

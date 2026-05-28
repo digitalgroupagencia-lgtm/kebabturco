@@ -2,6 +2,7 @@ import {
   ensureStaffPushServiceWorker,
   restoreStaffPushIfEnabled,
 } from "@/lib/staffPush";
+import { deployDebugLog } from "@/lib/deployDebugLog";
 
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";

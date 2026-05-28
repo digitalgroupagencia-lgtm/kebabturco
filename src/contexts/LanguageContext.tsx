@@ -621,7 +621,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const [lang, setLangState] = useState<Lang>(() => getEmbedLang() ?? loadSavedLang() ?? "es");
   const [translationTick, setTranslationTick] = useState(0);
   const pendingTexts = useRef(new Set<string>());
-  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   const setLang = (next: Lang) => {
     setLangState(next);
