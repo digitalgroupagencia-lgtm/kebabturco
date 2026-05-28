@@ -106,14 +106,14 @@ export async function hasActivePrintJob(orderId: string): Promise<boolean> {
 }
 
 export async function retryFailedPrintJobs(storeId: string): Promise<number> {
-  const { data, error } = await supabase.rpc("retry_failed_print_jobs", { _store_id: storeId });
+  const { data, error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>)("retry_failed_print_jobs", { _store_id: storeId });
   if (error) throw error;
   return (data as number) ?? 0;
 }
 
 export async function checkBridgeStatus(storeId: string): Promise<"active" | "inactive" | "unknown"> {
   const cutoff = new Date(Date.now() - BRIDGE_ONLINE_SECONDS * 1000).toISOString();
-  const { data: heartbeat } = await supabase
+  const { data: heartbeat } = await (supabase as unknown as { from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { last_seen_at?: string } | null }> } } } })
     .from("print_bridge_heartbeats")
     .select("last_seen_at")
     .eq("store_id", storeId)
@@ -151,7 +151,7 @@ export async function checkBridgeStatus(storeId: string): Promise<"active" | "in
 }
 
 export async function fetchBridgeLastSeen(storeId: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data } = await (supabase as unknown as { from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { last_seen_at?: string } | null }> } } } })
     .from("print_bridge_heartbeats")
     .select("last_seen_at")
     .eq("store_id", storeId)
