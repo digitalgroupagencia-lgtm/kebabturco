@@ -51,6 +51,57 @@ CREATE INDEX IF NOT EXISTS idx_staff_access_pins_store
   ON public.staff_access_pins(store_id)
   WHERE is_active = true;
 
+
+-- ─── Funções auxiliares (ANTES das políticas que as usam) ───────────────────
+
+CREATE OR REPLACE FUNCTION public.user_can_access_store(_user_id uuid, _store_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = _user_id
+      AND (
+        ur.role = 'admin_master'::public.app_role
+        OR ur.store_id = _store_id
+        OR (
+          ur.tenant_id IS NOT NULL
+          AND ur.tenant_id = (SELECT s.tenant_id FROM public.stores s WHERE s.id = _store_id)
+        )
+      )
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_is_delivery_driver(_user_id uuid, _store_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = _user_id
+      AND ur.role = 'delivery'::public.app_role
+      AND ur.store_id = _store_id
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.staff_pin_in_use(
+  _store_id uuid,
+  _pin text,
+  _exclude_role_id uuid DEFAULT NULL
+)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.staff_access_pins sap
+    WHERE sap.store_id = _store_id
+      AND sap.is_active
+      AND (_exclude_role_id IS NULL OR sap.user_role_id <> _exclude_role_id)
+      AND sap.pin_hash = crypt(_pin, sap.pin_hash)
+  );
+$$;
+
+
+-- ─── Políticas da tabela de códigos ──────────────────────────────────────────
+
 ALTER TABLE public.staff_access_pins ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Store managers manage staff pins" ON public.staff_access_pins;
@@ -79,7 +130,7 @@ DROP POLICY IF EXISTS "Store staff view pin status" ON public.staff_access_pins;
 CREATE POLICY "Store staff view pin status" ON public.staff_access_pins
 FOR SELECT TO authenticated
 USING (
-  public.user_can_access_store(auth.uid(), store_id)
+  public.user_can_access_store(store_id)
 );
 
 
