@@ -11,7 +11,7 @@ export const RESTAURANT_GUIDE_SECTIONS: FaqSection[] = [
       },
       {
         q: "Como adiciono um membro da equipa?",
-        a: "Equipe → Novo Membro. Preencha nome, email, senha, código de acesso (com #, ex: 482917#), papel e idioma (espanhol por defeito).\n\nApós criar, copie o resumo com instruções e envie ao funcionário (WhatsApp ou copiar).",
+        a: "Equipe → Novo Membro. Preencha nome, e-mail, senha, papel e idioma (espanhol por defeito).\n\nApós criar, copie o resumo com instruções e envie ao funcionário (WhatsApp ou copiar). Ele entra na app com esse e-mail e senha (5 toques no logótipo → Área da equipe).",
       },
       {
         q: "Quais são os papéis?",

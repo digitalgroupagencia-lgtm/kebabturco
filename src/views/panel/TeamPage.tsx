@@ -354,6 +354,13 @@ const TeamPage = () => {
             : "O membro foi criado, mas o login ainda não funciona. Edite-o, volte a escrever a senha e guarde.",
           { duration: 8000 },
         );
+      } else {
+        toast.success(
+          uiLang === "es"
+            ? "Login listo: puede entrar con este correo y contraseña en Área del equipo."
+            : "Login pronto: pode entrar com este e-mail e senha na Área da equipe.",
+          { duration: 6000 },
+        );
       }
       setWelcomeData({
         name: newName.trim(),
