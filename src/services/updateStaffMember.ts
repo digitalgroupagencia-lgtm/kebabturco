@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { extractErrorMessage } from "@/lib/extractErrorMessage";
-import { isNetworkOrEdgeUnavailable } from "@/lib/networkErrors";
+import { setStaffPasswordViaRpc } from "@/services/staffAuthRpc";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 export type UpdateStaffMemberInput = {
@@ -12,29 +11,6 @@ export type UpdateStaffMemberInput = {
   preferred_language: string;
   password?: string;
 };
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-
-async function invokeUpdateEdge(input: UpdateStaffMemberInput) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token ?? SUPABASE_KEY;
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/update-staff-member`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      apikey: SUPABASE_KEY,
-    },
-    body: JSON.stringify(input),
-  });
-
-  const payload = (await res.json().catch(() => ({}))) as { error?: string; success?: boolean };
-  if (!res.ok || payload.error) {
-    throw new Error(payload.error || `Erro ao actualizar membro (${res.status})`);
-  }
-}
 
 async function updateStaffMemberLocally(input: UpdateStaffMemberInput) {
   const { error: profileError } = await (supabase.rpc as any)("upsert_staff_profile_by_manager", {
@@ -52,27 +28,16 @@ async function updateStaffMemberLocally(input: UpdateStaffMemberInput) {
   if (roleError) throw roleError;
 }
 
-/** Actualiza membro da equipa — perfil, papel e senha (se indicada). */
+/** Actualiza membro da equipa — perfil, papel e senha (RPC na base de dados). */
 export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<void> {
-  const hasPassword = Boolean(input.password?.trim());
-
-  if (hasPassword) {
-    try {
-      await invokeUpdateEdge(input);
-      return;
-    } catch (e) {
-      const msg = extractErrorMessage(e);
-      if (!isNetworkOrEdgeUnavailable(msg) && !/404|502|503|504|500/i.test(msg)) {
-        throw e;
-      }
+  if (input.password?.trim()) {
+    const passwordSet = await setStaffPasswordViaRpc(input.user_id, input.password.trim());
+    if (!passwordSet) {
+      throw new Error(
+        "Não foi possível alterar a senha. Faça Sync + Publish na Lovable para aplicar a actualização da base de dados.",
+      );
     }
   }
 
   await updateStaffMemberLocally(input);
-
-  if (hasPassword) {
-    throw new Error(
-      "Perfil actualizado, mas a senha só pode ser alterada quando o servidor remoto está activo.",
-    );
-  }
 }

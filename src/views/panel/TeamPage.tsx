@@ -288,8 +288,8 @@ const TeamPage = () => {
       if (editPassword.trim() && !loginReady) {
         toast.warning(
           lang === "es"
-            ? "Perfil guardado, pero el login aún no responde. Publique create-staff-member en Lovable e intente de nuevo."
-            : "Perfil guardado, mas o login ainda não responde. Publique create-staff-member na Lovable e tente outra vez.",
+            ? "Perfil guardado, pero el login aún no responde. Vuelva a guardar la contraseña después de Sync + Publish."
+            : "Perfil guardado, mas o login ainda não responde. Volte a guardar a senha depois de Sync + Publish.",
           { duration: 8000 },
         );
       }
@@ -350,8 +350,8 @@ const TeamPage = () => {
       if (!result.login_ready) {
         toast.warning(
           uiLang === "es"
-            ? "El miembro fue creado, pero el login aún no funciona. Edítelo, vuelva a escribir la contraseña y guarde."
-            : "O membro foi criado, mas o login ainda não funciona. Edite-o, volte a escrever a senha e guarde.",
+            ? "Miembro creado, pero el login aún no responde. Edítelo, vuelva a escribir la contraseña y guarde. Si persiste, haga Sync + Publish."
+            : "Membro criado, mas o login ainda não responde. Edite-o, volte a escrever a senha e guarde. Se continuar, faça Sync + Publish.",
           { duration: 8000 },
         );
       } else {

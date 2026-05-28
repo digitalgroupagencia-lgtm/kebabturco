@@ -9,14 +9,14 @@ const mockRpc = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: { session: { access_token: "test-token" } },
-      }),
-    },
     from: (...args: unknown[]) => mockFrom(...args),
     rpc: (...args: unknown[]) => mockRpc(...args),
   },
+}));
+
+vi.mock("@/services/staffAuthRpc", () => ({
+  setStaffPasswordViaRpc: vi.fn().mockResolvedValue(true),
+  createStaffAuthUserViaRpc: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -41,7 +41,6 @@ describe("createStaffMember", () => {
   };
 
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     mockSignUp.mockResolvedValue({
       data: { user: { id: "user-new-1" } },
       error: null,
@@ -61,17 +60,19 @@ describe("createStaffMember", () => {
               }),
             }),
           }),
-          delete: () => ({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-        };
-      }
-      if (table === "profiles") {
-        return {
-          upsert: vi.fn().mockResolvedValue({ error: null }),
+          insert: () => ({
+            select: () => ({
+              single: vi.fn().mockResolvedValue({ data: { id: "role-1" }, error: null }),
+            }),
+          }),
         };
       }
       return {};
     });
     mockRpc.mockImplementation((fn: string) => {
+      if (fn === "lookup_staff_user_by_email") {
+        return Promise.resolve({ data: null, error: null });
+      }
       if (fn === "add_team_member_to_store") {
         return Promise.resolve({ data: "role-1", error: null });
       }
@@ -83,35 +84,23 @@ describe("createStaffMember", () => {
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it("usa fallback local quando a Edge Function falha com Failed to fetch", async () => {
+  it("cria membro com signUp e confirma login", async () => {
     const result = await createStaffMember(input);
 
     expect(result.success).toBe(true);
     expect(result.user_id).toBe("user-new-1");
     expect(result.created_new_user).toBe(true);
-    expect(typeof result.login_ready).toBe("boolean");
+    expect(result.login_ready).toBe(true);
     expect(mockSignUp).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "entregador@teste.com" }),
-    );
-  });
-
-  it("usa fallback local quando a Edge Function responde 404", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: async () => ({ error: "Not Found" }),
+      expect.objectContaining({
+        email: "entregador@teste.com",
+        options: expect.objectContaining({
+          data: expect.objectContaining({ staff_team: true }),
+        }),
       }),
     );
-
-    const result = await createStaffMember(input);
-
-    expect(result.success).toBe(true);
-    expect(mockSignUp).toHaveBeenCalled();
   });
 });
