@@ -3,6 +3,7 @@ import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { subscribePushWithLogging } from "@/lib/push/pushSubscriptionCore";
 import { pushLog } from "@/lib/push/pushLogger";
 
+export const STAFF_PUSH_TAG = "__staff__";
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
 
 export {
@@ -44,7 +45,7 @@ export async function subscribeStaffPush(storeId: string): Promise<{ ok: boolean
     context: "staff",
     storeId,
     orderId: null,
-    customerPhone: null,
+    customerPhone: STAFF_PUSH_TAG,
     onOptIn: () => setStaffPushEnabled(true),
     userMessageDenied: "Permissão de notificações negada",
     userMessageUnavailable: "Push não configurado no servidor",

@@ -39,7 +39,10 @@ import {
   subscribePushLogs,
   type PushLogEntry,
 } from "@/lib/push/pushLogger";
-import { sendTestPushNotification, type PushTestAudience } from "@/lib/push/pushTestService";
+import { sendTestPushNotification, fetchServerVapidDiagnostics, type PushTestAudience, type ServerVapidDiagnostics } from "@/lib/push/pushTestService";
+import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
+import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
+import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 import { cn } from "@/lib/utils";
 
 function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
@@ -83,6 +86,8 @@ export default function PushTestPage() {
     typeof Notification !== "undefined" ? Notification.permission : "unsupported",
   );
   const [logs, setLogs] = useState<PushLogEntry[]>(() => getPushLogs());
+  const [serverVapid, setServerVapid] = useState<ServerVapidDiagnostics | null>(null);
+  const [localDeviceReady, setLocalDeviceReady] = useState<boolean | null>(null);
   const [subscribeBusy, setSubscribeBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
   const [audience, setAudience] = useState<PushTestAudience>("staff");
@@ -96,6 +101,10 @@ export default function PushTestPage() {
     setPermission(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
     const swDiag = await probePushServiceWorker("test");
     setSw(swDiag);
+    const serverDiag = await fetchServerVapidDiagnostics();
+    setServerVapid(serverDiag);
+    const local = await getLocalPushSubscription();
+    setLocalDeviceReady(Boolean(local));
     setRefreshing(false);
   }, []);
 
@@ -118,6 +127,7 @@ export default function PushTestPage() {
       if (result.ok) {
         toast.success("Este dispositivo está subscrito para push");
         setPermission(Notification.permission);
+        setLocalDeviceReady(true);
       } else {
         toast.error(result.error ?? "Falha na subscrição — veja os logs abaixo");
       }
@@ -140,11 +150,11 @@ export default function PushTestPage() {
         body: testBody,
       });
       if (result.ok) {
-        toast.success(`Enviado para ${result.sent ?? 0} dispositivo(s)`);
+        toast.success(`Notificação enviada — ${result.sent ?? 0} dispositivo(s)`);
       } else if (result.skipped) {
-        toast.error(`Servidor sem VAPID: ${result.reason ?? "não configurado"}`);
+        toast.error(result.userMessage ?? "Servidor sem chaves para enviar notificações");
       } else {
-        toast.error(result.error ?? "Falha ao enviar teste");
+        toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
       }
     } finally {
       setSendBusy(false);
@@ -164,9 +174,10 @@ export default function PushTestPage() {
     toast.success("Logs copiados");
   };
 
-  const vapidOk = vapid.loaded && vapid.validFormat && vapid.decodable;
-  const swOk = Boolean(sw?.pushHandlerRegistered && sw.pushHandlerState === "activated");
+  const clientVapidOk = vapid.loaded && vapid.validFormat && vapid.decodable;
+  const serverVapidOk = Boolean(serverVapid?.configured);
   const permOk = permission === "granted";
+  const canSendTest = serverVapidOk && permOk && Boolean(storeId);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -176,10 +187,36 @@ export default function PushTestPage() {
           Diagnóstico e teste push
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Verifica a chave VAPID, o service worker e envia uma notificação de teste para este
-          dispositivo.
+          Verifica chaves no site e no servidor, service worker, e envia uma notificação de teste.
         </p>
       </div>
+
+      {serverVapid && !serverVapid.configured ? (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-50 flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">O site pode subscrever, mas o servidor ainda não envia</p>
+            <p className="text-xs mt-1 opacity-90">
+              A chave verde «No site» só permite registar o telemóvel. Para enviar notificações,
+              configure <strong>VAPID_PUBLIC_KEY</strong> e <strong>VAPID_PRIVATE_KEY</strong> nos
+              segredos da Lovable Cloud e volte a publicar as funções do servidor.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {serverVapid?.configured && serverVapid.keysMatchClient === false ? (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-semibold">Chaves do site e do servidor não coincidem</p>
+            <p className="text-xs mt-1 opacity-90">
+              A chave pública no site (fallback ou variável) é diferente da chave no servidor.
+              O envio pode falhar até alinhar ambas.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <AdminStoreSwitcher hint="Escolha a unidade para subscrição e envio de teste." />
 
@@ -190,14 +227,14 @@ export default function PushTestPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Chave VAPID</CardTitle>
-            <CardDescription>Chave pública no site</CardDescription>
+            <CardTitle className="text-base">Chave no site</CardTitle>
+            <CardDescription>Pública — subscrição neste browser</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <StatusBadge ok={vapidOk} label={vapidOk ? "Carregada" : "Problema"} />
+            <StatusBadge ok={clientVapidOk} label={clientVapidOk ? "OK para subscrever" : "Problema"} />
             <dl className="space-y-1 text-xs text-muted-foreground">
               <div className="flex justify-between gap-2">
                 <dt>Origem</dt>
@@ -223,6 +260,55 @@ export default function PushTestPage() {
             {vapid.decodeError ? (
               <p className="text-xs text-destructive">{vapid.decodeError}</p>
             ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className={!serverVapidOk ? "border-amber-500/40" : undefined}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Chave no servidor</CardTitle>
+            <CardDescription>Envio de notificações</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {serverVapid === null ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <StatusBadge
+                  ok={serverVapidOk}
+                  label={serverVapidOk ? "Pronto a enviar" : "Não configurado"}
+                />
+                <dl className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between gap-2">
+                    <dt>Chave pública</dt>
+                    <dd>{serverVapid.hasPublicKey ? "Sim" : "Não"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt>Chave privada</dt>
+                    <dd>{serverVapid.hasPrivateKey ? "Sim" : "Não"}</dd>
+                  </div>
+                  {serverVapid.publicKeyPreview ? (
+                    <div className="flex justify-between gap-2">
+                      <dt>Pré-visualização</dt>
+                      <dd
+                        className="font-mono text-foreground truncate max-w-[120px]"
+                        title={serverVapid.publicKeyPreview}
+                      >
+                        {serverVapid.publicKeyPreview}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {serverVapid.keysMatchClient != null ? (
+                    <div className="flex justify-between gap-2">
+                      <dt>Igual ao site</dt>
+                      <dd>{serverVapid.keysMatchClient ? "Sim" : "Não"}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+                {serverVapid.probeError ? (
+                  <p className="text-xs text-destructive">{serverVapid.probeError}</p>
+                ) : null}
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -287,6 +373,39 @@ export default function PushTestPage() {
         </Card>
       </div>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Como funciona «dispositivo»?</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm space-y-2 text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Um telemóvel ou computador = um dispositivo.</strong>{" "}
+            Tem de carregar em <strong>Registar push neste dispositivo</strong> antes de enviar o teste.
+          </p>
+          <ul className="list-disc pl-5 space-y-1 text-xs">
+            <li>Escolha a <strong>mesma loja</strong> (Gandia ou Playa) ao registar e ao enviar.</li>
+            <li>
+              Escolha o <strong>mesmo tipo</strong>: Equipa ou Cliente — registar os dois no mesmo aparelho
+              substitui o anterior (só conta o último).
+            </li>
+            <li>
+              Equipa → etiqueta interna <code className="text-foreground">{STAFF_PUSH_TAG}</code> · Cliente →{" "}
+              <code className="text-foreground">{CUSTOMER_MARKETING_PUSH_TAG}</code>
+            </li>
+          </ul>
+          <p className="text-xs pt-1">
+            Estado deste browser:{" "}
+            {localDeviceReady === null ? (
+              "…"
+            ) : localDeviceReady ? (
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">registado e pronto</span>
+            ) : (
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">ainda não registado</span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Testar neste dispositivo</CardTitle>
@@ -333,7 +452,7 @@ export default function PushTestPage() {
           <Button
             type="button"
             variant="default"
-            disabled={sendBusy || !storeId || !permOk}
+            disabled={sendBusy || !canSendTest}
             onClick={() => void handleSendTest()}
           >
             {sendBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
@@ -342,6 +461,10 @@ export default function PushTestPage() {
           {!permOk ? (
             <p className="text-xs text-muted-foreground">
               Registe o dispositivo primeiro para conceder permissão de notificações.
+            </p>
+          ) : !serverVapidOk ? (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              Configure as chaves VAPID no servidor antes de enviar testes.
             </p>
           ) : null}
         </CardContent>

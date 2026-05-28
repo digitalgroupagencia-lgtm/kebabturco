@@ -6,6 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-staff-push-secret",
 };
 
+const STAFF_PHONE_TAG = "__staff__";
+const MARKETING_PHONE_TAG = "__marketing__";
+
+type PushSubRow = { endpoint: string; p256dh: string; auth: string; order_id?: string | null; customer_phone?: string | null };
+
 async function sendWebPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: string,
@@ -27,18 +32,17 @@ function isStaffStoreBroadcast(body: {
   orderId?: string;
   storeId?: string;
   audience?: string;
+  testDirect?: boolean;
 }): boolean {
+  if (body.testDirect) return false;
   return Boolean(body.storeId && !body.orderId && body.audience !== "marketing");
 }
 
-function authorizeStaffBroadcast(req: Request, body: { orderId?: string; storeId?: string; audience?: string }): boolean {
+function authorizeStaffBroadcast(req: Request, body: { orderId?: string; storeId?: string; audience?: string; testDirect?: boolean }): boolean {
   const internalSecret = Deno.env.get("STAFF_PUSH_INTERNAL_SECRET");
   if (!isStaffStoreBroadcast(body)) return true;
 
-  if (!internalSecret) {
-    // Legacy: permitir se ainda não configuraram secret (migrar produção)
-    return true;
-  }
+  if (!internalSecret) return true;
 
   const headerSecret = req.headers.get("x-staff-push-secret");
   if (headerSecret === internalSecret) return true;
@@ -50,12 +54,73 @@ function authorizeStaffBroadcast(req: Request, body: { orderId?: string; storeId
   return false;
 }
 
+function vapidProbeResponse() {
+  const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+  const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
+  return new Response(
+    JSON.stringify({
+      configured: Boolean(vapidPublic && vapidPrivate),
+      hasPublicKey: Boolean(vapidPublic),
+      hasPrivateKey: Boolean(vapidPrivate),
+      publicKeyPreview: vapidPublic
+        ? `${vapidPublic.slice(0, 12)}…${vapidPublic.slice(-6)}`
+        : null,
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
+function isStaffAudienceRow(row: PushSubRow): boolean {
+  if (row.order_id) return false;
+  const tag = row.customer_phone;
+  return tag == null || tag === "" || tag === STAFF_PHONE_TAG;
+}
+
+function isMarketingAudienceRow(row: PushSubRow): boolean {
+  return row.customer_phone === MARKETING_PHONE_TAG || row.order_id != null;
+}
+
+function selectAudienceRows(
+  rows: PushSubRow[],
+  opts: { orderId?: string; storeId?: string; audience?: string },
+): PushSubRow[] {
+  if (opts.orderId) {
+    return rows.filter((r) => r.order_id === opts.orderId);
+  }
+  if (opts.audience === "marketing") {
+    return rows.filter(isMarketingAudienceRow);
+  }
+  if (opts.storeId) {
+    return rows.filter(isStaffAudienceRow);
+  }
+  return [];
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  if (req.method === "GET") {
+    return vapidProbeResponse();
+  }
+
   try {
-    const body = await req.json();
-    const { orderId, storeId, title, body: msgBody, tag, url, audience } = body;
+    const body = await req.json().catch(() => ({}));
+
+    if (body?.probe === true) {
+      return vapidProbeResponse();
+    }
+
+    const {
+      orderId,
+      storeId,
+      title,
+      body: msgBody,
+      tag,
+      url,
+      audience,
+      testDirect,
+      directSubscription,
+    } = body;
 
     if (!authorizeStaffBroadcast(req, body)) {
       return new Response(JSON.stringify({ error: "Unauthorized staff push" }), {
@@ -73,7 +138,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!orderId && !storeId) {
+    if (!orderId && !storeId && !testDirect) {
       return new Response(JSON.stringify({ error: "orderId ou storeId obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -85,22 +150,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    let query = supabase.from("push_subscriptions").select("endpoint, p256dh, auth");
-    if (orderId) {
-      query = query.eq("order_id", orderId);
-    } else if (storeId && audience === "marketing") {
-      query = query.eq("store_id", storeId).or(
-        'customer_phone.eq."__marketing__",order_id.not.is.null',
-      );
-    } else if (storeId) {
-      query = query.eq("store_id", storeId).is("order_id", null).is("customer_phone", null);
+    const targetMap = new Map<string, PushSubRow>();
+    let matchedInDb = 0;
+
+    if (storeId || orderId) {
+      let query = supabase
+        .from("push_subscriptions")
+        .select("endpoint, p256dh, auth, order_id, customer_phone");
+      if (orderId) {
+        query = query.eq("order_id", orderId);
+      } else if (storeId) {
+        query = query.eq("store_id", storeId);
+      }
+      const { data: rows } = await query;
+      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], { orderId, storeId, audience });
+      matchedInDb = matched.length;
+      for (const sub of matched) {
+        targetMap.set(sub.endpoint, sub);
+      }
     }
-    const { data: subs } = await query;
+
+    if (testDirect && directSubscription?.endpoint && directSubscription?.p256dh && directSubscription?.auth) {
+      targetMap.set(directSubscription.endpoint, directSubscription);
+    }
+
+    const subs = [...targetMap.values()];
 
     const payload = JSON.stringify({ title, body: msgBody, tag, url });
     let sent = 0;
 
-    for (const sub of subs || []) {
+    for (const sub of subs) {
       try {
         await sendWebPush(sub, payload, vapidPublic, vapidPrivate);
         sent++;
@@ -109,7 +188,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ sent }), {
+    return new Response(JSON.stringify({ sent, matched: matchedInDb, targeted: subs.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
