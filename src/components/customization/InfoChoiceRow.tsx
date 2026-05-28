@@ -21,26 +21,24 @@ export default function InfoChoiceRow({ title, selected, onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-all active:scale-[0.98] ${
-        selected
-          ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/15"
-          : "border-border/70 bg-card"
+      className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all active:scale-[0.99] ${
+        selected ? "border-primary bg-primary/[0.06]" : "border-border/60 bg-card"
       }`}
     >
       <span
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          selected ? "bg-emerald-500 text-white" : "bg-secondary/60 text-muted-foreground"
+          selected ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"
         }`}
       >
         <Icon className="h-5 w-5" strokeWidth={2.2} />
       </span>
-      <span className="flex-1 text-[15px] font-bold text-foreground leading-tight">{title}</span>
+      <span className="flex-1 text-[15px] font-bold leading-tight text-foreground">{title}</span>
       <span
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-          selected ? "border-emerald-500 bg-emerald-500 text-white" : "border-border bg-background"
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+          selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
         }`}
       >
-        {selected ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+        {selected ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
       </span>
     </button>
   );

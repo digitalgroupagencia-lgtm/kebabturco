@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Minus, Plus, X } from "lucide-react";
+import { Check, Lock, Minus, Plus, X } from "lucide-react";
 import { useCart, type CartItem } from "@/contexts/CartContext";
 import { isDrinkProduct } from "@/lib/modifiers/drinkProduct";
 import { type Extra, type Size, type Variant } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
-import QuantitySelector from "@/components/QuantitySelector";
+import ProductSummaryCard from "@/components/customization/ProductSummaryCard";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";
@@ -198,43 +198,35 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
   const { code: productCode, name: productCleanName } = parseProductCode(tProduct(product.name));
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
-      <ScreenHeader eyebrow={t("menu")} title={productCleanName} onBack={onBack} sticky />
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-4 space-y-5 pb-5">
-        <section className="relative rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
-          {productCode && (
-            <span className="absolute top-3 right-3 z-10 flex items-center justify-center min-w-[36px] h-[28px] px-2 rounded-full bg-foreground/85 text-background text-xs font-black tabular-nums shadow-md backdrop-blur-sm">
-              {productCode}
-            </span>
-          )}
-          <div className="aspect-square bg-secondary/40">
-            <img
-              src={product.image || "/placeholder.svg"}
-              alt={productCleanName}
-              className="w-full h-full object-cover rounded-[24px]"
-              loading="lazy"
-            />
-          </div>
-        </section>
-        <section className="space-y-2">
-          <h1 className="text-[30px] leading-[1.02] font-black text-foreground">{productCleanName}</h1>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">{tProduct(product.description)}</p>
-          <p className="text-[34px] font-black text-price pt-1 tabular-nums tracking-tight">{basePrice.toFixed(2)}€</p>
-        </section>
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/15 animate-fade-in">
+      <ScreenHeader eyebrow={t("customizeProduct")} title={productCleanName} onBack={onBack} sticky />
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-4 px-4 pb-5 pt-4">
+        <ProductSummaryCard
+          imageUrl={product.image || "/placeholder.svg"}
+          name={productCleanName}
+          priceLabel={`${basePrice.toFixed(2)}€`}
+          productCode={productCode}
+          quantity={quantity}
+          onQuantityChange={setQuantity}
+          showQuantity={!editingItem}
+        />
+        {descriptionText && (
+          <p className="px-1 text-sm leading-relaxed text-muted-foreground">{descriptionText}</p>
+        )}
         {(effectiveVariants.length > 0 || product.sizes?.length) && (
-          <section className="space-y-5">
+          <section className="overflow-hidden rounded-[22px] border border-border/50 bg-card shadow-[0_8px_24px_-18px_rgba(0,0,0,0.22)]">
             {effectiveVariants.length > 0 && (
-              <div>
-                <h3 className="text-[17px] font-black text-foreground mb-2.5">
+              <div className="p-3.5">
+                <h3 className="mb-2.5 text-[15px] font-black uppercase tracking-[0.06em] text-foreground">
                   {requiresVariant
                     ? isMeatChoice
-                      ? "Elige la carne"
+                      ? t("chooseOne")
                       : isDrink
-                        ? "Elige tu refresco"
-                        : "Elige tu opción"
+                        ? t("chooseOne")
+                        : t("choose")
                     : t("choose")}
                 </h3>
-                <div className={`grid gap-2 ${effectiveVariants.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                <div className="space-y-2">
                   {effectiveVariants.map((v) => {
                     const sel = selectedVariant?.id === v.id;
                     return (
@@ -242,9 +234,18 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
                         key={v.id}
                         type="button"
                         onClick={() => setSelectedVariant(v)}
-                        className={`rounded-2xl border px-2 py-3 min-h-[52px] ${sel ? "border-success bg-success/10" : "border-border bg-card"}`}
+                        className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left ${
+                          sel ? "border-primary bg-primary/[0.06]" : "border-border/60 bg-card"
+                        }`}
                       >
-                        <span className="text-[13px] font-bold">{tProduct(v.name)}</span>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                            sel ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
+                          }`}
+                        >
+                          {sel ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                        </span>
+                        <span className="text-[15px] font-bold">{tProduct(v.name)}</span>
                       </button>
                     );
                   })}
@@ -300,22 +301,23 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
             </ul>
           </section>
         )}
-        <section className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3">
-          <span className="font-black">Cantidad</span>
-          <QuantitySelector value={quantity} onChange={setQuantity} min={1} variant="compact" />
-        </section>
       </div>
-      <div className="shrink-0 border-t bg-background/92 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+
+      <section className="shrink-0 border-t border-border/60 bg-card/95 px-4 pt-3 backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={handleAdd}
           disabled={requiresVariant && !selectedVariant}
-          className="w-full flex justify-between py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] font-black disabled:opacity-50"
+          className="flex h-14 w-full items-center justify-between gap-3 rounded-[18px] bg-primary px-5 text-primary-foreground shadow-[0_10px_28px_-14px_rgba(139,0,0,0.65)] transition-transform active:scale-[0.98] disabled:opacity-50"
         >
-          <span>{t("addToOrder")}</span>
-          <span>{totalPrice.toFixed(2)}€</span>
+          <span className="text-[13px] font-black uppercase tracking-[0.08em]">{t("addToCartBtn")}</span>
+          <span className="text-lg font-black tabular-nums">{totalPrice.toFixed(2)}€</span>
         </button>
-      </div>
+        <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+          <Lock className="h-3 w-3 opacity-70" />
+          {t("securePaymentHint")}
+        </p>
+      </section>
     </div>
   );
 }

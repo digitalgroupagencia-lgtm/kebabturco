@@ -5,7 +5,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import PotatoUpsellSection from "@/components/customization/PotatoUpsellSection";
 import ProductChoiceCard from "@/components/customization/ProductChoiceCard";
 import InfoChoiceRow from "@/components/customization/InfoChoiceRow";
+import ModifierGroupHeader from "@/components/customization/ModifierGroupHeader";
+import ModifierRadioRow from "@/components/customization/ModifierRadioRow";
+import ModifierCheckboxRow from "@/components/customization/ModifierCheckboxRow";
+import ModifierChipOption from "@/components/customization/ModifierChipOption";
 import { isInformationalModifierGroup } from "@/lib/modifiers/informationalGroups";
+import {
+  groupHasImages,
+  shouldUseChipLayout,
+  shouldUseImageCarousel,
+  shouldUseRadioList,
+} from "@/lib/modifiers/groupRenderStyle";
 
 type Props = {
   group: ModifierGroup;
@@ -18,8 +28,8 @@ type Props = {
   stepMode?: boolean;
 };
 
-const INCLUDED = "border-emerald-500/50 bg-emerald-500/10 text-emerald-900";
-const REMOVED = "border-red-500 bg-red-500/10";
+const INCLUDED = "border-emerald-500/45 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100";
+const REMOVED = "border-red-500/70 bg-red-500/10";
 
 function updateOption(
   state: SelectionState,
@@ -86,51 +96,253 @@ export default function ChoiceGroupSection({
   }
 
   const badgeLabel = () => {
-    if (group.isRequired && !isRemoval) return t("required");
+    if (group.isRequired && !isRemoval) return count > 0 ? t("required") : t("required");
     if (isRemoval) return t("customize");
-    if (isExtra) return t("extraTag");
+    if (isExtra) return t("optional");
     return t("optional");
   };
 
+  const badgeTone = (): "required" | "optional" | "limit" | "done" => {
+    if (group.isRequired && count === 0) return "required";
+    if (group.isRequired && count > 0) return "done";
+    if (group.selectionMode === "multiple" && group.maxSelect > 1) return "limit";
+    return "optional";
+  };
+
   const subtitle = group.description && tDesc ? tDesc(group.description) : null;
-  const maxHint = group.groupKind === "substitution"
-    ? t("substitutionHint")
-    : group.selectionMode === "multiple" && group.maxSelect > 1
+  const maxHint =
+    group.selectionMode === "multiple" && group.maxSelect > 1
       ? `${t("chooseUpTo")} ${group.maxSelect}`
       : group.isRequired && isSingle
         ? t("chooseOne")
         : null;
 
-  return (
-    <section
-      className={`overflow-hidden ${stepMode ? "" : "rounded-[24px] border border-border/70 bg-card shadow-card"}`}
-    >
-      {!hideHeader && !stepMode && (
-        <div className="px-4 py-3.5 border-b border-border/60 bg-secondary/30 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="text-[17px] font-black text-foreground leading-tight">{tName(group.name)}</h3>
-            {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
-            {maxHint && <p className="text-[11px] text-muted-foreground mt-1 font-semibold">{maxHint}</p>}
-          </div>
-          <span
-            className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-              group.isRequired
-                ? count > 0
-                  ? "bg-emerald-500/15 text-emerald-700"
-                  : "bg-red-500/10 text-red-600"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {group.isRequired && count === 0 ? t("missingChoice") : badgeLabel()}
-          </span>
+  const cardShell = stepMode ? "space-y-3" : "overflow-hidden rounded-[22px] border border-border/50 bg-card shadow-[0_8px_24px_-18px_rgba(0,0,0,0.22)]";
+
+  const toggleSingle = (optionId: string, sel: boolean) => {
+    if (isSingle) {
+      if (sel && group.isRequired) return;
+      onChange(updateOption(state, group, optionId, sel && !group.isRequired ? 0 : 1, unitIndex));
+    } else {
+      onChange(updateOption(state, group, optionId, sel ? 0 : 1, unitIndex));
+    }
+  };
+
+  const renderOptions = () => {
+    if (isRemoval) {
+      return (
+        <div className="flex flex-wrap gap-2">
+          {group.options.map((opt) => {
+            const removed = (selected.get(opt.id) || 0) > 0;
+            const label = tName(opt.name);
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onChange(updateOption(state, group, opt.id, removed ? 0 : 1, unitIndex))}
+                className={`rounded-full border px-4 py-2.5 text-left transition-all active:scale-[0.97] ${
+                  removed ? REMOVED : INCLUDED
+                }`}
+              >
+                <span className={`block text-sm font-bold leading-tight ${removed ? "line-through text-red-700" : ""}`}>
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      );
+    }
+
+    if (isExtra) {
+      return (
+        <div className="space-y-2">
+          {group.options.map((opt) => {
+            const qty = selected.get(opt.id) || 0;
+            const max = opt.maxQty || 5;
+            const sel = qty > 0;
+            const useStepper = max > 1;
+
+            if (useStepper) {
+              return (
+                <ModifierCheckboxRow
+                  key={opt.id}
+                  title={tName(opt.name)}
+                  priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                  selected={sel}
+                  quantity={qty}
+                  maxQty={max}
+                  showStepper
+                  onClick={() =>
+                    onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex))
+                  }
+                  onDecrement={() =>
+                    onChange(updateOption(state, group, opt.id, Math.max(0, qty - 1), unitIndex))
+                  }
+                  onIncrement={() =>
+                    onChange(updateOption(state, group, opt.id, Math.min(max, qty + 1), unitIndex))
+                  }
+                />
+              );
+            }
+
+            return (
+              <ModifierCheckboxRow
+                key={opt.id}
+                title={tName(opt.name)}
+                priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                selected={sel}
+                onClick={() => onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex))}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (isInformational) {
+      return (
+        <div className="space-y-2">
+          {group.options.map((opt) => {
+            const qty = selected.get(opt.id) || 0;
+            const sel = qty > 0;
+            return (
+              <InfoChoiceRow
+                key={opt.id}
+                title={tName(opt.name)}
+                selected={sel}
+                onClick={() => toggleSingle(opt.id, sel)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (shouldUseImageCarousel(group)) {
+      return (
+        <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 no-scrollbar snap-x snap-mandatory">
+          {group.options.map((opt) => {
+            const sel = (selected.get(opt.id) || 0) > 0;
+            return (
+              <div key={opt.id} className="w-[108px] shrink-0 snap-start">
+                <ProductChoiceCard
+                  title={tName(opt.name)}
+                  priceLabel={opt.priceDelta > 0 ? `${opt.priceDelta.toFixed(2)}€` : null}
+                  imageUrl={opt.imageUrl}
+                  selected={sel}
+                  compact
+                  onClick={() => toggleSingle(opt.id, sel)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (shouldUseChipLayout(group)) {
+      return (
+        <div className="flex flex-wrap gap-2">
+          {group.options.map((opt) => {
+            const sel = (selected.get(opt.id) || 0) > 0;
+            return (
+              <ModifierChipOption
+                key={opt.id}
+                title={tName(opt.name)}
+                selected={sel}
+                onClick={() => toggleSingle(opt.id, sel)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (shouldUseRadioList(group) && !groupHasImages(group)) {
+      return (
+        <div className="space-y-2">
+          {group.options.map((opt) => {
+            const sel = (selected.get(opt.id) || 0) > 0;
+            return (
+              <ModifierRadioRow
+                key={opt.id}
+                title={tName(opt.name)}
+                priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                selected={sel}
+                onClick={() => toggleSingle(opt.id, sel)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (group.selectionMode === "multiple" && !groupHasImages(group)) {
+      return (
+        <div className="space-y-2">
+          {group.options.map((opt) => {
+            const sel = (selected.get(opt.id) || 0) > 0;
+            return (
+              <ModifierCheckboxRow
+                key={opt.id}
+                title={tName(opt.name)}
+                priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                selected={sel}
+                onClick={() => toggleSingle(opt.id, sel)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <div className={`grid gap-2.5 ${choiceGridCols(group.options.length)}`}>
+        {group.options.map((opt) => {
+          const sel = (selected.get(opt.id) || 0) > 0;
+          const compact = group.options.length >= 3;
+          return (
+            <ProductChoiceCard
+              key={opt.id}
+              title={tName(opt.name)}
+              priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+              imageUrl={opt.imageUrl}
+              selected={sel}
+              compact={compact}
+              onClick={() => toggleSingle(opt.id, sel)}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <section className={cardShell}>
+      {!hideHeader && !stepMode && (
+        <ModifierGroupHeader
+          group={group}
+          title={tName(group.name)}
+          subtitle={subtitle || maxHint}
+          badge={
+            group.isRequired && count === 0
+              ? t("required")
+              : group.selectionMode === "multiple" && group.maxSelect > 1
+                ? `${t("chooseUpTo")} ${group.maxSelect}`
+                : badgeLabel()
+          }
+          badgeTone={badgeTone()}
+        />
       )}
 
       {hideHeader && group.isRequired && (
-        <div className="px-4 pt-3 flex justify-end">
+        <div className="flex justify-end px-4 pt-3">
           <span
-            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-              count > 0 ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/10 text-red-600"
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+              count > 0
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                : "border-primary/25 bg-primary/8 text-primary"
             }`}
           >
             {count === 0 ? t("missingChoice") : t("required")}
@@ -138,126 +350,7 @@ export default function ChoiceGroupSection({
         </div>
       )}
 
-      <div className={`space-y-2 ${stepMode ? "" : "p-3"} ${hideHeader ? "pt-1" : ""}`}>
-        {isRemoval ? (
-          <div className="grid grid-cols-2 gap-2">
-            {group.options.map((opt) => {
-              const removed = (selected.get(opt.id) || 0) > 0;
-              const label = tName(opt.name);
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() =>
-                    onChange(updateOption(state, group, opt.id, removed ? 0 : 1, unitIndex))
-                  }
-                  className={`rounded-2xl border px-3 py-3 text-left transition-all active:scale-[0.98] min-h-[52px] ${
-                    removed ? REMOVED : INCLUDED
-                  }`}
-                >
-                  <span
-                    className={`block text-sm font-bold leading-tight ${
-                      removed ? "line-through text-red-700" : "text-emerald-900"
-                    }`}
-                  >
-                    {label}
-                  </span>
-                  <span className={`text-[10px] mt-1 block ${removed ? "text-red-600" : "text-emerald-700"}`}>
-                    {removed ? t("removedLabel") : t("included")}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ) : isExtra ? (
-          group.options.map((opt) => {
-            const qty = selected.get(opt.id) || 0;
-            const max = opt.maxQty || 5;
-            return (
-              <div
-                key={opt.id}
-                className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-3 py-2.5"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground">{tName(opt.name)}</p>
-                  {opt.priceDelta > 0 && (
-                    <p className="text-xs font-black text-price tabular-nums">+{opt.priceDelta.toFixed(2)}€</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    aria-label="Menos"
-                    disabled={qty <= 0}
-                    onClick={() => onChange(updateOption(state, group, opt.id, Math.max(0, qty - 1), unitIndex))}
-                    className="w-9 h-9 rounded-full border border-border flex items-center justify-center disabled:opacity-30"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-6 text-center font-black tabular-nums">{qty}</span>
-                  <button
-                    type="button"
-                    aria-label="Mais"
-                    disabled={qty >= max}
-                    onClick={() => onChange(updateOption(state, group, opt.id, Math.min(max, qty + 1), unitIndex))}
-                    className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center disabled:opacity-30"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        ) : isInformational ? (
-          <div className="flex flex-col gap-2">
-            {group.options.map((opt) => {
-              const qty = selected.get(opt.id) || 0;
-              const sel = qty > 0;
-              return (
-                <InfoChoiceRow
-                  key={opt.id}
-                  title={tName(opt.name)}
-                  selected={sel}
-                  onClick={() => {
-                    if (isSingle) {
-                      if (sel && group.isRequired) return;
-                      onChange(updateOption(state, group, opt.id, sel && !group.isRequired ? 0 : 1, unitIndex));
-                    } else {
-                      onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex));
-                    }
-                  }}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <div className={`grid gap-2 ${choiceGridCols(group.options.length)}`}>
-            {group.options.map((opt) => {
-              const qty = selected.get(opt.id) || 0;
-              const sel = qty > 0;
-              const compact = group.options.length >= 3;
-              return (
-                <ProductChoiceCard
-                  key={opt.id}
-                  title={tName(opt.name)}
-                  priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
-                  imageUrl={opt.imageUrl}
-                  selected={sel}
-                  compact={compact}
-                  onClick={() => {
-                    if (isSingle) {
-                      if (sel && group.isRequired) return;
-                      onChange(updateOption(state, group, opt.id, sel && !group.isRequired ? 0 : 1, unitIndex));
-                    } else {
-                      onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex));
-                    }
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <div className={`${stepMode ? "" : "p-3.5"} ${hideHeader ? "pt-1" : ""}`}>{renderOptions()}</div>
     </section>
   );
 }

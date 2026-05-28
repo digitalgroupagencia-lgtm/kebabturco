@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, Lock } from "lucide-react";
 import { toast } from "sonner";
 import ScreenHeader from "@/components/ScreenHeader";
-import QuantitySelector from "@/components/QuantitySelector";
 import ChoiceGroupSection from "@/components/customization/ChoiceGroupSection";
+import ProductSummaryCard from "@/components/customization/ProductSummaryCard";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Category } from "@/data/products";
@@ -321,11 +321,11 @@ export default function ProductCustomizationFlow({
   const showNote = !useStepWizard || isLastStep;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
-      <ScreenHeader eyebrow={t("menu")} title={productCleanName} onBack={onBack} sticky />
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/15 animate-fade-in">
+      <ScreenHeader eyebrow={t("customizeProduct")} title={productCleanName} onBack={onBack} sticky />
 
       {useStepWizard && (
-        <div className="px-4 pt-2 pb-1 shrink-0">
+        <div className="shrink-0 px-4 pt-2 pb-1">
           <div className="flex gap-1">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div
@@ -334,50 +334,33 @@ export default function ProductCustomizationFlow({
               />
             ))}
           </div>
-          <p className="text-[11px] font-bold text-muted-foreground mt-2 uppercase tracking-wider">
+          <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             {t("stepOf")} {comboStep + 1} {t("of")} {totalSteps}
           </p>
           {currentWizardStep?.kind !== "intro" && (
             <>
-              <h2 className="text-[22px] font-black text-foreground leading-tight mt-2">{stepTitle}</h2>
-              {stepHint && <p className="text-sm text-muted-foreground mt-1">{stepHint}</p>}
+              <h2 className="mt-2 text-[20px] font-black leading-tight text-foreground">{stepTitle}</h2>
+              {stepHint && <p className="mt-1 text-sm text-muted-foreground">{stepHint}</p>}
             </>
           )}
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 space-y-4 pb-4">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 space-y-3.5 pb-4">
         {showIntro && (
-          <>
-            <section className="relative rounded-[28px] overflow-hidden border border-border/70 bg-card shadow-card">
-              {productCode && (
-                <span className="absolute top-3 right-3 z-10 flex items-center justify-center min-w-[36px] h-[28px] px-2 rounded-full bg-foreground/85 text-background text-xs font-black tabular-nums">
-                  {productCode}
-                </span>
-              )}
-              <div className="aspect-[4/3] bg-secondary/40">
-                <img src={productImage} alt={productCleanName} className="w-full h-full object-cover" loading="lazy" />
-              </div>
-              <div className="p-4 space-y-1">
-                <p className="text-[28px] font-black text-price tabular-nums">{basePrice.toFixed(2)}€</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">{tProduct(product.description)}</p>
-              </div>
-            </section>
+          <ProductSummaryCard
+            imageUrl={productImage}
+            name={productCleanName}
+            priceLabel={`${basePrice.toFixed(2)}€`}
+            productCode={productCode}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            showQuantity={!editingItem && (!useStepWizard || currentWizardStep?.kind === "intro")}
+          />
+        )}
 
-            {!useStepWizard && !editingItem && (
-              <div className="flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-foreground">{t("quantity")}</span>
-                <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={20} />
-              </div>
-            )}
-
-            {useStepWizard && currentWizardStep?.kind === "intro" && !editingItem && (
-              <div className="flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-foreground">{t("quantity")}</span>
-                <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={20} />
-              </div>
-            )}
-          </>
+        {showIntro && tProduct(product.description) && (
+          <p className="px-1 text-sm leading-relaxed text-muted-foreground">{tProduct(product.description)}</p>
         )}
 
         {activeGroups.map((group) => (
@@ -395,52 +378,53 @@ export default function ProductCustomizationFlow({
         ))}
 
         {showNote && (
-          <section className="rounded-[24px] border border-border/70 bg-card p-4 space-y-2 shadow-card">
+          <section className="space-y-2 rounded-[22px] border border-border/50 bg-card p-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.2)]">
             <label className="text-sm font-black text-foreground">{t("note")}</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value.slice(0, 200))}
               rows={2}
               placeholder={t("notePlaceholder")}
-              className="w-full rounded-2xl border border-border/70 bg-secondary/30 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full resize-none rounded-2xl border border-border/60 bg-secondary/25 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
           </section>
         )}
       </div>
 
-      <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-muted-foreground">{t("total")}</span>
-          <span className="text-2xl font-black text-price tabular-nums">
-            {(unitPrice * (editingItem ? 1 : quantity)).toFixed(2)}€
-          </span>
-        </div>
+      <div className="shrink-0 border-t border-border/60 bg-card/95 px-4 pt-3 backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex gap-2">
           {useStepWizard && comboStep > 0 && (
             <button
               type="button"
               onClick={() => setComboStep((s) => s - 1)}
-              className="h-14 px-4 rounded-2xl border border-border font-bold flex items-center gap-1"
+              className="flex h-14 items-center gap-1 rounded-2xl border border-border px-4 font-bold"
             >
-              <ChevronLeft className="w-5 h-5" /> {t("back")}
+              <ChevronLeft className="h-5 w-5" /> {t("back")}
             </button>
           )}
           <button
             type="button"
             onClick={handleAdd}
-            className="flex-1 h-14 rounded-2xl bg-primary text-primary-foreground font-black text-base active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            className="flex h-14 flex-1 items-center justify-between gap-3 rounded-[18px] bg-primary px-5 text-primary-foreground shadow-[0_10px_28px_-14px_rgba(139,0,0,0.65)] transition-transform active:scale-[0.98]"
           >
-            {useStepWizard && !isLastStep ? (
-              <>
-                {t("continueBtn")} <ChevronRight className="w-5 h-5" />
-              </>
-            ) : editingItem ? (
-              t("update")
-            ) : (
-              t("addToOrder")
-            )}
+            <span className="text-[13px] font-black uppercase tracking-[0.08em]">
+              {useStepWizard && !isLastStep
+                ? t("continueBtn")
+                : editingItem
+                  ? t("update")
+                  : t("addToCartBtn")}
+            </span>
+            <span className="text-lg font-black tabular-nums">
+              {(unitPrice * (editingItem ? 1 : quantity)).toFixed(2)}€
+            </span>
           </button>
         </div>
+        {!useStepWizard || isLastStep ? (
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+            <Lock className="h-3 w-3 opacity-70" />
+            {t("securePaymentHint")}
+          </p>
+        ) : null}
       </div>
 
       {upsellOpen && (

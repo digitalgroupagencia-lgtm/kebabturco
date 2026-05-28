@@ -3,11 +3,36 @@ interface Props {
   onChange: (v: number) => void;
   min?: number;
   max?: number;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "premium";
 }
 
 const QuantitySelector = ({ value, onChange, min = 0, max = 20, variant = "default" }: Props) => {
   const isCompact = variant === "compact";
+  const isPremium = variant === "premium";
+
+  if (isPremium) {
+    return (
+      <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-secondary/30 p-1">
+        <button
+          type="button"
+          onClick={() => value > min && onChange(value - 1)}
+          disabled={value <= min}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-black text-primary-foreground transition-transform active:scale-90 disabled:opacity-30"
+        >
+          −
+        </button>
+        <span className="w-7 text-center text-base font-black tabular-nums text-foreground">{value}</span>
+        <button
+          type="button"
+          onClick={() => value < max && onChange(value + 1)}
+          disabled={value >= max}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-black text-primary-foreground transition-transform active:scale-90 disabled:opacity-30"
+        >
+          +
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center ${isCompact ? "gap-2 rounded-full bg-secondary/50 border border-border px-1.5 py-1" : "gap-3"}`}>

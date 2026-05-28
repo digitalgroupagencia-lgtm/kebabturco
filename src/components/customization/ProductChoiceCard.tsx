@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Heart } from "lucide-react";
 
 type Props = {
   title: string;
@@ -29,20 +29,25 @@ export default function ProductChoiceCard({
     <div
       className={`relative shrink-0 overflow-hidden bg-secondary/30 ${
         layout === "horizontal"
-          ? "w-20 h-20 rounded-[14px]"
+          ? "h-20 w-20 rounded-[14px]"
           : compact
-            ? "w-full aspect-[5/4] rounded-t-[16px]"
-            : "w-full aspect-[5/4] rounded-t-[18px]"
+            ? "aspect-square w-full rounded-t-[14px]"
+            : "aspect-[5/4] w-full rounded-t-[16px]"
       }`}
     >
       <img
         src={src}
         alt=""
-        className="w-full h-full object-cover"
+        className="h-full w-full object-cover"
         loading="lazy"
         draggable={false}
         onError={() => setBroken(true)}
       />
+      {selected && compact && (
+        <span className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+          <Heart className="h-3 w-3 fill-current" strokeWidth={2.5} />
+        </span>
+      )}
     </div>
   );
 
@@ -50,36 +55,34 @@ export default function ProductChoiceCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative w-full text-left transition-all active:scale-[0.98] overflow-hidden rounded-[18px] border ${
+      className={`relative w-full overflow-hidden rounded-[16px] border text-left transition-all active:scale-[0.98] ${
         selected
-          ? "border-emerald-500 bg-emerald-500/8 ring-2 ring-emerald-500/20 shadow-[0_8px_20px_-14px_rgba(16,185,129,0.55)]"
-          : "border-border/70 bg-card shadow-[0_6px_18px_-14px_rgba(0,0,0,0.22)]"
+          ? "border-primary bg-primary/[0.04] ring-2 ring-primary/20 shadow-[0_8px_20px_-14px_rgba(139,0,0,0.45)]"
+          : "border-border/60 bg-card shadow-[0_6px_18px_-16px_rgba(0,0,0,0.2)]"
       } ${layout === "horizontal" ? "flex items-center gap-4 p-3" : "flex flex-col"}`}
     >
-      {selected && (
-        <span className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-          <Check className="w-3.5 h-3.5" strokeWidth={3} />
+      {selected && !compact && (
+        <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
         </span>
       )}
 
       {layout === "vertical" ? (
         <>
           {imageBlock}
-          <div className={`${compact ? "p-2 pt-1.5" : "p-3 pt-2"} space-y-0.5`}>
+          <div className={`space-y-0.5 ${compact ? "p-2 pt-1.5 text-center" : "p-3 pt-2"}`}>
             <p
-              className={`font-black text-foreground leading-tight line-clamp-2 ${
-                compact ? "text-[11px] text-center" : "text-[15px]"
+              className={`font-bold leading-tight text-foreground line-clamp-2 ${
+                compact ? "text-[11px]" : "text-[14px] font-black"
               }`}
             >
               {title}
             </p>
             {subtitle && (
-              <p className={`text-muted-foreground font-semibold ${compact ? "text-[10px] text-center" : "text-xs"}`}>
-                {subtitle}
-              </p>
+              <p className={`font-semibold text-muted-foreground ${compact ? "text-[10px]" : "text-xs"}`}>{subtitle}</p>
             )}
             {priceLabel && (
-              <p className={`font-black text-price tabular-nums ${compact ? "text-[11px] text-center pt-0.5" : "text-sm pt-1"}`}>
+              <p className={`font-black tabular-nums text-price ${compact ? "pt-0.5 text-[11px]" : "pt-1 text-sm"}`}>
                 {priceLabel}
               </p>
             )}
@@ -88,10 +91,10 @@ export default function ProductChoiceCard({
       ) : (
         <>
           {imageBlock}
-          <div className="flex-1 min-w-0 pr-8">
-            <p className="text-base font-black text-foreground leading-tight">{title}</p>
-            {subtitle && <p className="text-xs text-emerald-700 font-semibold mt-1">{subtitle}</p>}
-            {priceLabel && <p className="text-sm font-black text-price tabular-nums mt-1">{priceLabel}</p>}
+          <div className="min-w-0 flex-1 pr-8">
+            <p className="text-base font-black leading-tight text-foreground">{title}</p>
+            {subtitle && <p className="mt-1 text-xs font-semibold text-emerald-700">{subtitle}</p>}
+            {priceLabel && <p className="mt-1 text-sm font-black tabular-nums text-price">{priceLabel}</p>}
           </div>
         </>
       )}
