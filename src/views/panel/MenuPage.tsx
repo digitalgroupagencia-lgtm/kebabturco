@@ -16,6 +16,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import ProductModifierEditor, { saveProductModifierLinks } from "@/components/panel/ProductModifierEditor";
 import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
 import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
+import MenuProductReviewQueue from "@/components/panel/MenuProductReviewQueue";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
 import ImageUploadField from "@/components/panel/ImageUploadField";
 import { uploadCategoryImage } from "@/lib/uploadImage";
@@ -27,6 +28,8 @@ import {
   pickLocalizedText,
   pickSourceText,
 } from "@/lib/localizedText";
+import { useMenuCatalogAudit } from "@/hooks/useMenuCatalogAudit";
+import type { CatalogAuditIssue } from "@/lib/modifiers/menuCatalogAudit";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
@@ -64,6 +67,11 @@ const MenuPage = () => {
   const [comboUnits, setComboUnits] = useState(1);
   const [modifierLinks, setModifierLinks] = useState<{ group_id: string; sort_order: number; repeat_per_unit: boolean }[]>([]);
   const [afterAddSuggestionIds, setAfterAddSuggestionIds] = useState("");
+  const [prodReviewMode, setProdReviewMode] = useState(false);
+  const [reviewProductId, setReviewProductId] = useState<string | null>(null);
+  const [approvingReviewId, setApprovingReviewId] = useState<string | null>(null);
+
+  const menuAudit = useMenuCatalogAudit(isAdminMenu ? storeId : null);
 
   useEffect(() => {
     if (storeId) {
@@ -119,7 +127,7 @@ const MenuPage = () => {
     };
 
     const handleReview = async (event: Event) => {
-      const detail = (event as CustomEvent<{ productId?: string; categoryId?: string }>).detail;
+      const detail = (event as CustomEvent<{ productId?: string; categoryId?: string; reviewMode?: boolean }>).detail;
       if (!detail?.productId || !storeId) return;
 
       if (detail.categoryId) {
@@ -144,16 +152,22 @@ const MenuPage = () => {
         await fetchProducts(data.category_id);
       }
 
-      openProdDialog(data as Product);
+      openProdDialog(data as Product, { reviewMode: detail.reviewMode !== false });
+    };
+
+    const handleApproved = () => {
+      void menuAudit.loadAuditData();
     };
 
     window.addEventListener("menu-catalog-audit-product-created", handleCreated);
     window.addEventListener("menu-catalog-audit-review-product", handleReview);
+    window.addEventListener("menu-catalog-product-approved", handleApproved);
     return () => {
       window.removeEventListener("menu-catalog-audit-product-created", handleCreated);
       window.removeEventListener("menu-catalog-audit-review-product", handleReview);
+      window.removeEventListener("menu-catalog-product-approved", handleApproved);
     };
-  }, [storeId]);
+  }, [storeId, menuAudit.loadAuditData]);
 
   // Category CRUD
   const openCatDialog = (cat?: Category) => {
@@ -209,9 +223,11 @@ const MenuPage = () => {
   };
 
   // Product CRUD
-  const openProdDialog = (prod?: Product) => {
+  const openProdDialog = (prod?: Product, options?: { reviewMode?: boolean }) => {
     if (prod) {
       setEditingProduct(prod);
+      setReviewProductId(prod.id);
+      setProdReviewMode(Boolean(options?.reviewMode));
       setProdName(pickSourceText(prod.name, primaryLang));
       setProdDesc(pickSourceText(prod.description, primaryLang));
       setProdPrice(String(prod.price));
@@ -232,6 +248,8 @@ const MenuPage = () => {
       setAfterAddSuggestionIds(Array.isArray(suggestions) ? suggestions.join(", ") : "");
     } else {
       setEditingProduct(null);
+      setReviewProductId(null);
+      setProdReviewMode(false);
       setProdName("");
       setProdDesc("");
       setProdPrice("");
@@ -281,7 +299,7 @@ const MenuPage = () => {
     }
   };
 
-  const saveProduct = async () => {
+  const saveProduct = async (approveAfterSave = false) => {
     if (!storeId || !selectedCategoryId) return;
 
     if (!prodName.trim()) {
@@ -335,7 +353,6 @@ const MenuPage = () => {
       } catch {
         toast.error("Produto guardado, mas falhou ao ligar grupos");
       }
-      toast.success("Produto atualizado!");
     } else {
       const { data: inserted, error } = await supabase.from("products").insert(payload).select("id").single();
       if (error) { toast.error("Erro ao criar produto"); return; }
@@ -346,11 +363,46 @@ const MenuPage = () => {
           toast.error("Produto criado, mas falhou ao ligar grupos");
         }
       }
-      toast.success("Produto criado!");
     }
 
     setProdDialogOpen(false);
+    setProdReviewMode(false);
+    if (approveAfterSave && reviewProductId) {
+      menuAudit.approveReview(reviewProductId);
+      toast.success("Produto guardado e aprovado!");
+      void menuAudit.loadAuditData();
+    } else {
+      toast.success(editingProduct ? "Produto atualizado!" : "Produto criado!");
+    }
+    setReviewProductId(null);
     fetchProducts(selectedCategoryId);
+  };
+
+  const openReviewIssue = async (issue: CatalogAuditIssue) => {
+    if (!issue.matchedProductId || !storeId) return;
+    window.dispatchEvent(
+      new CustomEvent("menu-catalog-audit-review-product", {
+        detail: {
+          productId: issue.matchedProductId,
+          categoryId: issue.matchedCategoryId,
+          reviewMode: true,
+        },
+      }),
+    );
+  };
+
+  const approveReviewIssue = async (issue: CatalogAuditIssue) => {
+    if (!issue.matchedProductId) return;
+    setApprovingReviewId(issue.matchedProductId);
+    menuAudit.approveReview(issue.matchedProductId);
+    toast.success(`"${issue.matchedProductName || issue.optionName}" aprovado`);
+    await menuAudit.loadAuditData();
+    setApprovingReviewId(null);
+  };
+
+  const approveReviewFromDialog = async () => {
+    if (!reviewProductId) return;
+    await saveProduct(true);
   };
 
   const deleteProduct = async (id: string) => {
@@ -409,6 +461,13 @@ const MenuPage = () => {
       {isAdminMenu && (
         <>
           <MenuCatalogAuditPanel />
+          <MenuProductReviewQueue
+            items={menuAudit.reviewIssues}
+            loading={menuAudit.loading}
+            approvingId={approvingReviewId}
+            onOpen={(issue) => void openReviewIssue(issue)}
+            onApprove={(issue) => void approveReviewIssue(issue)}
+          />
           <MenuCustomizationAuditPanel />
         </>
       )}
@@ -515,8 +574,15 @@ const MenuPage = () => {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+                    <DialogTitle>
+                      {prodReviewMode ? "Rever produto" : editingProduct ? "Editar Produto" : "Novo Produto"}
+                    </DialogTitle>
                   </DialogHeader>
+                  {prodReviewMode && (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+                      Confira foto, nome e preço. Quando estiver correcto, carregue em <strong>Aprovar</strong>.
+                    </div>
+                  )}
                   <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     <div>
                       <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
@@ -590,11 +656,22 @@ const MenuPage = () => {
                       <p className="text-xs text-muted-foreground mt-1">Use grupos acima para personalização profissional. Isto é fallback antigo.</p>
                     </div>
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="gap-2 sm:gap-0">
                     <DialogClose asChild>
-                      <Button variant="outline">Cancelar</Button>
+                      <Button variant="outline" onClick={() => setProdReviewMode(false)}>
+                        Cancelar
+                      </Button>
                     </DialogClose>
-                    <Button onClick={saveProduct}>Salvar</Button>
+                    {prodReviewMode ? (
+                      <>
+                        <Button variant="secondary" onClick={() => void saveProduct(false)}>
+                          Guardar
+                        </Button>
+                        <Button onClick={() => void approveReviewFromDialog()}>Aprovar</Button>
+                      </>
+                    ) : (
+                      <Button onClick={() => void saveProduct(false)}>Salvar</Button>
+                    )}
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
