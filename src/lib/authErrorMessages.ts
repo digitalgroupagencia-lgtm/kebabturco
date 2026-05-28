@@ -85,6 +85,9 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("already") && (m.includes("registered") || m.includes("exists"))) return "email_in_use";
   if (m.includes("invalid") && m.includes("email")) return "invalid_email";
   if (m.includes("signup") && m.includes("disabled")) return "signup_disabled";
+  if (m.includes("signups not allowed")) return "signup_disabled";
+  if (m.includes("permission denied")) return "rls_denied";
+  if (m.includes("violates row-level security")) return "rls_denied";
   if (m.includes("unauthorized") || m.includes("invalid token")) return "unauthorized";
   if (m.includes("forbidden") || m.includes("sem permissão")) return "forbidden";
   if (m.includes("código já está em uso") || m.includes("already in use")) return "pin_in_use";
@@ -116,8 +119,9 @@ export function translateAppError(message: string | null | undefined, lang: UiLa
   if (!message?.trim()) return MESSAGES.generic[lang];
   const key = detectKey(message);
   if (key !== "generic") return MESSAGES[key][lang];
-  if (/^[a-z\s\-_:.,!?'"]+$/i.test(message) && message.length < 120) {
-    return message;
+  const trimmed = message.trim();
+  if (trimmed.length <= 160 && /[a-záéíóúãõçñ]/i.test(trimmed) && !trimmed.includes("Http") && !trimmed.includes("PGRST")) {
+    return trimmed;
   }
   return MESSAGES.generic[lang];
 }

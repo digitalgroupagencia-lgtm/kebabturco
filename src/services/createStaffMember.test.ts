@@ -89,4 +89,20 @@ describe("createStaffMember", () => {
       expect.objectContaining({ email: "entregador@teste.com" }),
     );
   });
+
+  it("usa fallback local quando a Edge Function responde 404", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: "Not Found" }),
+      }),
+    );
+
+    const result = await createStaffMember(input);
+
+    expect(result.success).toBe(true);
+    expect(mockSignUp).toHaveBeenCalled();
+  });
 });

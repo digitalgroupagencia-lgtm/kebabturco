@@ -43,7 +43,7 @@ function isAlreadyRegistered(message: string): boolean {
 
 async function invokeEdgeFunction(
   input: CreateStaffMemberInput,
-): Promise<CreateStaffMemberResult | { error: string }> {
+): Promise<CreateStaffMemberResult | { error: string; httpStatus: number }> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token ?? SUPABASE_KEY;
 
@@ -59,7 +59,7 @@ async function invokeEdgeFunction(
       body: JSON.stringify(input),
     });
   } catch (e) {
-    return { error: extractErrorMessage(e) };
+    return { error: extractErrorMessage(e), httpStatus: 0 };
   }
 
   const payload = (await res.json().catch(() => ({}))) as {
@@ -70,15 +70,15 @@ async function invokeEdgeFunction(
   };
 
   if (!res.ok) {
-    return { error: payload.error || `Erro ao criar membro (${res.status})` };
+    return { error: payload.error || `Erro ao criar membro (${res.status})`, httpStatus: res.status };
   }
 
   if (payload.error) {
-    return { error: payload.error };
+    return { error: payload.error, httpStatus: res.status };
   }
 
   if (!payload.success || !payload.user_id) {
-    return { error: "Resposta inválida do servidor" };
+    return { error: "Resposta inválida do servidor", httpStatus: res.status };
   }
 
   return {
@@ -224,22 +224,57 @@ async function createStaffMemberLocally(
   };
 }
 
-/** Cria membro da equipa — tenta servidor remoto e, se indisponível, usa registo directo. */
+/** Edge indisponível ou erro técnico — tenta criar directo na base de dados. */
+function shouldFallbackToLocalAfterEdge(message: string, httpStatus: number): boolean {
+  if (httpStatus === 401) return false;
+
+  const m = message.toLowerCase();
+  const definitive =
+    m.includes("já faz parte") ||
+    m.includes("already") && m.includes("equipa") ||
+    m.includes("invalid email") ||
+    m.includes("correo inválido") ||
+    m.includes("código deve ter") ||
+    m.includes("codigo deve ter") ||
+    m.includes("codigo invalido") ||
+    (m.includes("weak") && m.includes("password")) ||
+    m.includes("senha precisa") ||
+    m.includes("signup is disabled") ||
+    m.includes("signups not allowed");
+  if (definitive) return false;
+
+  if (isNetworkOrEdgeUnavailable(message)) return true;
+  if (httpStatus === 404 || httpStatus === 502 || httpStatus === 503 || httpStatus === 504 || httpStatus === 500) {
+    return true;
+  }
+  if (m.includes("erro ao criar membro (404)")) return true;
+  if (m.includes("resposta inválida")) return true;
+  if (httpStatus === 400 || httpStatus === 403 || httpStatus === 0) return true;
+  return false;
+}
+
+/** Cria membro da equipa — tenta servidor remoto e, se falhar, usa registo directo. */
 export async function createStaffMember(
   input: CreateStaffMemberInput,
 ): Promise<CreateStaffMemberResult> {
+  let edgeError: string | null = null;
+  let edgeStatus = 0;
+
   try {
     const edge = await invokeEdgeFunction(input);
-    if ("error" in edge) {
-      if (!isNetworkOrEdgeUnavailable(edge.error)) {
-        throw new Error(edge.error);
-      }
-    } else {
+    if (!("error" in edge)) {
       return edge;
+    }
+    edgeError = edge.error;
+    edgeStatus = edge.httpStatus;
+    if (!shouldFallbackToLocalAfterEdge(edge.error, edge.httpStatus)) {
+      throw new Error(edge.error);
     }
   } catch (e) {
     const msg = extractErrorMessage(e);
-    if (!isNetworkOrEdgeUnavailable(msg)) throw e;
+    if (!edgeError || !shouldFallbackToLocalAfterEdge(edgeError, edgeStatus)) {
+      if (!shouldFallbackToLocalAfterEdge(msg, 0)) throw e;
+    }
   }
 
   return createStaffMemberLocally(input);
