@@ -64,11 +64,19 @@ const KEBAB_SECTIONS: FaqSection[] = [
     items: [
       {
         q: "Onde cadastro produtos?",
-        a: "Na administração geral do projecto, secção Cardápio. Crie categorias e depois produtos com preço, imagem e personalizações.",
+        a: "Admin → Cardápio. No topo escolha a unidade (Gandia ou Playa Gandia). Crie categorias e produtos com preço, imagem e personalizações.",
+      },
+      {
+        q: "Como copiar o cardápio para Playa Gandia?",
+        a: "Admin → Cardápio → selector Playa Gandia → secção «Duplicar cardápio» → origem Gandia → Duplicar cardápio. Fica independente: editar na praia não muda Gandia.",
       },
       {
         q: "Como importar um cardápio?",
         a: "No Cardápio, use Importar com IA e cole o texto do menu. A IA cria categorias e produtos.",
+      },
+      {
+        q: "Personalização global",
+        a: "Admin → Personalização → unidade Gandia. Se vazio, «Importar personalizações do cardápio». Liga grupos aos produtos em Cardápio ao editar cada produto.",
       },
     ],
   },

@@ -16,7 +16,24 @@ export function sanitizeModifierGroup(group: ModifierGroup): ModifierGroup {
 
   const mustSelect = group.isRequired || group.minSelect >= 1;
 
-  if (mustSelect && !options.some((o) => o.isDefault)) {
+  if (
+    mustSelect &&
+    group.groupKind === "substitution" &&
+    options.every((o) => o.priceDelta > 0)
+  ) {
+    options = [
+      {
+        id: `${group.id}-included`,
+        groupId: group.id,
+        name: { es: "Incluido", pt: "Incluído", en: "Included", fr: "Inclus" },
+        priceDelta: 0,
+        maxQty: 1,
+        isDefault: true,
+        sortOrder: -1,
+      },
+      ...options.map((o) => ({ ...o, isDefault: false })),
+    ];
+  } else if (mustSelect && !options.some((o) => o.isDefault)) {
     options = options.map((o, i) => ({ ...o, isDefault: i === 0 }));
   }
 

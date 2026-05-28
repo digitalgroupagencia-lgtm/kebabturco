@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import QuantitySelector from "@/components/QuantitySelector";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
@@ -178,13 +177,14 @@ const ReviewScreen = () => {
       <div
         ref={scrollRef}
         className="relative z-0 flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-pt-4"
+        style={items.length > 0 ? { paddingBottom: "max(4px, env(safe-area-inset-bottom, 0px))" } : undefined}
       >
-        <div className="px-4 pt-5 pb-4 flex flex-col gap-4">
+        <div className="px-4 pt-3 pb-2 flex flex-col gap-3">
         {/* Tipo de pedido + Mesa */}
-        <section className="rounded-[28px] border border-border bg-card p-4 shadow-card">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <ModalityIcon className="w-6 h-6" />
+        <section className="rounded-2xl border border-border bg-card p-3 shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <ModalityIcon className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
@@ -290,7 +290,7 @@ const ReviewScreen = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 px-3 py-2.5 bg-secondary/30 border-t border-border">
+              <div className="flex items-center gap-1 px-3 py-2 bg-secondary/30 border-t border-border">
                 <button
                   onClick={() => handleEdit(item.productId, item.id)}
                   className="flex items-center gap-1.5 text-primary text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
@@ -323,39 +323,39 @@ const ReviewScreen = () => {
 
         {/* Sugestões */}
         {items.length > 0 && (suggestions.length > 0 || showButton) && (
-          <div className="mt-2">
-            <div className="flex items-center gap-2 px-1 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-accent" />
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+          <div className="mt-1">
+            <div className="flex items-center gap-1.5 px-1 mb-1.5">
+              <Sparkles className="w-3 h-3 text-accent" />
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 {sectionTitle}
               </p>
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-0.5">
               {suggestions.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleAddSuggestion(p.id)}
-                  className="shrink-0 w-[150px] bg-card border border-border rounded-2xl shadow-card overflow-hidden text-left active:scale-[0.97] transition-transform"
+                  className="shrink-0 w-[108px] bg-card border border-border rounded-xl shadow-card overflow-hidden text-left active:scale-[0.97] transition-transform"
                 >
-                  <div className="aspect-[5/4] bg-secondary/40">
+                  <div className="h-[52px] bg-secondary/40 overflow-hidden">
                     <img
                       src={p.image}
                       alt={tProduct(p.name)}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-center"
                       loading="lazy"
                     />
                   </div>
-                  <div className="p-2.5 flex flex-col gap-1.5">
-                    <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-tight min-h-[32px] break-words hyphens-auto">
+                  <div className="px-2 py-1.5 flex flex-col gap-1">
+                    <p className="text-[11px] font-bold text-foreground line-clamp-2 leading-snug break-words hyphens-auto">
                       {tProduct(p.name).replace(/^\d{1,3}[A-Za-z]?\s*[.\-–—:)]\s*/, "")}
                     </p>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-black text-price tabular-nums">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[12px] font-black text-price tabular-nums">
                         {p.price.toFixed(2)}€
                       </span>
-                      <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
-                        <Plus className="w-4 h-4" strokeWidth={3} />
+                      <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                        <Plus className="w-3.5 h-3.5" strokeWidth={3} />
                       </span>
                     </div>
                   </div>
@@ -365,12 +365,12 @@ const ReviewScreen = () => {
               {showButton && (
                 <button
                   onClick={handleOpenCategory}
-                  className="shrink-0 w-[150px] bg-primary/10 border-2 border-dashed border-primary/40 rounded-2xl text-left active:scale-[0.97] transition-transform flex flex-col items-center justify-center gap-2 p-3"
+                  className="shrink-0 w-[108px] min-h-[96px] bg-primary/10 border border-dashed border-primary/35 rounded-xl text-left active:scale-[0.97] transition-transform flex flex-col items-center justify-center gap-1.5 p-2"
                 >
-                  <span className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
-                    <ArrowRight className="w-5 h-5" strokeWidth={3} />
+                  <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <ArrowRight className="w-4 h-4" strokeWidth={3} />
                   </span>
-                  <span className="text-[13px] font-black text-primary text-center leading-tight">
+                  <span className="text-[11px] font-black text-primary text-center leading-tight line-clamp-2">
                     {buttonLabel}
                   </span>
                 </button>
@@ -382,34 +382,38 @@ const ReviewScreen = () => {
         </div>
       </div>
 
-      {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}
+      {/* Checkout compacto — acima da tab bar */}
       {items.length > 0 && (
-        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-3 space-y-2.5">
-          <div className="flex items-end justify-between mb-2.5 px-1">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("total")}</p>
-              <p className="text-[28px] font-black text-price tabular-nums tracking-tight leading-none mt-0.5">
-                {totalPrice.toFixed(2)}€
-              </p>
-            </div>
-            <span className="text-[11px] font-semibold text-muted-foreground pb-1.5">
-              {t("taxesIncluded")}
-            </span>
-          </div>
-          <button
-            onClick={() => canCheckout && setScreen("payment")}
-            disabled={!canCheckout}
-            className="w-full flex items-center justify-between gap-3 py-4 px-5 bg-gradient-cta text-success-foreground rounded-[26px] shadow-cta text-[15px] font-black tracking-wide uppercase active:scale-[0.98] transition-transform touch-action-manipulation disabled:opacity-50 disabled:active:scale-100"
-          >
-            <span>{t("goToPayment")}</span>
-            <ChevronRight className="w-5 h-5" strokeWidth={3} />
-          </button>
+        <div className="shrink-0 z-40 border-t border-border/70 bg-background/98 backdrop-blur-md px-4 pt-2 pb-2 shadow-[0_-6px_20px_-16px_rgba(0,0,0,0.18)]">
           <button
             type="button"
             onClick={() => setScreen("home")}
-            className="w-full py-3.5 px-5 rounded-[22px] border-2 border-border bg-card text-[14px] font-black text-foreground active:scale-[0.98] transition-transform touch-action-manipulation"
+            className="mb-1.5 w-full text-center text-[12px] font-bold text-primary underline-offset-2 hover:underline active:opacity-70 touch-action-manipulation"
           >
             {t("addMoreItems")}
+          </button>
+
+          <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
+            <div className="flex min-w-0 items-baseline gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                {t("total")}
+              </span>
+              <span className="text-[22px] font-black leading-none text-price tabular-nums tracking-tight">
+                {totalPrice.toFixed(2)}€
+              </span>
+            </div>
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              {t("taxesIncluded")}
+            </span>
+          </div>
+
+          <button
+            onClick={() => canCheckout && setScreen("payment")}
+            disabled={!canCheckout}
+            className="flex w-full touch-action-manipulation items-center justify-between gap-2 rounded-2xl bg-gradient-cta px-4 py-2.5 text-[14px] font-black uppercase tracking-wide text-success-foreground shadow-cta transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+          >
+            <span>{t("goToPayment")}</span>
+            <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={3} />
           </button>
         </div>
       )}

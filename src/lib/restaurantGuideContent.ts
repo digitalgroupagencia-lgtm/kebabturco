@@ -63,7 +63,15 @@ export const RESTAURANT_GUIDE_SECTIONS: FaqSection[] = [
     items: [
       {
         q: "Alterar produtos ou preços",
-        a: "Feito pelo administrador geral do projecto. No painel operacional consulta pedidos e opera o dia-a-dia.",
+        a: "Feito na administração geral (/admin) → Cardápio. Escolha a unidade no selector (Gandia ou Playa Gandia). Cada loja tem cardápio independente — mudar preço numa não altera a outra.",
+      },
+      {
+        q: "Duas lojas (Gandia e Playa Gandia)",
+        a: "O cliente escolhe a loja ao encomendar. No admin, use o selector no topo do Cardápio. Se Playa Gandia estiver vazia, use «Duplicar cardápio» copiando de Gandia.",
+      },
+      {
+        q: "Personalização (extras, carne, ingredientes)",
+        a: "Admin → Personalização. Escolha a unidade Gandia. Se estiver vazio, use «Importar personalizações do cardápio». Depois pode editar grupos e opções.",
       },
       {
         q: "Promoções push aos clientes",
