@@ -1,5 +1,6 @@
 import { useCallback, useState, useMemo, type ElementType } from "react";
 import { Link } from "react-router-dom";
+import { nav } from "@/lib/navPaths.ts";
 import {
   Activity,
   RefreshCw,
@@ -106,8 +107,8 @@ function legacyToFindings(items: DiagnosticItem[]): AuditFinding[] {
         label: i.label,
         detail: i.detail,
         action: i.action,
-        link: isPayment ? "/admin/finance" : undefined,
-        linkLabel: isPayment ? "Abrir Recebimentos" : undefined,
+        link: i.link ?? (isPayment ? "/admin/finance" : undefined),
+        linkLabel: i.linkLabel ?? (isPayment ? "Abrir Recebimentos" : undefined),
       };
     });
 }
@@ -168,6 +169,12 @@ const DiagnosticsPage = () => {
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Auditoria completa: cardápio, pedidos, pagamentos, delivery, mesas, equipe, sistema e impressão.
+          </p>
+          <p className="text-sm mt-2">
+            <Link to={nav.admin("diagnostics-hub")} className="text-primary font-semibold underline">
+              Testes detalhados por módulo → Centro de testes
+            </Link>
+            <span className="text-muted-foreground"> (push, impressora, cupões, fidelidade, campanhas)</span>
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             {lastFullRun

@@ -184,6 +184,12 @@ const CouponsPage = () => {
           </p>
         )}
       </div>
+
+      <p className="text-xs text-center text-muted-foreground pt-2">
+        <a href="/admin/diagnostics-hub?tab=coupons" className="text-primary underline">
+          Testar validação de cupões no Centro de testes
+        </a>
+      </p>
     </div>
   );
 };

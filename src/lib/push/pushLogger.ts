@@ -1,3 +1,6 @@
+import { pushDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
+import type { DiagnosticLogEntry } from "@/lib/diagnostics/createDiagnosticLogger";
+
 export type PushLogContext = "staff" | "customer_marketing" | "order" | "test" | "system";
 
 export type PushLogLevel = "info" | "warn" | "error";
@@ -14,25 +17,18 @@ export type PushLogStage =
   | "test_send"
   | "unsubscribe";
 
-export type PushLogEntry = {
-  id: string;
-  at: string;
-  level: PushLogLevel;
+export type PushLogEntry = DiagnosticLogEntry & {
   context: PushLogContext;
   stage: PushLogStage;
-  message: string;
-  details?: Record<string, unknown>;
 };
 
-const MAX_LOGS = 120;
-const logs: PushLogEntry[] = [];
-const listeners = new Set<() => void>();
-
-function notifyListeners() {
-  listeners.forEach((fn) => fn());
+function toPushEntry(entry: DiagnosticLogEntry): PushLogEntry {
+  return {
+    ...entry,
+    context: (entry.context ?? "system") as PushLogContext,
+    stage: entry.stage as PushLogStage,
+  };
 }
-
-let logCounter = 0;
 
 export function pushLog(
   context: PushLogContext,
@@ -41,41 +37,19 @@ export function pushLog(
   message: string,
   details?: Record<string, unknown>,
 ): string {
-  const id = `push-${Date.now()}-${++logCounter}`;
-  const entry: PushLogEntry = {
-    id,
-    at: new Date().toISOString(),
-    level,
-    context,
-    stage,
-    message,
-    details: details && Object.keys(details).length > 0 ? details : undefined,
-  };
-
-  logs.unshift(entry);
-  if (logs.length > MAX_LOGS) logs.length = MAX_LOGS;
-
-  const prefix = `[push:${context}:${stage}]`;
-  if (level === "error") console.error(prefix, message, details ?? "");
-  else if (level === "warn") console.warn(prefix, message, details ?? "");
-  else console.info(prefix, message, details ?? "");
-
-  notifyListeners();
-  return id;
+  return pushDiagnosticLogger.log({ context, stage, level, message, details });
 }
 
 export function getPushLogs(): PushLogEntry[] {
-  return [...logs];
+  return pushDiagnosticLogger.getLogs().map(toPushEntry);
 }
 
 export function clearPushLogs(): void {
-  logs.length = 0;
-  notifyListeners();
+  pushDiagnosticLogger.clearLogs();
 }
 
 export function subscribePushLogs(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  return pushDiagnosticLogger.subscribe(listener);
 }
 
 /** Classifica erros comuns de permissão / VAPID / browser para logs legíveis. */

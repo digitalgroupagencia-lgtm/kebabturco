@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { nav } from "@/lib/navPaths.ts";
 import { Bell, Send, Users, Calendar } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import AdminCentralLayout from "@/components/admin/premium/AdminCentralLayout";
@@ -148,13 +150,18 @@ function PushTenantPanel({
 
       <AdminPremiumCard
         title="Calendário de envios"
-        summary="Planeamento visual de notificações"
+        summary="Agenda automática após 1.ª compra (2 / 5 / 30 dias)"
         icon={Calendar}
-        status="prepared"
-        meta="Próximo envio: — · Filas: 0"
+        status={gated ? "locked" : "active"}
+        gated={gated}
+        requiredPlan={getMinPlanForFeature("push_notifications")}
+        meta="Motor run-marketing-campaigns · envio manual no Centro de testes"
         preview={
-          <div className="rounded-xl border border-dashed px-3 py-4 text-center text-[11px] text-muted-foreground">
-            Calendário interactivo chega com o motor de push automático
+          <div className="rounded-xl border border-dashed px-3 py-4 text-center text-[11px] text-muted-foreground space-y-2">
+            <p>Configure presets e envie promos imediatas em Admin → Centro de testes → Campanhas.</p>
+            <Link to={`${nav.admin("diagnostics-hub")}?tab=campaigns`} className="text-primary underline font-semibold">
+              Abrir Centro de testes — Campanhas
+            </Link>
           </div>
         }
       />

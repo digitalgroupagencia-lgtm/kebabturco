@@ -2,6 +2,8 @@ import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { checkBridgeStatus } from "@/services/printerService";
+import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
+import { nav } from "@/lib/navPaths.ts";
 import {
   fetchDbOperationalDiagnostics,
   fetchServerOperationalDiagnostics,
@@ -20,6 +22,8 @@ export type DiagnosticItem = {
   /** O que fazer — linguagem simples para o dono do restaurante */
   action?: string;
   critical?: boolean;
+  link?: string;
+  linkLabel?: string;
 };
 
 function wait(ms: number) {
@@ -626,6 +630,8 @@ export function useOperationalDiagnostics() {
           critical: true,
           detail: `${pending.count} ticket(s) na fila — computador da cozinha offline.`,
           action: "Ligue o PC da cozinha com a app de impressão aberta.",
+          link: `${nav.admin("diagnostics-hub")}?tab=printer`,
+          linkLabel: "Centro de testes — Impressora",
         });
       } else if (bridge === "active") {
         results.push({
@@ -653,13 +659,65 @@ export function useOperationalDiagnostics() {
       action: "Lovable → Definições → Integrações → Google Maps → Remover. O site não usa mapas.",
     });
 
-    // PUSH — opcional
-    results.push({
-      id: "push",
-      label: "Notificações push",
-      status: "warn",
-      detail: "Opcional — não afecta pedidos nem pagamentos.",
-    });
+    // PUSH — marketing e campanhas
+    if (storeId) {
+      const { count: marketingSubs } = await supabase
+        .from("push_subscriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", storeId)
+        .eq("customer_phone", CUSTOMER_MARKETING_PUSH_TAG);
+
+      const subs = marketingSubs ?? 0;
+      if (subs === 0) {
+        results.push({
+          id: "push-marketing",
+          label: "Push marketing",
+          status: "warn",
+          detail: "Nenhum cliente subscrito a promoções push ainda.",
+          action: "Clientes devem aceitar notificações no site. Teste em Centro de testes → Push.",
+          link: `${nav.admin("diagnostics-hub")}?tab=push`,
+          linkLabel: "Centro de testes — Push",
+        });
+      } else {
+        results.push({
+          id: "push-marketing",
+          label: "Push marketing",
+          status: "ok",
+          detail: `${subs} subscritor(es) prontos para campanhas.`,
+          link: `${nav.admin("diagnostics-hub")}?tab=campaigns`,
+          linkLabel: "Enviar campanha",
+        });
+      }
+
+      const { data: failedSends } = await supabase
+        .from("campaign_send_log")
+        .select("id, error_message, sent_at")
+        .eq("store_id", storeId)
+        .eq("status", "failed")
+        .order("sent_at", { ascending: false })
+        .limit(1);
+
+      if (failedSends?.length) {
+        results.push({
+          id: "campaign-send-error",
+          label: "Campanha push",
+          status: "warn",
+          detail: `Último envio falhou: ${failedSends[0].error_message ?? "erro desconhecido"}`,
+          action: "Verifique VAPID e subscritores no Centro de testes.",
+          link: `${nav.admin("diagnostics-hub")}?tab=campaigns`,
+          linkLabel: "Centro de testes — Campanhas",
+        });
+      }
+    } else {
+      results.push({
+        id: "push",
+        label: "Notificações push",
+        status: "warn",
+        detail: "Opcional — escolha uma loja para ver subscritores.",
+        link: `${nav.admin("diagnostics-hub")}?tab=push`,
+        linkLabel: "Centro de testes",
+      });
+    }
 
     await wait(200);
     setItems(results);
@@ -669,7 +727,7 @@ export function useOperationalDiagnostics() {
 
   const criticalIssues = items.filter((i) => i.critical && (i.status === "fail" || i.status === "warn"));
   const failCount = items.filter((i) => i.status === "fail").length;
-  const warnCount = items.filter((i) => i.status === "warn" && i.id !== "push" && i.id !== "lovable-maps").length;
+  const warnCount = items.filter((i) => i.status === "warn" && i.id !== "lovable-maps").length;
 
   return { items, running, lastRun, run, criticalIssues, failCount, warnCount };
 }
