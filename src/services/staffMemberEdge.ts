@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import type { CreateStaffMemberInput, CreateStaffMemberResult } from "@/services/createStaffMember";
+import { verifyStaffMemberLogin } from "@/services/createStaffMember";
 import type { UpdateStaffMemberInput } from "@/services/updateStaffMember";
 
 function edgePayloadError(data: unknown): string | null {
@@ -64,6 +65,6 @@ export async function createStaffMemberViaEdge(
     user_id: userId,
     created_new_user: Boolean((data as { created_new_user?: boolean }).created_new_user),
     password_unchanged: false,
-    login_ready: true,
+    login_ready: await verifyStaffMemberLogin(input.email, input.password),
   };
 }

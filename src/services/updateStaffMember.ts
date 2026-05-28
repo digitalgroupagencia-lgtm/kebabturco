@@ -1,12 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
-import { setStaffPasswordViaRpc } from "@/services/staffAuthRpc";
+import {
+  repairStaffLoginViaRpc,
+  setStaffPasswordViaRpc,
+} from "@/services/staffAuthRpc";
 import { updateStaffMemberViaEdge } from "@/services/staffMemberEdge";
+import { verifyStaffMemberLogin } from "@/services/createStaffMember";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 export type UpdateStaffMemberInput = {
   user_id: string;
   user_role_id: string;
   store_id: string;
+  email?: string | null;
   full_name: string | null;
   role: StaffRole;
   preferred_language: string;
@@ -29,15 +34,43 @@ async function updateStaffMemberLocally(input: UpdateStaffMemberInput) {
   if (roleError) throw roleError;
 }
 
-/** Actualiza membro da equipa — perfil, papel e senha. */
-export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<void> {
-  if (input.password?.trim()) {
-    const passwordSet = await setStaffPasswordViaRpc(input.user_id, input.password.trim());
-    if (!passwordSet) {
-      await updateStaffMemberViaEdge(input);
-      return;
+async function assertStaffPasswordLogin(email: string | null | undefined, password: string) {
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (!normalizedEmail) return;
+
+  const loginOk = await verifyStaffMemberLogin(normalizedEmail, password);
+  if (!loginOk) {
+    throw new Error(
+      "LOGIN_NOT_READY: A senha foi guardada, mas o login ainda não responde. Edite o membro na Equipe, guarde a senha outra vez e faça Sync + Publish na Lovable.",
+    );
+  }
+}
+
+async function setPasswordWithFallbacks(input: UpdateStaffMemberInput, password: string): Promise<"edge" | "local"> {
+  try {
+    await updateStaffMemberViaEdge(input);
+    return "edge";
+  } catch (edgeErr) {
+    if (await setStaffPasswordViaRpc(input.user_id, password)) {
+      await updateStaffMemberLocally(input);
+      return "local";
     }
+    if (await repairStaffLoginViaRpc(input.user_id, password)) {
+      await updateStaffMemberLocally(input);
+      return "local";
+    }
+    throw edgeErr;
+  }
+}
+
+/** Actualiza membro da equipa — perfil, papel e senha, com teste de login. */
+export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<void> {
+  const password = input.password?.trim();
+  if (!password) {
+    await updateStaffMemberLocally(input);
+    return;
   }
 
-  await updateStaffMemberLocally(input);
+  await setPasswordWithFallbacks(input, password);
+  await assertStaffPasswordLogin(input.email, password);
 }

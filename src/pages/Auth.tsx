@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Mail, Lock, User, ChefHat } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
+import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import { nav } from "@/lib/navPaths.ts";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -55,7 +56,11 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const normalizedEmail = email.trim().toLowerCase();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
         if (error) throw error;
         const userId = data.user?.id;
         if (userId) {
@@ -76,8 +81,8 @@ const Auth = () => {
         if (error) throw error;
         toast.success("Verifique seu email para confirmar o cadastro!");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao autenticar");
+    } catch (error: unknown) {
+      toast.error(translateAppErrorFromException(error, "pt"));
     } finally {
       setLoading(false);
     }

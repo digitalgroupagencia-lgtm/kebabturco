@@ -17,6 +17,17 @@ export async function setStaffPasswordViaRpc(userId: string, password: string): 
   throw error;
 }
 
+/** Repara senha + confirmação + identidade em falta (contas antigas só com código). */
+export async function repairStaffLoginViaRpc(userId: string, password: string): Promise<boolean> {
+  const { error } = await (supabase.rpc as any)("manager_repair_staff_login", {
+    _user_id: userId,
+    _password: password.trim(),
+  });
+  if (!error) return true;
+  if (isMissingRpc(extractErrorMessage(error))) return false;
+  throw error;
+}
+
 /** Cria conta auth quando signUp público falha (RPC na base de dados). */
 export async function createStaffAuthUserViaRpc(
   email: string,

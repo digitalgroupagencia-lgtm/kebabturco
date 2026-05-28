@@ -22,6 +22,58 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
+async function applyStaffPassword(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  password: string,
+): Promise<{ email: string | null; error: string | null }> {
+  const trimmed = String(password).trim();
+
+  const repair = await admin.rpc("manager_repair_staff_login", {
+    _user_id: userId,
+    _password: trimmed,
+  });
+  if (!repair.error) {
+    const { data: userData } = await admin.auth.admin.getUserById(userId);
+    return { email: userData.user?.email ?? null, error: null };
+  }
+
+  const { data: userData, error: getErr } = await admin.auth.admin.getUserById(userId);
+  if (getErr || !userData.user?.email) {
+    return { email: null, error: "Utilizador não encontrado ou sem e-mail" };
+  }
+
+  const { error: pwdErr } = await admin.auth.admin.updateUserById(userId, {
+    password: trimmed,
+    email_confirm: true,
+    user_metadata: {
+      ...(userData.user.user_metadata ?? {}),
+      staff_team: true,
+    },
+  });
+
+  if (pwdErr) return { email: userData.user.email, error: pwdErr.message };
+  return { email: userData.user.email, error: null };
+}
+
+async function verifyPasswordLogin(
+  supabaseUrl: string,
+  anonKey: string,
+  email: string,
+  password: string,
+): Promise<boolean> {
+  const probe = createClient(supabaseUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  const { data, error } = await probe.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password: String(password).trim(),
+  });
+  if (error || !data.session) return false;
+  await probe.auth.signOut();
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -130,14 +182,26 @@ Deno.serve(async (req) => {
     }
 
     if (password?.trim()) {
-      const { error: pwdErr } = await admin.auth.admin.updateUserById(user_id, {
-        password: String(password).trim(),
-      });
-      if (pwdErr) {
-        return new Response(JSON.stringify({ error: pwdErr.message }), {
+      const applied = await applyStaffPassword(admin, user_id, password);
+      if (applied.error) {
+        return new Response(JSON.stringify({ error: applied.error }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      if (applied.email) {
+        const loginReady = await verifyPasswordLogin(SUPABASE_URL, ANON_KEY, applied.email, password);
+        if (!loginReady) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "A senha foi guardada, mas o login ainda não responde. Faça Sync + Publish na Lovable e guarde a senha outra vez.",
+              login_ready: false,
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
       }
     }
 
@@ -158,7 +222,7 @@ Deno.serve(async (req) => {
       _preferred_language: preferred_language || "es",
     });
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, login_ready: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

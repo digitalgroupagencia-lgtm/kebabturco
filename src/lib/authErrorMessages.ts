@@ -76,8 +76,12 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     es: "No se pudo completar. Inténtelo de nuevo.",
   },
   invalid_credentials: {
-    pt: "E-mail ou senha incorrectos. Se acabou de criar o membro na Equipe, edite-o e guarde a senha outra vez.",
-    es: "Correo o contraseña incorrectos. Si acaba de crear al miembro en Equipo, edítelo y guarde la contraseña otra vez.",
+    pt: "E-mail ou senha incorrectos. Peça ao gerente para ir à Equipe, editar o membro e guardar a senha outra vez.",
+    es: "Correo o contraseña incorrectos. Pida al gerente que vaya a Equipo, edite al miembro y guarde la contraseña otra vez.",
+  },
+  login_not_ready: {
+    pt: "A senha foi guardada, mas o login ainda não responde. Edite o membro na Equipe, guarde a senha outra vez e faça Sync + Publish na Lovable.",
+    es: "La contraseña se guardó, pero el inicio de sesión aún no responde. Edite al miembro en Equipo, guarde la contraseña otra vez y haga Sync + Publish en Lovable.",
   },
   email_not_confirmed: {
     pt: "Conta ainda não confirmada. Peça ao gerente para republicar a app na Lovable.",
@@ -87,6 +91,7 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
 
 function detectKey(raw: string): keyof typeof MESSAGES {
   const m = raw.toLowerCase();
+  if (m.includes("login_not_ready")) return "login_not_ready";
   if (m.includes("invalid login credentials") || m.includes("invalid email or password")) {
     return "invalid_credentials";
   }

@@ -160,6 +160,10 @@ Deno.serve(async (req) => {
         }
         const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
           password: normalizedPassword,
+          email_confirm: true,
+          user_metadata: {
+            staff_team: true,
+          },
         });
         if (updateErr) {
           return new Response(JSON.stringify({ error: updateErr.message }), {

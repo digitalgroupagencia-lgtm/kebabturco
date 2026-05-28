@@ -4,6 +4,7 @@ import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import type { StaffRole } from "@/lib/staffPermissions";
 import {
   createStaffAuthUserViaRpc,
+  repairStaffLoginViaRpc,
   setStaffPasswordViaRpc,
 } from "@/services/staffAuthRpc";
 import { createStaffMemberViaEdge } from "@/services/staffMemberEdge";
@@ -100,11 +101,13 @@ async function ensureAuthUserWithPassword(
   let createdNewUser = false;
 
   if (userId) {
-    const passwordSet = await setStaffPasswordViaRpc(userId, password);
-    if (!passwordSet) {
-      throw new Error("STAFF_AUTH_EDGE_FALLBACK");
+    if (await setStaffPasswordViaRpc(userId, password)) {
+      return { userId, createdNewUser: false };
     }
-    return { userId, createdNewUser: false };
+    if (await repairStaffLoginViaRpc(userId, password)) {
+      return { userId, createdNewUser: false };
+    }
+    throw new Error("STAFF_AUTH_EDGE_FALLBACK");
   }
 
   const ephemeral = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -151,9 +154,11 @@ async function ensureAuthUserWithPassword(
   }
 
   if (!(await canSignInWithPassword(email, password))) {
-    const fixed = await setStaffPasswordViaRpc(userId, password);
+    const fixed =
+      (await setStaffPasswordViaRpc(userId, password)) ||
+      (await repairStaffLoginViaRpc(userId, password));
     if (!fixed || !(await canSignInWithPassword(email, password))) {
-      throw new Error("Utilizador criado, mas o login ainda não responde. Guarde a senha outra vez em Editar membro.");
+      throw new Error("STAFF_AUTH_EDGE_FALLBACK");
     }
   }
 

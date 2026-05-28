@@ -264,6 +264,7 @@ const TeamPage = () => {
         user_id: editMember.user_id,
         user_role_id: editMember.id,
         store_id: storeId,
+        email: editMember.email,
         full_name: editName.trim() || null,
         role: editRole,
         preferred_language: editLanguage,
