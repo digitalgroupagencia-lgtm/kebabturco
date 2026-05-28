@@ -1,29 +1,21 @@
 -- =============================================================================
--- KEBAB TURCO — SQL COMPLETO PARA EQUIPE, CÓDIGOS DE ACESSO E ENTREGADORES
+-- PARTE 2 de 2 — EQUIPE, CÓDIGOS DE ACESSO E ENTREGADORES
 -- =============================================================================
--- Onde colar: Lovable → Supabase → SQL Editor → New query → Run
--- Pode correr TUDO de uma vez. Se der erro numa linha já existente, ignore e
--- continue (ou comente essa linha).
+-- IMPORTANTE: corra PRIMEIRO o ficheiro COPIAR_COLAR_SQL_EQUIPE_PARTE1_Papeis.sql
+-- e só depois este script (Run separado).
+--
+-- Lovable → Cloud → SQL editor → New query → colar → Run
 -- =============================================================================
 
 
--- ─── BLOCO 1: Papéis (funções) extra na equipa ───────────────────────────────
-
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'manager';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'cashier';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'attendant';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'delivery';
-
-
--- ─── BLOCO 2: Perfil — idioma preferido ──────────────────────────────────────
+-- ─── Perfil — idioma preferido ───────────────────────────────────────────────
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS preferred_language text NOT NULL DEFAULT 'pt';
 
 
--- ─── BLOCO 3: Pedidos — entregador e hora de saída ───────────────────────────
-
-ALTER TYPE public.order_status ADD VALUE IF NOT EXISTS 'out_for_delivery';
+-- ─── Pedidos — entregador, hora de saída e código de confirmação ───────────────
+-- (o valor out_for_delivery foi adicionado na Parte 1)
 
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS assigned_driver_id uuid REFERENCES auth.users(id);
@@ -552,4 +544,5 @@ SELECT 'staff_access_pins (tabela)' AS item,
          WHERE table_schema = 'public' AND table_name = 'staff_access_pins'
        ) AS instalada;
 
-SELECT unnest(enum_range(NULL::public.app_role)) AS papeis_disponiveis;
+-- Papéis: corra isto numa query SEPARADA se a Parte 1 acabou de ser executada
+-- SELECT unnest(enum_range(NULL::public.app_role)) AS papeis_disponiveis;
