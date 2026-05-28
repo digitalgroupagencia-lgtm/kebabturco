@@ -191,26 +191,28 @@ const HomeScreen = () => {
       )}
 
       <div className="flex flex-1 overflow-hidden min-h-0">
-        <aside className="w-[92px] min-w-[92px] bg-secondary/40 overflow-y-auto shrink-0 md:[&::-webkit-scrollbar]:hidden">
-          <div className="flex flex-col gap-2 px-1 py-2.5">
+        <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-col gap-2 px-2 py-2">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
               return (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`group relative flex flex-col items-center gap-1 pt-1.5 pb-2 rounded-xl transition-all touch-action-manipulation ${
+                  className={`group relative flex w-full flex-col items-stretch gap-1 overflow-hidden rounded-xl px-1.5 pb-1.5 pt-1.5 transition-all touch-action-manipulation ${
                     isActive
-                      ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)]"
-                      : "bg-card/60 hover:bg-card shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.12)] active:scale-[0.97]"
+                      ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)] ring-1 ring-primary/20"
+                      : "bg-card/70 shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.1)] active:scale-[0.97]"
                   }`}
                 >
-                  <img
-                    src={category.image}
-                    alt={tProduct(category.name)}
-                    className="w-[80px] h-[60px] object-cover rounded-xl drop-shadow-[0_5px_8px_rgba(0,0,0,0.16)]"
-                    loading="lazy"
-                  />
+                  <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[10px] bg-secondary/40">
+                    <img
+                      src={category.image}
+                      alt={tProduct(category.name)}
+                      className="h-full w-full object-cover object-center"
+                      loading="lazy"
+                    />
+                  </div>
                   <span
                     className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
                       isActive ? "text-primary" : "text-foreground"
@@ -219,7 +221,7 @@ const HomeScreen = () => {
                     {tProduct(category.name)}
                   </span>
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+                    <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full bg-primary" aria-hidden />
                   )}
                 </button>
               );
@@ -268,14 +270,16 @@ const HomeScreen = () => {
                   </span>
                 )}
 
-                {/* Imagem protagonista, sem moldura pesada */}
-                <div className="aspect-[5/4] px-2 pt-2 pb-1 flex items-center justify-center">
-                  <img
-                    src={product.image}
-                    alt={cleanName}
-                    className="w-full h-full object-cover rounded-[16px] drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)] transition-transform group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
+                {/* Imagem dentro da moldura do card — alinhada ao grid */}
+                <div className="aspect-[5/4] p-2 pb-1">
+                  <div className="relative h-full w-full overflow-hidden rounded-[14px] bg-secondary/30 ring-1 ring-border/30">
+                    <img
+                      src={product.image}
+                      alt={cleanName}
+                      className="h-full w-full object-cover object-center transition-transform group-hover:scale-[1.02]"
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
 
                 {/* Bloco inferior compacto: nome, preço e botão integrado */}
