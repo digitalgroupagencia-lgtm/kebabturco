@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedLang, isEmbedded } from "@/lib/embed-mode";
 import { loadSavedLang, readLangFromUrl, saveSavedLang } from "@/lib/customerSession";
-import { pickSourceText, type AppLang } from "@/lib/localizedText";
+import { pickSourceText, readLocalized, type AppLang } from "@/lib/localizedText";
 import { getCachedMenuTranslation } from "@/lib/menuTranslationCache";
 import { translateMenuTexts } from "@/services/menuTranslationService";
 
@@ -27,6 +27,53 @@ const translations: Translations = {
   eatHere: { pt: "Mesa", en: "Table", es: "Mesa", fr: "Table" },
   takeaway: { pt: "Levar", en: "Take away", es: "Para llevar", fr: "À emporter" },
   menu: { pt: "Cardápio", en: "Menu", es: "Menú", fr: "Menu" },
+  storeOpen: { pt: "Aberto", en: "Open", es: "Abierto", fr: "Ouvert" },
+  loadingMenu: { pt: "A carregar menu…", en: "Loading menu…", es: "Cargando menú…", fr: "Chargement du menu…" },
+  loadingGeneric: { pt: "A carregar…", en: "Loading…", es: "Cargando…", fr: "Chargement…" },
+  menuUnavailable: {
+    pt: "Menu indisponível",
+    en: "Menu unavailable",
+    es: "Menú no disponible",
+    fr: "Menu indisponible",
+  },
+  menuUnavailableHint: {
+    pt: "Esta loja ainda não tem produtos activos. Tente mais tarde.",
+    en: "This store has no active products yet. Please try again later.",
+    es: "Esta tienda aún no tiene productos activos. Inténtalo más tarde.",
+    fr: "Ce restaurant n'a pas encore de produits actifs. Réessayez plus tard.",
+  },
+  storeNotFound: { pt: "Loja não encontrada", en: "Store not found", es: "Local no encontrado", fr: "Restaurant introuvable" },
+  storeNotFoundHint: {
+    pt: "Não foi possível identificar a loja. Actualize a página.",
+    en: "We couldn't identify the store. Refresh the page.",
+    es: "No pudimos identificar el local. Actualiza la página.",
+    fr: "Impossible d'identifier le restaurant. Actualisez la page.",
+  },
+  menuLoadError: {
+    pt: "Erro ao carregar menu",
+    en: "Couldn't load menu",
+    es: "Error al cargar el menú",
+    fr: "Erreur de chargement du menu",
+  },
+  menuLoadErrorHint: {
+    pt: "Verifique a ligação e tente novamente.",
+    en: "Check your connection and try again.",
+    es: "Comprueba tu conexión e inténtalo de nuevo.",
+    fr: "Vérifiez votre connexion et réessayez.",
+  },
+  tryAgainBtn: { pt: "Tentar novamente", en: "Try again", es: "Intentar de nuevo", fr: "Réessayer" },
+  errPickMeatBeforeAdd: {
+    pt: "Escolhe pollo, ternera ou mixto antes de adicionar ao pedido",
+    en: "Choose chicken, beef or mixed before adding to cart",
+    es: "Elige pollo, ternera o mixto antes de añadir al pedido",
+    fr: "Choisissez poulet, bœuf ou mixte avant d'ajouter",
+  },
+  errPickDrinkBeforeAdd: {
+    pt: "Escolhe o refresco antes de adicionar ao pedido",
+    en: "Choose your drink before adding to cart",
+    es: "Elige tu refresco antes de añadir al pedido",
+    fr: "Choisissez votre boisson avant d'ajouter",
+  },
   bestsellers: { pt: "Mais vendidos", en: "Bestsellers", es: "Más vendidos", fr: "Meilleures ventes" },
   promotions: { pt: "Promoções", en: "Promotions", es: "Promociones", fr: "Promotions" },
   suggestions: { pt: "Sugestões", en: "Suggestions", es: "Sugerencias", fr: "Suggestions" },
@@ -620,20 +667,46 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
       if (!trimmed || from === to) return;
       if (getCachedMenuTranslation(trimmed, from, to)) return;
       pendingTexts.current.add(trimmed);
-      if (flushTimer.current != null) return;
-      flushTimer.current = window.setTimeout(() => void flushTranslations(from, to), 120);
+      if (flushTimer.current != null) window.clearTimeout(flushTimer.current);
+      flushTimer.current = window.setTimeout(() => void flushTranslations(from, to), 40);
     },
     [flushTranslations],
   );
+
+  useEffect(() => {
+    if (lang === primaryLang) return;
+    if (flushTimer.current != null) {
+      window.clearTimeout(flushTimer.current);
+      flushTimer.current = null;
+    }
+    if (pendingTexts.current.size > 0) {
+      void flushTranslations(primaryLang, lang);
+    }
+  }, [lang, primaryLang, flushTranslations]);
 
   const t = (key: string) => translations[key]?.[lang] || translations[key]?.en || key;
 
   const tProduct = useCallback(
     (obj: Record<string, string> | string | null | undefined) => {
       void translationTick;
+      if (typeof obj === "string") {
+        const trimmed = obj.trim();
+        if (!trimmed) return "";
+        if (lang === primaryLang) return trimmed;
+        const cached = getCachedMenuTranslation(trimmed, primaryLang, lang);
+        if (cached) return cached;
+        scheduleTranslation(trimmed, primaryLang, lang);
+        return trimmed;
+      }
+
+      const record = readLocalized(obj);
+      const inUserLang = record[lang]?.trim();
+      if (inUserLang) return inUserLang;
+
       const source = pickSourceText(obj, primaryLang);
       if (!source) return "";
       if (lang === primaryLang) return source;
+
       const cached = getCachedMenuTranslation(source, primaryLang, lang);
       if (cached) return cached;
       scheduleTranslation(source, primaryLang, lang);
@@ -646,12 +719,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
     (items: (Record<string, string> | string | null | undefined)[]) => {
       if (lang === primaryLang) return;
       for (const item of items) {
+        const record = readLocalized(item);
+        if (record[lang]?.trim()) continue;
         const source = pickSourceText(item, primaryLang);
-        if (source) scheduleTranslation(source, primaryLang, lang);
+        if (!source || getCachedMenuTranslation(source, primaryLang, lang)) continue;
+        pendingTexts.current.add(source);
       }
+      if (pendingTexts.current.size === 0) return;
+      if (flushTimer.current != null) window.clearTimeout(flushTimer.current);
+      flushTimer.current = window.setTimeout(() => void flushTranslations(primaryLang, lang), 0);
     },
-    [lang, primaryLang, scheduleTranslation],
+    [lang, primaryLang, flushTranslations],
   );
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   return (
     <LanguageContext.Provider

@@ -115,8 +115,8 @@ const HomeScreen = () => {
   if (loading) {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label="A carregar menu" />
-        <p className="text-sm text-muted-foreground font-semibold">A carregar menu…</p>
+        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label={t("loadingMenu")} />
+        <p className="text-sm text-muted-foreground font-semibold">{t("loadingMenu")}</p>
       </div>
     );
   }
@@ -124,10 +124,10 @@ const HomeScreen = () => {
   if (error) {
     const copy =
       error === "empty"
-        ? { title: "Menu indisponível", body: "Esta loja ainda não tem produtos activos. Tente mais tarde." }
+        ? { title: t("menuUnavailable"), body: t("menuUnavailableHint") }
         : error === "no_store"
-          ? { title: "Loja não encontrada", body: "Não foi possível identificar a loja. Actualize a página." }
-          : { title: "Erro ao carregar menu", body: "Verifique a ligação e tente novamente." };
+          ? { title: t("storeNotFound"), body: t("storeNotFoundHint") }
+          : { title: t("menuLoadError"), body: t("menuLoadErrorHint") };
 
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-background px-6 text-center">
@@ -139,7 +139,7 @@ const HomeScreen = () => {
           className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
         >
           <RefreshCw className="h-4 w-4" />
-          Tentar novamente
+          {t("tryAgainBtn")}
         </button>
       </div>
     );
@@ -182,7 +182,7 @@ const HomeScreen = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-success-foreground" />
               </span>
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.22em]">Abierto</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.22em]">{t("storeOpen")}</span>
             </div>
             <ThemeToggle variant="onColor" className="w-8 h-8 shadow-none" />
           </div>

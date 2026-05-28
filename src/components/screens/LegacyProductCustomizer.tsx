@@ -151,11 +151,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
 
   const handleAdd = () => {
     if (requiresVariant && !selectedVariant) {
-      toast.error(
-        isMeatChoice
-          ? "Elige pollo, ternera o mixto antes de añadir al pedido"
-          : "Elige tu refresco antes de añadir al pedido",
-      );
+      toast.error(isMeatChoice ? t("errPickMeatBeforeAdd") : t("errPickDrinkBeforeAdd"));
       return;
     }
 
@@ -167,7 +163,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
       })
       .filter(Boolean) as { id: string; name: Record<string, string>; price: number; quantity: number }[];
 
-    const variantSuffix = selectedVariant ? ` (${selectedVariant.name.es || selectedVariant.name.en})` : "";
+    const variantSuffix = selectedVariant ? ` (${tProduct(selectedVariant.name)})` : "";
     const finalName = selectedVariant
       ? (Object.fromEntries(Object.entries(product.name).map(([k, v]) => [k, v + variantSuffix])) as Record<string, string>)
       : product.name;
