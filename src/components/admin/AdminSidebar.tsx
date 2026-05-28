@@ -59,6 +59,7 @@ import { nav } from "@/lib/navPaths.ts";
 const overviewItems = [
   { title: "Command Center", url: nav.admin(), icon: LayoutGrid, end: true },
   { title: "Estado do sistema", url: nav.admin("diagnostics"), icon: Activity },
+  { title: "Teste push", url: nav.admin("push-test"), icon: Bell },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
 ];
