@@ -5,6 +5,7 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { applyBrandWineTokens, BRAND_WINE_HEX, applyBrowserChromeColor, hexToHslParts, hslString } from "@/lib/brandTokens";
 import { bumpAppCache } from "@/lib/appCacheBust";
 import { useTheme } from "@/contexts/ThemeContext";
+import { isAdminPreviewMode, PREVIEW_MESSAGE_TYPE } from "@/lib/tenantPreview";
 
 export type CompanySettings = Tables<"company_settings">;
 

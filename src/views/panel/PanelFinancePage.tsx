@@ -105,7 +105,7 @@ const PanelFinancePage = () => {
 
   return (
     <div className="mx-auto max-w-lg space-y-5 pb-10">
-      <PanelStoreSwitcher hint="Configure os recebimentos de cada unidade separadamente." />
+      <PanelStoreSwitcher />
 
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
