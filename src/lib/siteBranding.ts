@@ -3,7 +3,7 @@
  */
 
 import type { Tables } from "@/integrations/supabase/types";
-import { BRAND_WINE_HEX } from "@/lib/brandTokens";
+import { BRAND_WINE_HEX, BRAND_CHROME_HEX, applyBrowserChromeColor, chromeHexFromHeader } from "@/lib/brandTokens";
 import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
@@ -57,8 +57,8 @@ export const SNAPORDER_NEUTRAL_BRANDING: SiteBranding = {
   displayName: APP_NAME,
   shortName: APP_NAME,
   metaDescription: "Peça online no Kebab Turco",
-  themeColor: BRAND_WINE_HEX,
-  backgroundColor: "#ffffff",
+  themeColor: BRAND_CHROME_HEX,
+  backgroundColor: BRAND_CHROME_HEX,
   primaryColor: BRAND_WINE_HEX,
   faviconUrl: "/favicon.ico",
   icon192Url: "/icon-192.png",
@@ -83,8 +83,8 @@ export function brandingFromPlatform(row: PlatformRow | null | undefined): SiteB
     displayName: row.display_name || row.platform_name || APP_NAME,
     shortName: row.short_name || row.platform_name || APP_NAME,
     metaDescription: row.meta_description || SNAPORDER_NEUTRAL_BRANDING.metaDescription,
-    themeColor: row.theme_color || row.primary_color || BRAND_WINE_HEX,
-    backgroundColor: row.background_color || "#ffffff",
+    themeColor: row.theme_color || row.primary_color || BRAND_CHROME_HEX,
+    backgroundColor: row.background_color || BRAND_CHROME_HEX,
     primaryColor: row.primary_color || BRAND_WINE_HEX,
     faviconUrl: pickIcon(row.favicon_url, logo),
     icon192Url: pickIcon(row.icon_192_url, logo),
@@ -99,6 +99,7 @@ export function brandingFromCompany(row: CompanyRow | null | undefined): SiteBra
   if (!row) return { ...SNAPORDER_NEUTRAL_BRANDING, scope: "neutral" };
   const logo = row.logo_main_url || row.logo_secondary_url || null;
   const header = (row as { header_color?: string }).header_color || row.primary_color;
+  const chromeHex = chromeHexFromHeader(header || undefined);
   return {
     scope: "tenant",
     displayName: row.company_name || "Restaurante",
@@ -106,8 +107,8 @@ export function brandingFromCompany(row: CompanyRow | null | undefined): SiteBra
     metaDescription:
       row.meta_description ||
       `Peça online em ${row.company_name || "nosso restaurante"}`,
-    themeColor: header || BRAND_WINE_HEX,
-    backgroundColor: row.background_color || "#ffffff",
+    themeColor: chromeHex,
+    backgroundColor: chromeHex,
     primaryColor: row.primary_color || BRAND_WINE_HEX,
     faviconUrl: pickIcon(row.favicon_url, logo),
     icon192Url: pickIcon(row.icon_192_url, logo),
@@ -158,7 +159,7 @@ export function applySiteBrandingToDocument(branding: SiteBranding): void {
   document.title = branding.displayName;
 
   setMeta("description", branding.metaDescription);
-  setMeta("theme-color", branding.themeColor);
+  applyBrowserChromeColor(branding.primaryColor || BRAND_WINE_HEX);
   setMeta("apple-mobile-web-app-title", branding.shortName);
   setMeta("application-name", branding.shortName);
 

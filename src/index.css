@@ -146,7 +146,9 @@
   html {
     -webkit-text-size-adjust: 100%;
     background-color: var(--browser-chrome-bg, hsl(var(--brand-wine-dark)));
+    background-color: var(--browser-chrome-hex, #5C1419);
     overscroll-behavior-y: none;
+    color-scheme: dark;
   }
   body {
     max-width: 100vw;
@@ -155,6 +157,23 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
     background-color: hsl(var(--background));
+  }
+  /* Safari / PWA: prolongar vinho acima do header até ao notch */
+  @media (max-width: 767px) {
+    html::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: env(safe-area-inset-top, 0px);
+      background: var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%));
+      z-index: 9999;
+      pointer-events: none;
+    }
+    html.pwa-standalone::before {
+      background: var(--browser-chrome-hex, #5C1419);
+    }
   }
   #root {
     max-width: 100vw;

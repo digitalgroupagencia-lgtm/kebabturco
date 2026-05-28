@@ -6,7 +6,7 @@ import { ReactNode } from "react";
  */
 export default function MobileFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-background md:bg-neutral-900 md:p-4 sm:md:p-6">
+    <div className="flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-[var(--browser-chrome-hex,#5C1419)] md:bg-neutral-900 md:p-4 sm:md:p-6">
       <div
         className="relative flex h-full w-full min-h-0 flex-col overflow-hidden md:h-[min(880px,calc(100dvh-2rem))] md:w-[min(420px,calc(100vw-2rem))] md:rounded-[3rem] md:bg-black md:p-[14px] md:shadow-2xl"
       >
@@ -17,10 +17,11 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
         <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden md:rounded-[2.3rem] md:bg-background">
           <div
             aria-hidden
-            className="pointer-events-none fixed top-0 left-0 right-0 z-[60] md:hidden bg-gradient-header"
+            className="pointer-events-none fixed top-0 left-0 right-0 z-[60] md:hidden"
             style={{
               height: "max(env(safe-area-inset-top), 0px)",
               background: "var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%))",
+              boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.08)",
             }}
           />
           {children}

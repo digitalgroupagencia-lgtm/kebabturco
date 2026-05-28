@@ -151,12 +151,18 @@ const HomeScreen = () => {
       <>
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-[35] bg-gradient-header md:hidden"
-        style={{ height: "env(safe-area-inset-top)" }}
+        className="pointer-events-none fixed inset-x-0 top-0 z-[35] md:hidden"
+        style={{
+          height: "env(safe-area-inset-top)",
+          background: "var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%))",
+        }}
       />
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-4 pb-3 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
+          marginTop: "calc(-1 * env(safe-area-inset-top))",
+        }}
       >
         <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />

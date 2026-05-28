@@ -108,38 +108,97 @@ export function shadowHeaderFromPalette(p: ReturnType<typeof winePaletteFromHex>
   return `0 4px 18px -8px hsl(${p.wine} / 0.38)`;
 }
 
-/** Actualiza meta theme-color (Safari iOS + Chrome Android) com paleta vinho. */
-export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "dark" = "light"): void {
+/** Converte HSL (parts) para hex — usado na cor da barra do sistema. */
+export function hslPartsToHex(parts: HslParts): string {
+  const h = parts.h / 360;
+  const s = parts.s / 100;
+  const l = parts.l / 100;
+
+  const hue2rgb = (p: number, q: number, t: number) => {
+    let tt = t;
+    if (tt < 0) tt += 1;
+    if (tt > 1) tt -= 1;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+
+  let r: number;
+  let g: number;
+  let b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  const toByte = (v: number) => Math.round(v * 255).toString(16).padStart(2, "0");
+  return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
+}
+
+/** Vinho escuro do header — cor exacta para Safari / Android / PWA / TWA. */
+export function chromeHexFromHeader(headerHex?: string): string {
+  const base = headerHex || BRAND_WINE_HEX;
+  const palette = winePaletteFromHex(base);
+  const wineDarkParts = hexToHslParts(BRAND_CHROME_HEX) ?? { h: 356, s: 64, l: 24 };
+  const derived = hexToHslParts(base);
+  const parts: HslParts = derived
+    ? { h: derived.h, s: Math.min(derived.s + 4, 72), l: Math.max(derived.l - 10, 22) }
+    : wineDarkParts;
+  return hslPartsToHex(parts);
+}
+
+function setOrCreateMeta(name: string, content: string, extra?: Record<string, string>): void {
+  const selector = extra?.media
+    ? `meta[name="${name}"][media="${extra.media}"]`
+    : `meta[name="${name}"]:not([media])`;
+  let el = document.querySelector<HTMLMetaElement>(selector);
+  if (!el) {
+    el = document.createElement("meta");
+    el.name = name;
+    if (extra?.media) el.media = extra.media;
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
+
+/** Actualiza theme-color, safe-area e meta iOS — Safari, Chrome, PWA, TWA. */
+export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "dark" = "light"): void {
   if (typeof document === "undefined") return;
   const base = headerHex || BRAND_WINE_HEX;
   const palette = winePaletteFromHex(base);
-  // Topo integrado: vinho escuro em ambos os modos (nunca vermelho puro)
-  const chromeHex =
-    theme === "dark"
-      ? BRAND_CHROME_HEX
-      : base.startsWith("#")
-        ? base
-        : BRAND_WINE_HEX;
+  const chromeHex = chromeHexFromHeader(base);
 
-  const setThemeMeta = (content: string, media?: string) => {
-    const selector = media
-      ? `meta[name="theme-color"][media="${media}"]`
-      : 'meta[name="theme-color"]:not([media])';
-    let el = document.querySelector<HTMLMetaElement>(selector);
-    if (!el) {
-      el = document.createElement("meta");
-      el.name = "theme-color";
-      if (media) el.media = media;
-      document.head.appendChild(el);
-    }
-    el.content = content;
-  };
+  const themeMedia = [
+    undefined,
+    "(prefers-color-scheme: light)",
+    "(prefers-color-scheme: dark)",
+    "(display-mode: standalone)",
+    "(display-mode: browser)",
+  ] as const;
 
-  setThemeMeta(chromeHex);
-  setThemeMeta(chromeHex, "(prefers-color-scheme: light)");
-  setThemeMeta(BRAND_CHROME_HEX, "(prefers-color-scheme: dark)");
+  for (const media of themeMedia) {
+    setOrCreateMeta("theme-color", chromeHex, media ? { media } : undefined);
+  }
 
-  document.documentElement.style.setProperty("--browser-chrome-bg", `hsl(${palette.wineDark})`);
+  setOrCreateMeta("apple-mobile-web-app-capable", "yes");
+  setOrCreateMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
+  setOrCreateMeta("mobile-web-app-capable", "yes");
+
+  const root = document.documentElement;
+  root.style.setProperty("--browser-chrome-bg", `hsl(${palette.wineDark})`);
+  root.style.setProperty("--browser-chrome-hex", chromeHex);
+  root.style.backgroundColor = chromeHex;
+  root.style.colorScheme = "dark";
+
+  if (window.matchMedia("(display-mode: standalone)").matches) {
+    root.classList.add("pwa-standalone");
+  }
 }
 
 /** Apply brand wine tokens to document root (used by BrandingContext). */

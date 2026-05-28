@@ -5,6 +5,16 @@ import { applyBrowserChromeColor } from "./lib/brandTokens";
 
 applyBrowserChromeColor();
 
+if (typeof window !== "undefined") {
+  const markStandalone = () => {
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      document.documentElement.classList.add("pwa-standalone");
+    }
+  };
+  markStandalone();
+  window.matchMedia("(display-mode: standalone)").addEventListener("change", markStandalone);
+}
+
 function removeBootFallback() {
   document.getElementById("boot-fallback")?.remove();
 }

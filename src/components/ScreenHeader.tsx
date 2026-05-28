@@ -37,7 +37,10 @@ const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenH
       className={`relative bg-gradient-header text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] ${
         sticky ? "sticky top-0 z-40" : ""
       }`}
-      style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top) + 1rem)",
+        marginTop: sticky ? "calc(-1 * env(safe-area-inset-top))" : undefined,
+      }}
     >
       {/* Glows decorativos sutis (mesmo padrão da Home) */}
       <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />

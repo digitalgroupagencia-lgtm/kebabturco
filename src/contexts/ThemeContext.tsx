@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useLayoutEffect, useState } from "react";
-import { applyBrowserChromeColor, BRAND_CHROME_HEX } from "@/lib/brandTokens";
+import { applyBrowserChromeColor } from "@/lib/brandTokens";
 
 type Theme = "light" | "dark";
 
@@ -24,11 +24,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (theme === "dark") {
       root.classList.add("dark");
       body.classList.add("dark");
-      root.style.colorScheme = "dark";
     } else {
       root.classList.remove("dark");
       body.classList.remove("dark");
-      root.style.colorScheme = "light";
     }
     root.setAttribute("data-theme", theme);
     try {
@@ -37,7 +35,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       /* ignore quota / private mode */
     }
     applyBrowserChromeColor(undefined, theme);
-    document.documentElement.style.backgroundColor = BRAND_CHROME_HEX;
   }, [theme]);
 
   const toggle = () => setThemeState((t) => (t === "dark" ? "light" : "dark"));
