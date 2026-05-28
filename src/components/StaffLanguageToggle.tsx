@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { notifyStaffUiLangChange } from "@/lib/staffUiCopy";
 
 const STAFF_UI_LANG_KEY = "staff-ui-lang";
 
@@ -58,6 +59,7 @@ const StaffLanguageToggle = ({ defaultLang = "es", compact }: Props) => {
   const apply = async (next: StaffUiLang) => {
     setLang(next);
     saveStaffUiLang(next);
+    notifyStaffUiLangChange(next);
     if (user?.id) {
       await supabase.from("profiles").upsert(
         { user_id: user.id, preferred_language: next },

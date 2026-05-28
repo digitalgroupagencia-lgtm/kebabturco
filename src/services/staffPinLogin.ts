@@ -5,6 +5,10 @@ import type { StaffRole } from "@/lib/staffPermissions";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+const PIN_PATTERN = /^(?=.*\d)(?=.*#).{6,10}$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function isEdgeFunctionUnavailable(message: string): boolean {
   return /failed to send a request|edge function|functions\/v1|fetch failed|networkerror|network request failed/i.test(
     message,
@@ -19,11 +23,12 @@ async function invokeStaffPinLogin(storeId: string, pin: string) {
       Authorization: `Bearer ${SUPABASE_KEY}`,
       apikey: SUPABASE_KEY,
     },
-    body: JSON.stringify({ store_id: storeId, pin }),
+    body: JSON.stringify({ store_id: storeId.trim(), pin: pin.trim() }),
   });
 
   const payload = (await res.json().catch(() => ({}))) as {
     error?: string;
+    code?: string;
     token_hash?: string;
     role?: StaffRole;
     user_id?: string;
@@ -42,8 +47,8 @@ async function invokeStaffPinLogin(storeId: string, pin: string) {
 
 async function verifyPinLocally(storeId: string, pin: string) {
   const { data, error } = await (supabase.rpc as any)("verify_staff_access_pin", {
-    _store_id: storeId,
-    _pin: pin,
+    _store_id: storeId.trim(),
+    _pin: pin.trim(),
   });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
@@ -53,25 +58,48 @@ async function verifyPinLocally(storeId: string, pin: string) {
   return row as { user_id: string; role: StaffRole };
 }
 
-/** Inicia sessão com código da equipa — servidor remoto ou validação directa + link mágico. */
+/** Inicia sessão com código da equipa — validação directa + link mágico no servidor. */
 export async function loginWithStaffPin(storeId: string, pin: string) {
-  let tokenHash: string | undefined;
-  let role: StaffRole | null = null;
-  let userId: string | undefined;
+  const trimmedStoreId = storeId.trim();
+  const trimmedPin = pin.trim();
 
+  if (!UUID_PATTERN.test(trimmedStoreId)) {
+    throw new Error("Loja e código inválidos");
+  }
+  if (!PIN_PATTERN.test(trimmedPin)) {
+    throw new Error("Código inválido — use 6–10 caracteres com # e números");
+  }
+
+  let verified: { user_id: string; role: StaffRole };
   try {
-    const payload = await invokeStaffPinLogin(storeId, pin);
-    tokenHash = payload.token_hash;
-    role = (payload.role as StaffRole | undefined) ?? null;
-    userId = payload.user_id;
+    verified = await verifyPinLocally(trimmedStoreId, trimmedPin);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (!isEdgeFunctionUnavailable(msg)) {
-      throw e;
+    if (/crypt|gen_salt|pgcrypto/i.test(msg)) {
+      throw new Error(
+        "Verificação do código indisponível na base de dados. Peça ao gerente para executar o SQL LOVABLE_FIX_VERIFY_PIN_BLOCO3.",
+      );
     }
-    throw new Error(
-      "Login por código indisponível no servidor. Peça ao gerente para activar as funções ou use e-mail e senha em /auth.",
-    );
+    throw e instanceof Error ? e : new Error("Código incorrecto");
+  }
+
+  let tokenHash: string | undefined;
+  let role: StaffRole | null = verified.role ?? null;
+  let userId: string | undefined = verified.user_id;
+
+  try {
+    const payload = await invokeStaffPinLogin(trimmedStoreId, trimmedPin);
+    tokenHash = payload.token_hash;
+    role = (payload.role as StaffRole | undefined) ?? role;
+    userId = payload.user_id ?? userId;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (isEdgeFunctionUnavailable(msg)) {
+      throw new Error(
+        "Login por código indisponível no servidor. Peça ao gerente para activar as funções ou use e-mail e senha em /auth.",
+      );
+    }
+    throw e instanceof Error ? e : new Error("Código incorrecto");
   }
 
   const { error: otpError } = await supabase.auth.verifyOtp({

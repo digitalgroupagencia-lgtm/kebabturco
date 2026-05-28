@@ -37,7 +37,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.staff_access_pins (store_id, user_id, user_role_id, pin_hash)
-  VALUES (v_store_id, v_user_id, _user_role_id, crypt(_pin, gen_salt('bf')))
+  VALUES (v_store_id, v_user_id, _user_role_id, extensions.crypt(_pin, extensions.gen_salt('bf')))
   ON CONFLICT (user_role_id) DO UPDATE SET
     pin_hash = EXCLUDED.pin_hash,
     is_active = true,

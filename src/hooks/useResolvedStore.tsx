@@ -302,7 +302,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
             }) ?? null;
         }
 
-        if (!tenant && firstSeg && firstSeg !== "panel" && firstSeg !== "admin" && firstSeg !== "auth") {
+        if (!tenant && firstSeg && firstSeg !== "panel" && firstSeg !== "admin" && firstSeg !== "auth" && firstSeg !== "staff") {
           const { data: rows } = await supabase
             .from("tenants")
             .select("id, slug, path_slug, custom_domain, master_domain, use_master_domain")

@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const PIN_PATTERN = /^(?=.*\d)(?=.*#).{6,10}$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -13,11 +17,18 @@ Deno.serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const body = await req.json();
-    const store_id = body?.store_id as string | undefined;
+    const store_id = String(body?.store_id ?? "").trim();
     const pin = String(body?.pin ?? "").trim();
 
-    if (!store_id || !/^(?=.*\d)(?=.*#).{6,10}$/.test(pin)) {
-      return new Response(JSON.stringify({ error: "Loja e código inválidos" }), {
+    if (!store_id || !UUID_PATTERN.test(store_id)) {
+      return new Response(JSON.stringify({ error: "Loja não identificada", code: "INVALID_STORE" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!PIN_PATTERN.test(pin)) {
+      return new Response(JSON.stringify({ error: "Código inválido", code: "INVALID_PIN" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -31,7 +42,7 @@ Deno.serve(async (req) => {
     });
 
     if (verifyErr) {
-      return new Response(JSON.stringify({ error: verifyErr.message }), {
+      return new Response(JSON.stringify({ error: verifyErr.message, code: "VERIFY_FAILED" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -39,7 +50,7 @@ Deno.serve(async (req) => {
 
     const row = Array.isArray(verified) ? verified[0] : verified;
     if (!row?.user_id) {
-      return new Response(JSON.stringify({ error: "Código incorrecto" }), {
+      return new Response(JSON.stringify({ error: "Código incorrecto", code: "PIN_MISMATCH" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -47,7 +58,7 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userErr } = await admin.auth.admin.getUserById(row.user_id);
     if (userErr || !userData.user?.email) {
-      return new Response(JSON.stringify({ error: "Utilizador não encontrado" }), {
+      return new Response(JSON.stringify({ error: "Utilizador não encontrado", code: "USER_NOT_FOUND" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -59,7 +70,7 @@ Deno.serve(async (req) => {
     });
 
     if (linkErr || !linkData?.properties?.hashed_token) {
-      return new Response(JSON.stringify({ error: linkErr?.message || "Falha ao iniciar sessão" }), {
+      return new Response(JSON.stringify({ error: linkErr?.message || "Falha ao iniciar sessão", code: "SESSION_FAILED" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -74,7 +85,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    return new Response(JSON.stringify({ error: (e as Error).message, code: "INTERNAL" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

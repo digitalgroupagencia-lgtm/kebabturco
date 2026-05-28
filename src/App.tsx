@@ -44,7 +44,14 @@ const LovablePreviewRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
-    <Route path="/staff" element={withSuspense(<StaffLogin />)} />
+    <Route
+      path="/staff"
+      element={withSuspense(
+        <MobileFrame>
+          <StaffLogin />
+        </MobileFrame>,
+      )}
+    />
     <Route path="*" element={internal} />
   </Routes>
 );

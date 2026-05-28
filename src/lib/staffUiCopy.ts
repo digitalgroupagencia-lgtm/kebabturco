@@ -1,0 +1,98 @@
+import type { StaffUiLang } from "@/components/StaffLanguageToggle";
+
+export const STAFF_UI_LANG_EVENT = "staff-ui-lang-change";
+
+export function notifyStaffUiLangChange(lang: StaffUiLang) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(STAFF_UI_LANG_EVENT, { detail: lang }));
+}
+
+const staffLoginCopy = {
+  es: {
+    title: "Área del equipo",
+    subtitle: "Acceso interno — no es para clientes",
+    instruction: "Introduzca el código que el restaurante creó para usted en Equipo.",
+    placeholder: "482917#",
+    pinAria: "Código de acceso",
+    backAria: "Volver",
+    submit: "Entrar",
+    submitting: "Entrando…",
+    storeMissing: "Tienda no identificada. Actualice la página.",
+    storeLoading: "Esperando la tienda…",
+    fallbackStore: "No se pudo cargar la tienda. Compruebe la conexión e intente de nuevo.",
+    pinInvalid: "Código inválido — use 6–10 caracteres con # y números",
+    pinWrong: "Código incorrecto",
+    serverUnavailable:
+      "Login por código no disponible. Pida al gerente que active las funciones del servidor o use e-mail y contraseña en /auth.",
+    sessionFailed: "No se pudo iniciar sesión",
+    invalidStorePin: "Tienda o código no válidos",
+  },
+  pt: {
+    title: "Área da equipe",
+    subtitle: "Acesso interno — não é para clientes",
+    instruction: "Digite o código que o restaurante criou para si na área Equipe.",
+    placeholder: "482917#",
+    pinAria: "Código de acesso",
+    backAria: "Voltar",
+    submit: "Entrar",
+    submitting: "A entrar…",
+    storeMissing: "Loja não identificada. Actualize a página.",
+    storeLoading: "A carregar loja…",
+    fallbackStore: "Não foi possível carregar a loja. Verifique a ligação e tente novamente.",
+    pinInvalid: "Código inválido — use 6–10 caracteres com # e números",
+    pinWrong: "Código incorrecto",
+    serverUnavailable:
+      "Login por código indisponível no servidor. Peça ao gerente para activar as funções ou use e-mail e senha em /auth.",
+    sessionFailed: "Não foi possível iniciar sessão",
+    invalidStorePin: "Loja e código inválidos",
+  },
+  en: {
+    title: "Team area",
+    subtitle: "Internal access — not for customers",
+    instruction: "Enter the code the restaurant created for you in Team.",
+    placeholder: "482917#",
+    pinAria: "Access code",
+    backAria: "Back",
+    submit: "Enter",
+    submitting: "Signing in…",
+    storeMissing: "Store not identified. Refresh the page.",
+    storeLoading: "Loading store…",
+    fallbackStore: "Could not load the store. Check your connection and try again.",
+    pinInvalid: "Invalid code — use 6–10 characters with # and numbers",
+    pinWrong: "Incorrect code",
+    serverUnavailable:
+      "Code login unavailable. Ask the manager to enable server functions or use email and password at /auth.",
+    sessionFailed: "Could not sign in",
+    invalidStorePin: "Invalid store or code",
+  },
+} as const;
+
+export type StaffLoginCopy = (typeof staffLoginCopy)[StaffUiLang];
+
+export function getStaffLoginCopy(lang: StaffUiLang): StaffLoginCopy {
+  return staffLoginCopy[lang] ?? staffLoginCopy.es;
+}
+
+export function mapStaffPinError(message: string, lang: StaffUiLang): string {
+  const copy = getStaffLoginCopy(lang);
+  const m = message.toLowerCase();
+  if (m.includes("loja não identificada") || m.includes("tienda no identificada") || m.includes("store not identified")) {
+    return copy.storeMissing;
+  }
+  if (m.includes("loja e código") || m.includes("tienda o código") || m.includes("invalid store")) {
+    return copy.invalidStorePin;
+  }
+  if (m.includes("código inválido") || m.includes("codigo invalido") || m.includes("invalid code")) {
+    return copy.pinInvalid;
+  }
+  if (m.includes("código incorrecto") || m.includes("codigo incorrecto") || m.includes("incorrect code")) {
+    return copy.pinWrong;
+  }
+  if (m.includes("indisponível") || m.includes("unavailable") || m.includes("no disponible")) {
+    return copy.serverUnavailable;
+  }
+  if (m.includes("não foi possível iniciar") || m.includes("no se pudo iniciar") || m.includes("could not sign in")) {
+    return copy.sessionFailed;
+  }
+  return message;
+}
