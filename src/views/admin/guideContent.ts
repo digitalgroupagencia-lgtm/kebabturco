@@ -1,4 +1,5 @@
 import { SINGLE_TENANT_MODE } from "@/lib/appMode";
+import { RESTAURANT_GUIDE_SECTIONS } from "@/lib/restaurantGuideContent";
 
 export interface FaqItem {
   q: string;
@@ -10,7 +11,33 @@ export interface FaqSection {
   items: FaqItem[];
 }
 
+const ADMIN_INTERNAL_SECTIONS: FaqSection[] = [
+  {
+    title: "Administração geral (interno)",
+    items: [
+      {
+        q: "O que só o admin geral faz?",
+        a: "Cardápio completo, identidade visual, planos, centrais (push, IA, campanhas), utilizadores globais e diagnósticos técnicos. O painel do restaurante não acede a estas áreas.",
+      },
+      {
+        q: "Como activo push marketing para o restaurante?",
+        a: "Admin → Centrais → Push. Active a função por tenant/plano. O restaurante envia promoções em Configurações → Notificações.",
+      },
+      {
+        q: "Onde vejo o guia do restaurante?",
+        a: "Nesta central de ajuda, secção «Operação do restaurante» abaixo — é o mesmo conteúdo que a equipa vê em /panel/guide.",
+      },
+    ],
+  },
+];
+
 const KEBAB_SECTIONS: FaqSection[] = [
+  {
+    title: "Operação do restaurante (equipa)",
+    items: RESTAURANT_GUIDE_SECTIONS.flatMap((s) =>
+      s.items.map((it) => ({ q: `[Restaurante] ${it.q}`, a: it.a })),
+    ),
+  },
   {
     title: "Como aceder a cada área (Kebab Turco)",
     items: [
@@ -58,6 +85,7 @@ const KEBAB_SECTIONS: FaqSection[] = [
       },
     ],
   },
+  ...ADMIN_INTERNAL_SECTIONS,
 ];
 
 const PLATFORM_SECTIONS: FaqSection[] = [

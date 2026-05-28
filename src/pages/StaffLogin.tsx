@@ -11,6 +11,8 @@ import {
   loginWithStaffPin,
   resolveStaffLoginDestination,
 } from "@/lib/staffLogin";
+import { validateStaffAccessPin, STAFF_PIN_PATTERN } from "@/lib/staffAccessPin";
+import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 
 const StaffLogin = () => {
@@ -34,9 +36,9 @@ const StaffLogin = () => {
     }
   }, [authLoading, roleLoading, user, roleData?.role, navigate]);
 
-  const appendDigit = (digit: string) => {
-    if (pin.length >= 8) return;
-    setPin((prev) => prev + digit);
+  const appendChar = (char: string) => {
+    if (pin.length >= 10) return;
+    setPin((prev) => prev + char);
     setError(null);
   };
 
@@ -50,8 +52,8 @@ const StaffLogin = () => {
       setError("Loja não identificada. Actualize a página.");
       return;
     }
-    if (!/^\d{6,8}$/.test(pin)) {
-      setError("Introduza entre 6 e 8 dígitos");
+    if (!STAFF_PIN_PATTERN.test(pin)) {
+      setError("Código inválido — use 6–10 caracteres com # e números");
       return;
     }
 
@@ -83,13 +85,14 @@ const StaffLogin = () => {
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Shield className="h-5 w-5 text-primary shrink-0" />
           <div>
             <h1 className="font-bold text-lg leading-tight">Área da equipe</h1>
             <p className="text-xs text-muted-foreground">Acesso interno — não é para clientes</p>
           </div>
         </div>
+        <StaffLanguageToggle compact defaultLang="es" />
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-8 max-w-md mx-auto w-full">
@@ -99,9 +102,9 @@ const StaffLogin = () => {
 
         <Input
           readOnly
-          value={"•".repeat(pin.length)}
-          placeholder="••••••"
-          className="text-center text-2xl tracking-[0.35em] h-14 mb-4 font-mono"
+          value={pin ? "•".repeat(Math.max(0, pin.length - 1)) + pin.slice(-1) : ""}
+          placeholder="482917#"
+          className="text-center text-xl tracking-widest h-14 mb-4 font-mono"
           aria-label="Código de acesso"
         />
 
@@ -118,18 +121,26 @@ const StaffLogin = () => {
               type="button"
               variant="outline"
               className="h-14 text-xl font-bold"
-              onClick={() => appendDigit(d)}
+              onClick={() => appendChar(d)}
               disabled={submitting}
             >
               {d}
             </Button>
           ))}
-          <Button type="button" variant="ghost" className="h-14" disabled={submitting} aria-hidden />
           <Button
             type="button"
             variant="outline"
             className="h-14 text-xl font-bold"
-            onClick={() => appendDigit("0")}
+            onClick={() => appendChar("#")}
+            disabled={submitting || pin.includes("#")}
+          >
+            #
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-14 text-xl font-bold"
+            onClick={() => appendChar("0")}
             disabled={submitting}
           >
             0
@@ -150,7 +161,7 @@ const StaffLogin = () => {
           type="button"
           className="w-full h-12 text-base font-bold"
           onClick={() => void handleSubmit()}
-          disabled={submitting || pin.length < 4}
+          disabled={submitting || !STAFF_PIN_PATTERN.test(pin)}
         >
           {submitting ? (
             <>

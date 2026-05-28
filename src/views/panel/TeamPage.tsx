@@ -15,6 +15,15 @@ import { Users, Plus, Trash2, Shield } from "lucide-react";
 import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
+import {
+  staffAccessPinHint,
+  suggestStaffAccessPin,
+  sanitizeStaffAccessPinInput,
+  validateStaffAccessPin,
+} from "@/lib/staffAccessPin";
+import { useStoreLanguages } from "@/hooks/useStoreLanguages";
+import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
+import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 
 type AppRole = StaffRole;
 
@@ -52,6 +61,7 @@ const TeamPage = () => {
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
   const tenantId = roleData?.tenant_id;
+  const { primaryLang } = useStoreLanguages(storeId);
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +71,11 @@ const TeamPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
-  const [newLanguage, setNewLanguage] = useState<string>("pt");
+  const [newLanguage, setNewLanguage] = useState<string>("es");
   const [newAccessPin, setNewAccessPin] = useState("");
   const [saving, setSaving] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [welcomeData, setWelcomeData] = useState<StaffOnboardingInput | null>(null);
   const [pinDialogMember, setPinDialogMember] = useState<TeamMember | null>(null);
   const [editAccessPin, setEditAccessPin] = useState("");
   const [pinSaving, setPinSaving] = useState(false);
@@ -71,6 +83,15 @@ const TeamPage = () => {
   useEffect(() => {
     if (storeId) fetchMembers();
   }, [storeId]);
+
+  useEffect(() => {
+    if (primaryLang) setNewLanguage(primaryLang);
+  }, [primaryLang]);
+
+  const openAddDialog = () => {
+    setNewLanguage(primaryLang || "es");
+    setDialogOpen(true);
+  };
 
   const fetchMembers = async () => {
     if (!storeId) return;
@@ -122,8 +143,9 @@ const TeamPage = () => {
       toast.error(uiLang === "es" ? "El correo es obligatorio" : "Email é obrigatório");
       return;
     }
-    if (!/^\d{6,8}$/.test(newAccessPin)) {
-      toast.error(translateAppError("Código deve ter entre 6 e 8 dígitos", uiLang));
+    const pinError = validateStaffAccessPin(newAccessPin, uiLang);
+    if (pinError) {
+      toast.error(pinError);
       return;
     }
     const passwordError = validateStaffPassword(newPassword, uiLang);
@@ -165,13 +187,23 @@ const TeamPage = () => {
           ? `Miembro añadido como ${roleLabels[newRole].label}`
           : `Membro adicionado como ${roleLabels[newRole].label}!`,
       );
+      setWelcomeData({
+        name: newName.trim(),
+        email: newEmail.trim(),
+        password: newPassword,
+        accessPin: newAccessPin,
+        role: newRole,
+        lang: uiLang,
+        siteUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+      });
+      setWelcomeOpen(true);
       setDialogOpen(false);
       setNewEmail("");
       setNewPassword("");
       setShowPassword(false);
       setNewName("");
       setNewRole("operator");
-      setNewLanguage("pt");
+      setNewLanguage(primaryLang || "es");
       setNewAccessPin("");
       fetchMembers();
     } catch (e: unknown) {
@@ -191,8 +223,9 @@ const TeamPage = () => {
 
   const saveMemberPin = async () => {
     if (!pinDialogMember) return;
-    if (!/^\d{6,8}$/.test(editAccessPin)) {
-      toast.error(translateAppError("Código deve ter entre 6 e 8 dígitos", "pt"));
+    const pinError = validateStaffAccessPin(editAccessPin, "pt");
+    if (pinError) {
+      toast.error(pinError);
       return;
     }
     setPinSaving(true);
@@ -250,7 +283,7 @@ const TeamPage = () => {
           <Users className="h-6 w-6" /> Equipe
         </h2>
         {canManage && (
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-1" /> Novo Membro
           </Button>
         )}
@@ -407,15 +440,28 @@ const TeamPage = () => {
             </div>
             <div>
               <Label>Código de acesso *</Label>
-              <Input
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={newAccessPin}
-                onChange={(e) => setNewAccessPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                placeholder="Ex: 123456"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                O funcionário usa este código na Área da equipe do app — não confundir com Meus pedidos do cliente.
+              <div className="flex gap-2">
+                <Input
+                  value={newAccessPin}
+                  onChange={(e) => setNewAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
+                  placeholder="Ex: 482917#"
+                  className="flex-1 font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setNewAccessPin(suggestStaffAccessPin())}
+                >
+                  Sugerir código
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{staffAccessPinHint(uiLang)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {uiLang === "es"
+                  ? "El empleado lo usa en «Área da equipe» (5 toques en el logo del menú). No es para clientes."
+                  : "O funcionário usa na «Área da equipe» (5 toques no logótipo do menu). Não é para clientes."}
               </p>
             </div>
             <div>
@@ -439,7 +485,11 @@ const TeamPage = () => {
                   {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">Idioma em que este membro verá o painel.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {uiLang === "es"
+                  ? "Idioma principal del restaurante (español). El empleado puede cambiarlo con el icono 🌐."
+                  : "Idioma principal do restaurante (espanhol). O funcionário pode mudar com o ícone 🌐."}
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -457,13 +507,18 @@ const TeamPage = () => {
             <DialogTitle>Código de acesso — {pinDialogMember?.full_name || "Membro"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Label>Novo código (6 a 8 dígitos)</Label>
-            <Input
-              inputMode="numeric"
-              value={editAccessPin}
-              onChange={(e) => setEditAccessPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              placeholder="Ex: 456789"
-            />
+            <Label>Novo código (6–10 caracteres com #)</Label>
+            <div className="flex gap-2">
+              <Input
+                value={editAccessPin}
+                onChange={(e) => setEditAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
+                placeholder="Ex: 482917#"
+                className="font-mono flex-1"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => setEditAccessPin(suggestStaffAccessPin())}>
+                Sugerir
+              </Button>
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
@@ -473,6 +528,8 @@ const TeamPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <StaffMemberWelcomeDialog open={welcomeOpen} data={welcomeData} onOpenChange={setWelcomeOpen} />
     </div>
   );
 };

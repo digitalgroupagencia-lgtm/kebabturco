@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import DeliveryAccessGuard from "@/components/delivery/DeliveryAccessGuard";
+import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 
 type Props = {
   page?: ComponentType<object>;
@@ -19,7 +20,9 @@ export default function DeliveryLayout({ page: Page }: Props) {
             <p className="text-[10px] uppercase tracking-widest font-bold opacity-80">Entregas</p>
             <h1 className="text-lg font-black">Painel do entregador</h1>
           </div>
-          <Button
+          <div className="flex items-center gap-1">
+            <StaffLanguageToggle compact defaultLang="es" />
+            <Button
             type="button"
             variant="ghost"
             size="sm"
@@ -28,6 +31,7 @@ export default function DeliveryLayout({ page: Page }: Props) {
           >
             <LogOut className="h-4 w-4 mr-1" /> Sair
           </Button>
+          </div>
         </header>
         <main className="flex-1 min-h-0 overflow-y-auto p-3 pb-8 max-w-lg mx-auto w-full">
           {Page ? <Page /> : null}

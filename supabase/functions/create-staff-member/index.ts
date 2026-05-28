@@ -105,8 +105,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!/^\d{6,8}$/.test(String(access_pin))) {
-      return new Response(JSON.stringify({ error: "Código deve ter entre 6 e 8 dígitos" }), {
+    if (!/^(?=.*\d)(?=.*#).{6,10}$/.test(String(access_pin))) {
+      return new Response(JSON.stringify({ error: "Código deve ter 6–10 caracteres, incluir # e números" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

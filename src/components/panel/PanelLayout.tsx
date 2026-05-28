@@ -8,6 +8,8 @@ import { PanelSidebar } from "./PanelSidebar";
 import PanelAccessGuard from "./PanelAccessGuard";
 import AdminAssistant from "@/components/admin/AdminAssistant";
 import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
+import StaffLanguageToggle from "@/components/StaffLanguageToggle";
+import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
@@ -19,6 +21,7 @@ type Props = {
 const PanelLayout = ({ page: Page }: Props) => {
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
+  const { primaryLang } = useStoreLanguages(roleData?.store_id);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,6 +56,7 @@ const PanelLayout = ({ page: Page }: Props) => {
             <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
               <SidebarTrigger className="mr-2 sm:mr-4" />
               <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">{headerTitle}</h1>
+              <StaffLanguageToggle defaultLang={primaryLang} compact />
               <AdminThemeToggle />
             </header>
             <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">

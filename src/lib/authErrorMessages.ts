@@ -34,8 +34,8 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     es: "Este código de acceso ya está en uso en esta tienda. Elija otro.",
   },
   pin_format: {
-    pt: "O código deve ter entre 6 e 8 dígitos numéricos.",
-    es: "El código debe tener entre 6 y 8 dígitos numéricos.",
+    pt: "O código deve ter 6–10 caracteres, incluir # e números (ex: 482917#).",
+    es: "El código debe tener 6–10 caracteres, incluir # y números (ej: 482917#).",
   },
   pin_permission: {
     pt: "Sem permissão para definir o código de acesso.",
@@ -70,7 +70,7 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("unauthorized") || m.includes("invalid token")) return "unauthorized";
   if (m.includes("forbidden") || m.includes("sem permissão")) return "forbidden";
   if (m.includes("código já está em uso") || m.includes("already in use")) return "pin_in_use";
-  if (m.includes("entre 4 e 8") || m.includes("entre 6 e 8") || m.includes("dígitos")) return "pin_format";
+  if (m.includes("incluir #") || m.includes("6–10") || m.includes("6-10")) return "pin_format";
   if (m.includes("sem permissão para definir código")) return "pin_permission";
   if (m.includes("membro da equipe não encontrado") || m.includes("equipe não encontrado")) return "member_not_found";
   if (m.includes("loja inválida")) return "store_invalid";
