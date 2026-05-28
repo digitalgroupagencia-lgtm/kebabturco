@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -18,6 +19,13 @@ import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
 import ImageUploadField from "@/components/panel/ImageUploadField";
 import { uploadProductImage } from "@/lib/uploadProductImage";
+import { useStoreLanguages } from "@/hooks/useStoreLanguages";
+import { LANG_LABELS } from "@/contexts/LanguageContext";
+import {
+  buildPrimaryLanguagePayload,
+  pickLocalizedText,
+  pickSourceText,
+} from "@/lib/localizedText";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
@@ -26,6 +34,7 @@ const MenuPage = () => {
   const { pathname } = useLocation();
   const isAdminMenu = pathname.startsWith("/admin");
   const { storeId, loading: loadingStore } = useAdminStoreId();
+  const { primaryLang, loading: loadingLangs } = useStoreLanguages(storeId);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -36,16 +45,14 @@ const MenuPage = () => {
   // Category form
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [catNamePt, setCatNamePt] = useState("");
-  const [catNameEn, setCatNameEn] = useState("");
+  const [catName, setCatName] = useState("");
   const [catImageUrl, setCatImageUrl] = useState("");
 
   // Product form
   const [prodDialogOpen, setProdDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [prodNamePt, setProdNamePt] = useState("");
-  const [prodNameEn, setProdNameEn] = useState("");
-  const [prodDescPt, setProdDescPt] = useState("");
+  const [prodName, setProdName] = useState("");
+  const [prodDesc, setProdDesc] = useState("");
   const [prodPrice, setProdPrice] = useState("");
   const [prodImageUrl, setProdImageUrl] = useState("");
   const [prodBestseller, setProdBestseller] = useState(false);
@@ -117,28 +124,27 @@ const MenuPage = () => {
   const openCatDialog = (cat?: Category) => {
     if (cat) {
       setEditingCategory(cat);
-      const name = cat.name as Record<string, string>;
-      setCatNamePt(name?.pt || "");
-      setCatNameEn(name?.en || "");
+      setCatName(pickSourceText(cat.name, primaryLang));
       setCatImageUrl(cat.image_url || "");
     } else {
       setEditingCategory(null);
-      setCatNamePt("");
-      setCatNameEn("");
+      setCatName("");
       setCatImageUrl("");
     }
     setCatDialogOpen(true);
   };
 
   const saveCategory = async () => {
-    if (!storeId || !catNamePt.trim()) {
-      toast.error("Nome da categoria é obrigatório");
+    if (!storeId) return;
+    if (!catName.trim()) {
+      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
       return;
     }
+    const namePayload = buildPrimaryLanguagePayload(editingCategory?.name, primaryLang, catName);
 
     const payload = {
       store_id: storeId,
-      name: { pt: catNamePt.trim(), en: catNameEn.trim() } as unknown as import("@/integrations/supabase/types").Json,
+      name: namePayload as unknown as import("@/integrations/supabase/types").Json,
       image_url: catImageUrl || null,
     };
 
@@ -171,11 +177,8 @@ const MenuPage = () => {
   const openProdDialog = (prod?: Product) => {
     if (prod) {
       setEditingProduct(prod);
-      const name = prod.name as Record<string, string>;
-      const desc = prod.description as Record<string, string> | null;
-      setProdNamePt(name?.pt || "");
-      setProdNameEn(name?.en || "");
-      setProdDescPt(desc?.pt || "");
+      setProdName(pickSourceText(prod.name, primaryLang));
+      setProdDesc(pickSourceText(prod.description, primaryLang));
       setProdPrice(String(prod.price));
       setProdImageUrl(prod.image_url || "");
       setProdBestseller(Boolean(prod.is_bestseller));
@@ -183,7 +186,7 @@ const MenuPage = () => {
       const mods = Array.isArray(prod.price_modifiers) ? prod.price_modifiers : [];
       setModifierLines(
         mods.map((m: { name?: Record<string, string>; price?: number }, i: number) => {
-          const label = m.name?.es || m.name?.pt || `Extra ${i + 1}`;
+          const label = pickLocalizedText(m.name, primaryLang) || `Extra ${i + 1}`;
           return `${label}|${m.price ?? 0}`;
         }).join("\n"),
       );
@@ -194,9 +197,8 @@ const MenuPage = () => {
       setAfterAddSuggestionIds(Array.isArray(suggestions) ? suggestions.join(", ") : "");
     } else {
       setEditingProduct(null);
-      setProdNamePt("");
-      setProdNameEn("");
-      setProdDescPt("");
+      setProdName("");
+      setProdDesc("");
       setProdPrice("");
       setProdImageUrl("");
       setProdBestseller(false);
@@ -228,10 +230,15 @@ const MenuPage = () => {
   };
 
   const saveProduct = async () => {
-    if (!storeId || !selectedCategoryId || !prodNamePt.trim()) {
-      toast.error("Nome do produto é obrigatório");
+    if (!storeId || !selectedCategoryId) return;
+
+    if (!prodName.trim()) {
+      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
       return;
     }
+
+    const namePayload = buildPrimaryLanguagePayload(editingProduct?.name, primaryLang, prodName);
+    const descriptionPayload = buildPrimaryLanguagePayload(editingProduct?.description, primaryLang, prodDesc);
 
     const priceModifiers = modifierLines
       .split("\n")
@@ -242,7 +249,7 @@ const MenuPage = () => {
         const label = (namePart || "").trim();
         return {
           id: `mod-${index}`,
-          name: { es: label, pt: label, en: label, fr: label },
+          name: { [primaryLang]: label },
           price: parseFloat(pricePart || "0") || 0,
         };
       });
@@ -250,8 +257,8 @@ const MenuPage = () => {
     const payload = {
       store_id: storeId,
       category_id: selectedCategoryId,
-      name: { pt: prodNamePt.trim(), en: prodNameEn.trim(), es: prodNamePt.trim() } as unknown as import("@/integrations/supabase/types").Json,
-      description: { pt: prodDescPt.trim(), es: prodDescPt.trim() } as unknown as import("@/integrations/supabase/types").Json,
+      name: namePayload as unknown as import("@/integrations/supabase/types").Json,
+      description: descriptionPayload as unknown as import("@/integrations/supabase/types").Json,
       price: parseFloat(prodPrice) || 0,
       image_url: prodImageUrl || null,
       is_bestseller: prodBestseller,
@@ -323,7 +330,7 @@ const MenuPage = () => {
     }
   };
 
-  if (loadingStore) {
+  if (loadingStore || loadingLangs) {
     return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Carregando cardápio...</div>;
   }
 
@@ -371,12 +378,15 @@ const MenuPage = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label>Nome (PT) *</Label>
-                    <Input value={catNamePt} onChange={(e) => setCatNamePt(e.target.value)} placeholder="Ex: Hambúrgueres" />
-                  </div>
-                  <div>
-                    <Label>Nome (EN)</Label>
-                    <Input value={catNameEn} onChange={(e) => setCatNameEn(e.target.value)} placeholder="Ex: Burgers" />
+                    <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
+                    <Input
+                      value={catName}
+                      onChange={(e) => setCatName(e.target.value)}
+                      placeholder="Ex.: Pizzas"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Idioma principal do restaurante. Traduções para o cliente são automáticas.
+                    </p>
                   </div>
                   <div>
                     <Label>URL da Imagem <span className="text-xs text-muted-foreground ml-1">(512×512 px, quadrada)</span></Label>
@@ -413,7 +423,9 @@ const MenuPage = () => {
                       <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
                     )}
                   </div>
-                  <span className="font-medium text-sm flex-1 min-w-0 truncate">{name?.pt || name?.es || "Sem nome"}</span>
+                  <span className="font-medium text-sm flex-1 min-w-0 truncate">
+                    {pickLocalizedText(name, primaryLang) || "Sem nome"}
+                  </span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={(e) => { e.stopPropagation(); openCatDialog(cat); }} className="p-1 hover:bg-muted rounded">
                       <Pencil className="h-3 w-3" />
@@ -451,16 +463,24 @@ const MenuPage = () => {
                   </DialogHeader>
                   <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     <div>
-                      <Label>Nome (PT) *</Label>
-                      <Input value={prodNamePt} onChange={(e) => setProdNamePt(e.target.value)} placeholder="Ex: Big Burger" />
+                      <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
+                      <Input
+                        value={prodName}
+                        onChange={(e) => setProdName(e.target.value)}
+                        placeholder="Ex.: Kebab mixto"
+                      />
                     </div>
                     <div>
-                      <Label>Nome (EN)</Label>
-                      <Input value={prodNameEn} onChange={(e) => setProdNameEn(e.target.value)} placeholder="Ex: Big Burger" />
-                    </div>
-                    <div>
-                      <Label>Descrição (PT)</Label>
-                      <Input value={prodDescPt} onChange={(e) => setProdDescPt(e.target.value)} placeholder="Descrição do produto" />
+                      <Label>Descrição ({LANG_LABELS[primaryLang]})</Label>
+                      <Textarea
+                        value={prodDesc}
+                        onChange={(e) => setProdDesc(e.target.value)}
+                        placeholder="Ingredientes principais…"
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Escreva só no idioma principal. O sistema traduz para os idiomas activos no totem.
+                      </p>
                     </div>
                     <div>
                       <Label>Preço (€)</Label>
@@ -507,7 +527,7 @@ const MenuPage = () => {
                       <textarea
                         value={modifierLines}
                         onChange={(e) => setModifierLines(e.target.value)}
-                        placeholder={"Sin lechuga|0\nExtra queso|1\nCarne extra|2"}
+                        placeholder={"Sin cebolla|0\nExtra queso|1\nCarne extra|2"}
                         rows={4}
                         className="w-full rounded-md border px-3 py-2 text-sm font-mono"
                       />
@@ -563,7 +583,7 @@ const MenuPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="font-semibold">{name?.pt || "Sem nome"}</h4>
+                          <h4 className="font-semibold">{pickLocalizedText(name, primaryLang) || "Sem nome"}</h4>
                           <p className="text-lg font-bold text-primary">€ {Number(prod.price).toFixed(2)}</p>
                         </div>
                         <div className="flex gap-1">

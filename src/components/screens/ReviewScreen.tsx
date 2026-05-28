@@ -265,7 +265,7 @@ const ReviewScreen = () => {
                   )}
                   {item.configuration && (
                     <ul className="mt-1.5 space-y-0.5">
-                      {configurationSummaryLines(item.configuration as CartConfiguration, tProduct).map((line) => (
+                      {configurationSummaryLines(item.configuration as CartConfiguration, tProduct, t("without")).map((line) => (
                         <li key={line} className="text-[11px] text-foreground/80 font-medium">
                           · {line}
                         </li>

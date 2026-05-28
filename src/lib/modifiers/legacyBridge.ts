@@ -40,9 +40,13 @@ export function flattenConfiguration(config: CartConfiguration): ModifierSelecti
   return [...global, ...units];
 }
 
-function formatSelectionLine(s: ModifierSelection, tName: (n: Record<string, string>) => string): string {
+function formatSelectionLine(
+  s: ModifierSelection,
+  tName: (n: Record<string, string>) => string,
+  withoutPrefix: string,
+): string {
   const opt = tName(s.optionName);
-  if (s.groupKind === "removal") return `Sem ${opt}`;
+  if (s.groupKind === "removal") return `${withoutPrefix} ${opt}`;
   if (s.groupKind === "substitution") {
     const price = s.priceDelta > 0 ? ` (+${s.priceDelta.toFixed(2)}€)` : "";
     return `${opt}${price}`;
@@ -61,17 +65,18 @@ function isIncludedDefaultSelection(s: ModifierSelection): boolean {
 export function configurationSummaryLines(
   config: CartConfiguration,
   tName: (n: Record<string, string>) => string,
+  withoutPrefix = "Sem",
 ): string[] {
   const lines: string[] = [];
   for (const s of config.globalSelections || []) {
     if (isIncludedDefaultSelection(s)) continue;
-    lines.push(formatSelectionLine(s, tName));
+    lines.push(formatSelectionLine(s, tName, withoutPrefix));
   }
   for (const unit of config.comboUnits || []) {
     const unitName = tName(unit.unitLabel);
     for (const s of unit.selections) {
       if (isIncludedDefaultSelection(s)) continue;
-      lines.push(`${unitName}: ${formatSelectionLine(s, tName)}`);
+      lines.push(`${unitName}: ${formatSelectionLine(s, tName, withoutPrefix)}`);
     }
   }
   return lines;

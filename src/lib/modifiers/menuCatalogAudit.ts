@@ -167,10 +167,10 @@ export function buildProductPayloadFromOption(
     store_id: storeId,
     category_id: categoryId,
     name: {
-      pt: option.name.pt || nameEs,
-      en: option.name.en || nameEs,
-      es: nameEs,
-      fr: option.name.fr || nameEs,
+      pt: option.name.pt || "",
+      en: option.name.en || "",
+      es: option.name.es || nameEs,
+      fr: option.name.fr || "",
     },
     description: { pt: "", en: "", es: "", fr: "" },
     price: (option as any).price ?? 0,
@@ -201,7 +201,7 @@ export function buildProductPayloadFromIssue(
   return {
     store_id: storeId,
     category_id: categoryId,
-    name: { pt: label, en: label, es: label, fr: label },
+    name: { es: label },
     description: { pt: "", en: "", es: "", fr: "" },
     price: defaultDrinkPrice(issue.drinkRule),
     image_url: "/product-placeholder.svg",

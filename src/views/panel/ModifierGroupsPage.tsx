@@ -14,6 +14,9 @@ import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical, AlertTriangle } fr
 import type { ModifierGroupKind, SelectionMode, ModifierGroup } from "@/lib/modifiers/types";
 import { GROUP_KIND_META, groupKindLabel, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
 import { getModifierConfigWarnings } from "@/lib/modifiers/sanitizeGroups";
+import { useStoreLanguages } from "@/hooks/useStoreLanguages";
+import { LANG_LABELS } from "@/contexts/LanguageContext";
+import { buildPrimaryLanguagePayload, pickSourceText } from "@/lib/localizedText";
 
 type GroupRow = {
   id: string;
@@ -39,8 +42,8 @@ type OptionRow = {
 };
 
 const emptyGroup = (): Partial<GroupRow> => ({
-  name: { pt: "", es: "", en: "" },
-  description: { pt: "", es: "" },
+  name: {},
+  description: {},
   group_kind: "choice",
   selection_mode: "single",
   min_select: 0,
@@ -51,6 +54,7 @@ const emptyGroup = (): Partial<GroupRow> => ({
 
 export default function ModifierGroupsPage() {
   const { storeId, loading: loadingStore } = useAdminStoreId();
+  const { primaryLang, loading: loadingLangs } = useStoreLanguages(storeId);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +63,8 @@ export default function ModifierGroupsPage() {
   const [optionDialog, setOptionDialog] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Partial<GroupRow> | null>(null);
   const [editingOption, setEditingOption] = useState<Partial<OptionRow> | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [optionName, setOptionName] = useState("");
 
   const fetchAll = useCallback(async () => {
     if (!storeId) return;
@@ -123,22 +129,27 @@ export default function ModifierGroupsPage() {
   }, [groups, options, storeId]);
 
   const openGroup = (g?: GroupRow) => {
-    setEditingGroup(g ? { ...g } : emptyGroup());
+    if (g) {
+      setEditingGroup({ ...g });
+      setGroupName(pickSourceText(g.name, primaryLang));
+    } else {
+      setEditingGroup(emptyGroup());
+      setGroupName("");
+    }
     setGroupDialog(true);
   };
 
   const saveGroup = async () => {
     if (!storeId || !editingGroup) return;
-    const namePt = editingGroup.name?.pt?.trim() || editingGroup.name?.es?.trim();
-    if (!namePt) {
-      toast.error("Nome do grupo é obrigatório");
+    if (!groupName.trim()) {
+      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
       return;
     }
     const kind = (editingGroup.group_kind || "choice") as ModifierGroupKind;
     const normalized = normalizeGroupKindSettings(kind, editingGroup.is_required ?? false);
     const payload = {
       store_id: storeId,
-      name: editingGroup.name,
+      name: buildPrimaryLanguagePayload(editingGroup.name, primaryLang, groupName),
       description: editingGroup.description || {},
       group_kind: kind,
       selection_mode: normalized?.selection_mode ?? editingGroup.selection_mode ?? "single",
@@ -171,24 +182,31 @@ export default function ModifierGroupsPage() {
 
   const openOption = (o?: OptionRow) => {
     if (!selectedGroupId) return;
-    setEditingOption(
-      o
-        ? { ...o }
-        : { group_id: selectedGroupId, name: { pt: "", es: "" }, price_delta: 0, max_qty: 1, sort_order: groupOptions.length },
-    );
+    if (o) {
+      setEditingOption({ ...o });
+      setOptionName(pickSourceText(o.name, primaryLang));
+    } else {
+      setEditingOption({
+        group_id: selectedGroupId,
+        name: {},
+        price_delta: 0,
+        max_qty: 1,
+        sort_order: groupOptions.length,
+      });
+      setOptionName("");
+    }
     setOptionDialog(true);
   };
 
   const saveOption = async () => {
     if (!editingOption?.group_id) return;
-    const label = editingOption.name?.pt?.trim() || editingOption.name?.es?.trim();
-    if (!label) {
-      toast.error("Nome da opção é obrigatório");
+    if (!optionName.trim()) {
+      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
       return;
     }
     const payload = {
       group_id: editingOption.group_id,
-      name: editingOption.name,
+      name: buildPrimaryLanguagePayload(editingOption.name, primaryLang, optionName),
       price_delta: Number(editingOption.price_delta || 0),
       max_qty: Math.max(1, Number(editingOption.max_qty || 1)),
       is_default: editingOption.is_default ?? false,
@@ -216,7 +234,7 @@ export default function ModifierGroupsPage() {
     fetchAll();
   };
 
-  if (loadingStore || loading) {
+  if (loadingStore || loading || loadingLangs) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -284,7 +302,7 @@ export default function ModifierGroupsPage() {
                 }`}
               >
                 <GripVertical className="w-4 h-4 opacity-40 shrink-0" />
-                <span className="truncate flex-1">{g.name?.pt || g.name?.es || "Grupo"}</span>
+                <span className="truncate flex-1">{pickSourceText(g.name, primaryLang) || "Grupo"}</span>
                 {g.is_required && (
                   <span className="text-[9px] uppercase font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
                     Obrig.
@@ -298,7 +316,7 @@ export default function ModifierGroupsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">
-              {selectedGroup ? selectedGroup.name?.pt || selectedGroup.name?.es : "Seleciona um grupo"}
+              {selectedGroup ? pickSourceText(selectedGroup.name, primaryLang) : "Seleciona um grupo"}
             </CardTitle>
             {selectedGroup && (
               <div className="flex gap-1">
@@ -332,7 +350,7 @@ export default function ModifierGroupsPage() {
               {groupOptions.map((o) => (
                 <div key={o.id} className="flex items-center gap-3 rounded-xl border px-3 py-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold truncate">{o.name?.pt || o.name?.es}</p>
+                    <p className="font-bold truncate">{pickSourceText(o.name, primaryLang)}</p>
                     <p className="text-xs text-muted-foreground">
                       {o.price_delta > 0 ? `+${Number(o.price_delta).toFixed(2)} €` : "Sem custo extra"}
                       {o.max_qty > 1 ? ` · máx. ${o.max_qty}` : ""}
@@ -359,19 +377,10 @@ export default function ModifierGroupsPage() {
           {editingGroup && (
             <div className="space-y-3">
               <div>
-                <Label>Nome (PT)</Label>
+                <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
                 <Input
-                  value={editingGroup.name?.pt || ""}
-                  onChange={(e) =>
-                    setEditingGroup({ ...editingGroup, name: { ...editingGroup.name, pt: e.target.value, es: editingGroup.name?.es || e.target.value } })
-                  }
-                />
-              </div>
-              <div>
-                <Label>Nome (ES)</Label>
-                <Input
-                  value={editingGroup.name?.es || ""}
-                  onChange={(e) => setEditingGroup({ ...editingGroup, name: { ...editingGroup.name, es: e.target.value } })}
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -475,12 +484,10 @@ export default function ModifierGroupsPage() {
           {editingOption && (
             <div className="space-y-3">
               <div>
-                <Label>Nome (PT)</Label>
+                <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
                 <Input
-                  value={editingOption.name?.pt || ""}
-                  onChange={(e) =>
-                    setEditingOption({ ...editingOption, name: { ...editingOption.name, pt: e.target.value, es: editingOption.name?.es || e.target.value } })
-                  }
+                  value={optionName}
+                  onChange={(e) => setOptionName(e.target.value)}
                 />
               </div>
               <div>

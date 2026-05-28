@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedLang, isEmbedded } from "@/lib/embed-mode";
 import { loadSavedLang, readLangFromUrl, saveSavedLang } from "@/lib/customerSession";
+import { pickSourceText, type AppLang } from "@/lib/localizedText";
+import { getCachedMenuTranslation } from "@/lib/menuTranslationCache";
+import { translateMenuTexts } from "@/services/menuTranslationService";
 
 type Lang = "pt" | "en" | "es" | "fr";
 
@@ -476,6 +479,8 @@ interface LanguageContextType {
   activeLangs: Lang[];
   /** URL de ícone (bandeira) por idioma */
   langIcons: Partial<Record<Lang, string>>;
+  /** Pré-carrega traduções automáticas de nomes/descrições do cardápio */
+  preloadMenuTranslations: (items: (Record<string, string> | string | null | undefined)[]) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -490,6 +495,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
   const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
   const [lang, setLangState] = useState<Lang>(() => getEmbedLang() ?? loadSavedLang() ?? "es");
+  const [translationTick, setTranslationTick] = useState(0);
+  const pendingTexts = useRef(new Set<string>());
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setLang = (next: Lang) => {
     setLangState(next);
@@ -528,16 +536,57 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
     };
   }, [storeId]);
 
+  const flushTranslations = useCallback(async (from: AppLang, to: AppLang) => {
+    const batch = [...pendingTexts.current];
+    pendingTexts.current.clear();
+    flushTimer.current = null;
+    if (!batch.length || from === to) return;
+    await translateMenuTexts(batch, from, to);
+    setTranslationTick((n) => n + 1);
+  }, []);
+
+  const scheduleTranslation = useCallback(
+    (text: string, from: AppLang, to: AppLang) => {
+      const trimmed = text.trim();
+      if (!trimmed || from === to) return;
+      if (getCachedMenuTranslation(trimmed, from, to)) return;
+      pendingTexts.current.add(trimmed);
+      if (flushTimer.current != null) return;
+      flushTimer.current = window.setTimeout(() => void flushTranslations(from, to), 120);
+    },
+    [flushTranslations],
+  );
+
   const t = (key: string) => translations[key]?.[lang] || translations[key]?.en || key;
-  const tProduct = (obj: Record<string, string> | string | null | undefined) => {
-    if (!obj) return "";
-    if (typeof obj === "string") return obj;
-    return obj[lang] || obj.en || Object.values(obj)[0] || "";
-  };
+
+  const tProduct = useCallback(
+    (obj: Record<string, string> | string | null | undefined) => {
+      void translationTick;
+      const source = pickSourceText(obj, primaryLang);
+      if (!source) return "";
+      if (lang === primaryLang) return source;
+      const cached = getCachedMenuTranslation(source, primaryLang, lang);
+      if (cached) return cached;
+      scheduleTranslation(source, primaryLang, lang);
+      return source;
+    },
+    [lang, primaryLang, translationTick, scheduleTranslation],
+  );
+
+  const preloadMenuTranslations = useCallback(
+    (items: (Record<string, string> | string | null | undefined)[]) => {
+      if (lang === primaryLang) return;
+      for (const item of items) {
+        const source = pickSourceText(item, primaryLang);
+        if (source) scheduleTranslation(source, primaryLang, lang);
+      }
+    },
+    [lang, primaryLang, scheduleTranslation],
+  );
 
   return (
     <LanguageContext.Provider
-      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langIcons }}
+      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langIcons, preloadMenuTranslations }}
     >
       {children}
     </LanguageContext.Provider>

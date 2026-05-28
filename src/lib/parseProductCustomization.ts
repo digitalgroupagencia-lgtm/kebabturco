@@ -1,9 +1,9 @@
 import type { Variant } from "@/data/products";
 
 const VARIANT_DEFS: Record<string, Variant> = {
-  pollo: { id: "pollo", name: { es: "Pollo", en: "Chicken", pt: "Pollo", fr: "Poulet" } },
-  ternera: { id: "ternera", name: { es: "Ternera", en: "Beef", pt: "Ternera", fr: "Bœuf" } },
-  mixto: { id: "mixto", name: { es: "Mixto", en: "Mixed", pt: "Mixto", fr: "Mixte" } },
+  pollo: { id: "pollo", name: { es: "Pollo", en: "Chicken", pt: "Frango", fr: "Poulet" } },
+  ternera: { id: "ternera", name: { es: "Ternera", en: "Beef", pt: "Vaca", fr: "Bœuf" } },
+  mixto: { id: "mixto", name: { es: "Mixto", en: "Mixed", pt: "Misto", fr: "Mixte" } },
 };
 
 /** Detecta escolhas obrigatórias tipo "pollo o ternera o mixto" na descrição ou nome. */

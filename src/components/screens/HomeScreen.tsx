@@ -16,7 +16,7 @@ import { nav } from "@/lib/navPaths";
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
-  const { t, tProduct } = useLanguage();
+  const { t, tProduct, preloadMenuTranslations, lang, primaryLang } = useLanguage();
   const { settings } = useBranding();
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
@@ -55,6 +55,15 @@ const HomeScreen = () => {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (loading || lang === primaryLang) return;
+    preloadMenuTranslations([
+      ...categories.map((category) => category.name),
+      ...products.map((product) => product.name),
+      ...products.map((product) => product.description),
+    ]);
+  }, [loading, categories, products, lang, primaryLang, preloadMenuTranslations]);
 
   const allCategories = [
     ...(products.some((product) => product.isBestseller) ? [{

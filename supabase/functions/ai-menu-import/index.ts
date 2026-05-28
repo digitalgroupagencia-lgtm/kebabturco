@@ -85,6 +85,13 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
+    const { data: langConfig } = await supabase
+      .from("totem_config")
+      .select("primary_language")
+      .eq("store_id", store_id)
+      .maybeSingle();
+    const primaryLang = (langConfig?.primary_language as string) || "es";
+
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -114,7 +121,7 @@ Deno.serve(async (req) => {
         .from("categories")
         .insert({
           store_id,
-          name: { pt: cat.name, en: cat.name, es: cat.name },
+          name: { [primaryLang]: cat.name },
           sort_order: catIdx,
         })
         .select("id")
@@ -128,8 +135,8 @@ Deno.serve(async (req) => {
           .insert({
             store_id,
             category_id: insertedCat.id,
-            name: { pt: p.name, en: p.name, es: p.name },
-            description: p.description ? { pt: p.description, en: p.description, es: p.description } : {},
+            name: { [primaryLang]: p.name },
+            description: p.description ? { [primaryLang]: p.description } : {},
             price: Number(p.price) || 0,
             sort_order: pIdx,
           })
