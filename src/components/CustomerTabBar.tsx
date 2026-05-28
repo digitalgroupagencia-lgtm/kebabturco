@@ -57,7 +57,7 @@ const CustomerTabBar = () => {
 
   return (
     <nav
-      className="customer-tab-bar shrink-0 z-50 border-t border-border/60 bg-background/95 backdrop-blur-md"
+      className="customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-8px_24px_-18px_rgba(0,0,0,0.18)]"
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
       aria-label={t("navHome")}
     >
