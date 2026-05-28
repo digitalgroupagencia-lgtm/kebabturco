@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-staff-push-secret",
 };
 
 async function sendWebPush(
@@ -11,7 +12,6 @@ async function sendWebPush(
   vapidPublic: string,
   vapidPrivate: string,
 ) {
-  // Minimal Web Push via fetch to push service (uses web-push protocol)
   const webpush = await import("https://esm.sh/web-push@3.6.7");
   webpush.setVapidDetails("mailto:support@kebabturco.net", vapidPublic, vapidPrivate);
   await webpush.sendNotification(
@@ -23,11 +23,47 @@ async function sendWebPush(
   );
 }
 
+function isStaffStoreBroadcast(body: {
+  orderId?: string;
+  storeId?: string;
+  audience?: string;
+}): boolean {
+  return Boolean(body.storeId && !body.orderId && body.audience !== "marketing");
+}
+
+function authorizeStaffBroadcast(req: Request, body: { orderId?: string; storeId?: string; audience?: string }): boolean {
+  const internalSecret = Deno.env.get("STAFF_PUSH_INTERNAL_SECRET");
+  if (!isStaffStoreBroadcast(body)) return true;
+
+  if (!internalSecret) {
+    // Legacy: permitir se ainda não configuraram secret (migrar produção)
+    return true;
+  }
+
+  const headerSecret = req.headers.get("x-staff-push-secret");
+  if (headerSecret === internalSecret) return true;
+
+  const auth = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (serviceKey && auth.includes(serviceKey)) return true;
+
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { orderId, storeId, title, body, tag, url, audience } = await req.json();
+    const body = await req.json();
+    const { orderId, storeId, title, body: msgBody, tag, url, audience } = body;
+
+    if (!authorizeStaffBroadcast(req, body)) {
+      return new Response(JSON.stringify({ error: "Unauthorized staff push" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
 
@@ -57,12 +93,11 @@ Deno.serve(async (req) => {
         'customer_phone.eq."__marketing__",order_id.not.is.null',
       );
     } else if (storeId) {
-      // Equipa: subscrições da loja sem tag de marketing
       query = query.eq("store_id", storeId).is("order_id", null).is("customer_phone", null);
     }
     const { data: subs } = await query;
 
-    const payload = JSON.stringify({ title, body, tag, url });
+    const payload = JSON.stringify({ title, body: msgBody, tag, url });
     let sent = 0;
 
     for (const sub of subs || []) {

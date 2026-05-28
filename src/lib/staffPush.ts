@@ -1,12 +1,31 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
+export const PUSH_HANDLER_SW_PATH = "/push-handler.js";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+}
+
+export function isStaffPushEnabled(): boolean {
+  try {
+    return localStorage.getItem(STAFF_PUSH_ENABLED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setStaffPushEnabled(enabled: boolean) {
+  try {
+    if (enabled) localStorage.setItem(STAFF_PUSH_ENABLED_KEY, "1");
+    else localStorage.removeItem(STAFF_PUSH_ENABLED_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function isStaffPushSupported(): boolean {
@@ -19,11 +38,22 @@ export function isStaffPushSupported(): boolean {
   );
 }
 
-/** Regista SW de push (após purge de cache da app). */
+export function isPushHandlerRegistration(reg: ServiceWorkerRegistration): boolean {
+  const scriptUrl = reg.active?.scriptURL ?? reg.installing?.scriptURL ?? reg.waiting?.scriptURL ?? "";
+  return scriptUrl.includes(PUSH_HANDLER_SW_PATH);
+}
+
+/** Regista SW de push (preservado no boot da app). */
 export async function ensureStaffPushServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!("serviceWorker" in navigator)) return null;
   try {
-    const reg = await navigator.serviceWorker.register("/push-handler.js", { scope: "/" });
+    const existing = await navigator.serviceWorker.getRegistrations();
+    const pushReg = existing.find(isPushHandlerRegistration);
+    if (pushReg) {
+      await navigator.serviceWorker.ready;
+      return pushReg;
+    }
+    const reg = await navigator.serviceWorker.register(PUSH_HANDLER_SW_PATH, { scope: "/" });
     await navigator.serviceWorker.ready;
     return reg;
   } catch (err) {
@@ -73,8 +103,33 @@ export async function subscribeStaffPush(storeId: string): Promise<{ ok: boolean
     });
 
     if (dbErr) throw dbErr;
+    setStaffPushEnabled(true);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Erro ao activar push" };
   }
+}
+
+export async function unsubscribeStaffPush(): Promise<void> {
+  setStaffPushEnabled(false);
+  if (!("serviceWorker" in navigator)) return;
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      const endpoint = sub.endpoint;
+      await sub.unsubscribe();
+      await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Re-regista push se o utilizador já tinha activado (ex.: após reload). */
+export async function restoreStaffPushIfEnabled(storeId: string): Promise<void> {
+  if (!storeId || !isStaffPushEnabled() || !isStaffPushSupported()) return;
+  if (Notification.permission !== "granted") return;
+  await subscribeStaffPush(storeId);
 }

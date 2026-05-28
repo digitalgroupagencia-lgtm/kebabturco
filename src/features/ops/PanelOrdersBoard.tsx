@@ -82,7 +82,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
 
   useEffect(() => {
     if (mode !== "live") return;
-    void preparePanelAlertsIfEnabled();
+    void preparePanelAlertsIfEnabled(storeId);
     if (!isPanelAlertsEnabled()) {
       setPermissionOpen(true);
     }

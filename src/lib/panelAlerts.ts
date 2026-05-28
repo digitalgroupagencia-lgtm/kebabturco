@@ -1,4 +1,7 @@
-import { deployDebugLog } from "@/lib/deployDebugLog";
+import {
+  ensureStaffPushServiceWorker,
+  restoreStaffPushIfEnabled,
+} from "@/lib/staffPush";
 
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
@@ -454,10 +457,14 @@ export function isIOSPanelDevice(): boolean {
   return isIOSLike();
 }
 
-/** Prepara áudio se alertas já estavam activos numa sessão anterior. */
-export async function preparePanelAlertsIfEnabled(): Promise<void> {
+/** Prepara áudio e push se alertas já estavam activos numa sessão anterior. */
+export async function preparePanelAlertsIfEnabled(storeId?: string): Promise<void> {
   installVisibilityHook();
   if (!isPanelAlertsEnabled()) return;
   await ensureAudioReady();
   if (unacknowledgedPending.size > 0) ensurePendingAlertLoop();
+  if (storeId) {
+    await ensureStaffPushServiceWorker();
+    await restoreStaffPushIfEnabled(storeId);
+  }
 }

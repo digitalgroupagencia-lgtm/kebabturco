@@ -53,7 +53,7 @@ const deferAppBoot = () => ({
       if (!match) return html;
 
       const src = match[1];
-      const boot = `<script>(function(){var src=${JSON.stringify(src)};window.__SNAPORDER_MAIN__=src;function loadApp(){var s=document.createElement("script");s.type="module";s.crossOrigin="anonymous";s.src=src;document.body.appendChild(s)}function purge(){var tasks=[];if("serviceWorker" in navigator){tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs){return Promise.all(regs.map(function(r){return r.unregister()}))}))}if("caches" in window){tasks.push(caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k)}))}))}return Promise.all(tasks).catch(function(){})}purge().finally(loadApp)})();</script>`;
+      const boot = `<script>(function(){var src=${JSON.stringify(src)};var PUSH=${JSON.stringify("/push-handler.js")};window.__SNAPORDER_MAIN__=src;function loadApp(){var s=document.createElement("script");s.type="module";s.crossOrigin="anonymous";s.src=src;document.body.appendChild(s)}function shouldKeepSw(r){try{var u=(r.active&&r.active.scriptURL)||(r.installing&&r.installing.scriptURL)||(r.waiting&&r.waiting.scriptURL)||"";return u.indexOf("push-handler")!==-1}catch(e){return false}}function purge(){var tasks=[];if("serviceWorker" in navigator){tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs){return Promise.all(regs.map(function(r){return shouldKeepSw(r)?Promise.resolve():r.unregister()}))}))}if("caches" in window){tasks.push(caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k)}))}))}return Promise.all(tasks).catch(function(){})}purge().finally(loadApp)})();</script>`;
       return html.replace(moduleRe, boot);
     },
   },

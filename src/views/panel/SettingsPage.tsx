@@ -12,11 +12,21 @@ import ResetDataDialog from "@/components/ResetDataDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isPanelAlertsEnabled, setPanelAlertsEnabled } from "@/lib/panelAlerts";
+import {
+  isStaffPushEnabled,
+  isStaffPushSupported,
+  setStaffPushEnabled,
+  subscribeStaffPush,
+  unsubscribeStaffPush,
+} from "@/lib/staffPush";
 import MarketingBroadcastCard from "@/components/panel/MarketingBroadcastCard";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
+  const { storeId: adminStoreId } = useAdminStoreId();
+  const effectiveStoreId = roleData?.store_id ?? adminStoreId ?? "";
   const [resetOpen, setResetOpen] = useState(false);
   const [storeName, setStoreName] = useState("Minha Loja");
   const [storePhone, setStorePhone] = useState("");
@@ -35,11 +45,44 @@ const PanelSettingsPage = () => {
 
   const [soundOnNewOrder, setSoundOnNewOrder] = useState(() => isPanelAlertsEnabled());
   const [notifyKitchen, setNotifyKitchen] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
+  const [pushNotifications, setPushNotifications] = useState(() => isStaffPushEnabled());
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     setSoundOnNewOrder(isPanelAlertsEnabled());
+    setPushNotifications(isStaffPushEnabled());
   }, []);
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (!enabled) {
+      setPushNotifications(false);
+      setStaffPushEnabled(false);
+      await unsubscribeStaffPush();
+      toast.info("Push desactivado neste dispositivo");
+      return;
+    }
+    if (!effectiveStoreId) {
+      toast.error("Loja não identificada");
+      return;
+    }
+    if (!isStaffPushSupported()) {
+      toast.error("Push não disponível — configure VAPID e use HTTPS");
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const res = await subscribeStaffPush(effectiveStoreId);
+      if (res.ok) {
+        setPushNotifications(true);
+        toast.success("Push activo — receberá avisos mesmo com o painel fechado");
+      } else {
+        setPushNotifications(false);
+        toast.error(res.error || "Não foi possível activar push");
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const [openTime, setOpenTime] = useState("09:00");
   const [closeTime, setCloseTime] = useState("22:00");
@@ -193,7 +236,7 @@ const PanelSettingsPage = () => {
                   icon: Volume2,
                 },
                 { label: "Avisar a cozinha", desc: "Marca o pedido como 'novo' na tela da cozinha.", val: notifyKitchen, set: setNotifyKitchen, icon: Bell },
-                { label: "Notificações push (mobile)", desc: "Envia push para o celular do gerente.", val: pushNotifications, set: setPushNotifications, icon: Bell },
+                { label: "Notificações push (mobile)", desc: "Aviso no telemóvel mesmo com app fechada (requer permissão).", val: pushNotifications, set: (v: boolean) => { void handlePushToggle(v); }, icon: Bell, disabled: pushBusy },
               ].map((n) => (
                 <div key={n.label} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                   <div className="flex items-start gap-3">
@@ -203,7 +246,7 @@ const PanelSettingsPage = () => {
                       <p className="text-xs text-muted-foreground">{n.desc}</p>
                     </div>
                   </div>
-                  <Switch checked={n.val} onCheckedChange={n.set} />
+                  <Switch checked={n.val} onCheckedChange={n.set} disabled={"disabled" in n ? n.disabled : false} />
                 </div>
               ))}
               {roleData?.store_id && roleData?.tenant_id && (

@@ -1,8 +1,6 @@
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import type { CartItem } from "@/contexts/CartContext";
-import { notifyStaffNewOrder } from "@/services/pushService";
-
 export const PLATFORM_FEE_CENTS = 100;
 
 export type StoreStripeSettings = {
@@ -216,9 +214,6 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
 
   if (error) throw error;
   const result = data as CreateCustomerOrderResult;
-  if (result?.success && result.order_id && result.order_number) {
-    void notifyStaffNewOrder(params.storeId, result.order_id, result.order_number);
-  }
   return result;
 }
 

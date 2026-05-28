@@ -1,3 +1,4 @@
+import { isPushHandlerRegistration } from "@/lib/staffPush";
 import { deployDebugLog } from "@/lib/deployDebugLog";
 
 export const APP_BUILD_ID: string = __APP_BUILD_ID__;
@@ -88,7 +89,7 @@ async function purgeClientCaches() {
     }
     if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
+      await Promise.all(regs.map((r) => (isPushHandlerRegistration(r) ? Promise.resolve() : r.unregister())));
     }
   } catch {
     /* ignore */

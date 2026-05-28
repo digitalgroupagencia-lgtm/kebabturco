@@ -15,7 +15,7 @@ import {
   setPanelAlertsEnabled,
   silenceAllPendingAlerts,
 } from "@/lib/panelAlerts";
-import { isStaffPushSupported, subscribeStaffPush } from "@/lib/staffPush";
+import { isStaffPushSupported, subscribeStaffPush, setStaffPushEnabled } from "@/lib/staffPush";
 
 type Props = {
   storeId?: string;
@@ -83,6 +83,7 @@ const PanelAlertsBar = ({ storeId }: Props) => {
   const handleDisable = () => {
     silenceAllPendingAlerts();
     setPanelAlertsEnabled(false);
+    setStaffPushEnabled(false);
     setEnabled(false);
     setUnackCount(0);
     toast.info("Alertas desactivados");

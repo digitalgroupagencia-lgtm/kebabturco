@@ -7,6 +7,8 @@
     "predev": "node scripts/clean-lovable-pages.mjs",
     "prebuild": "node scripts/clean-lovable-pages.mjs && node scripts/package-print-bridge.mjs",
     "package:bridge": "node scripts/package-print-bridge.mjs",
+    "generate:vapid": "node scripts/generate-vapid-keys.mjs",
+    "generate:assetlinks": "node scripts/generate-assetlinks.mjs",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
