@@ -15,12 +15,6 @@ import { Users, Plus, Trash2, Shield, Pencil, ClipboardCopy } from "lucide-react
 import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
-import {
-  staffAccessPinHint,
-  suggestStaffAccessPin,
-  sanitizeStaffAccessPinInput,
-  validateStaffAccessPin,
-} from "@/lib/staffAccessPin";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
@@ -48,7 +42,6 @@ interface TeamMember {
   email?: string;
   full_name?: string;
   preferred_language?: string;
-  hasAccessPin?: boolean;
 }
 
 const LANGUAGES = [
@@ -86,20 +79,15 @@ const TeamPage = () => {
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
   const [newLanguage, setNewLanguage] = useState<string>("es");
-  const [newAccessPin, setNewAccessPin] = useState("");
   const [saving, setSaving] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [welcomeMode, setWelcomeMode] = useState<"create" | "review">("create");
   const [welcomeData, setWelcomeData] = useState<StaffOnboardingInput | null>(null);
-  const [pinDialogMember, setPinDialogMember] = useState<TeamMember | null>(null);
-  const [editAccessPin, setEditAccessPin] = useState("");
-  const [pinSaving, setPinSaving] = useState(false);
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
   const [editName, setEditName] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState<AppRole>("operator");
   const [editLanguage, setEditLanguage] = useState("es");
-  const [editMemberPin, setEditMemberPin] = useState("");
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
@@ -125,7 +113,6 @@ const TeamPage = () => {
     setNewPassword(draft.password);
     setNewRole(draft.role);
     setNewLanguage(draft.language);
-    setNewAccessPin(draft.accessPin);
     setHasDraft(true);
     setDialogOpen(true);
     if (draftToastStoreRef.current !== storeId) {
@@ -150,7 +137,6 @@ const TeamPage = () => {
       password: newPassword,
       role: newRole,
       language: newLanguage,
-      accessPin: newAccessPin,
     };
     const timer = window.setTimeout(() => {
       if (teamMemberDraftHasContent(payload)) {
@@ -162,7 +148,7 @@ const TeamPage = () => {
       }
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [storeId, newName, newEmail, newPassword, newRole, newLanguage, newAccessPin]);
+  }, [storeId, newName, newEmail, newPassword, newRole, newLanguage]);
 
   const clearDraftForm = () => {
     if (storeId) clearTeamMemberDraft(storeId);
@@ -173,7 +159,6 @@ const TeamPage = () => {
     setNewName("");
     setNewRole("operator");
     setNewLanguage(primaryLang || "es");
-    setNewAccessPin("");
   };
 
   const openAddDialog = () => {
@@ -198,8 +183,6 @@ const TeamPage = () => {
       .select("user_id, full_name, preferred_language")
       .in("user_id", userIds);
 
-    const roleIds = roles.map((r) => r.id);
-
     const emailByUser = new Map<string, string>();
     try {
       const { data: emailRows } = await (supabase.rpc as any)("get_store_team_member_emails", {
@@ -212,15 +195,6 @@ const TeamPage = () => {
       /* RPC opcional — emails vêm do cache local se indisponível */
     }
 
-    const { data: pinRows } = await (supabase
-      .from("staff_access_pins" as any)
-      .select("user_role_id, is_active")
-      .in("user_role_id", roleIds) as any);
-
-    const pinByRole = new Set(
-      ((pinRows ?? []) as any[]).filter((p: any) => p.is_active).map((p: any) => p.user_role_id),
-    );
-
     const membersData: TeamMember[] = roles.map((r) => {
       const profile = profiles?.find((p) => p.user_id === r.user_id);
       return {
@@ -230,7 +204,6 @@ const TeamPage = () => {
         email: emailByUser.get(r.user_id),
         full_name: profile?.full_name || undefined,
         preferred_language: (profile as any)?.preferred_language || "pt",
-        hasAccessPin: pinByRole.has(r.id),
       };
     });
 
@@ -247,7 +220,6 @@ const TeamPage = () => {
       name: string;
       email: string;
       password: string;
-      accessPin: string;
       role: AppRole;
       lang: "pt" | "es";
     },
@@ -272,20 +244,12 @@ const TeamPage = () => {
     setEditPassword("");
     setEditRole(member.role);
     setEditLanguage(member.preferred_language || primaryLang || "es");
-    setEditMemberPin("");
     setShowEditPassword(false);
   };
 
   const saveEditMember = async () => {
     if (!editMember || !storeId) return;
     const lang = (editLanguage === "es" ? "es" : "pt") as "pt" | "es";
-    if (editMemberPin.trim()) {
-      const pinError = validateStaffAccessPin(editMemberPin, lang);
-      if (pinError) {
-        toast.error(pinError);
-        return;
-      }
-    }
     if (editPassword.trim()) {
       const passwordError = validateStaffPassword(editPassword, lang);
       if (passwordError) {
@@ -304,7 +268,6 @@ const TeamPage = () => {
         role: editRole,
         preferred_language: editLanguage,
         password: editPassword.trim() || undefined,
-        access_pin: editMemberPin.trim() || undefined,
       });
 
       const cache = loadTeamOnboardingCache(storeId, editMember.id);
@@ -312,7 +275,6 @@ const TeamPage = () => {
         name: editName.trim(),
         email: editMember.email || cache?.email || "",
         password: editPassword.trim() || cache?.password || "",
-        accessPin: editMemberPin.trim() || cache?.accessPin || "",
         role: editRole,
         lang,
       });
@@ -326,9 +288,8 @@ const TeamPage = () => {
         full_name: editName.trim() || undefined,
         role: editRole,
         preferred_language: editLanguage,
-        hasAccessPin: editMemberPin.trim() ? true : editMember.hasAccessPin,
       };
-      if (editPassword.trim() || editMemberPin.trim()) {
+      if (editPassword.trim()) {
         showMemberInstructions(updated, "review");
       }
     } catch (e: unknown) {
@@ -341,11 +302,6 @@ const TeamPage = () => {
   const addMember = async () => {
     if (!storeId || !tenantId || !newEmail.trim()) {
       toast.error(uiLang === "es" ? "El correo es obligatorio" : "Email é obrigatório");
-      return;
-    }
-    const pinError = validateStaffAccessPin(newAccessPin, uiLang);
-    if (pinError) {
-      toast.error(pinError);
       return;
     }
     const passwordError = validateStaffPassword(newPassword, uiLang);
@@ -363,7 +319,6 @@ const TeamPage = () => {
         role: newRole,
         store_id: storeId,
         tenant_id: tenantId,
-        access_pin: newAccessPin,
         preferred_language: newLanguage,
       });
 
@@ -383,7 +338,6 @@ const TeamPage = () => {
         name: newName.trim(),
         email: newEmail.trim(),
         password: newPassword,
-        accessPin: newAccessPin,
         role: newRole,
         lang: uiLang,
         siteUrl: typeof window !== "undefined" ? window.location.origin : undefined,
@@ -398,7 +352,6 @@ const TeamPage = () => {
         name: newName.trim(),
         email: newEmail.trim(),
         password: newPassword,
-        accessPin: newAccessPin,
         role: newRole,
         lang: uiLang,
       };
@@ -409,7 +362,6 @@ const TeamPage = () => {
       setNewName("");
       setNewRole("operator");
       setNewLanguage(primaryLang || "es");
-      setNewAccessPin("");
 
       if (storeId) {
         const { data: roleRow } = await supabase
@@ -441,47 +393,6 @@ const TeamPage = () => {
     }
     toast.success(panelLang === "es" ? "Idioma actualizado" : "Idioma atualizado!");
     fetchMembers();
-  };
-
-  const saveMemberPin = async () => {
-    if (!pinDialogMember) return;
-    const pinLang = (pinDialogMember.preferred_language === "es" ? "es" : "pt") as "pt" | "es";
-    const pinError = validateStaffAccessPin(editAccessPin, pinLang);
-    if (pinError) {
-      toast.error(pinError);
-      return;
-    }
-    setPinSaving(true);
-    try {
-      const { error } = await (supabase.rpc as any)("upsert_staff_access_pin", {
-        _user_role_id: pinDialogMember.id,
-        _pin: editAccessPin,
-      });
-      if (error) throw error;
-      if (storeId && pinDialogMember) {
-        const cache = loadTeamOnboardingCache(storeId, pinDialogMember.id);
-        persistOnboardingCache(pinDialogMember.id, {
-          name: pinDialogMember.full_name || cache?.name || "",
-          email: pinDialogMember.email || cache?.email || "",
-          password: cache?.password || "",
-          accessPin: editAccessPin,
-          role: pinDialogMember.role,
-          lang: cache?.lang ?? panelLang,
-        });
-      }
-      toast.success(panelLang === "es" ? "Código actualizado" : "Código actualizado!");
-      const memberAfterPin = pinDialogMember
-        ? { ...pinDialogMember, hasAccessPin: true }
-        : null;
-      setPinDialogMember(null);
-      setEditAccessPin("");
-      await fetchMembers();
-      if (memberAfterPin) showMemberInstructions(memberAfterPin, "review");
-    } catch (e: unknown) {
-      toast.error(translateAppErrorFromException(e, "pt"));
-    } finally {
-      setPinSaving(false);
-    }
   };
 
   const removeMember = async (member: TeamMember) => {
@@ -554,7 +465,6 @@ const TeamPage = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Papel</TableHead>
-                <TableHead>Código</TableHead>
                 <TableHead>Idioma</TableHead>
                 {canManage && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
@@ -582,27 +492,6 @@ const TeamPage = () => {
                       </Select>
                     ) : (
                       <Badge className={roleLabels[m.role].color}>{roleLabels[m.role].label}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {m.hasAccessPin ? (
-                      <Badge variant="secondary" className="font-mono">Activo</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-600 border-amber-500/40">Sem código</Badge>
-                    )}
-                    {canManage && (
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 ml-2 text-xs"
-                        onClick={() => {
-                          setPinDialogMember(m);
-                          setEditAccessPin("");
-                        }}
-                      >
-                        {m.hasAccessPin ? "Alterar" : "Definir"}
-                      </Button>
                     )}
                   </TableCell>
                   <TableCell>
@@ -660,7 +549,7 @@ const TeamPage = () => {
               ))}
               {members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     Nenhum membro cadastrado.
                   </TableCell>
                 </TableRow>
@@ -718,34 +607,8 @@ const TeamPage = () => {
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(uiLang)}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {uiLang === "es"
-                  ? "Anote la contraseña y entréguela al empleado. También puede entrar con el código de acceso en el móvil."
-                  : "Anote a senha e entregue ao funcionário. Ele também pode entrar com o código de acesso no telemóvel."}
-              </p>
-            </div>
-            <div>
-              <Label>Código de acesso *</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newAccessPin}
-                  onChange={(e) => setNewAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
-                  placeholder="Ex: 482917#"
-                  className="flex-1 font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => setNewAccessPin(suggestStaffAccessPin())}
-                >
-                  Sugerir código
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{staffAccessPinHint(uiLang)}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {uiLang === "es"
-                  ? "El empleado lo usa en «Área da equipe» (5 toques en el logo del menú). No es para clientes."
-                  : "O funcionário usa na «Área da equipe» (5 toques no logótipo do menu). Não é para clientes."}
+                  ? "Anote la contraseña y entréguela al empleado. La usará para entrar en «Área del equipo» (5 toques en el logo del menú)."
+                  : "Anote a senha e entregue ao funcionário. Ele usa-a para entrar na «Área da equipe» (5 toques no logótipo do menu)."}
               </p>
             </div>
             <div>
@@ -788,34 +651,6 @@ const TeamPage = () => {
                 {saving ? "Criando..." : "Adicionar"}
               </Button>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!pinDialogMember} onOpenChange={(open) => !open && setPinDialogMember(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Código de acesso — {pinDialogMember?.full_name || "Membro"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Label>Novo código (6–10 caracteres com #)</Label>
-            <div className="flex gap-2">
-              <Input
-                value={editAccessPin}
-                onChange={(e) => setEditAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
-                placeholder="Ex: 482917#"
-                className="font-mono flex-1"
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => setEditAccessPin(suggestStaffAccessPin())}>
-                Sugerir
-              </Button>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button onClick={() => void saveMemberPin()} disabled={pinSaving}>
-              {pinSaving ? "A guardar…" : "Guardar código"}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -870,26 +705,6 @@ const TeamPage = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(panelLang)}</p>
-            </div>
-            <div>
-              <Label>{panelLang === "es" ? "Nuevo código (opcional)" : "Novo código (opcional)"}</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={editMemberPin}
-                  onChange={(e) => setEditMemberPin(sanitizeStaffAccessPinInput(e.target.value))}
-                  placeholder={editMember?.hasAccessPin ? "••••••#" : "482917#"}
-                  className="flex-1 font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditMemberPin(suggestStaffAccessPin())}
-                >
-                  {panelLang === "es" ? "Sugerir" : "Sugerir"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{staffAccessPinHint(panelLang)}</p>
             </div>
             <div>
               <Label>{panelLang === "es" ? "Perfil" : "Papel"}</Label>

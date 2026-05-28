@@ -8,7 +8,7 @@ function cacheKey(storeId: string, memberRoleId: string) {
 
 export type TeamOnboardingCache = Pick<
   StaffOnboardingInput,
-  "name" | "email" | "password" | "accessPin" | "role" | "lang"
+  "name" | "email" | "password" | "role" | "lang"
 >;
 
 export function saveTeamOnboardingCache(
@@ -44,7 +44,6 @@ export function mergeOnboardingInput(
     email?: string;
     role: StaffOnboardingInput["role"];
     preferred_language?: string;
-    hasAccessPin?: boolean;
   },
   cache: TeamOnboardingCache | null,
   siteUrl?: string,
@@ -62,15 +61,6 @@ export function mergeOnboardingInput(
       (isEs
         ? "(igual que al crear — pida al gerente una nueva si la olvidó)"
         : "(igual à de quando criou — peça ao gerente uma nova se esqueceu)"),
-    accessPin:
-      cache?.accessPin ||
-      (member.hasAccessPin
-        ? isEs
-          ? "(código activo — use «Alterar código» para ver uno nuevo)"
-          : "(código activo — use «Alterar código» para ver um novo)"
-        : isEs
-          ? "(sin código — defínalo en Equipe)"
-          : "(sem código — defina em Equipe)"),
     role: member.role,
     lang,
     siteUrl,

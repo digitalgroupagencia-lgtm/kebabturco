@@ -33,7 +33,6 @@ describe("createStaffMember", () => {
     role: "delivery" as const,
     store_id: "store-1",
     tenant_id: "tenant-1",
-    access_pin: "830242#",
     preferred_language: "es",
   };
 
@@ -67,7 +66,7 @@ describe("createStaffMember", () => {
       if (fn === "add_team_member_to_store") {
         return Promise.resolve({ data: "role-1", error: null });
       }
-      if (fn === "upsert_staff_access_pin" || fn === "upsert_staff_profile_by_manager") {
+      if (fn === "upsert_staff_profile_by_manager") {
         return Promise.resolve({ error: null });
       }
       return Promise.resolve({ error: null });

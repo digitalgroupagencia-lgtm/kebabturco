@@ -1,7 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import { nav } from "@/lib/navPaths";
 import type { StaffRole } from "@/lib/staffPermissions";
-export { loginWithStaffPin } from "@/services/staffPinLogin";
 
 export const STAFF_SESSION_FLAG = "kebabturco.staffSession";
 
@@ -29,7 +27,7 @@ export function isStaffSessionFlagSet(): boolean {
   }
 }
 
-/** Destino após código de equipe — separado do fluxo do cliente. */
+/** Destino após login da equipa — separado do fluxo do cliente. */
 export function resolveStaffLoginDestination(role: StaffRole | string | null | undefined): string {
   switch (role) {
     case "delivery":

@@ -5,7 +5,6 @@ export type StaffOnboardingInput = {
   name: string;
   email: string;
   password: string;
-  accessPin: string;
   role: StaffRole;
   lang: "pt" | "es";
   siteUrl?: string;
@@ -18,16 +17,12 @@ function loginBlock(input: StaffOnboardingInput): string[] {
       "══ ACCESO ══",
       `Correo: ${input.email}`,
       `Contraseña: ${input.password}`,
-      `Código rápido (móvil): ${input.accessPin}`,
       "",
-      "Entrar con correo y contraseña:",
-      `1. Abra ${site}/auth`,
-      "2. Introduzca correo y contraseña",
-      "",
-      "Entrar con código (más rápido en el móvil):",
+      "Cómo entrar en el móvil:",
       `1. Abra el menú del cliente (${site})`,
       "2. Toque el logotipo 5 veces seguidas",
-      "3. Se abre «Área da equipe» — introduzca el código (incluye #)",
+      "3. Se abre «Área del equipo»",
+      "4. Introduzca el correo y la contraseña de arriba",
       "",
       "Idioma: español por defecto. Use el icono 🌐 arriba a la derecha para cambiar.",
     ];
@@ -36,16 +31,12 @@ function loginBlock(input: StaffOnboardingInput): string[] {
     "══ ACESSO ══",
     `Email: ${input.email}`,
     `Senha: ${input.password}`,
-    `Código rápido (telemóvel): ${input.accessPin}`,
     "",
-    "Entrar com email e senha:",
-    `1. Abra ${site}/auth`,
-    "2. Introduza email e senha",
-    "",
-    "Entrar com código (mais rápido no telemóvel):",
+    "Como entrar no telemóvel:",
     `1. Abra o menu do cliente (${site})`,
     "2. Toque no logótipo 5 vezes seguidas",
-    "3. Abre «Área da equipe» — introduza o código (inclui #)",
+    "3. Abre «Área da equipe»",
+    "4. Introduza o e-mail e a senha indicados acima",
     "",
     "Idioma: espanhol por defeito. Use o ícone 🌐 no topo para mudar.",
   ];
@@ -93,7 +84,7 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
     manager: [
       "══ GERENTE — QUÉ HACER ══",
       "1. Acceso casi completo al panel del restaurante.",
-      "2. Equipo: crear miembros, códigos y roles.",
+      "2. Equipo: crear miembros con correo y contraseña.",
       "3. Supervise pedidos, caja, entregas y configuración operativa.",
       "4. Guía completa en el menú «Guia» del panel.",
     ],
@@ -147,7 +138,7 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
     manager: [
       "══ GERENTE — O QUE FAZER ══",
       "1. Acesso quase completo ao painel do restaurante.",
-      "2. Equipa: criar membros, códigos e papéis.",
+      "2. Equipa: criar membros com e-mail e senha.",
       "3. Supervise pedidos, caixa, entregas e configuração operativa.",
       "4. Guia completa no menu «Guia» do painel.",
     ],

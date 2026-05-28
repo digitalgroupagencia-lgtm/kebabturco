@@ -58,7 +58,6 @@ Deno.serve(async (req) => {
       role,
       preferred_language,
       password,
-      access_pin,
     } = body ?? {};
 
     if (!user_id || !user_role_id || !store_id || !role) {
@@ -83,13 +82,6 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-    }
-
-    if (access_pin?.trim() && !/^(?=.*\d)(?=.*#).{6,10}$/.test(String(access_pin))) {
-      return new Response(JSON.stringify({ error: "Código deve ter 6–10 caracteres, incluir # e números" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     const { data: canAccess } = await userClient.rpc("user_can_access_store", { _store_id: store_id });
@@ -158,19 +150,6 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    if (access_pin?.trim()) {
-      const { error: pinError } = await admin.rpc("upsert_staff_access_pin", {
-        _user_role_id: user_role_id,
-        _pin: String(access_pin).trim(),
-      });
-      if (pinError) {
-        return new Response(JSON.stringify({ error: pinError.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
     }
 
     await admin.rpc("upsert_staff_profile_by_manager", {

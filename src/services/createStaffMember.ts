@@ -11,7 +11,6 @@ export type CreateStaffMemberInput = {
   role: StaffRole;
   store_id: string;
   tenant_id: string;
-  access_pin: string;
   preferred_language: string;
 };
 
@@ -201,17 +200,6 @@ async function createStaffMemberLocally(
 
   if (!roleRow?.id) {
     throw new Error("Erro ao atribuir papel");
-  }
-
-  try {
-    const { error: pinError } = await (supabase.rpc as any)("upsert_staff_access_pin", {
-      _user_role_id: roleRow.id,
-      _pin: input.access_pin,
-    });
-    if (pinError) throw pinError;
-  } catch (e) {
-    await supabase.from("user_roles").delete().eq("id", roleRow.id);
-    throw e;
   }
 
   await upsertStaffProfileByManager(input, userId);

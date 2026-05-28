@@ -79,12 +79,11 @@ Deno.serve(async (req) => {
       role,
       store_id,
       tenant_id,
-      access_pin,
       preferred_language,
     } = body ?? {};
 
-    if (!email?.trim() || !store_id || !tenant_id || !access_pin || !password?.trim()) {
-      return new Response(JSON.stringify({ error: "email, password, store_id, tenant_id e access_pin são obrigatórios" }), {
+    if (!email?.trim() || !store_id || !tenant_id || !password?.trim()) {
+      return new Response(JSON.stringify({ error: "email, password, store_id e tenant_id são obrigatórios" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -100,13 +99,6 @@ Deno.serve(async (req) => {
 
     if (!RESTAURANT_ROLES.includes(role)) {
       return new Response(JSON.stringify({ error: "Papel inválido para a equipa do restaurante" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!/^(?=.*\d)(?=.*#).{6,10}$/.test(String(access_pin))) {
-      return new Response(JSON.stringify({ error: "Código deve ter 6–10 caracteres, incluir # e números" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -221,20 +213,6 @@ Deno.serve(async (req) => {
     if (roleError || !roleRow?.id) {
       if (createdNewUser) await admin.auth.admin.deleteUser(userId);
       return new Response(JSON.stringify({ error: roleError?.message || "Erro ao atribuir papel" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { error: pinError } = await admin.rpc("upsert_staff_access_pin", {
-      _user_role_id: roleRow.id,
-      _pin: String(access_pin),
-    });
-
-    if (pinError) {
-      await admin.from("user_roles").delete().eq("id", roleRow.id);
-      if (createdNewUser) await admin.auth.admin.deleteUser(userId);
-      return new Response(JSON.stringify({ error: pinError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

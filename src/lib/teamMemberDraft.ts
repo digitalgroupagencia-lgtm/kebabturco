@@ -7,7 +7,6 @@ export type TeamMemberDraft = {
   password: string;
   role: StaffRole;
   language: string;
-  accessPin: string;
   updatedAt: number;
 };
 
@@ -21,13 +20,8 @@ function isStaffRole(value: string): value is StaffRole {
   return (RESTAURANT_STAFF_ROLES as readonly string[]).includes(value);
 }
 
-export function teamMemberDraftHasContent(draft: Pick<TeamMemberDraft, "name" | "email" | "password" | "accessPin">): boolean {
-  return Boolean(
-    draft.name.trim() ||
-      draft.email.trim() ||
-      draft.password.trim() ||
-      draft.accessPin.trim(),
-  );
+export function teamMemberDraftHasContent(draft: Pick<TeamMemberDraft, "name" | "email" | "password">): boolean {
+  return Boolean(draft.name.trim() || draft.email.trim() || draft.password.trim());
 }
 
 export function loadTeamMemberDraft(storeId: string): TeamMemberDraft | null {
@@ -44,7 +38,6 @@ export function loadTeamMemberDraft(storeId: string): TeamMemberDraft | null {
       password: typeof parsed.password === "string" ? parsed.password : "",
       role,
       language: typeof parsed.language === "string" ? parsed.language : "es",
-      accessPin: typeof parsed.accessPin === "string" ? parsed.accessPin : "",
       updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : Date.now(),
     };
     return teamMemberDraftHasContent(draft) ? draft : null;

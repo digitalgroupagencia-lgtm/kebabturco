@@ -11,7 +11,6 @@ export type UpdateStaffMemberInput = {
   role: StaffRole;
   preferred_language: string;
   password?: string;
-  access_pin?: string;
 };
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -51,22 +50,13 @@ async function updateStaffMemberLocally(input: UpdateStaffMemberInput) {
     .eq("id", input.user_role_id)
     .eq("store_id", input.store_id);
   if (roleError) throw roleError;
-
-  if (input.access_pin?.trim()) {
-    const { error: pinError } = await (supabase.rpc as any)("upsert_staff_access_pin", {
-      _user_role_id: input.user_role_id,
-      _pin: input.access_pin.trim(),
-    });
-    if (pinError) throw pinError;
-  }
 }
 
-/** Actualiza membro da equipa — perfil, papel, código e senha (se indicada). */
+/** Actualiza membro da equipa — perfil, papel e senha (se indicada). */
 export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<void> {
   const hasPassword = Boolean(input.password?.trim());
-  const hasPin = Boolean(input.access_pin?.trim());
 
-  if (hasPassword || hasPin) {
+  if (hasPassword) {
     try {
       await invokeUpdateEdge(input);
       return;
