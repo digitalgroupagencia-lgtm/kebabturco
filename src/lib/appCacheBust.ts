@@ -9,6 +9,7 @@ export const APP_CACHE_BUST_EVENT = "snaporder:cache-bust";
 declare global {
   interface Window {
     __SNAPORDER_MAIN__?: string;
+    __SNAPORDER_APP_READY__?: boolean;
   }
 }
 
@@ -99,6 +100,8 @@ async function purgeClientCaches() {
 /** Recarrega a app se o deploy publicado tiver versão ou bundle diferente do local. */
 export async function checkForDeployedUpdate() {
   if (import.meta.env.DEV) return;
+  // Evita reload agressivo ao abrir pelo ícone do telemóvel (Safari).
+  if (typeof performance !== "undefined" && performance.now() < 8000) return;
 
   const localMain = getLocalMainScript();
   const remote = await fetchRemoteDeployInfo();

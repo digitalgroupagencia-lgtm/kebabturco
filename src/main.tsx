@@ -12,7 +12,10 @@ if (isStaffAppPath()) {
 
 if (typeof window !== "undefined") {
   const markStandalone = () => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (standalone) {
       document.documentElement.classList.add("pwa-standalone");
     }
   };
@@ -45,6 +48,7 @@ if (!rootEl) {
 } else {
   try {
     createRoot(rootEl).render(<App />);
+    window.__SNAPORDER_APP_READY__ = true;
     requestAnimationFrame(removeBootFallback);
   } catch (error) {
     console.error("[boot]", error);

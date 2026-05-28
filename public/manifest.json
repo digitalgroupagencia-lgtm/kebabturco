@@ -3,7 +3,7 @@
   "short_name": "Kebab Turco",
   "description": "Peça online no Kebab Turco",
   "lang": "pt",
-  "start_url": "/",
+  "start_url": "/?homescreen=1",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
