@@ -11,6 +11,7 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { loadSavedOrderType } from "@/lib/customerSession";
 import { configurationSummaryLines } from "@/lib/modifiers/legacyBridge";
 import type { CartConfiguration } from "@/lib/modifiers/types";
+import InAppConfirmDialog from "@/components/InAppConfirmDialog";
 
 type LangMap = Record<string, string>;
 type SuggestionConfig = {
@@ -25,12 +26,6 @@ const CLEAR_LABEL: Record<string, string> = {
   en: "Clear order",
   es: "Vaciar pedido",
   fr: "Vider la commande",
-};
-const CONFIRM_CLEAR: Record<string, string> = {
-  pt: "Tem certeza que deseja limpar todo o pedido?",
-  en: "Are you sure you want to clear the entire order?",
-  es: "¿Seguro que quieres vaciar todo el pedido?",
-  fr: "Voulez-vous vraiment vider toute la commande ?",
 };
 
 const ReviewScreen = () => {
@@ -49,9 +44,10 @@ const ReviewScreen = () => {
   const { storeId, selectedStoreId } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? storeId;
   const clearLabel = CLEAR_LABEL[lang] || CLEAR_LABEL.es;
-  const confirmMsg = CONFIRM_CLEAR[lang] || CONFIRM_CLEAR.es;
 
   const [suggestionConfig, setSuggestionConfig] = useState<SuggestionConfig | null>(null);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const [removeItemId, setRemoveItemId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,8 +72,18 @@ const ReviewScreen = () => {
     return () => { active = false; };
   }, [effectiveStoreId]);
 
-  const handleClearAll = () => {
-    if (window.confirm(confirmMsg)) clearCart();
+  const handleClearAll = () => setClearDialogOpen(true);
+
+  const confirmClearAll = () => {
+    clearCart();
+    setClearDialogOpen(false);
+  };
+
+  const pendingRemoveItem = removeItemId ? items.find((i) => i.id === removeItemId) : null;
+
+  const confirmRemoveFromCart = () => {
+    if (removeItemId) removeItem(removeItemId);
+    setRemoveItemId(null);
   };
   const canCheckout = items.length > 0 && !!orderType;
 
@@ -157,7 +163,7 @@ const ReviewScreen = () => {
   const ModalityIcon = orderType === "here" ? Utensils : orderType === "delivery" ? Bike : ShoppingBag;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
@@ -288,7 +294,7 @@ const ReviewScreen = () => {
                   <Pencil className="w-3.5 h-3.5" /> {t("edit2")}
                 </button>
                 <button
-                  onClick={() => removeItem(item.id)}
+                  onClick={() => setRemoveItemId(item.id)}
                   className="flex items-center gap-1.5 text-destructive text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-destructive/5 active:scale-95 transition-all"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> {t("remove2")}
@@ -403,6 +409,28 @@ const ReviewScreen = () => {
           </button>
         </div>
       )}
+      <InAppConfirmDialog
+        open={clearDialogOpen}
+        title={t("confirmClearTitle")}
+        description={t("confirmClear")}
+        confirmLabel={t("yes")}
+        cancelLabel={t("cancelBtn")}
+        onConfirm={confirmClearAll}
+        onCancel={() => setClearDialogOpen(false)}
+      />
+      <InAppConfirmDialog
+        open={Boolean(removeItemId)}
+        title={t("confirmRemoveTitle")}
+        description={
+          pendingRemoveItem
+            ? `${t("confirmRemoveItem")} (${tProduct(pendingRemoveItem.productName).replace(/^\d{1,3}[A-Za-z]?\s*[.\-–—:)]\s*/, "")})`
+            : t("confirmRemoveItem")
+        }
+        confirmLabel={t("remove2")}
+        cancelLabel={t("cancelBtn")}
+        onConfirm={confirmRemoveFromCart}
+        onCancel={() => setRemoveItemId(null)}
+      />
     </div>
   );
 };
