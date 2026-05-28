@@ -16,7 +16,6 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "tables",
   "finance",
   "settings",
-  "menu",
   "team",
   "sellers",
   "guide",
@@ -25,6 +24,7 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
 
 /** Configuração do projecto — bloqueada em /panel; redirecciona para /admin. */
 export const PANEL_CONFIG_SEGMENT_TO_ADMIN: Readonly<Record<string, readonly string[]>> = {
+  menu: ["menu"],
   modifiers: ["modifiers"],
   banners: ["banner"],
   "delivery-zones": ["delivery-zones"],
@@ -74,13 +74,15 @@ export function redirectTargetForPanelPath(
   const segment = panelSegmentFromPathname(pathname);
   const staffRole = role as StaffRole | null | undefined;
 
+  if (segment === "menu") return nav.admin("menu");
+
   if (staffRole && !panelSegmentAllowed(staffRole, segment)) {
     return nav.panel();
   }
 
   if (isPanelOperationalSegment(segment)) return null;
 
-  if (segment === "menu" || segment === "finance" || segment === "settings") return null;
+  if (segment === "finance" || segment === "settings") return null;
 
   if (role === "admin_master") return null;
 

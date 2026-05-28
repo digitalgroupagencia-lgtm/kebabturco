@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
@@ -15,17 +16,22 @@ import ProductModifierEditor, { saveProductModifierLinks } from "@/components/pa
 import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
 import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
+import ImageUploadField from "@/components/panel/ImageUploadField";
+import { uploadProductImage } from "@/lib/uploadProductImage";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
 
 const MenuPage = () => {
+  const { pathname } = useLocation();
+  const isAdminMenu = pathname.startsWith("/admin");
   const { storeId, loading: loadingStore } = useAdminStoreId();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [genImageId, setGenImageId] = useState<string | null>(null);
+  const [prodImageUploading, setProdImageUploading] = useState(false);
 
   // Category form
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -204,6 +210,23 @@ const MenuPage = () => {
     setProdDialogOpen(true);
   };
 
+  const handleProductImageUpload = async (file: File) => {
+    if (!storeId) {
+      toast.error("Loja não carregada");
+      return;
+    }
+    setProdImageUploading(true);
+    try {
+      const url = await uploadProductImage(storeId, file, editingProduct?.id);
+      setProdImageUrl(url);
+      toast.success("Imagem enviada");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+    } finally {
+      setProdImageUploading(false);
+    }
+  };
+
   const saveProduct = async () => {
     if (!storeId || !selectedCategoryId || !prodNamePt.trim()) {
       toast.error("Nome do produto é obrigatório");
@@ -324,8 +347,12 @@ const MenuPage = () => {
         description="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
       />
 
-      <MenuCatalogAuditPanel />
-      <MenuCustomizationAuditPanel />
+      {isAdminMenu && (
+        <>
+          <MenuCatalogAuditPanel />
+          <MenuCustomizationAuditPanel />
+        </>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Categories sidebar */}
@@ -439,10 +466,14 @@ const MenuPage = () => {
                       <Label>Preço (€)</Label>
                       <Input type="number" step="0.01" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} placeholder="0.00" />
                     </div>
-                    <div>
-                      <Label>URL da Imagem <span className="text-xs text-muted-foreground ml-1">(800×800 px, fundo neutro)</span></Label>
-                      <Input value={prodImageUrl} onChange={(e) => setProdImageUrl(e.target.value)} placeholder="https://..." />
-                    </div>
+                    <ImageUploadField
+                      label="Imagem do produto"
+                      dimensions="800×800 px, fundo neutro"
+                      value={prodImageUrl}
+                      uploading={prodImageUploading}
+                      disabled={!storeId}
+                      onPickFile={handleProductImageUpload}
+                    />
                     <div className="flex items-center justify-between">
                       <Label>⭐ Mais vendido</Label>
                       <Switch checked={prodBestseller} onCheckedChange={setProdBestseller} />

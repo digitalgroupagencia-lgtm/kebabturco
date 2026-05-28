@@ -15,7 +15,6 @@ const ALL_PANEL_SEGMENTS = new Set([
   "tables",
   "finance",
   "settings",
-  "menu",
   "team",
   "sellers",
   "guide",
@@ -108,7 +107,6 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
     id: "mgmt",
     label: "Gestão",
     items: [
-      { key: "menu", segment: "menu", label: "Cardápio" },
       { key: "tables", segment: "tables", label: "Mesas & QR" },
       { key: "team", segment: "team", label: "Equipe" },
       { key: "sellers", segment: "sellers", label: "Vendedores" },

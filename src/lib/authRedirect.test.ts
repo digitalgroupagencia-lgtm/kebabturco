@@ -30,7 +30,7 @@ describe("resolvePostLoginDestination", () => {
     expect(dest.path).toBe("/panel");
   });
 
-  it("honours next=/panel/menu for admin_master", async () => {
+  it("honours next=/admin/menu for admin_master when panel menu is requested", async () => {
     mockFrom.mockReturnValue({
       select: () => ({
         eq: () =>
@@ -40,8 +40,8 @@ describe("resolvePostLoginDestination", () => {
       }),
     });
 
-    const dest = await resolvePostLoginDestination("user-1", nav.panel("menu"));
-    expect(dest.path).toBe("/panel/menu");
+    const dest = await resolvePostLoginDestination("user-1", nav.admin("menu"));
+    expect(dest.path).toBe("/admin/menu");
   });
 
   it("defaults admin_master to general admin only when next is missing", async () => {

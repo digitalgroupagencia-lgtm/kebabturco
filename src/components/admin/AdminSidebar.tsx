@@ -66,7 +66,7 @@ const operationalItems = [
 ];
 
 const storeItems = [
-  { title: "Cardápio", url: nav.panel("menu"), icon: UtensilsCrossed },
+  { title: "Cardápio", url: nav.admin("menu"), icon: UtensilsCrossed },
   { title: "Personalização", url: nav.admin("modifiers"), icon: Layers },
   { title: "Identidade visual", url: nav.admin("branding"), icon: Palette },
   { title: "Banners", url: nav.admin("banner"), icon: Image },

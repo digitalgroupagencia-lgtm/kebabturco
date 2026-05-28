@@ -37,7 +37,7 @@ const KEBAB_SECTIONS: FaqSection[] = [
     items: [
       {
         q: "Onde cadastro produtos?",
-        a: "No painel do restaurante, secção Cardápio. Crie categorias e depois produtos com preço, imagem e personalizações.",
+        a: "Na administração geral do projecto, secção Cardápio. Crie categorias e depois produtos com preço, imagem e personalizações.",
       },
       {
         q: "Como importar um cardápio?",

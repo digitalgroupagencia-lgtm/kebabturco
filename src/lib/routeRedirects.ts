@@ -36,6 +36,8 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/panel/qrcodes": nav.panel("tables"),
   "/panel/qrcode": nav.panel("tables"),
   "/panel/qr-codes": nav.panel("tables"),
+  "/panel/menu": nav.admin("menu"),
+  "/panel/cardapio": nav.admin("menu"),
   "/panel/branding": nav.admin("branding"),
   "/panel/banners": nav.admin("banner"),
   "/panel/modifiers": nav.admin("modifiers"),
@@ -69,7 +71,6 @@ const ADMIN_RESTAURANT_PANEL_ALIASES: Readonly<Record<string, string>> = {
   "/admin/qr": nav.panel("tables"),
   "/admin/finance": nav.panel("finance"),
   "/admin/settings": nav.panel("settings"),
-  "/admin/menu": nav.panel("menu"),
 };
 
 export function normalizePathname(pathname: string): string {
