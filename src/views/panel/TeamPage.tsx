@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -26,6 +26,12 @@ import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialo
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember } from "@/services/createStaffMember";
 import { usePanelStore } from "@/contexts/PanelStoreContext";
+import {
+  clearTeamMemberDraft,
+  loadTeamMemberDraft,
+  saveTeamMemberDraft,
+  teamMemberDraftHasContent,
+} from "@/lib/teamMemberDraft";
 
 type AppRole = StaffRole;
 
@@ -81,6 +87,8 @@ const TeamPage = () => {
   const [pinDialogMember, setPinDialogMember] = useState<TeamMember | null>(null);
   const [editAccessPin, setEditAccessPin] = useState("");
   const [pinSaving, setPinSaving] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const draftToastStoreRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (storeId) {
@@ -91,11 +99,70 @@ const TeamPage = () => {
   }, [storeId]);
 
   useEffect(() => {
-    if (primaryLang) setNewLanguage(primaryLang);
-  }, [primaryLang]);
+    if (!storeId) return;
+    const draft = loadTeamMemberDraft(storeId);
+    if (!draft) {
+      setHasDraft(false);
+      return;
+    }
+    setNewName(draft.name);
+    setNewEmail(draft.email);
+    setNewPassword(draft.password);
+    setNewRole(draft.role);
+    setNewLanguage(draft.language);
+    setNewAccessPin(draft.accessPin);
+    setHasDraft(true);
+    setDialogOpen(true);
+    if (draftToastStoreRef.current !== storeId) {
+      draftToastStoreRef.current = storeId;
+      toast.info(
+        draft.language === "es"
+          ? "Borrador restaurado — puede continuar donde lo dejó"
+          : "Rascunho restaurado — pode continuar de onde parou",
+      );
+    }
+  }, [storeId]);
+
+  useEffect(() => {
+    if (primaryLang && !hasDraft) setNewLanguage(primaryLang);
+  }, [primaryLang, hasDraft]);
+
+  useEffect(() => {
+    if (!storeId) return;
+    const payload = {
+      name: newName,
+      email: newEmail,
+      password: newPassword,
+      role: newRole,
+      language: newLanguage,
+      accessPin: newAccessPin,
+    };
+    const timer = window.setTimeout(() => {
+      if (teamMemberDraftHasContent(payload)) {
+        saveTeamMemberDraft(storeId, payload);
+        setHasDraft(true);
+      } else {
+        clearTeamMemberDraft(storeId);
+        setHasDraft(false);
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [storeId, newName, newEmail, newPassword, newRole, newLanguage, newAccessPin]);
+
+  const clearDraftForm = () => {
+    if (storeId) clearTeamMemberDraft(storeId);
+    setHasDraft(false);
+    setNewEmail("");
+    setNewPassword("");
+    setShowPassword(false);
+    setNewName("");
+    setNewRole("operator");
+    setNewLanguage(primaryLang || "es");
+    setNewAccessPin("");
+  };
 
   const openAddDialog = () => {
-    setNewLanguage(primaryLang || "es");
+    if (!hasDraft) setNewLanguage(primaryLang || "es");
     setDialogOpen(true);
   };
 
@@ -196,6 +263,8 @@ const TeamPage = () => {
       });
       setWelcomeOpen(true);
       setDialogOpen(false);
+      if (storeId) clearTeamMemberDraft(storeId);
+      setHasDraft(false);
       setNewEmail("");
       setNewPassword("");
       setShowPassword(false);
@@ -289,6 +358,11 @@ const TeamPage = () => {
         {canManage && (
           <Button size="sm" onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-1" /> Novo Membro
+            {hasDraft && (
+              <Badge variant="secondary" className="ml-2 font-normal">
+                Rascunho
+              </Badge>
+            )}
           </Button>
         )}
       </div>
@@ -401,6 +475,11 @@ const TeamPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" /> Adicionar Membro
+              {hasDraft && (
+                <Badge variant="outline" className="font-normal text-xs">
+                  Rascunho guardado
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -496,11 +575,18 @@ const TeamPage = () => {
               </p>
             </div>
           </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button onClick={addMember} disabled={saving}>
-              {saving ? "Criando..." : "Adicionar"}
-            </Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+            {hasDraft && (
+              <Button type="button" variant="ghost" className="text-muted-foreground sm:mr-auto" onClick={clearDraftForm}>
+                Limpar rascunho
+              </Button>
+            )}
+            <div className="flex gap-2 sm:ml-auto">
+              <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+              <Button onClick={addMember} disabled={saving}>
+                {saving ? "Criando..." : "Adicionar"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -23,12 +23,10 @@ if (typeof window !== "undefined") {
   window.matchMedia("(display-mode: standalone)").addEventListener("change", markStandalone);
 }
 
-function removeBootFallback() {
-  document.getElementById("boot-fallback")?.remove();
-}
+import { dismissBootShell } from "./lib/bootShell";
 
 function showBootError(message: string) {
-  removeBootFallback();
+  dismissBootShell();
   const root = document.getElementById("root");
   if (!root) return;
   root.innerHTML = `
@@ -49,7 +47,6 @@ if (!rootEl) {
   try {
     createRoot(rootEl).render(<App />);
     window.__SNAPORDER_APP_READY__ = true;
-    requestAnimationFrame(removeBootFallback);
   } catch (error) {
     console.error("[boot]", error);
     showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");

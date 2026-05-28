@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { OrderProvider, useOrder } from "@/contexts/OrderContext";
@@ -16,6 +16,8 @@ import ProductScreen from "@/components/screens/ProductScreen";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/components/CustomerPushPromptHost";
+import { useBranding } from "@/contexts/BrandingContext";
+import { dismissBootShell } from "@/lib/bootShell";
 
 const HomeScreen = lazy(() => import("@/components/screens/HomeScreen"));
 const ReviewScreen = lazy(() => import("@/components/screens/ReviewScreen"));
@@ -38,6 +40,22 @@ const LazyScreen = ({ children }: { children: React.ReactNode }) => (
 const LazyInlineScreen = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<InlineScreenSpinner />}>{children}</Suspense>
 );
+
+/** LanguageScreen dismisses its own boot overlay; other entry screens dismiss here. */
+const CustomerBootDismiss = () => {
+  const { screen } = useOrder();
+  const { storeId, loading: storeLoading } = useResolvedStore();
+  const { loading: brandingLoading } = useBranding();
+
+  useEffect(() => {
+    if (screen === "language") return;
+    if (storeLoading || brandingLoading) return;
+    if (!storeId && screen !== "splash") return;
+    dismissBootShell();
+  }, [screen, storeLoading, brandingLoading, storeId]);
+
+  return null;
+};
 
 const ScreenRouter = () => {
   const { screen } = useOrder();
@@ -145,6 +163,7 @@ const ScreenRouter = () => {
 
 const CustomerShell = () => (
     <div className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background md:shadow-lg">
+      <CustomerBootDismiss />
       <div className="min-h-0 overflow-hidden">
         <ScreenRouter />
       </div>

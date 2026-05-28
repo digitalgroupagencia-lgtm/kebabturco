@@ -1,9 +1,16 @@
+import { useEffect } from "react";
 import { Globe } from "lucide-react";
+import { dismissBootShell } from "@/lib/bootShell";
 
 type Props = { hostname: string };
 
-const DomainNotConfiguredScreen = ({ hostname }: Props) => (
-  <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+const DomainNotConfiguredScreen = ({ hostname }: Props) => {
+  useEffect(() => {
+    dismissBootShell();
+  }, []);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-background px-6 text-center">
     <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
       <Globe className="w-8 h-8 text-primary" />
     </div>
@@ -13,6 +20,7 @@ const DomainNotConfiguredScreen = ({ hostname }: Props) => (
       Tente actualizar a página ou contacte o suporte.
     </p>
   </div>
-);
+  );
+};
 
 export default DomainNotConfiguredScreen;

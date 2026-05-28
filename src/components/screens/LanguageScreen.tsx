@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
+import { dismissBootShell } from "@/lib/bootShell";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 import flagBr from "@/assets/flag-br.png";
@@ -27,9 +29,9 @@ const TITLE_BY_LANG: Record<string, string> = {
 
 const LanguageScreen = () => {
   const { setScreen } = useOrder();
-  const { setLang, primaryLang, activeLangs, langIcons } = useLanguage();
-  const { settings } = useBranding();
-  const { stores, setSelectedStoreId } = useResolvedStore();
+  const { setLang, primaryLang, activeLangs, langIcons, langsReady } = useLanguage();
+  const { settings, loading: brandingLoading } = useBranding();
+  const { stores, setSelectedStoreId, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
   const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
@@ -38,20 +40,28 @@ const LanguageScreen = () => {
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
     (settings as any)?.logo_language_url ||
     settings?.logo_main_url ||
-    null;
+    "/apple-touch-icon.png";
   const brandName = settings?.company_name || "EL REY";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
   const titles = Array.from(new Set(langs.map((l) => TITLE_BY_LANG[l] || TITLE_BY_LANG.es)));
+
+  const screenReady = !storeLoading && langsReady && !brandingLoading;
+
+  useEffect(() => {
+    if (screenReady) dismissBootShell();
+  }, [screenReady]);
 
   const handleSelect = (code: "pt" | "en" | "es" | "fr") => {
     setLang(code);
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 
+  if (!screenReady) return null;
+
   return (
     <div
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div
@@ -64,14 +74,12 @@ const LanguageScreen = () => {
 
       {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
       <div className="flex flex-col items-center px-6 pt-3 shrink-0">
-        {logo && (
-          <div
-            className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
-            {...logoGesture}
-          >
-            <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
-          </div>
-        )}
+        <div
+          className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
+          {...logoGesture}
+        >
+          <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
+        </div>
 
         <div className="text-center flex flex-col gap-1 w-full">
           {titles.map((tt, idx) => (

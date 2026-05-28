@@ -639,6 +639,8 @@ interface LanguageContextType {
   primaryLang: Lang;
   /** Idiomas ativos do projeto (subset de Lang) */
   activeLangs: Lang[];
+  /** Totem language config loaded (avoids flashing a single flag before fetch completes) */
+  langsReady: boolean;
   /** URL de ícone (bandeira) por idioma */
   langIcons: Partial<Record<Lang, string>>;
   /** Pré-carrega traduções automáticas de nomes/descrições do cardápio */
@@ -655,6 +657,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const storeId = storeIdProp ?? resolved.storeId ?? "";
   const [primaryLang, setPrimaryLang] = useState<Lang>("es");
   const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
+  const [langsReady, setLangsReady] = useState(false);
   const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
   const [lang, setLangState] = useState<Lang>(() => getEmbedLang() ?? loadSavedLang() ?? "es");
   const [translationTick, setTranslationTick] = useState(0);
@@ -672,26 +675,36 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   }, []);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId) {
+      setLangsReady(false);
+      return;
+    }
     let alive = true;
+    setLangsReady(false);
     (async () => {
-      const { data } = await supabase
-        .from("totem_config")
-        .select("primary_language, active_languages, language_icons")
-        .eq("store_id", storeId)
-        .maybeSingle();
-      if (!alive || !data) return;
-      const valid: Lang[] = ["pt", "en", "es", "fr"];
-      const primary = (valid.includes((data.primary_language as Lang)) ? data.primary_language : "es") as Lang;
-      const actives = ((data.active_languages || []) as string[])
-        .filter((l): l is Lang => valid.includes(l as Lang));
-      setPrimaryLang(primary);
-      setActiveLangs(actives.length ? actives : [primary]);
-      setLangIcons((data.language_icons as Partial<Record<Lang, string>>) || {});
-      const fromEmbed = isEmbedded() ? getEmbedLang() : null;
-      const fromQr = readLangFromUrl();
-      const remembered = loadSavedLang();
-      setLang(fromEmbed ?? fromQr ?? remembered ?? primary);
+      try {
+        const { data } = await supabase
+          .from("totem_config")
+          .select("primary_language, active_languages, language_icons")
+          .eq("store_id", storeId)
+          .maybeSingle();
+        if (!alive) return;
+        if (data) {
+          const valid: Lang[] = ["pt", "en", "es", "fr"];
+          const primary = (valid.includes((data.primary_language as Lang)) ? data.primary_language : "es") as Lang;
+          const actives = ((data.active_languages || []) as string[])
+            .filter((l): l is Lang => valid.includes(l as Lang));
+          setPrimaryLang(primary);
+          setActiveLangs(actives.length ? actives : [primary]);
+          setLangIcons((data.language_icons as Partial<Record<Lang, string>>) || {});
+          const fromEmbed = isEmbedded() ? getEmbedLang() : null;
+          const fromQr = readLangFromUrl();
+          const remembered = loadSavedLang();
+          setLang(fromEmbed ?? fromQr ?? remembered ?? primary);
+        }
+      } finally {
+        if (alive) setLangsReady(true);
+      }
     })();
     return () => {
       alive = false;
@@ -784,7 +797,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
 
   return (
     <LanguageContext.Provider
-      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langIcons, preloadMenuTranslations }}
+      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langsReady, langIcons, preloadMenuTranslations }}
     >
       {children}
     </LanguageContext.Provider>
