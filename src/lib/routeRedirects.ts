@@ -43,6 +43,7 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/panel/modifiers": nav.admin("modifiers"),
   "/panel/delivery-zones": nav.admin("delivery-zones"),
   "/panel/payments": nav.admin("operations"),
+  "/panel/finance": nav.admin("finance"),
   "/cashier": nav.panel("cashier"),
   "/painel": nav.panel(),
   "/painel/pedidos": nav.panel(),
@@ -69,7 +70,6 @@ const ADMIN_RESTAURANT_PANEL_ALIASES: Readonly<Record<string, string>> = {
   "/admin/qrcode": nav.panel("tables"),
   "/admin/qr-codes": nav.panel("tables"),
   "/admin/qr": nav.panel("tables"),
-  "/admin/finance": nav.panel("finance"),
   "/admin/settings": nav.panel("settings"),
 };
 

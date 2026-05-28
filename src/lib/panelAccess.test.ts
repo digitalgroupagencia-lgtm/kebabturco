@@ -13,10 +13,15 @@ describe("redirectTargetForPanelPath", () => {
     expect(redirectTargetForPanelPath(nav.panel("menu"), "manager")).toBe(nav.admin("menu"));
   });
 
+  it("redirects /panel/finance to admin finance for every role", () => {
+    expect(redirectTargetForPanelPath(nav.panel("finance"), "admin_master")).toBe(nav.admin("finance"));
+    expect(redirectTargetForPanelPath(nav.panel("finance"), "restaurant_admin")).toBe(nav.admin("finance"));
+    expect(redirectTargetForPanelPath(nav.panel("finance"), "operator")).toBe(nav.admin("finance"));
+  });
+
   it("never redirects admin_master away from other restaurant panel routes", () => {
     const paths = [
       nav.panel(),
-      nav.panel("finance"),
       nav.panel("settings"),
       nav.panel("cashier"),
       nav.panel("tables"),

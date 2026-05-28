@@ -17,6 +17,20 @@ export function canAccessGeneralAdmin(role: string | null | undefined): boolean 
   return isGeneralAdmin(role);
 }
 
+/** Recebimentos / IBAN / Stripe — admin geral ou dono/gerente do restaurante. */
+export function canAccessAdminFinance(role: string | null | undefined): boolean {
+  return (
+    isGeneralAdmin(role) ||
+    role === RESTAURANT_ADMIN_ROLE ||
+    role === "manager"
+  );
+}
+
+/** Dono/gerente só acede a Recebimentos no admin; o resto fica no painel operacional. */
+export function isFinanceOnlyAdmin(role: string | null | undefined): boolean {
+  return role === RESTAURANT_ADMIN_ROLE || role === "manager";
+}
+
 /** @deprecated Usar canAccessGeneralAdmin ou isGeneralAdmin */
 export function canAccessProjectAdmin(role: string | null | undefined): boolean {
   return canAccessGeneralAdmin(role);

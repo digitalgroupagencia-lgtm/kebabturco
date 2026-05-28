@@ -23,10 +23,10 @@ describe("resolveLegacyRouteRedirect", () => {
 
   it("keeps restaurant-admin paths inside the restaurant panel", () => {
     expect(resolveAdminRestaurantPanelAlias("/admin/menu")).toBeNull();
-    expect(resolveAdminRestaurantPanelAlias("/admin/finance")).toBe("/panel/finance");
+    expect(resolveAdminRestaurantPanelAlias("/admin/finance")).toBeNull();
     expect(resolveAdminRestaurantPanelAlias("/admin/settings")).toBe("/panel/settings");
     expect(resolveLegacyRouteRedirect("/panel/menu")).toBe("/admin/menu");
-    expect(resolveLegacyRouteRedirect("/panel/finance")).toBeNull();
+    expect(resolveLegacyRouteRedirect("/panel/finance")).toBe("/admin/finance");
   });
 
   it("returns null for canonical routes", () => {

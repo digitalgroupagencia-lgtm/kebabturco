@@ -13,7 +13,6 @@ const ALL_PANEL_SEGMENTS = new Set([
   "cashier",
   "table-map",
   "tables",
-  "finance",
   "settings",
   "team",
   "sellers",
@@ -110,13 +109,6 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
       { key: "tables", segment: "tables", label: "Mesas & QR" },
       { key: "team", segment: "team", label: "Equipe" },
       { key: "sellers", segment: "sellers", label: "Vendedores" },
-    ],
-  },
-  {
-    id: "finance",
-    label: "Financeiro",
-    items: [
-      { key: "finance", segment: "finance", label: "Recebimentos" },
     ],
   },
   {

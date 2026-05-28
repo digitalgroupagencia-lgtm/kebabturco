@@ -1,5 +1,5 @@
 import { useEffect, type ComponentType } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -9,7 +9,7 @@ import AdminThemeToggle from "./AdminThemeToggle";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
-import { canAccessGeneralAdmin } from "@/lib/projectAccess";
+import { canAccessGeneralAdmin, canAccessAdminFinance, isFinanceOnlyAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
 import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 import { nav } from "@/lib/navPaths.ts";
@@ -23,6 +23,8 @@ type Props = {
 const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
+  const location = useLocation();
+  const onFinanceRoute = location.pathname.replace(/\/+$/, "").startsWith("/admin/finance");
 
   if (authLoading || roleLoading) {
     return (
@@ -36,10 +38,7 @@ const AdminLayout = ({ page: Page }: Props) => {
     return <Navigate to={nav.auth()} replace />;
   }
 
-  if (!roleData || !canAccessGeneralAdmin(roleData.role)) {
-    if (roleData && !canAccessGeneralAdmin(roleData.role)) {
-      return <Navigate to={nav.panel()} replace />;
-    }
+  if (!roleData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
         <p className="text-lg font-bold">Sem acesso de administrador geral</p>
@@ -51,6 +50,17 @@ const AdminLayout = ({ page: Page }: Props) => {
         </a>
       </div>
     );
+  }
+
+  const generalAdmin = canAccessGeneralAdmin(roleData.role);
+  const financeAccess = canAccessAdminFinance(roleData.role);
+
+  if (!generalAdmin && !(onFinanceRoute && financeAccess)) {
+    return <Navigate to={nav.panel()} replace />;
+  }
+
+  if (isFinanceOnlyAdmin(roleData.role) && !onFinanceRoute) {
+    return <Navigate to={nav.admin("finance")} replace />;
   }
 
   return (

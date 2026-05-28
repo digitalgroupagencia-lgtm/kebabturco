@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
+import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 
 type LedgerRow = {
   id: string;
@@ -195,6 +196,8 @@ const FinancePage = () => {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
+      <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — escolha Gandia ou Gandia Playa." />
+
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />

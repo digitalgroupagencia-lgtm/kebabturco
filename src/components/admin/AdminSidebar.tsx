@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { isFinanceOnlyAdmin } from "@/lib/projectAccess";
 import { APP_NAME } from "@/lib/appMode";
 import {
   Sidebar,
@@ -132,7 +134,9 @@ function NavItem({
 export function AdminSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
+  const financeOnly = isFinanceOnlyAdmin(roleData?.role);
   const location = useLocation();
   const centralsOpen = location.pathname.includes("/centrals");
   const [centralsExpanded, setCentralsExpanded] = useState(centralsOpen);
@@ -140,6 +144,9 @@ export function AdminSidebar() {
   const handleNav = () => {
     setOpenMobile(false);
   };
+
+  const financeItems = storeItems.filter((item) => item.url === nav.admin("finance"));
+  const visibleStoreItems = financeOnly ? financeItems : storeItems;
 
   return (
     <Sidebar collapsible="icon">
@@ -155,28 +162,32 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {!financeOnly && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {overviewItems.map((item) => (
+                  <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
-          <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
+          <SidebarGroupLabel>{financeOnly ? "Recebimentos" : "Configuração da loja"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {overviewItems.map((item) => (
+              {visibleStoreItems.map((item) => (
                 <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Configuração da loja</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {storeItems.map((item) => (
-                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
+        {!financeOnly && (
+          <>
         <SidebarGroup>
           <SidebarGroupLabel>Centrais</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -268,6 +279,8 @@ export function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
