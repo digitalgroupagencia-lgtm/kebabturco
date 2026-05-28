@@ -1,5 +1,21 @@
--- PARTE 2 de 3 — colar na Lovable, Run, depois a Parte 3
--- Corrige o codigo de acesso com #
+-- Colar na Lovable e Run — corrige codigo de acesso (#) na Lovable
+
+CREATE OR REPLACE FUNCTION public.staff_pin_in_use(_store_id uuid, _pin text, _exclude_role_id uuid DEFAULT NULL)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.staff_access_pins sap
+    WHERE sap.store_id = _store_id
+      AND sap.is_active
+      AND (_exclude_role_id IS NULL OR sap.user_role_id <> _exclude_role_id)
+      AND sap.pin_hash = extensions.crypt(_pin, sap.pin_hash)
+  );
+$$;
 
 CREATE OR REPLACE FUNCTION public.upsert_staff_access_pin(_user_role_id uuid, _pin text)
 RETURNS void
@@ -37,7 +53,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.staff_access_pins (store_id, user_id, user_role_id, pin_hash)
-  VALUES (v_store_id, v_user_id, _user_role_id, crypt(_pin, gen_salt('bf')))
+  VALUES (v_store_id, v_user_id, _user_role_id, extensions.crypt(_pin, extensions.gen_salt('bf')))
   ON CONFLICT (user_role_id) DO UPDATE SET
     pin_hash = EXCLUDED.pin_hash,
     is_active = true,
@@ -45,6 +61,7 @@ BEGIN
 END;
 $fn$;
 
+GRANT EXECUTE ON FUNCTION public.staff_pin_in_use(uuid, text, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.upsert_staff_access_pin(uuid, text) TO authenticated;
 
-SELECT 'Parte 2 OK — pode correr a Parte 3' AS resultado;
+SELECT 'Codigo de acesso corrigido' AS passo;

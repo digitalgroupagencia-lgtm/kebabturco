@@ -60,8 +60,8 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     es: "Servicio temporalmente no disponible. La app intentó crear el miembro por otra vía — si el error continúa, contacte con soporte.",
   },
   db_function_missing: {
-    pt: "Falta actualizar a base de dados da loja. Contacte o suporte ou execute o SQL de equipa na Lovable.",
-    es: "Falta actualizar la base de datos de la tienda. Contacte con soporte o ejecute el SQL de equipo en Lovable.",
+    pt: "Falta activar a encriptação na base de dados da Lovable. Execute o SQL «gen_salt» (Passo 2 + código de acesso) e tente novamente.",
+    es: "Falta activar el cifrado en la base de datos de Lovable. Ejecute el SQL «gen_salt» (Paso 2 + código de acceso) e inténtelo de nuevo.",
   },
   rls_denied: {
     pt: "Sem permissão para concluir esta acção. Verifique se está logado como gerente ou dono.",
@@ -95,6 +95,7 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("código deve ter") || m.includes("codigo deve ter")) return "pin_format";
   if (m.includes("incluir #") || m.includes("6–10") || m.includes("6-10")) return "pin_format";
   if (m.includes("could not find the function") || m.includes("schema cache")) return "db_function_missing";
+  if (m.includes("gen_salt") || m.includes("pgcrypto")) return "db_function_missing";
   if (m.includes("row-level security") || m.includes("rls")) return "rls_denied";
   if (m.includes("infinite recursion")) return "rls_recursion";
   if (m.includes("sem permissão para definir código")) return "pin_permission";
