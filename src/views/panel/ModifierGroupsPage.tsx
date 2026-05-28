@@ -17,6 +17,7 @@ import { getModifierConfigWarnings } from "@/lib/modifiers/sanitizeGroups";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { LANG_LABELS } from "@/contexts/LanguageContext";
 import { buildPrimaryLanguagePayload, pickSourceText } from "@/lib/localizedText";
+import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 
 type GroupRow = {
   id: string;
@@ -67,24 +68,39 @@ export default function ModifierGroupsPage() {
   const [optionName, setOptionName] = useState("");
 
   const fetchAll = useCallback(async () => {
-    if (!storeId) return;
+    if (!storeId) {
+      setGroups([]);
+      setOptions([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const { data: gData } = await supabase
+    const { data: gData, error: gErr } = await supabase
       .from("modifier_groups")
       .select("*")
       .eq("store_id", storeId)
       .order("sort_order");
+    if (gErr) {
+      console.error("[ModifierGroupsPage] load groups failed", gErr);
+      toast.error("Não foi possível carregar personalizações. Verifique permissões ou unidade.");
+      setLoading(false);
+      return;
+    }
     const gs = (gData || []) as GroupRow[];
     setGroups(gs);
     if (gs.length && !selectedGroupId) setSelectedGroupId(gs[0].id);
 
     const ids = gs.map((g) => g.id);
     if (ids.length) {
-      const { data: oData } = await supabase
+      const { data: oData, error: oErr } = await supabase
         .from("modifier_options")
         .select("*")
         .in("group_id", ids)
         .order("sort_order");
+      if (oErr) {
+        console.error("[ModifierGroupsPage] load options failed", oErr);
+        toast.error("Não foi possível carregar opções de personalização.");
+      }
       setOptions((oData || []) as OptionRow[]);
     } else {
       setOptions([]);
@@ -257,6 +273,8 @@ export default function ModifierGroupsPage() {
           <Plus className="w-4 h-4 mr-1" /> Novo grupo
         </Button>
       </div>
+
+      <AdminStoreSwitcher hint="Grupos de personalização são por unidade — escolha a loja correcta se estiver vazio." />
 
       {configWarnings.length > 0 && (
         <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 space-y-2">

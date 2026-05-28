@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
+import { fetchActiveStoresForTenant } from "@/lib/fetchActiveStores";
+import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
 
 export type AdminStoreOption = {
   id: string;
@@ -33,6 +35,77 @@ function storageKey(tenantId: string) {
   return `kebab-admin-store:${tenantId}`;
 }
 
+async function resolveTenantIdForAdmin(
+  selectedTenantId: string | null | undefined,
+  roleTenantId: string | null | undefined,
+): Promise<string | null> {
+  if (selectedTenantId) return selectedTenantId;
+  if (roleTenantId) return roleTenantId;
+
+  if (typeof window !== "undefined") {
+    const host = normalizeHostname(window.location.hostname);
+    if (host) {
+      const { data: rows } = await supabase
+        .from("tenants")
+        .select("id, custom_domain, slug")
+        .eq("is_active", true);
+
+      const byDomain = (rows ?? []).find(
+        (t) => t.custom_domain && normalizeHostname(t.custom_domain) === host,
+      );
+      if (byDomain?.id) return byDomain.id;
+
+      if (isDefaultKebabContextHost(host)) {
+        const { data: t } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", DEFAULT_TENANT_SLUG)
+          .maybeSingle();
+        if (t?.id) return t.id;
+      }
+    }
+  }
+
+  const { data: t } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("slug", DEFAULT_TENANT_SLUG)
+    .maybeSingle();
+  return t?.id ?? null;
+}
+
+async function resolveInitialStoreId(
+  options: AdminStoreOption[],
+  tenantId: string,
+): Promise<string | null> {
+  if (!options.length) return null;
+
+  const saved =
+    typeof window !== "undefined" ? window.localStorage.getItem(storageKey(tenantId)) : null;
+
+  const counts = await Promise.all(
+    options.map(async (store) => {
+      const { count, error } = await supabase
+        .from("categories")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store.id);
+      return { id: store.id, count: error ? 0 : count ?? 0 };
+    }),
+  );
+
+  if (saved && options.some((s) => s.id === saved)) {
+    const savedCount = counts.find((c) => c.id === saved)?.count ?? 0;
+    if (savedCount > 0) return saved;
+  }
+
+  const richest = counts.reduce(
+    (best, row) => (row.count > best.count ? row : best),
+    { id: options[0].id, count: 0 },
+  );
+
+  return richest.count > 0 ? richest.id : options[0].id;
+}
+
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
@@ -48,15 +121,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (roleLoading || tenantLoading) return;
       setLoading(true);
 
-      let tenantId = selectedTenant?.id ?? roleData?.tenant_id ?? null;
-      if (!tenantId) {
-        const { data: t } = await supabase
-          .from("tenants")
-          .select("id")
-          .eq("slug", DEFAULT_TENANT_SLUG)
-          .maybeSingle();
-        tenantId = t?.id ?? null;
-      }
+      let tenantId = await resolveTenantIdForAdmin(selectedTenant?.id, roleData?.tenant_id ?? null);
 
       if (!tenantId) {
         if (active) {
@@ -67,30 +132,20 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data: storeRows } = await supabase
-        .from("stores")
-        .select("id, name, address")
-        .eq("tenant_id", tenantId)
-        .eq("is_active", true)
-        .order("sort_order")
-        .order("created_at");
-
-      if (!active) return;
-
-      const options = (storeRows ?? []) as AdminStoreOption[];
+      const storeOptions = await fetchActiveStoresForTenant(tenantId);
+      const options: AdminStoreOption[] = storeOptions.map((s) => ({
+        id: s.id,
+        name: s.name,
+        address: s.address,
+      }));
       setStores(options);
 
-      const saved =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem(storageKey(tenantId))
-          : null;
+      const resolved = await resolveInitialStoreId(options, tenantId);
 
-      const fallback = options[0]?.id ?? null;
-      const resolved =
-        (saved && options.some((s) => s.id === saved) ? saved : null) ?? fallback;
-
-      setSelectedStoreId(resolved);
-      setLoading(false);
+      if (active) {
+        setSelectedStoreId(resolved);
+        setLoading(false);
+      }
     })();
 
     return () => {

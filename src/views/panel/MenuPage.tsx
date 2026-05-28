@@ -17,7 +17,9 @@ import ProductModifierEditor, { saveProductModifierLinks } from "@/components/pa
 import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
 import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
 import MenuProductReviewQueue from "@/components/panel/MenuProductReviewQueue";
+import CloneStoreMenuPanel from "@/components/panel/CloneStoreMenuPanel";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
+import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 import ImageUploadField from "@/components/panel/ImageUploadField";
 import { uploadCategoryImage } from "@/lib/uploadImage";
 import { uploadProductImage } from "@/lib/uploadProductImage";
@@ -74,9 +76,15 @@ const MenuPage = () => {
   const menuAudit = useMenuCatalogAudit(isAdminMenu ? storeId : null);
 
   useEffect(() => {
-    if (storeId) {
-      fetchCategories();
+    if (!storeId) {
+      setCategories([]);
+      setProducts([]);
+      setSelectedCategoryId(null);
+      setLoading(false);
+      return;
     }
+    setLoading(true);
+    void fetchCategories();
   }, [storeId]);
 
   useEffect(() => {
@@ -98,6 +106,9 @@ const MenuPage = () => {
       if (data.length > 0 && !selectedCategoryId) {
         setSelectedCategoryId(data[0].id);
       }
+    } else if (error) {
+      console.error("[MenuPage] categories load failed", error);
+      toast.error("Não foi possível carregar categorias. Verifique permissões ou unidade seleccionada.");
     }
     setLoading(false);
   };
@@ -457,6 +468,30 @@ const MenuPage = () => {
         title="Cardápio"
         description="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
       />
+
+      {isAdminMenu && (
+        <AdminStoreSwitcher hint="O cardápio é por unidade — escolha Gandia para ver os 93 produtos ou Playa Gandia para editar a cópia." />
+      )}
+
+      {isAdminMenu && storeId && (
+        <CloneStoreMenuPanel
+          targetStoreId={storeId}
+          targetProductCount={menuAudit.products.length}
+          onCloned={() => {
+            void fetchCategories();
+            void menuAudit.loadAuditData();
+          }}
+        />
+      )}
+
+      {!loading && categories.length === 0 && storeId && (
+        <Card className="border-amber-500/40 bg-amber-500/10">
+          <CardContent className="p-4 text-sm text-amber-950 dark:text-amber-50">
+            Esta unidade ainda não tem cardápio. Mude para <strong>Gandia</strong> no selector acima
+            ou use <strong>Duplicar cardápio</strong> para copiar tudo de Gandia para Playa Gandia.
+          </CardContent>
+        </Card>
+      )}
 
       {isAdminMenu && (
         <>
