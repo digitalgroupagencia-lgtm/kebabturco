@@ -15,6 +15,7 @@ import {
   Save, Download, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 
 const PrinterPage = () => {
   const { storeId } = useAdminStoreId();
@@ -26,13 +27,18 @@ const PrinterPage = () => {
   const [bridge, setBridge] = useState<"active" | "inactive" | "unknown" | "checking">("checking");
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     (async () => {
       const c = await fetchPrinterConfig(storeId);
       setCfg(c);
       const { data } = await supabase.from("company_settings")
         .select("company_name").eq("store_id", storeId).maybeSingle();
       if (data?.company_name) setCompanyName(data.company_name);
+      else setCompanyName("Restaurante");
       setLoading(false);
     })();
   }, [storeId]);
@@ -58,7 +64,7 @@ const PrinterPage = () => {
     setSaving(true);
     try {
       await savePrinterConfig(storeId, cfg);
-      toast.success("Configuración guardada");
+      toast.success("Configuração guardada");
     } catch (e) {
       toast.error("Error: " + (e as Error).message);
     } finally { setSaving(false); }
@@ -98,21 +104,31 @@ const PrinterPage = () => {
   };
   const status = statusMap[bridge];
 
-  if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+  if (loading) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+
+  if (!storeId) {
+    return (
+      <div className="p-8 text-muted-foreground">
+        Nenhuma unidade activa. Crie uma unidade em Unidades primeiro.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto w-full">
+      <AdminStoreSwitcher hint="Cada unidade tem a sua impressora. Escolha a loja, configure e guarde — depois repita para a outra unidade." />
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Printer className="h-5 w-5" /> Impresora LAN (ESC/POS)
+            <Printer className="h-5 w-5" /> Impressora da cozinha
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Los tickets se encolan en la base de datos y el <b>Print Bridge</b> local del restaurante los imprime.
+            Os pedidos desta unidade vão para esta impressora. Um computador na loja recebe e imprime os tickets.
           </p>
         </div>
         <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
-          <Save className="w-4 h-4 mr-2" /> {saving ? "Guardando..." : "Guardar"}
+          <Save className="w-4 h-4 mr-2" /> {saving ? "A guardar..." : "Guardar"}
         </Button>
       </div>
 

@@ -14,6 +14,7 @@ import LovableRouteHintBanner from "./LovableRouteHintBanner";
 import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
+import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 
 type Props = {
   page?: ComponentType<object>;
@@ -54,29 +55,31 @@ const AdminLayout = ({ page: Page }: Props) => {
 
   return (
     <SelectedTenantProvider>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
-          <AdminSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-              <SidebarTrigger className="mr-2 sm:mr-4" />
-              <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">
-                {APP_NAME} · Administração
-              </h1>
-              <StaffLanguageToggle defaultLang="pt" compact />
-              <AdminThemeToggle />
-            </header>
-            <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-              <div className="max-w-full mx-auto">
-                <OperationalDiagnosticsBanner area="admin" />
-                <LovableRouteHintBanner />
-                {Page ? <Page /> : <Outlet />}
-              </div>
-            </main>
+      <AdminStoreProvider>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
+            <AdminSidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+                <SidebarTrigger className="mr-2 sm:mr-4" />
+                <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">
+                  {APP_NAME} · Administração
+                </h1>
+                <StaffLanguageToggle defaultLang="pt" compact />
+                <AdminThemeToggle />
+              </header>
+              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <div className="max-w-full mx-auto">
+                  <OperationalDiagnosticsBanner area="admin" />
+                  <LovableRouteHintBanner />
+                  {Page ? <Page /> : <Outlet />}
+                </div>
+              </main>
+            </div>
+            <AdminAssistant />
           </div>
-          <AdminAssistant />
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </AdminStoreProvider>
     </SelectedTenantProvider>
   );
 };

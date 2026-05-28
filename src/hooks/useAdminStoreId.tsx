@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { useOptionalPanelStore } from "@/contexts/PanelStoreContext";
+import { useOptionalAdminStore } from "@/contexts/AdminStoreContext";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 
 async function firstActiveStoreForTenant(tenantId: string): Promise<string | null> {
@@ -46,13 +47,15 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
   const { tenantId: hostTenantId } = useResolvedStore();
   const { tenant, loading: tenantLoading } = useSelectedTenant();
   const panelStore = useOptionalPanelStore();
+  const adminStore = useOptionalAdminStore();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const inPanel = typeof window !== "undefined" && window.location.pathname.startsWith("/panel");
+  const inAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
 
   useEffect(() => {
-    if (inPanel && panelStore) return;
+    if ((inPanel && panelStore) || (inAdmin && adminStore)) return;
 
     let active = true;
     (async () => {
@@ -128,10 +131,17 @@ export function useAdminStoreId(): { storeId: string | null; loading: boolean } 
     inPanel,
     panelStore?.storeId,
     panelStore?.loading,
+    inAdmin,
+    adminStore?.storeId,
+    adminStore?.loading,
   ]);
 
   if (inPanel && panelStore) {
     return { storeId: panelStore.storeId, loading: panelStore.loading };
+  }
+
+  if (inAdmin && adminStore) {
+    return { storeId: adminStore.storeId, loading: adminStore.loading };
   }
 
   return { storeId, loading: loading || tenantLoading };
