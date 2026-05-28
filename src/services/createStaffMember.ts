@@ -168,19 +168,39 @@ async function createStaffMemberLocally(
     throw new Error("Esta pessoa já faz parte da equipa desta loja.");
   }
 
-  const { data: roleRow, error: roleError } = await supabase
-    .from("user_roles")
-    .insert({
-      user_id: userId,
-      role: input.role as any,
-      tenant_id: input.tenant_id,
-      store_id: input.store_id,
-    })
-    .select("id")
-    .single();
+  const { data: roleRowId, error: roleError } = await (supabase.rpc as any)("add_team_member_to_store", {
+    _user_id: userId,
+    _role: input.role,
+    _store_id: input.store_id,
+    _tenant_id: input.tenant_id,
+  });
 
-  if (roleError || !roleRow?.id) {
-    throw roleError ?? new Error("Erro ao atribuir papel");
+  let roleRow: { id: string } | null = roleRowId ? { id: roleRowId as string } : null;
+
+  if (roleError) {
+    const msg = extractErrorMessage(roleError).toLowerCase();
+    if (msg.includes("could not find the function") || msg.includes("schema cache")) {
+      const { data: inserted, error: insertError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          role: input.role as any,
+          tenant_id: input.tenant_id,
+          store_id: input.store_id,
+        })
+        .select("id")
+        .single();
+      if (insertError || !inserted?.id) {
+        throw insertError ?? roleError;
+      }
+      roleRow = inserted;
+    } else {
+      throw roleError;
+    }
+  }
+
+  if (!roleRow?.id) {
+    throw new Error("Erro ao atribuir papel");
   }
 
   try {

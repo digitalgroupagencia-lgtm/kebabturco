@@ -22,12 +22,7 @@ BEGIN
   END IF;
 
   v_can_manage := public.has_role(auth.uid(), 'admin_master'::public.app_role)
-    OR EXISTS (
-      SELECT 1 FROM public.user_roles ur
-      WHERE ur.user_id = auth.uid()
-        AND ur.store_id = v_store_id
-        AND ur.role IN ('restaurant_admin'::public.app_role, 'manager'::public.app_role)
-    );
+    OR public.user_manages_store_team(v_store_id);
 
   IF NOT v_can_manage THEN
     RAISE EXCEPTION 'Sem permissão para definir código de acesso';

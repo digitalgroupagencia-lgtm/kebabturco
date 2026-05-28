@@ -53,14 +53,6 @@ describe("createStaffMember", () => {
               }),
             }),
           }),
-          insert: () => ({
-            select: () => ({
-              single: vi.fn().mockResolvedValue({
-                data: { id: "role-1" },
-                error: null,
-              }),
-            }),
-          }),
           delete: () => ({ eq: vi.fn().mockResolvedValue({ error: null }) }),
         };
       }
@@ -72,6 +64,9 @@ describe("createStaffMember", () => {
       return {};
     });
     mockRpc.mockImplementation((fn: string) => {
+      if (fn === "add_team_member_to_store") {
+        return Promise.resolve({ data: "role-1", error: null });
+      }
       if (fn === "upsert_staff_access_pin" || fn === "upsert_staff_profile_by_manager") {
         return Promise.resolve({ error: null });
       }

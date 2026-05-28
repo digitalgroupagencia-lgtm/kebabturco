@@ -67,6 +67,10 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     pt: "Sem permissão para concluir esta acção. Verifique se está logado como gerente ou dono.",
     es: "Sin permiso para completar esta acción. Compruebe que inició sesión como gerente o dueño.",
   },
+  rls_recursion: {
+    pt: "Erro na base de dados da loja. Execute o script SQL de correção da equipa na Lovable.",
+    es: "Error en la base de datos de la tienda. Ejecute el script SQL de corrección del equipo en Lovable.",
+  },
   generic: {
     pt: "Não foi possível concluir. Tente novamente.",
     es: "No se pudo completar. Inténtelo de nuevo.",
@@ -89,6 +93,7 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("incluir #") || m.includes("6–10") || m.includes("6-10")) return "pin_format";
   if (m.includes("could not find the function") || m.includes("schema cache")) return "db_function_missing";
   if (m.includes("row-level security") || m.includes("rls")) return "rls_denied";
+  if (m.includes("infinite recursion")) return "rls_recursion";
   if (m.includes("sem permissão para definir código")) return "pin_permission";
   if (m.includes("membro da equipe não encontrado") || m.includes("equipe não encontrado")) return "member_not_found";
   if (m.includes("loja inválida")) return "store_invalid";

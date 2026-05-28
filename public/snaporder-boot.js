@@ -83,7 +83,7 @@
 
     var script = document.createElement("script");
     script.type = "module";
-    script.src = appSrc + (appSrc.indexOf("?") >= 0 ? "&" : "?") + "v=" + Date.now();
+    script.src = appSrc;
     script.onerror = function () {
       showBootError("Não foi possível abrir o menu. Toque em Actualizar.");
     };

@@ -51,6 +51,16 @@ export function useUserRole(userId: string | undefined) {
     setError(null);
 
     const fetchRole = async () => {
+      const rpcRole = await fetchRoleViaRpc();
+      if (!active) return;
+
+      if (rpcRole) {
+        setRoleData(rpcRole);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       const { data, error: queryError } = await supabase
         .from("user_roles")
         .select("role, tenant_id, store_id")
@@ -60,15 +70,6 @@ export function useUserRole(userId: string | undefined) {
 
       if (!queryError && data?.length) {
         setRoleData(pickRoleData(data as UserRoleData[]));
-        setLoading(false);
-        return;
-      }
-
-      const rpcRole = await fetchRoleViaRpc();
-      if (!active) return;
-
-      if (rpcRole) {
-        setRoleData(rpcRole);
         setError(null);
       } else {
         setRoleData(null);
