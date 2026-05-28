@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { markStaffSession } from "@/lib/staffLogin";
+import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -13,7 +14,11 @@ function isEdgeFunctionUnavailable(message: string): boolean {
   );
 }
 
-async function invokeStaffPinLogin(storeId: string | null, pin: string) {
+function isInvalidStorePayload(message: string): boolean {
+  return /loja e código|loja não identificada|tienda o código|invalid store/i.test(message);
+}
+
+async function invokeStaffPinLogin(storeId: string, pin: string) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/staff-pin-login`, {
     method: "POST",
     headers: {
@@ -22,8 +27,8 @@ async function invokeStaffPinLogin(storeId: string | null, pin: string) {
       apikey: SUPABASE_KEY,
     },
     body: JSON.stringify({
+      store_id: storeId,
       pin: pin.trim(),
-      ...(storeId?.trim() ? { store_id: storeId.trim() } : {}),
     }),
   });
 
@@ -45,7 +50,7 @@ async function invokeStaffPinLogin(storeId: string | null, pin: string) {
   return payload;
 }
 
-/** Inicia sessão com código — validação no servidor (RPC + bcrypt). */
+/** Inicia sessão com código — envia sempre store_id + pin ao servidor. */
 export async function loginWithStaffPin(storeId: string | null, pin: string) {
   const trimmedPin = pin.trim();
 
@@ -53,12 +58,22 @@ export async function loginWithStaffPin(storeId: string | null, pin: string) {
     throw new Error("Código inválido — use 6–10 caracteres com # e números");
   }
 
+  let effectiveStoreId = await ensureStaffLoginStoreId(storeId);
+
   let tokenHash: string | undefined;
   let role: StaffRole | null = null;
   let userId: string | undefined;
 
   try {
-    const payload = await invokeStaffPinLogin(storeId, trimmedPin);
+    let payload;
+    try {
+      payload = await invokeStaffPinLogin(effectiveStoreId, trimmedPin);
+    } catch (firstError) {
+      const msg = firstError instanceof Error ? firstError.message : String(firstError);
+      if (!isInvalidStorePayload(msg)) throw firstError;
+      effectiveStoreId = await ensureStaffLoginStoreId(null);
+      payload = await invokeStaffPinLogin(effectiveStoreId, trimmedPin);
+    }
     tokenHash = payload.token_hash;
     role = (payload.role as StaffRole | undefined) ?? null;
     userId = payload.user_id;
@@ -87,6 +102,7 @@ export async function loginWithStaffPin(storeId: string | null, pin: string) {
 }
 
 export async function verifyStaffPinOnly(storeId: string | null, pin: string) {
-  const payload = await invokeStaffPinLogin(storeId, pin.trim());
+  const effectiveStoreId = await ensureStaffLoginStoreId(storeId);
+  const payload = await invokeStaffPinLogin(effectiveStoreId, pin.trim());
   return { user_id: payload.user_id!, role: payload.role as StaffRole };
 }

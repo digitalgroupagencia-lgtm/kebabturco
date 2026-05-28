@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { resolveStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
+import { resolveStaffLoginStoreId, persistStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 
@@ -15,6 +15,7 @@ export function useStaffLoginStore() {
     const direct = await resolveStaffLoginStoreId();
     if (direct) {
       setStoreIdResolved(direct);
+      persistStaffLoginStoreId(direct);
       setLoading(false);
       setRetrying(false);
       return direct;
@@ -23,6 +24,7 @@ export function useStaffLoginStore() {
     const fromContext = selectedStoreId ?? storeId;
     if (fromContext && !isEmergencyFallbackStoreId(fromContext)) {
       setStoreIdResolved(fromContext);
+      persistStaffLoginStoreId(fromContext);
       setLoading(false);
       setRetrying(false);
       return fromContext;

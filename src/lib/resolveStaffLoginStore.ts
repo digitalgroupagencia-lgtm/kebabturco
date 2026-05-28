@@ -5,6 +5,15 @@ import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 
 const SELECTED_STORE_KEY = "totem.selectedStoreId";
 
+export function persistStaffLoginStoreId(storeId: string) {
+  if (!pickStoreId(storeId)) return;
+  try {
+    localStorage.setItem(SELECTED_STORE_KEY, storeId);
+  } catch {
+    /* ignore */
+  }
+}
+
 function pickStoreId(id: string | null | undefined): string | null {
   if (!id || isEmergencyFallbackStoreId(id)) return null;
   return id;
@@ -121,4 +130,35 @@ export async function resolveStaffLoginStoreId(): Promise<string | null> {
   }
 
   return readSavedStoreId();
+}
+
+/** Obrigatório antes do login — nunca chama o servidor sem loja real. */
+export async function ensureStaffLoginStoreId(hint?: string | null): Promise<string> {
+  const fromHint = pickStoreId(hint ?? null);
+  if (fromHint) {
+    persistStaffLoginStoreId(fromHint);
+    return fromHint;
+  }
+
+  const resolved = await resolveStaffLoginStoreId();
+  if (resolved) {
+    persistStaffLoginStoreId(resolved);
+    return resolved;
+  }
+
+  const { data: rows } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  const direct = pickStoreId(rows?.[0]?.id as string | undefined);
+  if (direct) {
+    persistStaffLoginStoreId(direct);
+    return direct;
+  }
+
+  throw new Error("Loja e código inválidos");
 }

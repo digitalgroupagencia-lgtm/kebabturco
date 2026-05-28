@@ -1,15 +1,22 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
+import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
 
-/** 5 toques rápidos OU pressão longa de 5s na logo → /staff-login. */
+/** 5 toques rápidos OU pressão longa de 5s na logo → /staff. */
 export function useStaffLogoGesture() {
   const navigate = useNavigate();
   const tapsRef = useRef<number>(0);
   const tapResetRef = useRef<number | null>(null);
   const longPressRef = useRef<number | null>(null);
 
-  const trigger = () => navigate(nav.staff());
+  const trigger = () => {
+    void ensureStaffLoginStoreId()
+      .catch(() => null)
+      .finally(() => {
+        navigate(nav.staff());
+      });
+  };
 
   const registerTap = () => {
     tapsRef.current += 1;
