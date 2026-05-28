@@ -118,8 +118,41 @@ const MenuPage = () => {
       }
     };
 
+    const handleReview = async (event: Event) => {
+      const detail = (event as CustomEvent<{ productId?: string; categoryId?: string }>).detail;
+      if (!detail?.productId || !storeId) return;
+
+      if (detail.categoryId) {
+        setSelectedCategoryId(detail.categoryId);
+        await fetchProducts(detail.categoryId);
+      }
+
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", detail.productId)
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error("Não foi possível abrir o produto para revisão");
+        return;
+      }
+
+      if (!detail.categoryId && data.category_id) {
+        setSelectedCategoryId(data.category_id);
+        await fetchProducts(data.category_id);
+      }
+
+      openProdDialog(data as Product);
+    };
+
     window.addEventListener("menu-catalog-audit-product-created", handleCreated);
-    return () => window.removeEventListener("menu-catalog-audit-product-created", handleCreated);
+    window.addEventListener("menu-catalog-audit-review-product", handleReview);
+    return () => {
+      window.removeEventListener("menu-catalog-audit-product-created", handleCreated);
+      window.removeEventListener("menu-catalog-audit-review-product", handleReview);
+    };
   }, [storeId]);
 
   // Category CRUD

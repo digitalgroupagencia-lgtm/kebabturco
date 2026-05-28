@@ -4,6 +4,7 @@ import {
   auditModifierOptionsAgainstCatalog,
   mergeCatalogAudits,
 } from "./menuCatalogAudit";
+import { KEBAB_DRINK_CATALOG } from "./__fixtures__/kebabMenuAuditProducts";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ModifierGroup } from "./types";
 
@@ -14,7 +15,7 @@ function product(name: string, image?: string): MenuProduct {
     description: { es: "", pt: "", en: "", fr: "" },
     price: 2,
     image: image ?? "",
-    categoryId: "bebidas",
+    category: "bebidas",
     categorySlug: "bebidas",
     isBestseller: false,
     isPromo: false,
@@ -30,31 +31,41 @@ describe("menuCatalogAudit", () => {
         name: { es: "Bebida 2L", pt: "Bebida 2L" },
         groupKind: "choice",
         options: [
-          { id: "o1", name: { es: "Coca-Cola 2L" }, price: 0 } as any,
-          { id: "o2", name: { es: "Fanta Naranja 2L" }, price: 0 } as any,
+          { id: "o1", name: { es: "Coca-Cola 2L" }, price: 0 } as never,
+          { id: "o2", name: { es: "Fanta Naranja 2L" }, price: 0 } as never,
         ],
-      } as any,
+      } as never,
     ];
     const products = [product("Refresco Botella 2L")];
 
     const issues = auditModifierOptionsAgainstCatalog(groups, products);
     expect(issues.some((i) => i.optionName.includes("Coca-Cola"))).toBe(true);
-    expect(issues.some((i) => i.problem.includes("sem produto editável"))).toBe(true);
+    expect(issues.some((i) => i.action === "create")).toBe(true);
   });
 
-  it("warns when matched product has no image", () => {
+  it("suggests review when matched product has no image", () => {
     const groups: ModifierGroup[] = [
       {
         id: "g1",
         name: { es: "Bebida 2L", pt: "Bebida 2L" },
         groupKind: "choice",
-        options: [{ id: "o1", name: { es: "Refresco Botella 2L" }, price: 0 } as any],
-      } as any,
+        options: [{ id: "o1", name: { es: "Refresco Botella 2L" }, price: 0 } as never],
+      } as never,
     ];
     const products = [product("Refresco Botella 2L", "")];
 
     const issues = auditModifierOptionsAgainstCatalog(groups, products);
-    expect(issues.some((i) => i.problem.includes("sem imagem"))).toBe(true);
+    expect(issues.some((i) => i.action === "review" && i.problem.includes("foto"))).toBe(true);
+  });
+
+  it("treats existing recommended drinks as review instead of create", () => {
+    const issues = auditExpectedDrinkCatalog(KEBAB_DRINK_CATALOG);
+    expect(issues.some((i) => i.optionName === "Coca-Cola 2L" && i.action === "create")).toBe(false);
+    expect(
+      issues.some(
+        (i) => i.optionName === "Coca-Cola 2L" && i.action === "review" && i.matchedProductId,
+      ),
+    ).toBe(true);
   });
 
   it("merges expected drink catalog gaps", () => {
@@ -63,6 +74,6 @@ describe("menuCatalogAudit", () => {
       auditModifierOptionsAgainstCatalog([], products),
       auditExpectedDrinkCatalog(products),
     ]);
-    expect(merged.length).toBeGreaterThan(0);
+    expect(merged.some((i) => i.action === "create")).toBe(true);
   });
 });
