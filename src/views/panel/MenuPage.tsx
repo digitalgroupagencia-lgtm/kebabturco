@@ -17,7 +17,6 @@ import ProductModifierEditor, { saveProductModifierLinks } from "@/components/pa
 import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
 import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
 import MenuProductReviewQueue from "@/components/panel/MenuProductReviewQueue";
-import CloneStoreMenuPanel from "@/components/panel/CloneStoreMenuPanel";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
 import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 import ImageUploadField from "@/components/panel/ImageUploadField";
@@ -473,22 +472,11 @@ const MenuPage = () => {
         <AdminStoreSwitcher hint="O cardápio é por unidade — escolha Gandia para ver os 93 produtos ou Playa Gandia para editar a cópia." />
       )}
 
-      {isAdminMenu && storeId && (
-        <CloneStoreMenuPanel
-          targetStoreId={storeId}
-          targetProductCount={menuAudit.products.length}
-          onCloned={() => {
-            void fetchCategories();
-            void menuAudit.loadAuditData();
-          }}
-        />
-      )}
-
       {!loading && categories.length === 0 && storeId && (
         <Card className="border-amber-500/40 bg-amber-500/10">
           <CardContent className="p-4 text-sm text-amber-950 dark:text-amber-50">
             Esta unidade ainda não tem cardápio. Mude para <strong>Gandia</strong> no selector acima
-            ou use <strong>Duplicar cardápio</strong> para copiar tudo de Gandia para Playa Gandia.
+            ou adicione categorias e produtos manualmente.
           </CardContent>
         </Card>
       )}

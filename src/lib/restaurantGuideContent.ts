@@ -67,7 +67,7 @@ export const RESTAURANT_GUIDE_SECTIONS: FaqSection[] = [
       },
       {
         q: "Duas lojas (Gandia e Playa Gandia)",
-        a: "O cliente escolhe a loja ao encomendar. No admin, use o selector no topo do Cardápio. Se Playa Gandia estiver vazia, use «Duplicar cardápio» copiando de Gandia.",
+        a: "O cliente escolhe a loja ao encomendar. No admin, use o selector no topo do Cardápio. Cada loja tem cardápio independente — alterar preços numa não muda na outra.",
       },
       {
         q: "Personalização (extras, carne, ingredientes)",

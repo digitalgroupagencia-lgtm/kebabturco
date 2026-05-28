@@ -68,7 +68,7 @@ const KEBAB_SECTIONS: FaqSection[] = [
       },
       {
         q: "Como copiar o cardápio para Playa Gandia?",
-        a: "Admin → Cardápio → selector Playa Gandia → secção «Duplicar cardápio» → origem Gandia → Duplicar cardápio. Fica independente: editar na praia não muda Gandia.",
+        a: "Admin → Cardápio → selector Playa Gandia. Cada unidade tem cardápio independente — editar na praia não muda Gandia.",
       },
       {
         q: "Como importar um cardápio?",
