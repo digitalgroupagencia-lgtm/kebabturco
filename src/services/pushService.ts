@@ -58,3 +58,26 @@ export async function notifyStaffNewOrder(
     /* não bloqueia operação */
   }
 }
+
+/** Campanha push para clientes com app (menu ou pedidos anteriores). */
+export async function notifyStoreMarketingBroadcast(
+  storeId: string,
+  title: string,
+  body: string,
+  url = "/",
+) {
+  try {
+    await supabase.functions.invoke("send-push-notification", {
+      body: {
+        storeId,
+        audience: "marketing",
+        title,
+        body,
+        tag: `marketing-${storeId}-${Date.now()}`,
+        url,
+      },
+    });
+  } catch {
+    /* não bloqueia operação */
+  }
+}

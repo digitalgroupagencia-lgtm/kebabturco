@@ -21,7 +21,9 @@ import {
   loadSavedMesaToken,
   loadSavedOrderType,
   saveSavedCustomerName,
+  saveSavedCustomerPhone,
   saveSavedDeliveryAddress,
+  hasCustomerProfile,
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -387,6 +389,7 @@ const PaymentScreen = () => {
     syncActiveOrderUrl(result.order_id, awaitsCounterPayment ? "cashPending" : "confirmation");
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
+    if (customerPhone.trim()) saveSavedCustomerPhone(phoneDialCode, customerPhone.trim());
     if (orderType === "delivery") {
       saveSavedDeliveryAddress({
         street: deliveryAddress.trim(),
@@ -716,6 +719,12 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
+            {hasCustomerProfile() && (
+              <p className="mt-3 text-[11px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-xl px-3 py-2">
+                {t("savedProfileHint")}
+              </p>
+            )}
+
             {isTableOrder && mesaValidated && (
               <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
                 <div className={`px-3 py-2.5 ${showError === "table" ? "bg-destructive/5" : ""}`}>

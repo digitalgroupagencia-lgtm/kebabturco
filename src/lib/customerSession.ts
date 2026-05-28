@@ -266,3 +266,74 @@ export function saveSavedDeliveryAddress(addr: SavedDeliveryAddress) {
     /* ignore */
   }
 }
+
+const EMPTY_DELIVERY: SavedDeliveryAddress = {
+  street: "",
+  number: "",
+  complement: "",
+  postalCode: "",
+  city: "",
+  notes: "",
+};
+
+export type CustomerProfile = {
+  name: string;
+  phoneDialCode: string;
+  phoneLocal: string;
+  delivery: SavedDeliveryAddress;
+};
+
+export function loadCustomerProfile(): CustomerProfile {
+  const phone = loadSavedCustomerPhone();
+  const delivery = loadSavedDeliveryAddress();
+  return {
+    name: loadSavedCustomerName(),
+    phoneDialCode: phone?.dialCode ?? "+34",
+    phoneLocal: phone?.local ?? "",
+    delivery: delivery ?? { ...EMPTY_DELIVERY },
+  };
+}
+
+export function saveCustomerProfile(profile: CustomerProfile) {
+  saveSavedCustomerName(profile.name);
+  saveSavedCustomerPhone(profile.phoneDialCode, profile.phoneLocal);
+  saveSavedDeliveryAddress(profile.delivery);
+}
+
+export function hasCustomerProfile(): boolean {
+  const profile = loadCustomerProfile();
+  return Boolean(
+    profile.name.trim() ||
+      profile.phoneLocal.trim() ||
+      profile.delivery.street.trim() ||
+      profile.delivery.city.trim(),
+  );
+}
+
+export function applyCustomerProfileToOrderContext(
+  profile: CustomerProfile,
+  setters: {
+    setCustomerName: (v: string) => void;
+    setPhoneDialCode: (v: string) => void;
+    setCustomerPhone: (v: string) => void;
+    setDeliveryAddress: (v: string) => void;
+    setDeliveryNumber: (v: string) => void;
+    setDeliveryComplement: (v: string) => void;
+    setDeliveryPostalCode: (v: string) => void;
+    setDeliveryCity: (v: string) => void;
+    setDeliveryNotes: (v: string) => void;
+  },
+) {
+  if (profile.name.trim()) setters.setCustomerName(profile.name.trim());
+  if (profile.phoneLocal.trim()) {
+    setters.setPhoneDialCode(profile.phoneDialCode);
+    setters.setCustomerPhone(profile.phoneLocal.trim());
+  }
+  const d = profile.delivery;
+  if (d.street.trim()) setters.setDeliveryAddress(d.street.trim());
+  if (d.number.trim()) setters.setDeliveryNumber(d.number.trim());
+  if (d.complement.trim()) setters.setDeliveryComplement(d.complement.trim());
+  if (d.postalCode.trim()) setters.setDeliveryPostalCode(d.postalCode.trim());
+  if (d.city.trim()) setters.setDeliveryCity(d.city.trim());
+  if (d.notes.trim()) setters.setDeliveryNotes(d.notes.trim());
+}

@@ -8,8 +8,12 @@ import ScreenHeader from "@/components/ScreenHeader";
 import PhoneInput from "@/components/PhoneInput";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import { loadLocalOrderHistory, type LocalOrderHistoryEntry } from "@/lib/customerOrderHistory";
-import { loadSavedCustomerName } from "@/lib/customerSession";
-import { Loader2, Package, RotateCcw, Gift } from "lucide-react";
+import {
+  loadCustomerProfile,
+  saveCustomerProfile,
+  type CustomerProfile,
+} from "@/lib/customerSession";
+import { Loader2, Package, RotateCcw, Gift, User, MapPin, Save } from "lucide-react";
 import { toast } from "sonner";
 
 type PastOrder = {
@@ -31,11 +35,27 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const CustomerAccountScreen = () => {
-  const { setScreen, setTrackingOrderId, customerPhone, setCustomerPhone, phoneDialCode, setPhoneDialCode, setCustomerName } = useOrder();
+  const {
+    setScreen,
+    setTrackingOrderId,
+    customerPhone,
+    setCustomerPhone,
+    phoneDialCode,
+    setPhoneDialCode,
+    setCustomerName,
+    setDeliveryAddress,
+    setDeliveryNumber,
+    setDeliveryComplement,
+    setDeliveryPostalCode,
+    setDeliveryCity,
+    setDeliveryNotes,
+  } = useOrder();
   const { addItem } = useCart();
   const { t } = useLanguage();
   const { storeId, selectedStoreId } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? storeId;
+
+  const [profile, setProfile] = useState<CustomerProfile>(() => loadCustomerProfile());
   const [localOrders, setLocalOrders] = useState<LocalOrderHistoryEntry[]>(() =>
     effectiveStoreId ? loadLocalOrderHistory(effectiveStoreId) : loadLocalOrderHistory(),
   );
@@ -43,11 +63,45 @@ const CustomerAccountScreen = () => {
   const [loyalty, setLoyalty] = useState<{ stamps: number; stamps_needed: number; reward_ready: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
-  const search = async () => {
-    const fullPhone = formatFullPhone(phoneDialCode, customerPhone);
-    if (!effectiveStoreId || !isValidCustomerPhone(phoneDialCode, customerPhone)) {
-      toast.error("Introduce un teléfono válido");
+  const syncProfileToOrder = (next: CustomerProfile) => {
+    setCustomerName(next.name);
+    setPhoneDialCode(next.phoneDialCode);
+    setCustomerPhone(next.phoneLocal);
+    setDeliveryAddress(next.delivery.street);
+    setDeliveryNumber(next.delivery.number);
+    setDeliveryComplement(next.delivery.complement);
+    setDeliveryPostalCode(next.delivery.postalCode);
+    setDeliveryCity(next.delivery.city);
+    setDeliveryNotes(next.delivery.notes);
+  };
+
+  const saveProfile = () => {
+    setSavingProfile(true);
+    try {
+      saveCustomerProfile(profile);
+      syncProfileToOrder(profile);
+      toast.success(t("profileSaved"));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const updateProfile = (patch: Partial<CustomerProfile>) => {
+    setProfile((prev) => ({
+      ...prev,
+      ...patch,
+      delivery: patch.delivery ? { ...prev.delivery, ...patch.delivery } : prev.delivery,
+    }));
+  };
+
+  const search = async (phoneOverride?: { dialCode: string; local: string }) => {
+    const dial = phoneOverride?.dialCode ?? phoneDialCode;
+    const local = phoneOverride?.local ?? customerPhone;
+    const fullPhone = formatFullPhone(dial, local);
+    if (!effectiveStoreId || !isValidCustomerPhone(dial, local)) {
+      toast.error(t("enterPhone"));
       return;
     }
     setLoading(true);
@@ -62,13 +116,14 @@ const CustomerAccountScreen = () => {
   };
 
   useEffect(() => {
-    const savedName = loadSavedCustomerName();
-    if (savedName) setCustomerName(savedName);
+    const saved = loadCustomerProfile();
+    setProfile(saved);
+    syncProfileToOrder(saved);
     if (effectiveStoreId) {
       setLocalOrders(loadLocalOrderHistory(effectiveStoreId));
     }
-    if (isValidCustomerPhone(phoneDialCode, customerPhone)) {
-      search();
+    if (isValidCustomerPhone(saved.phoneDialCode, saved.phoneLocal)) {
+      void search({ dialCode: saved.phoneDialCode, local: saved.phoneLocal });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveStoreId]);
@@ -99,29 +154,123 @@ const CustomerAccountScreen = () => {
     setScreen("review");
   };
 
+  const handlePhoneChange = (local: string) => {
+    setCustomerPhone(local);
+    updateProfile({ phoneLocal: local, phoneDialCode: phoneDialCode });
+  };
+
+  const handleDialChange = (dial: string) => {
+    setPhoneDialCode(dial);
+    updateProfile({ phoneDialCode: dial, phoneLocal: customerPhone });
+  };
+
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background">
-      <ScreenHeader eyebrow={t("trackMyOrders")} title={t("myOrdersTitle")} onBack={() => setScreen("home")} sticky />
+      <ScreenHeader eyebrow={t("openMyOrders")} title={t("myOrdersTitle")} onBack={() => setScreen("home")} sticky />
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 pb-24">
-        <p className="text-sm text-muted-foreground">{t("phoneSearchHint")}</p>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5 pb-24">
+        <section className="rounded-2xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <User className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="font-black">{t("myProfileSection")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("myProfileHint")}</p>
+            </div>
+          </div>
 
-        <div className="space-y-2">
-          <PhoneInput
-            dialCode={phoneDialCode}
-            onDialCodeChange={setPhoneDialCode}
-            localNumber={customerPhone}
-            onLocalNumberChange={setCustomerPhone}
-          />
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("yourName")}</label>
+            <input
+              type="text"
+              value={profile.name}
+              onChange={(e) => updateProfile({ name: e.target.value.slice(0, 40) })}
+              className="mt-1 w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary"
+              placeholder={t("enterName")}
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("yourPhone")}</label>
+            <div className="mt-1">
+              <PhoneInput
+                dialCode={profile.phoneDialCode}
+                onDialCodeChange={handleDialChange}
+                localNumber={profile.phoneLocal}
+                onLocalNumberChange={handlePhoneChange}
+              />
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <div className="flex items-center gap-1.5 mb-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("deliveryAddressSection")}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="text"
+                value={profile.delivery.street}
+                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, street: e.target.value.slice(0, 80) } })}
+                placeholder={t("addressStreetPh")}
+                className="col-span-2 h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+              />
+              <input
+                type="text"
+                value={profile.delivery.number}
+                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, number: e.target.value.slice(0, 12) } })}
+                placeholder={t("addressNumber")}
+                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <input
+                type="text"
+                value={profile.delivery.postalCode}
+                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, postalCode: e.target.value.slice(0, 12) } })}
+                placeholder={t("addressPostal")}
+                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+              />
+              <input
+                type="text"
+                value={profile.delivery.city}
+                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, city: e.target.value.slice(0, 40) } })}
+                placeholder={t("addressCity")}
+                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+              />
+            </div>
+            <input
+              type="text"
+              value={profile.delivery.complement}
+              onChange={(e) => updateProfile({ delivery: { ...profile.delivery, complement: e.target.value.slice(0, 60) } })}
+              placeholder={t("addressFloorPh")}
+              className="mt-2 w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+            />
+          </div>
+
           <button
-            onClick={search}
+            type="button"
+            onClick={saveProfile}
+            disabled={savingProfile}
+            className="w-full h-11 rounded-2xl border border-primary/30 bg-primary/10 text-primary font-black flex items-center justify-center gap-2"
+          >
+            {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {t("saveMyData")}
+          </button>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-sm font-bold">{t("searchMyOrders")}</p>
+          <p className="text-xs text-muted-foreground -mt-2">{t("phoneSearchHint")}</p>
+
+          <button
+            onClick={() => void search()}
             disabled={loading}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Package className="w-5 h-5" />}
             {t("searchMyOrders")}
           </button>
-        </div>
+        </section>
 
         {localOrders.length > 0 && (
           <div className="space-y-2">
@@ -162,7 +311,7 @@ const CustomerAccountScreen = () => {
         )}
 
         {searched && orders.length === 0 && !loading && (
-          <p className="text-center text-muted-foreground py-8">Nenhum pedido encontrado para este número</p>
+          <p className="text-center text-muted-foreground py-4">Nenhum pedido encontrado para este número</p>
         )}
 
         {orders.map((order) => (

@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { orderId, storeId, title, body, tag, url } = await req.json();
+    const { orderId, storeId, title, body, tag, url, audience } = await req.json();
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
 
@@ -52,8 +52,13 @@ Deno.serve(async (req) => {
     let query = supabase.from("push_subscriptions").select("endpoint, p256dh, auth");
     if (orderId) {
       query = query.eq("order_id", orderId);
-    } else {
-      query = query.eq("store_id", storeId).is("order_id", null);
+    } else if (storeId && audience === "marketing") {
+      query = query.eq("store_id", storeId).or(
+        'customer_phone.eq."__marketing__",order_id.not.is.null',
+      );
+    } else if (storeId) {
+      // Equipa: subscrições da loja sem tag de marketing
+      query = query.eq("store_id", storeId).is("order_id", null).is("customer_phone", null);
     }
     const { data: subs } = await query;
 

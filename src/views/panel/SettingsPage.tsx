@@ -12,6 +12,7 @@ import ResetDataDialog from "@/components/ResetDataDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isPanelAlertsEnabled, setPanelAlertsEnabled } from "@/lib/panelAlerts";
+import MarketingBroadcastCard from "@/components/panel/MarketingBroadcastCard";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -205,6 +206,12 @@ const PanelSettingsPage = () => {
                   <Switch checked={n.val} onCheckedChange={n.set} />
                 </div>
               ))}
+              {roleData?.store_id && roleData?.tenant_id && (
+                <MarketingBroadcastCard
+                  storeId={roleData.store_id}
+                  tenantId={roleData.tenant_id}
+                />
+              )}
               <Button onClick={() => save("Notificações")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
             </CardContent>
           </Card>

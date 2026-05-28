@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Users, Plus, Trash2, Shield } from "lucide-react";
 import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
+import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 
 type AppRole = StaffRole;
 
@@ -55,7 +56,6 @@ const TeamPage = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
   const [newLanguage, setNewLanguage] = useState<string>("pt");
@@ -112,83 +112,59 @@ const TeamPage = () => {
     setLoading(false);
   };
 
+  const uiLang = (newLanguage === "es" ? "es" : "pt") as "pt" | "es";
+
   const addMember = async () => {
     if (!storeId || !tenantId || !newEmail.trim()) {
-      toast.error("Email é obrigatório");
+      toast.error(uiLang === "es" ? "El correo es obligatorio" : "Email é obrigatório");
       return;
     }
     if (!/^\d{6,8}$/.test(newAccessPin)) {
-      toast.error("Código de acesso deve ter entre 6 e 8 dígitos");
+      toast.error(translateAppError("Código deve ter entre 6 e 8 dígitos", uiLang));
       return;
     }
     setSaving(true);
 
     try {
-      // First try to sign up the user (will auto-confirm)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: newEmail.trim(),
-        password: newPassword || "TempPass123!",
-        options: { data: { full_name: newName.trim() } },
+      const { data, error } = await supabase.functions.invoke("create-staff-member", {
+        body: {
+          email: newEmail.trim(),
+          full_name: newName.trim() || null,
+          role: newRole,
+          store_id: storeId,
+          tenant_id: tenantId,
+          access_pin: newAccessPin,
+          preferred_language: newLanguage,
+        },
       });
 
-      let userId: string | undefined;
-
-      if (signUpError) {
-        // User might already exist - try to find them
-        toast.error("Erro: " + signUpError.message);
+      if (error) {
+        toast.error(translateAppErrorFromException(error, uiLang));
         setSaving(false);
         return;
       }
 
-      userId = signUpData.user?.id;
-      if (!userId) {
-        toast.error("Erro ao criar usuário");
+      const payload = data as { error?: string; success?: boolean } | null;
+      if (payload?.error) {
+        toast.error(translateAppError(payload.error, uiLang));
         setSaving(false);
         return;
       }
 
-      // Create user_role
-      const { data: roleRow, error: roleError } = await supabase.from("user_roles").insert({
-        user_id: userId,
-        role: newRole as any,
-        tenant_id: tenantId,
-        store_id: storeId,
-      } as any).select("id").single();
-
-      if (roleError || !roleRow?.id) {
-        toast.error("Erro ao atribuir papel: " + (roleError?.message ?? "desconhecido"));
-        setSaving(false);
-        return;
-      }
-
-      const { error: pinError } = await (supabase.rpc as any)("upsert_staff_access_pin", {
-        _user_role_id: roleRow.id,
-        _pin: newAccessPin,
-      });
-
-      if (pinError) {
-        toast.error("Erro ao definir código: " + pinError.message);
-        setSaving(false);
-        return;
-      }
-
-      // Save preferred language on profile
-      await supabase.from("profiles").upsert(
-        { user_id: userId, full_name: newName.trim() || null, preferred_language: newLanguage } as any,
-        { onConflict: "user_id" }
+      toast.success(
+        uiLang === "es"
+          ? `Miembro añadido como ${roleLabels[newRole].label}`
+          : `Membro adicionado como ${roleLabels[newRole].label}!`,
       );
-
-      toast.success(`Membro adicionado como ${roleLabels[newRole].label}!`);
       setDialogOpen(false);
       setNewEmail("");
-      setNewPassword("");
       setNewName("");
       setNewRole("operator");
       setNewLanguage("pt");
       setNewAccessPin("");
       fetchMembers();
-    } catch (e: any) {
-      toast.error(e.message || "Erro inesperado");
+    } catch (e: unknown) {
+      toast.error(translateAppErrorFromException(e, uiLang));
     }
     setSaving(false);
   };
@@ -205,7 +181,7 @@ const TeamPage = () => {
   const saveMemberPin = async () => {
     if (!pinDialogMember) return;
     if (!/^\d{6,8}$/.test(editAccessPin)) {
-      toast.error("Código deve ter entre 6 e 8 dígitos");
+      toast.error(translateAppError("Código deve ter entre 6 e 8 dígitos", "pt"));
       return;
     }
     setPinSaving(true);
@@ -219,8 +195,8 @@ const TeamPage = () => {
       setPinDialogMember(null);
       setEditAccessPin("");
       fetchMembers();
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao guardar código");
+    } catch (e: unknown) {
+      toast.error(translateAppErrorFromException(e, "pt"));
     } finally {
       setPinSaving(false);
     }
@@ -387,10 +363,9 @@ const TeamPage = () => {
             <div>
               <Label>Email *</Label>
               <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
-            </div>
-            <div>
-              <Label>Senha temporária</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+              <p className="text-xs text-muted-foreground mt-1">
+                Só para registo interno — o funcionário entra na app com o código de acesso, não precisa de senha.
+              </p>
             </div>
             <div>
               <Label>Código de acesso *</Label>
@@ -444,7 +419,7 @@ const TeamPage = () => {
             <DialogTitle>Código de acesso — {pinDialogMember?.full_name || "Membro"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Label>Novo código (4 a 8 dígitos)</Label>
+            <Label>Novo código (6 a 8 dígitos)</Label>
             <Input
               inputMode="numeric"
               value={editAccessPin}
