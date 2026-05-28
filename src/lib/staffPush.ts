@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 
-const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+const VAPID_PUBLIC = getVapidPublicKey();
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
 export const PUSH_HANDLER_SW_PATH = "/push-handler.js";
 
