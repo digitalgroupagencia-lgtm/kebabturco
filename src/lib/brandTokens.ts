@@ -3,6 +3,8 @@
  * White-label: BrandingContext overrides --brand-wine* CSS vars from company_settings.header_color.
  */
 
+import { isCustomerStorefrontPath, isStaffAppPath } from "@/lib/appRouteKind";
+
 /** Premium burgundy — matches header / theme-color */
 export const BRAND_WINE_HEX = "#8B1A1A";
 export const BRAND_WINE_DARK_HEX = "#5C1419";
@@ -167,9 +169,18 @@ function setOrCreateMeta(name: string, content: string, extra?: Record<string, s
   el.content = content;
 }
 
-/** Actualiza theme-color, safe-area e meta iOS — Safari, Chrome, PWA, TWA. */
+/** Actualiza theme-color, safe-area e meta iOS — só no site do cliente (não admin/painel). */
 export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "dark" = "light"): void {
   if (typeof document === "undefined") return;
+
+  if (isStaffAppPath()) {
+    applyStaffAppChrome();
+    return;
+  }
+
+  const root = document.documentElement;
+  root.classList.remove("staff-app");
+
   const base = headerHex || BRAND_WINE_HEX;
   const palette = winePaletteFromHex(base);
   const chromeHex = chromeHexFromHeader(base);
@@ -190,7 +201,6 @@ export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "d
   setOrCreateMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
   setOrCreateMeta("mobile-web-app-capable", "yes");
 
-  const root = document.documentElement;
   root.style.setProperty("--browser-chrome-bg", `hsl(${palette.wineDark})`);
   root.style.setProperty("--browser-chrome-hex", chromeHex);
   root.style.backgroundColor = chromeHex;
@@ -198,7 +208,27 @@ export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "d
 
   if (window.matchMedia("(display-mode: standalone)").matches) {
     root.classList.add("pwa-standalone");
+  } else {
+    root.classList.remove("pwa-standalone");
   }
+}
+
+/** Chrome neutro para administração / painel — evita flash vinho e barra errada. */
+export function applyStaffAppChrome(): void {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.classList.add("staff-app");
+  root.classList.remove("pwa-standalone");
+  root.style.setProperty("--browser-chrome-bg", "hsl(var(--background))");
+  root.style.removeProperty("--browser-chrome-hex");
+  root.style.backgroundColor = "";
+  root.style.colorScheme = "light dark";
+
+  setOrCreateMeta("theme-color", "#ffffff");
+  setOrCreateMeta("apple-mobile-web-app-status-bar-style", "default");
+
+  const boot = document.getElementById("boot-fallback");
+  if (boot) boot.style.background = "hsl(var(--background, #ffffff))";
 }
 
 /** Apply brand wine tokens to document root (used by BrandingContext). */

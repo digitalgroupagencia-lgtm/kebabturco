@@ -171,6 +171,9 @@
       z-index: 9999;
       pointer-events: none;
     }
+    html.staff-app::before {
+      display: none;
+    }
     html.pwa-standalone::before {
       background: var(--browser-chrome-hex, #5C1419);
     }

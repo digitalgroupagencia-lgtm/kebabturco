@@ -1,9 +1,14 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { applyBrowserChromeColor } from "./lib/brandTokens";
+import { applyBrowserChromeColor, applyStaffAppChrome } from "./lib/brandTokens";
+import { isStaffAppPath } from "./lib/appRouteKind";
 
-applyBrowserChromeColor();
+if (isStaffAppPath()) {
+  applyStaffAppChrome();
+} else {
+  applyBrowserChromeColor();
+}
 
 if (typeof window !== "undefined") {
   const markStandalone = () => {

@@ -7,6 +7,7 @@ import { BRAND_WINE_HEX, BRAND_CHROME_HEX, applyBrowserChromeColor, chromeHexFro
 import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
+import { isCustomerStorefrontPath } from "@/lib/appRouteKind";
 
 export type SiteBrandingScope = "platform" | "tenant" | "neutral";
 
@@ -186,7 +187,8 @@ export function shouldApplyPlatformSiteBranding(): boolean {
 }
 
 export function shouldApplyTenantSiteBranding(): boolean {
-  if (SINGLE_TENANT_MODE) return true;
   if (typeof window === "undefined") return false;
+  if (!isCustomerStorefrontPath()) return false;
+  if (SINGLE_TENANT_MODE) return true;
   return !isPlatformAdminContext() || isEmbeddedTenantPreview();
 }

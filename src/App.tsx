@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
+import AppChromeEffect from "@/components/AppChromeEffect.tsx";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -56,6 +57,7 @@ const App = () => (
         <Sonner />
         <ThemeProvider>
           <BrowserRouter>
+            <AppChromeEffect />
             <AppCacheBustRouter>
               <LovablePreviewGate />
               <PreviewPathGuard />

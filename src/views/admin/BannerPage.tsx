@@ -10,6 +10,7 @@ import { Image as ImageIcon, Upload, Trash2, ArrowUp, ArrowDown, Youtube, Plus }
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Loader2 } from "lucide-react";
+import { loadOperationsSettingsForStore } from "@/lib/operationsSettingsAdmin";
 
 type Banner = Tables<"promo_banners">;
 type Ops = Tables<"operations_settings">;
@@ -18,27 +19,42 @@ const BannerPage = () => {
   const { storeId: STORE_ID, loading: loadingStore } = useAdminStoreId();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [ops, setOps] = useState<Ops | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoStartMuted, setVideoStartMuted] = useState(true);
 
   const load = async () => {
     if (!STORE_ID) return;
+    setLoadingData(true);
     const [b, o] = await Promise.all([
       supabase.from("promo_banners").select("*").eq("store_id", STORE_ID).order("sort_order"),
-      supabase.from("operations_settings").select("*").eq("store_id", STORE_ID).maybeSingle(),
+      loadOperationsSettingsForStore(STORE_ID),
     ]);
     setBanners(b.data ?? []);
-    setOps(o.data ?? null);
+    setOps(o);
+    setLoadingData(false);
   };
 
-  useEffect(() => { if (STORE_ID) load(); }, [STORE_ID]);
+  useEffect(() => {
+    if (!STORE_ID) {
+      setLoadingData(false);
+      return;
+    }
+    void load();
+  }, [STORE_ID]);
 
   const updateOps = async (patch: Partial<Ops>) => {
-    if (!ops || !STORE_ID) return;
+    if (!STORE_ID) return;
+    let base = ops;
+    if (!base) {
+      base = await loadOperationsSettingsForStore(STORE_ID);
+      if (!base) return toast.error("Não foi possível guardar as definições");
+      setOps(base);
+    }
     const { error } = await supabase.from("operations_settings").update(patch).eq("store_id", STORE_ID);
     if (error) return toast.error(error.message);
-    setOps({ ...ops, ...patch } as Ops);
+    setOps({ ...base, ...patch } as Ops);
     toast.success("Guardado");
   };
 
@@ -109,7 +125,25 @@ const BannerPage = () => {
     load();
   };
 
-  if (loadingStore || !ops) return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Cargando...</div>;
+  if (loadingStore || loadingData) {
+    return (
+      <div className="p-8 text-muted-foreground flex items-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Cargando...
+      </div>
+    );
+  }
+
+  if (!STORE_ID) {
+    return (
+      <div className="p-8 text-muted-foreground">
+        Nenhuma unidade activa encontrada. Verifique Administração → Unidades.
+      </div>
+    );
+  }
+
+  const bannerEnabled = ops?.banner_enabled ?? true;
+  const bannerIntervalMs = ops?.banner_interval_ms ?? 5000;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -128,16 +162,17 @@ const BannerPage = () => {
               <Label className="text-base">Activar banner</Label>
               <p className="text-xs text-muted-foreground">Mostrar el banner en la tela principal del totem</p>
             </div>
-            <Switch checked={ops.banner_enabled} onCheckedChange={(v) => updateOps({ banner_enabled: v })} />
+            <Switch checked={bannerEnabled} onCheckedChange={(v) => updateOps({ banner_enabled: v })} />
           </div>
           <div>
             <Label>Intervalo entre imágenes (segundos)</Label>
             <Input
               type="number"
-              value={Math.round((ops.banner_interval_ms ?? 5000) / 1000)}
-              onChange={(e) =>
-                setOps({ ...ops, banner_interval_ms: Math.max(1, Number(e.target.value)) * 1000 })
-              }
+              value={Math.round(bannerIntervalMs / 1000)}
+              onChange={(e) => {
+                const ms = Math.max(1, Number(e.target.value)) * 1000;
+                if (ops) setOps({ ...ops, banner_interval_ms: ms });
+              }}
               onBlur={(e) =>
                 updateOps({ banner_interval_ms: Math.max(1, Number(e.target.value)) * 1000 })
               }

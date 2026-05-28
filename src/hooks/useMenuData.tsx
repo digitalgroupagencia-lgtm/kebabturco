@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { useOptionalAdminStore } from "@/contexts/AdminStoreContext";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
 import { safeHasFixedProtein } from "@/lib/modifiers/safeCustomization";
 import { readMenuCache, writeMenuCache } from "@/lib/menuCache";
@@ -38,7 +39,11 @@ const ingredientFromModifier = (extra: Extra) => {
 
 export function useMenuData() {
   const { storeId, selectedStoreId, loading: storeLoading } = useResolvedStore();
-  const effectiveStoreId = selectedStoreId ?? storeId;
+  const adminStore = useOptionalAdminStore();
+  const adminPath =
+    typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const effectiveStoreId =
+    adminPath && adminStore?.storeId ? adminStore.storeId : (selectedStoreId ?? storeId);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<MenuProduct[]>([]);
   const [loading, setLoading] = useState(true);

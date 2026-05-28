@@ -12,6 +12,7 @@ import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { fetchStoreFinancialProfile } from "@/services/orderService";
+import { loadOperationsSettingsForStore } from "@/lib/operationsSettingsAdmin";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import { stripeAdminConfigIssue } from "@/lib/paymentPolicy";
 import { nav } from "@/lib/navPaths";
@@ -29,15 +30,22 @@ const PAY_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
 ];
 
 const OperationsPage = () => {
-  const { storeId: STORE_ID } = useAdminStoreId();
+  const { storeId: STORE_ID, loading: loadingStore } = useAdminStoreId();
   const [s, setS] = useState<Ops | null>(null);
+  const [loadingOps, setLoadingOps] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlineReady, setOnlineReady] = useState(false);
 
   useEffect(() => {
-    if (!STORE_ID) return;
-    supabase.from("operations_settings").select("*").eq("store_id", STORE_ID).maybeSingle()
-      .then(({ data }) => setS(data ?? null));
+    if (!STORE_ID) {
+      setLoadingOps(false);
+      return;
+    }
+    setLoadingOps(true);
+    void loadOperationsSettingsForStore(STORE_ID).then((data) => {
+      setS(data);
+      setLoadingOps(false);
+    });
     fetchStoreFinancialProfile(STORE_ID).then((data) => {
       setOnlineReady(isStripeConnectReady(data));
     });
@@ -72,7 +80,15 @@ const OperationsPage = () => {
     if (error) toast.error(error.message); else toast.success("Configuración guardada");
   };
 
-  if (!s) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+  if (loadingStore || loadingOps) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+
+  if (!STORE_ID || !s) {
+    return (
+      <div className="p-8 text-muted-foreground">
+        Não foi possível carregar as definições de pagamento para esta unidade.
+      </div>
+    );
+  }
 
   const stripeIssue = onlineReady
     ? null
