@@ -158,7 +158,7 @@
     overscroll-behavior-y: none;
     background-color: hsl(var(--background));
   }
-  /* Safari / PWA: prolongar vinho acima do header até ao notch */
+  /* Safari / app instalado: faixa superior igual ao vinho do cabeçalho */
   @media (max-width: 767px) {
     html::before {
       content: "";
@@ -167,15 +167,12 @@
       left: 0;
       right: 0;
       height: env(safe-area-inset-top, 0px);
-      background: var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%));
+      background: var(--browser-chrome-hex, #5C1419);
       z-index: 9999;
       pointer-events: none;
     }
     html.staff-app::before {
       display: none;
-    }
-    html.pwa-standalone::before {
-      background: var(--browser-chrome-hex, #5C1419);
     }
   }
   #root {

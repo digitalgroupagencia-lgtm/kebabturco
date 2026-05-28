@@ -10,7 +10,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
   SELECT
     public.has_role(auth.uid(), 'admin_master'::public.app_role)
     OR EXISTS (
@@ -23,7 +23,7 @@ AS $$
           'manager'::public.app_role
         )
     );
-$$;
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.user_can_view_team_at_store(_store_id uuid)
 RETURNS boolean
@@ -31,11 +31,11 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
   SELECT
     public.has_role(auth.uid(), 'admin_master'::public.app_role)
     OR public.user_can_access_store(_store_id);
-$$;
+$fn$;
 
 -- 2) Políticas de user_roles sem recursão
 DROP POLICY IF EXISTS "Restaurant admin manage store team" ON public.user_roles;
@@ -80,7 +80,7 @@ RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 DECLARE
   v_role_id uuid;
 BEGIN
@@ -110,7 +110,7 @@ BEGIN
 
   RETURN v_role_id;
 END;
-$$;
+$fn$;
 
 -- 4) Código de acesso com # (6–10 caracteres)
 CREATE OR REPLACE FUNCTION public.upsert_staff_access_pin(_user_role_id uuid, _pin text)
@@ -118,12 +118,16 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 DECLARE
   v_store_id uuid;
   v_user_id uuid;
 BEGIN
-  IF _pin IS NULL OR _pin !~ '^(?=.*\d)(?=.*#).{6,10}$' THEN
+  IF _pin IS NULL
+     OR length(_pin) < 6
+     OR length(_pin) > 10
+     OR position('#' in _pin) = 0
+     OR _pin !~ '[0-9]' THEN
     RAISE EXCEPTION 'Código deve ter 6–10 caracteres, incluir # e números';
   END IF;
 
@@ -151,7 +155,7 @@ BEGIN
     is_active = true,
     updated_at = now();
 END;
-$$;
+$fn$;
 
 -- 5) Perfil do novo membro (nome + idioma) pelo gerente
 CREATE OR REPLACE FUNCTION public.upsert_staff_profile_by_manager(
@@ -163,7 +167,7 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 BEGIN
   IF _user_id IS NULL THEN
     RAISE EXCEPTION 'Utilizador inválido';
@@ -189,7 +193,7 @@ BEGIN
     preferred_language = COALESCE(NULLIF(trim(EXCLUDED.preferred_language), ''), public.profiles.preferred_language),
     updated_at = now();
 END;
-$$;
+$fn$;
 
 GRANT EXECUTE ON FUNCTION public.user_manages_store_team(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.user_can_view_team_at_store(uuid) TO authenticated;

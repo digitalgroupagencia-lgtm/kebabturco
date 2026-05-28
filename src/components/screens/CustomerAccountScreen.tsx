@@ -18,6 +18,12 @@ import { Loader2, Package, RotateCcw, Gift, User, MapPin, Save, ChevronRight, Be
 import { appToastSuccess, appToastError } from "@/lib/appToast";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import {
+  fetchCustomerProfileFromCloud,
+  isProfileMostlyEmpty,
+  mergeCustomerProfiles,
+  saveCustomerProfileToCloud,
+} from "@/lib/customerProfileCloud";
+import {
   isCustomerMarketingPushOpted,
   isCustomerMarketingPushSupported,
   subscribeCustomerMarketingPush,
@@ -95,6 +101,9 @@ const CustomerAccountScreen = () => {
     try {
       saveCustomerProfile(profile);
       hydrateCustomerProfile(profile);
+      if (effectiveStoreId) {
+        void saveCustomerProfileToCloud(effectiveStoreId, profile);
+      }
       setProfileExpanded(false);
       appToastSuccess(t("profileSaved"));
     } finally {
@@ -153,18 +162,48 @@ const CustomerAccountScreen = () => {
   }, [screen, effectiveStoreId]);
 
   useEffect(() => {
+    if (screen !== "account" || !effectiveStoreId) return;
+    if (!isValidCustomerPhone(profile.phoneDialCode, profile.phoneLocal)) return;
+    if (!isProfileMostlyEmpty(profileRef.current)) return;
+    let cancelled = false;
+    void fetchCustomerProfileFromCloud(
+      effectiveStoreId,
+      profile.phoneDialCode,
+      profile.phoneLocal,
+    ).then((remote) => {
+      if (cancelled || !remote) return;
+      const merged = mergeCustomerProfiles(profileRef.current, remote);
+      setProfile(merged);
+      saveCustomerProfile(merged);
+      hydrateCustomerProfile(merged);
+      setProfileExpanded(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, effectiveStoreId, profile.phoneDialCode, profile.phoneLocal, hydrateCustomerProfile]);
+
+  useEffect(() => {
     if (screen !== "account") return;
     const timer = window.setTimeout(() => {
-      saveCustomerProfile(profileRef.current);
+      const current = profileRef.current;
+      saveCustomerProfile(current);
+      if (effectiveStoreId && isValidCustomerPhone(current.phoneDialCode, current.phoneLocal)) {
+        void saveCustomerProfileToCloud(effectiveStoreId, current);
+      }
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [profile, screen]);
+  }, [profile, screen, effectiveStoreId]);
 
   useEffect(() => {
     return () => {
-      saveCustomerProfile(profileRef.current);
+      const current = profileRef.current;
+      saveCustomerProfile(current);
+      if (effectiveStoreId && isValidCustomerPhone(current.phoneDialCode, current.phoneLocal)) {
+        void saveCustomerProfileToCloud(effectiveStoreId, current);
+      }
     };
-  }, []);
+  }, [effectiveStoreId]);
 
   const trackLocalOrder = (entry: LocalOrderHistoryEntry) => {
     setTrackingOrderId(entry.id);
@@ -487,18 +526,6 @@ const CustomerAccountScreen = () => {
             </div>
           </div>
         ))}
-      </div>
-
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-6"
-        style={{ background: "linear-gradient(to top, hsl(var(--background)) 40%, transparent)" }}
-      >
-        <a
-          href="/staff-login"
-          className="pointer-events-auto text-[9px] font-medium text-foreground/18 hover:text-foreground/35 transition-colors tracking-[0.2em] uppercase select-none"
-        >
-          Equipe
-        </a>
       </div>
     </div>
   );
