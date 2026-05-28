@@ -57,9 +57,10 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     setPrepMinutes,
     markOrderPaid,
     assignDriver,
+    reprintOrder,
     refresh,
   } = usePanelOrders(storeId);
-  const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(storeId);
+  const { summary: printSummary, loading: printLoading, refresh: refreshPrint, retryFailed } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
   const [viewMode, setViewMode] = useState<OpsViewMode>("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -246,7 +247,14 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
         headerExtra={
           <div className="space-y-2">
             <PanelAlertsBar storeId={storeId} />
-            {!isLive && <PanelPrintStatusBar summary={printSummary} loading={printLoading} />}
+            {printSummary?.printerEnabled && (
+              <PanelPrintStatusBar
+                summary={printSummary}
+                loading={printLoading}
+                onRetryFailed={retryFailed}
+                onRefresh={refreshPrint}
+              />
+            )}
             <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={orders} />
           </div>
         }
@@ -294,6 +302,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
         onMarkPaid={(o, m) => {
           void markOrderPaid(o, m);
         }}
+        onReprint={(o) => reprintOrder(o)}
       />
 
       <OpsAcceptEtaDialog

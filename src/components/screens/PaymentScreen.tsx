@@ -9,13 +9,12 @@ import StripePaymentForm from "@/components/StripePaymentForm";
 import {
   createCustomerOrder,
   createStripePaymentIntent,
-  buildPrintPayload,
-  invokePrintOrder,
   fetchStoreFinancialProfile,
   validateCoupon,
   verifyStripePaymentIntent,
   PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
+import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import {
   loadSavedMesaToken,
@@ -313,6 +312,38 @@ const PaymentScreen = () => {
   }
   const notes = notesParts.length ? notesParts.join(" | ") : null;
 
+  const deliveryFullAddress =
+    orderType === "delivery"
+      ? `${deliveryAddress.trim()}${deliveryNumber.trim() ? ` ${deliveryNumber.trim()}` : ""}${deliveryCity.trim() ? `, ${deliveryCity.trim()}` : ""}${deliveryPostalCode.trim() ? ` ${deliveryPostalCode.trim()}` : ""}`
+      : null;
+
+  const enqueueCheckoutPrint = async (
+    result: { order_id: string; order_number: string },
+    printOpts: { paymentMethod: string; paymentStatus: "pending" | "paid"; paidViaApp?: boolean },
+  ) => {
+    await tryPrintCheckoutOrder({
+      storeId,
+      orderId: result.order_id,
+      orderNumber: result.order_number,
+      orderType: orderTypeDb,
+      tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+      customerName: customerName.trim() || null,
+      customerPhone: fullCustomerPhone || null,
+      paymentMethod: printOpts.paymentMethod,
+      paymentStatus: printOpts.paymentStatus,
+      paidViaApp: printOpts.paidViaApp ?? printOpts.paymentStatus === "paid",
+      items,
+      total: grandTotal,
+      subtotal: totalPrice,
+      notes,
+      deliveryAddress: deliveryFullAddress,
+      customerOrderType: orderType || "takeaway",
+      mesaValidated,
+      settings,
+      companyName: brandingCtx?.settings?.company_name || "Restaurante",
+    });
+  };
+
   const assertStoreReady = (): boolean => {
     if (storeLoading || !storeId) {
       setShowError("store");
@@ -426,27 +457,11 @@ const PaymentScreen = () => {
     );
 
     if (printOk) {
-      await invokePrintOrder(buildPrintPayload({
-        storeId,
-        orderId: result.order_id,
-        orderNumber: result.order_number,
-        orderType: orderTypeDb,
-        tableNumber: mesaValidated ? tableNumber.trim() || null : null,
-        customerName: customerName.trim() || null,
-        customerPhone: fullCustomerPhone || null,
+      await enqueueCheckoutPrint(result, {
         paymentMethod: opts.paymentMethod,
-        paymentPending: opts.paymentStatus !== "paid",
+        paymentStatus: opts.paymentStatus,
         paidViaApp: opts.paymentStatus === "paid",
-        items,
-        total: grandTotal,
-        subtotal: totalPrice,
-        deliveryFee,
-        notes,
-        deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
-        deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
-        deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
-        deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
-      }));
+      });
     }
 
     clearCart();
@@ -685,27 +700,11 @@ const PaymentScreen = () => {
                     return;
                   }
 
-                  await invokePrintOrder(buildPrintPayload({
-                    storeId,
-                    orderId: result.order_id,
-                    orderNumber: result.order_number,
-                    orderType: orderTypeDb,
-                    tableNumber: mesaValidated ? tableNumber.trim() || null : null,
-                    customerName: customerName.trim() || null,
-                    customerPhone: fullCustomerPhone || null,
+                  await enqueueCheckoutPrint(result, {
                     paymentMethod: "card",
-                    paymentPending: false,
+                    paymentStatus: "paid",
                     paidViaApp: true,
-                    items,
-                    total: grandTotal,
-                    subtotal: totalPrice,
-                    deliveryFee,
-                    notes,
-                    deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
-                    deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
-                    deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
-                    deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
-                  }));
+                  });
 
                 } catch (e) {
                   console.error(e);

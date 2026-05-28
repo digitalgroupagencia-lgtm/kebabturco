@@ -13,7 +13,7 @@ import {
 import { blocksOperationalProgressUntilPaid, orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
-import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
+import { tryPrintPanelOrder, reprintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
 import {
   generateDeliveryConfirmationCode,
@@ -416,6 +416,27 @@ export function usePanelOrders(storeId: string | undefined) {
     }
   }, []);
 
+  const reprintOrder = useCallback(
+    async (order: PanelOrder) => {
+      if (!storeId) return false;
+      try {
+        const items = itemsByOrder[order.id] || (await fetchItemsForOrders([order.id]))[order.id] || [];
+        const { data: company } = await supabase
+          .from("company_settings")
+          .select("company_name")
+          .eq("store_id", storeId)
+          .maybeSingle();
+        await reprintPanelOrder(storeId, order, items, company?.company_name || "Restaurante");
+        toast.success(`Reimpressão enviada — #${order.order_number}`);
+        return true;
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro ao reimprimir");
+        return false;
+      }
+    },
+    [storeId, itemsByOrder],
+  );
+
   return {
     orders,
     itemsByOrder,
@@ -426,6 +447,7 @@ export function usePanelOrders(storeId: string | undefined) {
     setPrepMinutes,
     markOrderPaid,
     assignDriver,
+    reprintOrder,
     refresh: fetchOrders,
   };
 }

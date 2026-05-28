@@ -1,13 +1,10 @@
 import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
-import { supabase as _supabase } from "@/integrations/supabase/client";
 import type { TicketOrder } from "@/services/escPosTicketBuilder";
-import { fetchPrinterConfig, printOrder } from "@/services/printerService";
+import { fetchPrinterConfig, hasActivePrintJob, printOrder } from "@/services/printerService";
 import type { Tables } from "@/integrations/supabase/types";
 
-const supabase = _supabase as unknown as any;
 type OrderItem = Tables<"order_items">;
 type PanelOrder = Tables<"orders"> & { kitchen_printed_at?: string | null };
-
 
 export function panelOrderToTicket(
   order: PanelOrder,
@@ -51,23 +48,44 @@ export function panelOrderToTicket(
   };
 }
 
-/** Imprime na cozinha se elegível e ainda não impresso (uma vez por pedido). */
+/** Imprime na cozinha se elegível e ainda não impresso (dedup via kitchen_printed_at + job activo). */
 export async function tryPrintPanelOrder(
   storeId: string,
   order: PanelOrder,
   items: OrderItem[],
+  companyName = "Restaurante",
 ) {
   try {
     if (!orderReadyForKitchen(order)) return;
     if (order.kitchen_printed_at) return;
-    const { data: claimed, error: claimErr } = await supabase.rpc("claim_kitchen_print", {
-      _order_id: order.id,
-    });
-    if (claimErr || !claimed) return;
+    if (await hasActivePrintJob(order.id)) return;
     const cfg = await fetchPrinterConfig(storeId);
     if (!cfg.enabled) return;
-    await printOrder(storeId, panelOrderToTicket(order, items), order.id);
+    await printOrder(storeId, panelOrderToTicket(order, items, companyName), order.id);
   } catch {
     // silencioso — pedido continua
   }
+}
+
+/** Reimpressão manual — ignora dedup automática. */
+export async function reprintPanelOrder(
+  storeId: string,
+  order: PanelOrder,
+  items: OrderItem[],
+  companyName = "Restaurante",
+) {
+  const cfg = await fetchPrinterConfig(storeId);
+  if (!cfg.enabled) {
+    throw new Error("Impressora desactivada para esta unidade");
+  }
+  const result = await printOrder(
+    storeId,
+    panelOrderToTicket(order, items, companyName),
+    order.id,
+    { forceReprint: true },
+  );
+  if (!result.success) {
+    throw new Error(result.error || "Falha ao enfileirar impressão");
+  }
+  return result;
 }

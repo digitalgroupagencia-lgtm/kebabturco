@@ -301,6 +301,7 @@ export async function verifyStripePaymentIntent(params: {
 }
 
 export async function invokePrintOrder(body: Record<string, unknown>) {
+  /** @deprecated Use print_jobs via checkoutPrintHelper / printerService */
   try {
     await supabase.functions.invoke("print-order", { body });
   } catch {

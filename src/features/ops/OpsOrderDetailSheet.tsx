@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, MapPin, Clock, XCircle } from "lucide-react";
+import { User, Phone, MapPin, Clock, XCircle, Printer } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
@@ -55,6 +55,7 @@ type Props = {
   onSetPrepMinutes?: (order: PanelOrder, minutes: number) => void;
   onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void>;
   onRequestAssignDriver?: (order: PanelOrder) => void;
+  onReprint?: (order: PanelOrder) => void | Promise<void> | Promise<boolean>;
   viewerRole?: string | null;
   driverName?: string | null;
 };
@@ -70,11 +71,13 @@ const OpsOrderDetailSheet = ({
   onSetPrepMinutes,
   onMarkPaid,
   onRequestAssignDriver,
+  onReprint,
   viewerRole,
   driverName,
 }: Props) => {
   const [advancing, setAdvancing] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [reprinting, setReprinting] = useState(false);
 
   if (!order) return null;
 
@@ -302,6 +305,25 @@ const OpsOrderDetailSheet = ({
                 : action.kind === "accept_eta"
                   ? "Aceitar pedido"
                   : action.label}
+            </Button>
+          )}
+
+          {onReprint && order.status !== "cancelled" && (
+            <Button
+              variant="outline"
+              className="w-full h-10 touch-action-manipulation"
+              disabled={reprinting}
+              onClick={async () => {
+                setReprinting(true);
+                try {
+                  await onReprint(order);
+                } finally {
+                  setReprinting(false);
+                }
+              }}
+            >
+              <Printer className="h-4 w-4 mr-1" />
+              {reprinting ? "A enviar…" : "Reimprimir pedido"}
             </Button>
           )}
 

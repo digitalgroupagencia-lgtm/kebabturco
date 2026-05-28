@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Loader2, ArrowLeft, Plus, Minus, ShoppingCart, Trash2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { fmtMoney } from "@/hooks/useTenantBilling";
+import { tryPrintSellerOrder } from "@/services/checkoutPrintHelper";
 import { nav } from "@/lib/navPaths.ts";
 
 interface Line { product_id: string; product_name: string; unit_price: number; quantity: number; }
@@ -95,25 +96,21 @@ const SellerNewOrder = () => {
       });
       if (error) throw error;
       const out = res as any;
-      // Tenta imprimir (silencioso se falhar)
+      // Impressão cozinha via print_jobs (ESC/POS)
       try {
-        await supabase.functions.invoke("print-order", {
-          body: {
-            storeId,
-            orderNumber: out.order_number,
-            customerName: customerName.trim(),
-            tableNumber: tableNumber.trim(),
-            orderType: "here",
-            paymentMethod: "Pendente (mesa)",
-            paymentPending: true,
-            notes: notes.trim() || null,
-            items: lines.map((l) => ({
-              productName: l.product_name, quantity: l.quantity,
-              unitPrice: l.unit_price, totalPrice: l.unit_price * l.quantity,
-              extras: [], removed: [],
-            })),
-            total: out.total,
-          },
+        await tryPrintSellerOrder({
+          storeId,
+          orderId: out.order_id,
+          orderNumber: out.order_number,
+          tableNumber: tableNumber.trim(),
+          customerName: customerName.trim(),
+          items: lines.map((l) => ({
+            productName: l.product_name,
+            quantity: l.quantity,
+            unitPrice: l.unit_price,
+          })),
+          total: out.total,
+          notes: notes.trim() || null,
         });
       } catch {}
       toast.success(`Pedido #${out.order_number} enviado!`);

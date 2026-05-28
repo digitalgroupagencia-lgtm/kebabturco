@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { checkBridgeStatus } from "@/services/printerService";
+import { checkBridgeStatus, fetchBridgeLastSeen, retryFailedPrintJobs } from "@/services/printerService";
 
 export type PrintQueueSummary = {
   pending: number;
   failed: number;
   lastPrintedAt: string | null;
   bridge: "active" | "inactive" | "unknown";
+  bridgeLastSeen: string | null;
   printerEnabled: boolean;
 };
 
@@ -21,7 +22,7 @@ export function usePanelPrintStatus(storeId: string | undefined) {
       return;
     }
 
-    const [pendingRes, failedRes, lastRes, cfgRes, bridge] = await Promise.all([
+    const [pendingRes, failedRes, lastRes, cfgRes, bridge, bridgeLastSeen] = await Promise.all([
       supabase
         .from("print_jobs")
         .select("id", { count: "exact", head: true })
@@ -42,6 +43,7 @@ export function usePanelPrintStatus(storeId: string | undefined) {
         .maybeSingle(),
       supabase.from("printer_settings").select("enabled").eq("store_id", storeId).maybeSingle(),
       checkBridgeStatus(storeId),
+      fetchBridgeLastSeen(storeId),
     ]);
 
     setSummary({
@@ -49,10 +51,18 @@ export function usePanelPrintStatus(storeId: string | undefined) {
       failed: failedRes.count ?? 0,
       lastPrintedAt: lastRes.data?.updated_at ?? null,
       bridge,
+      bridgeLastSeen,
       printerEnabled: !!cfgRes.data?.enabled,
     });
     setLoading(false);
   }, [storeId]);
+
+  const retryFailed = useCallback(async () => {
+    if (!storeId) return 0;
+    const count = await retryFailedPrintJobs(storeId);
+    await refresh();
+    return count;
+  }, [storeId, refresh]);
 
   useEffect(() => {
     void refresh();
@@ -61,5 +71,5 @@ export function usePanelPrintStatus(storeId: string | undefined) {
     return () => window.clearInterval(id);
   }, [storeId, refresh]);
 
-  return { summary, loading, refresh };
+  return { summary, loading, refresh, retryFailed };
 }

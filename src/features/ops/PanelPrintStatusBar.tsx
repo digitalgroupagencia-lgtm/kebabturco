@@ -1,12 +1,19 @@
-import { Loader2, Printer, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Printer, AlertTriangle, CheckCircle2, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { PrintQueueSummary } from "./usePanelPrintStatus";
 
 interface PanelPrintStatusBarProps {
   summary: PrintQueueSummary | null;
   loading: boolean;
+  onRetryFailed?: () => Promise<number>;
+  onRefresh?: () => void;
 }
 
-const PanelPrintStatusBar = ({ summary, loading }: PanelPrintStatusBarProps) => {
+const PanelPrintStatusBar = ({ summary, loading, onRetryFailed, onRefresh }: PanelPrintStatusBarProps) => {
+  const [retrying, setRetrying] = useState(false);
+
   if (loading && !summary) {
     return (
       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -21,6 +28,27 @@ const PanelPrintStatusBar = ({ summary, loading }: PanelPrintStatusBarProps) => 
   const lastLabel = summary.lastPrintedAt
     ? new Date(summary.lastPrintedAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
     : "—";
+  const bridgeLabel = summary.bridgeLastSeen
+    ? new Date(summary.bridgeLastSeen).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : null;
+
+  const handleRetry = async () => {
+    if (!onRetryFailed) return;
+    setRetrying(true);
+    try {
+      const count = await onRetryFailed();
+      if (count > 0) {
+        toast.success(`${count} job(s) reenviado(s) para a fila`);
+      } else {
+        toast.info("Nenhum job falhado para reenviar");
+      }
+      onRefresh?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao reenviar jobs");
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   return (
     <div
@@ -43,13 +71,32 @@ const PanelPrintStatusBar = ({ summary, loading }: PanelPrintStatusBarProps) => 
       ) : (
         <span className="text-muted-foreground">Bridge —</span>
       )}
+      {bridgeLabel && (
+        <span className="text-muted-foreground">Último sinal: {bridgeLabel}</span>
+      )}
       {summary.pending > 0 && (
         <span className="font-bold text-amber-700 dark:text-amber-400">{summary.pending} na fila</span>
       )}
       {summary.failed > 0 && (
         <span className="font-bold text-destructive">{summary.failed} falhou</span>
       )}
-      <span className="text-muted-foreground ml-auto">Última: {lastLabel}</span>
+      {summary.failed > 0 && onRetryFailed && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          disabled={retrying}
+          onClick={() => void handleRetry()}
+        >
+          {retrying ? (
+            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+          ) : (
+            <RotateCcw className="w-3 h-3 mr-1" />
+          )}
+          Reenviar falhados
+        </Button>
+      )}
+      <span className="text-muted-foreground ml-auto">Última impressão: {lastLabel}</span>
     </div>
   );
 };

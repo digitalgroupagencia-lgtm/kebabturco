@@ -1198,15 +1198,50 @@ export type Database = {
         }
         Relationships: []
       }
+      print_bridge_heartbeats: {
+        Row: {
+          bridge_version: string | null
+          last_seen_at: string
+          printer_ip: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          bridge_version?: string | null
+          last_seen_at?: string
+          printer_ip?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          bridge_version?: string | null
+          last_seen_at?: string
+          printer_ip?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_bridge_heartbeats_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       print_jobs: {
         Row: {
           copies: number
           created_at: string
           error_message: string | null
           id: string
+          max_retries: number
+          next_retry_at: string | null
           order_id: string | null
           printer_ip: string
           printer_port: number
+          retry_count: number
           status: Database["public"]["Enums"]["print_job_status"]
           store_id: string | null
           ticket_data: string
@@ -1217,9 +1252,12 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          max_retries?: number
+          next_retry_at?: string | null
           order_id?: string | null
           printer_ip?: string
           printer_port?: number
+          retry_count?: number
           status?: Database["public"]["Enums"]["print_job_status"]
           store_id?: string | null
           ticket_data: string
@@ -1230,9 +1268,12 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          max_retries?: number
+          next_retry_at?: string | null
           order_id?: string | null
           printer_ip?: string
           printer_port?: number
+          retry_count?: number
           status?: Database["public"]["Enums"]["print_job_status"]
           store_id?: string | null
           ticket_data?: string
@@ -2759,11 +2800,22 @@ export type Database = {
       enqueue_print_job: {
         Args: {
           _copies_override?: number
+          _force_reprint?: boolean
           _order_id?: string
           _store_id: string
           _ticket_data: string
         }
         Returns: string
+      }
+      mark_kitchen_printed: { Args: { _order_id: string }; Returns: boolean }
+      retry_failed_print_jobs: { Args: { _store_id: string }; Returns: number }
+      upsert_print_bridge_heartbeat: {
+        Args: {
+          _bridge_version?: string
+          _printer_ip?: string
+          _store_id: string
+        }
+        Returns: undefined
       }
       get_admin_dashboard_stats: {
         Args: never

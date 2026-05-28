@@ -18,6 +18,8 @@ export const defaultConfig: PrinterConfig = {
   enabled: false,
 };
 
+const BRIDGE_ONLINE_SECONDS = 90;
+
 export async function fetchPrinterConfig(storeId: string): Promise<PrinterConfig> {
   const { data } = await supabase
     .from("printer_settings")
@@ -58,21 +60,28 @@ export async function createPrintJob(
   ticketDataBase64: string,
   orderId?: string,
   copiesOverride?: number,
+  forceReprint = false,
 ): Promise<{ success: boolean; jobId?: string; error?: string }> {
-  const { data, error } = await supabase.rpc("enqueue_print_job" as never, {
+  const { data, error } = await supabase.rpc("enqueue_print_job", {
     _ticket_data: ticketDataBase64,
     _store_id: storeId,
     _order_id: orderId ?? null,
     _copies_override: copiesOverride ?? null,
-  } as never);
+    _force_reprint: forceReprint,
+  });
   if (error) return { success: false, error: error.message };
-  return { success: true, jobId: data as unknown as string };
+  return { success: true, jobId: data as string };
 }
 
-export async function printOrder(storeId: string, order: TicketOrder, orderId?: string) {
+export async function printOrder(
+  storeId: string,
+  order: TicketOrder,
+  orderId?: string,
+  options?: { forceReprint?: boolean },
+) {
   const data = buildEscPosTicket(order);
   const copies = order.order_type === "delivery" ? 2 : undefined;
-  return createPrintJob(storeId, data, orderId, copies);
+  return createPrintJob(storeId, data, orderId, copies, options?.forceReprint ?? false);
 }
 
 export async function printTestTicket(storeId: string) {
@@ -86,7 +95,39 @@ export async function printSampleOrder(storeId: string, companyName: string) {
   return createPrintJob(storeId, data);
 }
 
+export async function hasActivePrintJob(orderId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("print_jobs")
+    .select("id")
+    .eq("order_id", orderId)
+    .in("status", ["pending", "printing"])
+    .limit(1);
+  return !!(data && data.length > 0);
+}
+
+export async function retryFailedPrintJobs(storeId: string): Promise<number> {
+  const { data, error } = await supabase.rpc("retry_failed_print_jobs", { _store_id: storeId });
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
 export async function checkBridgeStatus(storeId: string): Promise<"active" | "inactive" | "unknown"> {
+  const cutoff = new Date(Date.now() - BRIDGE_ONLINE_SECONDS * 1000).toISOString();
+  const { data: heartbeat } = await supabase
+    .from("print_bridge_heartbeats")
+    .select("last_seen_at")
+    .eq("store_id", storeId)
+    .maybeSingle();
+
+  if (heartbeat?.last_seen_at && heartbeat.last_seen_at >= cutoff) {
+    return "active";
+  }
+
+  if (heartbeat?.last_seen_at) {
+    return "inactive";
+  }
+
+  // Fallback heurístico enquanto bridge antigo não envia heartbeat
   const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const { data } = await supabase
     .from("print_jobs")
@@ -107,4 +148,13 @@ export async function checkBridgeStatus(storeId: string): Promise<"active" | "in
     .limit(1);
   if (pending && pending.length > 0) return "inactive";
   return "unknown";
+}
+
+export async function fetchBridgeLastSeen(storeId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("print_bridge_heartbeats")
+    .select("last_seen_at")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return data?.last_seen_at ?? null;
 }

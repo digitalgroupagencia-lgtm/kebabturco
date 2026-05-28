@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 import {
   PrinterConfig, defaultConfig, fetchPrinterConfig, savePrinterConfig,
-  printTestTicket, printSampleOrder, checkBridgeStatus,
+  printTestTicket, printSampleOrder, checkBridgeStatus, fetchBridgeLastSeen,
 } from "@/services/printerService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +20,15 @@ import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 
 const PrinterPage = () => {
   const { storeId } = useAdminStoreId();
+  const { stores } = useResolvedStore();
+  const activeStoreName = stores.find((s) => s.id === storeId)?.name ?? "Unidade";
   const [cfg, setCfg] = useState<PrinterConfig>(defaultConfig);
   const [companyName, setCompanyName] = useState("Restaurante");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [bridge, setBridge] = useState<"active" | "inactive" | "unknown" | "checking">("checking");
+  const [bridgeLastSeen, setBridgeLastSeen] = useState<string | null>(null);
 
   useEffect(() => {
     if (!storeId) {
@@ -46,7 +50,12 @@ const PrinterPage = () => {
   const refreshBridge = useCallback(async () => {
     if (!storeId) return;
     setBridge("checking");
-    setBridge(await checkBridgeStatus(storeId));
+    const [status, lastSeen] = await Promise.all([
+      checkBridgeStatus(storeId),
+      fetchBridgeLastSeen(storeId),
+    ]);
+    setBridge(status);
+    setBridgeLastSeen(lastSeen);
   }, [storeId]);
 
   useEffect(() => {
@@ -87,7 +96,16 @@ const PrinterPage = () => {
   };
 
   const downloadBridge = () => {
-    const env = `# print-bridge config\nSUPABASE_URL=${import.meta.env.VITE_SUPABASE_URL}\nSUPABASE_ANON_KEY=${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}\nSTORE_ID=${storeId || ""}\nDEFAULT_PRINTER_IP=${cfg.ip_address}\nDEFAULT_PRINTER_PORT=${cfg.port}\n`;
+    const env = `# print-bridge config — ${activeStoreName}
+# OBRIGATÓRIO: uma instância por loja com STORE_ID único
+SUPABASE_URL=${import.meta.env.VITE_SUPABASE_URL}
+SUPABASE_SERVICE_ROLE_KEY=<cole_a_service_role_key_do_supabase>
+# Fallback (não recomendado após hardening RLS):
+# SUPABASE_ANON_KEY=${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}
+STORE_ID=${storeId || ""}
+DEFAULT_PRINTER_IP=${cfg.ip_address}
+DEFAULT_PRINTER_PORT=${cfg.port}
+`;
     const blob = new Blob([env], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -118,6 +136,11 @@ const PrinterPage = () => {
     <div className="space-y-6 max-w-3xl mx-auto w-full">
       <AdminStoreSwitcher hint="Cada unidade tem a sua impressora. Escolha a loja, configure e guarde — depois repita para a outra unidade." />
 
+      <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+        <p className="text-sm font-bold text-foreground">A configurar: {activeStoreName}</p>
+        <p className="text-xs text-muted-foreground mt-1 font-mono">STORE_ID: {storeId}</p>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -139,7 +162,12 @@ const PrinterPage = () => {
               {status.icon}
               <div>
                 <span className={`text-sm font-medium ${status.color}`}>{status.label}</span>
-                <p className="text-[11px] text-muted-foreground">Print Bridge en el PC del restaurante</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Print Bridge no PC desta unidade
+                  {bridgeLastSeen
+                    ? ` · último sinal ${new Date(bridgeLastSeen).toLocaleTimeString("pt-PT")}`
+                    : ""}
+                </p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={refreshBridge}>
@@ -208,7 +236,7 @@ const PrinterPage = () => {
               : <><FileText className="w-4 h-4 mr-2" /> Probar ticket completo</>}
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            Los jobs se encolan en la base de datos y el Print Bridge del PC los procesa.
+            Jobs vão só para a fila desta unidade ({activeStoreName}). Compatível com impressoras ESC/POS LAN porta 9100 (ex.: NetumScan NS-8360L).
           </p>
         </CardContent>
       </Card>
@@ -227,11 +255,14 @@ const PrinterPage = () => {
             y envía los tickets ESC/POS vía TCP.
           </p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Cliente/vendedor crea pedido → se inserta en <span className="font-mono">orders</span>.</li>
-            <li>El sistema llama <span className="font-mono">enqueue_print_job</span> → crea fila en <span className="font-mono">print_jobs</span> (status: pending).</li>
-            <li>El Print Bridge en el PC del restaurante detecta el job por Realtime + polling.</li>
-            <li>El Bridge envía los bytes ESC/POS por TCP a la impresora ({cfg.ip_address}:{cfg.port}).</li>
+            <li>Cliente/vendedor cria pedido → <span className="font-mono">orders.store_id</span> da unidade escolhida.</li>
+            <li>Sistema chama <span className="font-mono">enqueue_print_job</span> → fila <span className="font-mono">print_jobs</span> (pending).</li>
+            <li>Print Bridge no PC desta loja (com <span className="font-mono">STORE_ID</span> correcto) processa só jobs desta unidade.</li>
+            <li>Bridge envia bytes ESC/POS 80mm por TCP ({cfg.ip_address}:{cfg.port}).</li>
           </ol>
+          <p className="text-xs text-muted-foreground">
+            Tabelas <span className="font-mono">printers</span> / <span className="font-mono">printer_category_map</span> são legado — use apenas <span className="font-mono">printer_settings</span> por loja.
+          </p>
           <Button variant="outline" size="sm" onClick={downloadBridge}>
             <Download className="w-4 h-4 mr-2" /> Descargar configuración (.env) para el Bridge
           </Button>

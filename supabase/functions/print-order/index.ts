@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildEscPosTicket, type TicketOrder } from "../_shared/escPosTicketBuilder.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,101 +34,34 @@ interface Payload {
   total: number;
 }
 
-const center = (s: string, w = 32) => {
-  const pad = Math.max(0, Math.floor((w - s.length) / 2));
-  return " ".repeat(pad) + s;
-};
+function payloadToTicket(p: Payload, brandName: string, orderId: string): TicketOrder {
+  const orderType =
+    p.orderType === "here" ? "dine_in" : p.orderType === "delivery" ? "delivery" : "takeaway";
 
-const LOCALES: Record<string, string> = {
-  pt: "pt-BR",
-  en: "en-US",
-  es: "es-ES",
-  fr: "fr-FR",
-};
-
-const LABELS: Record<string, Record<string, string>> = {
-  order: { pt: "PEDIDO", en: "ORDER", es: "PEDIDO", fr: "COMMANDE" },
-  payCounter: {
-    pt: "** PAGAR NO BALCAO **",
-    en: "** PAY AT COUNTER **",
-    es: "** PAGAR EN MOSTRADOR **",
-    fr: "** PAYER AU COMPTOIR **",
-  },
-  type: { pt: "Tipo", en: "Type", es: "Tipo", fr: "Type" },
-  here: { pt: "Comer aqui", en: "Eat here", es: "Comer aqui", fr: "Sur place" },
-  takeaway: { pt: "Para levar", en: "Take away", es: "Para llevar", fr: "A emporter" },
-  table: { pt: "Mesa", en: "Table", es: "Mesa", fr: "Table" },
-  customer: { pt: "Cliente", en: "Customer", es: "Cliente", fr: "Client" },
-  phone: { pt: "Tel", en: "Tel", es: "Tel", fr: "Tel" },
-  payment: { pt: "Pago", en: "Pay", es: "Pago", fr: "Paie" },
-  time: { pt: "Hora", en: "Time", es: "Hora", fr: "Heure" },
-  total: { pt: "TOTAL", en: "TOTAL", es: "TOTAL", fr: "TOTAL" },
-  notes: { pt: "Obs", en: "Notes", es: "Obs", fr: "Notes" },
-  delivery: { pt: "Domicilio", en: "Delivery", es: "Domicilio", fr: "Livraison" },
-  address: { pt: "Morada", en: "Address", es: "Direccion", fr: "Adresse" },
-  without: { pt: "sem", en: "no", es: "sin", fr: "sans" },
-};
-
-const buildTicket = (p: Payload, lang: string, brandName: string) => {
-  const W = 32;
-  const lines: string[] = [];
-  const sep = "-".repeat(W);
-  const dsep = "=".repeat(W);
-  const L = (k: string) => LABELS[k]?.[lang] || LABELS[k]?.es || k;
-  const locale = LOCALES[lang] || "es-ES";
-
-  lines.push(center(brandName.toUpperCase(), W));
-  lines.push(sep);
-
-  if (p.tableNumber) {
-    lines.push(dsep);
-    lines.push(center(`MESA ${p.tableNumber}`, W));
-    lines.push(dsep);
-  }
-
-  lines.push(center(`${L("order")} #${p.orderNumber}`, W));
-  lines.push(center(new Date().toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }), W));
-  lines.push(sep);
-
-  if (p.paidViaApp) {
-    lines.push(center("*** PAGO VIA APP ***", W));
-    lines.push(sep);
-  } else if (p.paymentPending) {
-    lines.push(center(L("payCounter"), W));
-    lines.push(sep);
-  }
-
-  lines.push(`${L("type")}:  ${p.orderType === "here" ? L("here") : p.orderType === "delivery" ? L("delivery") : L("takeaway")}`);
-  if (p.customerName) lines.push(`${L("customer")}: ${p.customerName}`);
-  if (p.customerPhone) lines.push(`${L("phone")}: ${p.customerPhone}`);
-  if (p.deliveryAddress) lines.push(`${L("address")}: ${p.deliveryAddress}`);
-  lines.push(`${L("payment")}:  ${p.paymentMethod}`);
-  lines.push(`${L("time")}:  ${new Date().toLocaleString(locale)}`);
-  lines.push(sep);
-
-  for (const it of p.items) {
-    lines.push(`${it.quantity}x ${it.productName}`);
-    if (it.size) lines.push(`   Tam: ${it.size}`);
-    for (const ex of it.extras) lines.push(`   + ${ex.quantity}x ${ex.name}`);
-    for (const rm of it.removed) lines.push(`   - ${L("without")} ${rm}`);
-    lines.push(`   ${it.totalPrice.toFixed(2)} EUR`);
-  }
-
-  lines.push(dsep);
-  lines.push(`${L("total")}:  ${p.total.toFixed(2)} EUR`);
-  lines.push(dsep);
-
-  if (p.notes) {
-    lines.push(`${L("notes")}:`);
-    lines.push(p.notes);
-    lines.push(sep);
-  }
-
-  lines.push("");
-  lines.push("");
-  lines.push("");
-  return lines.join("\n");
-};
+  return {
+    id: orderId,
+    order_number: p.orderNumber,
+    customer_name: p.customerName ?? undefined,
+    order_type: orderType,
+    table_number: p.tableNumber,
+    address: p.deliveryAddress,
+    contact_phone: p.customerPhone,
+    notes: p.notes,
+    items: p.items.map((it) => ({
+      name: it.productName,
+      price: it.unitPrice,
+      quantity: it.quantity,
+      size: it.size,
+      extras: it.extras?.map((e) => ({ name: e.name, price: e.price })),
+      removed: it.removed,
+    })),
+    total: p.total,
+    payment_method: p.paymentMethod,
+    paid_via_app: p.paidViaApp ?? !p.paymentPending,
+    company_name: brandName,
+    created_at: new Date().toISOString(),
+  };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -146,8 +80,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // SEGURANÇA: só imprime se houver um pedido real recente com este número/store.
-    // Bloqueia abuso anónimo (SSRF, spam de impressão).
     const { data: recentOrder } = await supabase
       .from("orders")
       .select("id, created_at, payment_status, order_type, table_validated, kitchen_printed_at")
@@ -175,71 +107,45 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: claimed } = await supabase.rpc("claim_kitchen_print", { _order_id: orderId });
-    if (!claimed) {
-      return new Response(JSON.stringify({ skipped: true, reason: "already_printed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { data: printer } = await supabase
       .from("printer_settings")
-      .select("*")
+      .select("enabled")
       .eq("store_id", payload.storeId)
       .maybeSingle();
 
-    if (!printer || !printer.enabled) {
+    if (!printer?.enabled) {
       return new Response(JSON.stringify({ skipped: true, reason: "printer disabled" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const { data: company } = await supabase
+      .from("company_settings")
+      .select("company_name")
+      .eq("store_id", payload.storeId)
+      .maybeSingle();
 
-    if (!printer.agent_endpoint) {
-      return new Response(
-        JSON.stringify({ error: "Agent endpoint not configured" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    const brand = company?.company_name || "Restaurante";
+    const ticketBase64 = buildEscPosTicket(payloadToTicket(payload, brand, orderId));
+    const copiesOverride = payload.orderType === "delivery" ? 2 : null;
 
-    // Idioma principal e nome do projeto
-    const [{ data: totem }, { data: company }] = await Promise.all([
-      supabase
-        .from("totem_config")
-        .select("primary_language")
-        .eq("store_id", payload.storeId)
-        .maybeSingle(),
-      supabase
-        .from("company_settings")
-        .select("company_name")
-        .eq("store_id", payload.storeId)
-        .maybeSingle(),
-    ]);
-    const lang = totem?.primary_language || "es";
-    const brand = company?.company_name || "EL REY";
-
-    const ticket = buildTicket(payload, lang, brand);
-
-    const agentResp = await fetch(`${printer.agent_endpoint.replace(/\/+$/, "")}/print`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ip: printer.ip_address,
-        port: printer.port ?? 9100,
-        text: ticket,
-      }),
+    const { data: jobId, error: enqueueErr } = await supabase.rpc("enqueue_print_job", {
+      _ticket_data: ticketBase64,
+      _store_id: payload.storeId,
+      _order_id: orderId,
+      _copies_override: copiesOverride,
+      _force_reprint: false,
     });
 
-    const ok = agentResp.ok;
-    const body = await agentResp.text().catch(() => "");
-
-    await supabase
-      .from("printer_settings")
-      .update({ last_test_at: new Date().toISOString(), last_test_ok: ok })
-      .eq("store_id", payload.storeId);
+    if (enqueueErr) {
+      return new Response(JSON.stringify({ error: enqueueErr.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(
-      JSON.stringify({ ok, status: agentResp.status, body }),
+      JSON.stringify({ ok: true, deprecated: true, jobId, via: "print_jobs" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
