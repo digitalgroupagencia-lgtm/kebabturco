@@ -2,6 +2,8 @@
 /**
  * Gera public/downloads/kebab-print-bridge.zip a partir de print-bridge/
  * Uso: npm run package:bridge
+ *
+ * Em ambientes sem o comando `zip` (ex.: build Lovable), reutiliza o zip já no repositório.
  */
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -26,6 +28,15 @@ const INCLUDE = [
   "README-WINDOWS.md",
 ];
 
+function hasZipCommand() {
+  try {
+    execSync("command -v zip", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 for (const name of INCLUDE) {
   const p = path.join(bridgeDir, name);
   if (!fs.existsSync(p)) {
@@ -35,6 +46,16 @@ for (const name of INCLUDE) {
 }
 
 fs.mkdirSync(outDir, { recursive: true });
+
+if (!hasZipCommand()) {
+  if (fs.existsSync(outZip)) {
+    console.log("[package-print-bridge] zip indisponível — a usar ficheiro existente");
+    process.exit(0);
+  }
+  console.error("[package-print-bridge] zip indisponível e sem ficheiro existente em public/downloads/");
+  process.exit(1);
+}
+
 if (fs.existsSync(outZip)) fs.unlinkSync(outZip);
 
 const isWin = process.platform === "win32";
