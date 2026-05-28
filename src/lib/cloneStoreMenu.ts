@@ -95,9 +95,7 @@ async function cloneStoreMenuClientSide(
 
   const { data: products, error: prodErr } = await supabase
     .from("products")
-    .select(
-      "id, category_id, name, description, price, image_url, is_active, is_bestseller, is_promo, sort_order, price_modifiers, product_type, combo_unit_count, unit_label, after_add_suggestions",
-    )
+    .select("*")
     .eq("store_id", sourceStoreId)
     .order("sort_order")
     .order("created_at");
