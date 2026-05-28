@@ -6,7 +6,7 @@ import { useEffectiveModifierConfig } from "@/hooks/useEffectiveModifierConfig";
 import ProductCustomizationFlow from "@/components/customization/ProductCustomizationFlow";
 import LegacyProductCustomizer from "@/components/screens/LegacyProductCustomizer";
 import ProductErrorBoundary from "@/components/ProductErrorBoundary";
-import PageSpinner from "@/components/PageSpinner";
+import InlineScreenSpinner from "@/components/InlineScreenSpinner";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -53,15 +53,11 @@ const ProductScreen = () => {
 
   const productLabel = product ? tProduct(product.name) : undefined;
 
-  if (menuLoading || modifierLoading || (selectedProductId && !product)) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <PageSpinner />
-      </div>
-    );
+  if (menuLoading) {
+    return <InlineScreenSpinner />;
   }
 
-  if (!product) {
+  if (selectedProductId && !product) {
     return (
       <div className="flex h-full flex-col bg-background">
         <ScreenHeader eyebrow={t("menu")} title={t("productUnavailable")} onBack={goBack} sticky />
@@ -77,6 +73,14 @@ const ProductScreen = () => {
         </div>
       </div>
     );
+  }
+
+  if (!product) {
+    return null;
+  }
+
+  if (modifierLoading) {
+    return <InlineScreenSpinner />;
   }
 
   const productContent =

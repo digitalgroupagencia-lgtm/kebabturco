@@ -11,11 +11,12 @@ import OrderTypeScreen from "@/components/screens/OrderTypeScreen";
 import CustomerScreenErrorBoundary from "@/components/CustomerScreenErrorBoundary";
 import DomainNotConfiguredScreen from "@/components/screens/DomainNotConfiguredScreen";
 import PageSpinner from "@/components/PageSpinner";
+import InlineScreenSpinner from "@/components/InlineScreenSpinner";
+import ProductScreen from "@/components/screens/ProductScreen";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 
 const HomeScreen = lazy(() => import("@/components/screens/HomeScreen"));
-const ProductScreen = lazy(() => import("@/components/screens/ProductScreen"));
 const ReviewScreen = lazy(() => import("@/components/screens/ReviewScreen"));
 const PaymentScreen = lazy(() => import("@/components/screens/PaymentScreen"));
 const CashPendingScreen = lazy(() => import("@/components/screens/CashPendingScreen"));
@@ -31,6 +32,10 @@ const PreviewBootstrap = () => {
 
 const LazyScreen = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<PageSpinner />}>{children}</Suspense>
+);
+
+const LazyInlineScreen = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<InlineScreenSpinner />}>{children}</Suspense>
 );
 
 const ScreenRouter = () => {
@@ -77,17 +82,15 @@ const ScreenRouter = () => {
     case "product":
       return (
         <CustomerScreenErrorBoundary scope="product">
-          <LazyScreen>
-            <ProductScreen />
-          </LazyScreen>
+          <ProductScreen />
         </CustomerScreenErrorBoundary>
       );
     case "review":
       return (
         <CustomerScreenErrorBoundary scope="checkout">
-          <LazyScreen>
+          <LazyInlineScreen>
             <ReviewScreen />
-          </LazyScreen>
+          </LazyInlineScreen>
         </CustomerScreenErrorBoundary>
       );
     case "payment":
