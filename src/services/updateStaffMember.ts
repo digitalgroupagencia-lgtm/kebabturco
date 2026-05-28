@@ -1,4 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
 import {
   repairStaffLoginViaRpc,
   setStaffPasswordViaRpc,
@@ -6,6 +5,7 @@ import {
 import { updateStaffMemberViaEdge } from "@/services/staffMemberEdge";
 import { verifyStaffMemberLogin } from "@/services/createStaffMember";
 import type { StaffRole } from "@/lib/staffPermissions";
+import { supabase } from "@/integrations/supabase/client";
 
 export type UpdateStaffMemberInput = {
   user_id: string;
@@ -46,21 +46,16 @@ async function assertStaffPasswordLogin(email: string | null | undefined, passwo
   }
 }
 
-async function setPasswordWithFallbacks(input: UpdateStaffMemberInput, password: string): Promise<"edge" | "local"> {
-  try {
-    await updateStaffMemberViaEdge(input);
-    return "edge";
-  } catch (edgeErr) {
-    if (await setStaffPasswordViaRpc(input.user_id, password)) {
-      await updateStaffMemberLocally(input);
-      return "local";
-    }
-    if (await repairStaffLoginViaRpc(input.user_id, password)) {
-      await updateStaffMemberLocally(input);
-      return "local";
-    }
-    throw edgeErr;
+async function setPasswordWithRpc(input: UpdateStaffMemberInput, password: string): Promise<boolean> {
+  if (await setStaffPasswordViaRpc(input.user_id, password)) {
+    await updateStaffMemberLocally(input);
+    return true;
   }
+  if (await repairStaffLoginViaRpc(input.user_id, password)) {
+    await updateStaffMemberLocally(input);
+    return true;
+  }
+  return false;
 }
 
 /** Actualiza membro da equipa — perfil, papel e senha, com teste de login. */
@@ -71,6 +66,11 @@ export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<
     return;
   }
 
-  await setPasswordWithFallbacks(input, password);
+  if (await setPasswordWithRpc(input, password)) {
+    await assertStaffPasswordLogin(input.email, password);
+    return;
+  }
+
+  await updateStaffMemberViaEdge(input);
   await assertStaffPasswordLogin(input.email, password);
 }

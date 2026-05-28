@@ -23,6 +23,10 @@ import {
   loadStoreConnectPaymentRow,
   resolveStoreConnectEnvironment,
 } from "../_shared/stripeStoreConnect.ts";
+import {
+  handleStaffCreateMember,
+  handleStaffUpdateMember,
+} from "../_shared/staffMemberActions.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -73,6 +77,14 @@ Deno.serve(async (req) => {
       } catch (e) {
         return connectErrorResponse(e);
       }
+    }
+
+    if (body?.action === "staff_update_member") {
+      return handleStaffUpdateMember(req, body);
+    }
+
+    if (body?.action === "staff_create_member") {
+      return handleStaffCreateMember(req, body);
     }
 
     const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";

@@ -1,5 +1,9 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  handleStaffCreateMember,
+  handleStaffUpdateMember,
+} from "../_shared/staffMemberActions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,6 +75,15 @@ Deno.serve(async (req) => {
     }
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+
+    if (body?.action === "staff_update_member") {
+      return handleStaffUpdateMember(req, body);
+    }
+
+    if (body?.action === "staff_create_member") {
+      return handleStaffCreateMember(req, body);
+    }
+
     const storeId = typeof body.storeId === "string" ? body.storeId : null;
 
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") ?? "";

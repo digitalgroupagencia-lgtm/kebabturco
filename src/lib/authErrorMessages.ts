@@ -56,8 +56,12 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
     es: "Esta persona ya forma parte del equipo de esta tienda.",
   },
   edge_function_unavailable: {
-    pt: "Serviço temporariamente indisponível. A app tentou criar o membro por outro caminho — se o erro persistir, contacte o suporte.",
-    es: "Servicio temporalmente no disponible. La app intentó crear el miembro por otra vía — si el error continúa, contacte con soporte.",
+    pt: "O servidor da loja ainda não tem a função de senha activa. Faça Sync + Publish na Lovable e tente guardar outra vez.",
+    es: "El servidor de la tienda aún no tiene activa la función de contraseña. Haga Sync + Publish en Lovable e intente guardar otra vez.",
+  },
+  staff_server_unavailable: {
+    pt: "Não foi possível ligar ao servidor para guardar a senha. Faça Sync + Publish na Lovable e tente outra vez.",
+    es: "No fue posible conectar con el servidor para guardar la contraseña. Haga Sync + Publish en Lovable e intente otra vez.",
   },
   db_function_missing: {
     pt: "Falta activar a encriptação na base de dados da Lovable. Execute o SQL «gen_salt» (Passo 2 + código de acesso) e tente novamente.",
@@ -91,6 +95,7 @@ const MESSAGES: Record<string, Record<UiLang, string>> = {
 
 function detectKey(raw: string): keyof typeof MESSAGES {
   const m = raw.toLowerCase();
+  if (m.includes("staff_server_unavailable")) return "staff_server_unavailable";
   if (m.includes("login_not_ready")) return "login_not_ready";
   if (m.includes("invalid login credentials") || m.includes("invalid email or password")) {
     return "invalid_credentials";
