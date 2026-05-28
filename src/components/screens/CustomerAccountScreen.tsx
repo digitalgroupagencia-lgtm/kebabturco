@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/customerSession";
 import { Loader2, Package, RotateCcw, Gift, User, MapPin, Save } from "lucide-react";
 import { toast } from "sonner";
+import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 
 type PastOrder = {
   id: string;
@@ -36,7 +37,9 @@ const STATUS_LABEL: Record<string, string> = {
 
 const CustomerAccountScreen = () => {
   const {
+    screen,
     setScreen,
+    accountFocus,
     setTrackingOrderId,
     customerPhone,
     setCustomerPhone,
@@ -64,6 +67,15 @@ const CustomerAccountScreen = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const profileSectionRef = useRef<HTMLElement>(null);
+  const ordersSectionRef = useRef<HTMLElement>(null);
+  const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
+
+  useEffect(() => {
+    if (screen !== "account") return;
+    const target = accountFocus === "orders" ? ordersSectionRef.current : profileSectionRef.current;
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [screen, accountFocus]);
 
   const syncProfileToOrder = (next: CustomerProfile) => {
     setCustomerName(next.name);
@@ -166,10 +178,15 @@ const CustomerAccountScreen = () => {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background">
-      <ScreenHeader eyebrow={t("openMyOrders")} title={t("myOrdersTitle")} onBack={() => setScreen("home")} sticky />
+      <ScreenHeader
+        eyebrow={accountFocus === "profile" ? t("navAccount") : t("openMyOrders")}
+        title={accountFocus === "profile" ? t("myAccountTitle") : t("myOrdersTitle")}
+        onBack={tabBarVisible ? undefined : () => setScreen("home")}
+        sticky
+      />
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5 pb-24">
-        <section className="rounded-2xl border border-border bg-card p-4 space-y-3">
+        <section ref={profileSectionRef} className="rounded-2xl border border-border bg-card p-4 space-y-3 scroll-mt-4">
           <div className="flex items-start gap-2">
             <User className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
@@ -258,7 +275,7 @@ const CustomerAccountScreen = () => {
           </button>
         </section>
 
-        <section className="space-y-3">
+        <section ref={ordersSectionRef} className="space-y-3 scroll-mt-4">
           <p className="text-sm font-bold">{t("searchMyOrders")}</p>
           <p className="text-xs text-muted-foreground -mt-2">{t("phoneSearchHint")}</p>
 

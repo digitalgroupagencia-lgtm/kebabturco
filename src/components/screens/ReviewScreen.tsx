@@ -12,6 +12,7 @@ import { loadSavedOrderType } from "@/lib/customerSession";
 import { configurationSummaryLines } from "@/lib/modifiers/legacyBridge";
 import type { CartConfiguration } from "@/lib/modifiers/types";
 import InAppConfirmDialog from "@/components/InAppConfirmDialog";
+import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 
 type LangMap = Record<string, string>;
 type SuggestionConfig = {
@@ -30,6 +31,7 @@ const CLEAR_LABEL: Record<string, string> = {
 
 const ReviewScreen = () => {
   const {
+    screen,
     setScreen,
     setSelectedProductId,
     setProductReturnScreen,
@@ -162,12 +164,14 @@ const ReviewScreen = () => {
     orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway");
   const ModalityIcon = orderType === "here" ? Utensils : orderType === "delivery" ? Bike : ShoppingBag;
 
+  const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
+
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
-        onBack={() => setScreen("home")}
+        onBack={tabBarVisible ? undefined : () => setScreen("home")}
         sticky
       />
 
@@ -380,7 +384,7 @@ const ReviewScreen = () => {
 
       {/* CTA fixo (sticky para respeitar a moldura mobile no desktop) */}
       {items.length > 0 && (
-        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] space-y-2.5">
+        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-3 space-y-2.5">
           <div className="flex items-end justify-between mb-2.5 px-1">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("total")}</p>

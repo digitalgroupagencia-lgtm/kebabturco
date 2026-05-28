@@ -3,6 +3,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { OrderProvider, useOrder } from "@/contexts/OrderContext";
 import CustomerBottomDock from "@/components/CustomerBottomDock";
+import CustomerTabBar from "@/components/CustomerTabBar";
 import SplashScreen from "@/components/screens/SplashScreen";
 import LanguageScreen from "@/components/screens/LanguageScreen";
 import StoreSelectionScreen from "@/components/screens/StoreSelectionScreen";
@@ -146,6 +147,7 @@ const CustomerShell = () => (
         </div>
       </div>
       <CustomerScreenErrorBoundary scope="bootstrap">
+        <CustomerTabBar />
         <CustomerBottomDock />
       </CustomerScreenErrorBoundary>
     </div>

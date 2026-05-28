@@ -7,10 +7,11 @@ import { customerTrackingStepIndex } from "@/lib/orderOperationalFlow";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import ScreenHeader from "@/components/ScreenHeader";
+import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
 
 const OrderTrackingScreen = () => {
-  const { trackingOrderId, setScreen, orderNumber } = useOrder();
+  const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
   const { t } = useLanguage();
   const { settings } = useOperationsSettings();
   const [order, setOrder] = useState<PublicOrderTrack | null>(null);
@@ -46,16 +47,18 @@ const OrderTrackingScreen = () => {
     );
   }
 
+  const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background animate-fade-in">
       <ScreenHeader
         eyebrow={t("menu")}
         title={`${t("orderNumber")} #${order?.order_number || orderNumber || "..."}`}
-        onBack={() => setScreen("home")}
+        onBack={tabBarVisible ? undefined : () => setScreen("home")}
         sticky
       />
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 pb-24 space-y-6">
         {!loading && order && (
           <p className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
             <Radio className="h-3 w-3 text-success animate-pulse" />

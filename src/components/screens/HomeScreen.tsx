@@ -6,7 +6,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { Plus, Package, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Loader2, RefreshCw } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
@@ -177,14 +177,6 @@ const HomeScreen = () => {
           </button>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setScreen("account")}
-              className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95"
-              aria-label={t("openMyOrders")}
-            >
-              <Package className="w-4 h-4" />
-            </button>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-foreground opacity-80" />
@@ -256,7 +248,7 @@ const HomeScreen = () => {
           </div>
 
 
-          <div className="px-3 pb-6 grid grid-cols-2 gap-2.5">
+          <div className="px-3 pb-24 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);

@@ -3,7 +3,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveOrder } from "@/features/customer/useActiveOrder";
-import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS } from "@/lib/customerBottomBars";
+import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS, TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 
 /**
  * Barra inferior do carrinho / pedido activo — dentro da moldura mobile (não fixed ao viewport).
@@ -13,6 +13,8 @@ const CustomerBottomDock = () => {
   const { totalItems, totalPrice } = useCart();
   const { t } = useLanguage();
   const { hasActiveOrder, displayNumber, statusLabel, trackOrder, isLoadingOrder } = useActiveOrder();
+
+  if (TAB_BAR_VISIBLE_SCREENS.has(screen)) return null;
 
   const showActiveOrder = hasActiveOrder && ACTIVE_ORDER_BAR_SCREENS.has(screen);
   const showCart = totalItems > 0 && !CART_BAR_HIDDEN_SCREENS.has(screen);

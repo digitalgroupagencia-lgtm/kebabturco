@@ -37,10 +37,13 @@ import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "cashPending" | "confirmation" | "tracking" | "account";
 export type { Screen };
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
+export type AccountFocus = "orders" | "profile";
 
 interface OrderContextType {
   screen: Screen;
   setScreen: (s: Screen) => void;
+  accountFocus: AccountFocus;
+  setAccountFocus: (f: AccountFocus) => void;
   selectedProductId: string | null;
   setSelectedProductId: (id: string | null) => void;
   editingCartItemId: string | null;
@@ -141,6 +144,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   })();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [accountFocus, setAccountFocus] = useState<AccountFocus>("profile");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -371,6 +375,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         screen,
         setScreen,
+        accountFocus,
+        setAccountFocus,
         selectedProductId,
         setSelectedProductId,
         editingCartItemId,
