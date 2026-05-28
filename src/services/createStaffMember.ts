@@ -6,6 +6,7 @@ import {
   createStaffAuthUserViaRpc,
   setStaffPasswordViaRpc,
 } from "@/services/staffAuthRpc";
+import { createStaffMemberViaEdge } from "@/services/staffMemberEdge";
 
 export type CreateStaffMemberInput = {
   email: string;
@@ -101,9 +102,7 @@ async function ensureAuthUserWithPassword(
   if (userId) {
     const passwordSet = await setStaffPasswordViaRpc(userId, password);
     if (!passwordSet) {
-      throw new Error(
-        "Conta já existe mas a senha não foi actualizada. Faça Sync + Publish na Lovable e tente outra vez.",
-      );
+      throw new Error("STAFF_AUTH_EDGE_FALLBACK");
     }
     return { userId, createdNewUser: false };
   }
@@ -161,8 +160,21 @@ async function ensureAuthUserWithPassword(
   return { userId, createdNewUser };
 }
 
-/** Cria membro da equipa — utilizador + permissões + login testado (sem edge functions). */
+/** Cria membro da equipa — utilizador + permissões + login testado. */
 export async function createStaffMember(
+  input: CreateStaffMemberInput,
+): Promise<CreateStaffMemberResult> {
+  try {
+    return await createStaffMemberDirect(input);
+  } catch (e) {
+    if (extractErrorMessage(e) === "STAFF_AUTH_EDGE_FALLBACK") {
+      return createStaffMemberViaEdge(input);
+    }
+    throw e;
+  }
+}
+
+async function createStaffMemberDirect(
   input: CreateStaffMemberInput,
 ): Promise<CreateStaffMemberResult> {
   const { userId, createdNewUser } = await ensureAuthUserWithPassword(input);
@@ -226,6 +238,7 @@ export async function createStaffMember(
     login_ready: loginReady,
   };
 }
+
 
 /** Confirma se e-mail + senha entram na app. */
 export async function verifyStaffMemberLogin(email: string, password: string): Promise<boolean> {

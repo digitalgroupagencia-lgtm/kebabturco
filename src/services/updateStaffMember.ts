@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { setStaffPasswordViaRpc } from "@/services/staffAuthRpc";
+import { updateStaffMemberViaEdge } from "@/services/staffMemberEdge";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 export type UpdateStaffMemberInput = {
@@ -28,14 +29,13 @@ async function updateStaffMemberLocally(input: UpdateStaffMemberInput) {
   if (roleError) throw roleError;
 }
 
-/** Actualiza membro da equipa — perfil, papel e senha (RPC na base de dados). */
+/** Actualiza membro da equipa — perfil, papel e senha. */
 export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<void> {
   if (input.password?.trim()) {
     const passwordSet = await setStaffPasswordViaRpc(input.user_id, input.password.trim());
     if (!passwordSet) {
-      throw new Error(
-        "Não foi possível alterar a senha. Faça Sync + Publish na Lovable para aplicar a actualização da base de dados.",
-      );
+      await updateStaffMemberViaEdge(input);
+      return;
     }
   }
 
