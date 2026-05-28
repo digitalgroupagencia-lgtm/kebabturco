@@ -27,6 +27,12 @@ const staffLoginCopy = {
       "Login por código no disponible. Pida al gerente que active las funciones del servidor o use e-mail y contraseña en /auth.",
     sessionFailed: "No se pudo iniciar sesión",
     invalidStorePin: "Tienda o código no válidos",
+    emailDivider: "O entre con correo y contraseña",
+    emailLabel: "Correo",
+    passwordLabel: "Contraseña",
+    emailSubmit: "Entrar con correo",
+    emailSubmitting: "Entrando…",
+    emailFailed: "Correo o contraseña incorrectos",
   },
   pt: {
     title: "Área da equipe",
@@ -47,6 +53,12 @@ const staffLoginCopy = {
       "Login por código indisponível no servidor. Peça ao gerente para activar as funções ou use e-mail e senha em /auth.",
     sessionFailed: "Não foi possível iniciar sessão",
     invalidStorePin: "Loja e código inválidos",
+    emailDivider: "Ou entre com e-mail e senha",
+    emailLabel: "E-mail",
+    passwordLabel: "Senha",
+    emailSubmit: "Entrar com e-mail",
+    emailSubmitting: "A entrar…",
+    emailFailed: "E-mail ou senha incorrectos",
   },
   en: {
     title: "Team area",
@@ -67,6 +79,12 @@ const staffLoginCopy = {
       "Code login unavailable. Ask the manager to enable server functions or use email and password at /auth.",
     sessionFailed: "Could not sign in",
     invalidStorePin: "Invalid store or code",
+    emailDivider: "Or sign in with email and password",
+    emailLabel: "Email",
+    passwordLabel: "Password",
+    emailSubmit: "Sign in with email",
+    emailSubmitting: "Signing in…",
+    emailFailed: "Incorrect email or password",
   },
 } as const;
 

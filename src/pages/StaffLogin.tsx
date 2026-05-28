@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, Shield, Delete, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
 import {
   loginWithStaffPin,
+  markStaffSession,
   resolveStaffLoginDestination,
 } from "@/lib/staffLogin";
 import { STAFF_PIN_PATTERN } from "@/lib/staffAccessPin";
@@ -24,7 +27,10 @@ const StaffLogin = () => {
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
   const [pin, setPin] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pinReady = STAFF_PIN_PATTERN.test(pin);
 
@@ -72,6 +78,29 @@ const StaffLogin = () => {
     }
   };
 
+  const handleEmailLogin = async () => {
+    if (!email.trim() || !password) {
+      setError(copy.emailFailed);
+      return;
+    }
+
+    setEmailSubmitting(true);
+    setError(null);
+
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (signInError) throw signInError;
+      markStaffSession();
+    } catch {
+      setError(copy.emailFailed);
+    } finally {
+      setEmailSubmitting(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-background">
@@ -108,7 +137,7 @@ const StaffLogin = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-6 py-6">
+      <main className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-6 py-6 pb-8">
         <p className="mb-5 text-center text-sm text-muted-foreground">{copy.instruction}</p>
 
         <Input
@@ -133,7 +162,7 @@ const StaffLogin = () => {
               variant="outline"
               className="h-14 text-xl font-bold"
               onClick={() => appendChar(d)}
-              disabled={submitting}
+              disabled={submitting || emailSubmitting}
             >
               {d}
             </Button>
@@ -143,7 +172,7 @@ const StaffLogin = () => {
             variant="outline"
             className="h-14 text-xl font-bold"
             onClick={() => appendChar("#")}
-            disabled={submitting || pin.includes("#")}
+            disabled={submitting || emailSubmitting || pin.includes("#")}
           >
             #
           </Button>
@@ -152,7 +181,7 @@ const StaffLogin = () => {
             variant="outline"
             className="h-14 text-xl font-bold"
             onClick={() => appendChar("0")}
-            disabled={submitting}
+            disabled={submitting || emailSubmitting}
           >
             0
           </Button>
@@ -161,7 +190,7 @@ const StaffLogin = () => {
             variant="ghost"
             className="h-14"
             onClick={backspace}
-            disabled={submitting || pin.length === 0}
+            disabled={submitting || emailSubmitting || pin.length === 0}
             aria-label={copy.backAria}
           >
             <Delete className="h-5 w-5" />
@@ -172,7 +201,7 @@ const StaffLogin = () => {
           type="button"
           className="h-12 w-full text-base font-bold"
           onClick={() => void handleSubmit()}
-          disabled={submitting || !pinReady}
+          disabled={submitting || emailSubmitting || !pinReady}
         >
           {submitting ? (
             <>
@@ -183,6 +212,58 @@ const StaffLogin = () => {
             copy.submit
           )}
         </Button>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">{copy.emailDivider}</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="staff-email">{copy.emailLabel}</Label>
+            <Input
+              id="staff-email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              placeholder="entregador@gmail.com"
+            />
+          </div>
+          <div>
+            <Label htmlFor="staff-password">{copy.passwordLabel}</Label>
+            <Input
+              id="staff-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full"
+            onClick={() => void handleEmailLogin()}
+            disabled={submitting || emailSubmitting}
+          >
+            {emailSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {copy.emailSubmitting}
+              </>
+            ) : (
+              copy.emailSubmit
+            )}
+          </Button>
+        </div>
       </main>
     </div>
   );

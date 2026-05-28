@@ -19,12 +19,16 @@ function pickStoreId(id: string | null | undefined): string | null {
   return id;
 }
 
-function readSavedStoreId(): string | null {
+export function readSavedStaffLoginStoreId(): string | null {
   try {
     return pickStoreId(localStorage.getItem(SELECTED_STORE_KEY));
   } catch {
     return null;
   }
+}
+
+function readSavedStoreId(): string | null {
+  return readSavedStaffLoginStoreId();
 }
 
 async function firstPublicStoreId(tenantId?: string): Promise<string | null> {
@@ -129,7 +133,7 @@ export async function resolveStaffLoginStoreId(): Promise<string | null> {
     console.error("[StaffLoginStore] resolve failed", err);
   }
 
-  return readSavedStoreId();
+  return readSavedStaffLoginStoreId();
 }
 
 /** Obrigatório antes do login — nunca chama o servidor sem loja real. */
@@ -160,5 +164,5 @@ export async function ensureStaffLoginStoreId(hint?: string | null): Promise<str
     return direct;
   }
 
-  throw new Error("Loja e código inválidos");
+  throw new Error("No se encontró el restaurante");
 }
