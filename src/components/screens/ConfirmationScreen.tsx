@@ -8,6 +8,7 @@ import { Check, Download, RotateCcw } from "lucide-react";
 import { toPng } from "html-to-image";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
+import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import { clearStoredActiveOrder } from "@/features/customer/useActiveOrderStorage";
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
 import { updateLocalOrderHistoryStatus } from "@/lib/customerOrderHistory";
@@ -56,6 +57,7 @@ const ConfirmationScreen = () => {
   }, []);
   const onTrackingLoading = useCallback(() => {}, []);
   useOrderTracking(activeOrderId || null, onLiveOrder, onTrackingLoading);
+  useCustomerOrderNotifications(liveOrder);
 
   useEffect(() => {
     const id = window.setInterval(() => setNowTick(Date.now()), 30_000);

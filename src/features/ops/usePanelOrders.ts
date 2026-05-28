@@ -7,6 +7,8 @@ import {
   isPanelAlertsEnabled,
   acknowledgePendingOrderAlert,
   playNewOrderAlert,
+  registerNewPendingOrderAlert,
+  syncPendingOrderAlertLoop,
 } from "@/lib/panelAlerts";
 import { blocksOperationalProgressUntilPaid, orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
@@ -108,7 +110,10 @@ export function usePanelOrders(storeId: string | undefined) {
         }
       } else {
         for (const o of rows) {
-          if (o.status === "pending") knownPendingRef.current.add(o.id);
+          if (o.status === "pending") {
+            knownPendingRef.current.add(o.id);
+            registerNewPendingOrderAlert(o.id);
+          }
         }
         initializedRef.current = true;
 
@@ -127,6 +132,7 @@ export function usePanelOrders(storeId: string | undefined) {
       });
       const ids = rows.map((o) => o.id);
       setItemsByOrder(ids.length ? await fetchItemsForOrders(ids) : {});
+      syncPendingOrderAlertLoop(rows.some((o) => o.status === "pending"));
     }
     setLoading(false);
   }, [storeId, notifyNewPending]);
@@ -221,6 +227,9 @@ export function usePanelOrders(storeId: string | undefined) {
                 const items = itemsByOrder[row.id] || (await fetchItemsForOrders([row.id]))[row.id] || [];
                 void tryPrintPanelOrder(storeId!, row, items);
               })();
+            }
+            if (old?.payment_status !== "paid" && row.payment_status === "paid") {
+              void notifyOrderStatusChange(row.id, "payment_paid", row.order_number);
             }
           },
         )
@@ -375,6 +384,7 @@ export function usePanelOrders(storeId: string | undefined) {
         const items = itemsByOrder[order.id] || [];
         void tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid" }, items);
         toast.success(`Pagamento registado — #${order.order_number}`);
+        void notifyOrderStatusChange(order.id, "payment_paid", order.order_number);
         return true;
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");

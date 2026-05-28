@@ -14,9 +14,9 @@ import OpsAcceptEtaDialog from "@/features/ops/OpsAcceptEtaDialog";
 import OpsAssignDriverDialog, { type StoreDriver } from "@/features/ops/OpsAssignDriverDialog";
 import OpsModeFilter, { filterOrdersByMode, type OpsViewMode } from "@/features/ops/OpsModeFilter";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
+import PanelAlertsPermissionDialog from "@/features/ops/PanelAlertsPermissionDialog";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
-import { bootstrapPanelAlertsOnLiveOpen } from "@/lib/panelAlerts";
-import { isStaffPushSupported, subscribeStaffPush } from "@/lib/staffPush";
+import { isPanelAlertsEnabled, preparePanelAlertsIfEnabled } from "@/lib/panelAlerts";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
@@ -71,6 +71,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
   const [accepting, setAccepting] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [, setUnackTick] = useState(0);
+  const [permissionOpen, setPermissionOpen] = useState(false);
 
   useEffect(() => {
     const sync = () => setUnackTick((t) => t + 1);
@@ -80,19 +81,11 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
 
   useEffect(() => {
     if (mode !== "live") return;
-    let cancelled = false;
-    (async () => {
-      await bootstrapPanelAlertsOnLiveOpen();
-      if (cancelled || !isStaffPushSupported()) return;
-      const push = await subscribeStaffPush(storeId);
-      if (!push.ok && push.error && push.error !== "Permissão de notificações negada") {
-        console.warn("[PanelOrdersBoard] staff push:", push.error);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, storeId]);
+    void preparePanelAlertsIfEnabled();
+    if (!isPanelAlertsEnabled()) {
+      setPermissionOpen(true);
+    }
+  }, [mode]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -235,6 +228,14 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
 
   return (
     <>
+      {mode === "live" && (
+        <PanelAlertsPermissionDialog
+          open={permissionOpen}
+          storeId={storeId}
+          onOpenChange={setPermissionOpen}
+          onEnabled={() => setPermissionOpen(false)}
+        />
+      )}
       <OpsOrdersLayout
         variant={isLive ? "live" : "default"}
         columns={visibleColumns}

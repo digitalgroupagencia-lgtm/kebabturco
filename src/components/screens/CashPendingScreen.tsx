@@ -3,6 +3,7 @@ import { Banknote, Loader2, Store } from "lucide-react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
+import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 
 const CashPendingScreen = () => {
@@ -19,6 +20,7 @@ const CashPendingScreen = () => {
 
   const onOrder = useCallback((next: PublicOrderTrack | null) => setOrder(next), []);
   useOrderTracking(activeOrderId || null, onOrder, setLoading);
+  useCustomerOrderNotifications(order);
 
   useEffect(() => {
     if (!activeOrderId) {

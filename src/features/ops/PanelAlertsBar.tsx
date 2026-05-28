@@ -68,9 +68,9 @@ const PanelAlertsBar = ({ storeId }: Props) => {
         toast.success(
           isIOSPanelDevice()
             ? lastDiag?.ok
-              ? "Alertas activos — bip curto quando chega pedido novo."
-              : "Alertas activos — flash e vibração suave por pedido novo."
-            : "Alertas activos — bip curto só quando chega pedido novo",
+              ? "Alertas activos — som repete até mudar o estado do pedido."
+              : "Alertas activos — flash e vibração até mudar o estado."
+            : "Alertas activos — som repete até mudar o estado do pedido",
         );
       } else {
         toast.warning("Não foi possível activar. Toca outra vez.");
@@ -127,7 +127,7 @@ const PanelAlertsBar = ({ storeId }: Props) => {
           <div className="min-w-0">
             <p className="text-sm font-black text-foreground">Activar alertas de pedidos</p>
             <p className="text-xs text-muted-foreground">
-              Um bip curto por pedido novo em «Recebido». Para ao aceitar ou abrir o pedido — sem repetição.
+              O som repete automaticamente enquanto houver pedidos em «Recebido», até mudar o estado do pedido.
             </p>
             {diagLine && <p className="text-[10px] text-muted-foreground mt-1">{diagLine}</p>}
           </div>
@@ -153,7 +153,7 @@ const PanelAlertsBar = ({ storeId }: Props) => {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="flex items-center gap-2 text-xs font-bold text-success">
           <Bell className="w-4 h-4" />
-          Alertas activos · bip único por pedido novo
+          Alertas activos · som repete até mudar estado
           {unackCount > 0 && (
             <span className="rounded-full bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 min-w-[18px] text-center">
               {unackCount}

@@ -5,6 +5,7 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { getCustomerTrackingSteps } from "@/lib/orderStatusLabels";
 import { customerTrackingStepIndex } from "@/lib/orderOperationalFlow";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
+import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
 
@@ -23,6 +24,7 @@ const OrderTrackingScreen = () => {
   const handleLoading = useCallback((l: boolean) => setLoading(l), []);
 
   useOrderTracking(orderId, handleOrder, handleLoading);
+  useCustomerOrderNotifications(order);
 
   const steps = useMemo(() => getCustomerTrackingSteps(order?.order_type, t), [order?.order_type, t]);
 

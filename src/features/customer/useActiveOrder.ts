@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { customerStatusTranslationKey } from "@/lib/orderStatusLabels";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
+import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import { clearStoredActiveOrder } from "./useActiveOrderStorage";
 
 export {
@@ -49,6 +50,7 @@ export function useActiveOrder() {
   }, []);
 
   useOrderTracking(activeOrderId || null, onOrder, onLoading);
+  useCustomerOrderNotifications(order);
 
   useEffect(() => {
     if (!activeOrderId) {

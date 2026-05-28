@@ -1,12 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const STATUS_MESSAGES: Record<string, Record<string, string>> = {
-  pending: { es: "¡Pedido recibido!", pt: "Pedido recebido!" },
-  preparing: { es: "Tu pedido está en preparación", pt: "O teu pedido está a ser preparado" },
-  ready: { es: "¡Tu pedido está listo!", pt: "O teu pedido está pronto!" },
-  out_for_delivery: { es: "¡Tu pedido salió para entrega!", pt: "O teu pedido saiu para entrega!" },
-  delivered: { es: "¡Pedido entregado! ¡Buen provecho!", pt: "Pedido entregue! Bom apetite!" },
-  cancelled: { es: "Tu pedido fue cancelado", pt: "O teu pedido foi cancelado" },
+  pending: { es: "¡Pedido recibido!", pt: "Pedido recebido!", en: "Order received!" },
+  preparing: { es: "Tu pedido está en preparación", pt: "O teu pedido está a ser preparado", en: "Your order is being prepared" },
+  ready: { es: "¡Tu pedido está listo!", pt: "O teu pedido está pronto!", en: "Your order is ready!" },
+  out_for_delivery: { es: "¡Tu pedido salió para entrega!", pt: "O teu pedido saiu para entrega!", en: "Your order is out for delivery!" },
+  delivered: { es: "¡Pedido entregado! ¡Buen provecho!", pt: "Pedido entregue! Bom apetite!", en: "Order delivered! Enjoy!" },
+  collected: { es: "¡Pedido recogido!", pt: "Pedido recolhido!", en: "Order collected!" },
+  served: { es: "¡Pedido servido!", pt: "Pedido servido!", en: "Order served!" },
+  cancelled: { es: "Tu pedido fue cancelado", pt: "O teu pedido foi cancelado", en: "Your order was cancelled" },
+  payment_paid: { es: "¡Pago confirmado!", pt: "Pagamento confirmado!", en: "Payment confirmed!" },
 };
 
 export async function notifyOrderStatusChange(

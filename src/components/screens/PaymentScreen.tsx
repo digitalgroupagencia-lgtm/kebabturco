@@ -25,6 +25,7 @@ import {
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
@@ -407,6 +408,7 @@ const PaymentScreen = () => {
       itemCount: items.length,
     });
 
+    await enableCustomerOrderAlerts();
     await subscribePush({
       storeId,
       orderId: result.order_id,
@@ -509,6 +511,7 @@ const PaymentScreen = () => {
     setTrackingOrderId(result.order_id);
     syncActiveOrderUrl(result.order_id, "confirmation");
 
+    await enableCustomerOrderAlerts();
     await subscribePush({
       storeId,
       orderId: result.order_id,
