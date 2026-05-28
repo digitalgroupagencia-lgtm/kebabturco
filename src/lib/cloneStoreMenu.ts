@@ -149,7 +149,7 @@ async function cloneStoreMenuClientSide(
     if (prod.unit_label != null) payload.unit_label = prod.unit_label;
     if (prod.after_add_suggestions != null) payload.after_add_suggestions = prod.after_add_suggestions;
 
-    const { error } = await supabase.from("products").insert(payload);
+    const { error } = await supabase.from("products").insert(payload as never);
     if (error) throw new Error(error.message);
     productsCopied += 1;
   }
