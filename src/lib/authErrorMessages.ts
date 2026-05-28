@@ -79,7 +79,16 @@ function detectKey(raw: string): keyof typeof MESSAGES {
   if (m.includes("membro da equipe não encontrado") || m.includes("equipe não encontrado")) return "member_not_found";
   if (m.includes("loja inválida")) return "store_invalid";
   if (m.includes("já faz parte") || m.includes("already on team")) return "role_exists";
-  if (m.includes("failed to send a request") || m.includes("edge function")) return "edge_function_unavailable";
+  if (
+    m.includes("failed to fetch") ||
+    m.includes("fetch failed") ||
+    m.includes("failed to send a request") ||
+    m.includes("edge function") ||
+    m.includes("networkerror") ||
+    m.includes("network request failed")
+  ) {
+    return "edge_function_unavailable";
+  }
   return "generic";
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isNetworkOrEdgeUnavailable } from "@/lib/networkErrors";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 export type CreateStaffMemberInput = {
@@ -46,15 +47,21 @@ async function invokeEdgeFunction(
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token ?? SUPABASE_KEY;
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/create-staff-member`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      apikey: SUPABASE_KEY,
-    },
-    body: JSON.stringify(input),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${SUPABASE_URL}/functions/v1/create-staff-member`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        apikey: SUPABASE_KEY,
+      },
+      body: JSON.stringify(input),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
 
   const payload = (await res.json().catch(() => ({}))) as {
     error?: string;
@@ -195,7 +202,7 @@ export async function createStaffMember(
   try {
     const edge = await invokeEdgeFunction(input);
     if ("error" in edge) {
-      if (!isEdgeFunctionUnavailable(edge.error)) {
+      if (!isNetworkOrEdgeUnavailable(edge.error)) {
         throw new Error(edge.error);
       }
     } else {
@@ -203,7 +210,7 @@ export async function createStaffMember(
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (!isEdgeFunctionUnavailable(msg)) throw e;
+    if (!isNetworkOrEdgeUnavailable(msg)) throw e;
   }
 
   return createStaffMemberLocally(input);
