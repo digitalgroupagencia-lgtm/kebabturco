@@ -20,13 +20,6 @@ Deno.serve(async (req) => {
     const store_id = String(body?.store_id ?? "").trim();
     const pin = String(body?.pin ?? "").trim();
 
-    if (!store_id || !UUID_PATTERN.test(store_id)) {
-      return new Response(JSON.stringify({ error: "Loja não identificada", code: "INVALID_STORE" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     if (!PIN_PATTERN.test(pin)) {
       return new Response(JSON.stringify({ error: "Código inválido", code: "INVALID_PIN" }), {
         status: 400,
@@ -36,16 +29,28 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    const { data: verified, error: verifyErr } = await admin.rpc("verify_staff_access_pin", {
-      _store_id: store_id,
-      _pin: pin,
-    });
+    let verified: unknown;
+    let verifyErr: { message: string } | null = null;
 
-    if (verifyErr) {
-      return new Response(JSON.stringify({ error: verifyErr.message, code: "VERIFY_FAILED" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (store_id && UUID_PATTERN.test(store_id)) {
+      const result = await admin.rpc("verify_staff_access_pin", {
+        _store_id: store_id,
+        _pin: pin,
       });
+      verified = result.data;
+      verifyErr = result.error;
+    }
+
+    const rowFromStore = Array.isArray(verified) ? verified[0] : verified;
+    if (verifyErr || !rowFromStore?.user_id) {
+      const anyResult = await admin.rpc("verify_staff_access_pin_any", { _pin: pin });
+      if (anyResult.error) {
+        return new Response(JSON.stringify({ error: anyResult.error.message, code: "VERIFY_FAILED" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      verified = anyResult.data;
     }
 
     const row = Array.isArray(verified) ? verified[0] : verified;
