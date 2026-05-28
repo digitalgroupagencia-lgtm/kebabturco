@@ -79,23 +79,41 @@ export function getPanelPaymentBadge(order: {
   return { label: "PAG. PENDENTE", tone: "pending" as const };
 }
 
-export function getCustomerTrackingSteps(orderType: string | null | undefined) {
+const CUSTOMER_STATUS_KEYS: Record<string, string> = {
+  pending: "customerStatusPending",
+  preparing: "customerStatusPreparing",
+  ready: "customerStatusReady",
+  out_for_delivery: "customerStatusOutForDelivery",
+  delivered: "customerStatusDelivered",
+  cancelled: "orderCancelled",
+};
+
+export function customerStatusTranslationKey(status: string, orderType?: string | null): string {
+  if (status === "delivered" && orderType === "takeaway") return "customerStatusCollected";
+  if (status === "delivered" && orderType === "dine_in") return "customerStatusServed";
+  return CUSTOMER_STATUS_KEYS[status] ?? status;
+}
+
+export function getCustomerTrackingSteps(
+  orderType: string | null | undefined,
+  t: (key: string) => string,
+) {
   const isDelivery = orderType === "delivery";
   if (isDelivery) {
     return [
-      { key: "pending", label: "Pedido recebido", icon: "📥" },
-      { key: "preparing", label: "Em preparação", icon: "👨‍🍳" },
-      { key: "ready", label: "Pronto para entrega", icon: "📦" },
-      { key: "out_for_delivery", label: "Saiu para entrega", icon: "🛵" },
-      { key: "delivered", label: "Entregue", icon: "🎉" },
+      { key: "pending", label: t("customerStatusPending"), icon: "📥" },
+      { key: "preparing", label: t("customerStatusPreparing"), icon: "👨‍🍳" },
+      { key: "ready", label: t("customerStatusReady"), icon: "📦" },
+      { key: "out_for_delivery", label: t("customerStatusOutForDelivery"), icon: "🛵" },
+      { key: "delivered", label: t("customerStatusDelivered"), icon: "🎉" },
     ];
   }
-  const deliveredLabel = orderType === "takeaway" ? "Recolhido" : "Servido";
+  const deliveredKey = orderType === "takeaway" ? "customerStatusCollected" : "customerStatusServed";
   return [
-    { key: "pending", label: "Pedido recebido", icon: "📥" },
-    { key: "preparing", label: "Em preparação", icon: "👨‍🍳" },
-    { key: "ready", label: "Pronto para entrega", icon: "📦" },
-    { key: "delivered", label: deliveredLabel, icon: "🎉" },
+    { key: "pending", label: t("customerStatusPending"), icon: "📥" },
+    { key: "preparing", label: t("customerStatusPreparing"), icon: "👨‍🍳" },
+    { key: "ready", label: t("customerStatusReady"), icon: "📦" },
+    { key: "delivered", label: t(deliveredKey), icon: "🎉" },
   ];
 }
 

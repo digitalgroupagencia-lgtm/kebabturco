@@ -39,6 +39,8 @@ import {
   stripeConfigIssue,
 } from "@/lib/paymentPolicy";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import PhoneInput from "@/components/PhoneInput";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle } from "lucide-react";
@@ -108,6 +110,7 @@ const PaymentScreen = () => {
   } = useOrder();
   const { items, totalPrice, clearCart, orderType, setOrderType } = useCart();
   const { settings, loading: settingsLoading } = useOperationsSettings();
+  const { loading: storeLoading } = useResolvedStore();
   const brandingCtx = useBranding();
   const { t, tProduct } = useLanguage();
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
@@ -126,7 +129,7 @@ const PaymentScreen = () => {
   } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone" | "store">(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
@@ -307,11 +310,25 @@ const PaymentScreen = () => {
   }
   const notes = notesParts.length ? notesParts.join(" | ") : null;
 
+  const assertStoreReady = (): boolean => {
+    if (storeLoading || !storeId) {
+      setShowError("store");
+      return false;
+    }
+    if (isEmergencyFallbackStoreId(storeId)) {
+      setShowError("store");
+      return false;
+    }
+    return true;
+  };
+
   const finishOrder = async (opts: {
     paymentMethod: PaymentMethodId;
     paymentStatus: "pending" | "paid";
     stripePi?: string | null;
   }) => {
+    if (!assertStoreReady()) return;
+
     if (isTableOrder && !mesaValidated) {
       setShowError("table");
       return;
@@ -437,6 +454,8 @@ const PaymentScreen = () => {
   };
 
   const startCardPayment = async () => {
+    if (!assertStoreReady()) return;
+
     const subtotalCents = Math.round(totalPrice * 100);
     const deliveryCents = Math.round(deliveryFee * 100);
     const discountCents = Math.round(couponDiscount * 100);
@@ -606,6 +625,7 @@ const PaymentScreen = () => {
                 setStripePaymentMeta(null);
               }}
               onSuccess={async () => {
+                if (!assertStoreReady()) return;
                 setProcessing(true);
                 try {
                   const fin = cardOrderFinancials();
@@ -924,6 +944,11 @@ const PaymentScreen = () => {
 
       {!stripeClientSecret && (
         <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+          {showError === "store" && (
+            <p className="text-xs text-destructive font-bold mb-2 px-1">
+              {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
+            </p>
+          )}
           <button
             type="button"
             onClick={confirm}

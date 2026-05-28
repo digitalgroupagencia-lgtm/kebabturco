@@ -5,28 +5,19 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveOrder } from "@/features/customer/useActiveOrder";
 import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS } from "@/lib/customerBottomBars";
 
-const TRACK_LABEL = {
-  pt: "Ver estado do pedido",
-  en: "View order status",
-  es: "Ver estado del pedido",
-  fr: "Voir le statut",
-};
-
 /**
  * Barra inferior do carrinho / pedido activo — dentro da moldura mobile (não fixed ao viewport).
  */
 const CustomerBottomDock = () => {
   const { screen, setScreen } = useOrder();
   const { totalItems, totalPrice } = useCart();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { hasActiveOrder, displayNumber, statusLabel, trackOrder, isLoadingOrder } = useActiveOrder();
 
   const showActiveOrder = hasActiveOrder && ACTIVE_ORDER_BAR_SCREENS.has(screen);
   const showCart = totalItems > 0 && !CART_BAR_HIDDEN_SCREENS.has(screen);
 
   if (!showActiveOrder && !showCart) return null;
-
-  const trackCta = TRACK_LABEL[lang] || TRACK_LABEL.es;
 
   return (
     <div
@@ -45,7 +36,7 @@ const CustomerBottomDock = () => {
             </span>
             <span className="min-w-0 flex-1 text-left">
               <span className="block truncate text-[10px] font-bold uppercase tracking-wider opacity-85">
-                {trackCta}
+                {t("viewOrderStatus")}
               </span>
               <span className="block truncate text-sm font-black">
                 #{displayNumber}

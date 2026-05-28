@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { useMesaFromUrl } from "@/hooks/useMesaFromUrl";
@@ -187,7 +188,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [effectiveStoreId, activeOrderId]);
 
   useEffect(() => {
-    if (activeOrderId && orderNumber && effectiveStoreId) {
+    if (activeOrderId && orderNumber && effectiveStoreId && !isEmergencyFallbackStoreId(effectiveStoreId)) {
       saveStoredActiveOrder({
         orderId: activeOrderId,
         orderNumber,

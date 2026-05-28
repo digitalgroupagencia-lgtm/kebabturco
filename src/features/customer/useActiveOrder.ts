@@ -1,6 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { getStatusLabel } from "@/lib/orderStatusLabels";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { customerStatusTranslationKey } from "@/lib/orderStatusLabels";
+import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { clearStoredActiveOrder } from "./useActiveOrderStorage";
 
@@ -16,37 +18,70 @@ export {
 const TERMINAL_STATUSES = new Set(["delivered", "cancelled"]);
 
 export function useActiveOrder() {
-  const { activeOrderId, orderNumber, setActiveOrderId, setTrackingOrderId, setScreen } = useOrder();
+  const { activeOrderId, orderNumber, setActiveOrderId, setTrackingOrderId, setScreen, storeId } =
+    useOrder();
+  const { t } = useLanguage();
   const [order, setOrder] = useState<PublicOrderTrack | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchSettled, setFetchSettled] = useState(false);
+
+  const clearActiveOrder = useCallback(() => {
+    clearStoredActiveOrder();
+    setActiveOrderId("");
+    setTrackingOrderId("");
+    setOrder(null);
+  }, [setActiveOrderId, setTrackingOrderId]);
 
   const onOrder = useCallback(
     (row: PublicOrderTrack | null) => {
       setOrder(row);
+      setFetchSettled(true);
       if (row && TERMINAL_STATUSES.has(row.status)) {
-        clearStoredActiveOrder();
-        setActiveOrderId("");
+        clearActiveOrder();
       }
     },
-    [setActiveOrderId],
+    [clearActiveOrder],
   );
 
-  useOrderTracking(activeOrderId || null, onOrder, setLoading);
+  const onLoading = useCallback((next: boolean) => {
+    setLoading(next);
+    if (next) setFetchSettled(false);
+  }, []);
+
+  useOrderTracking(activeOrderId || null, onOrder, onLoading);
+
+  useEffect(() => {
+    if (!activeOrderId) {
+      setOrder(null);
+      setFetchSettled(false);
+    }
+  }, [activeOrderId]);
+
+  useEffect(() => {
+    if (activeOrderId && isEmergencyFallbackStoreId(storeId)) {
+      clearActiveOrder();
+    }
+  }, [activeOrderId, storeId, clearActiveOrder]);
+
+  useEffect(() => {
+    if (!activeOrderId || loading || !fetchSettled) return;
+    if (!order) {
+      clearActiveOrder();
+    }
+  }, [activeOrderId, loading, fetchSettled, order, clearActiveOrder]);
 
   const trackOrder = () => {
-    if (!activeOrderId) return;
+    if (!activeOrderId || !order) return;
     setTrackingOrderId(activeOrderId);
     setScreen("tracking");
   };
 
   const dismiss = () => {
-    clearStoredActiveOrder();
-    setActiveOrderId("");
-    setOrder(null);
+    clearActiveOrder();
   };
 
-  const hasActiveOrder = !!activeOrderId && (!order || !TERMINAL_STATUSES.has(order.status));
-  const isLoadingOrder = !!activeOrderId && loading && !order;
+  const hasActiveOrder = Boolean(activeOrderId && order && !TERMINAL_STATUSES.has(order.status));
+  const isLoadingOrder = Boolean(activeOrderId && loading && !order);
 
   return {
     order,
@@ -54,7 +89,7 @@ export function useActiveOrder() {
     isLoadingOrder,
     hasActiveOrder,
     displayNumber: order?.order_number || orderNumber,
-    statusLabel: order ? getStatusLabel(order.status, order.order_type) : "",
+    statusLabel: order ? t(customerStatusTranslationKey(order.status, order.order_type)) : "",
     trackOrder,
     dismiss,
   };

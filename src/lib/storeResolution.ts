@@ -8,6 +8,11 @@ export type StoreOption = {
 
 export const KEBAB_FALLBACK_STORE_ID = "22222222-2222-2222-2222-222222222222";
 
+/** Loja de emergência do preview — pedidos aqui não aparecem no painel real. */
+export function isEmergencyFallbackStoreId(storeId: string | null | undefined): boolean {
+  return storeId === KEBAB_FALLBACK_STORE_ID;
+}
+
 export function isGenericFallbackStores(stores: StoreOption[]): boolean {
   return (
     stores.length === 1 &&

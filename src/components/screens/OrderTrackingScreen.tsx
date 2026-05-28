@@ -24,7 +24,7 @@ const OrderTrackingScreen = () => {
 
   useOrderTracking(orderId, handleOrder, handleLoading);
 
-  const steps = useMemo(() => getCustomerTrackingSteps(order?.order_type), [order?.order_type]);
+  const steps = useMemo(() => getCustomerTrackingSteps(order?.order_type, t), [order?.order_type, t]);
 
   const currentIdx = useMemo(() => {
     if (!order) return 0;
@@ -36,9 +36,9 @@ const OrderTrackingScreen = () => {
   if (!orderId) {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center p-6 text-center">
-        <p className="text-muted-foreground">Pedido não encontrado</p>
+        <p className="text-muted-foreground">{t("orderNotFound")}</p>
         <button onClick={() => setScreen("home")} className="mt-4 text-primary font-bold">
-          Voltar ao menu
+          {t("backToMenu")}
         </button>
       </div>
     );
@@ -48,7 +48,7 @@ const OrderTrackingScreen = () => {
     <div className="flex h-full min-h-0 flex-col bg-background animate-fade-in">
       <ScreenHeader
         eyebrow={t("menu")}
-        title={`Pedido #${order?.order_number || orderNumber || "..."}`}
+        title={`${t("orderNumber")} #${order?.order_number || orderNumber || "..."}`}
         onBack={() => setScreen("home")}
         sticky
       />
@@ -57,7 +57,7 @@ const OrderTrackingScreen = () => {
         {!loading && order && (
           <p className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
             <Radio className="h-3 w-3 text-success animate-pulse" />
-            Actualização automática activa
+            {t("trackingAutoUpdate")}
           </p>
         )}
 
@@ -66,28 +66,28 @@ const OrderTrackingScreen = () => {
             <Loader2 className="animate-spin w-8 h-8 text-primary" />
           </div>
         ) : !order ? (
-          <p className="text-center text-muted-foreground">Pedido não encontrado</p>
+          <p className="text-center text-muted-foreground">{t("orderNotFound")}</p>
         ) : (
           <>
             {order.status === "cancelled" ? (
               <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-center">
-                <p className="text-lg font-black text-destructive">Pedido cancelado</p>
+                <p className="text-lg font-black text-destructive">{t("orderCancelled")}</p>
               </div>
             ) : (
               <>
                 <div className="text-center space-y-2">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
-                    Estado actual
+                    {t("trackingCurrentStatus")}
                   </p>
                   <p className="text-2xl font-black text-foreground">
                     {steps[currentIdx]?.icon} {steps[currentIdx]?.label}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Tempo estimado: ~{prepMin} min
+                    {t("trackingEstimatedTime").replace("{n}", String(prepMin))}
                     {order.estimated_ready_at && (
                       <>
                         {" "}
-                        · Pronto ~{" "}
+                        · {t("trackingReadyAt")}
                         {new Date(order.estimated_ready_at).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -100,10 +100,10 @@ const OrderTrackingScreen = () => {
                 {order.status === "out_for_delivery" && order.assigned_driver_name && (
                   <div className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-4 text-center">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
-                      Entregador
+                      {t("trackingDriver")}
                     </p>
                     <p className="text-lg font-black">{order.assigned_driver_name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">O seu pedido saiu para entrega</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t("trackingOutForDelivery")}</p>
                   </div>
                 )}
 
@@ -111,14 +111,12 @@ const OrderTrackingScreen = () => {
                   (order.status === "ready" || order.status === "out_for_delivery") && (
                     <div className="rounded-2xl border border-orange-500/40 bg-orange-500/10 p-5 text-center space-y-2">
                       <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
-                        Código para o estafeta
+                        {t("trackingDeliveryCode")}
                       </p>
                       <p className="text-4xl font-black tracking-[0.3em] tabular-nums text-orange-600">
                         {order.delivery_confirmation_code}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Mostre este código quando receber o pedido
-                      </p>
+                      <p className="text-xs text-muted-foreground">{t("trackingShowCode")}</p>
                     </div>
                   )}
 
@@ -156,7 +154,9 @@ const OrderTrackingScreen = () => {
                           >
                             {step.label}
                           </p>
-                          {active && <p className="text-xs text-muted-foreground mt-0.5">Em curso...</p>}
+                          {active && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{t("trackingInProgress")}</p>
+                          )}
                         </div>
                       </li>
                     );
@@ -167,7 +167,7 @@ const OrderTrackingScreen = () => {
 
             {order.delivery_street && (
               <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-                <p className="font-bold text-muted-foreground text-xs uppercase mb-1">Entrega em</p>
+                <p className="font-bold text-muted-foreground text-xs uppercase mb-1">{t("trackingDeliveryTo")}</p>
                 <p>
                   {order.delivery_street}
                   {order.delivery_city ? `, ${order.delivery_city}` : ""}
@@ -176,7 +176,7 @@ const OrderTrackingScreen = () => {
             )}
 
             <div className="rounded-2xl border border-border bg-card p-4 flex justify-between items-center">
-              <span className="font-bold">Total</span>
+              <span className="font-bold">{t("total")}</span>
               <span className="text-xl font-black text-price tabular-nums">
                 {Number(order.total).toFixed(2)}€
               </span>
