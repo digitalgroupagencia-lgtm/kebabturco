@@ -13,6 +13,23 @@ const ALL_PANEL_SEGMENTS = new Set([
   "cashier",
   "table-map",
   "tables",
+  "finance",
+  "settings",
+  "team",
+  "sellers",
+  "guide",
+  "diagnostics",
+]);
+
+const MANAGER_PANEL_SEGMENTS = new Set([
+  "",
+  "live",
+  "kitchen",
+  "dashboard",
+  "cashier",
+  "table-map",
+  "tables",
+  "finance",
   "settings",
   "team",
   "sellers",
@@ -24,7 +41,7 @@ const ALL_PANEL_SEGMENTS = new Set([
 const PANEL_SEGMENTS_BY_ROLE: Partial<Record<StaffRole, ReadonlySet<string>>> = {
   admin_master: ALL_PANEL_SEGMENTS,
   restaurant_admin: ALL_PANEL_SEGMENTS,
-  manager: ALL_PANEL_SEGMENTS,
+  manager: MANAGER_PANEL_SEGMENTS,
   operator: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
   kitchen: new Set(["", "live", "kitchen", "guide"]),
   cashier: new Set(["", "cashier", "guide"]),
@@ -110,6 +127,11 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
       { key: "team", segment: "team", label: "Equipe" },
       { key: "sellers", segment: "sellers", label: "Vendedores" },
     ],
+  },
+  {
+    id: "finance",
+    label: "Financeiro",
+    items: [{ key: "finance", segment: "finance", label: "Recebimentos" }],
   },
   {
     id: "config",

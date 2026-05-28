@@ -14,6 +14,7 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "cashier",
   "table-map",
   "tables",
+  "finance",
   "settings",
   "team",
   "sellers",
@@ -75,7 +76,7 @@ export function redirectTargetForPanelPath(
 
   if (segment === "menu") return nav.admin("menu");
 
-  if (segment === "finance") return nav.admin("finance");
+  if (segment === "finance") return null;
 
   if (staffRole && !panelSegmentAllowed(staffRole, segment)) {
     return nav.panel();

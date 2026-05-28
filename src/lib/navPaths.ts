@@ -40,7 +40,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "panel", segments: ["team"], loader: () => import("@/views/panel/TeamPage.tsx") },
   { area: "panel", segments: ["sellers"], loader: () => import("@/views/panel/SellersPage.tsx") },
   { area: "panel", segments: ["tables"], loader: () => import("@/views/panel/TablesPage.tsx") },
-  { area: "panel", segments: ["finance"], loader: () => import("@/views/panel/FinancePage.tsx") },
+  { area: "panel", segments: ["finance"], loader: () => import("@/views/panel/PanelFinancePage.tsx") },
   { area: "panel", segments: ["settings"], loader: () => import("@/views/panel/SettingsPage.tsx") },
   { area: "panel", segments: ["guide"], loader: () => import("@/views/panel/GuidePage.tsx") },
   // /panel/diagnostics removido — auditoria geral é admin-only

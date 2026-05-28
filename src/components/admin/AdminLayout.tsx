@@ -1,5 +1,5 @@
-import { useEffect, type ComponentType } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { type ComponentType } from "react";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -9,7 +9,7 @@ import AdminThemeToggle from "./AdminThemeToggle";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
-import { canAccessGeneralAdmin, canAccessAdminFinance, isFinanceOnlyAdmin } from "@/lib/projectAccess";
+import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
 import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 import { nav } from "@/lib/navPaths.ts";
@@ -23,8 +23,6 @@ type Props = {
 const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
-  const location = useLocation();
-  const onFinanceRoute = location.pathname.replace(/\/+$/, "").startsWith("/admin/finance");
 
   if (authLoading || roleLoading) {
     return (
@@ -52,15 +50,8 @@ const AdminLayout = ({ page: Page }: Props) => {
     );
   }
 
-  const generalAdmin = canAccessGeneralAdmin(roleData.role);
-  const financeAccess = canAccessAdminFinance(roleData.role);
-
-  if (!generalAdmin && !(onFinanceRoute && financeAccess)) {
+  if (!canAccessGeneralAdmin(roleData.role)) {
     return <Navigate to={nav.panel()} replace />;
-  }
-
-  if (isFinanceOnlyAdmin(roleData.role) && !onFinanceRoute) {
-    return <Navigate to={nav.admin("finance")} replace />;
   }
 
   return (

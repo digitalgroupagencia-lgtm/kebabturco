@@ -26,7 +26,7 @@ describe("resolveLegacyRouteRedirect", () => {
     expect(resolveAdminRestaurantPanelAlias("/admin/finance")).toBeNull();
     expect(resolveAdminRestaurantPanelAlias("/admin/settings")).toBe("/panel/settings");
     expect(resolveLegacyRouteRedirect("/panel/menu")).toBe("/admin/menu");
-    expect(resolveLegacyRouteRedirect("/panel/finance")).toBe("/admin/finance");
+    expect(resolveLegacyRouteRedirect("/panel/finance")).toBeNull();
   });
 
   it("returns null for canonical routes", () => {

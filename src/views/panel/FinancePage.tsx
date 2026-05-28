@@ -31,6 +31,7 @@ import {
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
+import AdminPayoutIntakeCard from "@/components/finance/AdminPayoutIntakeCard";
 
 type LedgerRow = {
   id: string;
@@ -196,7 +197,8 @@ const FinancePage = () => {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
-      <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — escolha Gandia ou Gandia Playa." />
+      <AdminStoreSwitcher hint="Recebimentos e Stripe são configurados por unidade." />
+      <AdminPayoutIntakeCard storeId={storeId} />
 
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
