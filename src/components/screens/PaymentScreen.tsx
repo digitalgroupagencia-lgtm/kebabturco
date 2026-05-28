@@ -106,6 +106,8 @@ const PaymentScreen = () => {
     setDeliveryFloor,
     deliveryDoor,
     setDeliveryDoor,
+    deliveryBlock,
+    setDeliveryBlock,
     deliveryPostalCode,
     setDeliveryPostalCode,
     deliveryCity,
@@ -316,7 +318,13 @@ const PaymentScreen = () => {
   const notes = notesParts.length ? notesParts.join(" | ") : null;
 
   const deliveryComplementText =
-    orderType === "delivery" ? formatDeliveryComplement(deliveryFloor, deliveryDoor) : "";
+    orderType === "delivery"
+      ? formatDeliveryComplement(deliveryFloor, deliveryDoor, deliveryBlock, {
+          floor: t("addressFloor"),
+          door: t("addressDoor"),
+          block: t("addressBlock"),
+        })
+      : "";
 
   const deliveryFullAddress =
     orderType === "delivery"
@@ -433,6 +441,7 @@ const PaymentScreen = () => {
         number: deliveryNumber.trim(),
         floor: deliveryFloor.trim(),
         door: deliveryDoor.trim(),
+        block: deliveryBlock.trim(),
         postalCode: deliveryPostalCode.trim(),
         city: deliveryCity.trim(),
         notes: deliveryNotes.trim(),
@@ -854,9 +863,43 @@ const PaymentScreen = () => {
                     <input type="text" value={deliveryPostalCode} onChange={(e) => setDeliveryPostalCode(e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder={`${t("addressPostal")} *`} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
                   </div>
                   <p className="text-[10px] text-muted-foreground">{t("addressFloorDoorHint")}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" value={deliveryFloor} onChange={(e) => setDeliveryFloor(e.target.value.slice(0, 20))} placeholder={t("addressFloorPh")} aria-label={t("addressFloor")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
-                    <input type="text" value={deliveryDoor} onChange={(e) => setDeliveryDoor(e.target.value.slice(0, 20))} placeholder={t("addressDoorPh")} aria-label={t("addressDoor")} className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent" />
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                        {t("addressFloor")}
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryFloor}
+                        onChange={(e) => setDeliveryFloor(e.target.value.slice(0, 20))}
+                        placeholder={t("addressFloorPh")}
+                        className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                        {t("addressDoor")}
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryDoor}
+                        onChange={(e) => setDeliveryDoor(e.target.value.slice(0, 20))}
+                        placeholder={t("addressDoorPh")}
+                        className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                        {t("addressBlock")}
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryBlock}
+                        onChange={(e) => setDeliveryBlock(e.target.value.slice(0, 20))}
+                        placeholder={t("addressBlockPh")}
+                        className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 border-transparent"
+                      />
+                    </div>
                   </div>
                   <input
                     type="text"

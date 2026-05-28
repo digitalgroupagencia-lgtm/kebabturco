@@ -78,6 +78,8 @@ interface OrderContextType {
   setDeliveryFloor: (v: string) => void;
   deliveryDoor: string;
   setDeliveryDoor: (v: string) => void;
+  deliveryBlock: string;
+  setDeliveryBlock: (v: string) => void;
   deliveryPostalCode: string;
   setDeliveryPostalCode: (v: string) => void;
   deliveryCity: string;
@@ -249,6 +251,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [deliveryNumber, setDeliveryNumberState] = useState(savedDelivery?.number ?? "");
   const [deliveryFloor, setDeliveryFloorState] = useState(savedDelivery?.floor ?? "");
   const [deliveryDoor, setDeliveryDoorState] = useState(savedDelivery?.door ?? "");
+  const [deliveryBlock, setDeliveryBlockState] = useState(savedDelivery?.block ?? "");
   const [deliveryPostalCode, setDeliveryPostalCodeState] = useState(savedDelivery?.postalCode ?? "");
   const [deliveryCity, setDeliveryCityState] = useState(savedDelivery?.city ?? "");
   const [deliveryNotes, setDeliveryNotesState] = useState(savedDelivery?.notes ?? "");
@@ -259,6 +262,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       number: patch.number ?? deliveryNumber,
       floor: patch.floor ?? deliveryFloor,
       door: patch.door ?? deliveryDoor,
+      block: patch.block ?? deliveryBlock,
       postalCode: patch.postalCode ?? deliveryPostalCode,
       city: patch.city ?? deliveryCity,
       notes: patch.notes ?? deliveryNotes,
@@ -280,6 +284,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setDeliveryDoor = (value: string) => {
     setDeliveryDoorState(value);
     persistDeliveryAddress({ door: value });
+  };
+  const setDeliveryBlock = (value: string) => {
+    setDeliveryBlockState(value);
+    persistDeliveryAddress({ block: value });
   };
   const setDeliveryPostalCode = (value: string) => {
     setDeliveryPostalCodeState(value);
@@ -388,6 +396,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setDeliveryFloor,
         deliveryDoor,
         setDeliveryDoor,
+        deliveryBlock,
+        setDeliveryBlock,
         deliveryPostalCode,
         setDeliveryPostalCode,
         deliveryCity,

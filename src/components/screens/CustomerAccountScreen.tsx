@@ -50,6 +50,7 @@ const CustomerAccountScreen = () => {
     setDeliveryNumber,
     setDeliveryFloor,
     setDeliveryDoor,
+    setDeliveryBlock,
     setDeliveryPostalCode,
     setDeliveryCity,
     setDeliveryNotes,
@@ -86,6 +87,7 @@ const CustomerAccountScreen = () => {
     setDeliveryNumber(next.delivery.number);
     setDeliveryFloor(next.delivery.floor);
     setDeliveryDoor(next.delivery.door);
+    setDeliveryBlock(next.delivery.block);
     setDeliveryPostalCode(next.delivery.postalCode);
     setDeliveryCity(next.delivery.city);
     setDeliveryNotes(next.delivery.notes);
@@ -258,23 +260,43 @@ const CustomerAccountScreen = () => {
               />
             </div>
             <p className="text-[10px] text-muted-foreground mt-2 mb-1">{t("addressFloorDoorHint")}</p>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                value={profile.delivery.floor}
-                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, floor: e.target.value.slice(0, 20) } })}
-                placeholder={t("addressFloorPh")}
-                aria-label={t("addressFloor")}
-                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
-              />
-              <input
-                type="text"
-                value={profile.delivery.door}
-                onChange={(e) => updateProfile({ delivery: { ...profile.delivery, door: e.target.value.slice(0, 20) } })}
-                placeholder={t("addressDoorPh")}
-                aria-label={t("addressDoor")}
-                className="h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
-              />
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                  {t("addressFloor")}
+                </label>
+                <input
+                  type="text"
+                  value={profile.delivery.floor}
+                  onChange={(e) => updateProfile({ delivery: { ...profile.delivery, floor: e.target.value.slice(0, 20) } })}
+                  placeholder={t("addressFloorPh")}
+                  className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                  {t("addressDoor")}
+                </label>
+                <input
+                  type="text"
+                  value={profile.delivery.door}
+                  onChange={(e) => updateProfile({ delivery: { ...profile.delivery, door: e.target.value.slice(0, 20) } })}
+                  placeholder={t("addressDoorPh")}
+                  className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                  {t("addressBlock")}
+                </label>
+                <input
+                  type="text"
+                  value={profile.delivery.block}
+                  onChange={(e) => updateProfile({ delivery: { ...profile.delivery, block: e.target.value.slice(0, 20) } })}
+                  placeholder={t("addressBlockPh")}
+                  className="w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl"
+                />
+              </div>
             </div>
           </div>
 
