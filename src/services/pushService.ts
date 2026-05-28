@@ -34,3 +34,24 @@ export async function notifyOrderStatusChange(
     // não bloqueia operação
   }
 }
+
+/** Aviso push para equipa do restaurante quando entra pedido novo. */
+export async function notifyStaffNewOrder(
+  storeId: string,
+  orderId: string,
+  orderNumber: string,
+) {
+  try {
+    await supabase.functions.invoke("send-push-notification", {
+      body: {
+        storeId,
+        title: `Nuevo pedido #${orderNumber}`,
+        body: "Pedido recibido — abre el panel para ver detalles",
+        tag: `staff-new-order-${orderId}`,
+        url: "/panel/live",
+      },
+    });
+  } catch {
+    /* não bloqueia operação */
+  }
+}

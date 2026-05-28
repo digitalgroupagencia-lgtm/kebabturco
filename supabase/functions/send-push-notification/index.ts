@@ -27,12 +27,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { orderId, title, body, tag, url } = await req.json();
+    const { orderId, storeId, title, body, tag, url } = await req.json();
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
 
     if (!vapidPublic || !vapidPrivate) {
       return new Response(JSON.stringify({ skipped: true, reason: "VAPID not configured" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!orderId && !storeId) {
+      return new Response(JSON.stringify({ error: "orderId ou storeId obrigatório" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -43,7 +50,11 @@ Deno.serve(async (req) => {
     );
 
     let query = supabase.from("push_subscriptions").select("endpoint, p256dh, auth");
-    if (orderId) query = query.eq("order_id", orderId);
+    if (orderId) {
+      query = query.eq("order_id", orderId);
+    } else {
+      query = query.eq("store_id", storeId).is("order_id", null);
+    }
     const { data: subs } = await query;
 
     const payload = JSON.stringify({ title, body, tag, url });

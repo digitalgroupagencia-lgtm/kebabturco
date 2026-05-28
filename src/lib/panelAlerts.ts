@@ -363,20 +363,28 @@ async function playAlertSoundOnce(): Promise<boolean> {
   if (!isPanelAlertsEnabled()) return false;
 
   flashVisualAlert();
+  await ensureAudioReady();
 
   let soundOk = false;
   let path = "none";
 
-  if (isIOSLike()) {
-    soundOk = await playHtmlBeep(false);
-    path = "ios-static-wav";
-  } else {
-    soundOk = await playHtmlBeep(false);
-    path = "static-wav";
-    if (!soundOk) {
-      const ready = await ensureAudioReady();
-      soundOk = ready && playWebBeep();
-      path = "web-audio";
+  for (let attempt = 0; attempt < 2 && !soundOk; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => window.setTimeout(r, 280));
+      await ensureAudioReady();
+    }
+
+    if (isIOSLike()) {
+      soundOk = await playHtmlBeep(false);
+      path = "ios-static-wav";
+    } else {
+      soundOk = await playHtmlBeep(false);
+      path = "static-wav";
+      if (!soundOk) {
+        const ready = await ensureAudioReady();
+        soundOk = ready && playWebBeep();
+        path = "web-audio";
+      }
     }
   }
 
@@ -389,7 +397,7 @@ async function playAlertSoundOnce(): Promise<boolean> {
     location: "panelAlerts.ts:playAlertSoundOnce",
     message: "single alert sound",
     data: { soundOk, path, isIOS: isIOSLike(), iosAudioUnlocked },
-    runId: "alert-once-v1",
+    runId: "alert-once-v2",
   });
 
   return soundOk;
@@ -427,4 +435,30 @@ export function stopPendingOrderAlertLoop() {
 
 export function isIOSPanelDevice(): boolean {
   return isIOSLike();
+}
+
+let liveBootstrapAttached = false;
+
+function attachOneTimeAudioUnlock() {
+  if (liveBootstrapAttached || typeof document === "undefined") return;
+  liveBootstrapAttached = true;
+  const unlock = () => {
+    void enablePanelAlerts();
+  };
+  document.addEventListener("pointerdown", unlock, { once: true, capture: true });
+  document.addEventListener("keydown", unlock, { once: true, capture: true });
+}
+
+/** Ao abrir pedidos ao vivo: activar alertas e preparar áudio. */
+export async function bootstrapPanelAlertsOnLiveOpen(): Promise<boolean> {
+  installVisibilityHook();
+  if (isPanelAlertsEnabled()) {
+    await ensureAudioReady();
+    return true;
+  }
+  const ok = await enablePanelAlerts();
+  if (!ok && !isPanelAlertsEnabled()) {
+    attachOneTimeAudioUnlock();
+  }
+  return ok || isPanelAlertsEnabled();
 }

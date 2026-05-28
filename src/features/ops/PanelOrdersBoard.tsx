@@ -15,6 +15,8 @@ import OpsAssignDriverDialog, { type StoreDriver } from "@/features/ops/OpsAssig
 import OpsModeFilter, { filterOrdersByMode, type OpsViewMode } from "@/features/ops/OpsModeFilter";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
+import { bootstrapPanelAlertsOnLiveOpen } from "@/lib/panelAlerts";
+import { isStaffPushSupported, subscribeStaffPush } from "@/lib/staffPush";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
@@ -75,6 +77,22 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     window.addEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
     return () => window.removeEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
   }, []);
+
+  useEffect(() => {
+    if (mode !== "live") return;
+    let cancelled = false;
+    (async () => {
+      await bootstrapPanelAlertsOnLiveOpen();
+      if (cancelled || !isStaffPushSupported()) return;
+      const push = await subscribeStaffPush(storeId);
+      if (!push.ok && push.error && push.error !== "Permissão de notificações negada") {
+        console.warn("[PanelOrdersBoard] staff push:", push.error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, storeId]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -226,7 +244,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
         connectionStatus={connectionStatus}
         headerExtra={
           <div className="space-y-2">
-            <PanelAlertsBar />
+            <PanelAlertsBar storeId={storeId} />
             {!isLive && <PanelPrintStatusBar summary={printSummary} loading={printLoading} />}
             <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={orders} />
           </div>

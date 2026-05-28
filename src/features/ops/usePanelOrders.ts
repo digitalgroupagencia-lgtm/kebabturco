@@ -60,6 +60,7 @@ export function usePanelOrders(storeId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<PanelConnectionStatus>("connecting");
   const knownPendingRef = useRef<Set<string>>(new Set());
+  const pendingDuringBootstrapRef = useRef<PanelOrder[]>([]);
   const initializedRef = useRef(false);
   const updatingRef = useRef<Set<string>>(new Set());
   const reconnectAttemptRef = useRef(0);
@@ -94,20 +95,31 @@ export function usePanelOrders(storeId: string | undefined) {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
+      const rows = data as PanelOrder[];
+
       if (initializedRef.current) {
-        for (const o of data) {
+        for (const o of rows) {
           if (o.status === "pending" && !knownPendingRef.current.has(o.id)) {
             knownPendingRef.current.add(o.id);
             const items = await fetchItemsForOrders([o.id]);
             setItemsByOrder((prev) => ({ ...prev, ...items }));
-            void notifyNewPending(o as PanelOrder, items[o.id] || [], orderReadyForKitchen(o as PanelOrder));
+            void notifyNewPending(o, items[o.id] || [], orderReadyForKitchen(o));
           }
         }
-      }
-      knownPendingRef.current = new Set(data.filter((o) => o.status === "pending").map((o) => o.id));
-      initializedRef.current = true;
+      } else {
+        for (const o of rows) {
+          if (o.status === "pending") knownPendingRef.current.add(o.id);
+        }
+        initializedRef.current = true;
 
-      const rows = data as PanelOrder[];
+        const queued = pendingDuringBootstrapRef.current.splice(0);
+        for (const row of queued) {
+          const items = await fetchItemsForOrders([row.id]);
+          setItemsByOrder((prev) => ({ ...prev, ...items }));
+          void notifyNewPending(row, items[row.id] || [], orderReadyForKitchen(row));
+        }
+      }
+
       setOrders((prev) => {
         if (updatingRef.current.size === 0) return rows;
         const prevById = new Map(prev.map((o) => [o.id, o]));
@@ -179,6 +191,13 @@ export function usePanelOrders(storeId: string | undefined) {
             if (initializedRef.current && row.status === "pending" && !knownPendingRef.current.has(row.id)) {
               knownPendingRef.current.add(row.id);
               void notifyNewPending(row, items[row.id] || [], orderReadyForKitchen(row));
+            } else if (
+              !initializedRef.current &&
+              row.status === "pending" &&
+              !knownPendingRef.current.has(row.id)
+            ) {
+              knownPendingRef.current.add(row.id);
+              pendingDuringBootstrapRef.current.push(row);
             }
           },
         )

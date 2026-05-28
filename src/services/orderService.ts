@@ -1,6 +1,7 @@
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import type { CartItem } from "@/contexts/CartContext";
+import { notifyStaffNewOrder } from "@/services/pushService";
 
 export const PLATFORM_FEE_CENTS = 100;
 
@@ -214,7 +215,11 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
   const { data, error } = await supabase.rpc("create_customer_order", args);
 
   if (error) throw error;
-  return data as CreateCustomerOrderResult;
+  const result = data as CreateCustomerOrderResult;
+  if (result?.success && result.order_id && result.order_number) {
+    void notifyStaffNewOrder(params.storeId, result.order_id, result.order_number);
+  }
+  return result;
 }
 
 export async function markOrderPaidAtCounter(orderId: string, paymentMethod: "cash" | "card" = "cash") {

@@ -8,14 +8,20 @@ import {
   getLastAlertDiagnostic,
   isIOSPanelDevice,
   isPanelAlertsEnabled,
+  PANEL_ALERTS_CHANGED_EVENT,
   PANEL_ALERT_FLASH_EVENT,
   PANEL_UNACK_CHANGED_EVENT,
   playTestAlert,
   setPanelAlertsEnabled,
   silenceAllPendingAlerts,
 } from "@/lib/panelAlerts";
+import { isStaffPushSupported, subscribeStaffPush } from "@/lib/staffPush";
 
-const PanelAlertsBar = () => {
+type Props = {
+  storeId?: string;
+};
+
+const PanelAlertsBar = ({ storeId }: Props) => {
   const [enabled, setEnabled] = useState(isPanelAlertsEnabled);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -27,8 +33,13 @@ const PanelAlertsBar = () => {
       setFlash(true);
       window.setTimeout(() => setFlash(false), 350);
     };
+    const onAlertsChanged = () => setEnabled(isPanelAlertsEnabled());
     window.addEventListener(PANEL_ALERT_FLASH_EVENT, onFlash);
-    return () => window.removeEventListener(PANEL_ALERT_FLASH_EVENT, onFlash);
+    window.addEventListener(PANEL_ALERTS_CHANGED_EVENT, onAlertsChanged);
+    return () => {
+      window.removeEventListener(PANEL_ALERT_FLASH_EVENT, onFlash);
+      window.removeEventListener(PANEL_ALERTS_CHANGED_EVENT, onAlertsChanged);
+    };
   }, []);
 
   useEffect(() => {
@@ -46,6 +57,12 @@ const PanelAlertsBar = () => {
       const nowEnabled = isPanelAlertsEnabled();
       setEnabled(nowEnabled);
       refreshDiag();
+      if (storeId && isStaffPushSupported()) {
+        const push = await subscribeStaffPush(storeId);
+        if (push.ok) {
+          toast.success("Push activo para novos pedidos neste dispositivo", { duration: 3000 });
+        }
+      }
       const lastDiag = getLastAlertDiagnostic();
       if (nowEnabled && ok) {
         toast.success(

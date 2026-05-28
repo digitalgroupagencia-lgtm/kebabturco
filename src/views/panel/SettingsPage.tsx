@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import ResetDataDialog from "@/components/ResetDataDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { isPanelAlertsEnabled, setPanelAlertsEnabled } from "@/lib/panelAlerts";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -31,9 +32,13 @@ const PanelSettingsPage = () => {
   const [receiptFooter, setReceiptFooter] = useState("¡Gracias por su compra!");
   const [taxRate, setTaxRate] = useState(0);
 
-  const [soundOnNewOrder, setSoundOnNewOrder] = useState(true);
+  const [soundOnNewOrder, setSoundOnNewOrder] = useState(() => isPanelAlertsEnabled());
   const [notifyKitchen, setNotifyKitchen] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
+
+  useEffect(() => {
+    setSoundOnNewOrder(isPanelAlertsEnabled());
+  }, []);
 
   const [openTime, setOpenTime] = useState("09:00");
   const [closeTime, setCloseTime] = useState("22:00");
@@ -176,7 +181,16 @@ const PanelSettingsPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { label: "Som ao receber novo pedido", desc: "Toca alerta sonoro no painel quando entra pedido.", val: soundOnNewOrder, set: setSoundOnNewOrder, icon: Volume2 },
+                {
+                  label: "Som ao receber novo pedido",
+                  desc: "Ligado ao mesmo sistema de «Activar alertas» em Pedidos ao vivo.",
+                  val: soundOnNewOrder,
+                  set: (v: boolean) => {
+                    setSoundOnNewOrder(v);
+                    setPanelAlertsEnabled(v);
+                  },
+                  icon: Volume2,
+                },
                 { label: "Avisar a cozinha", desc: "Marca o pedido como 'novo' na tela da cozinha.", val: notifyKitchen, set: setNotifyKitchen, icon: Bell },
                 { label: "Notificações push (mobile)", desc: "Envia push para o celular do gerente.", val: pushNotifications, set: setPushNotifications, icon: Bell },
               ].map((n) => (
