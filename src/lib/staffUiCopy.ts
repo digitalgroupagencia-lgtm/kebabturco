@@ -24,9 +24,9 @@ const staffLoginCopy = {
     pinInvalid: "Código inválido — use 6–10 caracteres con # y números",
     pinWrong: "Código incorrecto",
     serverUnavailable:
-      "Login por código no disponible. Pida al gerente que active las funciones del servidor o use e-mail y contraseña en /auth.",
+      "El código con # aún no funciona en el servidor. Entre con correo y contraseña abajo, o pida al gerente que publique la app en Lovable.",
     sessionFailed: "No se pudo iniciar sesión",
-    invalidStorePin: "Tienda o código no válidos",
+    invalidStorePin: "Tienda o código no válidos (servidor antiguo — use correo y contraseña abajo)",
     emailDivider: "O entre con correo y contraseña",
     emailLabel: "Correo",
     passwordLabel: "Contraseña",
@@ -50,9 +50,9 @@ const staffLoginCopy = {
     pinInvalid: "Código inválido — use 6–10 caracteres com # e números",
     pinWrong: "Código incorrecto",
     serverUnavailable:
-      "Login por código indisponível no servidor. Peça ao gerente para activar as funções ou use e-mail e senha em /auth.",
+      "O código com # ainda não funciona no servidor. Entre com e-mail e senha abaixo, ou peça ao gerente para publicar a app na Lovable.",
     sessionFailed: "Não foi possível iniciar sessão",
-    invalidStorePin: "Loja e código inválidos",
+    invalidStorePin: "Loja e código inválidos (servidor antigo — use e-mail e senha abaixo)",
     emailDivider: "Ou entre com e-mail e senha",
     emailLabel: "E-mail",
     passwordLabel: "Senha",
@@ -101,7 +101,10 @@ export function mapStaffPinError(message: string, lang: StaffUiLang): string {
     return copy.storeMissing;
   }
   if (m.includes("loja e código") || m.includes("tienda o código") || m.includes("invalid store")) {
-    return copy.invalidStorePin;
+    return copy.serverUnavailable;
+  }
+  if (m.includes("server_outdated")) {
+    return copy.serverUnavailable;
   }
   if (m.includes("código inválido") || m.includes("codigo invalido") || m.includes("invalid code")) {
     return copy.pinInvalid;

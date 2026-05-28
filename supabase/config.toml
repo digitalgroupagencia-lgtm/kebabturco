@@ -15,5 +15,8 @@ verify_jwt = true
 [functions.staff-pin-login]
 verify_jwt = false
 
+[functions.staff-access-login]
+verify_jwt = false
+
 [functions.update-staff-member]
 verify_jwt = true

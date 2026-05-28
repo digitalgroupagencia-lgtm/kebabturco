@@ -1,4 +1,3 @@
-/** Versão 2026-06-07 — aceita códigos com # (ex: 256656#). */
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import bcrypt from "npm:bcryptjs@2.4.3";
 
@@ -126,10 +125,13 @@ Deno.serve(async (req) => {
     });
 
     if (linkErr || !linkData?.properties?.hashed_token) {
-      return new Response(JSON.stringify({ error: linkErr?.message || "Falha ao iniciar sessão", code: "SESSION_FAILED" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: linkErr?.message || "Falha ao iniciar sessão", code: "SESSION_FAILED" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response(

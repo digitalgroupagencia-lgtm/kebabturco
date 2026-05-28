@@ -14,6 +14,7 @@ import {
   markStaffSession,
   resolveStaffLoginDestination,
 } from "@/lib/staffLogin";
+import { StaffPinLoginHintError } from "@/services/staffPinLogin";
 import { STAFF_PIN_PATTERN } from "@/lib/staffAccessPin";
 import { getStaffLoginCopy, mapStaffPinError } from "@/lib/staffUiCopy";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
@@ -71,6 +72,11 @@ const StaffLogin = () => {
       const { role } = await loginWithStaffPin(storeId, pin);
       navigate(resolveStaffLoginDestination(role), { replace: true });
     } catch (e) {
+      if (e instanceof StaffPinLoginHintError) {
+        if (e.email) setEmail(e.email);
+        setError(copy.serverUnavailable);
+        return;
+      }
       const raw = e instanceof Error ? e.message : copy.pinWrong;
       setError(mapStaffPinError(raw, lang));
     } finally {

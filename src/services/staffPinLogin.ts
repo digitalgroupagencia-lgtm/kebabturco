@@ -14,7 +14,21 @@ const PIN_PATTERN = /^(?=.*\d)(?=.*#).{6,10}$/;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type VerifiedPin = { user_id: string; role: StaffRole; store_id?: string };
+/** Função nova (aceita #). A antiga staff-pin-login rejeita códigos com #. */
+const PRIMARY_LOGIN_FUNCTION = "staff-access-login";
+const LEGACY_LOGIN_FUNCTION = "staff-pin-login";
+
+type VerifiedPin = { user_id: string; role: StaffRole; store_id?: string; email?: string };
+
+export class StaffPinLoginHintError extends Error {
+  email?: string;
+
+  constructor(email?: string) {
+    super("SERVER_OUTDATED");
+    this.name = "StaffPinLoginHintError";
+    this.email = email;
+  }
+}
 
 function isEdgeFunctionUnavailable(message: string): boolean {
   return /failed to send a request|edge function|functions\/v1|fetch failed|networkerror|network request failed/i.test(
@@ -24,6 +38,12 @@ function isEdgeFunctionUnavailable(message: string): boolean {
 
 function isWrongPinMessage(message: string): boolean {
   return /código incorrecto|codigo incorrecto|incorrect code|pin_mismatch/i.test(message);
+}
+
+/** Resposta típica do servidor antigo — não aceita códigos com #. */
+export function isStaleStaffPinServerError(message: string, pin: string): boolean {
+  if (!pin.includes("#")) return false;
+  return /loja e código|tienda o código|invalid store and code|invalid store or code/i.test(message);
 }
 
 async function listCandidateStoreIds(hint: string | null): Promise<string[]> {
@@ -59,6 +79,27 @@ async function listCandidateStoreIds(hint: string | null): Promise<string[]> {
   return [...ids];
 }
 
+async function lookupStaffByPin(pin: string): Promise<VerifiedPin | null> {
+  const trimmedPin = pin.trim();
+
+  const { data, error } = await (supabase.rpc as any)("lookup_staff_by_pin", {
+    _pin: trimmedPin,
+  });
+  if (!error) {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.user_id) {
+      return {
+        user_id: row.user_id,
+        role: row.role,
+        store_id: row.store_id,
+        email: row.email,
+      };
+    }
+  }
+
+  return verifyPinOnClient(trimmedPin);
+}
+
 async function verifyPinOnClient(pin: string, storeId?: string): Promise<VerifiedPin | null> {
   const trimmedPin = pin.trim();
 
@@ -90,8 +131,12 @@ async function verifyPinOnClient(pin: string, storeId?: string): Promise<Verifie
   };
 }
 
-async function invokeStaffPinLogin(storeId: string, pin: string) {
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/staff-pin-login`, {
+async function invokeStaffPinLoginFunction(
+  functionName: string,
+  storeId: string | undefined,
+  pin: string,
+) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -99,7 +144,7 @@ async function invokeStaffPinLogin(storeId: string, pin: string) {
       apikey: SUPABASE_KEY,
     },
     body: JSON.stringify({
-      store_id: storeId,
+      ...(storeId ? { store_id: storeId } : {}),
       pin: pin.trim(),
     }),
   });
@@ -111,15 +156,23 @@ async function invokeStaffPinLogin(storeId: string, pin: string) {
     user_id?: string;
   };
 
+  if (res.status === 404) {
+    return { kind: "missing" as const };
+  }
+
   if (!res.ok) {
-    throw new Error(payload.error || "Código incorrecto");
+    const message = payload.error || "Código incorrecto";
+    if (isStaleStaffPinServerError(message, pin)) {
+      return { kind: "stale" as const, message };
+    }
+    throw new Error(message);
   }
 
   if (payload.error || !payload.token_hash) {
     throw new Error(payload.error || "Resposta inválida do servidor");
   }
 
-  return payload;
+  return { kind: "ok" as const, payload };
 }
 
 async function completePinSession(payload: { token_hash: string; role?: StaffRole; user_id?: string }) {
@@ -140,7 +193,48 @@ async function completePinSession(payload: { token_hash: string; role?: StaffRol
   };
 }
 
-/** Inicia sessão com código — tenta todas as lojas até o servidor aceitar. */
+async function tryLoginFunctions(
+  storeIds: string[],
+  pin: string,
+): Promise<{ token_hash: string; role?: StaffRole; user_id?: string } | null> {
+  const trimmedPin = pin.trim();
+  const storeAttempts = storeIds.length ? storeIds : [undefined];
+  let sawStaleServer = false;
+  let primaryMissing = false;
+
+  for (const functionName of [PRIMARY_LOGIN_FUNCTION, LEGACY_LOGIN_FUNCTION]) {
+    if (functionName === LEGACY_LOGIN_FUNCTION && trimmedPin.includes("#")) {
+      continue;
+    }
+
+    for (const storeId of storeAttempts) {
+      try {
+        const result = await invokeStaffPinLoginFunction(functionName, storeId, trimmedPin);
+        if (result.kind === "missing") {
+          if (functionName === PRIMARY_LOGIN_FUNCTION) primaryMissing = true;
+          break;
+        }
+        if (result.kind === "stale") {
+          sawStaleServer = true;
+          break;
+        }
+        return result.payload;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (isWrongPinMessage(msg)) throw e;
+        if (isEdgeFunctionUnavailable(msg)) throw e;
+      }
+    }
+  }
+
+  if (primaryMissing || sawStaleServer) {
+    return null;
+  }
+
+  return null;
+}
+
+/** Inicia sessão com código — usa servidor novo e ignora o antigo para códigos com #. */
 export async function loginWithStaffPin(storeId: string | null, pin: string) {
   const trimmedPin = pin.trim();
 
@@ -148,7 +242,7 @@ export async function loginWithStaffPin(storeId: string | null, pin: string) {
     throw new Error("Código inválido — use 6–10 caracteres com # e números");
   }
 
-  const verified = await verifyPinOnClient(trimmedPin, storeId?.trim() || undefined);
+  const verified = await lookupStaffByPin(trimmedPin);
   const candidates = await listCandidateStoreIds(verified?.store_id ?? storeId);
 
   if (verified?.store_id) {
@@ -157,41 +251,32 @@ export async function loginWithStaffPin(storeId: string | null, pin: string) {
 
   const uniqueStores = [...new Set(candidates)];
 
+  try {
+    const payload = await tryLoginFunctions(uniqueStores, trimmedPin);
+    if (payload) {
+      return completePinSession(payload);
+    }
+  } catch (e) {
+    if (!(e instanceof Error) || !isWrongPinMessage(e.message)) {
+      throw e;
+    }
+    if (!verified) throw e;
+  }
+
+  if (verified) {
+    throw new StaffPinLoginHintError(verified.email);
+  }
+
   if (!uniqueStores.length) {
     throw new Error("No se encontró el restaurante. Abra el menú principal y vuelva a intentar.");
   }
 
-  let lastError: Error | null = null;
-
-  for (const sid of uniqueStores) {
-    try {
-      const payload = await invokeStaffPinLogin(sid, trimmedPin);
-      return completePinSession(payload);
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error(String(e));
-      const msg = lastError.message;
-      if (isWrongPinMessage(msg)) {
-        throw lastError;
-      }
-      if (isEdgeFunctionUnavailable(msg)) {
-        throw new Error(
-          "Login por código indisponível no servidor. Use e-mail e senha abaixo ou peça ao gerente para publicar as funções.",
-        );
-      }
-    }
-  }
-
-  if (verified) {
-    throw new Error(
-      "Código reconhecido, mas o servidor não iniciou sessão. Use e-mail e senha ou peça ao gerente para publicar a app.",
-    );
-  }
-
-  throw lastError ?? new Error("Código incorrecto");
+  throw new Error("Código incorrecto");
 }
 
 export async function verifyStaffPinOnly(storeId: string | null, pin: string) {
   const verified =
+    (await lookupStaffByPin(pin.trim())) ??
     (await verifyPinOnClient(pin.trim(), storeId?.trim() || undefined)) ??
     (await (async () => {
       for (const sid of await listCandidateStoreIds(storeId)) {
