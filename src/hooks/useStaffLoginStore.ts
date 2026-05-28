@@ -3,18 +3,20 @@ import { resolveStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 
-/** Garante loja real na entrada da equipa (ignora fallback de preview). */
+/** Loja real na entrada da equipa — resolve logo ao abrir, sem bloquear no fallback global. */
 export function useStaffLoginStore() {
-  const { storeId, selectedStoreId, loading: globalLoading } = useResolvedStore();
+  const { storeId, selectedStoreId } = useResolvedStore();
   const [storeIdResolved, setStoreIdResolved] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
+    setRetrying(true);
     const direct = await resolveStaffLoginStoreId();
     if (direct) {
       setStoreIdResolved(direct);
       setLoading(false);
+      setRetrying(false);
       return direct;
     }
 
@@ -22,22 +24,24 @@ export function useStaffLoginStore() {
     if (fromContext && !isEmergencyFallbackStoreId(fromContext)) {
       setStoreIdResolved(fromContext);
       setLoading(false);
+      setRetrying(false);
       return fromContext;
     }
 
     setStoreIdResolved(null);
     setLoading(false);
+    setRetrying(false);
     return null;
   }, [selectedStoreId, storeId]);
 
   useEffect(() => {
-    if (globalLoading) return;
     void refresh();
-  }, [globalLoading, refresh]);
+  }, [refresh]);
 
   return {
     storeId: storeIdResolved,
-    loading: globalLoading || loading,
+    loading,
+    retrying,
     refresh,
   };
 }
