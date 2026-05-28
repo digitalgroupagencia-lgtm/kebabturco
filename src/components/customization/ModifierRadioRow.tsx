@@ -13,7 +13,7 @@ export default function ModifierRadioRow({ title, priceLabel, selected, onClick 
       type="button"
       onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all active:scale-[0.99] ${
-        selected ? "border-primary bg-primary/[0.06] shadow-[0_6px_18px_-16px_rgba(139,0,0,0.55)]" : "border-border/60 bg-card"
+        selected ? "border-primary bg-primary/[0.06] shadow-primary" : "border-border/60 bg-card"
       }`}
     >
       <span

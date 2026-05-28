@@ -13,7 +13,7 @@ export default function ModifierChipOption({ title, selected, onClick }: Props) 
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-[0.97] ${
         selected
-          ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_-12px_rgba(139,0,0,0.65)]"
+          ? "border-primary bg-primary text-primary-foreground shadow-primary"
           : "border-border/70 bg-card text-foreground"
       }`}
     >

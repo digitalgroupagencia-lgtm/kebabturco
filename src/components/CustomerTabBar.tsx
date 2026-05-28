@@ -66,7 +66,7 @@ const CustomerTabBar = () => {
           <button
             type="button"
             onClick={trackOrder}
-            className="flex h-12 w-full touch-manipulation items-center gap-3 rounded-2xl bg-primary px-3 text-primary-foreground shadow-md transition-transform active:scale-[0.98]"
+            className="flex h-12 w-full touch-manipulation items-center gap-3 rounded-2xl bg-gradient-primary px-3 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
               {isLoadingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
@@ -100,7 +100,7 @@ const CustomerTabBar = () => {
               aria-label={label}
             >
               {active ? (
-                <span className="flex min-w-[68px] flex-col items-center rounded-full bg-primary px-4 py-2 shadow-md">
+                <span className="flex min-w-[68px] flex-col items-center rounded-full bg-gradient-primary px-4 py-2 shadow-primary">
                   <Icon className="h-5 w-5 text-primary-foreground" strokeWidth={2.25} />
                   <span className="mt-0.5 text-[10px] font-bold leading-tight text-primary-foreground">{label}</span>
                 </span>

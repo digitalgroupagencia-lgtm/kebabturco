@@ -405,7 +405,7 @@ export default function ProductCustomizationFlow({
           <button
             type="button"
             onClick={handleAdd}
-            className="flex h-14 flex-1 items-center justify-between gap-3 rounded-[18px] bg-primary px-5 text-primary-foreground shadow-[0_10px_28px_-14px_rgba(139,0,0,0.65)] transition-transform active:scale-[0.98]"
+            className="flex h-14 flex-1 items-center justify-between gap-3 rounded-[18px] bg-gradient-primary px-5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
           >
             <span className="text-[13px] font-black uppercase tracking-[0.08em]">
               {useStepWizard && !isLastStep

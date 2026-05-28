@@ -57,7 +57,7 @@ export default function ProductChoiceCard({
       onClick={onClick}
       className={`relative w-full overflow-hidden rounded-[16px] border text-left transition-all active:scale-[0.98] ${
         selected
-          ? "border-primary bg-primary/[0.04] ring-2 ring-primary/20 shadow-[0_8px_20px_-14px_rgba(139,0,0,0.45)]"
+          ? "border-primary bg-primary/[0.04] ring-2 ring-primary/20 shadow-primary"
           : "border-border/60 bg-card shadow-[0_6px_18px_-16px_rgba(0,0,0,0.2)]"
       } ${layout === "horizontal" ? "flex items-center gap-4 p-3" : "flex flex-col"}`}
     >

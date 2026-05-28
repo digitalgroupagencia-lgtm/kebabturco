@@ -872,7 +872,7 @@ const PaymentScreen = () => {
                     placeholder="CÓDIGO"
                     className="flex-1 h-9 px-3 rounded-lg border border-border font-bold uppercase text-sm"
                   />
-                  <button type="button" onClick={applyCoupon} className="px-3 h-9 rounded-lg bg-primary text-primary-foreground font-bold text-xs">Aplicar</button>
+                  <button type="button" onClick={applyCoupon} className="px-3 h-9 rounded-lg bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary">Aplicar</button>
                 </div>
                 {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
               </div>

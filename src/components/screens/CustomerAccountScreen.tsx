@@ -282,7 +282,7 @@ const CustomerAccountScreen = () => {
           <button
             onClick={() => void search()}
             disabled={loading}
-            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 rounded-2xl bg-gradient-primary text-primary-foreground font-black disabled:opacity-50 flex items-center justify-center gap-2 shadow-primary"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Package className="w-5 h-5" />}
             {t("searchMyOrders")}

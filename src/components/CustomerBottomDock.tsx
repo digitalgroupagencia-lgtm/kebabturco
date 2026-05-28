@@ -31,7 +31,7 @@ const CustomerBottomDock = () => {
           <button
             type="button"
             onClick={trackOrder}
-            className="flex h-[56px] w-full touch-manipulation items-center gap-3 rounded-full bg-primary px-4 text-primary-foreground shadow-lg transition-transform active:scale-[0.98]"
+            className="flex h-[56px] w-full touch-manipulation items-center gap-3 rounded-full bg-gradient-primary px-4 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
               {isLoadingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}

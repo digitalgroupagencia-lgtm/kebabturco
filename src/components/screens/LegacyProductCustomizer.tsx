@@ -304,7 +304,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
           type="button"
           onClick={handleAdd}
           disabled={requiresVariant && !selectedVariant}
-          className="flex h-14 w-full items-center justify-between gap-3 rounded-[18px] bg-primary px-5 text-primary-foreground shadow-[0_10px_28px_-14px_rgba(139,0,0,0.65)] transition-transform active:scale-[0.98] disabled:opacity-50"
+          className="flex h-14 w-full items-center justify-between gap-3 rounded-[18px] bg-gradient-primary px-5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           <span className="text-[13px] font-black uppercase tracking-[0.08em]">{t("addToCartBtn")}</span>
           <span className="text-lg font-black tabular-nums">{totalPrice.toFixed(2)}€</span>

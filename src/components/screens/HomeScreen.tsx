@@ -136,7 +136,7 @@ const HomeScreen = () => {
         <button
           type="button"
           onClick={retry}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-primary"
         >
           <RefreshCw className="h-4 w-4" />
           {t("tryAgainBtn")}

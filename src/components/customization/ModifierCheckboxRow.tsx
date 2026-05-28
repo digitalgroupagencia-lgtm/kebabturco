@@ -61,7 +61,7 @@ export default function ModifierCheckboxRow({
             aria-label="Mais"
             disabled={quantity >= maxQty}
             onClick={onIncrement}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-success text-success-foreground shadow-sm disabled:opacity-30"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>

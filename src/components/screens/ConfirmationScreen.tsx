@@ -281,7 +281,7 @@ const ConfirmationScreen = () => {
           <button
             type="button"
             onClick={handleViewOrder}
-            className="mb-3 w-full touch-manipulation rounded-[22px] bg-primary py-4 text-[15px] font-black uppercase tracking-wide text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)] transition-transform active:scale-[0.98]"
+            className="mb-3 w-full touch-manipulation rounded-[22px] bg-gradient-primary py-4 text-[15px] font-black uppercase tracking-wide text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
           >
             {t("viewOrder")}
           </button>

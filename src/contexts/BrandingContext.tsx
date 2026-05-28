@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { applyBrandWineTokens, BRAND_WINE_HEX, hexToHslParts, hslString } from "@/lib/brandTokens";
 import { bumpAppCache } from "@/lib/appCacheBust";
 import { isAdminPreviewMode, PREVIEW_MESSAGE_TYPE } from "@/lib/tenantPreview";
 
@@ -15,54 +16,36 @@ interface BrandingContextType {
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
 
-function hexToHsl(hex: string): string {
-  const m = hex.replace("#", "");
-  if (m.length !== 6) return "0 0% 0%";
-  const r = parseInt(m.slice(0, 2), 16) / 255;
-  const g = parseInt(m.slice(2, 4), 16) / 255;
-  const b = parseInt(m.slice(4, 6), 16) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-}
-
 function applyTheme(s: CompanySettings) {
   const root = document.documentElement;
-  root.style.setProperty("--primary", hexToHsl(s.primary_color));
-  root.style.setProperty("--ring", hexToHsl(s.primary_color));
-  root.style.setProperty("--accent", hexToHsl(s.accent_color || s.secondary_color));
-  root.style.setProperty("--success", hexToHsl(s.cta_color));
-  root.style.setProperty("--background", hexToHsl(s.background_color));
-  root.style.setProperty("--foreground", hexToHsl(s.text_color));
-  root.style.setProperty("--card", hexToHsl(s.background_color));
-  root.style.setProperty("--card-foreground", hexToHsl(s.text_color));
+  const headerHex = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
 
-  // Cor personalizada da barra superior (header) — sólida, sem degradê
-  const headerHex = (s as any).header_color || s.primary_color;
-  const headerHsl = hexToHsl(headerHex);
-  root.style.setProperty(
-    "--gradient-header",
-    `linear-gradient(180deg, hsl(${headerHsl}) 0%, hsl(${headerHsl}) 100%)`
-  );
-  root.style.setProperty("--shadow-header", `0 4px 18px -8px hsla(${headerHsl} / 0.4)`);
+  // Wine palette drives primary, header gradient, CTA shadows — single source for white-label
+  applyBrandWineTokens(headerHex);
 
+  const accentParts = hexToHslParts(s.accent_color || s.secondary_color);
+  if (accentParts) root.style.setProperty("--accent", hslString(accentParts));
+
+  const successParts = hexToHslParts(s.cta_color);
+  if (successParts) root.style.setProperty("--success", hslString(successParts));
+
+  const bgParts = hexToHslParts(s.background_color);
+  if (bgParts) {
+    root.style.setProperty("--background", hslString(bgParts));
+    root.style.setProperty("--card", hslString(bgParts));
+  }
+
+  const fgParts = hexToHslParts(s.text_color);
+  if (fgParts) {
+    root.style.setProperty("--foreground", hslString(fgParts));
+    root.style.setProperty("--card-foreground", hslString(fgParts));
+  }
 }
 
 function applyInstallMeta(s: CompanySettings) {
   try {
     const name = s.company_name || "Restaurante";
-    const themeColor = (s as any).header_color || s.primary_color || "#CC0000";
+    const themeColor = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
 
     // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.
     // Só actualiza meta tags dinâmicas (título e cor da barra).

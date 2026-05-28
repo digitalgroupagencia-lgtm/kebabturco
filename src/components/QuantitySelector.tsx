@@ -17,7 +17,7 @@ const QuantitySelector = ({ value, onChange, min = 0, max = 20, variant = "defau
           type="button"
           onClick={() => value > min && onChange(value - 1)}
           disabled={value <= min}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-black text-primary-foreground transition-transform active:scale-90 disabled:opacity-30"
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-lg font-black text-muted-foreground transition-transform active:scale-90 disabled:opacity-30"
         >
           −
         </button>
@@ -26,7 +26,7 @@ const QuantitySelector = ({ value, onChange, min = 0, max = 20, variant = "defau
           type="button"
           onClick={() => value < max && onChange(value + 1)}
           disabled={value >= max}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-black text-primary-foreground transition-transform active:scale-90 disabled:opacity-30"
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-success text-lg font-black text-success-foreground shadow-sm transition-transform active:scale-90 disabled:opacity-30"
         >
           +
         </button>
