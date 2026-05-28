@@ -13,7 +13,8 @@ export const LEGACY_RED_HEX = "#CC0000";
 
 export type HslParts = { h: number; s: number; l: number };
 
-export function hexToHslParts(hex: string): HslParts | null {
+export function hexToHslParts(hex: string | null | undefined): HslParts | null {
+  if (!hex || typeof hex !== "string") return null;
   const m = hex.replace("#", "").trim();
   if (m.length !== 6) return null;
   const r = parseInt(m.slice(0, 2), 16) / 255;

@@ -17,28 +17,31 @@ interface BrandingContextType {
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
 
 function applyTheme(s: CompanySettings) {
-  const root = document.documentElement;
-  const headerHex = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
+  try {
+    const root = document.documentElement;
+    const headerHex = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
 
-  // Wine palette drives primary, header gradient, CTA shadows — single source for white-label
-  applyBrandWineTokens(headerHex);
+    applyBrandWineTokens(headerHex);
 
-  const accentParts = hexToHslParts(s.accent_color || s.secondary_color);
-  if (accentParts) root.style.setProperty("--accent", hslString(accentParts));
+    const accentParts = hexToHslParts(s.accent_color || s.secondary_color);
+    if (accentParts) root.style.setProperty("--accent", hslString(accentParts));
 
-  const successParts = hexToHslParts(s.cta_color);
-  if (successParts) root.style.setProperty("--success", hslString(successParts));
+    const successParts = hexToHslParts(s.cta_color);
+    if (successParts) root.style.setProperty("--success", hslString(successParts));
 
-  const bgParts = hexToHslParts(s.background_color);
-  if (bgParts) {
-    root.style.setProperty("--background", hslString(bgParts));
-    root.style.setProperty("--card", hslString(bgParts));
-  }
+    const bgParts = hexToHslParts(s.background_color);
+    if (bgParts) {
+      root.style.setProperty("--background", hslString(bgParts));
+      root.style.setProperty("--card", hslString(bgParts));
+    }
 
-  const fgParts = hexToHslParts(s.text_color);
-  if (fgParts) {
-    root.style.setProperty("--foreground", hslString(fgParts));
-    root.style.setProperty("--card-foreground", hslString(fgParts));
+    const fgParts = hexToHslParts(s.text_color);
+    if (fgParts) {
+      root.style.setProperty("--foreground", hslString(fgParts));
+      root.style.setProperty("--card-foreground", hslString(fgParts));
+    }
+  } catch (err) {
+    console.error("[BrandingContext] applyTheme failed", err);
   }
 }
 
