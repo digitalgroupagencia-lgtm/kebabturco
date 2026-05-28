@@ -149,8 +149,8 @@ const HomeScreen = () => {
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {!shouldHideHeader() && (
       <header
-        className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-5 pb-4 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+        className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-4 pb-3 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
       >
         <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
@@ -191,15 +191,15 @@ const HomeScreen = () => {
       )}
 
       <div className="flex flex-1 overflow-hidden min-h-0">
-        <aside className="w-[108px] min-w-[108px] bg-secondary/40 overflow-y-auto shrink-0 md:[&::-webkit-scrollbar]:hidden">
-          <div className="flex flex-col gap-2.5 px-1.5 py-3">
+        <aside className="w-[92px] min-w-[92px] bg-secondary/40 overflow-y-auto shrink-0 md:[&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-col gap-2 px-1 py-2.5">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
               return (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`group relative flex flex-col items-center gap-1.5 pt-2 pb-2.5 rounded-2xl transition-all touch-action-manipulation ${
+                  className={`group relative flex flex-col items-center gap-1 pt-1.5 pb-2 rounded-xl transition-all touch-action-manipulation ${
                     isActive
                       ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)]"
                       : "bg-card/60 hover:bg-card shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.12)] active:scale-[0.97]"
@@ -208,18 +208,18 @@ const HomeScreen = () => {
                   <img
                     src={category.image}
                     alt={tProduct(category.name)}
-                    className="w-[96px] h-[72px] object-cover rounded-[14px] drop-shadow-[0_5px_8px_rgba(0,0,0,0.16)]"
+                    className="w-[80px] h-[60px] object-cover rounded-xl drop-shadow-[0_5px_8px_rgba(0,0,0,0.16)]"
                     loading="lazy"
                   />
                   <span
-                    className={`text-[11px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
+                    className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
                       isActive ? "text-primary" : "text-foreground"
                     }`}
                   >
                     {tProduct(category.name)}
                   </span>
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-9 bg-primary rounded-r-full" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
                   )}
                 </button>
               );
@@ -228,27 +228,26 @@ const HomeScreen = () => {
         </aside>
 
         <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
-          {/* Banner + título da categoria fixos no topo; produtos rolam por baixo */}
-          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md px-3 pt-3">
+          {/* Banner e título rolam com os produtos — liberta espaço vertical com a barra inferior */}
+          <div className="px-3 pt-2">
             <PromoBannerCarousel />
-            <div className="px-1 pt-3 pb-2 flex items-end justify-between">
+            <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
                   {t("menu")}
                 </span>
-                <h2 className="text-[20px] font-black text-foreground tracking-tight leading-tight mt-0.5">
+                <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
                   {activeCategoryName}
                 </h2>
-                <div className="h-[3px] w-8 bg-primary rounded-full mt-1.5" />
+                <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
               </div>
-              <span className="text-[11px] font-bold text-muted-foreground tabular-nums pb-1">
+              <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
                 {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
               </span>
             </div>
           </div>
 
-
-          <div className="px-3 pb-24 grid grid-cols-2 gap-2.5">
+          <div className="px-3 pb-20 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
