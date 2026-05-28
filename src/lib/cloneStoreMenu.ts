@@ -114,12 +114,12 @@ async function cloneStoreMenuClientSide(
         image_url: copyImages ? cat.image_url : null,
         is_active: cat.is_active,
         sort_order: cat.sort_order ?? 0,
-      })
+      } as never)
       .select("id")
       .single();
 
     if (error) throw new Error(error.message);
-    categoryIdMap.set(cat.id, inserted.id);
+    categoryIdMap.set(cat.id, (inserted as { id: string }).id);
     categoriesCopied += 1;
   }
 
