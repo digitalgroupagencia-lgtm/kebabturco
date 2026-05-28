@@ -468,6 +468,42 @@ const translations: Translations = {
     es: "¡Datos guardados en este móvil!",
     fr: "Données enregistrées !",
   },
+  editMyData: {
+    pt: "Editar os meus dados",
+    en: "Edit my details",
+    es: "Editar mis datos",
+    fr: "Modifier mes données",
+  },
+  pushOptInTitle: {
+    pt: "Notificações no telemóvel",
+    en: "Phone notifications",
+    es: "Notificaciones en el móvil",
+    fr: "Notifications sur le téléphone",
+  },
+  pushOptInHint: {
+    pt: "Active para receber promoções e avisos do restaurante neste telemóvel.",
+    en: "Enable to get offers and updates from the restaurant on this phone.",
+    es: "Activa para recibir promociones y avisos del restaurante en este móvil.",
+    fr: "Activez pour recevoir promos et alertes du restaurant sur ce téléphone.",
+  },
+  pushOptInButton: {
+    pt: "Activar notificações",
+    en: "Enable notifications",
+    es: "Activar notificaciones",
+    fr: "Activer les notifications",
+  },
+  pushActivated: {
+    pt: "Notificações activadas!",
+    en: "Notifications enabled!",
+    es: "¡Notificaciones activadas!",
+    fr: "Notifications activées !",
+  },
+  pushActivateFailed: {
+    pt: "Não foi possível activar. Tente nas definições do telemóvel.",
+    en: "Could not enable. Try in your phone settings.",
+    es: "No se pudo activar. Prueba en los ajustes del móvil.",
+    fr: "Impossible d'activer. Essayez dans les réglages du téléphone.",
+  },
   deliveryAddressSection: {
     pt: "Morada habitual (entrega)",
     en: "Usual address (delivery)",

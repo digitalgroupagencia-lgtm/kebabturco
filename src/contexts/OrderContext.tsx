@@ -86,6 +86,13 @@ interface OrderContextType {
   setDeliveryCity: (v: string) => void;
   deliveryNotes: string;
   setDeliveryNotes: (v: string) => void;
+  hydrateDeliveryAddress: (addr: SavedDeliveryAddress) => void;
+  hydrateCustomerProfile: (profile: {
+    name: string;
+    phoneDialCode: string;
+    phoneLocal: string;
+    delivery: SavedDeliveryAddress;
+  }) => void;
   paymentMethod: PaymentMethodId | null;
   setPaymentMethod: (m: PaymentMethodId | null) => void;
   orderPaymentStatus: "pending" | "paid";
@@ -301,6 +308,36 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDeliveryNotesState(value);
     persistDeliveryAddress({ notes: value });
   };
+
+  const hydrateDeliveryAddress = useCallback((addr: SavedDeliveryAddress) => {
+    setDeliveryAddressState(addr.street);
+    setDeliveryNumberState(addr.number);
+    setDeliveryFloorState(addr.floor);
+    setDeliveryDoorState(addr.door);
+    setDeliveryBlockState(addr.block);
+    setDeliveryPostalCodeState(addr.postalCode);
+    setDeliveryCityState(addr.city);
+    setDeliveryNotesState(addr.notes);
+    saveSavedDeliveryAddress(addr);
+  }, []);
+
+  const hydrateCustomerProfile = useCallback(
+    (profile: {
+      name: string;
+      phoneDialCode: string;
+      phoneLocal: string;
+      delivery: SavedDeliveryAddress;
+    }) => {
+      setCustomerNameState(profile.name);
+      saveSavedCustomerName(profile.name);
+      setPhoneDialCodeState(profile.phoneDialCode);
+      setCustomerPhoneState(profile.phoneLocal);
+      saveSavedCustomerPhone(profile.phoneDialCode, profile.phoneLocal);
+      hydrateDeliveryAddress(profile.delivery);
+    },
+    [hydrateDeliveryAddress],
+  );
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId | null>(null);
   const [orderPaymentStatus, setOrderPaymentStatus] = useState<"pending" | "paid">("pending");
   const [productReturnScreen, setProductReturnScreen] = useState<Screen>("home");
@@ -404,6 +441,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setDeliveryCity,
         deliveryNotes,
         setDeliveryNotes,
+        hydrateDeliveryAddress,
+        hydrateCustomerProfile,
         paymentMethod,
         setPaymentMethod,
         orderPaymentStatus,

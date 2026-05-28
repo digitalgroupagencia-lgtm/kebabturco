@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Bell } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import {
@@ -64,7 +64,7 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
 
   const handleActivate = async () => {
     if (!isCustomerMarketingPushSupported()) {
-      toast.info(copy.denied);
+      appToastInfo(copy.denied);
       onOpenChange(false);
       return;
     }
@@ -72,13 +72,13 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
     try {
       const result = await subscribeCustomerMarketingPush(storeId);
       if (result.ok) {
-        toast.success(copy.success);
+        appToastSuccess(copy.success);
         onOpenChange(false);
       } else if (result.error?.includes("negada") || result.error?.includes("denied")) {
-        toast.info(copy.denied);
+        appToastInfo(copy.denied);
         onOpenChange(false);
       } else {
-        toast.error(result.error || copy.denied);
+        appToastError(result.error || copy.denied);
       }
     } finally {
       setBusy(false);

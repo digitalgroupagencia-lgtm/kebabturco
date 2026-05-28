@@ -15,6 +15,7 @@ import InlineScreenSpinner from "@/components/InlineScreenSpinner";
 import ProductScreen from "@/components/screens/ProductScreen";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
+import CustomerPushPromptHost from "@/components/CustomerPushPromptHost";
 
 const HomeScreen = lazy(() => import("@/components/screens/HomeScreen"));
 const ReviewScreen = lazy(() => import("@/components/screens/ReviewScreen"));
@@ -150,6 +151,7 @@ const CustomerShell = () => (
       <CustomerScreenErrorBoundary scope="bootstrap">
         <CustomerBottomDock />
         <CustomerTabBar />
+        <CustomerPushPromptHost />
       </CustomerScreenErrorBoundary>
     </div>
 );

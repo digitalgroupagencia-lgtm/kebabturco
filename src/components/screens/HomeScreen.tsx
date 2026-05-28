@@ -12,12 +12,6 @@ import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
-import { useResolvedStore } from "@/hooks/useResolvedStore";
-import CustomerNotificationOptInDialog from "@/components/CustomerNotificationOptInDialog";
-import {
-  isCustomerMarketingPushSupported,
-  shouldPromptCustomerMarketingPush,
-} from "@/lib/customerMarketingPush";
 
 
 const HomeScreen = () => {
@@ -27,10 +21,6 @@ const HomeScreen = () => {
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
   const navigate = useNavigate();
-  const { storeId: resolvedStoreId, selectedStoreId } = useResolvedStore();
-  const activeStoreId = selectedStoreId || resolvedStoreId || "";
-  const [notifyOptInOpen, setNotifyOptInOpen] = useState(false);
-  const notifyPromptedRef = useRef(false);
   const [logoTaps, setLogoTaps] = useState(0);
   const tapResetRef = useRef<number | null>(null);
   const handleLogoTap = () => {
@@ -74,15 +64,6 @@ const HomeScreen = () => {
       ...products.map((product) => product.description),
     ]);
   }, [loading, categories, products, lang, primaryLang, preloadMenuTranslations]);
-
-  useEffect(() => {
-    if (loading || !activeStoreId || notifyPromptedRef.current) return;
-    if (!isCustomerMarketingPushSupported()) return;
-    if (!shouldPromptCustomerMarketingPush()) return;
-    notifyPromptedRef.current = true;
-    const timer = window.setTimeout(() => setNotifyOptInOpen(true), 1200);
-    return () => window.clearTimeout(timer);
-  }, [loading, activeStoreId]);
 
   const allCategories = [
     ...(products.some((product) => product.isBestseller) ? [{
@@ -321,14 +302,6 @@ const HomeScreen = () => {
           </div>
         </main>
       </div>
-
-      {activeStoreId && (
-        <CustomerNotificationOptInDialog
-          open={notifyOptInOpen}
-          storeId={activeStoreId}
-          onOpenChange={setNotifyOptInOpen}
-        />
-      )}
     </div>
   );
 };

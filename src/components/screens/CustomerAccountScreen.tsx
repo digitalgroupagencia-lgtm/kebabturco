@@ -11,11 +11,17 @@ import { loadLocalOrderHistory, type LocalOrderHistoryEntry } from "@/lib/custom
 import {
   loadCustomerProfile,
   saveCustomerProfile,
+  hasCustomerProfile,
   type CustomerProfile,
 } from "@/lib/customerSession";
-import { Loader2, Package, RotateCcw, Gift, User, MapPin, Save } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, Package, RotateCcw, Gift, User, MapPin, Save, ChevronRight, Bell } from "lucide-react";
+import { appToastSuccess, appToastError } from "@/lib/appToast";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
+import {
+  isCustomerMarketingPushOpted,
+  isCustomerMarketingPushSupported,
+  subscribeCustomerMarketingPush,
+} from "@/lib/customerMarketingPush";
 
 type PastOrder = {
   id: string;
@@ -45,15 +51,7 @@ const CustomerAccountScreen = () => {
     setCustomerPhone,
     phoneDialCode,
     setPhoneDialCode,
-    setCustomerName,
-    setDeliveryAddress,
-    setDeliveryNumber,
-    setDeliveryFloor,
-    setDeliveryDoor,
-    setDeliveryBlock,
-    setDeliveryPostalCode,
-    setDeliveryCity,
-    setDeliveryNotes,
+    hydrateCustomerProfile,
   } = useOrder();
   const { addItem } = useCart();
   const { t } = useLanguage();
@@ -69,9 +67,15 @@ const CustomerAccountScreen = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [activatingPush, setActivatingPush] = useState(false);
+  const [pushOpted, setPushOpted] = useState(() => isCustomerMarketingPushOpted());
+  const [profileExpanded, setProfileExpanded] = useState(() => !hasCustomerProfile());
   const profileSectionRef = useRef<HTMLElement>(null);
   const ordersSectionRef = useRef<HTMLElement>(null);
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
+  const pushSupported = isCustomerMarketingPushSupported();
 
   useEffect(() => {
     if (screen !== "account") return;
@@ -79,30 +83,35 @@ const CustomerAccountScreen = () => {
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [screen, accountFocus]);
 
-  const syncProfileToOrder = (next: CustomerProfile) => {
-    setCustomerName(next.name);
-    setPhoneDialCode(next.phoneDialCode);
-    setCustomerPhone(next.phoneLocal);
-    setDeliveryAddress(next.delivery.street);
-    setDeliveryNumber(next.delivery.number);
-    setDeliveryFloor(next.delivery.floor);
-    setDeliveryDoor(next.delivery.door);
-    setDeliveryBlock(next.delivery.block);
-    setDeliveryPostalCode(next.delivery.postalCode);
-    setDeliveryCity(next.delivery.city);
-    setDeliveryNotes(next.delivery.notes);
+  const reloadProfileFromDevice = () => {
+    const saved = loadCustomerProfile();
+    setProfile(saved);
+    hydrateCustomerProfile(saved);
+    return saved;
   };
 
   const saveProfile = () => {
     setSavingProfile(true);
     try {
       saveCustomerProfile(profile);
-      syncProfileToOrder(profile);
-      toast.success(t("profileSaved"));
+      hydrateCustomerProfile(profile);
+      setProfileExpanded(false);
+      appToastSuccess(t("profileSaved"));
     } finally {
       setSavingProfile(false);
     }
   };
+
+  const profileSummaryLine = () => {
+    const d = profile.delivery;
+    const street = [d.street, d.number].filter(Boolean).join(" ");
+    const city = [d.postalCode, d.city].filter(Boolean).join(" ");
+    return [street, city].filter(Boolean).join(" · ");
+  };
+
+  const displayPhone = isValidCustomerPhone(profile.phoneDialCode, profile.phoneLocal)
+    ? formatFullPhone(profile.phoneDialCode, profile.phoneLocal)
+    : "";
 
   const updateProfile = (patch: Partial<CustomerProfile>) => {
     setProfile((prev) => ({
@@ -117,7 +126,7 @@ const CustomerAccountScreen = () => {
     const local = phoneOverride?.local ?? customerPhone;
     const fullPhone = formatFullPhone(dial, local);
     if (!effectiveStoreId || !isValidCustomerPhone(dial, local)) {
-      toast.error(t("enterPhone"));
+      appToastError(t("enterPhone"));
       return;
     }
     setLoading(true);
@@ -132,9 +141,8 @@ const CustomerAccountScreen = () => {
   };
 
   useEffect(() => {
-    const saved = loadCustomerProfile();
-    setProfile(saved);
-    syncProfileToOrder(saved);
+    if (screen !== "account") return;
+    const saved = reloadProfileFromDevice();
     if (effectiveStoreId) {
       setLocalOrders(loadLocalOrderHistory(effectiveStoreId));
     }
@@ -142,7 +150,21 @@ const CustomerAccountScreen = () => {
       void search({ dialCode: saved.phoneDialCode, local: saved.phoneLocal });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveStoreId]);
+  }, [screen, effectiveStoreId]);
+
+  useEffect(() => {
+    if (screen !== "account") return;
+    const timer = window.setTimeout(() => {
+      saveCustomerProfile(profileRef.current);
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [profile, screen]);
+
+  useEffect(() => {
+    return () => {
+      saveCustomerProfile(profileRef.current);
+    };
+  }, []);
 
   const trackLocalOrder = (entry: LocalOrderHistoryEntry) => {
     setTrackingOrderId(entry.id);
@@ -166,7 +188,7 @@ const CustomerAccountScreen = () => {
         totalPrice: Number(item.unit_price) * (item.quantity || 1),
       });
     }
-    toast.success("Produtos adicionados ao carrinho");
+    appToastSuccess("Produtos adicionados ao carrinho");
     setScreen("review");
   };
 
@@ -180,6 +202,22 @@ const CustomerAccountScreen = () => {
     updateProfile({ phoneDialCode: dial, phoneLocal: customerPhone });
   };
 
+  const handleActivatePush = async () => {
+    if (!effectiveStoreId || !pushSupported) return;
+    setActivatingPush(true);
+    try {
+      const result = await subscribeCustomerMarketingPush(effectiveStoreId);
+      if (result.ok) {
+        setPushOpted(true);
+        appToastSuccess(t("pushActivated"));
+      } else {
+        appToastError(result.error || t("pushActivateFailed"));
+      }
+    } finally {
+      setActivatingPush(false);
+    }
+  };
+
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background">
       <ScreenHeader
@@ -190,7 +228,32 @@ const CustomerAccountScreen = () => {
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-5 pb-24">
-        <section ref={profileSectionRef} className="rounded-2xl border border-border bg-card p-4 space-y-3 scroll-mt-4">
+        <section ref={profileSectionRef} className="rounded-2xl border border-border bg-card scroll-mt-4 overflow-hidden">
+          {!profileExpanded ? (
+            <button
+              type="button"
+              onClick={() => setProfileExpanded(true)}
+              className="w-full flex items-center gap-3 p-4 text-left active:bg-muted/40 transition-colors"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-black truncate">
+                  {profile.name.trim() || t("myProfileSection")}
+                </p>
+                {displayPhone ? (
+                  <p className="text-xs text-muted-foreground truncate">{displayPhone}</p>
+                ) : null}
+                {profileSummaryLine() ? (
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{profileSummaryLine()}</p>
+                ) : null}
+                <p className="text-[10px] font-bold text-primary mt-1">{t("editMyData")}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+            </button>
+          ) : (
+            <div className="p-4 space-y-3">
           <div className="flex items-start gap-2">
             <User className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
@@ -309,7 +372,32 @@ const CustomerAccountScreen = () => {
             {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {t("saveMyData")}
           </button>
+            </div>
+          )}
         </section>
+
+        {pushSupported && !pushOpted && (
+          <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                <Bell className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-black text-sm">{t("pushOptInTitle")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("pushOptInHint")}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleActivatePush()}
+              disabled={activatingPush}
+              className="w-full h-11 rounded-2xl bg-gradient-primary text-primary-foreground font-black flex items-center justify-center gap-2 shadow-primary disabled:opacity-60"
+            >
+              {activatingPush ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+              {t("pushOptInButton")}
+            </button>
+          </section>
+        )}
 
         <section ref={ordersSectionRef} className="space-y-3 scroll-mt-4">
           <p className="text-sm font-bold">{t("searchMyOrders")}</p>
