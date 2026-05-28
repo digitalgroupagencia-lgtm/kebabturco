@@ -8,8 +8,11 @@ export const BRAND_WINE_HEX = "#8B1A1A";
 export const BRAND_WINE_DARK_HEX = "#5C1419";
 export const BRAND_WINE_LIGHT_HEX = "#962E34";
 
-/** Legacy fallback replaced across static assets */
-export const LEGACY_RED_HEX = "#CC0000";
+/**
+ * Cor usada na barra do sistema / Safari / Chrome (chrome do browser).
+ * Deve ser o vinho escuro — nunca branco nem vermelho puro.
+ */
+export const BRAND_CHROME_HEX = BRAND_WINE_DARK_HEX;
 
 export type HslParts = { h: number; s: number; l: number };
 
@@ -105,6 +108,40 @@ export function shadowHeaderFromPalette(p: ReturnType<typeof winePaletteFromHex>
   return `0 4px 18px -8px hsl(${p.wine} / 0.38)`;
 }
 
+/** Actualiza meta theme-color (Safari iOS + Chrome Android) com paleta vinho. */
+export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "dark" = "light"): void {
+  if (typeof document === "undefined") return;
+  const base = headerHex || BRAND_WINE_HEX;
+  const palette = winePaletteFromHex(base);
+  // Topo integrado: vinho escuro em ambos os modos (nunca vermelho puro)
+  const chromeHex =
+    theme === "dark"
+      ? BRAND_CHROME_HEX
+      : base.startsWith("#")
+        ? base
+        : BRAND_WINE_HEX;
+
+  const setThemeMeta = (content: string, media?: string) => {
+    const selector = media
+      ? `meta[name="theme-color"][media="${media}"]`
+      : 'meta[name="theme-color"]:not([media])';
+    let el = document.querySelector<HTMLMetaElement>(selector);
+    if (!el) {
+      el = document.createElement("meta");
+      el.name = "theme-color";
+      if (media) el.media = media;
+      document.head.appendChild(el);
+    }
+    el.content = content;
+  };
+
+  setThemeMeta(chromeHex);
+  setThemeMeta(chromeHex, "(prefers-color-scheme: light)");
+  setThemeMeta(BRAND_CHROME_HEX, "(prefers-color-scheme: dark)");
+
+  document.documentElement.style.setProperty("--browser-chrome-bg", `hsl(${palette.wineDark})`);
+}
+
 /** Apply brand wine tokens to document root (used by BrandingContext). */
 export function applyBrandWineTokens(headerHex: string): void {
   if (typeof document === "undefined") return;
@@ -119,3 +156,6 @@ export function applyBrandWineTokens(headerHex: string): void {
   root.style.setProperty("--shadow-primary", shadowPrimaryFromPalette(palette));
   root.style.setProperty("--shadow-header", shadowHeaderFromPalette(palette));
 }
+
+/** Legacy fallback replaced across static assets */
+export const LEGACY_RED_HEX = "#CC0000";

@@ -2,9 +2,9 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import { applyBrandWineTokens, BRAND_WINE_HEX, hexToHslParts, hslString } from "@/lib/brandTokens";
+import { applyBrandWineTokens, BRAND_WINE_HEX, applyBrowserChromeColor, hexToHslParts, hslString } from "@/lib/brandTokens";
 import { bumpAppCache } from "@/lib/appCacheBust";
-import { isAdminPreviewMode, PREVIEW_MESSAGE_TYPE } from "@/lib/tenantPreview";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export type CompanySettings = Tables<"company_settings">;
 
@@ -45,10 +45,10 @@ function applyTheme(s: CompanySettings) {
   }
 }
 
-function applyInstallMeta(s: CompanySettings) {
+function applyInstallMeta(s: CompanySettings, theme: "light" | "dark" = "light") {
   try {
     const name = s.company_name || "Restaurante";
-    const themeColor = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
+    const headerHex = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
 
     // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.
     // Só actualiza meta tags dinâmicas (título e cor da barra).
@@ -61,9 +61,7 @@ function applyInstallMeta(s: CompanySettings) {
       document.head.appendChild(m);
     }
 
-    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
-      m.content = themeColor;
-    });
+    applyBrowserChromeColor(headerHex, theme);
   } catch (_e) {
     // ignore
   }
@@ -75,6 +73,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
 }) => {
   const resolved = useResolvedStore();
   const storeId = storeIdProp ?? resolved.storeId ?? "";
+  const { theme } = useTheme();
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [draftOverride, setDraftOverride] = useState<Partial<CompanySettings> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,13 +95,16 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
   }, []);
 
   useEffect(() => {
-    if (!effectiveSettings) return;
+    if (!effectiveSettings) {
+      applyBrowserChromeColor(undefined, theme);
+      return;
+    }
     applyTheme(effectiveSettings);
-    applyInstallMeta(effectiveSettings);
+    applyInstallMeta(effectiveSettings, theme);
     if (effectiveSettings.company_name) {
       document.title = effectiveSettings.company_name;
     }
-  }, [effectiveSettings]);
+  }, [effectiveSettings, theme]);
 
   const load = useCallback(async () => {
     if (!storeId) { setLoading(false); return; }

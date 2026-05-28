@@ -17,10 +17,10 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
         <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden md:rounded-[2.3rem] md:bg-background">
           <div
             aria-hidden
-            className="pointer-events-none fixed top-0 left-0 right-0 z-[60] md:hidden"
+            className="pointer-events-none fixed top-0 left-0 right-0 z-[60] md:hidden bg-gradient-header"
             style={{
-              height: "env(safe-area-inset-top)",
-              background: "var(--gradient-header)",
+              height: "max(env(safe-area-inset-top), 0px)",
+              background: "var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%))",
             }}
           />
           {children}

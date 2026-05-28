@@ -148,6 +148,12 @@ const HomeScreen = () => {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {!shouldHideHeader() && (
+      <>
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-[35] bg-gradient-header md:hidden"
+        style={{ height: "env(safe-area-inset-top)" }}
+      />
       <header
         className="sticky top-0 z-30 relative bg-gradient-header text-primary-foreground px-4 pb-3 shrink-0 shadow-header overflow-hidden rounded-b-[18px]"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
@@ -188,6 +194,7 @@ const HomeScreen = () => {
           </div>
         </div>
       </header>
+      </>
       )}
 
       <div className="flex flex-1 overflow-hidden min-h-0">
