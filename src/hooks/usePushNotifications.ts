@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 
-const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+const VAPID_PUBLIC = getVapidPublicKey();
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
