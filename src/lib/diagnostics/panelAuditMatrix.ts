@@ -120,7 +120,7 @@ export async function probeRestaurantPanel(storeId: string | null): Promise<Audi
     });
   }
 
-  const { data: openSession } = await supabase
+  const { data: openSession } = await (supabase as any)
     .from("cash_sessions")
     .select("id")
     .eq("store_id", storeId)

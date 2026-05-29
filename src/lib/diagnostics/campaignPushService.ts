@@ -193,10 +193,10 @@ export async function upsertCampaignPreset(storeId: string, preset: CampaignPres
   };
 
   if (existing?.id) {
-    const { error } = await supabase.from("marketing_campaigns").update(row).eq("id", existing.id);
+    const { error } = await (supabase.from("marketing_campaigns") as any).update(row).eq("id", existing.id);
     if (error) return { ok: false, error: error.message };
   } else {
-    const { error } = await supabase.from("marketing_campaigns").insert(row);
+    const { error } = await (supabase.from("marketing_campaigns") as any).insert(row);
     if (error) return { ok: false, error: error.message };
   }
 
@@ -205,7 +205,7 @@ export async function upsertCampaignPreset(storeId: string, preset: CampaignPres
 }
 
 export async function fetchCampaignSendLog(storeId: string, limit = 20): Promise<CampaignSendLogRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("campaign_send_log")
     .select("id, campaign_id, customer_phone, status, error_message, sent_at")
     .eq("store_id", storeId)
@@ -220,7 +220,7 @@ export async function fetchCampaignSendLog(storeId: string, limit = 20): Promise
     log("fetch", "error", error.message);
     return [];
   }
-  return (data ?? []) as CampaignSendLogRow[];
+  return (data ?? []) as unknown as CampaignSendLogRow[];
 }
 
 export async function simulateCampaignRun(storeId: string, campaignId?: string, dryRun = true) {

@@ -57,7 +57,7 @@ const StaffEmailLoginScreen = () => {
       if (signInError) throw signInError;
       markStaffSession();
     } catch (e) {
-      setError(translateAppErrorFromException(e, lang));
+      setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
     } finally {
       setSubmitting(false);
     }
