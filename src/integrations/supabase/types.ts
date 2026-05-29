@@ -408,6 +408,45 @@ export type Database = {
           },
         ]
       }
+      customer_saved_profiles: {
+        Row: {
+          delivery: Json
+          name: string | null
+          phone: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          delivery?: Json
+          name?: string | null
+          phone: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          delivery?: Json
+          name?: string | null
+          phone?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_saved_profiles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_saved_profiles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string
@@ -2738,6 +2777,15 @@ export type Database = {
         Args: { _name?: string; _session_id: string }
         Returns: string
       }
+      add_team_member_to_store: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _store_id: string
+          _tenant_id: string
+          _user_id: string
+        }
+        Returns: string
+      }
       assign_delivery_driver: {
         Args: { _driver_user_id: string; _order_id: string }
         Returns: Json
@@ -2888,6 +2936,10 @@ export type Database = {
           total: number
         }[]
       }
+      get_customer_saved_profile: {
+        Args: { _phone: string; _store_id: string }
+        Returns: Json
+      }
       get_driver_deliveries: {
         Args: { _store_id?: string }
         Returns: {
@@ -2980,6 +3032,13 @@ export type Database = {
           revenue: number
           seller_id: string
           seller_name: string
+        }[]
+      }
+      get_store_team_member_emails: {
+        Args: { _store_id: string }
+        Returns: {
+          email: string
+          user_id: string
         }[]
       }
       get_table_session_detail: {
@@ -3176,18 +3235,40 @@ export type Database = {
         Args: { _feature_key: string; _tenant_id: string }
         Returns: boolean
       }
+      upsert_customer_saved_profile: {
+        Args: {
+          _delivery?: Json
+          _name?: string
+          _phone: string
+          _store_id: string
+        }
+        Returns: undefined
+      }
       upsert_staff_access_pin: {
         Args: { _pin: string; _user_role_id: string }
+        Returns: undefined
+      }
+      upsert_staff_profile_by_manager: {
+        Args: {
+          _full_name?: string
+          _preferred_language?: string
+          _user_id: string
+        }
         Returns: undefined
       }
       user_can_access_store:
         | { Args: { _store_id: string }; Returns: boolean }
         | { Args: { _store_id: string; _user_id: string }; Returns: boolean }
       user_can_access_tenant: { Args: { _tenant_id: string }; Returns: boolean }
+      user_can_view_team_at_store: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
       user_is_delivery_driver: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
       }
+      user_manages_store_team: { Args: { _store_id: string }; Returns: boolean }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
         Returns: Json
