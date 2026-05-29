@@ -32,14 +32,14 @@ describe("probeBackendReadiness", () => {
   });
 
   it("flags missing staff password RPC as critical", async () => {
-    vi.mocked(supabase.rpc).mockImplementation((name: string) => {
+    vi.mocked(supabase.rpc).mockImplementation(((name: string) => {
       if (name === "manager_set_staff_password") {
         return Promise.resolve({
           error: { message: "PGRST202: Could not find the function" },
         } as never);
       }
       return Promise.resolve({ error: { message: "permission denied" } } as never);
-    });
+    }) as never);
 
     const findings = await probeBackendReadiness("store-1");
     const missing = findings.find((f) => f.id === "rpc-missing-manager_set_staff_password");

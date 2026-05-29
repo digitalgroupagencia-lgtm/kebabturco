@@ -119,7 +119,7 @@ export async function subscribePushWithLogging(
       try {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
         });
       } catch (subscribeErr) {
         const described = describePushFailure(subscribeErr, permission);

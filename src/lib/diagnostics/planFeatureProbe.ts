@@ -4,9 +4,8 @@ import {
   FEATURE_MIN_PLAN,
   isFeatureAvailableForPlan,
   normalizePlan,
-  type PlanKey,
 } from "@/lib/platformFeatureGates";
-import type { TenantFeatureFlag } from "@/lib/platformFeatures";
+import type { PlanKey, TenantFeatureFlag } from "@/lib/platformFeatures";
 import { planDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 

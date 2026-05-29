@@ -689,7 +689,7 @@ export function useOperationalDiagnostics() {
         });
       }
 
-      const { data: failedSends } = await supabase
+      const { data: failedSends } = await (supabase as any)
         .from("campaign_send_log")
         .select("id, error_message, sent_at")
         .eq("store_id", storeId)
@@ -702,7 +702,7 @@ export function useOperationalDiagnostics() {
           id: "campaign-send-error",
           label: "Campanha push",
           status: "warn",
-          detail: `Último envio falhou: ${failedSends[0].error_message ?? "erro desconhecido"}`,
+          detail: `Último envio falhou: ${(failedSends[0] as any).error_message ?? "erro desconhecido"}`,
           action: "Verifique VAPID e subscritores no Centro de testes.",
           link: `${nav.admin("diagnostics-hub")}?tab=campaigns`,
           linkLabel: "Centro de testes — Campanhas",
