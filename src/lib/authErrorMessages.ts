@@ -1,6 +1,6 @@
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
 
-type UiLang = "pt" | "es";
+type UiLang = "pt" | "es" | "en";
 
 const MESSAGES: Record<string, Record<UiLang, string>> = {
   weak_password: {
