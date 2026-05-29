@@ -1,16 +1,37 @@
 import { useSearchParams } from "react-router-dom";
-import { Activity, Bell, CreditCard, Gift, Megaphone, Printer, Tag } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  CreditCard,
+  Gift,
+  Megaphone,
+  Printer,
+  Tag,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths.ts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import PushDiagnosticPanel from "@/components/admin/diagnostics/PushDiagnosticPanel";
 import PrinterDiagnosticPanel from "@/components/admin/diagnostics/PrinterDiagnosticPanel";
 import CouponDiagnosticPanel from "@/components/admin/diagnostics/CouponDiagnosticPanel";
 import LoyaltyDiagnosticPanel from "@/components/admin/diagnostics/LoyaltyDiagnosticPanel";
 import CampaignDiagnosticPanel from "@/components/admin/diagnostics/CampaignDiagnosticPanel";
 import PlanDiagnosticPanel from "@/components/admin/diagnostics/PlanDiagnosticPanel";
+import { useFullAppAudit } from "@/hooks/useFullAppAudit";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
+import type { AuditSeverity } from "@/services/adminSystemAudit";
 
 const TABS = [
+  { id: "overview", label: "Visão geral", icon: Activity },
   { id: "push", label: "Push", icon: Bell },
   { id: "printer", label: "Impressora", icon: Printer },
   { id: "coupons", label: "Cupões", icon: Tag },
@@ -29,10 +50,22 @@ const FULL_PAGE_LINKS: Partial<Record<TabId, string>> = {
   plans: nav.admin("plans"),
 };
 
+const SEV_ICON: Record<AuditSeverity, typeof CheckCircle2> = {
+  ok: CheckCircle2,
+  suggestion: Activity,
+  warning: AlertTriangle,
+  critical: XCircle,
+};
+
 export default function DiagnosticsHubPage() {
   const [params, setParams] = useSearchParams();
-  const tab = (params.get("tab") as TabId) || "push";
-  const validTab = TABS.some((t) => t.id === tab) ? tab : "push";
+  const tab = (params.get("tab") as TabId) || "overview";
+  const validTab = TABS.some((t) => t.id === tab) ? tab : "overview";
+  const { storeId } = useAdminStoreId();
+  const { tenant } = useSelectedTenant();
+  const { report, running, run } = useFullAppAudit(storeId, tenant?.id ?? null);
+
+  const topIssues = report?.allFindings.filter((f) => f.severity !== "ok").slice(0, 5) ?? [];
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -42,7 +75,7 @@ export default function DiagnosticsHubPage() {
           Centro de testes
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Diagnósticos, testes e logs por módulo — push, impressora, cupões, fidelidade, campanhas e planos.
+          Testes interactivos por módulo e ligação à auditoria completa do sistema.
         </p>
       </div>
 
@@ -60,7 +93,78 @@ export default function DiagnosticsHubPage() {
           ))}
         </TabsList>
 
-        {TABS.map((t) => (
+        <TabsContent value="overview" className="mt-4 space-y-4">
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="font-bold">Auditoria completa</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Verifica cliente, equipa, delivery, pagamentos, RPCs e servidores num só relatório.
+                  </p>
+                  {report && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Última execução: {new Date(report.ranAt).toLocaleString("pt-PT")} ·{" "}
+                      {report.summary.ok} OK · {report.summary.totalIssues} problema(s)
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>
+                    {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    <span className="ml-1.5">{running ? "A auditar…" : "Auditar tudo"}</span>
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link to={nav.admin("diagnostics")}>
+                      Ver relatório
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              {!report && !running && (
+                <p className="text-sm text-muted-foreground border-t pt-4">
+                  Ainda não há auditoria guardada. Clique em <strong>Auditar tudo</strong> ou abra{" "}
+                  <Link to={nav.admin("diagnostics")} className="text-primary underline">
+                    Estado do sistema
+                  </Link>
+                  .
+                </p>
+              )}
+
+              {topIssues.length > 0 && (
+                <div className="border-t pt-4 space-y-2">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    Principais alertas
+                  </p>
+                  {topIssues.map((f) => {
+                    const Icon = SEV_ICON[f.severity];
+                    return (
+                      <div key={f.id} className="flex items-start gap-2 text-sm">
+                        <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>{f.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {report && report.summary.totalIssues === 0 && (
+                <div className="flex items-center gap-2 text-sm text-success border-t pt-4">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Última auditoria sem problemas detectados.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <p className="text-sm text-muted-foreground">
+            Use as outras tabs para testes manuais (enviar push, imprimir teste, validar cupões, etc.).
+          </p>
+        </TabsContent>
+
+        {TABS.filter((t) => t.id !== "overview").map((t) => (
           <TabsContent key={t.id} value={t.id} className="mt-4 space-y-4">
             {FULL_PAGE_LINKS[t.id] ? (
               <p className="text-xs text-muted-foreground">

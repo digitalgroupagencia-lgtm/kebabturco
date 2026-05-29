@@ -194,6 +194,32 @@ export async function handleStaffUpdateMember(req: Request, body: Record<string,
   return json({ success: true, login_ready: true });
 }
 
+/** Probe-only: verifies manager auth + store access without mutating data. */
+export async function handleStaffAuditPing(req: Request, body: Record<string, unknown>) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return json({ error: "Unauthorized" }, 401);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authErr } = await userClient.auth.getUser();
+  if (authErr || !user) return json({ error: "Invalid token" }, 401);
+
+  const store_id = String(body.store_id ?? "");
+  if (!store_id) return json({ error: "store_id é obrigatório" }, 400);
+
+  const { data: canAccess } = await userClient.rpc("user_can_access_store", { _store_id: store_id });
+  if (!canAccess) return json({ error: "Forbidden: sem acesso a esta loja" }, 403);
+
+  const canManage = await callerCanManageStoreTeam(userClient, user.id, store_id);
+  if (!canManage) return json({ error: "Forbidden" }, 403);
+
+  return json({ success: true, audit_ready: true, store_id });
+}
+
 export async function handleStaffCreateMember(req: Request, body: Record<string, unknown>) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "Unauthorized" }, 401);

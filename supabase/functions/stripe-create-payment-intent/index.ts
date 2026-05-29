@@ -26,6 +26,7 @@ import {
 import {
   handleStaffCreateMember,
   handleStaffUpdateMember,
+  handleStaffAuditPing,
 } from "../_shared/staffMemberActions.ts";
 
 function json(data: unknown, status = 200) {
@@ -81,6 +82,10 @@ Deno.serve(async (req) => {
 
     if (body?.action === "staff_update_member") {
       return handleStaffUpdateMember(req, body);
+    }
+
+    if (body?.action === "staff_audit_ping") {
+      return handleStaffAuditPing(req, body);
     }
 
     if (body?.action === "staff_create_member") {

@@ -12,6 +12,14 @@ export type AuditCategory =
   | "system"
   | "printing";
 
+export type AuditPanel =
+  | "customer"
+  | "restaurant"
+  | "delivery"
+  | "seller"
+  | "admin"
+  | "backend";
+
 export type AuditFinding = {
   id: string;
   category: AuditCategory;
@@ -22,6 +30,8 @@ export type AuditFinding = {
   /** Caminho interno para resolver (relativo, ex: /admin/menu). */
   link?: string;
   linkLabel?: string;
+  /** Área da app (cliente, painel, entregador, etc.). */
+  panel?: AuditPanel;
 };
 
 function jsonbName(name: any): string {
@@ -276,19 +286,20 @@ async function auditDelivery(storeId: string | null): Promise<AuditFinding[]> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data: orders } = await supabase
     .from("orders")
-    .select("id,status,order_type,seller_id")
+    .select("id,status,order_type,assigned_driver_id")
     .eq("store_id", storeId)
     .eq("order_type", "delivery")
     .in("status", ["ready", "out_for_delivery"])
     .gte("created_at", since);
 
-  const noDriver = (orders ?? []).filter((o: any) => !o.seller_id);
+  const noDriver = (orders ?? []).filter((o: any) => !o.assigned_driver_id);
   if (noDriver.length > 0) {
     findings.push({
       id: "delivery-no-driver",
       category: "delivery",
       severity: "critical",
       label: `${noDriver.length} pedido(s) delivery sem entregador`,
+      panel: "restaurant",
       link: "/panel/live",
     });
   }
@@ -336,13 +347,96 @@ async function auditTeam(storeId: string | null): Promise<AuditFinding[]> {
       link: "/panel/team",
     });
   }
+  if (!has("delivery")) {
+    findings.push({
+      id: "team-no-delivery",
+      category: "team",
+      severity: "warning",
+      label: "Sem entregador cadastrado na Equipe",
+      panel: "restaurant",
+      link: "/panel/team",
+    });
+  }
   if (!has("seller")) {
     findings.push({
       id: "team-no-seller",
       category: "team",
       severity: "suggestion",
-      label: "Sem entregador/vendedor cadastrado",
+      label: "Sem vendedor cadastrado",
+      panel: "restaurant",
       link: "/panel/sellers",
+    });
+  }
+
+  return findings;
+}
+
+// ---------- PAGAMENTOS ----------
+async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
+  if (!storeId) return [];
+  const findings: AuditFinding[] = [];
+
+  const { data: store } = await supabase
+    .from("stores")
+    .select(
+      "stripe_connect_account_id,stripe_charges_enabled,stripe_onboarding_completed",
+    )
+    .eq("id", storeId)
+    .maybeSingle();
+
+  if (!store?.stripe_connect_account_id) {
+    findings.push({
+      id: "payments-no-stripe",
+      category: "payments",
+      severity: "warning",
+      label: "Stripe Connect não configurado",
+      panel: "admin",
+      action: "Configure recebimentos para pagamentos com cartão.",
+      link: "/admin/finance",
+    });
+  } else if (!store.stripe_charges_enabled) {
+    findings.push({
+      id: "payments-stripe-incomplete",
+      category: "payments",
+      severity: "critical",
+      label: "Stripe Connect incompleto — cobranças desactivadas",
+      panel: "admin",
+      link: "/admin/finance",
+    });
+  } else {
+    findings.push({
+      id: "payments-stripe-ok",
+      category: "payments",
+      severity: "ok",
+      label: "Stripe Connect activo para cobranças",
+      panel: "admin",
+    });
+  }
+
+  return findings;
+}
+
+// ---------- MESAS ----------
+async function auditTables(storeId: string | null): Promise<AuditFinding[]> {
+  if (!storeId) return [];
+  const findings: AuditFinding[] = [];
+
+  const { data: tables } = await supabase
+    .from("tables")
+    .select("id,qr_token,is_active")
+    .eq("store_id", storeId)
+    .eq("is_active", true);
+
+  const missingQr = (tables ?? []).filter((t: any) => !t.qr_token);
+  if (missingQr.length > 0) {
+    findings.push({
+      id: "tables-missing-qr",
+      category: "tables",
+      severity: "warning",
+      label: `${missingQr.length} mesa(s) sem código QR`,
+      panel: "restaurant",
+      action: "Regenerar QR em Mesas & QR.",
+      link: "/panel/tables",
     });
   }
 
@@ -399,6 +493,8 @@ export async function fetchAdminSystemAudit(storeId: string | null): Promise<Aud
     auditDelivery(storeId),
     auditTeam(storeId),
     auditPrinting(storeId),
+    auditPayments(storeId),
+    auditTables(storeId),
   ]);
   const out: AuditFinding[] = [];
   for (const r of results) {

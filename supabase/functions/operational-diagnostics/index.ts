@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   handleStaffCreateMember,
   handleStaffUpdateMember,
+  handleStaffAuditPing,
 } from "../_shared/staffMemberActions.ts";
 
 const corsHeaders = {
@@ -78,6 +79,10 @@ Deno.serve(async (req) => {
 
     if (body?.action === "staff_update_member") {
       return handleStaffUpdateMember(req, body);
+    }
+
+    if (body?.action === "staff_audit_ping") {
+      return handleStaffAuditPing(req, body);
     }
 
     if (body?.action === "staff_create_member") {
