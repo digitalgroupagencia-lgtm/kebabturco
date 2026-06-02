@@ -23,6 +23,7 @@ import MarketingBroadcastCard from "@/components/panel/MarketingBroadcastCard";
 import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
