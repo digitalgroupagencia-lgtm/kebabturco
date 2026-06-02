@@ -448,7 +448,7 @@ const TeamPage = () => {
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Equipe</h2>
+        <h2 className="text-2xl font-bold">{t("page.team.title")}</h2>
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             {canSwitchStore && stores.length > 1
