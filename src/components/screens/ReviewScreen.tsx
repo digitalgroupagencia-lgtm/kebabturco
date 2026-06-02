@@ -3,8 +3,9 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ScreenHeader from "@/components/ScreenHeader";
+import OrderTypeIcon from "@/components/OrderTypeIcon";
 import UpsellProductCard from "@/components/customization/UpsellProductCard";
-import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike, ArrowRight } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
@@ -162,7 +163,6 @@ const ReviewScreen = () => {
 
   const modalityLabel =
     orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway");
-  const ModalityIcon = orderType === "here" ? Utensils : orderType === "delivery" ? Bike : ShoppingBag;
 
   const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
 
@@ -184,8 +184,14 @@ const ReviewScreen = () => {
         {/* Tipo de pedido + Mesa */}
         <section className="rounded-2xl border border-border bg-card p-3 shadow-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <ModalityIcon className="w-5 h-5" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 p-1.5">
+              {orderType && (
+                <OrderTypeIcon
+                  type={orderType}
+                  imgClassName="h-full w-full object-contain"
+                  iconClassName="h-5 w-5 text-primary"
+                />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
