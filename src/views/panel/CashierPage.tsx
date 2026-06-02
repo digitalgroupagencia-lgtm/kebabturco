@@ -131,12 +131,13 @@ const CashierPage = () => {
     });
 
     if (error) {
-      toast.error("Erro ao abrir caixa");
+      toast.error(t("toast.cash_open_error"));
     } else {
-      toast.success("Caixa aberto!");
+      toast.success(t("toast.cash_opened"));
       setOpenDialogVisible(false);
       fetchCurrentRegister();
     }
+
   };
 
   const closeRegister = async () => {
