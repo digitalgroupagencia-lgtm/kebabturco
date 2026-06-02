@@ -180,18 +180,18 @@ const SellersPage = () => {
       <Card>
         <CardContent className="p-4 flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <Badge variant={overLimit ? "destructive" : "secondary"}>{active}/{allowed} vendedores</Badge>
+            <Badge variant={overLimit ? "destructive" : "secondary"}>{active}/{allowed} {t("sellers.units")}</Badge>
             {overLimit && (
               <span className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" /> Limite atingido — solicite upgrade
+                <AlertCircle className="w-3.5 h-3.5" /> {t("sellers.limit_reached")}
               </span>
             )}
           </div>
           {billing.data && (
             <div className="text-xs text-muted-foreground ml-auto">
-              Mensalidade prevista: <b className="text-foreground">{fmtMoney(billing.data.monthly_total, billing.data.currency)}</b>
+              {t("sellers.monthly")} <b className="text-foreground">{fmtMoney(billing.data.monthly_total, billing.data.currency)}</b>
               {billing.data.extra_sellers > 0 && (
-                <span> · inclui {billing.data.extra_sellers} vendedor(es) extra</span>
+                <span> · {t("sellers.includes_extra").replace("{n}", String(billing.data.extra_sellers))}</span>
               )}
             </div>
           )}
@@ -209,26 +209,26 @@ const SellersPage = () => {
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-bold truncate">{s.full_name || "Sem nome"}</p>
-                      <p className="text-xs text-muted-foreground">Desde {format(new Date(s.created_at), "dd/MM/yyyy")}</p>
+                      <p className="font-bold truncate">{s.full_name || t("sellers.no_name")}</p>
+                      <p className="text-xs text-muted-foreground">{t("sellers.since")} {format(new Date(s.created_at), "dd/MM/yyyy")}</p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0">Ativo</Badge>
+                    <Badge variant="secondary" className="shrink-0">{t("common.active")}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm pt-1 border-t border-border">
                     <div>
-                      <p className="text-muted-foreground text-xs">Pedidos (30d)</p>
+                      <p className="text-muted-foreground text-xs">{t("sellers.kpi.orders")}</p>
                       <p className="font-bold flex items-center gap-1"><ShoppingBag className="w-3.5 h-3.5" /> {st?.count ?? 0}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Faturamento</p>
+                      <p className="text-muted-foreground text-xs">{t("sellers.kpi.revenue")}</p>
                       <p className="font-bold">{fmtMoney(st?.revenue ?? 0, billing.data?.currency || "BRL")}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pt-1">
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => { setResetUserId(s.user_id); setNewPwd(""); }}>
-                      <KeyRound className="w-3.5 h-3.5 mr-1" /> Senha
+                      <KeyRound className="w-3.5 h-3.5 mr-1" /> {t("sellers.action.password")}
                     </Button>
-                    <Button size="sm" variant="outline" className="text-destructive" onClick={() => { if (confirm(`Remover ${s.full_name || "vendedor"}?`)) remove.mutate(s.role_id); }}>
+                    <Button size="sm" variant="outline" className="text-destructive" onClick={() => { if (confirm(t("sellers.confirm.remove").replace("{name}", s.full_name || t("sellers.fallback.name")))) remove.mutate(s.role_id); }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -239,7 +239,7 @@ const SellersPage = () => {
           {sellers?.length === 0 && (
             <Card className="col-span-full">
               <CardContent className="p-8 text-center text-muted-foreground">
-                Nenhum vendedor cadastrado. Crie o primeiro acima.
+                {t("sellers.empty")}
               </CardContent>
             </Card>
           )}
@@ -250,31 +250,31 @@ const SellersPage = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo vendedor</DialogTitle>
+            <DialogTitle>{t("sellers.dialog.new")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label>Nome</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do vendedor" />
+              <Label>{t("sellers.field.name")}</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("sellers.field.name.ph")} />
             </div>
             <div>
-              <Label>E-mail *</Label>
-              <Input type="email" autoCapitalize="none" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="vendedor@restaurante.com" />
+              <Label>{t("sellers.field.email")}</Label>
+              <Input type="email" autoCapitalize="none" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("sellers.field.email.ph")} />
             </div>
             <div>
-              <Label>Senha inicial *</Label>
-              <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 6 caracteres" />
-              <p className="text-xs text-muted-foreground mt-1">Compartilhe com o vendedor — ele pode trocar depois.</p>
+              <Label>{t("sellers.field.password")}</Label>
+              <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={t("sellers.field.password.ph")} />
+              <p className="text-xs text-muted-foreground mt-1">{t("sellers.field.password.note")}</p>
             </div>
             <div>
-              <Label>Telefone (opcional)</Label>
+              <Label>{t("sellers.field.phone")}</Label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+55 11 ..." />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={() => create.mutate()} disabled={create.isPending}>
-              {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar vendedor"}
+              {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t("sellers.action.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -283,13 +283,12 @@ const SellersPage = () => {
       {/* Reset senha (placeholder) */}
       <Dialog open={!!resetUserId} onOpenChange={(v) => !v && setResetUserId(null)}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
-          <DialogHeader><DialogTitle>Redefinir senha</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("sellers.reset.title")}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
-            O reset direto requer um endpoint administrativo. Por enquanto, o vendedor pode usar
-            "Esqueci minha senha" na tela de login para receber um e-mail de recuperação.
+            {t("sellers.reset.body")}
           </p>
           <DialogFooter>
-            <Button onClick={() => setResetUserId(null)}>Entendi</Button>
+            <Button onClick={() => setResetUserId(null)}>{t("sellers.reset.ok")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
