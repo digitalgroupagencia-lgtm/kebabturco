@@ -10,6 +10,7 @@ export type PushTestSendResult = {
   sent?: number;
   matched?: number;
   targeted?: number;
+  errors?: { endpoint: string; status?: number; message: string }[];
   skipped?: boolean;
   reason?: string;
   error?: string;
@@ -20,6 +21,7 @@ export type ServerVapidDiagnostics = {
   configured: boolean;
   hasPublicKey: boolean;
   hasPrivateKey: boolean;
+  publicKey?: string | null;
   publicKeyPreview: string | null;
   keysMatchClient: boolean | null;
   probeError?: string;
@@ -60,12 +62,15 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       configured?: boolean;
       hasPublicKey?: boolean;
       hasPrivateKey?: boolean;
+      publicKey?: string | null;
       publicKeyPreview?: string | null;
     };
 
     const clientKey = getVapidPublicKey();
     let keysMatchClient: boolean | null = null;
-    if (payload.configured && clientKey && payload.publicKeyPreview) {
+    if (payload.configured && clientKey && payload.publicKey) {
+      keysMatchClient = clientKey === payload.publicKey;
+    } else if (payload.configured && clientKey && payload.publicKeyPreview) {
       const clientPreview =
         clientKey.length <= 16 ? clientKey : `${clientKey.slice(0, 12)}…${clientKey.slice(-6)}`;
       keysMatchClient = clientPreview === payload.publicKeyPreview;
@@ -75,6 +80,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       configured: Boolean(payload.configured),
       hasPublicKey: Boolean(payload.hasPublicKey),
       hasPrivateKey: Boolean(payload.hasPrivateKey),
+      publicKey: payload.publicKey ?? null,
       publicKeyPreview: payload.publicKeyPreview ?? null,
       keysMatchClient,
     };
@@ -178,7 +184,7 @@ export async function sendTestPushNotification(opts: {
         ? `Erro do serviço de push${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 240)}`
         : "Nenhum dispositivo recebeu. Registe de novo com o mesmo tipo e a mesma loja seleccionada.";
       pushLog("test", "test_send", "error", userMessage, { matched, targeted: payload.targeted, errors });
-      return { ok: false, sent: 0, matched, userMessage };
+      return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
     }
 
     pushLog("test", "test_send", "info", `Notificação enviada para ${sent} dispositivo(s)`, {
