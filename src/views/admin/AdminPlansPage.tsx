@@ -113,6 +113,38 @@ export default function AdminPlansPage() {
         />
       </AdminCollapsibleSection>
 
+      {tenantId && (
+        <AdminCollapsibleSection
+          title="Módulos opcionais"
+          summary="Activação manual por restaurante (sobrepõe o plano)"
+          defaultOpen
+        >
+          <AdminPremiumCard
+            title="Módulo Vendedor"
+            summary="Quando activo, o restaurante vê a área 'Vendedores' no painel e os logins de vendedor podem aceder ao app /seller. Desactivado por defeito."
+            badges={[{ label: sellerOn ? "Activo" : "Desactivado" }]}
+            actions={
+              <Switch
+                checked={sellerOn}
+                disabled={togglingSeller}
+                onCheckedChange={async (v) => {
+                  setTogglingSeller(true);
+                  try {
+                    await setFeatureOverride(tenantId, "seller_app", v);
+                    toast.success(v ? "Módulo Vendedor activado" : "Módulo Vendedor desactivado");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Erro");
+                  } finally {
+                    setTogglingSeller(false);
+                  }
+                }}
+              />
+            }
+          />
+        </AdminCollapsibleSection>
+      )}
+
+
       {tenantId && flags && (
         <AdminCollapsibleSection title="Benefícios activos neste plano" summary={flagSummary} defaultOpen>
           <div className="space-y-3">
