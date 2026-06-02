@@ -119,11 +119,7 @@ const TeamPage = () => {
     setDialogOpen(true);
     if (draftToastStoreRef.current !== storeId) {
       draftToastStoreRef.current = storeId;
-      toast.info(
-        draft.language === "es"
-          ? "Borrador restaurado — puede continuar donde lo dejó"
-          : "Rascunho restaurado — pode continuar de onde parou",
-      );
+      toast.info(t("team.toast.draft_restored"));
     }
   }, [storeId]);
 
