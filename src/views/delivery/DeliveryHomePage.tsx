@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useDriverOrders } from "@/features/delivery/useDriverOrders";
 import { validateDeliveryCode } from "@/features/ops/opsOrderUi";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const DeliveryHomePage = () => {
+  const { t } = useStaffT();
+
   const { storeId } = useAdminStoreId();
   const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId);
   const [codeByOrder, setCodeByOrder] = useState<Record<string, string>>({});
