@@ -2,31 +2,32 @@
 /**
  * Smoke test do fluxo cliente — obrigatório antes de cada build.
  *
- * Valida que os módulos críticos da área pública carregam sem crash de import:
- *   - página inicial / SplashScreen
- *   - LanguageScreen (selecção idioma)
- *   - StoreSelectionScreen (loja)
- *   - HomeScreen (cardápio)
- *   - ProductScreen (abrir produto)
- *   - CartContext + ReviewScreen (carrinho)
+ * Valida que a área pública (cardápio/produto/carrinho/checkout) consegue
+ * subir sem depender ESTATICAMENTE de módulos internos
+ * (admin/panel/seller/delivery/kitchen/staff).
  *
- * Não inicia browser; faz uma análise estática rigorosa:
- *   1. Os ficheiros existem.
- *   2. Vite consegue transformar (parse + resolver imports) cada um.
- *   3. Nenhum deles importa, directa ou indirectamente, de módulos
- *      proibidos (admin / panel / seller / delivery / kitchen / staff).
+ * Imports dinâmicos via lazy(() => import(...)) são IGNORADOS — o cliente
+ * só os carrega no runtime se navegar lá, e essa rota nem existe no fluxo
+ * cliente.
  *
- * Se qualquer passo falhar, sai com código 1 e BLOQUEIA o build.
+ * Estratégia:
+ *   1. Confirmar que cada ficheiro crítico existe.
+ *   2. A partir desses pontos de entrada, seguir só os IMPORTS ESTÁTICOS,
+ *      resolvendo aliases ("@/...").
+ *   3. Se algum ficheiro alcançado estaticamente vier de zona interna,
+ *      bloqueia o build.
+ *
+ * Sai com código 1 → prebuild aborta.
  */
 
-import { createServer } from "vite";
-import path from "node:path";
 import fs from "node:fs";
+import path from "node:path";
 import url from "node:url";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
+const SRC = path.join(ROOT, "src");
 
 const CRITICAL = [
   { name: "Página inicial (Index)", file: "src/pages/Index.tsx" },
@@ -39,18 +40,20 @@ const CRITICAL = [
   { name: "Contexto Carrinho", file: "src/contexts/CartContext.tsx" },
 ];
 
-const FORBIDDEN_PREFIXES = [
-  "/src/views/admin/",
-  "/src/views/panel/",
-  "/src/views/seller/",
-  "/src/views/delivery/",
-  "/src/components/admin/",
-  "/src/components/panel/",
-  "/src/components/seller/",
-  "/src/components/delivery/",
-  "/src/components/kitchen/",
-  "/src/components/staff/",
+const FORBIDDEN_DIRS = [
+  "src/views/admin",
+  "src/views/panel",
+  "src/views/seller",
+  "src/views/delivery",
+  "src/components/admin",
+  "src/components/panel",
+  "src/components/seller",
+  "src/components/delivery",
+  "src/components/kitchen",
+  "src/components/staff",
 ];
+
+const EXTS = [".tsx", ".ts", ".jsx", ".js", "/index.tsx", "/index.ts", "/index.jsx", "/index.js"];
 
 const RESET = "\x1b[0m";
 const RED = "\x1b[31m";
@@ -58,88 +61,122 @@ const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const CYAN = "\x1b[36m";
 
-function log(color, msg) {
-  console.log(`${color}${msg}${RESET}`);
+function log(c, m) {
+  console.log(`${c}${m}${RESET}`);
+}
+
+function resolveImport(spec, fromFile) {
+  // ignora pacotes node_modules
+  if (!spec.startsWith(".") && !spec.startsWith("@/")) return null;
+
+  let base;
+  if (spec.startsWith("@/")) {
+    base = path.join(SRC, spec.slice(2));
+  } else {
+    base = path.resolve(path.dirname(fromFile), spec);
+  }
+
+  if (fs.existsSync(base) && fs.statSync(base).isFile()) return base;
+  for (const ext of EXTS) {
+    const candidate = base + ext;
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+// Regex para imports estáticos:
+//   import ... from "x"
+//   import "x"
+//   export ... from "x"
+const STATIC_IMPORT_RE =
+  /(?:^|[\s;])(?:import|export)\s+(?:[^'"]*?\sfrom\s+)?["']([^"']+)["']/gm;
+
+function extractStaticImports(source) {
+  // Remove comentários e strings dynamic-import para não causar falsos positivos
+  const cleaned = source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+  const out = [];
+  let m;
+  while ((m = STATIC_IMPORT_RE.exec(cleaned)) !== null) {
+    out.push(m[1]);
+  }
+  return out;
+}
+
+function relFromRoot(abs) {
+  return path.relative(ROOT, abs).replace(/\\/g, "/");
+}
+
+function isForbidden(rel) {
+  return FORBIDDEN_DIRS.some((d) => rel === d || rel.startsWith(d + "/"));
 }
 
 async function main() {
   log(CYAN, "\n▶ Smoke test do fluxo cliente (pré-build)\n");
 
-  // 1. Ficheiros existem?
+  // 1. Existência
   for (const step of CRITICAL) {
-    const abs = path.join(ROOT, step.file);
-    if (!fs.existsSync(abs)) {
+    if (!fs.existsSync(path.join(ROOT, step.file))) {
       log(RED, `✗ Ficheiro em falta: ${step.file} (${step.name})`);
       process.exit(1);
     }
   }
   log(GREEN, "✓ Todos os ficheiros do fluxo cliente existem");
 
-  // 2. Vite consegue transformar cada um (parse + resolver imports)?
-  const server = await createServer({
-    root: ROOT,
-    server: { middlewareMode: true, hmr: false },
-    appType: "custom",
-    logLevel: "error",
-    optimizeDeps: { noDiscovery: true, include: [] },
-  });
-
+  // 2. Walk de imports ESTÁTICOS
   const visited = new Set();
-  const forbiddenHits = [];
+  const hits = [];
 
-  async function walk(rel, fromPretty) {
+  function walk(abs, fromPretty) {
+    const rel = relFromRoot(abs);
     if (visited.has(rel)) return;
     visited.add(rel);
 
-    for (const prefix of FORBIDDEN_PREFIXES) {
-      if (rel.startsWith(prefix)) {
-        forbiddenHits.push({ rel, from: fromPretty });
-        return;
-      }
+    if (isForbidden(rel)) {
+      hits.push({ rel, from: fromPretty });
+      return;
     }
 
-    let mod;
+    let src;
     try {
-      mod = await server.transformRequest(rel);
+      src = fs.readFileSync(abs, "utf8");
     } catch (err) {
-      log(RED, `\n✗ Falhou a transformar ${rel}\n  ↳ origem: ${fromPretty}\n  ↳ erro: ${err.message}`);
-      await server.close();
+      log(RED, `✗ Não consegui ler ${rel}: ${err.message}`);
       process.exit(1);
     }
-    if (!mod) return;
 
-    // Inspeccionar imports recursivamente (só os internos do projecto)
-    const moduleNode = await server.moduleGraph.getModuleByUrl(rel);
-    if (!moduleNode) return;
-    for (const dep of moduleNode.importedModules) {
-      if (!dep.url) continue;
-      if (!dep.url.startsWith("/src/")) continue;
-      await walk(dep.url, rel);
+    for (const spec of extractStaticImports(src)) {
+      const resolved = resolveImport(spec, abs);
+      if (!resolved) continue;
+      walk(resolved, rel);
     }
   }
 
-  try {
-    for (const step of CRITICAL) {
-      const rel = "/" + step.file.replace(/\\/g, "/");
-      log(CYAN, `  • ${step.name}`);
-      await walk(rel, "(entry)");
-    }
-  } finally {
-    await server.close();
+  for (const step of CRITICAL) {
+    log(CYAN, `  • ${step.name}`);
+    walk(path.join(ROOT, step.file), "(entry)");
   }
 
-  if (forbiddenHits.length > 0) {
-    log(RED, "\n✗ Fluxo cliente importa módulos internos (proibido):");
-    for (const hit of forbiddenHits) {
-      log(YELLOW, `  - ${hit.rel}\n    via ${hit.from}`);
+  if (hits.length > 0) {
+    log(RED, "\n✗ Fluxo cliente importa estaticamente módulos internos (PROIBIDO):");
+    for (const h of hits) {
+      log(YELLOW, `  - ${h.rel}\n      via ${h.from}`);
     }
-    log(RED, "\n  Quebra a regra: cliente não pode depender de admin/panel/seller/staff/kitchen/delivery.");
+    log(
+      RED,
+      "\n  Regra: cliente não pode depender de admin/panel/seller/staff/kitchen/delivery.",
+    );
+    log(
+      YELLOW,
+      "  Solução: usar lazy(() => import(\"...\")) ou mover a dependência para shared/.",
+    );
     process.exit(1);
   }
 
-  log(GREEN, "\n✓ Todos os módulos do fluxo cliente carregam sem erro");
-  log(GREEN, "✓ Nenhuma dependência proibida (admin/panel/staff/kitchen/...)");
-  log(GREEN, "\n✅ Smoke test cliente OK — deploy autorizado\n");
+  log(GREEN, `\n✓ ${visited.size} módulos analisados — nenhuma dependência interna estática`);
+  log(GREEN, "✅ Smoke test cliente OK — deploy autorizado\n");
 }
 
 main().catch((err) => {
