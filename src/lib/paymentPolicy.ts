@@ -21,17 +21,20 @@ function cashAllowedForOrderType(
   orderType: CustomerOrderType,
   settings: OperationsSettings | null,
 ): boolean {
-  if (!opsFlag(settings, "pay_cash_enabled", true)) return false;
   if (orderType === "here") return opsFlag(settings, "pay_cash_dine_in", true);
   if (orderType === "takeaway") return opsFlag(settings, "pay_cash_takeaway", true);
   if (orderType === "delivery") return opsFlag(settings, "pay_cash_delivery", false);
   return false;
 }
 
-/** Cartão listado no checkout (chave publicável). Pagamento efectivo exige stripeReady. */
+/** Cartão só aparece quando pagamento online está realmente activo. */
 export function cardListedInCheckout(input: PaymentPolicyInput): boolean {
-  const { settings, stripePublishableKey } = input;
-  return stripePublishableKey && opsFlag(settings, "pay_card_enabled", true);
+  const { settings, stripePublishableKey, stripeReady } = input;
+  return (
+    stripePublishableKey &&
+    stripeReady &&
+    opsFlag(settings, "pay_card_enabled", true)
+  );
 }
 
 /** Métodos disponíveis no checkout conforme tipo de pedido e configuração. */

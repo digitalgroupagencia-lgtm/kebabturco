@@ -962,7 +962,6 @@ const PaymentScreen = () => {
                 <div className="flex flex-col gap-1.5">
                   {checkoutMethods.map((pm) => {
                     const isSel = selected === pm.id;
-                    const cardBlocked = pm.id === "card" && !stripeEnabled;
                     return (
                       <button
                         key={pm.id}
@@ -970,15 +969,13 @@ const PaymentScreen = () => {
                         onClick={() => { setSelected(pm.id); setShowError(null); }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${
                           isSel ? "border-success bg-success/5" : "border-border bg-card"
-                        } ${cardBlocked ? "opacity-90" : ""}`}
+                        }`}
                       >
                         <pm.icon className="w-5 h-5 shrink-0" />
                         <div className="flex-1 text-left min-w-0">
                           <p className="font-black text-sm">{tProduct(METHOD_LABELS[pm.id])}</p>
                           <p className="text-[11px] text-muted-foreground truncate">
-                            {cardBlocked && pm.id === "card" && stripeIssue
-                              ? stripeIssue
-                              : tProduct(METHOD_SUBS[pm.id])}
+                            {tProduct(METHOD_SUBS[pm.id])}
                           </p>
                         </div>
                         {isSel && <Check className="w-5 h-5 text-success shrink-0" />}

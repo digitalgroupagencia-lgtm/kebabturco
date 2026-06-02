@@ -14,7 +14,28 @@ const baseSettings = {
 } as any;
 
 describe("paymentPolicy", () => {
-  it("takeaway: dinheiro só se activo; delivery sem dinheiro", () => {
+  it("takeaway: dinheiro por defeito; cartão só com pagamento online activo", () => {
+    expect(
+      resolveCheckoutMethods({
+        orderType: "takeaway",
+        mesaValidated: false,
+        settings: null,
+        stripeReady: false,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["cash"]);
+    expect(
+      resolveCheckoutMethods({
+        orderType: "takeaway",
+        mesaValidated: false,
+        settings: null,
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["card", "cash"]);
+  });
+
+  it("takeaway: dinheiro desactivado só se flag explícita; delivery sem dinheiro", () => {
     expect(
       resolveCheckoutMethods({
         orderType: "takeaway",

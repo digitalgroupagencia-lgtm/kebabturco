@@ -59,7 +59,7 @@ const OperationsPage = () => {
     const { error } = await supabase.from("operations_settings").update({
       payment_mode: s.payment_mode,
       pay_card_enabled: s.pay_card_enabled,
-      pay_cash_enabled: s.pay_cash_enabled,
+      pay_cash_enabled: s.pay_cash_enabled ?? true,
       pay_cash_dine_in: (s as any).pay_cash_dine_in ?? true,
       pay_cash_takeaway: true,
       pay_cash_delivery: false,
