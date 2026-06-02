@@ -76,12 +76,13 @@ const DeliveryHomePage = () => {
             <div className="px-4 py-3 bg-muted/30 flex items-center justify-between gap-2">
               <div>
                 <p className="text-2xl font-black tabular-nums">#{order.order_number}</p>
-                <p className="text-sm font-semibold">{order.customer_name || "Cliente"}</p>
+                <p className="text-sm font-semibold">{order.customer_name || t("common.customer")}</p>
               </div>
               <div className="text-right">
                 <Badge className={isOut ? "bg-orange-600" : "bg-yellow-500 text-black"}>
-                  {isOut ? "A caminho" : "Pronto"}
+                  {isOut ? t("delivery.state.on_the_way") : t("delivery.state.ready")}
                 </Badge>
+
                 <p className="text-lg font-black text-primary mt-1">€{Number(order.total).toFixed(2)}</p>
               </div>
             </div>
