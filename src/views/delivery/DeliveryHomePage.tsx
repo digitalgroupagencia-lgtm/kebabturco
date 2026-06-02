@@ -128,7 +128,7 @@ const DeliveryHomePage = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Navigation className="h-4 w-4 mr-2" /> Abrir rota
+                    <Navigation className="h-4 w-4 mr-2" /> {t("delivery.openRoute")}
                   </a>
                 </Button>
               )}
@@ -146,12 +146,12 @@ const DeliveryHomePage = () => {
                     }
                   }}
                 >
-                  {busyId === order.id ? "A iniciar…" : "Iniciar entrega"}
+                  {busyId === order.id ? t("delivery.cta.starting") : t("delivery.cta.start")}
                 </Button>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4" /> Código do cliente
+                    <ShieldCheck className="h-4 w-4" /> {t("delivery.code.label")}
                   </div>
                   <Input
                     inputMode="numeric"
@@ -179,8 +179,9 @@ const DeliveryHomePage = () => {
                       }
                     }}
                   >
-                    {busyId === order.id ? "A validar…" : "Finalizar entrega"}
+                    {busyId === order.id ? t("delivery.cta.validating") : t("delivery.cta.finish")}
                   </Button>
+
                 </div>
               )}
             </div>
