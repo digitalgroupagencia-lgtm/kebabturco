@@ -14,10 +14,11 @@ export async function ensureStaffPushServiceWorker(): Promise<ServiceWorkerRegis
     const existing = await navigator.serviceWorker.getRegistrations();
     const pushReg = existing.find(isPushHandlerRegistration);
     if (pushReg) {
+      await pushReg.update().catch(() => null);
       await navigator.serviceWorker.ready;
       return pushReg;
     }
-    const reg = await navigator.serviceWorker.register(PUSH_HANDLER_SW_PATH, { scope: "/" });
+    const reg = await navigator.serviceWorker.register(PUSH_HANDLER_SW_PATH, { scope: "/", updateViaCache: "none" });
     await navigator.serviceWorker.ready;
     return reg;
   } catch (err) {

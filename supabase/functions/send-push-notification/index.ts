@@ -4,6 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-staff-push-secret",
+  "Cache-Control": "no-store",
 };
 
 const STAFF_PHONE_TAG = "__staff__";
@@ -62,6 +63,7 @@ function vapidProbeResponse() {
       configured: Boolean(vapidPublic && vapidPrivate),
       hasPublicKey: Boolean(vapidPublic),
       hasPrivateKey: Boolean(vapidPrivate),
+      publicKey: vapidPublic || null,
       publicKeyPreview: vapidPublic
         ? `${vapidPublic.slice(0, 12)}…${vapidPublic.slice(-6)}`
         : null,
@@ -193,7 +195,7 @@ Deno.serve(async (req) => {
           message,
         });
         errors.push({ endpoint: sub.endpoint.slice(0, 60), status, message });
-        if (status === 404 || status === 410) {
+        if (status === 403 || status === 404 || status === 410) {
           await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
         }
       }
