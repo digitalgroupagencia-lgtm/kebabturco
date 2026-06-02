@@ -2,20 +2,21 @@
 /**
  * Smoke test do fluxo cliente — obrigatório antes de cada build.
  *
- * Valida que a área pública (cardápio/produto/carrinho/checkout) consegue
- * subir sem depender ESTATICAMENTE de módulos internos
- * (admin/panel/seller/delivery/kitchen/staff).
+ * Garante que a área pública (splash → idioma → loja → cardápio → produto
+ * com modificadores → carrinho → checkout) consegue subir SEM depender
+ * estaticamente de módulos internos (admin/panel/seller/delivery/kitchen/
+ * staff/diagnósticos/impressora/push staff).
  *
- * Imports dinâmicos via lazy(() => import(...)) são IGNORADOS — o cliente
- * só os carrega no runtime se navegar lá, e essa rota nem existe no fluxo
- * cliente.
+ * Imports dinâmicos via `lazy(() => import(...))` ou `import("...")` são
+ * IGNORADOS — só carregam em runtime se o utilizador navegar lá, o que não
+ * acontece no fluxo cliente.
  *
  * Estratégia:
- *   1. Confirmar que cada ficheiro crítico existe.
- *   2. A partir desses pontos de entrada, seguir só os IMPORTS ESTÁTICOS,
+ *   1. Confirmar que cada ficheiro/símbolo crítico existe.
+ *   2. A partir dos pontos de entrada, seguir só os IMPORTS ESTÁTICOS,
  *      resolvendo aliases ("@/...").
- *   3. Se algum ficheiro alcançado estaticamente vier de zona interna,
- *      bloqueia o build.
+ *   3. Se algum ficheiro alcançado estaticamente estiver na lista de
+ *      pastas/ficheiros proibidos, bloqueia o build.
  *
  * Sai com código 1 → prebuild aborta.
  */
@@ -29,7 +30,7 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src");
 
-const CRITICAL = [
+const CRITICAL_FILES = [
   { name: "Página inicial (Index)", file: "src/pages/Index.tsx" },
   { name: "Splash", file: "src/components/screens/SplashScreen.tsx" },
   { name: "Selecção de idioma", file: "src/components/screens/LanguageScreen.tsx" },
@@ -37,7 +38,19 @@ const CRITICAL = [
   { name: "Cardápio (Home)", file: "src/components/screens/HomeScreen.tsx" },
   { name: "Produto", file: "src/components/screens/ProductScreen.tsx" },
   { name: "Carrinho (Review)", file: "src/components/screens/ReviewScreen.tsx" },
+  { name: "Checkout (Payment)", file: "src/components/screens/PaymentScreen.tsx" },
   { name: "Contexto Carrinho", file: "src/contexts/CartContext.tsx" },
+  // Customização de produto / modificadores
+  { name: "Modificador (radio)", file: "src/components/customization/ModifierRadioRow.tsx" },
+  { name: "Modificador (checkbox)", file: "src/components/customization/ModifierCheckboxRow.tsx" },
+  { name: "Grupo de escolha", file: "src/components/customization/ChoiceGroupSection.tsx" },
+];
+
+// Símbolos que o fluxo cliente PRECISA expor — se algum desaparecer, bloqueia.
+const CRITICAL_SYMBOLS = [
+  { file: "src/contexts/CartContext.tsx", needle: /addItem\s*[:=]/, label: "CartContext.addItem" },
+  { file: "src/contexts/CartContext.tsx", needle: /clearCart\s*[:=]/, label: "CartContext.clearCart" },
+  { file: "src/contexts/OrderContext.tsx", needle: /setScreen\s*[:=(]/, label: "OrderContext.setScreen" },
 ];
 
 const FORBIDDEN_DIRS = [
@@ -51,6 +64,24 @@ const FORBIDDEN_DIRS = [
   "src/components/delivery",
   "src/components/kitchen",
   "src/components/staff",
+  "src/features/ops",
+  "src/features/delivery",
+  "src/lib/diagnostics",
+];
+
+// Ficheiros individuais proibidos no cliente (Fase 6 — isolar diagnóstico/staff)
+const FORBIDDEN_FILES = [
+  "src/lib/staffPush.ts",
+  "src/lib/push/staff.ts",
+  "src/lib/push/pushTestService.ts",
+  "src/lib/panelAlerts.ts",
+  "src/services/printerService.ts",
+  "src/services/operationalDiagnosticsService.ts",
+  "src/services/adminSystemAudit.ts",
+  "src/services/fullAppAuditService.ts",
+  "src/services/staffMemberEdge.ts",
+  "src/services/createStaffMember.ts",
+  "src/services/updateStaffMember.ts",
 ];
 
 const EXTS = [".tsx", ".ts", ".jsx", ".js", "/index.tsx", "/index.ts", "/index.jsx", "/index.js"];
@@ -66,7 +97,6 @@ function log(c, m) {
 }
 
 function resolveImport(spec, fromFile) {
-  // ignora pacotes node_modules
   if (!spec.startsWith(".") && !spec.startsWith("@/")) return null;
 
   let base;
@@ -84,15 +114,10 @@ function resolveImport(spec, fromFile) {
   return null;
 }
 
-// Regex para imports estáticos:
-//   import ... from "x"
-//   import "x"
-//   export ... from "x"
 const STATIC_IMPORT_RE =
   /(?:^|[\s;])(?:import|export)\s+(?:[^'"]*?\sfrom\s+)?["']([^"']+)["']/gm;
 
 function extractStaticImports(source) {
-  // Remove comentários e strings dynamic-import para não causar falsos positivos
   const cleaned = source
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
@@ -110,22 +135,34 @@ function relFromRoot(abs) {
 }
 
 function isForbidden(rel) {
+  if (FORBIDDEN_FILES.includes(rel)) return true;
   return FORBIDDEN_DIRS.some((d) => rel === d || rel.startsWith(d + "/"));
 }
 
 async function main() {
   log(CYAN, "\n▶ Smoke test do fluxo cliente (pré-build)\n");
 
-  // 1. Existência
-  for (const step of CRITICAL) {
+  // 1. Existência de ficheiros críticos
+  for (const step of CRITICAL_FILES) {
     if (!fs.existsSync(path.join(ROOT, step.file))) {
       log(RED, `✗ Ficheiro em falta: ${step.file} (${step.name})`);
       process.exit(1);
     }
   }
-  log(GREEN, "✓ Todos os ficheiros do fluxo cliente existem");
+  log(GREEN, `✓ ${CRITICAL_FILES.length} ficheiros do fluxo cliente presentes`);
 
-  // 2. Walk de imports ESTÁTICOS
+  // 2. Símbolos críticos (heurística — defende contra renames silenciosos)
+  for (const sym of CRITICAL_SYMBOLS) {
+    const abs = path.join(ROOT, sym.file);
+    const src = fs.readFileSync(abs, "utf8");
+    if (!sym.needle.test(src)) {
+      log(RED, `✗ Símbolo crítico em falta: ${sym.label} em ${sym.file}`);
+      process.exit(1);
+    }
+  }
+  log(GREEN, `✓ ${CRITICAL_SYMBOLS.length} símbolos críticos (carrinho/checkout) presentes`);
+
+  // 3. Walk de imports ESTÁTICOS
   const visited = new Set();
   const hits = [];
 
@@ -154,8 +191,7 @@ async function main() {
     }
   }
 
-  for (const step of CRITICAL) {
-    log(CYAN, `  • ${step.name}`);
+  for (const step of CRITICAL_FILES) {
     walk(path.join(ROOT, step.file), "(entry)");
   }
 
@@ -166,11 +202,12 @@ async function main() {
     }
     log(
       RED,
-      "\n  Regra: cliente não pode depender de admin/panel/seller/staff/kitchen/delivery.",
+      "\n  Regra: cliente não pode depender de admin/panel/seller/staff/kitchen/" +
+        "delivery/diagnósticos/impressora/push-staff.",
     );
     log(
       YELLOW,
-      "  Solução: usar lazy(() => import(\"...\")) ou mover a dependência para shared/.",
+      '  Solução: usar lazy(() => import("...")) ou mover a dependência partilhada para shared/.',
     );
     process.exit(1);
   }
