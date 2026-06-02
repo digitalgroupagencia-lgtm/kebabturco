@@ -22,7 +22,9 @@ import { CENTRAL_GROUPS, PLAN_LABELS, type PlanKey } from "@/lib/platformFeature
 export default function AdminPlansPage() {
   const { data: plans, isLoading: loadingPlans } = usePlatformPlans();
   const setPlan = useSetTenantPlan();
+  const setFeatureOverride = useSetFeatureOverride();
   const [saving, setSaving] = useState(false);
+  const [togglingSeller, setTogglingSeller] = useState(false);
 
   const { data: tenant, isLoading: loadingTenant } = useQuery({
     queryKey: ["kebab-tenant-plan", DEFAULT_TENANT_SLUG],
