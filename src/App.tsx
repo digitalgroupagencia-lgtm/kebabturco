@@ -16,6 +16,8 @@ import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
+import CustomerAreaBoundary from "@/components/CustomerAreaBoundary.tsx";
+import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
 
@@ -27,13 +29,23 @@ const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
 
-const tenantStore = withSuspense(
-  <MobileFrame>
-    <Index />
-  </MobileFrame>,
+// Cliente — qualquer crash em providers/módulos internos é contido aqui
+const tenantStore = (
+  <CustomerAreaBoundary>
+    {withSuspense(
+      <MobileFrame>
+        <Index />
+      </MobileFrame>,
+    )}
+  </CustomerAreaBoundary>
 );
 
-const internal = withSuspense(<CatchAllResolver notFound={<NotFound />} />);
+// Interno — falhas em admin/painel/equipa/etc. não escapam deste boundary
+const internal = (
+  <AdminErrorBoundary area="admin">
+    {withSuspense(<CatchAllResolver notFound={<NotFound />} />)}
+  </AdminErrorBoundary>
+);
 
 /**
  * Rotas do dropdown Lovable — APENAS 2 entradas literais + catch-all.
