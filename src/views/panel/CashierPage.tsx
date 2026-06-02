@@ -176,15 +176,15 @@ const CashierPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <DollarSign className="h-6 w-6" /> Caixa
+          <DollarSign className="h-6 w-6" /> {t("cashier.title")}
         </h2>
         {!currentRegister ? (
           <Button onClick={() => setOpenDialogVisible(true)} className="bg-success hover:bg-success/90">
-            <ArrowUpCircle className="h-4 w-4 mr-1" /> Abrir Caixa
+            <ArrowUpCircle className="h-4 w-4 mr-1" /> {t("cashier.action.open")}
           </Button>
         ) : (
           <Button variant="destructive" onClick={() => setCloseDialogVisible(true)}>
-            <ArrowDownCircle className="h-4 w-4 mr-1" /> Fechar Caixa
+            <ArrowDownCircle className="h-4 w-4 mr-1" /> {t("cashier.action.close")}
           </Button>
         )}
       </div>
@@ -194,16 +194,17 @@ const CashierPage = () => {
         <CardContent className="p-4 flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full ${currentRegister ? "bg-success animate-pulse" : "bg-destructive"}`} />
           <span className="font-semibold">
-            {currentRegister ? "Caixa Aberto" : "Caixa Fechado"}
+            {currentRegister ? t("cashier.state.open") : t("cashier.state.closed")}
           </span>
           {currentRegister && (
             <span className="text-sm text-muted-foreground ml-auto">
               <Clock className="inline h-3 w-3 mr-1" />
-              Aberto às {new Date(currentRegister.opened_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              {t("cashier.openedAt")} {new Date(currentRegister.opened_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
         </CardContent>
       </Card>
+
 
       {/* Sales summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
