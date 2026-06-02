@@ -452,8 +452,8 @@ const TeamPage = () => {
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             {canSwitchStore && stores.length > 1
-              ? "Escolha a unidade no topo da página para ver a equipa."
-              : "Nenhuma loja vinculada."}
+              ? t("team.no_store_switch")
+              : t("common.no_store")}
           </CardContent>
         </Card>
       </div>
@@ -470,10 +470,10 @@ const TeamPage = () => {
         </h2>
         {canManage && (
           <Button size="sm" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Membro
+            <Plus className="h-4 w-4 mr-1" /> {t("team.new")}
             {hasDraft && (
               <Badge variant="secondary" className="ml-2 font-normal">
-                Rascunho
+                {t("team.draft.badge")}
               </Badge>
             )}
           </Button>
@@ -494,10 +494,10 @@ const TeamPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Papel</TableHead>
-                <TableHead>Idioma</TableHead>
-                {canManage && <TableHead className="text-right">Ações</TableHead>}
+                <TableHead>{t("team.col.name")}</TableHead>
+                <TableHead>{t("team.col.role")}</TableHead>
+                <TableHead>{t("team.col.lang")}</TableHead>
+                {canManage && <TableHead className="text-right">{t("common.actions")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
