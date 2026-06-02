@@ -1,4 +1,4 @@
-import { isPushHandlerRegistration } from "@/lib/staffPush";
+import { isPushHandlerRegistration } from "@/lib/push/pushServiceWorker";
 import { deployDebugLog } from "@/lib/deployDebugLog";
 
 export const APP_BUILD_ID: string = __APP_BUILD_ID__;
