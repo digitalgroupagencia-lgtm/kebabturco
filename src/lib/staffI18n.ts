@@ -24,8 +24,29 @@ export const STAFF_I18N = {
   "common.inactive": { es: "Inactivo", pt: "Inactivo", en: "Inactive" },
   "common.actions": { es: "Acciones", pt: "Acções", en: "Actions" },
   "common.empty": { es: "Sin datos", pt: "Sem dados", en: "No data" },
+  "common.refresh": { es: "Actualizar", pt: "Actualizar", en: "Refresh" },
+  "common.customer": { es: "Cliente", pt: "Cliente", en: "Customer" },
+  "common.error": { es: "Error", pt: "Erro", en: "Error" },
+  "common.success": { es: "Hecho", pt: "Feito", en: "Done" },
+  "common.no_store": { es: "Ninguna tienda vinculada.", pt: "Nenhuma loja vinculada.", en: "No store linked." },
+
+  // --- Order modality (reutilizável em várias páginas) ---
+  "order.modality.delivery": { es: "Entrega", pt: "Entrega", en: "Delivery" },
+  "order.modality.pickup": { es: "Mostrador", pt: "Balcão", en: "Counter" },
+  "order.modality.table": { es: "Mesa", pt: "Mesa", en: "Table" },
+
+  // --- Toasts genéricos ---
+  "toast.saved": { es: "Guardado", pt: "Guardado", en: "Saved" },
+  "toast.save_error": { es: "Error al guardar", pt: "Erro ao guardar", en: "Save failed" },
+  "toast.payment_registered": { es: "Pago registrado", pt: "Pagamento registado", en: "Payment registered" },
+  "toast.payment_error": { es: "Error al registrar pago", pt: "Erro ao registar pagamento", en: "Payment failed" },
+  "toast.cash_open_error": { es: "Error al abrir caja", pt: "Erro ao abrir caixa", en: "Failed to open register" },
+  "toast.cash_close_error": { es: "Error al cerrar caja", pt: "Erro ao fechar caixa", en: "Failed to close register" },
+  "toast.cash_opened": { es: "¡Caja abierta!", pt: "Caixa aberta!", en: "Register opened!" },
+  "toast.cash_closed": { es: "¡Caja cerrada!", pt: "Caixa fechada!", en: "Register closed!" },
 
   // --- Sidebar groups ---
+
   "nav.group.ops": { es: "Operación", pt: "Operação", en: "Operations" },
   "nav.group.mgmt": { es: "Gestión", pt: "Gestão", en: "Management" },
   "nav.group.finance": { es: "Financiero", pt: "Financeiro", en: "Finance" },
