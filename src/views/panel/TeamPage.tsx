@@ -287,7 +287,7 @@ const TeamPage = () => {
         lang,
       });
 
-      toast.success(lang === "es" ? "Miembro actualizado" : "Membro actualizado");
+      toast.success(t("team.toast.member_updated"));
       if (editPassword.trim() && !loginReady) {
         toast.warning(
           lang === "es"
@@ -317,7 +317,7 @@ const TeamPage = () => {
 
   const addMember = async () => {
     if (!storeId || !tenantId || !newEmail.trim()) {
-      toast.error(uiLang === "es" ? "El correo es obligatorio" : "Email é obrigatório");
+      toast.error(t("team.toast.email_required"));
       return;
     }
     const passwordError = validateStaffPassword(newPassword, uiLang);
@@ -419,29 +419,29 @@ const TeamPage = () => {
       _preferred_language: lang,
     });
     if (error) {
-      toast.error(panelLang === "es" ? "Error al actualizar idioma" : "Erro ao atualizar idioma");
+      toast.error(t("team.toast.lang_error"));
       return;
     }
-    toast.success(panelLang === "es" ? "Idioma actualizado" : "Idioma atualizado!");
+    toast.success(t("team.toast.lang_updated"));
     fetchMembers();
   };
 
   const removeMember = async (member: TeamMember) => {
     if (member.user_id === user?.id) {
-      toast.error("Você não pode remover a si mesmo!");
+      toast.error(t("team.toast.cannot_remove_self"));
       return;
     }
 
     const { error } = await supabase.from("user_roles").delete().eq("id", member.id);
-    if (error) { toast.error("Erro ao remover"); return; }
-    toast.success("Membro removido!");
+    if (error) { toast.error(t("team.toast.remove_error")); return; }
+    toast.success(t("team.toast.removed"));
     fetchMembers();
   };
 
   const updateRole = async (memberId: string, role: AppRole) => {
     const { error } = await supabase.from("user_roles").update({ role: role as any }).eq("id", memberId);
-    if (error) { toast.error("Erro ao atualizar papel"); return; }
-    toast.success("Papel atualizado!");
+    if (error) { toast.error(t("team.toast.role_error")); return; }
+    toast.success(t("team.toast.role_updated"));
     fetchMembers();
   };
 
@@ -452,8 +452,8 @@ const TeamPage = () => {
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             {canSwitchStore && stores.length > 1
-              ? "Escolha a unidade no topo da página para ver a equipa."
-              : "Nenhuma loja vinculada."}
+              ? t("team.no_store_switch")
+              : t("common.no_store")}
           </CardContent>
         </Card>
       </div>
@@ -470,10 +470,10 @@ const TeamPage = () => {
         </h2>
         {canManage && (
           <Button size="sm" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Membro
+            <Plus className="h-4 w-4 mr-1" /> {t("team.new")}
             {hasDraft && (
               <Badge variant="secondary" className="ml-2 font-normal">
-                Rascunho
+                {t("team.draft.badge")}
               </Badge>
             )}
           </Button>
@@ -494,10 +494,10 @@ const TeamPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Papel</TableHead>
-                <TableHead>Idioma</TableHead>
-                {canManage && <TableHead className="text-right">Ações</TableHead>}
+                <TableHead>{t("team.col.name")}</TableHead>
+                <TableHead>{t("team.col.role")}</TableHead>
+                <TableHead>{t("team.col.lang")}</TableHead>
+                {canManage && <TableHead className="text-right">{t("common.actions")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -505,7 +505,7 @@ const TeamPage = () => {
                 <TableRow key={m.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{m.full_name || "Sem nome"}</p>
+                      <p className="font-medium">{m.full_name || t("team.no_name")}</p>
                       <p className="text-xs text-muted-foreground">{m.email || m.user_id.slice(0, 8) + "..."}</p>
                     </div>
                   </TableCell>
@@ -547,7 +547,7 @@ const TeamPage = () => {
                           type="button"
                           size="icon"
                           variant="ghost"
-                          title={panelLang === "es" ? "Copiar instrucciones" : "Copiar instruções"}
+                          title={t("team.action.copy_instructions")}
                           onClick={() => showMemberInstructions(m, "review")}
                         >
                           <ClipboardCopy className="h-4 w-4" />
@@ -558,7 +558,7 @@ const TeamPage = () => {
                               type="button"
                               size="icon"
                               variant="ghost"
-                              title={panelLang === "es" ? "Editar miembro" : "Editar membro"}
+                              title={t("team.action.edit_member")}
                               onClick={() => openEditMember(m)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -581,7 +581,7 @@ const TeamPage = () => {
               {members.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    Nenhum membro cadastrado.
+                    {t("team.empty")}
                   </TableCell>
                 </TableRow>
               )}
@@ -595,31 +595,31 @@ const TeamPage = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" /> Adicionar Membro
+              <Shield className="h-5 w-5" /> {t("team.dialog.add")}
               {hasDraft && (
                 <Badge variant="outline" className="font-normal text-xs">
-                  Rascunho guardado
+                  {t("team.draft.saved")}
                 </Badge>
               )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Nome</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do membro" />
+              <Label>{t("team.col.name")}</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("team.field.name.ph")} />
             </div>
             <div>
-              <Label>Email *</Label>
-              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
+              <Label>{t("team.field.email")}</Label>
+              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder={t("team.field.email.ph")} />
             </div>
             <div>
-              <Label>Senha *</Label>
+              <Label>{t("team.field.password")}</Label>
               <div className="flex gap-2">
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder={t("team.field.password.ph")}
                   className="flex-1"
                 />
                 <Button
@@ -632,18 +632,16 @@ const TeamPage = () => {
                     setShowPassword(true);
                   }}
                 >
-                  Sugerir senha
+                  {t("team.field.password.suggest")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(uiLang)}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {uiLang === "es"
-                  ? "Anote la contraseña y entréguela al empleado. La usará para entrar en «Área del equipo» (5 toques en el logo del menú)."
-                  : "Anote a senha e entregue ao funcionário. Ele usa-a para entrar na «Área da equipe» (5 toques no logótipo do menu)."}
+                {t("team.field.password.note")}
               </p>
             </div>
             <div>
-              <Label>Papel</Label>
+              <Label>{t("team.col.role")}</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -656,7 +654,7 @@ const TeamPage = () => {
               </Select>
             </div>
             <div>
-              <Label>Idioma do sistema *</Label>
+              <Label>{t("team.field.lang")}</Label>
               <Select value={newLanguage} onValueChange={setNewLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -664,22 +662,20 @@ const TeamPage = () => {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                {uiLang === "es"
-                  ? "Idioma principal del restaurante (español). El empleado puede cambiarlo con el icono 🌐."
-                  : "Idioma principal do restaurante (espanhol). O funcionário pode mudar com o ícone 🌐."}
+                {t("team.field.lang.desc")}
               </p>
             </div>
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
             {hasDraft && (
               <Button type="button" variant="ghost" className="text-muted-foreground sm:mr-auto" onClick={clearDraftForm}>
-                Limpar rascunho
+                {t("team.draft.clear")}
               </Button>
             )}
             <div className="flex gap-2 sm:ml-auto">
-              <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+              <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
               <Button onClick={addMember} disabled={saving}>
-                {saving ? "Criando..." : "Adicionar"}
+                {saving ? t("team.action.creating") : t("team.action.add")}
               </Button>
             </div>
           </DialogFooter>
@@ -690,36 +686,34 @@ const TeamPage = () => {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {panelLang === "es" ? "Editar miembro" : "Editar membro"}
+              {t("team.dialog.edit")}
               {editMember?.full_name ? ` — ${editMember.full_name}` : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{panelLang === "es" ? "Nombre" : "Nome"}</Label>
+              <Label>{t("team.col.name")}</Label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder={panelLang === "es" ? "Nombre del miembro" : "Nome do membro"}
+                placeholder={t("team.field.name.ph")}
               />
             </div>
             <div>
               <Label>Email</Label>
               <Input value={editMember?.email || "—"} readOnly disabled className="bg-muted/40" />
               <p className="text-xs text-muted-foreground mt-1">
-                {panelLang === "es"
-                  ? "El correo no se puede cambiar aquí."
-                  : "O e-mail não pode ser alterado aqui."}
+                {t("team.field.email.readonly")}
               </p>
             </div>
             <div>
-              <Label>{panelLang === "es" ? "Nueva contraseña (opcional)" : "Nova senha (opcional)"}</Label>
+              <Label>{t("team.field.password.new")}</Label>
               <div className="flex gap-2">
                 <Input
                   type={showEditPassword ? "text" : "password"}
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder={panelLang === "es" ? "Dejar vacío para mantener" : "Deixe vazio para manter"}
+                  placeholder={t("team.field.password.new.ph")}
                   className="flex-1"
                 />
                 <Button
@@ -732,13 +726,13 @@ const TeamPage = () => {
                     setShowEditPassword(true);
                   }}
                 >
-                  {panelLang === "es" ? "Sugerir" : "Sugerir"}
+                  {t("team.field.password.suggest")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(panelLang)}</p>
             </div>
             <div>
-              <Label>{panelLang === "es" ? "Perfil" : "Papel"}</Label>
+              <Label>{t("team.col.role")}</Label>
               <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -751,7 +745,7 @@ const TeamPage = () => {
               </Select>
             </div>
             <div>
-              <Label>{panelLang === "es" ? "Idioma del sistema" : "Idioma do sistema"}</Label>
+              <Label>{t("team.field.lang")}</Label>
               <Select value={editLanguage} onValueChange={setEditLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -761,15 +755,9 @@ const TeamPage = () => {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <DialogClose asChild><Button variant="outline">{panelLang === "es" ? "Cancelar" : "Cancelar"}</Button></DialogClose>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
             <Button onClick={() => void saveEditMember()} disabled={editSaving}>
-              {editSaving
-                ? panelLang === "es"
-                  ? "Guardando…"
-                  : "A guardar…"
-                : panelLang === "es"
-                  ? "Guardar"
-                  : "Guardar"}
+              {editSaving ? t("team.action.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
