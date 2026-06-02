@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { describePushFailure } from "./pushLogger";
-import { isValidVapidPublicKeyFormat, urlBase64ToUint8Array, VAPID_PUBLIC_KEY_FALLBACK } from "@/lib/vapidPublicKey";
+import { isValidVapidPublicKeyFormat, urlBase64ToUint8Array, VAPID_PUBLIC_KEY } from "@/lib/vapidPublicKey";
 
 describe("describePushFailure", () => {
   it("detects permission denied", () => {
@@ -16,8 +16,8 @@ describe("describePushFailure", () => {
 });
 
 describe("vapid public key", () => {
-  it("validates fallback key format and decodes", () => {
-    expect(isValidVapidPublicKeyFormat(VAPID_PUBLIC_KEY_FALLBACK)).toBe(true);
-    expect(urlBase64ToUint8Array(VAPID_PUBLIC_KEY_FALLBACK).length).toBeGreaterThanOrEqual(65);
+  it("validates app key format and decodes", () => {
+    expect(isValidVapidPublicKeyFormat(VAPID_PUBLIC_KEY)).toBe(true);
+    expect(urlBase64ToUint8Array(VAPID_PUBLIC_KEY).length).toBeGreaterThanOrEqual(65);
   });
 });
