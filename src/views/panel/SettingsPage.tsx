@@ -152,38 +152,39 @@ const PanelSettingsPage = () => {
         <TabsContent value="ops">
           <Card>
             <CardHeader>
-              <CardTitle>Operação</CardTitle>
-              <CardDescription>Como pedidos são processados.</CardDescription>
+              <CardTitle>{t("settings.ops.title")}</CardTitle>
+              <CardDescription>{t("settings.ops.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Aceitar pedidos automaticamente</Label>
-                  <p className="text-xs text-muted-foreground">Se desativado, cada pedido precisa ser confirmado pela equipe.</p>
+                  <Label className="text-base">{t("settings.ops.autoaccept")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.ops.autoaccept.desc")}</p>
                 </div>
                 <Switch checked={autoAcceptOrders} onCheckedChange={setAutoAcceptOrders} />
               </div>
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Permitir cancelamento de pedidos</Label>
-                  <p className="text-xs text-muted-foreground">Operadores podem cancelar pedidos em andamento.</p>
+                  <Label className="text-base">{t("settings.ops.cancel")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.ops.cancel.desc")}</p>
                 </div>
                 <Switch checked={allowOrderCancel} onCheckedChange={setAllowOrderCancel} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Tempo máx. de preparo (min)</Label>
+                  <Label>{t("settings.ops.prepTime")}</Label>
                   <Input type="number" min={1} max={120} value={maxPrepMinutes}
                     onChange={(e) => setMaxPrepMinutes(Number(e.target.value))} />
                 </div>
                 <div>
-                  <Label>Prefixo do número do pedido</Label>
+                  <Label>{t("settings.ops.prefix")}</Label>
                   <Input value={orderNumberPrefix}
                     onChange={(e) => setOrderNumberPrefix(e.target.value)}
                     placeholder="Ex: A, B, MESA" maxLength={5} />
                 </div>
               </div>
-              <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+
             </CardContent>
           </Card>
         </TabsContent>
