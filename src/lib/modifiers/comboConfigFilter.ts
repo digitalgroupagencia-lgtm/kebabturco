@@ -132,7 +132,7 @@ function enrichGroupOptions(group: ModifierGroup, menuProducts: MenuProduct[]): 
   };
 }
 
-/** Produtos simples: só enriquece imagens — sem injectar bebidas/batatas. */
+/** Produtos simples: nunca exibir "acompañamiento incluido" obrigatório. Converte substituição em extra opcional. */
 export function applySimpleProductRules(
   product: MenuProduct,
   config: ProductModifierConfig | null,
@@ -142,7 +142,37 @@ export function applySimpleProductRules(
 
   const groups = config.groups
     .filter((group) => group.options.length > 0)
-    .map((group) => enrichGroupOptions(group, menuProducts));
+    .map((group) => {
+      let next = group;
+      // Substituição em produto simples → optional addon (batatas como extra), sem "Incluido"
+      if (isPotatoGroup(group)) {
+        const optionsPaidOnly = group.options
+          .filter((o) => o.priceDelta > 0)
+          .map((o) => normalizePotatoOption(product, o));
+        if (optionsPaidOnly.length > 0) {
+          next = {
+            ...group,
+            name: {
+              es: "¿Quieres añadir patatas?",
+              pt: "Queres adicionar batatas?",
+              en: "Want to add fries?",
+              fr: "Ajouter des frites ?",
+            },
+            groupKind: "extra",
+            selectionMode: "single",
+            isRequired: false,
+            minSelect: 0,
+            maxSelect: 1,
+            options: optionsPaidOnly.map((o, i) => ({ ...o, isDefault: false, sortOrder: i })),
+          };
+        } else {
+          // Não há upgrades pagos → nada para oferecer num produto simples
+          return null;
+        }
+      }
+      return enrichGroupOptions(next, menuProducts);
+    })
+    .filter((g): g is ModifierGroup => g !== null);
 
   return {
     ...config,
