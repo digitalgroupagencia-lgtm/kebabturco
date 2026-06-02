@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ScreenHeader from "@/components/ScreenHeader";
 import OrderTypeIcon from "@/components/OrderTypeIcon";
-import UpsellProductCard from "@/components/customization/UpsellProductCard";
+import UpsellProductCard from "@/customer/customization/UpsellProductCard";
 import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";

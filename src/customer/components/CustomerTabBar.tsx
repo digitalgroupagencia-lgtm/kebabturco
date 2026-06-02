@@ -1,8 +1,8 @@
 import { ChevronRight, ClipboardList, Home, Loader2, Package, ShoppingCart, User } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useActiveOrder } from "@/features/customer/useActiveOrder";
+import { useActiveOrder } from "@/customer/active-order/useActiveOrder";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 
 type TabId = "home" | "orders" | "cart" | "account";

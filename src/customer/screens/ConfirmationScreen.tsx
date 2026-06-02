@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -9,7 +9,7 @@ import { toPng } from "html-to-image";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
-import { clearStoredActiveOrder } from "@/features/customer/useActiveOrderStorage";
+import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
 import { updateLocalOrderHistoryStatus } from "@/lib/customerOrderHistory";
 

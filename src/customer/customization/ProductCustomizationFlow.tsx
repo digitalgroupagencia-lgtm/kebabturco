@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Lock } from "lucide-react";
 import { toast } from "sonner";
 import ScreenHeader from "@/components/ScreenHeader";
-import ChoiceGroupSection from "@/components/customization/ChoiceGroupSection";
-import ProductSummaryCard from "@/components/customization/ProductSummaryCard";
-import { useCart } from "@/contexts/CartContext";
+import ChoiceGroupSection from "@/customer/customization/ChoiceGroupSection";
+import ProductSummaryCard from "@/customer/customization/ProductSummaryCard";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Category } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
-import ProductUpsellSheet from "@/components/customization/ProductUpsellSheet";
+import ProductUpsellSheet from "@/customer/customization/ProductUpsellSheet";
 import { afterAddSuggestionTitleKey, resolveAfterAddSuggestions } from "@/lib/modifiers/afterAddSuggestions";
 import type { ModifierGroup, ProductModifierConfig, SelectionState, CartConfiguration } from "@/lib/modifiers/types";
 import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
@@ -18,7 +18,7 @@ import { configurationSummaryLines, flattenConfiguration, selectionsToLegacyFiel
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { buildDefaultSelectionState, buildDefaultUnitStates } from "@/lib/modifiers/defaults";
 import { parseProductCode } from "@/lib/parseProductCode";
-import type { CartItem } from "@/contexts/CartContext";
+import type { CartItem } from "@/customer/contexts/CartContext";
 import { comboUnitStepTitle } from "@/lib/modifiers/comboProductRules";
 import { shouldUseCustomizationStepWizard } from "@/lib/modifiers/customizationWizard";
 

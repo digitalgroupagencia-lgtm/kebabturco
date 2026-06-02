@@ -1,4 +1,4 @@
-import { loadAnyStoredActiveOrder } from "@/features/customer/useActiveOrderStorage";
+import { loadAnyStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 import type { Screen } from "@/contexts/OrderContext";
 
 export const KIOSK_LANG_KEY = "kiosk-lang";

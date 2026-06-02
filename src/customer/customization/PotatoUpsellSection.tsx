@@ -1,8 +1,8 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
-import ProductChoiceCard from "@/components/customization/ProductChoiceCard";
-import ModifierGroupHeader from "@/components/customization/ModifierGroupHeader";
+import ProductChoiceCard from "@/customer/customization/ProductChoiceCard";
+import ModifierGroupHeader from "@/customer/customization/ModifierGroupHeader";
 
 type Props = {
   group: ModifierGroup;

@@ -1,6 +1,6 @@
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
-import { useActiveOrder } from "@/features/customer/useActiveOrder";
+import { useActiveOrder } from "@/customer/active-order/useActiveOrder";
 import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS } from "@/lib/customerBottomBars";
 
 /** Espaço reservado em baixo para o dock não tapar conteúdo. */

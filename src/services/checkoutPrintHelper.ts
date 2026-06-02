@@ -1,4 +1,4 @@
-import type { CartItem } from "@/contexts/CartContext";
+import type { CartItem } from "@/customer/contexts/CartContext";
 import type { CustomerOrderType } from "@/lib/paymentPolicy";
 import { shouldPrintAfterCheckout } from "@/lib/paymentPolicy";
 import type { OperationsSettings } from "@/hooks/useOperationsSettings";

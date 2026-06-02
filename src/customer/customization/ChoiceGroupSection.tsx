@@ -2,13 +2,13 @@ import { Minus, Plus } from "lucide-react";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import PotatoUpsellSection from "@/components/customization/PotatoUpsellSection";
-import ProductChoiceCard from "@/components/customization/ProductChoiceCard";
-import InfoChoiceRow from "@/components/customization/InfoChoiceRow";
-import ModifierGroupHeader from "@/components/customization/ModifierGroupHeader";
-import ModifierRadioRow from "@/components/customization/ModifierRadioRow";
-import ModifierCheckboxRow from "@/components/customization/ModifierCheckboxRow";
-import ModifierChipOption from "@/components/customization/ModifierChipOption";
+import PotatoUpsellSection from "@/customer/customization/PotatoUpsellSection";
+import ProductChoiceCard from "@/customer/customization/ProductChoiceCard";
+import InfoChoiceRow from "@/customer/customization/InfoChoiceRow";
+import ModifierGroupHeader from "@/customer/customization/ModifierGroupHeader";
+import ModifierRadioRow from "@/customer/customization/ModifierRadioRow";
+import ModifierCheckboxRow from "@/customer/customization/ModifierCheckboxRow";
+import ModifierChipOption from "@/customer/customization/ModifierChipOption";
 import { isInformationalModifierGroup } from "@/lib/modifiers/informationalGroups";
 import {
   groupHasImages,

@@ -1,5 +1,5 @@
 import type { CartConfiguration, ModifierSelection } from "./types";
-import type { CartItemExtra } from "@/contexts/CartContext";
+import type { CartItemExtra } from "@/customer/contexts/CartContext";
 
 function pickLabel(name: Record<string, string>): string {
   return name.es || name.pt || name.en || name.fr || Object.values(name)[0] || "";
