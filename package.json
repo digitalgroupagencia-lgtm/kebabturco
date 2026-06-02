@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "predev": "node scripts/clean-lovable-pages.mjs && node scripts/ensure-staff-email-login.mjs",
-    "prebuild": "node scripts/clean-lovable-pages.mjs && node scripts/ensure-staff-email-login.mjs && node scripts/package-print-bridge.mjs",
+    "prebuild": "node scripts/clean-lovable-pages.mjs && node scripts/ensure-staff-email-login.mjs && node scripts/package-print-bridge.mjs && node scripts/customer-smoke-test.mjs",
+    "smoke:customer": "node scripts/customer-smoke-test.mjs",
     "package:bridge": "node scripts/package-print-bridge.mjs",
     "generate:vapid": "node scripts/generate-vapid-keys.mjs",
     "generate:assetlinks": "node scripts/generate-assetlinks.mjs",
