@@ -14,7 +14,7 @@ import type { ModifierGroup, ProductModifierConfig, SelectionState, CartConfigur
 import { applyComboDescriptionRules } from "@/lib/modifiers/comboConfigFilter";
 import { buildSelectionsFromState, validateAllGroups } from "@/lib/modifiers/validation";
 import { computeUnitPrice } from "@/lib/modifiers/pricing";
-import { flattenConfiguration, selectionsToLegacyFields } from "@/lib/modifiers/legacyBridge";
+import { configurationSummaryLines, flattenConfiguration, selectionsToLegacyFields } from "@/lib/modifiers/legacyBridge";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
 import { buildDefaultSelectionState, buildDefaultUnitStates } from "@/lib/modifiers/defaults";
 import { parseProductCode } from "@/lib/parseProductCode";
@@ -487,7 +487,7 @@ export default function ProductCustomizationFlow({
         <ProductUpsellSheet
           title={upsellTitle}
           suggestions={upsellSuggestions}
-          menuProducts={products}
+          menuProducts={menuProducts}
           onPick={(id) => {
             setUpsellOpen(false);
             if (onOpenProduct) onOpenProduct(id);
