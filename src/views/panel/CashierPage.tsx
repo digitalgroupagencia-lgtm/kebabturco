@@ -210,18 +210,18 @@ const CashierPage = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total Hoje</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("cashier.total.today")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-success">€ {todaySales.total.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{todaySales.count} pedidos</p>
+            <p className="text-xs text-muted-foreground">{todaySales.count} {t("cashier.orders.count")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <CreditCard className="h-4 w-4" /> Cartão
+              <CreditCard className="h-4 w-4" /> {t("cashier.method.card")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -232,7 +232,7 @@ const CashierPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Banknote className="h-4 w-4" /> Dinheiro
+              <Banknote className="h-4 w-4" /> {t("cashier.method.cash")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -243,7 +243,7 @@ const CashierPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Smartphone className="h-4 w-4" /> Pix
+              <Smartphone className="h-4 w-4" /> {t("cashier.method.pix")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -251,6 +251,7 @@ const CashierPage = () => {
           </CardContent>
         </Card>
       </div>
+
 
       {/* Pending Payments */}
       <Card className={pendingOrders.length > 0 ? "border-yellow-500/60 bg-yellow-500/5" : ""}>
