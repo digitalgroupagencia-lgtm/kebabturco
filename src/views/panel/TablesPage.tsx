@@ -387,7 +387,7 @@ const TablesPage = () => {
       <Dialog open={!!qrTable} onOpenChange={() => setQrTable(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>QR premium — Mesa {qrTable?.number}</DialogTitle>
+            <DialogTitle>{t("tables.qr.dialog")} {qrTable?.number}</DialogTitle>
           </DialogHeader>
           {qrTable && (
             <div className="flex flex-col items-center gap-4">
@@ -399,13 +399,13 @@ const TablesPage = () => {
               <p className="text-[10px] text-muted-foreground text-center break-all">{tableQrUrl(qrTable)}</p>
               <div className="grid grid-cols-2 gap-2 w-full">
                 <Button variant="outline" onClick={() => copyLink(qrTable)} className="gap-2">
-                  <Copy className="h-4 w-4" /> Copiar link
+                  <Copy className="h-4 w-4" /> {t("tables.qr.copy")}
                 </Button>
                 <Button variant="outline" onClick={() => downloadPremiumPng(qrTable)} className="gap-2">
-                  <Download className="h-4 w-4" /> Baixar PNG
+                  <Download className="h-4 w-4" /> {t("tables.qr.png")}
                 </Button>
                 <Button onClick={() => printPremiumQr(qrTable)} className="col-span-2 gap-2">
-                  <Printer className="h-4 w-4" /> Imprimir / PDF
+                  <Printer className="h-4 w-4" /> {t("tables.qr.print")}
                 </Button>
                 {canManage && (
                   <Button
@@ -419,7 +419,7 @@ const TablesPage = () => {
                     ) : (
                       <RefreshCw className="h-4 w-4" />
                     )}
-                    Regenerar token (invalida QR anterior)
+                    {t("tables.qr.regen")}
                   </Button>
                 )}
               </div>
