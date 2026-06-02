@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useDriverOrders } from "@/features/delivery/useDriverOrders";
 import { validateDeliveryCode } from "@/features/ops/opsOrderUi";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const DeliveryHomePage = () => {
+  const { t } = useStaffT();
+
   const { storeId } = useAdminStoreId();
   const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId);
   const [codeByOrder, setCodeByOrder] = useState<Record<string, string>>({});
@@ -29,9 +32,9 @@ const DeliveryHomePage = () => {
             <Package className="h-10 w-10 text-orange-500" />
           </div>
           <div className="space-y-1">
-            <p className="font-black text-xl">Sem entregas atribuídas</p>
+            <p className="font-black text-xl">{t("delivery.empty.title")}</p>
             <p className="text-sm text-muted-foreground">
-              Quando o restaurante atribuir um pedido, aparece aqui com o endereço e código.
+              {t("delivery.empty.body")}
             </p>
           </div>
           <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-600">
@@ -39,15 +42,16 @@ const DeliveryHomePage = () => {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            Online · A receber pedidos
+            {t("delivery.online")}
           </div>
           <Button variant="outline" onClick={() => void refresh()} className="w-full h-11 font-bold">
-            Actualizar
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
     );
   }
+
 
   return (
     <div className="space-y-3">
@@ -72,12 +76,13 @@ const DeliveryHomePage = () => {
             <div className="px-4 py-3 bg-muted/30 flex items-center justify-between gap-2">
               <div>
                 <p className="text-2xl font-black tabular-nums">#{order.order_number}</p>
-                <p className="text-sm font-semibold">{order.customer_name || "Cliente"}</p>
+                <p className="text-sm font-semibold">{order.customer_name || t("common.customer")}</p>
               </div>
               <div className="text-right">
                 <Badge className={isOut ? "bg-orange-600" : "bg-yellow-500 text-black"}>
-                  {isOut ? "A caminho" : "Pronto"}
+                  {isOut ? t("delivery.state.on_the_way") : t("delivery.state.ready")}
                 </Badge>
+
                 <p className="text-lg font-black text-primary mt-1">€{Number(order.total).toFixed(2)}</p>
               </div>
             </div>
@@ -123,7 +128,7 @@ const DeliveryHomePage = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Navigation className="h-4 w-4 mr-2" /> Abrir rota
+                    <Navigation className="h-4 w-4 mr-2" /> {t("delivery.openRoute")}
                   </a>
                 </Button>
               )}
@@ -141,12 +146,12 @@ const DeliveryHomePage = () => {
                     }
                   }}
                 >
-                  {busyId === order.id ? "A iniciar…" : "Iniciar entrega"}
+                  {busyId === order.id ? t("delivery.cta.starting") : t("delivery.cta.start")}
                 </Button>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4" /> Código do cliente
+                    <ShieldCheck className="h-4 w-4" /> {t("delivery.code.label")}
                   </div>
                   <Input
                     inputMode="numeric"
@@ -174,8 +179,9 @@ const DeliveryHomePage = () => {
                       }
                     }}
                   >
-                    {busyId === order.id ? "A validar…" : "Finalizar entrega"}
+                    {busyId === order.id ? t("delivery.cta.validating") : t("delivery.cta.finish")}
                   </Button>
+
                 </div>
               )}
             </div>

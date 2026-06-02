@@ -13,6 +13,7 @@ import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote
 import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -21,6 +22,8 @@ const CashierPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
+  const { t } = useStaffT();
+
 
   const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,12 +76,13 @@ const CashierPage = () => {
       await markOrderPaidAtCounter(order.id, method);
       const { data: items } = await supabase.from("order_items").select("*").eq("order_id", order.id);
       await tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid", payment_method: method } as any, (items ?? []) as any);
-      toast.success(`Pagamento registado — #${order.order_number}`);
+      toast.success(`${t("toast.payment_registered")} — #${order.order_number}`);
       await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");
+      toast.error(e instanceof Error ? e.message : t("toast.payment_error"));
     } finally {
       setConfirmingId(null);
+
     }
   };
 
@@ -127,12 +131,13 @@ const CashierPage = () => {
     });
 
     if (error) {
-      toast.error("Erro ao abrir caixa");
+      toast.error(t("toast.cash_open_error"));
     } else {
-      toast.success("Caixa aberto!");
+      toast.success(t("toast.cash_opened"));
       setOpenDialogVisible(false);
       fetchCurrentRegister();
     }
+
   };
 
   const closeRegister = async () => {
@@ -148,20 +153,22 @@ const CashierPage = () => {
       .eq("id", currentRegister.id);
 
     if (error) {
-      toast.error("Erro ao fechar caixa");
+      toast.error(t("toast.cash_close_error"));
     } else {
-      toast.success("Caixa fechado!");
+      toast.success(t("toast.cash_closed"));
       setCloseDialogVisible(false);
       fetchCurrentRegister();
     }
+
   };
 
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Caixa</h2>
-        <Card><CardContent className="p-8 text-center text-muted-foreground">Nenhuma loja vinculada.</CardContent></Card>
+        <h2 className="text-2xl font-bold">{t("cashier.title")}</h2>
+        <Card><CardContent className="p-8 text-center text-muted-foreground">{t("common.no_store")}</CardContent></Card>
       </div>
+
     );
   }
 
@@ -169,15 +176,15 @@ const CashierPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <DollarSign className="h-6 w-6" /> Caixa
+          <DollarSign className="h-6 w-6" /> {t("cashier.title")}
         </h2>
         {!currentRegister ? (
           <Button onClick={() => setOpenDialogVisible(true)} className="bg-success hover:bg-success/90">
-            <ArrowUpCircle className="h-4 w-4 mr-1" /> Abrir Caixa
+            <ArrowUpCircle className="h-4 w-4 mr-1" /> {t("cashier.action.open")}
           </Button>
         ) : (
           <Button variant="destructive" onClick={() => setCloseDialogVisible(true)}>
-            <ArrowDownCircle className="h-4 w-4 mr-1" /> Fechar Caixa
+            <ArrowDownCircle className="h-4 w-4 mr-1" /> {t("cashier.action.close")}
           </Button>
         )}
       </div>
@@ -187,33 +194,34 @@ const CashierPage = () => {
         <CardContent className="p-4 flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full ${currentRegister ? "bg-success animate-pulse" : "bg-destructive"}`} />
           <span className="font-semibold">
-            {currentRegister ? "Caixa Aberto" : "Caixa Fechado"}
+            {currentRegister ? t("cashier.state.open") : t("cashier.state.closed")}
           </span>
           {currentRegister && (
             <span className="text-sm text-muted-foreground ml-auto">
               <Clock className="inline h-3 w-3 mr-1" />
-              Aberto às {new Date(currentRegister.opened_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              {t("cashier.openedAt")} {new Date(currentRegister.opened_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
         </CardContent>
       </Card>
 
+
       {/* Sales summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total Hoje</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("cashier.total.today")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-success">€ {todaySales.total.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{todaySales.count} pedidos</p>
+            <p className="text-xs text-muted-foreground">{todaySales.count} {t("cashier.orders.count")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <CreditCard className="h-4 w-4" /> Cartão
+              <CreditCard className="h-4 w-4" /> {t("cashier.method.card")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -224,7 +232,7 @@ const CashierPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Banknote className="h-4 w-4" /> Dinheiro
+              <Banknote className="h-4 w-4" /> {t("cashier.method.cash")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -235,7 +243,7 @@ const CashierPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Smartphone className="h-4 w-4" /> Pix
+              <Smartphone className="h-4 w-4" /> {t("cashier.method.pix")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -244,12 +252,13 @@ const CashierPage = () => {
         </Card>
       </div>
 
+
       {/* Pending Payments */}
       <Card className={pendingOrders.length > 0 ? "border-yellow-500/60 bg-yellow-500/5" : ""}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <AlertCircle className={`h-5 w-5 ${pendingOrders.length > 0 ? "text-yellow-600" : "text-muted-foreground"}`} />
-            Pagamentos pendentes
+            {t("cashier.pending.title")}
             <Badge variant={pendingOrders.length > 0 ? "default" : "secondary"} className="ml-auto">
               {pendingOrders.length}
             </Badge>
@@ -257,21 +266,25 @@ const CashierPage = () => {
         </CardHeader>
         <CardContent>
           {pendingOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Sem pedidos aguardando pagamento.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">{t("cashier.pending.empty")}</p>
           ) : (
             <ul className="space-y-2">
               {pendingOrders.map((o) => {
-                const modality = o.order_type === "delivery" ? "Entrega" : o.order_type === "dine_in" ? `Mesa ${o.table_number ?? ""}` : "Balcão";
+                const modality = o.order_type === "delivery"
+                  ? t("order.modality.delivery")
+                  : o.order_type === "dine_in"
+                    ? `${t("order.modality.table")} ${o.table_number ?? ""}`
+                    : t("order.modality.pickup");
                 return (
                   <li key={o.id} className="flex items-center gap-2 rounded-lg border bg-card p-2.5">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm">#{o.order_number}</span>
                         <Badge variant="outline" className="h-5 text-[10px]">{modality}</Badge>
-                        <span className="text-xs text-muted-foreground truncate">{o.customer_name || "Cliente"}</span>
+                        <span className="text-xs text-muted-foreground truncate">{o.customer_name || t("common.customer")}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {new Date(o.created_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(o.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
                         {" · "}Status: <span className="font-semibold">{o.status}</span>
                       </p>
                     </div>
@@ -283,7 +296,7 @@ const CashierPage = () => {
                       onClick={() => void confirmCashPayment(o, "cash")}
                     >
                       <Banknote className="h-4 w-4 mr-1" />
-                      Dinheiro
+                      {t("cashier.method.cash")}
                     </Button>
                     <Button
                       size="sm"
@@ -293,12 +306,13 @@ const CashierPage = () => {
                       onClick={() => void confirmCashPayment(o, "card")}
                     >
                       <CreditCard className="h-4 w-4 mr-1" />
-                      Cartão
+                      {t("cashier.method.card")}
                     </Button>
                   </li>
                 );
               })}
             </ul>
+
           )}
         </CardContent>
       </Card>
@@ -306,19 +320,19 @@ const CashierPage = () => {
       {currentRegister && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Resumo do Turno</CardTitle>
+            <CardTitle className="text-lg">{t("cashier.shift.title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Saldo Inicial</span>
+              <span className="text-muted-foreground">{t("cashier.balance.opening")}</span>
               <span className="font-semibold">€ {Number(currentRegister.opening_balance).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Vendas (Dinheiro)</span>
+              <span className="text-muted-foreground">{t("cashier.sales.cash")}</span>
               <span className="font-semibold text-success">+ € {todaySales.cash.toFixed(2)}</span>
             </div>
             <div className="border-t pt-2 flex justify-between">
-              <span className="font-semibold">Saldo Esperado</span>
+              <span className="font-semibold">{t("cashier.balance.expected")}</span>
               <span className="font-bold text-lg">€ {(Number(currentRegister.opening_balance) + todaySales.cash).toFixed(2)}</span>
             </div>
           </CardContent>
@@ -328,14 +342,14 @@ const CashierPage = () => {
       {/* Open Dialog */}
       <Dialog open={openDialogVisible} onOpenChange={setOpenDialogVisible}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Abrir Caixa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("cashier.action.open")}</DialogTitle></DialogHeader>
           <div>
-            <Label>Saldo Inicial (€)</Label>
+            <Label>{t("cashier.balance.opening.input")}</Label>
             <Input type="number" step="0.01" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} placeholder="0.00" />
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button onClick={openRegister}>Abrir Caixa</Button>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
+            <Button onClick={openRegister}>{t("cashier.action.open")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -343,19 +357,20 @@ const CashierPage = () => {
       {/* Close Dialog */}
       <Dialog open={closeDialogVisible} onOpenChange={setCloseDialogVisible}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Fechar Caixa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("cashier.action.close")}</DialogTitle></DialogHeader>
           <div>
-            <Label>Saldo Final Contado (€)</Label>
+            <Label>{t("cashier.balance.closing.input")}</Label>
             <Input type="number" step="0.01" value={closingBalance} onChange={(e) => setClosingBalance(e.target.value)} placeholder="0.00" />
           </div>
           <p className="text-sm text-muted-foreground">
-            Total vendido hoje: <strong>€ {todaySales.total.toFixed(2)}</strong>
+            {t("cashier.today.sold")} <strong>€ {todaySales.total.toFixed(2)}</strong>
           </p>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button variant="destructive" onClick={closeRegister}>Fechar Caixa</Button>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
+            <Button variant="destructive" onClick={closeRegister}>{t("cashier.action.close")}</Button>
           </DialogFooter>
         </DialogContent>
+
       </Dialog>
     </div>
   );

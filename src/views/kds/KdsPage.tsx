@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type KdsOrder = {
   id: string;
@@ -16,11 +17,12 @@ type KdsOrder = {
   created_at: string;
 };
 
-const STATUS_COLUMNS: Array<{ key: string; label: string; tone: string }> = [
-  { key: "new", label: "Novos", tone: "border-red-500/60 bg-red-500/5" },
-  { key: "preparing", label: "Em preparação", tone: "border-amber-500/60 bg-amber-500/5" },
-  { key: "ready", label: "Prontos", tone: "border-emerald-500/60 bg-emerald-500/5" },
+const STATUS_COLUMN_KEYS = [
+  { key: "new", labelKey: "kds.col.new" as const, tone: "border-red-500/60 bg-red-500/5" },
+  { key: "preparing", labelKey: "kds.col.preparing" as const, tone: "border-amber-500/60 bg-amber-500/5" },
+  { key: "ready", labelKey: "kds.col.ready" as const, tone: "border-emerald-500/60 bg-emerald-500/5" },
 ];
+
 
 const NEW_STATUSES = new Set(["pending", "confirmed", "new"]);
 const PREP_STATUSES = new Set(["preparing", "in_preparation"]);
@@ -64,6 +66,8 @@ function playBeep() {
 const KdsPage = () => {
   const { user, loading: authLoading } = useAuth();
   const { storeId } = useAdminStoreId();
+  const { t } = useStaffT();
+
   const [orders, setOrders] = useState<KdsOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
@@ -141,10 +145,10 @@ const KdsPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white gap-3 p-6 text-center">
         <ChefHat className="h-12 w-12" />
-        <p className="text-xl font-bold">Painel KDS — Acesso interno</p>
-        <p className="text-sm text-slate-400">É necessário iniciar sessão como equipa.</p>
+        <p className="text-xl font-bold">{t("kds.gate.title")}</p>
+        <p className="text-sm text-slate-400">{t("kds.gate.body")}</p>
         <Button asChild>
-          <a href="/staff">Iniciar sessão</a>
+          <a href="/staff">{t("kds.gate.signin")}</a>
         </Button>
       </div>
     );
@@ -152,17 +156,18 @@ const KdsPage = () => {
   if (!storeId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <p>Nenhuma loja vinculada</p>
+        <p>{t("common.no_store")}</p>
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900">
         <div className="flex items-center gap-2">
           <ChefHat className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-black">KDS — Cozinha</h1>
+          <h1 className="text-xl font-black">{t("kds.title")}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -175,7 +180,7 @@ const KdsPage = () => {
             className="gap-1"
           >
             {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            {soundOn ? "Som ON" : "Activar som"}
+            {soundOn ? t("kds.sound.on") : t("kds.sound.enable")}
           </Button>
           <Button
             variant="outline"
@@ -187,8 +192,9 @@ const KdsPage = () => {
             }}
             className="gap-1"
           >
-            <Maximize className="h-4 w-4" /> Tela cheia
+            <Maximize className="h-4 w-4" /> {t("kds.fullscreen")}
           </Button>
+
         </div>
       </header>
 
@@ -198,13 +204,13 @@ const KdsPage = () => {
         </div>
       ) : (
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 p-3 overflow-hidden">
-          {STATUS_COLUMNS.map((col) => (
+          {STATUS_COLUMN_KEYS.map((col) => (
             <section
               key={col.key}
               className={`rounded-2xl border-2 ${col.tone} flex flex-col overflow-hidden`}
             >
               <header className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                <h2 className="text-lg font-black uppercase tracking-wide">{col.label}</h2>
+                <h2 className="text-lg font-black uppercase tracking-wide">{t(col.labelKey)}</h2>
                 <span className="text-2xl font-black tabular-nums">{grouped[col.key].length}</span>
               </header>
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -231,17 +237,18 @@ const KdsPage = () => {
                             {min}m
                           </span>
                         </div>
-                        <p className="font-bold text-base truncate">{o.customer_name || "Cliente"}</p>
+                        <p className="font-bold text-base truncate">{o.customer_name || t("common.customer")}</p>
                         <p className="text-sm text-slate-400 uppercase tracking-wide">
                           {o.order_type === "delivery"
-                            ? "Delivery"
+                            ? t("order.modality.delivery")
                             : o.order_type === "dine_in"
-                              ? `Mesa ${o.table_number ?? "—"}`
-                              : "Balcão"}
+                              ? `${t("order.modality.table")} ${o.table_number ?? "—"}`
+                              : t("order.modality.pickup")}
                         </p>
                       </article>
                     );
                   })
+
                 )}
               </div>
             </section>

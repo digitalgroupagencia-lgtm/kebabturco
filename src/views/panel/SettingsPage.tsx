@@ -119,29 +119,30 @@ const PanelSettingsPage = () => {
         <TabsContent value="store">
           <Card>
             <CardHeader>
-              <CardTitle>Dados da loja</CardTitle>
-              <CardDescription>Informações exibidas em recibos e impressões.</CardDescription>
+              <CardTitle>{t("settings.store.title")}</CardTitle>
+              <CardDescription>{t("settings.store.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Nome da loja</Label>
+                <Label>{t("settings.store.name")}</Label>
                 <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Telefone</Label>
+                  <Label>{t("settings.store.phone")}</Label>
                   <Input value={storePhone} onChange={(e) => setStorePhone(e.target.value)} placeholder="(11) 90000-0000" />
                 </div>
                 <div>
-                  <Label>CNPJ / Identificação fiscal</Label>
+                  <Label>{t("settings.store.fiscal")}</Label>
                   <Input value={storeCnpj} onChange={(e) => setStoreCnpj(e.target.value)} />
                 </div>
               </div>
               <div>
-                <Label>Endereço completo</Label>
+                <Label>{t("settings.store.address")}</Label>
                 <Textarea rows={2} value={storeAddress} onChange={(e) => setStoreAddress(e.target.value)} />
               </div>
-              <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+
             </CardContent>
           </Card>
 
@@ -151,38 +152,39 @@ const PanelSettingsPage = () => {
         <TabsContent value="ops">
           <Card>
             <CardHeader>
-              <CardTitle>Operação</CardTitle>
-              <CardDescription>Como pedidos são processados.</CardDescription>
+              <CardTitle>{t("settings.ops.title")}</CardTitle>
+              <CardDescription>{t("settings.ops.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Aceitar pedidos automaticamente</Label>
-                  <p className="text-xs text-muted-foreground">Se desativado, cada pedido precisa ser confirmado pela equipe.</p>
+                  <Label className="text-base">{t("settings.ops.autoaccept")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.ops.autoaccept.desc")}</p>
                 </div>
                 <Switch checked={autoAcceptOrders} onCheckedChange={setAutoAcceptOrders} />
               </div>
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Permitir cancelamento de pedidos</Label>
-                  <p className="text-xs text-muted-foreground">Operadores podem cancelar pedidos em andamento.</p>
+                  <Label className="text-base">{t("settings.ops.cancel")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.ops.cancel.desc")}</p>
                 </div>
                 <Switch checked={allowOrderCancel} onCheckedChange={setAllowOrderCancel} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Tempo máx. de preparo (min)</Label>
+                  <Label>{t("settings.ops.prepTime")}</Label>
                   <Input type="number" min={1} max={120} value={maxPrepMinutes}
                     onChange={(e) => setMaxPrepMinutes(Number(e.target.value))} />
                 </div>
                 <div>
-                  <Label>Prefixo do número do pedido</Label>
+                  <Label>{t("settings.ops.prefix")}</Label>
                   <Input value={orderNumberPrefix}
                     onChange={(e) => setOrderNumberPrefix(e.target.value)}
                     placeholder="Ex: A, B, MESA" maxLength={5} />
                 </div>
               </div>
-              <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -190,35 +192,36 @@ const PanelSettingsPage = () => {
         <TabsContent value="receipt">
           <Card>
             <CardHeader>
-              <CardTitle>Recibo / impressão</CardTitle>
-              <CardDescription>Personalize o que sai na impressora.</CardDescription>
+              <CardTitle>{t("settings.print.title")}</CardTitle>
+              <CardDescription>{t("settings.print.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Imprimir automaticamente novos pedidos</Label>
-                  <p className="text-xs text-muted-foreground">Manda direto pra cozinha quando entra pedido novo.</p>
+                  <Label className="text-base">{t("settings.print.auto")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.print.auto.desc")}</p>
                 </div>
                 <Switch checked={printAutoOnNew} onCheckedChange={setPrintAutoOnNew} />
               </div>
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Imprimir via do cliente</Label>
-                  <p className="text-xs text-muted-foreground">Gera segunda via para entregar ao cliente.</p>
+                  <Label className="text-base">{t("settings.print.customer")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.print.customer.desc")}</p>
                 </div>
                 <Switch checked={printCustomerCopy} onCheckedChange={setPrintCustomerCopy} />
               </div>
               <div>
-                <Label>Mensagem no rodapé do recibo</Label>
+                <Label>{t("settings.print.footer")}</Label>
                 <Textarea rows={2} value={receiptFooter} onChange={(e) => setReceiptFooter(e.target.value)} />
               </div>
               <div>
-                <Label>Taxa de serviço (%)</Label>
+                <Label>{t("settings.print.tax")}</Label>
                 <Input type="number" min={0} max={30} step={0.5} value={taxRate}
                   onChange={(e) => setTaxRate(Number(e.target.value))} />
-                <p className="text-xs text-muted-foreground mt-1">Adiciona automaticamente ao total. 0 = desativado.</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("settings.print.tax.desc")}</p>
               </div>
-              <Button onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -269,18 +272,18 @@ const PanelSettingsPage = () => {
         <TabsContent value="hours">
           <Card>
             <CardHeader>
-              <CardTitle>Horário de funcionamento</CardTitle>
+              <CardTitle>{t("settings.hours.title")}</CardTitle>
               <CardDescription>
-                Defina os horários reais por dia da semana, para a loja e para o delivery separadamente.
-                Quando o canal está fechado, o cliente continua a poder navegar e montar carrinho — só não consegue finalizar.
+                {t("settings.hours.desc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {effectiveStoreId ? (
                 <WeeklyHoursEditor storeId={effectiveStoreId} />
               ) : (
-                <p className="text-sm text-muted-foreground">A carregar loja…</p>
+                <p className="text-sm text-muted-foreground">{t("settings.hours.loading")}</p>
               )}
+
             </CardContent>
           </Card>
         </TabsContent>
