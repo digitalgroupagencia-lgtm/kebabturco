@@ -8,6 +8,7 @@ import { isDrinkProduct, resolveDrinkExtrasFromMenu } from "@/lib/modifiers/drin
 import { drinkExtraMatchesRule, resolveDrinkSizeRuleForProduct, DEFAULT_DRINK_LABELS } from "@/lib/modifiers/drinkSizeRules";
 import {
   allowsIngredientRemoval,
+  defaultRemovableIngredients,
   globalMeatChoiceVariants,
   allowsPerUnitMeatChoice,
   allowsPerUnitPizzaFlavor,
