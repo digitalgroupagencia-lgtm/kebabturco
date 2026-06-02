@@ -285,6 +285,11 @@ function SummaryTile({
 function FindingCard({ f }: { f: AuditFinding }) {
   const meta = SEVERITY_META[f.severity];
   const Icon = meta.icon;
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const linkPath = f.link?.split("?")[0];
+  const isSelfLink = linkPath === currentPath;
+  const showLink = f.link && !isSelfLink;
   return (
     <Card className={`border-2 ${meta.ring}`}>
       <CardContent className="p-4 flex gap-3">
@@ -300,9 +305,9 @@ function FindingCard({ f }: { f: AuditFinding }) {
             <p className="text-xs text-muted-foreground mt-1 break-words">{f.detail}</p>
           )}
           {f.action && <p className="text-xs font-medium mt-1.5">{f.action}</p>}
-          {f.link && (
+          {showLink && (
             <Link
-              to={f.link}
+              to={f.link!}
               className="inline-flex items-center gap-1 text-xs font-bold text-primary mt-2 hover:underline"
             >
               {f.linkLabel ?? "Resolver"}
@@ -314,5 +319,6 @@ function FindingCard({ f }: { f: AuditFinding }) {
     </Card>
   );
 }
+
 
 export default DiagnosticsPage;
