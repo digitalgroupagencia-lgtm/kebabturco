@@ -290,6 +290,12 @@ export const STAFF_I18N = {
   "team.toast.lang_error": { es: "Error al actualizar idioma", pt: "Erro ao atualizar idioma", en: "Failed to update language" },
   "team.toast.lang_updated": { es: "Idioma actualizado", pt: "Idioma atualizado!", en: "Language updated" },
   "team.toast.member_updated": { es: "Miembro actualizado", pt: "Membro actualizado", en: "Member updated" },
+  "team.toast.draft_restored": { es: "Borrador restaurado — puede continuar donde lo dejó", pt: "Rascunho restaurado — pode continuar de onde parou", en: "Draft restored — you can pick up where you left off" },
+  "team.toast.login_pending_edit": { es: "Perfil guardado, pero el login aún no responde. Vuelva a guardar la contraseña después de Sync + Publish.", pt: "Perfil guardado, mas o login ainda não responde. Volte a guardar a senha depois de Sync + Publish.", en: "Profile saved, but login isn't ready yet. Save the password again after Sync + Publish." },
+  "team.toast.member_added": { es: "Miembro añadido como {role}", pt: "Membro adicionado como {role}!", en: "Member added as {role}" },
+  "team.toast.email_existed": { es: "Este correo ya existía: se añadió al equipo, pero la contraseña anterior se mantiene.", pt: "Este e-mail já existia: foi adicionado à equipa, mas a senha anterior mantém-se.", en: "This email already existed: added to the team, but the previous password stays." },
+  "team.toast.login_pending_create": { es: "Miembro creado, pero el login aún no responde. Edítelo, vuelva a escribir la contraseña y guarde. Si persiste, haga Sync + Publish.", pt: "Membro criado, mas o login ainda não responde. Edite-o, volte a escrever a senha e guarde. Se continuar, faça Sync + Publish.", en: "Member created, but login isn't ready yet. Edit, retype the password and save. If it persists, run Sync + Publish." },
+  "team.toast.login_ready": { es: "Login listo: puede entrar con este correo y contraseña en Área del equipo.", pt: "Login pronto: pode entrar com este e-mail e senha na Área da equipe.", en: "Login ready: you can sign in with this email and password in the Team area." },
 
   // --- Sellers page ---
   "sellers.units": { es: "vendedores", pt: "vendedores", en: "sellers" },
