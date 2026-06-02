@@ -22,6 +22,7 @@ import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -29,6 +30,7 @@ const fmt = (n: number) =>
 const Dashboard = () => {
   const { storeId: STORE_ID } = useAdminStoreId();
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID);
+  const { t } = useStaffT();
 
   const { data, isLoading } = useQuery({
     queryKey: ["panel-dashboard-financial", STORE_ID],
@@ -114,13 +116,13 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <PanelPageHeader
-        title="Resumo do dia"
+        title={t("page.dashboard.title")}
         description="Visão geral da loja — faturamento, pedidos e estado do sistema. Para operação em tempo real, use Pedidos ao vivo."
         actions={
           <Button asChild size="sm" className="gap-1.5">
             <Link to={nav.panel("live")}>
               <Radio className="h-4 w-4" />
-              Pedidos ao vivo
+              {t("nav.live")}
               <ChevronRight className="h-4 w-4" />
             </Link>
           </Button>

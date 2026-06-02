@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Card } from "@/components/ui/card";
@@ -41,6 +42,7 @@ const TablesPage = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
   const canManage = isAdmin;
+  const { t } = useStaffT();
 
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { tenant: ctxTenant } = useSelectedTenant();
@@ -270,7 +272,7 @@ const TablesPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <LayoutGrid className="h-6 w-6 text-primary" /> {isAdmin ? "Mesas & QR Codes" : "Mesas & QR"}
+            <LayoutGrid className="h-6 w-6 text-primary" /> {t("page.tables.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             QR codes premium com número da mesa, idioma principal ({primaryLang.toUpperCase()}) e token único

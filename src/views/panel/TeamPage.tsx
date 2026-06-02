@@ -16,6 +16,7 @@ import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRol
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
+import { useStaffT } from "@/hooks/useStaffT";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember, verifyStaffMemberLogin } from "@/services/createStaffMember";
@@ -65,6 +66,7 @@ const roleLabels: Record<AppRole, { label: string; color: string }> = {
 
 const TeamPage = () => {
   const { user } = useAuth();
+  const { t } = useStaffT();
   const { roleData } = useUserRole(user?.id);
   const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
@@ -446,7 +448,7 @@ const TeamPage = () => {
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Equipe</h2>
+        <h2 className="text-2xl font-bold">{t("page.team.title")}</h2>
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             {canSwitchStore && stores.length > 1
@@ -464,7 +466,7 @@ const TeamPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Users className="h-6 w-6" /> Equipe
+          <Users className="h-6 w-6" /> {t("page.team.title")}
         </h2>
         {canManage && (
           <Button size="sm" onClick={openAddDialog}>
