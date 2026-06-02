@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Card } from "@/components/ui/card";
