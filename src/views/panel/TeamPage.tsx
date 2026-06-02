@@ -285,10 +285,8 @@ const TeamPage = () => {
 
       toast.success(t("team.toast.member_updated"));
       if (editPassword.trim() && !loginReady) {
-        toast.warning(
-          lang === "es"
-            ? "Perfil guardado, pero el login aún no responde. Vuelva a guardar la contraseña después de Sync + Publish."
-            : "Perfil guardado, mas o login ainda não responde. Volte a guardar a senha depois de Sync + Publish.",
+        toast.warning(t("team.toast.login_pending_edit"), { duration: 8000 });
+      }
           { duration: 8000 },
         );
       }
