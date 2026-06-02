@@ -9,6 +9,8 @@ import { hasMesaQrInUrl } from "@/lib/customerSession";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { nav } from "@/lib/navPaths";
 
+const STAFF_LONG_PRESS_MS = 5000;
+
 const SplashScreen = () => {
   const { setScreen } = useOrder();
   const { settings, loading: brandingLoading } = useBranding();
@@ -26,6 +28,12 @@ const SplashScreen = () => {
     null;
   const brandName = settings?.company_name || "";
 
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,7 +58,7 @@ const SplashScreen = () => {
   const openStaffArea = () => navigate(nav.staff());
 
   const handleLogoPressStart = () => {
-    longPressTimer.current = window.setTimeout(openStaffArea, 900);
+    longPressTimer.current = window.setTimeout(openStaffArea, STAFF_LONG_PRESS_MS);
   };
 
   const handleLogoPressEnd = () => {
