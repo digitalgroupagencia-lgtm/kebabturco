@@ -77,7 +77,7 @@ const StaffEmailLoginScreen = () => {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-background" data-staff-login="email-password">
       <header className="shrink-0 border-b bg-card/80 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -88,68 +88,70 @@ const StaffEmailLoginScreen = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <Shield className="h-5 w-5 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <h1 className="text-lg font-bold leading-tight">{copy.title}</h1>
-              <p className="text-xs text-muted-foreground">{copy.subtitle}</p>
-            </div>
-          </div>
           <StaffLanguageToggle compact defaultLang="es" />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-6 py-8 pb-10">
-        <p className="mb-6 text-center text-sm text-muted-foreground">{copy.instruction}</p>
-
-        <form className="space-y-4" onSubmit={(e) => void handleLogin(e)}>
-          <div>
-            <Label htmlFor="staff-email">{copy.emailLabel}</Label>
-            <Input
-              id="staff-email"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError(null);
-              }}
-              placeholder="entregador@gmail.com"
-              className="mt-1.5 h-12"
-            />
-          </div>
-          <div>
-            <Label htmlFor="staff-password">{copy.passwordLabel}</Label>
-            <Input
-              id="staff-password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(null);
-              }}
-              className="mt-1.5 h-12"
-            />
+      <main className="flex flex-1 items-center justify-center overflow-y-auto px-6 py-8">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+              <Shield className="h-7 w-7 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold leading-tight text-foreground">{copy.title}</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">{copy.subtitle}</p>
+            <p className="mt-4 text-sm text-muted-foreground">{copy.instruction}</p>
           </div>
 
-          {error && (
-            <p className="text-center text-sm font-medium text-destructive" role="alert">
-              {error}
-            </p>
-          )}
+          <form className="space-y-4" onSubmit={(e) => void handleLogin(e)}>
+            <div className="space-y-1.5">
+              <Label htmlFor="staff-email">{copy.emailLabel}</Label>
+              <Input
+                id="staff-email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+                placeholder="entregador@gmail.com"
+                className="h-12 w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="staff-password">{copy.passwordLabel}</Label>
+              <Input
+                id="staff-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                className="h-12 w-full"
+              />
+            </div>
 
-          <Button type="submit" className="h-12 w-full text-base font-bold" disabled={submitting}>
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {copy.submitting}
-              </>
-            ) : (
-              copy.submit
+            {error && (
+              <p className="text-center text-sm font-medium text-destructive" role="alert">
+                {error}
+              </p>
             )}
-          </Button>
-        </form>
+
+            <Button type="submit" className="h-12 w-full text-base font-bold" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {copy.submitting}
+                </>
+              ) : (
+                copy.submit
+              )}
+            </Button>
+          </form>
+        </div>
       </main>
     </div>
   );
