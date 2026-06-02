@@ -165,9 +165,10 @@ const CashierPage = () => {
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Caixa</h2>
-        <Card><CardContent className="p-8 text-center text-muted-foreground">Nenhuma loja vinculada.</CardContent></Card>
+        <h2 className="text-2xl font-bold">{t("cashier.title")}</h2>
+        <Card><CardContent className="p-8 text-center text-muted-foreground">{t("common.no_store")}</CardContent></Card>
       </div>
+
     );
   }
 
