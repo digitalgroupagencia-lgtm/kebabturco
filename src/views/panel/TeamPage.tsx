@@ -317,7 +317,7 @@ const TeamPage = () => {
 
   const addMember = async () => {
     if (!storeId || !tenantId || !newEmail.trim()) {
-      toast.error(uiLang === "es" ? "El correo es obligatorio" : "Email é obrigatório");
+      toast.error(t("team.toast.email_required"));
       return;
     }
     const passwordError = validateStaffPassword(newPassword, uiLang);
@@ -419,29 +419,29 @@ const TeamPage = () => {
       _preferred_language: lang,
     });
     if (error) {
-      toast.error(panelLang === "es" ? "Error al actualizar idioma" : "Erro ao atualizar idioma");
+      toast.error(t("team.toast.lang_error"));
       return;
     }
-    toast.success(panelLang === "es" ? "Idioma actualizado" : "Idioma atualizado!");
+    toast.success(t("team.toast.lang_updated"));
     fetchMembers();
   };
 
   const removeMember = async (member: TeamMember) => {
     if (member.user_id === user?.id) {
-      toast.error("Você não pode remover a si mesmo!");
+      toast.error(t("team.toast.cannot_remove_self"));
       return;
     }
 
     const { error } = await supabase.from("user_roles").delete().eq("id", member.id);
-    if (error) { toast.error("Erro ao remover"); return; }
-    toast.success("Membro removido!");
+    if (error) { toast.error(t("team.toast.remove_error")); return; }
+    toast.success(t("team.toast.removed"));
     fetchMembers();
   };
 
   const updateRole = async (memberId: string, role: AppRole) => {
     const { error } = await supabase.from("user_roles").update({ role: role as any }).eq("id", memberId);
-    if (error) { toast.error("Erro ao atualizar papel"); return; }
-    toast.success("Papel atualizado!");
+    if (error) { toast.error(t("team.toast.role_error")); return; }
+    toast.success(t("team.toast.role_updated"));
     fetchMembers();
   };
 
