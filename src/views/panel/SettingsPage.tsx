@@ -100,20 +100,20 @@ const PanelSettingsPage = () => {
     <div className="space-y-6 max-w-5xl">
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <SettingsIcon className="h-6 w-6" /> Configurações
+          <SettingsIcon className="h-6 w-6" /> {t("page.settings.title")}
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Ajuste a operação da sua loja.
+          {t("page.settings.subtitle")}
         </p>
       </div>
 
       <Tabs defaultValue="store" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">
-          <TabsTrigger value="store"><Store className="w-4 h-4 mr-1.5" /> Loja</TabsTrigger>
-          <TabsTrigger value="ops"><Clock className="w-4 h-4 mr-1.5" /> Operação</TabsTrigger>
-          <TabsTrigger value="receipt"><Receipt className="w-4 h-4 mr-1.5" /> Recibo</TabsTrigger>
-          <TabsTrigger value="notif"><Bell className="w-4 h-4 mr-1.5" /> Notificações</TabsTrigger>
-          <TabsTrigger value="hours"><Clock className="w-4 h-4 mr-1.5" /> Horário</TabsTrigger>
+          <TabsTrigger value="store"><Store className="w-4 h-4 mr-1.5" /> {t("settings.tab.store")}</TabsTrigger>
+          <TabsTrigger value="ops"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.ops")}</TabsTrigger>
+          <TabsTrigger value="receipt"><Receipt className="w-4 h-4 mr-1.5" /> {t("settings.tab.receipt")}</TabsTrigger>
+          <TabsTrigger value="notif"><Bell className="w-4 h-4 mr-1.5" /> {t("settings.tab.notif")}</TabsTrigger>
+          <TabsTrigger value="hours"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.hours")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="store">
