@@ -22,6 +22,7 @@ import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
