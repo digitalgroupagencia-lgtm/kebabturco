@@ -20,6 +20,7 @@ import {
   unsubscribeStaffPush,
 } from "@/lib/staffPush";
 import MarketingBroadcastCard from "@/components/panel/MarketingBroadcastCard";
+import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 
 const PanelSettingsPage = () => {
@@ -140,6 +141,8 @@ const PanelSettingsPage = () => {
               <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
             </CardContent>
           </Card>
+
+          <OfficialSiteQrCard />
         </TabsContent>
 
         <TabsContent value="ops">

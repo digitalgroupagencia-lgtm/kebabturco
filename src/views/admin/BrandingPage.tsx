@@ -17,6 +17,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import TenantLivePreview from "@/components/admin/TenantLivePreview";
 import type { TenantPreviewScreen } from "@/lib/tenantPreview";
 import ImageUploadField from "@/components/panel/ImageUploadField";
+import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 
 type Settings = Tables<"company_settings">;
 
@@ -245,6 +246,19 @@ const BrandingPage = () => {
                   </p>
                 </CardContent>
               </Card>
+
+              {previewTenant && (
+                <OfficialSiteQrCard
+                  tenant={{
+                    slug: previewTenant.slug,
+                    custom_domain: previewTenant.custom_domain,
+                    path_slug: previewTenant.path_slug,
+                    master_domain: previewTenant.master_domain,
+                    use_master_domain: previewTenant.use_master_domain,
+                  }}
+                  restaurantName={previewTenant.name}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="language" className="space-y-4 mt-0">

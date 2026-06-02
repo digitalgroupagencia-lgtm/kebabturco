@@ -20,6 +20,7 @@ import { buildDefaultSelectionState, buildDefaultUnitStates } from "@/lib/modifi
 import { parseProductCode } from "@/lib/parseProductCode";
 import type { CartItem } from "@/contexts/CartContext";
 import { comboUnitStepTitle } from "@/lib/modifiers/comboProductRules";
+import { shouldUseCustomizationStepWizard } from "@/lib/modifiers/customizationWizard";
 
 type Props = {
   product: MenuProduct;
@@ -35,7 +36,9 @@ type Props = {
 type WizardStep =
   | { kind: "intro" }
   | { kind: "global"; group: ModifierGroup }
-  | { kind: "unit"; unitIndex: number };
+  | { kind: "unit"; unitIndex: number }
+  | { kind: "note" }
+  | { kind: "summary" };
 
 export default function ProductCustomizationFlow({
   product,
@@ -71,7 +74,11 @@ export default function ProductCustomizationFlow({
   const isMultiUnit =
     effectiveConfig.productType === "combo" && effectiveConfig.comboUnitCount > 1 && unitGroups.length > 0;
 
-  const useStepWizard = effectiveConfig.productType === "combo" && globalGroups.length > 0;
+  const useStepWizard = shouldUseCustomizationStepWizard(
+    effectiveConfig.productType,
+    globalGroups.length,
+    isMultiUnit,
+  );
 
   const wizardSteps = useMemo((): WizardStep[] => {
     if (!useStepWizard) return [];
@@ -82,6 +89,7 @@ export default function ProductCustomizationFlow({
         steps.push({ kind: "unit", unitIndex: i });
       }
     }
+    steps.push({ kind: "note" }, { kind: "summary" });
     return steps;
   }, [useStepWizard, globalGroups, isMultiUnit, effectiveConfig.comboUnitCount]);
 
@@ -198,7 +206,13 @@ export default function ProductCustomizationFlow({
   const unitPrice = computeUnitPrice(basePrice, 0, allSelections);
 
   const validateCurrentStep = (): boolean => {
-    if (currentWizardStep?.kind === "intro") return true;
+    if (
+      currentWizardStep?.kind === "intro" ||
+      currentWizardStep?.kind === "note" ||
+      currentWizardStep?.kind === "summary"
+    ) {
+      return true;
+    }
 
     const groups = activeGroups;
     const state = activeState;
@@ -302,11 +316,15 @@ export default function ProductCustomizationFlow({
   const stepTitle = (() => {
     if (!currentWizardStep) return tProduct(product.name);
     if (currentWizardStep.kind === "intro") return tProduct(product.name);
+    if (currentWizardStep.kind === "note") return t("note");
+    if (currentWizardStep.kind === "summary") return t("customizationSummary");
     if (currentWizardStep.kind === "global") return tProduct(currentWizardStep.group.name);
     return tProduct(comboUnitStepTitle(product, currentWizardStep.unitIndex));
   })();
 
   const stepHint = (() => {
+    if (currentWizardStep?.kind === "summary") return t("customizationSummaryHint");
+    if (currentWizardStep?.kind === "note") return null;
     if (currentWizardStep?.kind === "global") {
       const g = currentWizardStep.group;
       if (g.groupKind === "substitution") return t("potatoStepHint");
@@ -318,7 +336,13 @@ export default function ProductCustomizationFlow({
   })();
 
   const showIntro = !useStepWizard || currentWizardStep?.kind === "intro";
-  const showNote = !useStepWizard || isLastStep;
+  const showNote = !useStepWizard || currentWizardStep?.kind === "note";
+  const showSummary = useStepWizard && currentWizardStep?.kind === "summary";
+
+  const summaryLines = useMemo(
+    () => configurationSummaryLines(configuration, tProduct, t("without")),
+    [configuration, tProduct, t],
+  );
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/15 animate-fade-in">
@@ -383,11 +407,43 @@ export default function ProductCustomizationFlow({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value.slice(0, 200))}
-              rows={2}
+              rows={3}
               placeholder={t("notePlaceholder")}
               className="w-full resize-none rounded-2xl border border-border/60 bg-secondary/25 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
           </section>
+        )}
+
+        {showSummary && (
+          <>
+            <ProductSummaryCard
+              imageUrl={productImage}
+              name={productCleanName}
+              priceLabel={`${unitPrice.toFixed(2)}€`}
+              productCode={productCode}
+              quantity={quantity}
+              onQuantityChange={setQuantity}
+              showQuantity={!editingItem}
+            />
+            {summaryLines.length > 0 && (
+              <section className="space-y-2 rounded-[22px] border border-border/50 bg-card p-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.2)]">
+                <h3 className="text-sm font-black text-foreground">{t("customizationSummary")}</h3>
+                <ul className="space-y-1 text-sm text-foreground/90">
+                  {summaryLines.map((line) => (
+                    <li key={line} className="leading-snug">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {note.trim() && (
+              <section className="rounded-[22px] border border-border/50 bg-card p-4 text-sm text-muted-foreground">
+                <span className="font-bold text-foreground">{t("note")}: </span>
+                {note.trim()}
+              </section>
+            )}
+          </>
         )}
       </div>
 

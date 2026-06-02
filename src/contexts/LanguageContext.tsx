@@ -390,6 +390,18 @@ const translations: Translations = {
   },
   stepOf: { pt: "Passo", en: "Step", es: "Paso", fr: "Étape" },
   of: { pt: "de", en: "of", es: "de", fr: "sur" },
+  customizationSummary: {
+    pt: "Resumo",
+    en: "Summary",
+    es: "Resumen",
+    fr: "Récapitulatif",
+  },
+  customizationSummaryHint: {
+    pt: "Confirme as suas escolhas antes de adicionar ao carrinho.",
+    en: "Confirm your choices before adding to cart.",
+    es: "Confirma tus elecciones antes de añadir al carrito.",
+    fr: "Confirmez vos choix avant d'ajouter au panier.",
+  },
   unit: { pt: "Unidade", en: "Unit", es: "Unidad", fr: "Unité" },
   substitutionHint: {
     pt: "Substitui o acompanhamento — escolhe apenas uma opção",
