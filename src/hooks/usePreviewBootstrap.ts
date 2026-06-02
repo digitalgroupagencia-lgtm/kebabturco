@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { isAdminPreviewMode } from "@/lib/tenantPreview";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";

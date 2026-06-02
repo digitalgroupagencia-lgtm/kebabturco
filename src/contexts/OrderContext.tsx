@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { getEmbedScreen, isEmbedded, isGandiaFoodSource } from "@/lib/embed-mode";
@@ -9,7 +9,7 @@ import {
   loadAnyStoredActiveOrder,
   saveStoredActiveOrder,
   clearStoredActiveOrder,
-} from "@/features/customer/useActiveOrderStorage";
+} from "@/customer/active-order/useActiveOrderStorage";
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearMesaBindingStorage,

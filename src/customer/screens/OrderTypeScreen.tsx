@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { UtensilsCrossed, ShoppingBag, Bike } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";

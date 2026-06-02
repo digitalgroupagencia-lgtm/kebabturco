@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";

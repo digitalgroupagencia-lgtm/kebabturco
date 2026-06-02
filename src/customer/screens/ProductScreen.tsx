@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useEffectiveModifierConfig } from "@/hooks/useEffectiveModifierConfig";
-import ProductCustomizationFlow from "@/components/customization/ProductCustomizationFlow";
-import LegacyProductCustomizer from "@/components/screens/LegacyProductCustomizer";
+import ProductCustomizationFlow from "@/customer/customization/ProductCustomizationFlow";
+import LegacyProductCustomizer from "@/customer/screens/LegacyProductCustomizer";
 import ProductErrorBoundary from "@/components/ProductErrorBoundary";
 import InlineScreenSpinner from "@/components/InlineScreenSpinner";
 import ScreenHeader from "@/components/ScreenHeader";

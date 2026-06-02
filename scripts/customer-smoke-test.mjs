@@ -31,25 +31,25 @@ const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src");
 
 const CRITICAL_FILES = [
-  { name: "Página inicial (Index)", file: "src/pages/Index.tsx" },
-  { name: "Splash", file: "src/components/screens/SplashScreen.tsx" },
-  { name: "Selecção de idioma", file: "src/components/screens/LanguageScreen.tsx" },
-  { name: "Selecção de loja", file: "src/components/screens/StoreSelectionScreen.tsx" },
-  { name: "Cardápio (Home)", file: "src/components/screens/HomeScreen.tsx" },
-  { name: "Produto", file: "src/components/screens/ProductScreen.tsx" },
-  { name: "Carrinho (Review)", file: "src/components/screens/ReviewScreen.tsx" },
-  { name: "Checkout (Payment)", file: "src/components/screens/PaymentScreen.tsx" },
-  { name: "Contexto Carrinho", file: "src/contexts/CartContext.tsx" },
+  { name: "Página inicial (Index)", file: "src/customer/Index.tsx" },
+  { name: "Splash", file: "src/customer/screens/SplashScreen.tsx" },
+  { name: "Selecção de idioma", file: "src/customer/screens/LanguageScreen.tsx" },
+  { name: "Selecção de loja", file: "src/customer/screens/StoreSelectionScreen.tsx" },
+  { name: "Cardápio (Home)", file: "src/customer/screens/HomeScreen.tsx" },
+  { name: "Produto", file: "src/customer/screens/ProductScreen.tsx" },
+  { name: "Carrinho (Review)", file: "src/customer/screens/ReviewScreen.tsx" },
+  { name: "Checkout (Payment)", file: "src/customer/screens/PaymentScreen.tsx" },
+  { name: "Contexto Carrinho", file: "src/customer/contexts/CartContext.tsx" },
   // Customização de produto / modificadores
-  { name: "Modificador (radio)", file: "src/components/customization/ModifierRadioRow.tsx" },
-  { name: "Modificador (checkbox)", file: "src/components/customization/ModifierCheckboxRow.tsx" },
-  { name: "Grupo de escolha", file: "src/components/customization/ChoiceGroupSection.tsx" },
+  { name: "Modificador (radio)", file: "src/customer/customization/ModifierRadioRow.tsx" },
+  { name: "Modificador (checkbox)", file: "src/customer/customization/ModifierCheckboxRow.tsx" },
+  { name: "Grupo de escolha", file: "src/customer/customization/ChoiceGroupSection.tsx" },
 ];
 
 // Símbolos que o fluxo cliente PRECISA expor — se algum desaparecer, bloqueia.
 const CRITICAL_SYMBOLS = [
-  { file: "src/contexts/CartContext.tsx", needle: /addItem\s*[:=]/, label: "CartContext.addItem" },
-  { file: "src/contexts/CartContext.tsx", needle: /clearCart\s*[:=]/, label: "CartContext.clearCart" },
+  { file: "src/customer/contexts/CartContext.tsx", needle: /addItem\s*[:=]/, label: "CartContext.addItem" },
+  { file: "src/customer/contexts/CartContext.tsx", needle: /clearCart\s*[:=]/, label: "CartContext.clearCart" },
   { file: "src/contexts/OrderContext.tsx", needle: /setScreen\s*[:=(]/, label: "OrderContext.setScreen" },
 ];
 

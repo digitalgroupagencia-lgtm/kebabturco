@@ -1,6 +1,6 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
 import { useLanguage } from "@/contexts/LanguageContext";
-import UpsellProductCard from "@/components/customization/UpsellProductCard";
+import UpsellProductCard from "@/customer/customization/UpsellProductCard";
 import { X } from "lucide-react";
 
 type Props = {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import CustomerNotificationOptInDialog from "@/components/CustomerNotificationOptInDialog";
+import CustomerNotificationOptInDialog from "@/customer/components/CustomerNotificationOptInDialog";
 import {
   isCustomerMarketingPushSupported,
   shouldPromptCustomerMarketingPush,

@@ -16,7 +16,7 @@ import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
-import CustomerAreaBoundary from "@/components/CustomerAreaBoundary.tsx";
+import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";

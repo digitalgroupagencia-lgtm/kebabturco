@@ -177,13 +177,9 @@ export default defineConfig(({ mode }) => {
 
           // Área cliente
           if (
-            id.includes("/src/components/screens/") ||
-            id.includes("/src/components/customization/") ||
-            id.includes("/src/components/Customer") ||
-            id.includes("/src/contexts/CartContext") ||
+            id.includes("/src/customer/") ||
             id.includes("/src/contexts/OrderContext") ||
-            id.includes("/src/contexts/LanguageContext") ||
-            id.includes("/src/pages/Index")
+            id.includes("/src/contexts/LanguageContext")
           ) {
             return "customer";
           }

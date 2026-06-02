@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Lock, Minus, Plus, X } from "lucide-react";
-import { useCart, type CartItem } from "@/contexts/CartContext";
+import { useCart, type CartItem } from "@/customer/contexts/CartContext";
 import { isDrinkProduct } from "@/lib/modifiers/drinkProduct";
 import { type Extra, type Size, type Variant } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
-import ProductSummaryCard from "@/components/customization/ProductSummaryCard";
+import ProductSummaryCard from "@/customer/customization/ProductSummaryCard";
 import ScreenHeader from "@/components/ScreenHeader";
 import { emojiFor } from "@/lib/foodEmojis";
 import { parseProductCode } from "@/lib/parseProductCode";

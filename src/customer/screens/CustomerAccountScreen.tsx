@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrder } from "@/contexts/OrderContext";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/customer/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ScreenHeader from "@/components/ScreenHeader";

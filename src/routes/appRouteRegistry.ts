@@ -3,7 +3,7 @@
  */
 import { lazy } from "react";
 
-export const Index = lazy(() => import("@/pages/Index.tsx"));
+export const Index = lazy(() => import("@/customer/Index.tsx"));
 export const Auth = lazy(() => import("@/pages/Auth.tsx"));
 export const StaffLogin = lazy(() => import("@/components/staff/StaffEmailLoginScreen.tsx"));
 export const NotFound = lazy(() => import("@/pages/NotFound.tsx"));
