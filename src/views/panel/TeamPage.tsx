@@ -329,32 +329,14 @@ const TeamPage = () => {
         preferred_language: newLanguage,
       });
 
-      toast.success(
-        uiLang === "es"
-          ? `Miembro añadido como ${roleLabels[newRole].label}`
-          : `Membro adicionado como ${roleLabels[newRole].label}!`,
-      );
+      toast.success(t("team.toast.member_added").replace("{role}", roleLabels[newRole].label));
       if (result.password_unchanged) {
-        toast.info(
-          uiLang === "es"
-            ? "Este correo ya existía: se añadió al equipo, pero la contraseña anterior se mantiene."
-            : "Este e-mail já existia: foi adicionado à equipa, mas a senha anterior mantém-se.",
-        );
+        toast.info(t("team.toast.email_existed"));
       }
       if (!result.login_ready) {
-        toast.warning(
-          uiLang === "es"
-            ? "Miembro creado, pero el login aún no responde. Edítelo, vuelva a escribir la contraseña y guarde. Si persiste, haga Sync + Publish."
-            : "Membro criado, mas o login ainda não responde. Edite-o, volte a escrever a senha e guarde. Se continuar, faça Sync + Publish.",
-          { duration: 8000 },
-        );
+        toast.warning(t("team.toast.login_pending_create"), { duration: 8000 });
       } else {
-        toast.success(
-          uiLang === "es"
-            ? "Login listo: puede entrar con este correo y contraseña en Área del equipo."
-            : "Login pronto: pode entrar com este e-mail e senha na Área da equipe.",
-          { duration: 6000 },
-        );
+        toast.success(t("team.toast.login_ready"), { duration: 6000 });
       }
       setWelcomeData({
         name: newName.trim(),
