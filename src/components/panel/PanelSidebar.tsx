@@ -19,7 +19,9 @@ import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
+import { useStaffT } from "@/hooks/useStaffT";
 import { panelNavGroupsForRole } from "@/lib/staffPermissions";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 import {
   Sidebar,
   SidebarContent,
