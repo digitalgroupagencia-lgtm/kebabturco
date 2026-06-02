@@ -11,9 +11,11 @@ import {
   globalMeatChoiceVariants,
   allowsPerUnitMeatChoice,
   allowsPerUnitPizzaFlavor,
+  hasFixedProtein,
   inferComboUnitCount,
   inferComboUnitKind,
   isClosedProteinCombo,
+  isVariableProteinProduct,
   perUnitChoiceGroupName,
   perUnitChoiceVariants,
   productDescriptionText,
@@ -25,6 +27,35 @@ import {
   normalizeProductClassification,
   resolveIsComboProduct,
 } from "./productClassification";
+
+/** Normaliza rótulo para dedup case-insensitive + sem acentos. */
+function normalizeIngredientKey(label: string): string {
+  return label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Capitaliza para exibição uniforme. */
+function prettifyIngredientLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
+/** Rótulos que NÃO devem aparecer em "quitar ingredientes" (carne base, escolhas, etc). */
+function isExcludedRemovalLabel(label: string, product: MenuProduct): boolean {
+  const key = normalizeIngredientKey(label);
+  if (!key) return true;
+  if (/^carne(\s+de\s+\w+)?$/.test(key)) return true;
+  if (/^(pollo|ternera|mixto|frango|vaca|crispy)$/.test(key)) return true;
+  if ((hasFixedProtein(product) || isVariableProteinProduct(product)) && /^carne\b/.test(key)) {
+    return true;
+  }
+  return false;
+}
 
 const SYNTH_PREFIX = "synth";
 
@@ -289,21 +320,31 @@ function buildModifierConfigFromProduct(
     );
   }
 
-  const removalLabels = new Set<string>();
+  // Dedup case-insensitive + sem acentos. Mantém a primeira variante "bonita" do rótulo.
+  const removalMap = new Map<string, string>();
+  const addRemoval = (raw: string) => {
+    if (!raw) return;
+    const cleaned = raw.trim();
+    if (!cleaned || isExcludedRemovalLabel(cleaned, product)) return;
+    const key = normalizeIngredientKey(cleaned);
+    if (!key || removalMap.has(key)) return;
+    removalMap.set(key, prettifyIngredientLabel(cleaned));
+  };
+
   const substitutionExtras: Extra[] = [];
   const drinkExtras: Extra[] = [];
   const paidExtras: Extra[] = [];
 
   if (!isDrink && allowsIngredientRemoval(product)) {
     for (const ing of product.ingredients || []) {
-      if (ing && !isDrinkOption(ing) && !isSubstitutionOption(ing)) removalLabels.add(ing);
+      if (ing && !isDrinkOption(ing) && !isSubstitutionOption(ing)) addRemoval(ing);
     }
   }
 
   for (const extra of product.extras || []) {
     const label = extra.name.es || extra.name.pt || extra.name.en || "";
     if (!isDrink && isRemovalLabel(label)) {
-      removalLabels.add(stripRemovalPrefix(label));
+      addRemoval(stripRemovalPrefix(label));
       continue;
     }
     if (isSubstitutionOption(label)) {
@@ -323,7 +364,7 @@ function buildModifierConfigFromProduct(
   const descFull = product.description?.es || product.description?.pt || product.description?.en || "";
   if (!isDrink && allowsIngredientRemoval(product)) {
     for (const ing of parseRemovableIngredients(descFull, globalMeatVariants.length >= 2)) {
-      removalLabels.add(ing);
+      addRemoval(ing);
     }
   }
 
@@ -333,11 +374,11 @@ function buildModifierConfigFromProduct(
     !isDrink &&
     isMultiUnit &&
     allowsIngredientRemoval(product) &&
-    removalLabels.size === 0 &&
+    removalMap.size === 0 &&
     (inferComboUnitKind(product) === "pita" || inferComboUnitKind(product) === "rollo")
   ) {
     for (const label of ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"]) {
-      removalLabels.add(label);
+      addRemoval(label);
     }
   }
 
@@ -361,7 +402,7 @@ function buildModifierConfigFromProduct(
     }
   }
 
-  if (!isDrink && allowsIngredientRemoval(product) && removalLabels.size > 0) {
+  if (!isDrink && allowsIngredientRemoval(product) && removalMap.size > 0) {
     groups.push(
       makeGroup(product.id, "removal", {
         name: { es: "Quitar ingredientes", pt: "Retirar ingredientes", en: "Remove ingredients", fr: "Retirer" },
@@ -374,7 +415,7 @@ function buildModifierConfigFromProduct(
         sortOrder: 2,
         repeatPerUnit: isMultiUnit && allowsIngredientRemoval(product),
         linkSortOrder: 2,
-        options: Array.from(removalLabels).map((label, i) => ({
+        options: Array.from(removalMap.values()).map((label, i) => ({
           id: `${SYNTH_PREFIX}-${product.id}-rem-${i}`,
           groupId: `${SYNTH_PREFIX}-${product.id}-removal`,
           name: { es: label, pt: label, en: label, fr: label },
