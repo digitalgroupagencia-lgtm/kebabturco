@@ -3,7 +3,8 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ScreenHeader from "@/components/ScreenHeader";
-import { Trash2, ShoppingCart, Pencil, Plus, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike, ArrowRight } from "lucide-react";
+import UpsellProductCard from "@/components/customization/UpsellProductCard";
+import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, Utensils, ShoppingBag, Bike, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
@@ -330,36 +331,15 @@ const ReviewScreen = () => {
                 {sectionTitle}
               </p>
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-0.5">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-0.5 snap-x snap-mandatory">
               {suggestions.map((p) => (
-                <button
+                <UpsellProductCard
                   key={p.id}
+                  product={p}
+                  menuProducts={products}
                   onClick={() => handleAddSuggestion(p.id)}
-                  className="shrink-0 w-[108px] bg-card border border-border rounded-xl shadow-card overflow-hidden text-left active:scale-[0.97] transition-transform"
-                >
-                  <div className="h-[52px] bg-secondary/40 overflow-hidden">
-                    <img
-                      src={p.image}
-                      alt={tProduct(p.name)}
-                      className="w-full h-full object-cover object-center"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="px-2 py-1.5 flex flex-col gap-1">
-                    <p className="text-[11px] font-bold text-foreground line-clamp-2 leading-snug break-words hyphens-auto">
-                      {tProduct(p.name).replace(/^\d{1,3}[A-Za-z]?\s*[.\-–—:)]\s*/, "")}
-                    </p>
-
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[12px] font-black text-price tabular-nums">
-                        {p.price.toFixed(2)}€
-                      </span>
-                      <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                        <Plus className="w-3.5 h-3.5" strokeWidth={3} />
-                      </span>
-                    </div>
-                  </div>
-                </button>
+                  className="snap-start"
+                />
               ))}
 
               {showButton && (
