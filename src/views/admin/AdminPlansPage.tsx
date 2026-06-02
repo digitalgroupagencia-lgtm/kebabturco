@@ -72,6 +72,7 @@ export default function AdminPlansPage() {
   const flagSummary = flags
     ? `${flags.filter((f) => f.enabled).length} funcionalidades activas neste plano`
     : "";
+  const sellerOn = flags?.find((f) => f.feature_key === "seller_app")?.enabled ?? false;
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
