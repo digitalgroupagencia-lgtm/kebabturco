@@ -184,12 +184,12 @@ const ReviewScreen = () => {
         {/* Tipo de pedido + Mesa */}
         <section className="rounded-2xl border border-border bg-card p-3 shadow-card">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 p-1.5">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center">
               {orderType && (
                 <OrderTypeIcon
                   type={orderType}
-                  imgClassName="h-full w-full object-contain"
-                  iconClassName="h-5 w-5 text-primary"
+                  imgClassName="h-14 w-14 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)]"
+                  iconClassName="h-10 w-10 text-foreground/70"
                 />
               )}
             </div>
