@@ -50,6 +50,8 @@ import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Ha
 import ScreenHeader from "@/components/ScreenHeader";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
+import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
+import { useSellerMode } from "@/contexts/SellerModeContext";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
   { id: "card", icon: CreditCard },
