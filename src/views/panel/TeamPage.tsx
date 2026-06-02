@@ -287,7 +287,7 @@ const TeamPage = () => {
         lang,
       });
 
-      toast.success(lang === "es" ? "Miembro actualizado" : "Membro actualizado");
+      toast.success(t("team.toast.member_updated"));
       if (editPassword.trim() && !loginReady) {
         toast.warning(
           lang === "es"
