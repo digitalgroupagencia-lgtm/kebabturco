@@ -159,11 +159,8 @@ const SellersPage = () => {
         <Card>
           <CardContent className="p-6 text-center space-y-3">
             <Users className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h2 className="text-xl font-bold">Módulo Vendedor desactivado</h2>
-            <p className="text-sm text-muted-foreground">
-              Este módulo é controlado pela plataforma. Contacte o administrador
-              para o activar no seu restaurante.
-            </p>
+            <h2 className="text-xl font-bold">{t("page.sellers.disabled.title")}</h2>
+            <p className="text-sm text-muted-foreground">{t("page.sellers.disabled.body")}</p>
           </CardContent>
         </Card>
       </div>
@@ -174,11 +171,11 @@ const SellersPage = () => {
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6" /> Vendedores</h2>
-          <p className="text-sm text-muted-foreground">Funcionários que tiram pedidos pelo celular vinculando mesa e cliente.</p>
+          <h2 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6" /> {t("page.sellers.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("page.sellers.subtitle")}</p>
         </div>
         <Button onClick={() => setOpen(true)} disabled={overLimit}>
-          <UserPlus className="w-4 h-4 mr-2" /> Novo vendedor
+          <UserPlus className="w-4 h-4 mr-2" /> {t("page.sellers.new")}
         </Button>
       </div>
 
