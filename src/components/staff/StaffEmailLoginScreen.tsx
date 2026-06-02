@@ -23,6 +23,14 @@ const StaffEmailLoginScreen = () => {
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
+  const { settings } = useBranding();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const brandLogo =
+    (isDark && (settings as any)?.logo_main_dark_url) ||
+    settings?.logo_main_url ||
+    null;
+  const brandName = settings?.company_name || "Logo";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
