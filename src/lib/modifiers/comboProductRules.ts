@@ -114,10 +114,15 @@ export function isClosedProteinCombo(product: MenuProduct): boolean {
 
 export function inferComboUnitKind(product: MenuProduct): ComboUnitKind {
   const text = productText(product);
+  const desc = productDescriptionText(product);
+  const combined = `${text} ${desc}`;
   if (isClosedProteinCombo(product)) return "piece";
-  if (/pizza/i.test(text)) return "pizza";
-  if (/pan\s*pita|\bpita\b/i.test(text)) return "pita";
-  if (/rollo/i.test(text)) return "rollo";
+  if (/pizza/i.test(combined)) return "pizza";
+  if (/pan\s*pita|\bpita\b/i.test(combined)) return "pita";
+  if (/rollo|\bdurum\b|\bdürüm\b/i.test(combined)) return "rollo";
+  if (/hamburgues|\bburger\b|\bburguer\b/i.test(combined)) return "burger";
+  if (/\bkebab\b|\bshawarma\b|\bdoner\b|\bdöner\b/i.test(combined)) return "kebab";
+  if (/\bsandwich\b|\bsándwich\b|\bbocadillo\b|\bbocata\b/i.test(combined)) return "sandwich";
   return null;
 }
 
@@ -177,9 +182,25 @@ export function allowsGlobalMeatChoice(product: MenuProduct): boolean {
 
 export function allowsIngredientRemoval(product: MenuProduct): boolean {
   if (isClosedProteinCombo(product)) return false;
+  if (isDrinkProduct(product)) return false;
   const kind = inferComboUnitKind(product);
-  return kind === "pita" || kind === "rollo" || kind === null;
+  // Pizza tem sua própria personalização (sabor); demais tipos com ingredientes podem remover.
+  if (kind === "pizza") return false;
+  return true;
 }
+
+/** Conjunto padrão de ingredientes removíveis quando o produto não lista no descritivo. */
+export function defaultRemovableIngredients(product: MenuProduct): string[] {
+  const kind = inferComboUnitKind(product);
+  if (kind === "burger") {
+    return ["Lechuga", "Tomate", "Cebolla", "Pepinillos", "Queso", "Salsas"];
+  }
+  if (kind === "pita" || kind === "rollo" || kind === "kebab" || kind === "sandwich") {
+    return ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"];
+  }
+  return [];
+}
+
 
 export {
   productIncludesPotato,
