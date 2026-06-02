@@ -6,11 +6,12 @@
 
 @layer base {
   :root {
-    /* ── Brand wine source tokens (overridable via BrandingContext / white-label) ── */
-    --brand-wine: 356 58% 34%;
-    --brand-wine-dark: 356 64% 24%;
-    --brand-wine-light: 356 52% 40%;
-    --brand-wine-muted: 356 42% 48%;
+    /* ── Brand wine source tokens (deep burgundy / vinho, evita vermelho vivo) ── */
+    /* Referência: #5A1023 / #65152A / #6D1830 — bordô profundo premium */
+    --brand-wine: 348 64% 24%;
+    --brand-wine-dark: 350 70% 20%;
+    --brand-wine-light: 346 60% 28%;
+    --brand-wine-muted: 346 38% 38%;
 
     --background: 0 0% 100%;
     --foreground: 0 0% 13%;
