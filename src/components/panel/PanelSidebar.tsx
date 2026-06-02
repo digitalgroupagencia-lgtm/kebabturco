@@ -18,6 +18,7 @@ import { NavLink as RouterNavLink } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { panelNavGroupsForRole } from "@/lib/staffPermissions";
 import {
   Sidebar,
