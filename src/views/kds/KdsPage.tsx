@@ -66,6 +66,9 @@ function playBeep() {
 const KdsPage = () => {
   const { user, loading: authLoading } = useAuth();
   const { storeId } = useAdminStoreId();
+  const { t } = useStaffT();
+
+  const { storeId } = useAdminStoreId();
   const [orders, setOrders] = useState<KdsOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
