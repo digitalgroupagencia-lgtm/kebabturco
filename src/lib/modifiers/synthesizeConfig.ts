@@ -320,21 +320,31 @@ function buildModifierConfigFromProduct(
     );
   }
 
-  const removalLabels = new Set<string>();
+  // Dedup case-insensitive + sem acentos. Mantém a primeira variante "bonita" do rótulo.
+  const removalMap = new Map<string, string>();
+  const addRemoval = (raw: string) => {
+    if (!raw) return;
+    const cleaned = raw.trim();
+    if (!cleaned || isExcludedRemovalLabel(cleaned, product)) return;
+    const key = normalizeIngredientKey(cleaned);
+    if (!key || removalMap.has(key)) return;
+    removalMap.set(key, prettifyIngredientLabel(cleaned));
+  };
+
   const substitutionExtras: Extra[] = [];
   const drinkExtras: Extra[] = [];
   const paidExtras: Extra[] = [];
 
   if (!isDrink && allowsIngredientRemoval(product)) {
     for (const ing of product.ingredients || []) {
-      if (ing && !isDrinkOption(ing) && !isSubstitutionOption(ing)) removalLabels.add(ing);
+      if (ing && !isDrinkOption(ing) && !isSubstitutionOption(ing)) addRemoval(ing);
     }
   }
 
   for (const extra of product.extras || []) {
     const label = extra.name.es || extra.name.pt || extra.name.en || "";
     if (!isDrink && isRemovalLabel(label)) {
-      removalLabels.add(stripRemovalPrefix(label));
+      addRemoval(stripRemovalPrefix(label));
       continue;
     }
     if (isSubstitutionOption(label)) {
@@ -354,7 +364,7 @@ function buildModifierConfigFromProduct(
   const descFull = product.description?.es || product.description?.pt || product.description?.en || "";
   if (!isDrink && allowsIngredientRemoval(product)) {
     for (const ing of parseRemovableIngredients(descFull, globalMeatVariants.length >= 2)) {
-      removalLabels.add(ing);
+      addRemoval(ing);
     }
   }
 
@@ -364,11 +374,11 @@ function buildModifierConfigFromProduct(
     !isDrink &&
     isMultiUnit &&
     allowsIngredientRemoval(product) &&
-    removalLabels.size === 0 &&
+    removalMap.size === 0 &&
     (inferComboUnitKind(product) === "pita" || inferComboUnitKind(product) === "rollo")
   ) {
     for (const label of ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"]) {
-      removalLabels.add(label);
+      addRemoval(label);
     }
   }
 
