@@ -143,6 +143,31 @@ const SellersPage = () => {
   const active = sellers?.length ?? 0;
   const overLimit = active >= allowed;
 
+  if (sellerFlagLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!sellerEnabled) {
+    return (
+      <div className="max-w-xl mx-auto py-12">
+        <Card>
+          <CardContent className="p-6 text-center space-y-3">
+            <Users className="w-10 h-10 mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-bold">Módulo Vendedor desactivado</h2>
+            <p className="text-sm text-muted-foreground">
+              Este módulo é controlado pela plataforma. Contacte o administrador
+              para o activar no seu restaurante.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
