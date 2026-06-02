@@ -30,6 +30,7 @@ const SellersPage = () => {
   const tenantId = roleData?.tenant_id;
   const storeId = roleData?.store_id;
   const { enabled: sellerEnabled, isLoading: sellerFlagLoading } = useSellerModuleEnabled(tenantId);
+  const { t } = useStaffT();
   const qc = useQueryClient();
   const billing = useTenantBilling(tenantId);
   const [open, setOpen] = useState(false);
