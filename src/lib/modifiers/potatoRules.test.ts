@@ -142,6 +142,9 @@ describe("synthesize potato groups", () => {
     const rollo = menu.find((p) => p.id === "r2")!;
     const legacyConfig: ProductModifierConfig = {
       productId: rollo.id,
+      productType: "simple",
+      comboUnitCount: 0,
+      unitLabel: { es: "Unidad", pt: "Unidade", en: "Unit", fr: "Unité" },
       hasStructuredModifiers: true,
       groups: [
         {
