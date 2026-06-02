@@ -14,7 +14,7 @@ const baseSettings = {
 } as any;
 
 describe("paymentPolicy", () => {
-  it("takeaway: dinheiro por defeito; cartão só com pagamento online activo", () => {
+  it("takeaway: dinheiro por defeito; cartão continua visível em modo teste", () => {
     expect(
       resolveCheckoutMethods({
         orderType: "takeaway",
@@ -23,7 +23,7 @@ describe("paymentPolicy", () => {
         stripeReady: false,
         stripePublishableKey: true,
       }),
-    ).toEqual(["cash"]);
+    ).toEqual(["card", "cash"]);
     expect(
       resolveCheckoutMethods({
         orderType: "takeaway",

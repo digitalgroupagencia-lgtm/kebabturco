@@ -27,14 +27,10 @@ function cashAllowedForOrderType(
   return false;
 }
 
-/** Cartão só aparece quando pagamento online está realmente activo. */
+/** Cartão listado no checkout quando existe chave publicável (inclui modo teste). */
 export function cardListedInCheckout(input: PaymentPolicyInput): boolean {
-  const { settings, stripePublishableKey, stripeReady } = input;
-  return (
-    stripePublishableKey &&
-    stripeReady &&
-    opsFlag(settings, "pay_card_enabled", true)
-  );
+  const { settings, stripePublishableKey } = input;
+  return stripePublishableKey && opsFlag(settings, "pay_card_enabled", true);
 }
 
 /** Métodos disponíveis no checkout conforme tipo de pedido e configuração. */
