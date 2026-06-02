@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type KdsOrder = {
   id: string;
@@ -16,11 +17,12 @@ type KdsOrder = {
   created_at: string;
 };
 
-const STATUS_COLUMNS: Array<{ key: string; label: string; tone: string }> = [
-  { key: "new", label: "Novos", tone: "border-red-500/60 bg-red-500/5" },
-  { key: "preparing", label: "Em preparação", tone: "border-amber-500/60 bg-amber-500/5" },
-  { key: "ready", label: "Prontos", tone: "border-emerald-500/60 bg-emerald-500/5" },
+const STATUS_COLUMN_KEYS = [
+  { key: "new", labelKey: "kds.col.new" as const, tone: "border-red-500/60 bg-red-500/5" },
+  { key: "preparing", labelKey: "kds.col.preparing" as const, tone: "border-amber-500/60 bg-amber-500/5" },
+  { key: "ready", labelKey: "kds.col.ready" as const, tone: "border-emerald-500/60 bg-emerald-500/5" },
 ];
+
 
 const NEW_STATUSES = new Set(["pending", "confirmed", "new"]);
 const PREP_STATUSES = new Set(["preparing", "in_preparation"]);
