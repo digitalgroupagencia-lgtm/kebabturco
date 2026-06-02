@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowLeft } from "lucide-react";
-import brandLogo from "@/assets/elrey-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
+import { useBranding } from "@/contexts/BrandingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { markStaffSession, resolveStaffLoginDestination } from "@/lib/staffLogin";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
@@ -22,6 +23,14 @@ const StaffEmailLoginScreen = () => {
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
+  const { settings } = useBranding();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const brandLogo =
+    (isDark && (settings as any)?.logo_main_dark_url) ||
+    settings?.logo_main_url ||
+    null;
+  const brandName = settings?.company_name || "Logo";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -96,9 +105,9 @@ const StaffEmailLoginScreen = () => {
       <main className="flex flex-1 items-center justify-center overflow-y-auto px-6 py-8">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-primary/5 ring-1 ring-primary/15">
-              <img src={brandLogo} alt="Logo" className="h-full w-full object-contain p-2" />
-            </div>
+            {brandLogo && (
+              <img src={brandLogo} alt={brandName} className="mb-5 h-28 w-28 object-contain drop-shadow-xl" />
+            )}
             <h1 className="text-2xl font-bold leading-tight text-foreground">{copy.title}</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">{copy.subtitle}</p>
             <p className="mt-4 text-sm text-muted-foreground">{copy.instruction}</p>
