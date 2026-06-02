@@ -487,7 +487,7 @@ export default function ProductCustomizationFlow({
         <ProductUpsellSheet
           title={upsellTitle}
           suggestions={upsellSuggestions}
-          menuProducts={products}
+          menuProducts={menuProducts}
           onPick={(id) => {
             setUpsellOpen(false);
             if (onOpenProduct) onOpenProduct(id);
