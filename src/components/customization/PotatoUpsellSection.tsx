@@ -53,7 +53,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
           group={group}
           title={tName(group.name)}
           subtitle={t("substitutionHint")}
-          badge={group.isRequired && count === 0 ? t("required") : t("required")}
+          badge={group.isRequired ? t("required") : t("optional")}
           badgeTone={group.isRequired && count === 0 ? "required" : count > 0 ? "done" : "optional"}
         />
       )}
