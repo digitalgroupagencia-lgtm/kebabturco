@@ -19,9 +19,16 @@ import {
   perUnitChoiceGroupName,
   perUnitChoiceVariants,
   productDescriptionText,
-  productIncludesPotato,
   resolveUnitLabel,
 } from "./comboProductRules";
+import {
+  COMBO_POTATO_UPGRADE_PRICE,
+  isPotatoOptionLabel,
+  productIncludesSidePotato,
+  resolvePotatoMenuOptions,
+  shouldOfferPotatoExtra,
+  POTATO_EXTRA_GROUP_KEY,
+} from "./potatoRules";
 import {
   descriptionIncludesDrink,
   normalizeProductClassification,
@@ -84,8 +91,7 @@ function stripRemovalPrefix(label: string): string {
 }
 
 function isSubstitutionOption(label: string): boolean {
-  const lower = label.toLowerCase();
-  return /patata|bravas|deluxe|fritas|lux|batata/i.test(lower) && !/extra|dentro|\+/i.test(lower);
+  return isPotatoOptionLabel(label);
 }
 
 function isDrinkOption(label: string): boolean {
@@ -143,12 +149,10 @@ function variantsToOptions(productId: string, groupKey: string, variants: Varian
   }));
 }
 
-const COMBO_POTATO_UPGRADE_PRICE = 0.5;
+function buildPotatoUpgradeGroup(product: MenuProduct, substitutionExtras: Extra[]): ModifierGroup | null {
+  if (!productIncludesSidePotato(product)) return null;
 
-function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: Extra[]): ModifierGroup | null {
   const isCombo = resolveIsComboProduct(product);
-  if (!isCombo && substitutionExtras.length === 0) return null;
-
   const productId = product.id;
   let options: ModifierOption[] = substitutionExtras.map((e, i) => {
     const opt = optionFromExtra(productId, "substitution", e, i, {
@@ -157,7 +161,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
     });
     const label = `${e.name.es || ""} ${e.name.pt || ""}`.toLowerCase();
     const priceDelta =
-      e.price > 0 && productIncludesPotato(product) && /bravas|lux|deluxe|especial/.test(label)
+      e.price > 0 && /bravas|lux|deluxe|especial/.test(label)
         ? COMBO_POTATO_UPGRADE_PRICE
         : e.price || 0;
     return { ...opt, name: cleanSideOptionName(e.name), priceDelta };
@@ -169,7 +173,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
   });
 
   const hasIncluded = options.some((o) => o.priceDelta === 0);
-  if (isCombo && !hasIncluded && (productIncludesPotato(product) || options.length > 0)) {
+  if ((isCombo || productIncludesSidePotato(product)) && !hasIncluded) {
     options = [
       {
         id: `${SYNTH_PREFIX}-${productId}-substitution-included`,
@@ -199,7 +203,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
       name: cleanSideOptionName(upgradeExtra.name),
       priceDelta: COMBO_POTATO_UPGRADE_PRICE,
     });
-  } else if (isCombo && productIncludesPotato(product) && !options.some((o) => /bravas/i.test(`${o.name.es} ${o.name.pt}`))) {
+  } else if (!options.some((o) => /bravas/i.test(`${o.name.es} ${o.name.pt}`))) {
     options.push({
       id: `${SYNTH_PREFIX}-${productId}-substitution-bravas`,
       groupId: `${SYNTH_PREFIX}-${productId}-substitution`,
@@ -216,7 +220,7 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
     });
   }
 
-  if (isCombo && productIncludesPotato(product) && !options.some((o) => /lux|deluxe|especial/i.test(`${o.name.es} ${o.name.pt}`))) {
+  if (!options.some((o) => /lux|deluxe|especial/i.test(`${o.name.es} ${o.name.pt}`))) {
     options.push({
       id: `${SYNTH_PREFIX}-${productId}-substitution-lux`,
       groupId: `${SYNTH_PREFIX}-${productId}-substitution`,
@@ -236,7 +240,12 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
   if (options.length < 2) return null;
 
   return makeGroup(productId, "substitution", {
-    name: { es: "Acompañamiento", pt: "Acompanhamento", en: "Side dish", fr: "Accompagnement" },
+    name: {
+      es: "¿Quieres mejorar tus patatas?",
+      pt: "Quer melhorar as batatas?",
+      en: "Upgrade your fries?",
+      fr: "Améliorer vos frites ?",
+    },
     description: {},
     groupKind: "substitution",
     selectionMode: "single",
@@ -246,6 +255,39 @@ function buildPotatoSubstitutionGroup(product: MenuProduct, substitutionExtras: 
     sortOrder: 1,
     repeatPerUnit: false,
     linkSortOrder: 1,
+    options,
+  });
+}
+
+function buildPotatoExtraGroup(productId: string, menuPotatoes: ReturnType<typeof resolvePotatoMenuOptions>): ModifierGroup | null {
+  if (menuPotatoes.length === 0) return null;
+
+  const options: ModifierOption[] = menuPotatoes.map((p, i) => ({
+    id: p.id,
+    groupId: `${SYNTH_PREFIX}-${productId}-${POTATO_EXTRA_GROUP_KEY}`,
+    name: p.name,
+    priceDelta: p.price,
+    maxQty: 1,
+    isDefault: false,
+    sortOrder: i,
+  }));
+
+  return makeGroup(productId, POTATO_EXTRA_GROUP_KEY, {
+    name: {
+      es: "¿Quieres añadir patatas?",
+      pt: "Quer adicionar batatas?",
+      en: "Add fries?",
+      fr: "Ajouter des frites ?",
+    },
+    description: {},
+    groupKind: "extra",
+    selectionMode: "single",
+    minSelect: 0,
+    maxSelect: 1,
+    isRequired: false,
+    sortOrder: 2,
+    repeatPerUnit: false,
+    linkSortOrder: 2,
     options,
   });
 }
@@ -348,7 +390,9 @@ function buildModifierConfigFromProduct(
       continue;
     }
     if (isSubstitutionOption(label)) {
-      substitutionExtras.push(extra);
+      if (productIncludesSidePotato(product)) {
+        substitutionExtras.push(extra);
+      }
       continue;
     }
     if (isDrinkOption(label)) {
@@ -428,13 +472,17 @@ function buildModifierConfigFromProduct(
     );
   }
 
-  const potatoGroup =
-    isCombo || substitutionExtras.length > 0
-      ? buildPotatoSubstitutionGroup(product, substitutionExtras)
-      : null;
-  if (potatoGroup) {
-    groups.push(potatoGroup);
-  } else if (substitutionExtras.length >= 2) {
+  const potatoUpgradeGroup = buildPotatoUpgradeGroup(product, substitutionExtras);
+  if (potatoUpgradeGroup) {
+    groups.push(potatoUpgradeGroup);
+  }
+
+  if (shouldOfferPotatoExtra(product) && menuProducts.length > 0) {
+    const potatoExtraGroup = buildPotatoExtraGroup(product.id, resolvePotatoMenuOptions(menuProducts));
+    if (potatoExtraGroup) {
+      groups.push(potatoExtraGroup);
+    }
+  } else if (substitutionExtras.length >= 2 && productIncludesSidePotato(product)) {
     groups.push(
       makeGroup(product.id, "substitution", {
         name: { es: "Acompañamiento", pt: "Acompanhamento", en: "Side dish", fr: "Accompagnement" },
@@ -453,6 +501,11 @@ function buildModifierConfigFromProduct(
       }),
     );
   }
+
+  const paidExtrasFiltered = paidExtras.filter((e) => {
+    const label = `${e.name.es || ""} ${e.name.pt || ""}`;
+    return !isSubstitutionOption(label);
+  });
 
   if (drinkExtras.length >= 2) {
     groups.push(
@@ -488,7 +541,7 @@ function buildModifierConfigFromProduct(
     );
   }
 
-  if (paidExtras.length > 0) {
+  if (paidExtrasFiltered.length > 0) {
     groups.push(
       makeGroup(product.id, "extra", {
         name: { es: "Extras", pt: "Extras", en: "Extras", fr: "Extras" },
@@ -501,7 +554,7 @@ function buildModifierConfigFromProduct(
         sortOrder: 3,
         repeatPerUnit: isMultiUnit && allowsIngredientRemoval(product),
         linkSortOrder: 3,
-        options: paidExtras.map((e, i) => optionFromExtra(product.id, "extra", e, i)),
+        options: paidExtrasFiltered.map((e, i) => optionFromExtra(product.id, "extra", e, i)),
       }),
     );
   }

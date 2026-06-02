@@ -23,6 +23,8 @@ export function formatOrderItemDetailLines(item: OrderItem): string[] {
       else if (s.groupKind === "substitution") {
         const price = s.priceDelta > 0 ? ` (+${Number(s.priceDelta).toFixed(2)}€)` : "";
         lines.push(`${prefix}${opt}${price}`);
+      } else if (s.groupKind === "extra" && s.priceDelta > 0) {
+        lines.push(`${prefix}${opt} (+${Number(s.priceDelta).toFixed(2)}€)`);
       } else if (s.quantity > 1) lines.push(`${prefix}${s.quantity}× ${opt}`);
       else lines.push(`${prefix}${opt}`);
     }

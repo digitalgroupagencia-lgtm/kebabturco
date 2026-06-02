@@ -1,7 +1,15 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { Extra } from "@/data/products";
 import type { ModifierGroup, ModifierOption, ProductModifierConfig } from "./types";
-import { productIncludesPotato } from "./comboProductRules";
+import {
+  productIncludesSidePotato,
+  isPotatoExtraGroupId,
+  resolvePotatoExtraPriceFromMenu,
+  shouldOfferPotatoExtra,
+  buildPotatoExtraGroupFromMenu,
+  isPotatoOptionLabel,
+  COMBO_POTATO_UPGRADE_PRICE,
+} from "./potatoRules";
 import { descriptionIncludesDrink, resolveIsComboProduct } from "./productClassification";
 import { isDrinkProduct, resolveDrinkExtrasFromMenu } from "./drinkProduct";
 import {
@@ -14,8 +22,6 @@ import {
 import { enrichOptionWithMenuImage } from "./optionCatalog";
 import { synthesizeModifierConfigFromProduct } from "./synthesizeConfig";
 import { filterProductModifierConfig } from "./proteinRules";
-
-const COMBO_POTATO_UPGRADE_PRICE = 0.5;
 
 function slugifyLabel(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -94,15 +100,46 @@ function rebuildDrinkOptions(
   return merged.slice(0, 8).map((opt, index) => ({ ...opt, isDefault: index === 0, sortOrder: index }));
 }
 
-function normalizePotatoOption(product: MenuProduct, option: ModifierOption): ModifierOption {
-  if (option.priceDelta === 0) return option;
-  if (!productIncludesPotato(product)) return option;
+function optionLabelText(option: ModifierOption): string {
+  return `${option.name.es || ""} ${option.name.pt || ""}`;
+}
 
-  const label = `${option.name.es || ""} ${option.name.pt || ""}`.toLowerCase();
-  if (/bravas|lux|deluxe|especial/.test(label)) {
-    return { ...option, priceDelta: COMBO_POTATO_UPGRADE_PRICE };
+function isPotatoOption(option: ModifierOption): boolean {
+  return isPotatoOptionLabel(optionLabelText(option));
+}
+
+function normalizePotatoOption(
+  product: MenuProduct,
+  option: ModifierOption,
+  menuProducts: MenuProduct[],
+): ModifierOption {
+  if (!isPotatoOption(option)) return option;
+
+  if (productIncludesSidePotato(product)) {
+    const label = optionLabelText(option).toLowerCase();
+    if (option.priceDelta > 0 && /bravas|lux|deluxe|especial/.test(label)) {
+      return { ...option, priceDelta: COMBO_POTATO_UPGRADE_PRICE };
+    }
+    return option;
+  }
+
+  const fromMenu = resolvePotatoExtraPriceFromMenu(option.name, menuProducts);
+  if (fromMenu != null) return { ...option, priceDelta: fromMenu };
+  if (option.priceDelta === COMBO_POTATO_UPGRADE_PRICE) {
+    return { ...option, priceDelta: 0 };
   }
   return option;
+}
+
+function applyPotatoExtraMenuPrices(group: ModifierGroup, menuProducts: MenuProduct[]): ModifierGroup {
+  if (!isPotatoExtraGroupId(group.id)) return group;
+  return {
+    ...group,
+    options: group.options.map((opt) => {
+      const fromMenu = resolvePotatoExtraPriceFromMenu(opt.name, menuProducts);
+      return fromMenu != null ? { ...opt, priceDelta: fromMenu } : opt;
+    }),
+  };
 }
 
 function filterDrinkGroup(
@@ -115,11 +152,56 @@ function filterDrinkGroup(
   return { ...group, options: rebuildDrinkOptions(product, group, menuProducts, rule) };
 }
 
-function filterPotatoGroup(product: MenuProduct, group: ModifierGroup): ModifierGroup {
+function filterPotatoGroup(
+  product: MenuProduct,
+  group: ModifierGroup,
+  menuProducts: MenuProduct[],
+): ModifierGroup {
   return {
     ...group,
-    options: group.options.map((opt) => normalizePotatoOption(product, opt)),
+    options: group.options.map((opt) => normalizePotatoOption(product, opt, menuProducts)),
   };
+}
+
+function reconcileSimpleProductPotatoGroups(
+  product: MenuProduct,
+  groups: ModifierGroup[],
+  menuProducts: MenuProduct[],
+): ModifierGroup[] {
+  const side = productIncludesSidePotato(product);
+  const result: ModifierGroup[] = [];
+
+  for (const group of groups) {
+    if (isPotatoGroup(group) && group.groupKind === "substitution" && !side) {
+      continue;
+    }
+
+    let next = group;
+    if (isPotatoGroup(next) || next.groupKind === "extra") {
+      next = {
+        ...next,
+        options: next.options
+          .map((opt) => normalizePotatoOption(product, opt, menuProducts))
+          .filter((opt) => {
+            if (side || isPotatoExtraGroupId(next.id)) return true;
+            if (isPotatoOption(opt) && opt.priceDelta === 0) return false;
+            return true;
+          }),
+      };
+    }
+
+    if (next.options.length > 0) result.push(next);
+  }
+
+  if (!side && shouldOfferPotatoExtra(product)) {
+    const hasExtra = result.some((g) => isPotatoExtraGroupId(g.id));
+    if (!hasExtra) {
+      const synthetic = buildPotatoExtraGroupFromMenu(product.id, menuProducts);
+      if (synthetic) result.push(synthetic);
+    }
+  }
+
+  return result;
 }
 
 function enrichGroupOptions(group: ModifierGroup, menuProducts: MenuProduct[]): ModifierGroup {
@@ -140,39 +222,17 @@ export function applySimpleProductRules(
 ): ProductModifierConfig | null {
   if (!config) return null;
 
-  const groups = config.groups
-    .filter((group) => group.options.length > 0)
-    .map((group) => {
-      let next = group;
-      // Substituição em produto simples → optional addon (batatas como extra), sem "Incluido"
-      if (isPotatoGroup(group)) {
-        const optionsPaidOnly = group.options
-          .filter((o) => o.priceDelta > 0)
-          .map((o) => normalizePotatoOption(product, o));
-        if (optionsPaidOnly.length > 0) {
-          next = {
-            ...group,
-            name: {
-              es: "¿Quieres añadir patatas?",
-              pt: "Queres adicionar batatas?",
-              en: "Want to add fries?",
-              fr: "Ajouter des frites ?",
-            },
-            groupKind: "extra",
-            selectionMode: "single",
-            isRequired: false,
-            minSelect: 0,
-            maxSelect: 1,
-            options: optionsPaidOnly.map((o, i) => ({ ...o, isDefault: false, sortOrder: i })),
-          };
-        } else {
-          // Não há upgrades pagos → nada para oferecer num produto simples
-          return null;
-        }
-      }
-      return enrichGroupOptions(next, menuProducts);
-    })
-    .filter((g): g is ModifierGroup => g !== null);
+  const groups = reconcileSimpleProductPotatoGroups(
+    product,
+    config.groups
+      .filter((group) => group.options.length > 0)
+      .map((group) => {
+        let next = enrichGroupOptions(group, menuProducts);
+        next = applyPotatoExtraMenuPrices(next, menuProducts);
+        return next;
+      }),
+    menuProducts,
+  );
 
   return {
     ...config,
@@ -198,7 +258,7 @@ export function applyComboDescriptionRules(
       next = filterDrinkGroup(product, group, menuProducts);
     }
     if (isPotatoGroup(group)) {
-      next = filterPotatoGroup(product, next);
+      next = filterPotatoGroup(product, next, menuProducts);
     }
     return enrichGroupOptions(next, menuProducts);
   });

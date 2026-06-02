@@ -398,10 +398,10 @@ const translations: Translations = {
     fr: "Remplace l'accompagnement — un seul choix",
   },
   potatoUpsellTitle: {
-    pt: "Quer melhorar?",
-    en: "Want to upgrade?",
-    es: "¿Quieres mejorar?",
-    fr: "Envie d'améliorer ?",
+    pt: "Quer melhorar as batatas?",
+    en: "Want to upgrade your fries?",
+    es: "¿Quieres mejorar tus patatas?",
+    fr: "Envie d'améliorer vos frites ?",
   },
   potatoUpgradeHint: {
     pt: "Adicionar por +0,50€",

@@ -181,11 +181,10 @@ export function allowsIngredientRemoval(product: MenuProduct): boolean {
   return kind === "pita" || kind === "rollo" || kind === null;
 }
 
-export function productIncludesPotato(product: MenuProduct): boolean {
-  if (!resolveIsComboProduct(product)) return false;
-  const blob = `${productText(product)} ${productDescriptionText(product)}`;
-  return /patata|batata|fritas|fries/i.test(blob);
-}
+export {
+  productIncludesPotato,
+  productIncludesSidePotato,
+} from "./potatoRules";
 
 const ORDINAL_ES = ["1ª", "2ª", "3ª", "4ª", "5ª", "6ª", "7ª", "8ª", "9ª", "10ª"];
 const ORDINAL_PT = ["1ª", "2ª", "3ª", "4ª", "5ª", "6ª", "7ª", "8ª", "9ª", "10ª"];

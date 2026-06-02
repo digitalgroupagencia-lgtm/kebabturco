@@ -51,6 +51,9 @@ function formatSelectionLine(
     const price = s.priceDelta > 0 ? ` (+${s.priceDelta.toFixed(2)}€)` : "";
     return `${opt}${price}`;
   }
+  if (s.groupKind === "extra" && s.priceDelta > 0) {
+    return `${opt} (+${s.priceDelta.toFixed(2)}€)`;
+  }
   if (s.quantity > 1) return `${s.quantity}× ${opt}`;
   return opt;
 }
