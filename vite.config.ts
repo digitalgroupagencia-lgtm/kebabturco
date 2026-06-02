@@ -146,5 +146,52 @@ export default defineConfig(({ mode }) => {
       "@tanstack/query-core",
     ],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        /**
+         * Chunks isolados: cliente (cardápio/carrinho/checkout) vs interno
+         * (admin/painel/equipa/etc). Alterar um módulo interno NÃO invalida
+         * o bundle do cliente — o navegador continua a usar o chunk cliente
+         * cacheado, e o fluxo de venda fica protegido.
+         */
+        manualChunks(id: string) {
+          if (!id.includes("/src/")) return undefined;
+
+          // Área interna
+          if (
+            id.includes("/src/views/admin/") ||
+            id.includes("/src/views/panel/") ||
+            id.includes("/src/views/seller/") ||
+            id.includes("/src/views/delivery/") ||
+            id.includes("/src/components/admin/") ||
+            id.includes("/src/components/panel/") ||
+            id.includes("/src/components/seller/") ||
+            id.includes("/src/components/delivery/") ||
+            id.includes("/src/components/kitchen/") ||
+            id.includes("/src/components/staff/") ||
+            id.includes("/src/routes/internalRouteOutlet")
+          ) {
+            return "internal";
+          }
+
+          // Área cliente
+          if (
+            id.includes("/src/components/screens/") ||
+            id.includes("/src/components/customization/") ||
+            id.includes("/src/components/Customer") ||
+            id.includes("/src/contexts/CartContext") ||
+            id.includes("/src/contexts/OrderContext") ||
+            id.includes("/src/contexts/LanguageContext") ||
+            id.includes("/src/pages/Index")
+          ) {
+            return "customer";
+          }
+
+          return undefined;
+        },
+      },
+    },
+  },
 };
 });
