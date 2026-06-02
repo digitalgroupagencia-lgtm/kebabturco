@@ -247,20 +247,20 @@ const PaymentScreen = () => {
   const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing && !stripeClientSecret;
 
   useEffect(() => {
-    if (checkoutMethods.length === 0) return;
-    const cardMethod = checkoutMethods.find((m) => m.id === "card");
-    if (cardMethod) {
-      setSelected("card");
-      return;
-    }
-    if (checkoutMethods.length === 1) {
-      setSelected(checkoutMethods[0].id);
-      return;
-    }
-    if (selected && !checkoutMethods.some((m) => m.id === selected)) {
+    if (checkoutMethods.length === 0) {
       setSelected(null);
+      return;
     }
-  }, [checkoutMethods, selected]);
+    setSelected((current) => {
+      if (current && checkoutMethods.some((m) => m.id === current)) {
+        return current;
+      }
+      const cardMethod = checkoutMethods.find((m) => m.id === "card");
+      if (cardMethod) return "card";
+      if (checkoutMethods.length === 1) return checkoutMethods[0].id;
+      return null;
+    });
+  }, [checkoutMethods]);
 
   const validate = () => {
     if (!orderType) {
@@ -966,7 +966,15 @@ const PaymentScreen = () => {
                       <button
                         key={pm.id}
                         type="button"
-                        onClick={() => { setSelected(pm.id); setShowError(null); }}
+                        onClick={() => {
+                          setSelected(pm.id);
+                          setShowError(null);
+                          if (pm.id === "cash" || pm.id === "counter") {
+                            setStripeClientSecret(null);
+                            setStripePaymentIntentId(null);
+                            setStripePaymentMeta(null);
+                          }
+                        }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${
                           isSel ? "border-success bg-success/5" : "border-border bg-card"
                         }`}
