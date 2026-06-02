@@ -466,7 +466,7 @@ const TeamPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Users className="h-6 w-6" /> Equipe
+          <Users className="h-6 w-6" /> {t("page.team.title")}
         </h2>
         {canManage && (
           <Button size="sm" onClick={openAddDialog}>
