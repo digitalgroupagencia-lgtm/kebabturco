@@ -204,13 +204,13 @@ const KdsPage = () => {
         </div>
       ) : (
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 p-3 overflow-hidden">
-          {STATUS_COLUMNS.map((col) => (
+          {STATUS_COLUMN_KEYS.map((col) => (
             <section
               key={col.key}
               className={`rounded-2xl border-2 ${col.tone} flex flex-col overflow-hidden`}
             >
               <header className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                <h2 className="text-lg font-black uppercase tracking-wide">{col.label}</h2>
+                <h2 className="text-lg font-black uppercase tracking-wide">{t(col.labelKey)}</h2>
                 <span className="text-2xl font-black tabular-nums">{grouped[col.key].length}</span>
               </header>
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -237,17 +237,18 @@ const KdsPage = () => {
                             {min}m
                           </span>
                         </div>
-                        <p className="font-bold text-base truncate">{o.customer_name || "Cliente"}</p>
+                        <p className="font-bold text-base truncate">{o.customer_name || t("common.customer")}</p>
                         <p className="text-sm text-slate-400 uppercase tracking-wide">
                           {o.order_type === "delivery"
-                            ? "Delivery"
+                            ? t("order.modality.delivery")
                             : o.order_type === "dine_in"
-                              ? `Mesa ${o.table_number ?? "—"}`
-                              : "Balcão"}
+                              ? `${t("order.modality.table")} ${o.table_number ?? "—"}`
+                              : t("order.modality.pickup")}
                         </p>
                       </article>
                     );
                   })
+
                 )}
               </div>
             </section>
