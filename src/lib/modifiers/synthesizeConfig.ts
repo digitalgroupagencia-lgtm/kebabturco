@@ -417,15 +417,14 @@ function buildModifierConfigFromProduct(
 
   if (
     !isDrink &&
-    isMultiUnit &&
     allowsIngredientRemoval(product) &&
-    removalMap.size === 0 &&
-    (inferComboUnitKind(product) === "pita" || inferComboUnitKind(product) === "rollo")
+    removalMap.size === 0
   ) {
-    for (const label of ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"]) {
+    for (const label of defaultRemovableIngredients(product)) {
       addRemoval(label);
     }
   }
+
 
   if (isCombo && drinkExtras.length < 2 && descriptionIncludesDrink(product)) {
     const fromMenu = menuProducts.length ? resolveDrinkExtrasFromMenu(product, menuProducts) : [];
