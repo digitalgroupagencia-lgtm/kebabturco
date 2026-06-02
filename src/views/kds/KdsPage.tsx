@@ -167,7 +167,7 @@ const KdsPage = () => {
       <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900">
         <div className="flex items-center gap-2">
           <ChefHat className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-black">KDS — Cozinha</h1>
+          <h1 className="text-xl font-black">{t("kds.title")}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
