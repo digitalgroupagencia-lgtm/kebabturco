@@ -11,9 +11,11 @@ import {
   globalMeatChoiceVariants,
   allowsPerUnitMeatChoice,
   allowsPerUnitPizzaFlavor,
+  hasFixedProtein,
   inferComboUnitCount,
   inferComboUnitKind,
   isClosedProteinCombo,
+  isVariableProteinProduct,
   perUnitChoiceGroupName,
   perUnitChoiceVariants,
   productDescriptionText,
@@ -25,6 +27,35 @@ import {
   normalizeProductClassification,
   resolveIsComboProduct,
 } from "./productClassification";
+
+/** Normaliza rótulo para dedup case-insensitive + sem acentos. */
+function normalizeIngredientKey(label: string): string {
+  return label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Capitaliza para exibição uniforme. */
+function prettifyIngredientLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
+/** Rótulos que NÃO devem aparecer em "quitar ingredientes" (carne base, escolhas, etc). */
+function isExcludedRemovalLabel(label: string, product: MenuProduct): boolean {
+  const key = normalizeIngredientKey(label);
+  if (!key) return true;
+  if (/^carne(\s+de\s+\w+)?$/.test(key)) return true;
+  if (/^(pollo|ternera|mixto|frango|vaca|crispy)$/.test(key)) return true;
+  if ((hasFixedProtein(product) || isVariableProteinProduct(product)) && /^carne\b/.test(key)) {
+    return true;
+  }
+  return false;
+}
 
 const SYNTH_PREFIX = "synth";
 
