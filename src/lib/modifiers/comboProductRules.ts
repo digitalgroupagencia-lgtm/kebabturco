@@ -4,7 +4,7 @@ import { inferVariantsFromText, isMeatVariantSet } from "@/lib/parseProductCusto
 import { isDrinkProduct } from "./drinkProduct";
 import { inferComboUnitCountFromName, normalizeProductClassification, resolveIsComboProduct } from "./productClassification";
 
-export type ComboUnitKind = "pita" | "rollo" | "pizza" | "piece" | null;
+export type ComboUnitKind = "pita" | "rollo" | "pizza" | "piece" | "burger" | "kebab" | "sandwich" | null;
 export type FixedProtein = "pollo" | "ternera" | "mixto" | "crispy";
 
 const DEFAULT_MEAT_VARIANTS: Variant[] = [
