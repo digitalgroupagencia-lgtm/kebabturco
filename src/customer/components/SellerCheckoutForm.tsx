@@ -59,15 +59,22 @@ const SellerCheckoutForm = () => {
 
       const itemsPayload = items.map((it) => ({
         order_id: orderRow.id,
-        product_id: (it as any).productId ?? (it as any).product_id ?? null,
-        product_name: typeof it.name === "object" ? ((it.name as any).pt ?? (it.name as any).es ?? "Produto") : String(it.name),
-        quantity: it.quantity ?? 1,
-        unit_price: Number(it.price ?? it.unitPrice ?? 0),
-        total_price: Number((it.price ?? it.unitPrice ?? 0)) * (it.quantity ?? 1),
-        selections: (it as any).selections ?? [],
-        extras: (it as any).extras ?? [],
-        removed: (it as any).removed ?? [],
-        notes: (it as any).notes ?? null,
+        product_id: it.productId,
+        product_name:
+          (it.productName?.pt as string) ||
+          (it.productName?.es as string) ||
+          (it.productName?.en as string) ||
+          "Produto",
+        quantity: it.quantity,
+        unit_price: Number(it.unitPrice ?? it.basePrice ?? 0),
+        total_price: Number(it.totalPrice ?? (it.unitPrice ?? it.basePrice ?? 0) * it.quantity),
+        size_name: it.sizeName
+          ? ((it.sizeName.pt as string) || (it.sizeName.es as string) || null)
+          : null,
+        selections: (it.selections ?? []) as any,
+        extras: (it.extras ?? []) as any,
+        removed: (it.removedIngredients ?? []) as any,
+        notes: it.note ?? null,
       }));
       const { error: itemsError } = await supabase.from("order_items").insert(itemsPayload as any);
       if (itemsError) throw itemsError;
