@@ -153,12 +153,13 @@ const CashierPage = () => {
       .eq("id", currentRegister.id);
 
     if (error) {
-      toast.error("Erro ao fechar caixa");
+      toast.error(t("toast.cash_close_error"));
     } else {
-      toast.success("Caixa fechado!");
+      toast.success(t("toast.cash_closed"));
       setCloseDialogVisible(false);
       fetchCurrentRegister();
     }
+
   };
 
   if (!storeId) {
