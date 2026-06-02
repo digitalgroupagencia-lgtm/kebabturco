@@ -66,6 +66,7 @@ const roleLabels: Record<AppRole, { label: string; color: string }> = {
 
 const TeamPage = () => {
   const { user } = useAuth();
+  const { t } = useStaffT();
   const { roleData } = useUserRole(user?.id);
   const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
