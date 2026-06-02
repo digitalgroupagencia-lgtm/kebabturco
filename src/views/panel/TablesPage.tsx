@@ -272,7 +272,7 @@ const TablesPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <LayoutGrid className="h-6 w-6 text-primary" /> {isAdmin ? "Mesas & QR Codes" : "Mesas & QR"}
+            <LayoutGrid className="h-6 w-6 text-primary" /> {t("page.tables.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             QR codes premium com número da mesa, idioma principal ({primaryLang.toUpperCase()}) e token único
