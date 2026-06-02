@@ -192,35 +192,36 @@ const PanelSettingsPage = () => {
         <TabsContent value="receipt">
           <Card>
             <CardHeader>
-              <CardTitle>Recibo / impressão</CardTitle>
-              <CardDescription>Personalize o que sai na impressora.</CardDescription>
+              <CardTitle>{t("settings.print.title")}</CardTitle>
+              <CardDescription>{t("settings.print.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Imprimir automaticamente novos pedidos</Label>
-                  <p className="text-xs text-muted-foreground">Manda direto pra cozinha quando entra pedido novo.</p>
+                  <Label className="text-base">{t("settings.print.auto")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.print.auto.desc")}</p>
                 </div>
                 <Switch checked={printAutoOnNew} onCheckedChange={setPrintAutoOnNew} />
               </div>
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                 <div>
-                  <Label className="text-base">Imprimir via do cliente</Label>
-                  <p className="text-xs text-muted-foreground">Gera segunda via para entregar ao cliente.</p>
+                  <Label className="text-base">{t("settings.print.customer")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("settings.print.customer.desc")}</p>
                 </div>
                 <Switch checked={printCustomerCopy} onCheckedChange={setPrintCustomerCopy} />
               </div>
               <div>
-                <Label>Mensagem no rodapé do recibo</Label>
+                <Label>{t("settings.print.footer")}</Label>
                 <Textarea rows={2} value={receiptFooter} onChange={(e) => setReceiptFooter(e.target.value)} />
               </div>
               <div>
-                <Label>Taxa de serviço (%)</Label>
+                <Label>{t("settings.print.tax")}</Label>
                 <Input type="number" min={0} max={30} step={0.5} value={taxRate}
                   onChange={(e) => setTaxRate(Number(e.target.value))} />
-                <p className="text-xs text-muted-foreground mt-1">Adiciona automaticamente ao total. 0 = desativado.</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("settings.print.tax.desc")}</p>
               </div>
-              <Button onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+
             </CardContent>
           </Card>
         </TabsContent>
