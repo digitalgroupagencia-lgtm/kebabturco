@@ -60,11 +60,15 @@ export function PanelSidebar() {
   const { signOut, user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { enabled: sellerEnabled } = useSellerModuleEnabled(roleData?.tenant_id);
+  const { t } = useStaffT();
   const navGroupsRaw = panelNavGroupsForRole(roleData?.role);
   const navGroups = navGroupsRaw
     .map((g) => ({
       ...g,
-      items: g.items.filter((it) => sellerEnabled || it.key !== "sellers"),
+      label: t(`nav.group.${g.id}` as StaffI18nKey, g.label),
+      items: g.items
+        .filter((it) => sellerEnabled || it.key !== "sellers")
+        .map((it) => ({ ...it, label: t(`nav.${it.key}` as StaffI18nKey, it.label) })),
     }))
     .filter((g) => g.items.length > 0);
 
