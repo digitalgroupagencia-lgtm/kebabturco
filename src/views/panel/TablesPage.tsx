@@ -275,13 +275,12 @@ const TablesPage = () => {
             <LayoutGrid className="h-6 w-6 text-primary" /> {t("page.tables.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            QR codes premium com número da mesa, idioma principal ({primaryLang.toUpperCase()}) e token único
-            de segurança. Disponível na administração e no painel do restaurante.
+            {t("tables.subtitle").replace("{lang}", primaryLang.toUpperCase())}
           </p>
         </div>
         {tables.some((t) => t.is_active) && (
           <Button variant="outline" className="gap-2 shrink-0" onClick={downloadAllPremium}>
-            <Printer className="h-4 w-4" /> Imprimir / PDF — todas
+            <Printer className="h-4 w-4" /> {t("tables.print_all")}
           </Button>
         )}
       </div>
@@ -289,10 +288,10 @@ const TablesPage = () => {
       {canManage && (
         <>
           <Card className="p-4 space-y-3">
-            <h2 className="font-bold">Nova mesa</h2>
+            <h2 className="font-bold">{t("tables.new")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <Label>Número / nome</Label>
+                <Label>{t("tables.number")}</Label>
                 <Input
                   value={newNumber}
                   onChange={(e) => setNewNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
@@ -300,13 +299,13 @@ const TablesPage = () => {
                 />
               </div>
               <div>
-                <Label>Lugares</Label>
+                <Label>{t("tables.seats")}</Label>
                 <Input type="number" value={newCapacity} onChange={(e) => setNewCapacity(e.target.value)} />
               </div>
               <div className="flex items-end">
                 <Button onClick={addTable} disabled={saving} className="w-full gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Adicionar
+                  {t("tables.add")}
                 </Button>
               </div>
             </div>
@@ -314,22 +313,22 @@ const TablesPage = () => {
 
           <Card className="p-4 space-y-3">
             <h2 className="font-bold flex items-center gap-2">
-              <Layers className="h-4 w-4" /> Criar lote de mesas
+              <Layers className="h-4 w-4" /> {t("tables.bulk.title")}
             </h2>
-            <p className="text-xs text-muted-foreground">Ex.: Mesa 1 até Mesa 30 — só cria as que ainda não existem.</p>
+            <p className="text-xs text-muted-foreground">{t("tables.bulk.hint")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <Label>De</Label>
+                <Label>{t("tables.bulk.from")}</Label>
                 <Input value={bulkFrom} onChange={(e) => setBulkFrom(e.target.value.replace(/\D/g, "").slice(0, 3))} />
               </div>
               <div>
-                <Label>Até</Label>
+                <Label>{t("tables.bulk.to")}</Label>
                 <Input value={bulkTo} onChange={(e) => setBulkTo(e.target.value.replace(/\D/g, "").slice(0, 3))} />
               </div>
               <div className="flex items-end">
                 <Button onClick={bulkCreateTables} disabled={bulkSaving} variant="secondary" className="w-full gap-2">
                   {bulkSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers className="h-4 w-4" />}
-                  Gerar mesas
+                  {t("tables.bulk.generate")}
                 </Button>
               </div>
             </div>
@@ -338,25 +337,25 @@ const TablesPage = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tables.map((t) => (
-          <Card key={t.id} className={`p-4 space-y-3 ${!t.is_active ? "opacity-60" : ""}`}>
+        {tables.map((tbl) => (
+          <Card key={tbl.id} className={`p-4 space-y-3 ${!tbl.is_active ? "opacity-60" : ""}`}>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-black tracking-tight">Mesa {t.number}</span>
+              <span className="text-2xl font-black tracking-tight">{t("tables.table_n")} {tbl.number}</span>
               {canManage ? (
-                <Switch checked={t.is_active} onCheckedChange={(v) => toggleActive(t, v)} />
+                <Switch checked={tbl.is_active} onCheckedChange={(v) => toggleActive(tbl, v)} />
               ) : (
-                <span className="text-xs font-semibold text-muted-foreground">{t.is_active ? "Activa" : "Inactiva"}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{tbl.is_active ? t("tables.active") : t("tables.inactive")}</span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{t.capacity} lugares</p>
+            <p className="text-sm text-muted-foreground">{tbl.capacity} {t("tables.places")}</p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="flex-1 gap-1 min-w-[100px]" onClick={() => setQrTable(t)}>
-                <QrCode className="h-4 w-4" /> Ver QR
+              <Button variant="outline" size="sm" className="flex-1 gap-1 min-w-[100px]" onClick={() => setQrTable(tbl)}>
+                <QrCode className="h-4 w-4" /> {t("tables.view_qr")}
               </Button>
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(t)}>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(tbl)}>
                 <Copy className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => downloadPremiumPng(t)}>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => downloadPremiumPng(tbl)}>
                 <Download className="h-4 w-4" />
               </Button>
               {canManage && (
@@ -364,10 +363,10 @@ const TablesPage = () => {
                   variant="outline"
                   size="sm"
                   className="gap-1"
-                  disabled={regeneratingId === t.id}
-                  onClick={() => regenerateQr(t)}
+                  disabled={regeneratingId === tbl.id}
+                  onClick={() => regenerateQr(tbl)}
                 >
-                  {regeneratingId === t.id ? (
+                  {regeneratingId === tbl.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <RefreshCw className="h-4 w-4" />
@@ -381,7 +380,7 @@ const TablesPage = () => {
 
       {tables.length === 0 && (
         <Card className="p-8 text-center text-muted-foreground">
-          {canManage ? "Nenhuma mesa registada. Adicione a primeira acima." : "Nenhuma mesa registada."}
+          {canManage ? t("tables.empty.manage") : t("tables.empty.view")}
         </Card>
       )}
 
