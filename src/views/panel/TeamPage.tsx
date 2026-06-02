@@ -595,31 +595,31 @@ const TeamPage = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" /> Adicionar Membro
+              <Shield className="h-5 w-5" /> {t("team.dialog.add")}
               {hasDraft && (
                 <Badge variant="outline" className="font-normal text-xs">
-                  Rascunho guardado
+                  {t("team.draft.saved")}
                 </Badge>
               )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Nome</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do membro" />
+              <Label>{t("team.col.name")}</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("team.field.name.ph")} />
             </div>
             <div>
-              <Label>Email *</Label>
-              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
+              <Label>{t("team.field.email")}</Label>
+              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder={t("team.field.email.ph")} />
             </div>
             <div>
-              <Label>Senha *</Label>
+              <Label>{t("team.field.password")}</Label>
               <div className="flex gap-2">
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder={t("team.field.password.ph")}
                   className="flex-1"
                 />
                 <Button
@@ -632,18 +632,16 @@ const TeamPage = () => {
                     setShowPassword(true);
                   }}
                 >
-                  Sugerir senha
+                  {t("team.field.password.suggest")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(uiLang)}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {uiLang === "es"
-                  ? "Anote la contraseña y entréguela al empleado. La usará para entrar en «Área del equipo» (5 toques en el logo del menú)."
-                  : "Anote a senha e entregue ao funcionário. Ele usa-a para entrar na «Área da equipe» (5 toques no logótipo do menu)."}
+                {t("team.field.password.note")}
               </p>
             </div>
             <div>
-              <Label>Papel</Label>
+              <Label>{t("team.col.role")}</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -656,7 +654,7 @@ const TeamPage = () => {
               </Select>
             </div>
             <div>
-              <Label>Idioma do sistema *</Label>
+              <Label>{t("team.field.lang")}</Label>
               <Select value={newLanguage} onValueChange={setNewLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -664,22 +662,20 @@ const TeamPage = () => {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                {uiLang === "es"
-                  ? "Idioma principal del restaurante (español). El empleado puede cambiarlo con el icono 🌐."
-                  : "Idioma principal do restaurante (espanhol). O funcionário pode mudar com o ícone 🌐."}
+                {t("team.field.lang.desc")}
               </p>
             </div>
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
             {hasDraft && (
               <Button type="button" variant="ghost" className="text-muted-foreground sm:mr-auto" onClick={clearDraftForm}>
-                Limpar rascunho
+                {t("team.draft.clear")}
               </Button>
             )}
             <div className="flex gap-2 sm:ml-auto">
-              <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+              <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
               <Button onClick={addMember} disabled={saving}>
-                {saving ? "Criando..." : "Adicionar"}
+                {saving ? t("team.action.creating") : t("team.action.add")}
               </Button>
             </div>
           </DialogFooter>
