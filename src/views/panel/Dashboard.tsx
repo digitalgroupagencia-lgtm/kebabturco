@@ -30,6 +30,7 @@ const fmt = (n: number) =>
 const Dashboard = () => {
   const { storeId: STORE_ID } = useAdminStoreId();
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID);
+  const { t } = useStaffT();
 
   const { data, isLoading } = useQuery({
     queryKey: ["panel-dashboard-financial", STORE_ID],
