@@ -29,6 +29,7 @@ const PanelSettingsPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { storeId: adminStoreId } = useAdminStoreId();
+  const { t } = useStaffT();
   const effectiveStoreId = roleData?.store_id ?? adminStoreId ?? "";
   const [resetOpen, setResetOpen] = useState(false);
   const [storeName, setStoreName] = useState("Minha Loja");
