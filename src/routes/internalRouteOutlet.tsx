@@ -28,6 +28,7 @@ function lazyPage(loader: RouteSegmentDef["loader"]) {
 }
 
 const Install = lazy(() => import("@/pages/Install.tsx"));
+const KdsPage = lazy(() => import("@/views/kds/KdsPage.tsx"));
 
 const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
@@ -40,6 +41,14 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
 
   if (pathname === "/install") {
     return withSuspense(<Install />);
+  }
+
+  if (pathname === "/kds") {
+    return withSuspense(
+      <AdminErrorBoundary area="kds">
+        <KdsPage />
+      </AdminErrorBoundary>,
+    );
   }
 
   const legalLoader = legalPageLoader(pathname);

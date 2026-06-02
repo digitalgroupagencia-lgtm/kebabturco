@@ -48,6 +48,10 @@ import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import PhoneInput from "@/components/PhoneInput";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
+import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
+import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
+import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
+import { useSellerMode } from "@/contexts/SellerModeContext";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
   { id: "card", icon: CreditCard },
@@ -142,6 +146,15 @@ const PaymentScreen = () => {
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const { subscribe: subscribePush } = usePushNotifications();
+  const channel = orderType === "delivery" ? "delivery" : "store";
+  const openStatus = useStoreOpenStatus(channel);
+  const [closedDialog, setClosedDialog] = useState(false);
+  const sellerMode = useSellerMode();
+
+  if (sellerMode.active) {
+    return <SellerCheckoutForm />;
+  }
+
 
   const isTableOrder = orderType === "here";
   const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
@@ -559,6 +572,11 @@ const PaymentScreen = () => {
   const confirm = async () => {
     if (processing || !validate() || !selected) return;
 
+    if (!openStatus.open) {
+      setClosedDialog(true);
+      return;
+    }
+
     if (selected === "card") {
       if (!stripeEnabled || !stripePublishableKey) {
         setShowError("method");
@@ -596,6 +614,15 @@ const PaymentScreen = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+      <StoreClosedDialog
+        open={closedDialog}
+        status={openStatus}
+        channel={channel}
+        onKeep={() => {
+          setClosedDialog(false);
+          setScreen("review");
+        }}
+      />
       <ScreenHeader
         eyebrow={t("finalStep")}
         title={isTableOrder ? "Pagamento na mesa" : t("pay")}

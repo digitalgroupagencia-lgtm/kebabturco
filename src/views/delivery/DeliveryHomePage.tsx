@@ -23,11 +23,28 @@ const DeliveryHomePage = () => {
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-16 space-y-3">
-        <Package className="h-12 w-12 mx-auto text-muted-foreground/50" />
-        <p className="font-bold text-lg">Sem entregas atribuídas</p>
-        <p className="text-sm text-muted-foreground">Quando o restaurante atribuir um pedido, aparece aqui.</p>
-        <Button variant="outline" onClick={() => void refresh()}>Actualizar</Button>
+      <div className="px-6 py-12">
+        <div className="mx-auto max-w-sm rounded-3xl border-2 border-dashed border-orange-500/30 bg-orange-500/5 p-8 text-center space-y-4">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-500/10">
+            <Package className="h-10 w-10 text-orange-500" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-black text-xl">Sem entregas atribuídas</p>
+            <p className="text-sm text-muted-foreground">
+              Quando o restaurante atribuir um pedido, aparece aqui com o endereço e código.
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-600">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Online · A receber pedidos
+          </div>
+          <Button variant="outline" onClick={() => void refresh()} className="w-full h-11 font-bold">
+            Actualizar
+          </Button>
+        </div>
       </div>
     );
   }

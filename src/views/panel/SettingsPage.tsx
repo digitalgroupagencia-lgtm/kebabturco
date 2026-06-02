@@ -21,6 +21,7 @@ import {
 } from "@/lib/staffPush";
 import MarketingBroadcastCard from "@/components/panel/MarketingBroadcastCard";
 import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
+import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 
 const PanelSettingsPage = () => {
@@ -267,27 +268,17 @@ const PanelSettingsPage = () => {
           <Card>
             <CardHeader>
               <CardTitle>Horário de funcionamento</CardTitle>
-              <CardDescription>Quando o totem aceita pedidos.</CardDescription>
+              <CardDescription>
+                Defina os horários reais por dia da semana, para a loja e para o delivery separadamente.
+                Quando o canal está fechado, o cliente continua a poder navegar e montar carrinho — só não consegue finalizar.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
-                <div>
-                  <Label className="text-base">Loja fechada hoje</Label>
-                  <p className="text-xs text-muted-foreground">Bloqueia novos pedidos até amanhã.</p>
-                </div>
-                <Switch checked={closedToday} onCheckedChange={setClosedToday} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Abertura</Label>
-                  <Input type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
-                </div>
-                <div>
-                  <Label>Fechamento</Label>
-                  <Input type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
-                </div>
-              </div>
-              <Button onClick={() => save("Horário")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+            <CardContent>
+              {effectiveStoreId ? (
+                <WeeklyHoursEditor storeId={effectiveStoreId} />
+              ) : (
+                <p className="text-sm text-muted-foreground">A carregar loja…</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
