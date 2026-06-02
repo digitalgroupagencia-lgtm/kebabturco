@@ -652,6 +652,7 @@ export type Database = {
           banner_enabled: boolean
           banner_interval_ms: number
           created_at: string
+          delivery_schedule: Json
           id: string
           msg_counter: string
           msg_paid: string
@@ -670,14 +671,17 @@ export type Database = {
           require_phone_takeaway: boolean
           require_prepayment_delivery: boolean
           require_prepayment_takeaway: boolean
+          schedule_timezone: string
           store_id: string
           updated_at: string
+          weekly_schedule: Json
         }
         Insert: {
           avg_prep_minutes?: number
           banner_enabled?: boolean
           banner_interval_ms?: number
           created_at?: string
+          delivery_schedule?: Json
           id?: string
           msg_counter?: string
           msg_paid?: string
@@ -696,14 +700,17 @@ export type Database = {
           require_phone_takeaway?: boolean
           require_prepayment_delivery?: boolean
           require_prepayment_takeaway?: boolean
+          schedule_timezone?: string
           store_id: string
           updated_at?: string
+          weekly_schedule?: Json
         }
         Update: {
           avg_prep_minutes?: number
           banner_enabled?: boolean
           banner_interval_ms?: number
           created_at?: string
+          delivery_schedule?: Json
           id?: string
           msg_counter?: string
           msg_paid?: string
@@ -722,8 +729,10 @@ export type Database = {
           require_phone_takeaway?: boolean
           require_prepayment_delivery?: boolean
           require_prepayment_takeaway?: boolean
+          schedule_timezone?: string
           store_id?: string
           updated_at?: string
+          weekly_schedule?: Json
         }
         Relationships: [
           {
