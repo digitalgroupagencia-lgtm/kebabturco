@@ -1,7 +1,7 @@
 // Chave pública VAPID — segura no frontend (apenas pública).
 // Usada como fallback quando VITE_VAPID_PUBLIC_KEY não está definida.
 export const VAPID_PUBLIC_KEY_FALLBACK =
-  "BI12AgGYT4ftAQJq_R4Y5fDr5uTqtc5RmAGwQjLE3lf4H_asiXfJEjt7BipHbNjrFUUle5waZc4Ga4QblW9KQt0";
+  "BAVIdtGVN1TnxJ15C0fY2934DIEjb48x2lNM58ST0YgbbXwOa64mR9mcs33x96u1a75DswvIrJN56aPr2G8smcU";
 
 export type VapidPublicKeySource = "env" | "fallback" | "none";
 

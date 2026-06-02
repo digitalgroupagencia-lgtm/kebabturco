@@ -105,32 +105,36 @@ export async function subscribePushWithLogging(
     }
 
     const reg = await navigator.serviceWorker.ready;
-    let sub = await reg.pushManager.getSubscription();
+    const existingSub = await reg.pushManager.getSubscription();
 
-    if (sub) {
-      pushLog(context, "subscribe", "info", "Subscrição push existente reutilizada", {
-        endpointPreview: sub.endpoint.slice(0, 48) + "…",
+    if (existingSub) {
+      const endpoint = existingSub.endpoint;
+      pushLog(context, "subscribe", "info", "Subscrição antiga encontrada — removendo antes de recriar", {
+        endpointPreview: endpoint.slice(0, 48) + "…",
       });
-    } else {
-      pushLog(context, "subscribe", "info", "A criar nova subscrição push", {
-        vapidSource: vapidDiag.source,
-      });
-
-      try {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
-        });
-      } catch (subscribeErr) {
-        const described = describePushFailure(subscribeErr, permission);
-        pushLog(context, "subscribe", "error", described.message, described.details);
-        return { ok: false, error: described.message, errorCode: described.code };
-      }
-
-      pushLog(context, "subscribe", "info", "Subscrição push criada", {
-        endpointPreview: sub.endpoint.slice(0, 48) + "…",
-      });
+      await existingSub.unsubscribe();
+      await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
     }
+
+    pushLog(context, "subscribe", "info", "A criar nova subscrição push", {
+      vapidSource: vapidDiag.source,
+    });
+
+    let sub: PushSubscription;
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
+      });
+    } catch (subscribeErr) {
+      const described = describePushFailure(subscribeErr, permission);
+      pushLog(context, "subscribe", "error", described.message, described.details);
+      return { ok: false, error: described.message, errorCode: described.code };
+    }
+
+    pushLog(context, "subscribe", "info", "Subscrição push criada", {
+      endpointPreview: sub.endpoint.slice(0, 48) + "…",
+    });
 
     const json = sub.toJSON();
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
