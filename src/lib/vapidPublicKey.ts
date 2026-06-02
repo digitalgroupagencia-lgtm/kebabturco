@@ -3,22 +3,20 @@
 export const VAPID_PUBLIC_KEY =
   "BGxtrIj6XFsYvJykwBtZHzw6EPNhUYOycKOPi9xwMLfNaf6nl05gjChe1cgUjdY8PI05UwuJ5UPdiyPqag74eK4";
 
-export const VAPID_PUBLIC_KEY_FALLBACK = VAPID_PUBLIC_KEY;
-
-export type VapidPublicKeySource = "app" | "env" | "fallback" | "none";
+export type VapidPublicKeySource = "app" | "env" | "none";
 
 export function getVapidPublicKeySource(): VapidPublicKeySource {
   if (VAPID_PUBLIC_KEY) return "app";
   const env = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
   if (env && env.trim()) return "env";
-  return VAPID_PUBLIC_KEY_FALLBACK ? "fallback" : "none";
+  return "none";
 }
 
 export function getVapidPublicKey(): string | undefined {
   if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
   const env = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
   if (env && env.trim()) return env.trim();
-  return VAPID_PUBLIC_KEY_FALLBACK || undefined;
+  return undefined;
 }
 
 /** Formato base64url típico de chave pública VAPID (87 chars uncompressed P-256). */
