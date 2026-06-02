@@ -12,15 +12,19 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   usePlatformPlans,
   useSetTenantPlan,
+  useSetFeatureOverride,
   useTenantFeatureFlags,
 } from "@/hooks/usePlatformFeatures";
+import { Switch } from "@/components/ui/switch";
 import { APP_NAME, DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { CENTRAL_GROUPS, PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 
 export default function AdminPlansPage() {
   const { data: plans, isLoading: loadingPlans } = usePlatformPlans();
   const setPlan = useSetTenantPlan();
+  const setFeatureOverride = useSetFeatureOverride();
   const [saving, setSaving] = useState(false);
+  const [togglingSeller, setTogglingSeller] = useState(false);
 
   const { data: tenant, isLoading: loadingTenant } = useQuery({
     queryKey: ["kebab-tenant-plan", DEFAULT_TENANT_SLUG],
@@ -68,6 +72,7 @@ export default function AdminPlansPage() {
   const flagSummary = flags
     ? `${flags.filter((f) => f.enabled).length} funcionalidades activas neste plano`
     : "";
+  const sellerOn = flags?.find((f) => f.feature_key === "seller_app")?.enabled ?? false;
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
@@ -108,6 +113,38 @@ export default function AdminPlansPage() {
           }
         />
       </AdminCollapsibleSection>
+
+      {tenantId && (
+        <AdminCollapsibleSection
+          title="Módulos opcionais"
+          summary="Activação manual por restaurante (sobrepõe o plano)"
+          defaultOpen
+        >
+          <AdminPremiumCard
+            title="Módulo Vendedor"
+            summary="Quando activo, o restaurante vê a área 'Vendedores' no painel e os logins de vendedor podem aceder ao app /seller. Desactivado por defeito."
+            badges={[{ label: sellerOn ? "Activo" : "Desactivado" }]}
+            actions={
+              <Switch
+                checked={sellerOn}
+                disabled={togglingSeller}
+                onCheckedChange={async (v) => {
+                  setTogglingSeller(true);
+                  try {
+                    await setFeatureOverride(tenantId, "seller_app", v);
+                    toast.success(v ? "Módulo Vendedor activado" : "Módulo Vendedor desactivado");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Erro");
+                  } finally {
+                    setTogglingSeller(false);
+                  }
+                }}
+              />
+            }
+          />
+        </AdminCollapsibleSection>
+      )}
+
 
       {tenantId && flags && (
         <AdminCollapsibleSection title="Benefícios activos neste plano" summary={flagSummary} defaultOpen>

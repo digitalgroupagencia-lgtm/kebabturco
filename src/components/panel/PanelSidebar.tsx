@@ -18,6 +18,7 @@ import { NavLink as RouterNavLink } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { panelNavGroupsForRole } from "@/lib/staffPermissions";
 import {
   Sidebar,
@@ -56,7 +57,14 @@ export function PanelSidebar() {
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const navGroups = panelNavGroupsForRole(roleData?.role);
+  const { enabled: sellerEnabled } = useSellerModuleEnabled(roleData?.tenant_id);
+  const navGroupsRaw = panelNavGroupsForRole(roleData?.role);
+  const navGroups = navGroupsRaw
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((it) => sellerEnabled || it.key !== "sellers"),
+    }))
+    .filter((g) => g.items.length > 0);
 
   const handleNav = () => {
     if (isMobile) setOpenMobile(false);

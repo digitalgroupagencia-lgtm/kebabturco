@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { useTenantBilling, fmtMoney } from "@/hooks/useTenantBilling";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ const SellersPage = () => {
   const { roleData } = useUserRole(user?.id);
   const tenantId = roleData?.tenant_id;
   const storeId = roleData?.store_id;
+  const { enabled: sellerEnabled, isLoading: sellerFlagLoading } = useSellerModuleEnabled(tenantId);
   const qc = useQueryClient();
   const billing = useTenantBilling(tenantId);
   const [open, setOpen] = useState(false);
@@ -140,6 +142,31 @@ const SellersPage = () => {
   const allowed = billing.data?.sellers_allowed ?? 1;
   const active = sellers?.length ?? 0;
   const overLimit = active >= allowed;
+
+  if (sellerFlagLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!sellerEnabled) {
+    return (
+      <div className="max-w-xl mx-auto py-12">
+        <Card>
+          <CardContent className="p-6 text-center space-y-3">
+            <Users className="w-10 h-10 mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-bold">Módulo Vendedor desactivado</h2>
+            <p className="text-sm text-muted-foreground">
+              Este módulo é controlado pela plataforma. Contacte o administrador
+              para o activar no seu restaurante.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
