@@ -30,6 +30,7 @@ import {
   sendTestPushNotification,
   fetchServerVapidDiagnostics,
   type PushTestAudience,
+  type PushTestSendResult,
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
@@ -59,6 +60,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const [audience, setAudience] = useState<PushTestAudience>("staff");
   const [testTitle, setTestTitle] = useState("Teste push Kebab Turco");
   const [testBody, setTestBody] = useState("Se vês isto, as notificações push estão a funcionar.");
+  const [testStatus, setTestStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [testResult, setTestResult] = useState<PushTestSendResult | null>(null);
 
   const refreshProbe = useCallback(async () => {
     setRefreshing(true);
@@ -108,11 +111,20 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       return;
     }
     setSendBusy(true);
+    setTestStatus("sending");
+    setTestResult(null);
     try {
       const result = await sendTestPushNotification({ storeId, audience, title: testTitle, body: testBody });
+      setTestResult(result);
+      setTestStatus(result.ok ? "success" : "error");
       if (result.ok) toast.success(`Notificação enviada — ${result.sent ?? 0} dispositivo(s)`);
       else if (result.skipped) toast.error(result.userMessage ?? "Servidor sem chaves VAPID");
       else toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
+      void refreshProbe();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setTestStatus("error");
+      setTestResult({ ok: false, error: message, userMessage: message });
     } finally {
       setSendBusy(false);
     }
@@ -122,6 +134,14 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const serverVapidOk = Boolean(serverVapid?.configured);
   const permOk = permission === "granted";
   const canSendTest = serverVapidOk && permOk && Boolean(storeId);
+  const testStatusLabel =
+    testStatus === "sending"
+      ? "A enviar agora…"
+      : testStatus === "success"
+        ? "Sucesso — notificação enviada"
+        : testStatus === "error"
+          ? "Erro no envio"
+          : "Aguardando teste";
 
   const alerts = (
     <>
@@ -242,9 +262,32 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             <Label>Mensagem</Label>
             <Input value={testBody} onChange={(e) => setTestBody(e.target.value)} />
           </div>
+          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold">Resultado em tempo real</span>
+              <AdminDiagnosticStatusBadge ok={testStatus === "success"} label={testStatusLabel} />
+            </div>
+            {testResult ? (
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>
+                  Enviados: {testResult.sent ?? 0} · Alvos: {testResult.targeted ?? 0} · Encontrados: {testResult.matched ?? 0}
+                </p>
+                {testResult.userMessage || testResult.error ? (
+                  <p className="text-destructive font-medium">{testResult.userMessage ?? testResult.error}</p>
+                ) : null}
+                {testResult.errors?.length ? (
+                  <pre className="whitespace-pre-wrap break-all rounded-md bg-background p-2 text-[10px]">
+                    {JSON.stringify(testResult.errors, null, 2)}
+                  </pre>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">O resultado aparece aqui assim que o servidor responder.</p>
+            )}
+          </div>
           <Button disabled={sendBusy || !canSendTest} onClick={() => void handleSendTest()}>
             {sendBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-            Enviar teste
+            Enviar push de teste agora
           </Button>
         </CardContent>
       </Card>
