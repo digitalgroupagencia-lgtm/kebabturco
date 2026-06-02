@@ -402,7 +402,7 @@ function buildModifierConfigFromProduct(
     }
   }
 
-  if (!isDrink && allowsIngredientRemoval(product) && removalLabels.size > 0) {
+  if (!isDrink && allowsIngredientRemoval(product) && removalMap.size > 0) {
     groups.push(
       makeGroup(product.id, "removal", {
         name: { es: "Quitar ingredientes", pt: "Retirar ingredientes", en: "Remove ingredients", fr: "Retirer" },
@@ -415,7 +415,7 @@ function buildModifierConfigFromProduct(
         sortOrder: 2,
         repeatPerUnit: isMultiUnit && allowsIngredientRemoval(product),
         linkSortOrder: 2,
-        options: Array.from(removalLabels).map((label, i) => ({
+        options: Array.from(removalMap.values()).map((label, i) => ({
           id: `${SYNTH_PREFIX}-${product.id}-rem-${i}`,
           groupId: `${SYNTH_PREFIX}-${product.id}-removal`,
           name: { es: label, pt: label, en: label, fr: label },
