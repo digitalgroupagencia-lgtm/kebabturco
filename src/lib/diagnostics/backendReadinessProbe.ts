@@ -83,7 +83,7 @@ const RPC_SPECS: RpcSpec[] = [
   },
   {
     name: "create_customer_order",
-    args: { _store_id: DUMMY_UUID, _order_type: "takeaway", _items: [] },
+    args: { _store_id: DUMMY_UUID, _order_type: "takeaway", _items: [], _total: 0 },
     label: "Criar pedido do cliente",
     critical: true,
     group: "customer",
@@ -108,7 +108,12 @@ const RPC_SPECS: RpcSpec[] = [
   },
   {
     name: "create_seller_order",
-    args: { _store_id: DUMMY_UUID, _items: [] },
+    args: {
+      _store_id: DUMMY_UUID,
+      _table_number: "0",
+      _customer_name: "probe",
+      _items: [],
+    },
     label: "Criar pedido do vendedor",
     group: "seller",
   },
@@ -132,10 +137,11 @@ const RPC_SPECS: RpcSpec[] = [
   },
   {
     name: "enqueue_print_job",
-    args: { _store_id: DUMMY_UUID, _order_id: DUMMY_UUID, _job_type: "kitchen" },
+    args: { _store_id: DUMMY_UUID, _ticket_data: "", _order_id: DUMMY_UUID },
     label: "Fila de impressão",
     group: "ops",
   },
+
 ];
 
 const EDGE_FUNCTIONS: Array<{ name: string; label: string; critical?: boolean }> = [
