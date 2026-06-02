@@ -53,6 +53,10 @@ describe.each(MENU.map((p) => [labelOf(p), p] as const))(
     const hasDrinkInDesc = descriptionIncludesDrink(product);
     const drinkRule = resolveDrinkSizeRuleForProduct(product);
 
+    it("síntese de modificadores não lança erro", () => {
+      expect(() => getGroups(product)).not.toThrow();
+    });
+
     if (includesPotato) {
       it("expõe grupo de batata com fritas incluidas + bravas + lux", () => {
         const potato = findPotatoGroup(groups);
