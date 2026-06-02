@@ -229,14 +229,14 @@ const PanelSettingsPage = () => {
         <TabsContent value="notif">
           <Card>
             <CardHeader>
-              <CardTitle>Notificações</CardTitle>
-              <CardDescription>Como a equipe é avisada.</CardDescription>
+              <CardTitle>{t("settings.notif.title")}</CardTitle>
+              <CardDescription>{t("settings.notif.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
                 {
-                  label: "Som ao receber novo pedido",
-                  desc: "Ligado ao mesmo sistema de «Activar alertas» em Pedidos ao vivo.",
+                  label: t("settings.notif.sound"),
+                  desc: t("settings.notif.sound.desc"),
                   val: soundOnNewOrder,
                   set: (v: boolean) => {
                     setSoundOnNewOrder(v);
@@ -244,8 +244,8 @@ const PanelSettingsPage = () => {
                   },
                   icon: Volume2,
                 },
-                { label: "Avisar a cozinha", desc: "Marca o pedido como 'novo' na tela da cozinha.", val: notifyKitchen, set: setNotifyKitchen, icon: Bell },
-                { label: "Notificações push (mobile)", desc: "Aviso no telemóvel mesmo com app fechada (requer permissão).", val: pushNotifications, set: (v: boolean) => { void handlePushToggle(v); }, icon: Bell, disabled: pushBusy },
+                { label: t("settings.notif.kitchen"), desc: t("settings.notif.kitchen.desc"), val: notifyKitchen, set: setNotifyKitchen, icon: Bell },
+                { label: t("settings.notif.push"), desc: t("settings.notif.push.desc"), val: pushNotifications, set: (v: boolean) => { void handlePushToggle(v); }, icon: Bell, disabled: pushBusy },
               ].map((n) => (
                 <div key={n.label} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                   <div className="flex items-start gap-3">
@@ -264,10 +264,11 @@ const PanelSettingsPage = () => {
                   tenantId={roleData.tenant_id}
                 />
               )}
-              <Button onClick={() => save("Notificações")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save(t("settings.notif.title"))}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
+
 
         <TabsContent value="hours">
           <Card>
