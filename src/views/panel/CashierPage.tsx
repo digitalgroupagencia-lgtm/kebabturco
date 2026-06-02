@@ -13,6 +13,7 @@ import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote
 import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -21,6 +22,8 @@ const CashierPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
+  const { t } = useStaffT();
+
 
   const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null);
   const [loading, setLoading] = useState(true);
