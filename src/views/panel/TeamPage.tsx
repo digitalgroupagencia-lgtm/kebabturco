@@ -505,7 +505,7 @@ const TeamPage = () => {
                 <TableRow key={m.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{m.full_name || "Sem nome"}</p>
+                      <p className="font-medium">{m.full_name || t("team.no_name")}</p>
                       <p className="text-xs text-muted-foreground">{m.email || m.user_id.slice(0, 8) + "..."}</p>
                     </div>
                   </TableCell>
