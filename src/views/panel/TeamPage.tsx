@@ -287,9 +287,6 @@ const TeamPage = () => {
       if (editPassword.trim() && !loginReady) {
         toast.warning(t("team.toast.login_pending_edit"), { duration: 8000 });
       }
-          { duration: 8000 },
-        );
-      }
       setEditMember(null);
       await fetchMembers();
 
