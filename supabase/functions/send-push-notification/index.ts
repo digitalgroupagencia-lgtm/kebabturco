@@ -178,19 +178,31 @@ Deno.serve(async (req) => {
 
     const payload = JSON.stringify({ title, body: msgBody, tag, url });
     let sent = 0;
+    const errors: { endpoint: string; status?: number; message: string }[] = [];
 
     for (const sub of subs) {
       try {
         await sendWebPush(sub, payload, vapidPublic, vapidPrivate);
         sent++;
-      } catch {
-        await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      } catch (e: any) {
+        const status = e?.statusCode ?? e?.status;
+        const message = e?.body || e?.message || String(e);
+        console.error("[send-push-notification] webpush error", {
+          endpoint: sub.endpoint.slice(0, 60),
+          status,
+          message,
+        });
+        errors.push({ endpoint: sub.endpoint.slice(0, 60), status, message });
+        if (status === 404 || status === 410) {
+          await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+        }
       }
     }
 
-    return new Response(JSON.stringify({ sent, matched: matchedInDb, targeted: subs.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ sent, matched: matchedInDb, targeted: subs.length, errors: errors.length ? errors : undefined }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,

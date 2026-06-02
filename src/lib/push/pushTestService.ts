@@ -168,11 +168,16 @@ export async function sendTestPushNotification(opts: {
 
     const sent = payload.sent ?? 0;
     const matched = payload.matched ?? 0;
+    const errors = (payload as any).errors as
+      | { endpoint: string; status?: number; message: string }[]
+      | undefined;
 
     if (sent === 0) {
-      const userMessage =
-        "Nenhum dispositivo recebeu. Registe de novo com o mesmo tipo e a mesma loja seleccionada.";
-      pushLog("test", "test_send", "warn", userMessage, { matched, targeted: payload.targeted });
+      const firstErr = errors?.[0];
+      const userMessage = firstErr
+        ? `Erro do serviço de push${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 240)}`
+        : "Nenhum dispositivo recebeu. Registe de novo com o mesmo tipo e a mesma loja seleccionada.";
+      pushLog("test", "test_send", "error", userMessage, { matched, targeted: payload.targeted, errors });
       return { ok: false, sent: 0, matched, userMessage };
     }
 
