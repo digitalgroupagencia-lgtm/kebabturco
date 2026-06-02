@@ -71,7 +71,7 @@ const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
 
 const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Pagamento seguro online", en: "Secure online payment", es: "Pago seguro online", fr: "Paiement sécurisé en ligne" },
-  cash: { pt: "Pagamento em dinheiro", en: "Cash payment", es: "Pago en efectivo", fr: "Paiement en espèces" },
+  cash: { pt: "Pagamento no caixa", en: "Pay at register", es: "Pago en caja", fr: "Paiement à la caisse" },
   pix: { pt: "Pagamento instantâneo", en: "Instant payment", es: "Pago instantáneo", fr: "Paiement instantané" },
   apple: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
   google: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
@@ -974,14 +974,7 @@ const PaymentScreen = () => {
                       >
                         <pm.icon className="w-5 h-5 shrink-0" />
                         <div className="flex-1 text-left min-w-0">
-                          <p className="font-black text-sm">
-                            {tProduct(METHOD_LABELS[pm.id])}
-                            {pm.id === "card" ? (
-                              <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-                                {t("recommended")}
-                              </span>
-                            ) : null}
-                          </p>
+                          <p className="font-black text-sm">{tProduct(METHOD_LABELS[pm.id])}</p>
                           <p className="text-[11px] text-muted-foreground truncate">
                             {cardBlocked && pm.id === "card" && stripeIssue
                               ? stripeIssue
@@ -996,6 +989,15 @@ const PaymentScreen = () => {
                     <p className="text-[10px] text-muted-foreground px-1 pt-1">
                       Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
                     </p>
+                  )}
+                  {(selected === "cash" || selected === "counter") && (
+                    <div className="mt-1.5 flex gap-2.5 items-start rounded-2xl border-2 border-amber-500/35 bg-amber-500/5 p-3">
+                      <Store className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
+                      <div className="min-w-0 text-left">
+                        <p className="text-sm font-bold text-foreground">{t("cashCheckoutTitle")}</p>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t("cashCheckoutHint")}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
                 {showError === "method" && (

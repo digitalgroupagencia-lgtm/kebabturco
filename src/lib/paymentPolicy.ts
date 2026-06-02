@@ -17,6 +17,17 @@ function opsFlag(settings: OperationsSettings | null, key: string, fallback: boo
   return typeof v === "boolean" ? v : fallback;
 }
 
+function cashAllowedForOrderType(
+  orderType: CustomerOrderType,
+  settings: OperationsSettings | null,
+): boolean {
+  if (!opsFlag(settings, "pay_cash_enabled", true)) return false;
+  if (orderType === "here") return opsFlag(settings, "pay_cash_dine_in", true);
+  if (orderType === "takeaway") return opsFlag(settings, "pay_cash_takeaway", true);
+  if (orderType === "delivery") return opsFlag(settings, "pay_cash_delivery", false);
+  return false;
+}
+
 /** Cartão listado no checkout (chave publicável). Pagamento efectivo exige stripeReady. */
 export function cardListedInCheckout(input: PaymentPolicyInput): boolean {
   const { settings, stripePublishableKey } = input;
@@ -40,7 +51,7 @@ export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethod
   const methods: PaymentMethodId[] = [];
   if (cardVisible) methods.push("card");
 
-  if (orderType === "takeaway") {
+  if (cashAllowedForOrderType(orderType, settings)) {
     methods.push("cash");
   }
 

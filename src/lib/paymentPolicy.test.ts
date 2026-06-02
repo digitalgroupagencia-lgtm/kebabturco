@@ -3,6 +3,7 @@ import { requiresPrepayment, resolveCheckoutMethods, shouldPrintAfterCheckout } 
 
 const baseSettings = {
   pay_card_enabled: true,
+  pay_cash_enabled: true,
   pay_cash_dine_in: true,
   pay_cash_takeaway: false,
   pay_cash_delivery: false,
@@ -13,22 +14,43 @@ const baseSettings = {
 } as any;
 
 describe("paymentPolicy", () => {
-  it("takeaway default: cartão e dinheiro, sem delivery dinheiro", () => {
-    const methods = resolveCheckoutMethods({
-      orderType: "takeaway",
-      mesaValidated: false,
-      settings: baseSettings,
-      stripeReady: true,
-      stripePublishableKey: true,
-    });
-    expect(methods).toEqual(["card", "cash"]);
-    expect(resolveCheckoutMethods({
-      orderType: "delivery",
-      mesaValidated: false,
-      settings: { ...baseSettings, pay_cash_delivery: true },
-      stripeReady: true,
-      stripePublishableKey: true,
-    })).toEqual(["card"]);
+  it("takeaway: dinheiro só se activo; delivery sem dinheiro", () => {
+    expect(
+      resolveCheckoutMethods({
+        orderType: "takeaway",
+        mesaValidated: false,
+        settings: baseSettings,
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["card"]);
+    expect(
+      resolveCheckoutMethods({
+        orderType: "takeaway",
+        mesaValidated: false,
+        settings: { ...baseSettings, pay_cash_takeaway: true },
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["card", "cash"]);
+    expect(
+      resolveCheckoutMethods({
+        orderType: "delivery",
+        mesaValidated: false,
+        settings: baseSettings,
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["card"]);
+    expect(
+      resolveCheckoutMethods({
+        orderType: "delivery",
+        mesaValidated: false,
+        settings: { ...baseSettings, pay_cash_delivery: true },
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["card", "cash"]);
   });
 
   it("mesa sem QR validado: nenhum método", () => {

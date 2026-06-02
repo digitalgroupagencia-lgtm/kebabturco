@@ -580,6 +580,18 @@ const translations: Translations = {
   pickMethod: { pt: "Escolha o método", en: "Pick your method", es: "Elige tu método", fr: "Choisissez votre méthode" },
   payAtCounterTitle: { pt: "Pagar no balcão", en: "Pay at counter", es: "Pago en mostrador", fr: "Payer au comptoir" },
   payAtCounterSub: { pt: "Você pagará ao retirar o pedido.", en: "You will pay when picking up.", es: "Realizarás el pago al recoger tu pedido.", fr: "Vous paierez au retrait." },
+  cashCheckoutTitle: {
+    pt: "Pagamento no caixa",
+    en: "Pay at the register",
+    es: "Pago en caja",
+    fr: "Paiement à la caisse",
+  },
+  cashCheckoutHint: {
+    pt: "Depois de confirmar, dirija-se ao caixa do restaurante para pagar em dinheiro.",
+    en: "After confirming, go to the restaurant register to pay in cash.",
+    es: "Tras confirmar, acude a la caja del restaurante para pagar en efectivo.",
+    fr: "Après confirmation, rendez-vous à la caisse pour payer en espèces.",
+  },
   recommended: { pt: "Principal", en: "Primary", es: "Principal", fr: "Principal" },
   cashPendingTitle: {
     pt: "Dirija-se ao balcão",
