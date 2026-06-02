@@ -119,29 +119,30 @@ const PanelSettingsPage = () => {
         <TabsContent value="store">
           <Card>
             <CardHeader>
-              <CardTitle>Dados da loja</CardTitle>
-              <CardDescription>Informações exibidas em recibos e impressões.</CardDescription>
+              <CardTitle>{t("settings.store.title")}</CardTitle>
+              <CardDescription>{t("settings.store.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Nome da loja</Label>
+                <Label>{t("settings.store.name")}</Label>
                 <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Telefone</Label>
+                  <Label>{t("settings.store.phone")}</Label>
                   <Input value={storePhone} onChange={(e) => setStorePhone(e.target.value)} placeholder="(11) 90000-0000" />
                 </div>
                 <div>
-                  <Label>CNPJ / Identificação fiscal</Label>
+                  <Label>{t("settings.store.fiscal")}</Label>
                   <Input value={storeCnpj} onChange={(e) => setStoreCnpj(e.target.value)} />
                 </div>
               </div>
               <div>
-                <Label>Endereço completo</Label>
+                <Label>{t("settings.store.address")}</Label>
                 <Textarea rows={2} value={storeAddress} onChange={(e) => setStoreAddress(e.target.value)} />
               </div>
-              <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> Salvar</Button>
+              <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+
             </CardContent>
           </Card>
 
