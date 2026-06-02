@@ -83,9 +83,7 @@ const KdsPage = () => {
         .from("orders")
         .select("id, order_number, customer_name, table_number, order_type, status, total, created_at")
         .eq("store_id", storeId)
-        .neq("status", "completed")
-        .neq("status", "cancelled")
-        .neq("status", "delivered")
+        .in("status", ["pending", "preparing", "ready", "out_for_delivery"])
         .order("created_at", { ascending: true })
         .limit(200);
       if (!active) return;
