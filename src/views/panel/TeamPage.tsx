@@ -16,6 +16,7 @@ import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRol
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
+import { useStaffT } from "@/hooks/useStaffT";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember, verifyStaffMemberLogin } from "@/services/createStaffMember";
