@@ -84,13 +84,13 @@ const SellersPage = () => {
 
   const create = useMutation({
     mutationFn: async () => {
-      if (!form.email.trim() || !form.password.trim()) throw new Error("E-mail e senha são obrigatórios");
-      if (form.password.length < 6) throw new Error("Senha deve ter pelo menos 6 caracteres");
-      if (!tenantId) throw new Error("Tenant não encontrado");
+      if (!form.email.trim() || !form.password.trim()) throw new Error(t("sellers.err.email_password"));
+      if (form.password.length < 6) throw new Error(t("sellers.err.password_short"));
+      if (!tenantId) throw new Error(t("sellers.err.tenant"));
       const allowed = billing.data?.sellers_allowed ?? 1;
       const active = billing.data?.sellers_active ?? sellers?.length ?? 0;
       if (active >= allowed) {
-        throw new Error(`Seu plano permite ${allowed} vendedor(es). Para adicionar mais, solicite um upgrade.`);
+        throw new Error(t("sellers.err.plan_limit").replace("{n}", String(allowed)));
       }
       const { data, error } = await supabase.functions.invoke("create-tenant-user", {
         body: {
@@ -106,7 +106,7 @@ const SellersPage = () => {
       return data;
     },
     onSuccess: () => {
-      toast.success("Vendedor criado!");
+      toast.success(t("sellers.toast.created"));
       qc.invalidateQueries({ queryKey: ["sellers", tenantId] });
       qc.invalidateQueries({ queryKey: ["tenant-billing", tenantId] });
       setOpen(false);
@@ -121,7 +121,7 @@ const SellersPage = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Vendedor removido");
+      toast.success(t("sellers.toast.removed"));
       qc.invalidateQueries({ queryKey: ["sellers", tenantId] });
       qc.invalidateQueries({ queryKey: ["tenant-billing", tenantId] });
     },
@@ -130,13 +130,10 @@ const SellersPage = () => {
 
   const resetPassword = useMutation({
     mutationFn: async () => {
-      if (!resetUserId || newPwd.length < 6) throw new Error("Nova senha deve ter 6+ caracteres");
-      // We need an admin endpoint; reuse create-tenant-user pattern via service role isn't available client-side.
-      // Workaround: ask user to re-create account or contact admin master. Instead we use Supabase password reset email.
+      if (!resetUserId || newPwd.length < 6) throw new Error(t("sellers.err.password_short"));
       const u = sellers?.find((s) => s.user_id === resetUserId);
-      if (!u) throw new Error("Vendedor não encontrado");
-      // Send reset link - requires email; best UX is an admin reset endpoint, but for now we surface a clear message.
-      throw new Error("Reset direto requer endpoint admin. Use 'Esqueci senha' na tela de login.");
+      if (!u) throw new Error(t("sellers.err.tenant"));
+      throw new Error(t("sellers.reset.body"));
     },
     onError: (e: Error) => toast.error(e.message),
   });
