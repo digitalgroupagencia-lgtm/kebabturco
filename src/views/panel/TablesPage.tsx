@@ -162,7 +162,7 @@ const TablesPage = () => {
     setSaving(false);
     if (error) toast.error(error.message);
     else {
-      toast.success("Mesa adicionada");
+      toast.success(t("tables.toast.added"));
       setNewNumber("");
       load();
     }
@@ -173,7 +173,7 @@ const TablesPage = () => {
     const from = Math.max(1, parseInt(bulkFrom, 10) || 1);
     const to = Math.max(from, parseInt(bulkTo, 10) || from);
     if (to - from > 60) {
-      toast.error("Máximo 60 mesas por lote");
+      toast.error(t("tables.toast.bulk_max"));
       return;
     }
     setBulkSaving(true);
@@ -192,13 +192,13 @@ const TablesPage = () => {
       if (!error) created++;
     }
     setBulkSaving(false);
-    toast.success(created ? `${created} mesa(s) criada(s)` : "Todas as mesas do intervalo já existiam");
+    toast.success(created ? t("tables.toast.bulk_created").replace("{n}", String(created)) : t("tables.toast.bulk_none"));
     load();
   };
 
-  const toggleActive = async (t: TableRow, active: boolean) => {
+  const toggleActive = async (tbl: TableRow, active: boolean) => {
     if (!canManage) return;
-    const { error } = await supabase.from("tables").update({ is_active: active }).eq("id", t.id);
+    const { error } = await supabase.from("tables").update({ is_active: active }).eq("id", tbl.id);
     if (error) toast.error(error.message);
     else load();
   };
@@ -206,65 +206,65 @@ const TablesPage = () => {
   const copyLink = async (table: TableRow) => {
     try {
       await navigator.clipboard.writeText(tableQrUrl(table));
-      toast.success(`Link da mesa ${table.number} copiado`);
+      toast.success(t("tables.toast.link_copied").replace("{n}", table.number));
     } catch {
-      toast.error("Não foi possível copiar o link");
+      toast.error(t("tables.toast.link_error"));
     }
   };
 
   const downloadPremiumPng = async (table: TableRow) => {
     try {
       await downloadTableQrPng(exportInput(table), `${branding.restaurantName}-mesa-${table.number}.png`);
-      toast.success(`PNG da mesa ${table.number} descarregado`);
+      toast.success(t("tables.toast.png_ok").replace("{n}", table.number));
     } catch {
-      toast.error("Erro ao gerar PNG");
+      toast.error(t("tables.toast.png_error"));
     }
   };
 
   const regenerateQr = async (table: TableRow) => {
     if (!canManage) return;
-    if (!window.confirm(`Regenerar QR da mesa ${table.number}? Os códigos antigos deixam de funcionar.`)) return;
+    if (!window.confirm(t("tables.toast.regen_confirm").replace("{n}", table.number))) return;
     setRegeneratingId(table.id);
     try {
       const newToken = await regenerateTableQrToken(table.id);
       const updated = { ...table, qr_token: newToken };
       setTables((prev) => prev.map((t) => (t.id === table.id ? updated : t)));
       if (qrTable?.id === table.id) setQrTable(updated);
-      toast.success(`Novo QR gerado para a mesa ${table.number}`);
+      toast.success(t("tables.toast.regen_ok").replace("{n}", table.number));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao regenerar QR");
+      toast.error(e instanceof Error ? e.message : t("tables.toast.regen_error"));
     } finally {
       setRegeneratingId(null);
     }
   };
 
   const printPremiumQr = async (table: TableRow) => {
-    await printTableQrCards([exportInput(table)], `Mesa ${table.number}`);
+    await printTableQrCards([exportInput(table)], `${t("tables.table_n")} ${table.number}`);
   };
 
   const downloadAllPremium = async () => {
     const active = tables.filter((t) => t.is_active);
     if (!active.length) {
-      toast.error("Nenhuma mesa activa");
+      toast.error(t("tables.toast.no_active"));
       return;
     }
     await printTableQrCards(
       active.map(exportInput),
       `QR Codes — ${branding.restaurantName}`,
     );
-    toast.success(`${active.length} QR codes prontos para imprimir ou guardar em PDF`);
+    toast.success(t("tables.toast.batch_ready").replace("{n}", String(active.length)));
   };
 
   if (storeLoading || loading) {
     return (
       <div className="p-8 flex items-center gap-2">
-        <Loader2 className="animate-spin h-4 w-4" /> A carregar mesas...
+        <Loader2 className="animate-spin h-4 w-4" /> {t("tables.loading")}
       </div>
     );
   }
 
   if (!storeId) {
-    return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
+    return <div className="p-8 text-muted-foreground">{t("common.no_store")}</div>;
   }
 
   return (
