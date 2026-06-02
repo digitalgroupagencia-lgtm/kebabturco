@@ -66,16 +66,16 @@ const FORBIDDEN_DIRS = [
   "src/components/staff",
   "src/features/ops",
   "src/features/delivery",
-  "src/lib/diagnostics",
 ];
 
-// Ficheiros individuais proibidos no cliente (Fase 6 — isolar diagnóstico/staff)
+// Ficheiros individuais proibidos no cliente (Fase 6 — isolar diagnóstico/staff).
+// NOTA: `src/lib/diagnostics/*` e `src/services/printerService.ts` são infra
+// PARTILHADA (logger de push e impressão de talão de checkout) — não entram aqui.
 const FORBIDDEN_FILES = [
   "src/lib/staffPush.ts",
   "src/lib/push/staff.ts",
   "src/lib/push/pushTestService.ts",
   "src/lib/panelAlerts.ts",
-  "src/services/printerService.ts",
   "src/services/operationalDiagnosticsService.ts",
   "src/services/adminSystemAudit.ts",
   "src/services/fullAppAuditService.ts",
