@@ -180,7 +180,7 @@ const KdsPage = () => {
             className="gap-1"
           >
             {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            {soundOn ? "Som ON" : "Activar som"}
+            {soundOn ? t("kds.sound.on") : t("kds.sound.enable")}
           </Button>
           <Button
             variant="outline"
@@ -192,8 +192,9 @@ const KdsPage = () => {
             }}
             className="gap-1"
           >
-            <Maximize className="h-4 w-4" /> Tela cheia
+            <Maximize className="h-4 w-4" /> {t("kds.fullscreen")}
           </Button>
+
         </div>
       </header>
 
