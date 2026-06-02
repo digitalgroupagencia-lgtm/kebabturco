@@ -7,7 +7,7 @@ import {
 
 export type VapidKeyDiagnostics = {
   loaded: boolean;
-  source: "app" | "env" | "fallback" | "none";
+  source: "app" | "env" | "none";
   keyPreview: string;
   keyLength: number;
   validFormat: boolean;
