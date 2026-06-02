@@ -2,6 +2,7 @@ import { useEffect, type ComponentType } from "react";
 import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { nav } from "@/lib/navPaths.ts";
@@ -13,6 +14,7 @@ type Props = {
 const SellerLayout = ({ page: Page }: Props) => {
   const { user, loading, signOut } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
+  const { enabled: sellerEnabled, isLoading: flagLoading } = useSellerModuleEnabled(roleData?.tenant_id);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,10 +29,25 @@ const SellerLayout = ({ page: Page }: Props) => {
     }
   }, [roleLoading, roleData, navigate]);
 
-  if (loading || roleLoading) {
+  if (loading || roleLoading || flagLoading) {
     return <div className="min-h-[100dvh] flex items-center justify-center bg-background"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>;
   }
   if (!user) return null;
+
+  if (!sellerEnabled) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 px-6 text-center bg-background">
+        <h1 className="text-xl font-bold">Módulo Vendedor desactivado</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          O acesso ao app de vendedor foi desactivado pela plataforma para este restaurante.
+          Contacte o administrador.
+        </p>
+        <Button variant="outline" onClick={signOut}>
+          <LogOut className="w-4 h-4 mr-2" /> Sair
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] w-full bg-background flex flex-col max-w-full overflow-x-hidden">
