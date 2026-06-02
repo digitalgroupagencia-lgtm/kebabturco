@@ -52,6 +52,8 @@ import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
 import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
 import { useSellerMode } from "@/contexts/SellerModeContext";
+import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
+import { useSellerMode } from "@/contexts/SellerModeContext";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
   { id: "card", icon: CreditCard },
@@ -149,6 +151,12 @@ const PaymentScreen = () => {
   const channel = orderType === "delivery" ? "delivery" : "store";
   const openStatus = useStoreOpenStatus(channel);
   const [closedDialog, setClosedDialog] = useState(false);
+  const sellerMode = useSellerMode();
+
+  if (sellerMode.active) {
+    return <SellerCheckoutForm />;
+  }
+
 
   const isTableOrder = orderType === "here";
   const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
