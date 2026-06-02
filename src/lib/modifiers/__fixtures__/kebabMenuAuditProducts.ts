@@ -6,7 +6,7 @@ const drink = (id: string, name: string, slug = "bebidas"): MenuProduct =>
     name: { es: name, pt: name, en: name },
     description: { es: "", pt: "", en: "" },
     price: 2,
-    image: "",
+    image: `/assets/${id}.png`,
     category: "drinks",
     categorySlug: slug,
     extras: [],
