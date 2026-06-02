@@ -272,18 +272,18 @@ const PanelSettingsPage = () => {
         <TabsContent value="hours">
           <Card>
             <CardHeader>
-              <CardTitle>Horário de funcionamento</CardTitle>
+              <CardTitle>{t("settings.hours.title")}</CardTitle>
               <CardDescription>
-                Defina os horários reais por dia da semana, para a loja e para o delivery separadamente.
-                Quando o canal está fechado, o cliente continua a poder navegar e montar carrinho — só não consegue finalizar.
+                {t("settings.hours.desc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {effectiveStoreId ? (
                 <WeeklyHoursEditor storeId={effectiveStoreId} />
               ) : (
-                <p className="text-sm text-muted-foreground">A carregar loja…</p>
+                <p className="text-sm text-muted-foreground">{t("settings.hours.loading")}</p>
               )}
+
             </CardContent>
           </Card>
         </TabsContent>
