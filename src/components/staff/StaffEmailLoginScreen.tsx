@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowLeft } from "lucide-react";
-import brandLogo from "@/assets/elrey-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
+import { useBranding } from "@/contexts/BrandingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { markStaffSession, resolveStaffLoginDestination } from "@/lib/staffLogin";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
