@@ -1,105 +1,106 @@
+# Análise de Impacto — Fase 2 (separação física da área cliente)
 
-# Auditoria Completa do SnapOrder / Kebab Turco
+## 1. Ficheiros que seriam movidos
 
-Objectivo: produzir um **relatório verificável** (não palpites) cobrindo cada painel, cada função crítica, cada fluxo de login, e cada integração — com testes reais executados contra a base de dados, edge functions e UI.
+| Grupo | Ficheiros | Destino proposto |
+|---|---|---|
+| Ecrãs cliente | 14 (`src/components/screens/*.tsx`) | `src/customer/screens/` |
+| Customização de produto | 12 (`src/components/customization/*.tsx`) | `src/customer/customization/` |
+| Componentes `Customer*` na raiz | 9 (`CustomerTabBar`, `CustomerBottomDock`, `CustomerPushPromptHost`, `CustomerNotificationOptInDialog`, `CustomerAreaBoundary`, `CustomerScreenErrorBoundary`, etc.) | `src/customer/components/` |
+| `features/customer/` | 3 (`ActiveOrderBar`, `useActiveOrder`, `useActiveOrderStorage`) | `src/customer/active-order/` |
+| Página de entrada | 1 (`src/pages/Index.tsx`) | `src/customer/Index.tsx` |
 
-## O que vou auditar
+**Total: ~39 ficheiros físicos a mover.**
 
-### 1. Backend & Infraestrutura
-- Estado do Lovable Cloud (`cloud_status`, `db_health`)
-- Linter de segurança Supabase (RLS, policies, grants)
-- Todas as edge functions: deploy status + smoke test (`curl_edge_functions`)
-- Logs recentes de cada edge function (erros, timeouts)
-- Secrets configurados (Stripe, VAPID, push, AI)
-- Tabelas sem GRANT correcto / sem RLS
+## 2. Imports a actualizar
 
-### 2. Autenticação (4 fluxos)
-- **Cliente** (auth normal email/google) — signup + login
-- **Staff PIN** (`staff-pin-login`)
-- **Staff Access Code** (`staff-access-login`)
-- **Admin Master** — roles em `user_roles`
-- Verificação: roles atribuídos correctamente, sem recursão, sem privilege escalation
+- **33 ficheiros distintos** importam de pelo menos um dos caminhos a mover.
+- Detalhe por símbolo:
+  - `@/components/screens/*` → 2 importadores
+  - `@/components/customization/*` → 7 importadores
+  - `@/contexts/CartContext` → 17 importadores
+  - `@/contexts/OrderContext` → 24 importadores
+  - `@/features/customer/*` → poucos (≤3)
+  - `@/pages/Index` → 1 (`AppRoutes`)
 
-### 3. Painel do Cliente (totem/web)
-Por loja activa (Gandia, Playa Gandia, etc.):
-- Carregamento do cardápio (categorias + produtos activos)
-- Selecção idioma (pt/en/es/fr)
-- Carrinho + modificadores
-- Checkout: dinheiro, cartão (Stripe), tipos (mesa/balcão/delivery)
-- Zonas de entrega + cálculo de taxa
-- Tracking de pedido
-- Push notifications
+## 3. Contextos afectados
 
-### 4. Painel do Restaurante
-Por módulo:
-- **Live Orders** — recebimento realtime, mudança de status
-- **Cozinha (KDS)** — fila, marcar pronto
-- **Caixa** — abrir/fechar sessão, pagamentos
-- **Mesas & QR** — geração QR, sessões de mesa
-- **Equipa** — criar staff (`create-staff-member`), PIN
-- **Vendedores** — atribuição
-- **Stock** — controlo
-- **Relatórios / Finance** — Stripe payouts
-- **Impressão** — print-bridge + `print-order`
+| Contexto | Uso só-cliente? | Decisão |
+|---|---|---|
+| `CartContext` | ✅ Sim | mover para `src/customer/contexts/` |
+| `OrderContext` | ⚠ Usado também por `services/orderService`, `services/checkoutPrintHelper`, `lib/paymentMethods`, `lib/paymentPolicy`, `lib/modifiers/legacyBridge` | **NÃO mover** — só re-exportar via barrel. Mexer aqui = risco de partir checkout/Stripe/impressão. |
+| `LanguageContext` | ⚠ Usado por `panel/MenuPage`, `panel/TablesPage`, `panel/ModifierGroupsPage` (i18n partilhado) | **NÃO mover** — é infra partilhada |
+| `BrandingContext` | ⚠ Usado por `pages/Install`, componentes legais, ThemeToggle | **NÃO mover** |
+| `ThemeContext` | ⚠ Usado por `AdminThemeToggle` | **NÃO mover** |
 
-### 5. Painel do Entregador
-- Login, pedidos atribuídos, mudança de status, confirmação entrega
+→ Apenas **1 contexto** (`CartContext`) é seguro de mover fisicamente.
 
-### 6. Painel do Vendedor
-- Mesas, novo pedido, meus pedidos
+## 4. Riscos por área
 
-### 7. Painel Admin Master
-- Cardápios por loja (verificar duplicação Gandia → Playa Gandia)
-- Gestão de tenants e lojas
-- Branding, idiomas, zonas
-- Stripe Connect (onboarding, charges_enabled, payouts)
-- IA (admin assistant, menu import, product image)
-- Push central, campanhas, lealdade
-- Diagnósticos
+| Área | Risco | Mitigação |
+|---|---|---|
+| **Carrinho** | Baixo. `CartContext` é só-cliente. | Mover + actualizar 17 imports |
+| **Checkout** | **Médio-alto.** `PaymentScreen` mover é OK, mas `paymentMethods`/`paymentPolicy`/`checkoutPrintHelper` partilham `OrderContext`. | **Não mover** `OrderContext`. |
+| **Produto/modificadores** | Baixo. `customization/` é só-cliente. | Mover + actualizar 7 imports |
+| **Pagamento (Stripe)** | Nenhum se não tocarmos em `services/*Stripe*` nem em `paymentMethods`/`paymentPolicy`. | Não mexer nestes ficheiros |
+| **Notificações push** | Baixo. Já separadas na Fase 3. `CustomerPushPromptHost` move junto. | Mover sem tocar lógica |
+| **Impressão** | **Médio.** `checkoutPrintHelper` importa `OrderContext`. Se mexermos no caminho, partimos. | Manter `OrderContext` no lugar |
 
-### 8. Integrações
-- Stripe (secret, webhook, Connect)
-- Lovable AI Gateway (modelos disponíveis)
-- Push VAPID (chave fallback)
-- Print bridge (heartbeat)
+## 5. Pode ser só "mover ficheiros + ajustar imports"?
 
-## Como vou executar
+**Sim — desde que o escopo seja reduzido.** A versão "mover tudo" parte coisas (contextos partilhados). A versão segura é:
 
-1. Rodar `supabase--linter`, `cloud_status`, `db_health`
-2. Rodar `read_query` para checar: contagens por loja, roles, sessões abertas, pedidos órfãos, produtos sem categoria, zonas sem polígono, staff sem PIN, etc.
-3. `curl_edge_functions` em cada função pública (OPTIONS + POST mínimo) para confirmar 2xx/4xx esperados
-4. `edge_function_logs` em cada uma para apanhar erros silenciosos
-5. Probes existentes (`runFullAppAudit`, `probeAllPanels`, `fetchAdminSystemAudit`) — chamar via DB onde possível
-6. Browser real (`navigate_to_sandbox` + `observe` + `act`) para testar:
-   - Login cliente
-   - Adicionar ao carrinho
-   - Login staff PIN
-   - Abrir painel Live
-   - Login admin
+- Mover apenas o que é **exclusivamente** consumido pelo cliente: `screens/`, `customization/`, `Customer*.tsx`, `features/customer/`, `pages/Index.tsx`, `CartContext`.
+- **Manter no lugar** `OrderContext`, `LanguageContext`, `BrandingContext`, `ThemeContext`, `services/*`, `lib/payment*`, `lib/modifiers/*`, `services/printerService`, `services/checkoutPrintHelper`.
+- Operação 100% mecânica: `git mv` + reescrita de paths de import. Zero alterações de lógica, UI, regras, comportamento.
 
-## Entregável
+## Plano de execução (Fase 2 — escopo reduzido)
 
-Um relatório markdown em `/mnt/documents/auditoria-completa.md` com:
+1. **Criar estrutura**
+   ```text
+   src/customer/
+     Index.tsx
+     screens/        (14 ficheiros)
+     customization/  (12 ficheiros)
+     components/     (9 ficheiros Customer*)
+     active-order/   (3 ficheiros)
+     contexts/CartContext.tsx
+   ```
 
-```text
-[OK]    item — detalhe
-[WARN]  item — porquê + acção
-[FAIL]  item — erro exacto + ficheiro/linha/fix sugerido
-```
+2. **Mover ficheiros** (39 no total) preservando nomes.
 
-Agrupado por: Backend · Auth · Cliente · Restaurante · Entregador · Vendedor · Admin · Integrações.
-Resumo no topo: X críticos / Y avisos / Z OK.
+3. **Reescrever imports**:
+   - `@/components/screens/X` → `@/customer/screens/X`
+   - `@/components/customization/X` → `@/customer/customization/X`
+   - `@/components/Customer*` → `@/customer/components/Customer*`
+   - `@/features/customer/*` → `@/customer/active-order/*`
+   - `@/contexts/CartContext` → `@/customer/contexts/CartContext`
+   - `@/pages/Index` → `@/customer/Index` (e actualizar `AppRoutes`)
 
-## Detalhes técnicos
+4. **NÃO tocar** em: `OrderContext`, `LanguageContext`, `BrandingContext`, `ThemeContext`, qualquer `services/*`, `lib/payment*`, `lib/modifiers/*`, `lib/push/*` (mantém barris da Fase 3), `printerService`, `stripe*`, `print-bridge`.
 
-- Não vou modificar dados de produção — só leitura + smoke tests
-- Edge functions testadas com payloads mínimos válidos (sem criar pedidos reais)
-- Testes UI usam tenant `kebab-turco` que já está em preview
-- Cada FAIL inclui: ficheiro, função, query SQL ou request que falhou, e o fix proposto (sem aplicar)
+5. **Actualizar `scripts/customer-smoke-test.mjs`** para apontar para os novos caminhos críticos (`src/customer/screens/...`).
 
-## O que NÃO vou fazer nesta passagem
+6. **Actualizar `vite.config.ts`** — ajustar o pattern do chunk `customer` para apanhar `src/customer/**`.
 
-- Não vou corrigir nada automaticamente — só reportar
-- Após aprovares o relatório, fazemos uma segunda passagem só de fixes, priorizada pelos críticos
+7. **Validação obrigatória** (deploy bloqueia se falhar):
+   - `node scripts/customer-smoke-test.mjs` → verde
+   - `tsc --noEmit` (via build) → sem erros
+   - Build dos chunks `customer` e `internal` separados
 
-Confirma e eu arranco a auditoria completa.
+8. **Se qualquer passo falhar → reverter o move desse grupo** (commits separados por grupo: screens / customization / components / active-order / Index+CartContext).
+
+## Regras respeitadas
+
+- ✅ Zero alteração de comportamento
+- ✅ Zero alteração de UI
+- ✅ Zero alteração de regras de produto
+- ✅ Zero alteração de checkout
+- ✅ Zero alteração de Stripe
+- ✅ Zero alteração de impressão
+
+## Recomendação
+
+**Avançar com a Fase 2 no escopo reduzido acima.** É uma operação mecânica (move + rename de imports) que entrega a separação física pedida sem tocar nas zonas críticas (Order/checkout/Stripe/impressão).
+
+Confirma para eu executar?
