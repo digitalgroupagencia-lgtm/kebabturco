@@ -320,19 +320,19 @@ const CashierPage = () => {
       {currentRegister && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Resumo do Turno</CardTitle>
+            <CardTitle className="text-lg">{t("cashier.shift.title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Saldo Inicial</span>
+              <span className="text-muted-foreground">{t("cashier.balance.opening")}</span>
               <span className="font-semibold">€ {Number(currentRegister.opening_balance).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Vendas (Dinheiro)</span>
+              <span className="text-muted-foreground">{t("cashier.sales.cash")}</span>
               <span className="font-semibold text-success">+ € {todaySales.cash.toFixed(2)}</span>
             </div>
             <div className="border-t pt-2 flex justify-between">
-              <span className="font-semibold">Saldo Esperado</span>
+              <span className="font-semibold">{t("cashier.balance.expected")}</span>
               <span className="font-bold text-lg">€ {(Number(currentRegister.opening_balance) + todaySales.cash).toFixed(2)}</span>
             </div>
           </CardContent>
@@ -342,14 +342,14 @@ const CashierPage = () => {
       {/* Open Dialog */}
       <Dialog open={openDialogVisible} onOpenChange={setOpenDialogVisible}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Abrir Caixa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("cashier.action.open")}</DialogTitle></DialogHeader>
           <div>
-            <Label>Saldo Inicial (€)</Label>
+            <Label>{t("cashier.balance.opening.input")}</Label>
             <Input type="number" step="0.01" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} placeholder="0.00" />
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button onClick={openRegister}>Abrir Caixa</Button>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
+            <Button onClick={openRegister}>{t("cashier.action.open")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -357,19 +357,20 @@ const CashierPage = () => {
       {/* Close Dialog */}
       <Dialog open={closeDialogVisible} onOpenChange={setCloseDialogVisible}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Fechar Caixa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("cashier.action.close")}</DialogTitle></DialogHeader>
           <div>
-            <Label>Saldo Final Contado (€)</Label>
+            <Label>{t("cashier.balance.closing.input")}</Label>
             <Input type="number" step="0.01" value={closingBalance} onChange={(e) => setClosingBalance(e.target.value)} placeholder="0.00" />
           </div>
           <p className="text-sm text-muted-foreground">
-            Total vendido hoje: <strong>€ {todaySales.total.toFixed(2)}</strong>
+            {t("cashier.today.sold")} <strong>€ {todaySales.total.toFixed(2)}</strong>
           </p>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button variant="destructive" onClick={closeRegister}>Fechar Caixa</Button>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
+            <Button variant="destructive" onClick={closeRegister}>{t("cashier.action.close")}</Button>
           </DialogFooter>
         </DialogContent>
+
       </Dialog>
     </div>
   );
