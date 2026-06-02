@@ -69,7 +69,9 @@ async function invokeStaffOnDeployedServer(
     lastError = new Error(extractErrorMessage(data) || "Resposta inválida do servidor");
   }
 
-  throw lastError ?? new Error("STAFF_SERVER_UNAVAILABLE");
+  throw lastError instanceof Error && lastError.message === "STAFF_SERVER_UNAVAILABLE"
+    ? lastError
+    : lastError ?? new Error("STAFF_SERVER_UNAVAILABLE");
 }
 
 /** Actualiza membro via servidor já activo na Lovable Cloud. */
