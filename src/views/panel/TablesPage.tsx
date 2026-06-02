@@ -42,6 +42,7 @@ const TablesPage = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
   const canManage = isAdmin;
+  const { t } = useStaffT();
 
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { tenant: ctxTenant } = useSelectedTenant();
