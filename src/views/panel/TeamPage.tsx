@@ -547,7 +547,7 @@ const TeamPage = () => {
                           type="button"
                           size="icon"
                           variant="ghost"
-                          title={panelLang === "es" ? "Copiar instrucciones" : "Copiar instruções"}
+                          title={t("team.action.copy_instructions")}
                           onClick={() => showMemberInstructions(m, "review")}
                         >
                           <ClipboardCopy className="h-4 w-4" />
@@ -558,7 +558,7 @@ const TeamPage = () => {
                               type="button"
                               size="icon"
                               variant="ghost"
-                              title={panelLang === "es" ? "Editar miembro" : "Editar membro"}
+                              title={t("team.action.edit_member")}
                               onClick={() => openEditMember(m)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -581,7 +581,7 @@ const TeamPage = () => {
               {members.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    Nenhum membro cadastrado.
+                    {t("team.empty")}
                   </TableCell>
                 </TableRow>
               )}
