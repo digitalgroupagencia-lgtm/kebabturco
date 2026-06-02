@@ -12,8 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   usePlatformPlans,
   useSetTenantPlan,
+  useSetFeatureOverride,
   useTenantFeatureFlags,
 } from "@/hooks/usePlatformFeatures";
+import { Switch } from "@/components/ui/switch";
 import { APP_NAME, DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { CENTRAL_GROUPS, PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 
