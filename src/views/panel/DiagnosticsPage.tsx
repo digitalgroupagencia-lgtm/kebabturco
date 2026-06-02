@@ -1,5 +1,6 @@
 import { useMemo, useState, type ElementType, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+
 import { nav } from "@/lib/navPaths.ts";
 import {
   Activity,
