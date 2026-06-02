@@ -145,10 +145,10 @@ const KdsPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white gap-3 p-6 text-center">
         <ChefHat className="h-12 w-12" />
-        <p className="text-xl font-bold">Painel KDS — Acesso interno</p>
-        <p className="text-sm text-slate-400">É necessário iniciar sessão como equipa.</p>
+        <p className="text-xl font-bold">{t("kds.gate.title")}</p>
+        <p className="text-sm text-slate-400">{t("kds.gate.body")}</p>
         <Button asChild>
-          <a href="/staff">Iniciar sessão</a>
+          <a href="/staff">{t("kds.gate.signin")}</a>
         </Button>
       </div>
     );
@@ -156,10 +156,11 @@ const KdsPage = () => {
   if (!storeId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <p>Nenhuma loja vinculada</p>
+        <p>{t("common.no_store")}</p>
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col">
