@@ -686,36 +686,34 @@ const TeamPage = () => {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {panelLang === "es" ? "Editar miembro" : "Editar membro"}
+              {t("team.dialog.edit")}
               {editMember?.full_name ? ` — ${editMember.full_name}` : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{panelLang === "es" ? "Nombre" : "Nome"}</Label>
+              <Label>{t("team.col.name")}</Label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder={panelLang === "es" ? "Nombre del miembro" : "Nome do membro"}
+                placeholder={t("team.field.name.ph")}
               />
             </div>
             <div>
               <Label>Email</Label>
               <Input value={editMember?.email || "—"} readOnly disabled className="bg-muted/40" />
               <p className="text-xs text-muted-foreground mt-1">
-                {panelLang === "es"
-                  ? "El correo no se puede cambiar aquí."
-                  : "O e-mail não pode ser alterado aqui."}
+                {t("team.field.email.readonly")}
               </p>
             </div>
             <div>
-              <Label>{panelLang === "es" ? "Nueva contraseña (opcional)" : "Nova senha (opcional)"}</Label>
+              <Label>{t("team.field.password.new")}</Label>
               <div className="flex gap-2">
                 <Input
                   type={showEditPassword ? "text" : "password"}
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder={panelLang === "es" ? "Dejar vacío para mantener" : "Deixe vazio para manter"}
+                  placeholder={t("team.field.password.new.ph")}
                   className="flex-1"
                 />
                 <Button
@@ -728,13 +726,13 @@ const TeamPage = () => {
                     setShowEditPassword(true);
                   }}
                 >
-                  {panelLang === "es" ? "Sugerir" : "Sugerir"}
+                  {t("team.field.password.suggest")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(panelLang)}</p>
             </div>
             <div>
-              <Label>{panelLang === "es" ? "Perfil" : "Papel"}</Label>
+              <Label>{t("team.col.role")}</Label>
               <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -747,7 +745,7 @@ const TeamPage = () => {
               </Select>
             </div>
             <div>
-              <Label>{panelLang === "es" ? "Idioma del sistema" : "Idioma do sistema"}</Label>
+              <Label>{t("team.field.lang")}</Label>
               <Select value={editLanguage} onValueChange={setEditLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -757,15 +755,9 @@ const TeamPage = () => {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <DialogClose asChild><Button variant="outline">{panelLang === "es" ? "Cancelar" : "Cancelar"}</Button></DialogClose>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
             <Button onClick={() => void saveEditMember()} disabled={editSaving}>
-              {editSaving
-                ? panelLang === "es"
-                  ? "Guardando…"
-                  : "A guardar…"
-                : panelLang === "es"
-                  ? "Guardar"
-                  : "Guardar"}
+              {editSaving ? t("team.action.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
