@@ -133,7 +133,7 @@ export function PanelSidebar() {
       <SidebarFooter>
         <Button variant="ghost" className="w-full justify-start rounded-lg" onClick={() => void signOut()}>
           <LogOut className="mr-2 h-4 w-4" />
-          {!collapsed && "Sair"}
+          {!collapsed && t("common.signout")}
         </Button>
       </SidebarFooter>
     </Sidebar>
