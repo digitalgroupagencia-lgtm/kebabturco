@@ -21,6 +21,14 @@ export function isDrinkProduct(product: MenuProduct | undefined): boolean {
   return DRINK_NAME_RE.test(text);
 }
 
+/** Detecta especificamente água (mineral/sem gás), onde gelo não faz sentido. */
+export function isWaterProduct(product: MenuProduct | undefined): boolean {
+  if (!product) return false;
+  const text = `${product.name?.es || ""} ${product.name?.pt || ""} ${product.name?.en || ""} ${product.name?.fr || ""}`.toLowerCase();
+  // "agua", "água", "water", "eau" — evita "aguardiente" etc.
+  return /\b(agua|[áa]gua|water|eau)\b/.test(text);
+}
+
 /** Prefer active drink products from the menu when synthesizing combo drink choices. */
 export function resolveDrinkExtrasFromMenu(product: MenuProduct, menuProducts: MenuProduct[]): Extra[] {
   const rule = resolveDrinkSizeRuleForProduct(product);
