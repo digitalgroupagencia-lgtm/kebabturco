@@ -34,6 +34,30 @@ function log(...args: unknown[]) {
   console.log(TAG, ...args);
 }
 
+async function logTcpSocketDiagnostics() {
+  const platform = await Promise.resolve(Capacitor.getPlatform());
+  const available = Capacitor.isPluginAvailable("TcpSocket");
+  // Logs pedidos para validar no tablet via Logcat/console remota.
+  // eslint-disable-next-line no-console
+  console.log(platform);
+  // eslint-disable-next-line no-console
+  console.log(available);
+  // eslint-disable-next-line no-console
+  console.log(TAG, "Capacitor.getPlatform()", platform);
+  // eslint-disable-next-line no-console
+  console.log(TAG, "Capacitor.isPluginAvailable('TcpSocket')", available);
+  return { platform, available };
+}
+
+async function assertTcpSocketAvailable() {
+  const { available } = await logTcpSocketDiagnostics();
+  if (!available) {
+    throw new Error(
+      "TcpSocket plugin indisponível neste APK. Gere novamente depois de npm install + npx cap sync android e reinstale no tablet.",
+    );
+  }
+}
+
 async function fetchAndroidStores(): Promise<string[]> {
   const { data, error } = await supabase
     .from("printer_settings")
@@ -48,6 +72,7 @@ async function fetchAndroidStores(): Promise<string[]> {
 }
 
 async function sendEscPos(job: PrintJob): Promise<void> {
+  await assertTcpSocketAvailable();
   log(`conectando ${job.printer_ip}:${job.printer_port}`);
   const { client } = await TcpSocket.connect({
     ipAddress: job.printer_ip,
@@ -136,6 +161,7 @@ export async function startAndroidPrintListener() {
   }
   started = true;
   log("iniciando (plataforma nativa)");
+  void logTcpSocketDiagnostics();
 
   const stores = await fetchAndroidStores();
   if (stores.length === 0) {
@@ -164,6 +190,7 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");
   }
+  await assertTcpSocketAvailable();
   const { client } = await TcpSocket.connect({ ipAddress: opts.ip, port: opts.port || 9100 });
   try {
     await TcpSocket.send({ client, data: opts.ticketBase64, encoding: DataEncoding.BASE64 });
