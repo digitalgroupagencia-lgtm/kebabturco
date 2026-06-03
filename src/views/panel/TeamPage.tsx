@@ -21,6 +21,7 @@ import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialo
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember, verifyStaffMemberLogin } from "@/services/createStaffMember";
 import { updateStaffMember } from "@/services/updateStaffMember";
+import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import {
   loadTeamOnboardingCache,
   mergeOnboardingInput,
