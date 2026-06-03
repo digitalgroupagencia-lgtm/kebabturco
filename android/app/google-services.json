@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "972596599121",
+    "project_id": "kebab-turco-gandia",
+    "storage_bucket": "kebab-turco-gandia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:972596599121:android:e0ff2297956aa1976e9b70",
+        "android_client_info": {
+          "package_name": "app.lovable.d04adf9611f44dc9b79cf756a89ef084"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAS4E2qhVzFBNUrh-Xtrha_UQWdhsfFb5I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
