@@ -234,7 +234,7 @@ export default function ChoiceGroupSection({
                 <ProductChoiceCard
                   title={tName(opt.name)}
                   priceLabel={opt.priceDelta > 0 ? `${opt.priceDelta.toFixed(2)}€` : null}
-                  imageUrl={opt.imageUrl}
+                  imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
                   selected={sel}
                   compact
                   onClick={() => toggleSingle(opt.id, sel)}
