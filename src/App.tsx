@@ -87,6 +87,7 @@ const App = () => {
           <ThemeProvider>
             <BrowserRouter>
               <AppChromeEffect />
+              <ForcePortraitGate />
               <AppCacheBustRouter>
                 <LovablePreviewGate />
                 <PreviewPathGuard />
