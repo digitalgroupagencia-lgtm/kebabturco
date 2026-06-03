@@ -7,16 +7,16 @@ import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2 } from "lucide-
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import { playTestAlert } from "@/lib/panelAlerts";
 
 type Store = { id: string; name: string };
 type Table = { id: string; number: string };
 
-const STATUS_FLOW = ["pending", "preparing", "ready", "out_for_delivery", "delivered"] as const;
-
 export default function OrderSimulatorPage() {
-  const { role, loading: roleLoading } = useUserRole();
-  const isAdmin = role === "admin_master";
+  const { user } = useAuth();
+  const { roleData, loading: roleLoading } = useUserRole(user?.id);
+  const isAdmin = roleData?.role === "admin_master";
 
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState<string>("");
