@@ -74,6 +74,7 @@ export default function ChoiceGroupSection({
   tDesc,
   hideHeader,
   stepMode,
+  menuProducts = [],
 }: Props) {
   const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
@@ -94,6 +95,7 @@ export default function ChoiceGroupSection({
         onChange={onChange}
         tName={tName}
         stepMode={stepMode}
+        menuProducts={menuProducts}
       />
     );
   }
