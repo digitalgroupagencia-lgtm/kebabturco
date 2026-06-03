@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
+import PrintQueueCard from "./PrintQueueCard";
 
 const BRIDGE_ZIP_URL = "/downloads/kebab-print-bridge.zip";
 
