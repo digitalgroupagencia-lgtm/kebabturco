@@ -19,7 +19,7 @@ const SellerLayout = ({ page: Page }: Props) => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) navigate(nav.auth());
+    if (!loading && !user) navigate(nav.staff(), { replace: true });
   }, [user, loading, navigate]);
 
   useEffect(() => {
