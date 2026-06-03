@@ -34,23 +34,24 @@ function log(...args: unknown[]) {
   console.log(TAG, ...args);
 }
 
-async function logTcpSocketDiagnostics() {
-  const platform = await Promise.resolve(Capacitor.getPlatform());
+function logTcpSocketDiagnostics() {
+  const platform = Capacitor.getPlatform();
   const available = Capacitor.isPluginAvailable("TcpSocket");
-  // Logs pedidos para validar no tablet via Logcat/console remota.
   // eslint-disable-next-line no-console
-  console.log(platform);
+  console.log("[AndroidPrint] Platform:", platform);
   // eslint-disable-next-line no-console
-  console.log(available);
+  console.log("[AndroidPrint] TcpSocket available:", available);
   // eslint-disable-next-line no-console
-  console.log(TAG, "Capacitor.getPlatform()", platform);
+  console.log("[AndroidPrint] Plugin object:", TcpSocket);
   // eslint-disable-next-line no-console
-  console.log(TAG, "Capacitor.isPluginAvailable('TcpSocket')", available);
+  console.log("[AndroidPrint] Native platform:", Capacitor.isNativePlatform());
+  // eslint-disable-next-line no-console
+  try { console.log("[AndroidPrint] Registered plugins keys:", Object.keys((Capacitor as unknown as { Plugins?: Record<string, unknown> }).Plugins ?? {})); } catch { /* noop */ }
   return { platform, available };
 }
 
-async function assertTcpSocketAvailable() {
-  const { available } = await logTcpSocketDiagnostics();
+function assertTcpSocketAvailable() {
+  const { available } = logTcpSocketDiagnostics();
   if (!available) {
     throw new Error(
       "TcpSocket plugin indisponível neste APK. Gere novamente depois de npm install + npx cap sync android e reinstale no tablet.",
@@ -72,24 +73,34 @@ async function fetchAndroidStores(): Promise<string[]> {
 }
 
 async function sendEscPos(job: PrintJob): Promise<void> {
-  await assertTcpSocketAvailable();
-  log(`conectando ${job.printer_ip}:${job.printer_port}`);
-  const { client } = await TcpSocket.connect({
-    ipAddress: job.printer_ip,
-    port: job.printer_port || 9100,
-  });
+  assertTcpSocketAvailable();
+  const host = job.printer_ip;
+  const port = job.printer_port || 9100;
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connecting to", host, port);
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Plugin object:", TcpSocket);
+  const { client } = await TcpSocket.connect({ ipAddress: host, port });
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connected, client=", client);
   try {
     const copies = Math.max(1, job.copies || 1);
     for (let i = 0; i < copies; i++) {
+      // eslint-disable-next-line no-console
+      console.log("[AndroidPrint] Sending copy", i + 1, "of", copies);
       await TcpSocket.send({
         client,
         data: job.ticket_data, // already base64
         encoding: DataEncoding.BASE64,
       });
     }
+    // eslint-disable-next-line no-console
+    console.log("[AndroidPrint] Send complete");
   } finally {
     try {
       await TcpSocket.disconnect({ client });
+      // eslint-disable-next-line no-console
+      console.log("[AndroidPrint] Disconnected");
     } catch (e) {
       log("disconnect warn", (e as Error).message);
     }
@@ -161,7 +172,7 @@ export async function startAndroidPrintListener() {
   }
   started = true;
   log("iniciando (plataforma nativa)");
-  void logTcpSocketDiagnostics();
+  logTcpSocketDiagnostics();
 
   const stores = await fetchAndroidStores();
   if (stores.length === 0) {
@@ -190,10 +201,20 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");
   }
-  await assertTcpSocketAvailable();
-  const { client } = await TcpSocket.connect({ ipAddress: opts.ip, port: opts.port || 9100 });
+  assertTcpSocketAvailable();
+  const host = opts.ip;
+  const port = opts.port || 9100;
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connecting to", host, port);
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Plugin object:", TcpSocket);
+  const { client } = await TcpSocket.connect({ ipAddress: host, port });
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connected, client=", client);
   try {
     await TcpSocket.send({ client, data: opts.ticketBase64, encoding: DataEncoding.BASE64 });
+    // eslint-disable-next-line no-console
+    console.log("[AndroidPrint] Test send complete");
   } finally {
     try { await TcpSocket.disconnect({ client }); } catch { /* noop */ }
   }
