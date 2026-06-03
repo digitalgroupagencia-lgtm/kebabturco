@@ -1,129 +1,102 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { isStaffAppPath } from "@/lib/appRouteKind";
 
 /**
- * Para rotas do CLIENTE: força orientação retrato.
- * - Tenta `screen.orientation.lock('portrait')` (PWA instalado, Android).
- * - Quando o bloqueio não é suportado (ex.: iPad em Safari, navegadores desktop em modo tablet),
- *   mostra um overlay full-screen pedindo para girar o dispositivo enquanto estiver em landscape.
- * Em rotas de staff/admin não interfere.
+ * Rotas do CLIENTE em tablet: força layout em retrato.
+ * - Tenta `screen.orientation.lock('portrait')` (PWA / Android).
+ * - Se o aparelho estiver em landscape e for touch (tablet), aplica um
+ *   rotate(-90deg) no <body> trocando largura/altura — o cardápio sempre
+ *   aparece vertical, sem mensagem pedindo para girar.
+ * - Em desktop sem touch o MobileFrame já cuida da moldura.
+ * - Não interfere em rotas de admin/KDS/painel.
  */
 export default function ForcePortraitGate() {
   const { pathname } = useLocation();
   const isCustomer = !isStaffAppPath(pathname);
-  const [showOverlay, setShowOverlay] = useState(false);
 
-  // Tenta travar orientação nativamente.
   useEffect(() => {
     if (!isCustomer) {
       try {
-        // @ts-ignore — nem todos os browsers expõem unlock
+        // @ts-ignore
         screen.orientation?.unlock?.();
       } catch {
         /* noop */
       }
+      document.body.classList.remove("fp-rotate");
+      document.body.style.removeProperty("--fp-w");
+      document.body.style.removeProperty("--fp-h");
       return;
     }
+
     try {
       // @ts-ignore
       const lock = screen.orientation?.lock;
       if (typeof lock === "function") {
         // @ts-ignore
         lock.call(screen.orientation, "portrait").catch(() => {
-          /* ignorado — usaremos overlay */
+          /* fallback CSS abaixo */
         });
       }
     } catch {
       /* noop */
     }
-  }, [isCustomer]);
 
-  // Detecta landscape e ativa overlay (apenas em telas suficientemente grandes — tablets).
-  useEffect(() => {
-    if (!isCustomer) {
-      setShowOverlay(false);
-      return;
-    }
+    const isTouch =
+      typeof window !== "undefined" &&
+      (("ontouchstart" in window) ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
 
-    const compute = () => {
+    const apply = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       const isLandscape = w > h;
-      // Considera tablet/desktop em landscape. Em telefones pequenos rodando deitado
-      // (largura < 720) também mostra para garantir layout vertical.
       const meaningful = w >= 600;
-      setShowOverlay(isLandscape && meaningful);
+      const shouldRotate = isTouch && isLandscape && meaningful;
+
+      if (shouldRotate) {
+        document.body.style.setProperty("--fp-w", `${w}px`);
+        document.body.style.setProperty("--fp-h", `${h}px`);
+        document.body.classList.add("fp-rotate");
+      } else {
+        document.body.classList.remove("fp-rotate");
+        document.body.style.removeProperty("--fp-w");
+        document.body.style.removeProperty("--fp-h");
+      }
     };
 
-    compute();
-    window.addEventListener("resize", compute);
-    window.addEventListener("orientationchange", compute);
+    apply();
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
     return () => {
-      window.removeEventListener("resize", compute);
-      window.removeEventListener("orientationchange", compute);
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+      document.body.classList.remove("fp-rotate");
+      document.body.style.removeProperty("--fp-w");
+      document.body.style.removeProperty("--fp-h");
     };
   }, [isCustomer]);
 
-  if (!showOverlay) return null;
-
+  // CSS injetado uma vez.
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        background: "#FFFFFF",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 24,
-        padding: 32,
-        textAlign: "center",
-        fontFamily: "Nunito, system-ui, sans-serif",
-        color: "#1a1a1a",
-      }}
-    >
-      <div
-        aria-hidden
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 20,
-          border: "4px solid #D62300",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          animation: "fp-rotate 2s ease-in-out infinite",
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 56,
-            border: "3px solid #D62300",
-            borderRadius: 6,
-          }}
-        />
-      </div>
-      <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
-        Gira el dispositivo
-      </h1>
-      <p style={{ fontSize: 16, margin: 0, maxWidth: 420, lineHeight: 1.4 }}>
-        Para una mejor experiencia, usa el menú en vertical.
-        <br />
-        Please rotate your device to portrait.
-      </p>
-      <style>
-        {`@keyframes fp-rotate {
-          0% { transform: rotate(-90deg); }
-          50% { transform: rotate(0deg); }
-          100% { transform: rotate(-90deg); }
-        }`}
-      </style>
-    </div>
+    <style>{`
+      body.fp-rotate {
+        overflow: hidden !important;
+        position: fixed !important;
+        inset: 0 !important;
+        margin: 0 !important;
+      }
+      body.fp-rotate > #root {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--fp-h);
+        height: var(--fp-w);
+        transform: translate(-50%, -50%) rotate(-90deg);
+        transform-origin: center center;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    `}</style>
   );
 }
