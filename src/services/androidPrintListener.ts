@@ -10,8 +10,7 @@
  *  3. Abre TCP → envia ESC/POS (ticket_data base64) → fecha
  *  4. Marca job como 'printed' (sucesso) ou 'failed' + error_message
  */
-import { Capacitor } from "@capacitor/core";
-import { TcpSocket, DataEncoding } from "capacitor-tcp-socket";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -25,38 +24,114 @@ type PrintJob = {
   status: string;
 };
 
+type TcpSocketPluginInstance = {
+  connect(options: { ipAddress: string; port: number }): Promise<{ client: number }>;
+  send(options: { client: number; data: string; encoding?: "utf8" | "base64" | "hex" }): Promise<void>;
+  disconnect(options: { client: number }): Promise<void | { client?: number }>;
+};
+
+type CapacitorRuntime = typeof Capacitor & {
+  Plugins?: Record<string, unknown>;
+  PluginHeaders?: Array<{ name: string; methods?: Array<{ name: string; rtype?: string }> }>;
+  nativePromise?: (pluginName: string, methodName: string, options?: unknown) => Promise<unknown>;
+};
+
 const TAG = "[AndroidPrint]";
 let started = false;
 const channels: RealtimeChannel[] = [];
+let registeredTcpSocketFallback: TcpSocketPluginInstance | null = null;
 
 function log(...args: unknown[]) {
-  // eslint-disable-next-line no-console
   console.log(TAG, ...args);
+}
+
+function getWindowCapacitor(): CapacitorRuntime | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as unknown as { Capacitor?: CapacitorRuntime }).Capacitor;
+}
+
+function getPluginKeys(runtime?: CapacitorRuntime) {
+  return Object.keys(runtime?.Plugins ?? {});
+}
+
+function getPluginHeaderNames(runtime?: CapacitorRuntime) {
+  return (runtime?.PluginHeaders ?? []).map((header) => ({
+    name: header.name,
+    methods: header.methods?.map((method) => method.name) ?? [],
+  }));
+}
+
+function isTcpSocketPlugin(value: unknown): value is TcpSocketPluginInstance {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof (value as TcpSocketPluginInstance).connect === "function" &&
+      typeof (value as TcpSocketPluginInstance).send === "function" &&
+      typeof (value as TcpSocketPluginInstance).disconnect === "function",
+  );
+}
+
+function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
+  const importedRuntime = Capacitor as CapacitorRuntime;
+  const windowRuntime = getWindowCapacitor();
+  const candidates = ["TcpSocket", "TcpSockets", "TCPSocket", "Socket"];
+
+  const nativePromise = windowRuntime?.nativePromise ?? importedRuntime.nativePromise;
+  if (Capacitor.getPlatform() === "android" && typeof nativePromise === "function") {
+    return {
+      connect: (options) => nativePromise("TcpSocket", "connect", options) as Promise<{ client: number }>,
+      send: (options) => nativePromise("TcpSocket", "send", options) as Promise<void>,
+      disconnect: (options) => nativePromise("TcpSocket", "disconnect", options) as Promise<void | { client?: number }>,
+    };
+  }
+
+  for (const name of candidates) {
+    const fromWindow = windowRuntime?.Plugins?.[name];
+    if (isTcpSocketPlugin(fromWindow)) return fromWindow;
+
+    const fromImported = importedRuntime.Plugins?.[name];
+    if (isTcpSocketPlugin(fromImported)) return fromImported;
+  }
+
+  if (!registeredTcpSocketFallback && Capacitor.isPluginAvailable("TcpSocket")) {
+    registeredTcpSocketFallback = registerPlugin<TcpSocketPluginInstance>("TcpSocket");
+  }
+
+  return registeredTcpSocketFallback;
 }
 
 function logTcpSocketDiagnostics() {
   const platform = Capacitor.getPlatform();
   const available = Capacitor.isPluginAvailable("TcpSocket");
-  // eslint-disable-next-line no-console
-  console.log("[AndroidPrint] Platform:", platform);
-  // eslint-disable-next-line no-console
-  console.log("[AndroidPrint] TcpSocket available:", available);
-  // eslint-disable-next-line no-console
-  console.log("[AndroidPrint] Plugin object:", TcpSocket);
-  // eslint-disable-next-line no-console
-  console.log("[AndroidPrint] Native platform:", Capacitor.isNativePlatform());
-  // eslint-disable-next-line no-console
-  try { console.log("[AndroidPrint] Registered plugins keys:", Object.keys((Capacitor as unknown as { Plugins?: Record<string, unknown> }).Plugins ?? {})); } catch { /* noop */ }
-  return { platform, available };
+  const importedRuntime = Capacitor as CapacitorRuntime;
+  const windowRuntime = getWindowCapacitor();
+  const plugin = resolveTcpSocketPlugin();
+
+  console.log("[AndroidPrint] Platform", platform);
+  console.log("[AndroidPrint] TcpSocket available", available);
+  console.log("[AndroidPrint] Native platform", Capacitor.isNativePlatform());
+  console.log("[AndroidPrint] Plugins", getPluginKeys(importedRuntime));
+  console.log("[AndroidPrint] window.Capacitor.Plugins", getPluginKeys(windowRuntime));
+  console.log("[AndroidPrint] PluginHeaders", getPluginHeaderNames(windowRuntime ?? importedRuntime));
+  console.log("[AndroidPrint] TcpSocket plugin", importedRuntime.Plugins?.TcpSocket);
+  console.log("[AndroidPrint] window TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket);
+  console.log("[AndroidPrint] nativePromise", typeof (windowRuntime?.nativePromise ?? importedRuntime.nativePromise));
+  console.log("[AndroidPrint] Resolved TcpSocket plugin", plugin);
+  console.log("Platform", platform);
+  console.log("Plugins", getPluginKeys(windowRuntime ?? importedRuntime));
+  console.log("TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket ?? importedRuntime.Plugins?.TcpSocket);
+
+  return { platform, available, plugin };
 }
 
-function assertTcpSocketAvailable() {
-  const { available } = logTcpSocketDiagnostics();
-  if (!available) {
+function getTcpSocketOrThrow(): TcpSocketPluginInstance {
+  const { available, plugin } = logTcpSocketDiagnostics();
+  if (!plugin) {
     throw new Error(
-      "TcpSocket plugin indisponível neste APK. Gere novamente depois de npm install + npx cap sync android e reinstale no tablet.",
+      `TcpSocket plugin indisponível no JS deste APK. isPluginAvailable=${available}. Verifique PluginHeaders/nativePromise no Logcat.`,
     );
   }
+  return plugin;
 }
 
 async function fetchAndroidStores(): Promise<string[]> {
@@ -73,33 +148,27 @@ async function fetchAndroidStores(): Promise<string[]> {
 }
 
 async function sendEscPos(job: PrintJob): Promise<void> {
-  assertTcpSocketAvailable();
+  const tcpSocket = getTcpSocketOrThrow();
   const host = job.printer_ip;
   const port = job.printer_port || 9100;
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Connecting to", host, port);
-  // eslint-disable-next-line no-console
-  console.log("[AndroidPrint] Plugin object:", TcpSocket);
-  const { client } = await TcpSocket.connect({ ipAddress: host, port });
-  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Plugin object:", tcpSocket);
+  const { client } = await tcpSocket.connect({ ipAddress: host, port });
   console.log("[AndroidPrint] Connected, client=", client);
   try {
     const copies = Math.max(1, job.copies || 1);
     for (let i = 0; i < copies; i++) {
-      // eslint-disable-next-line no-console
       console.log("[AndroidPrint] Sending copy", i + 1, "of", copies);
-      await TcpSocket.send({
+      await tcpSocket.send({
         client,
         data: job.ticket_data, // already base64
-        encoding: DataEncoding.BASE64,
+        encoding: "base64",
       });
     }
-    // eslint-disable-next-line no-console
     console.log("[AndroidPrint] Send complete");
   } finally {
     try {
-      await TcpSocket.disconnect({ client });
-      // eslint-disable-next-line no-console
+      await tcpSocket.disconnect({ client });
       console.log("[AndroidPrint] Disconnected");
     } catch (e) {
       log("disconnect warn", (e as Error).message);
@@ -201,21 +270,17 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");
   }
-  assertTcpSocketAvailable();
+  const tcpSocket = getTcpSocketOrThrow();
   const host = opts.ip;
   const port = opts.port || 9100;
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Connecting to", host, port);
-  // eslint-disable-next-line no-console
-  console.log("[AndroidPrint] Plugin object:", TcpSocket);
-  const { client } = await TcpSocket.connect({ ipAddress: host, port });
-  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Plugin object:", tcpSocket);
+  const { client } = await tcpSocket.connect({ ipAddress: host, port });
   console.log("[AndroidPrint] Connected, client=", client);
   try {
-    await TcpSocket.send({ client, data: opts.ticketBase64, encoding: DataEncoding.BASE64 });
-    // eslint-disable-next-line no-console
+    await tcpSocket.send({ client, data: opts.ticketBase64, encoding: "base64" });
     console.log("[AndroidPrint] Test send complete");
   } finally {
-    try { await TcpSocket.disconnect({ client }); } catch { /* noop */ }
+    try { await tcpSocket.disconnect({ client }); } catch { /* noop */ }
   }
 }
