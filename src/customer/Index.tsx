@@ -13,17 +13,17 @@ import DomainNotConfiguredScreen from "@/customer/screens/DomainNotConfiguredScr
 import PageSpinner from "@/components/PageSpinner";
 import InlineScreenSpinner from "@/components/InlineScreenSpinner";
 import ProductScreen from "@/customer/screens/ProductScreen";
+import HomeScreen from "@/customer/screens/HomeScreen";
+import ReviewScreen from "@/customer/screens/ReviewScreen";
+import PaymentScreen from "@/customer/screens/PaymentScreen";
+import CashPendingScreen from "@/customer/screens/CashPendingScreen";
+import ConfirmationScreen from "@/customer/screens/ConfirmationScreen";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
 
-const HomeScreen = lazy(() => import("@/customer/screens/HomeScreen"));
-const ReviewScreen = lazy(() => import("@/customer/screens/ReviewScreen"));
-const PaymentScreen = lazy(() => import("@/customer/screens/PaymentScreen"));
-const CashPendingScreen = lazy(() => import("@/customer/screens/CashPendingScreen"));
-const ConfirmationScreen = lazy(() => import("@/customer/screens/ConfirmationScreen"));
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
 
