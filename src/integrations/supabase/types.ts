@@ -1364,6 +1364,7 @@ export type Database = {
           last_test_at: string | null
           last_test_ok: boolean | null
           port: number
+          print_mode: string
           printer_copies: number
           printer_name: string
           store_id: string
@@ -1378,6 +1379,7 @@ export type Database = {
           last_test_at?: string | null
           last_test_ok?: boolean | null
           port?: number
+          print_mode?: string
           printer_copies?: number
           printer_name?: string
           store_id: string
@@ -1392,6 +1394,7 @@ export type Database = {
           last_test_at?: string | null
           last_test_ok?: boolean | null
           port?: number
+          print_mode?: string
           printer_copies?: number
           printer_name?: string
           store_id?: string
