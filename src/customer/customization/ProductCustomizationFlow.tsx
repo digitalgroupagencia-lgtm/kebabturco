@@ -93,13 +93,55 @@ export default function ProductCustomizationFlow({
     return steps;
   }, [useStepWizard, globalGroups, isMultiUnit, effectiveConfig.comboUnitCount]);
 
-  const [quantity, setQuantity] = useState(1);
-  const [globalState, setGlobalState] = useState<SelectionState>(() => new Map());
-  const [unitStates, setUnitStates] = useState<SelectionState[]>(() =>
-    Array.from({ length: effectiveConfig.comboUnitCount || 0 }, () => new Map()),
-  );
-  const [comboStep, setComboStep] = useState(0);
-  const [note, setNote] = useState("");
+  const draftKey = `__customizationDraft__${product.id}${editingItem?.id ? `__edit_${editingItem.id}` : ""}`;
+  const readDraft = (): null | {
+    quantity: number;
+    note: string;
+    comboStep: number;
+    globalSelections: Array<{ groupId: string; optionId: string; quantity: number }>;
+    unitSelections: Array<Array<{ groupId: string; optionId: string; quantity: number }>>;
+  } => {
+    if (editingItem?.configuration) return null;
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.sessionStorage.getItem(draftKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const initialDraft = readDraft();
+  const [quantity, setQuantity] = useState(initialDraft?.quantity ?? 1);
+  const [globalState, setGlobalState] = useState<SelectionState>(() => {
+    if (initialDraft) {
+      const m: SelectionState = new Map();
+      for (const s of initialDraft.globalSelections) {
+        const inner = new Map(m.get(s.groupId) || []);
+        inner.set(s.optionId, s.quantity);
+        m.set(s.groupId, inner);
+      }
+      return m;
+    }
+    return new Map();
+  });
+  const [unitStates, setUnitStates] = useState<SelectionState[]>(() => {
+    if (initialDraft && initialDraft.unitSelections?.length) {
+      return initialDraft.unitSelections.map((unit, idx) => {
+        const m: SelectionState = new Map();
+        for (const s of unit) {
+          const k = `${s.groupId}::u${idx}`;
+          const inner = new Map(m.get(k) || []);
+          inner.set(s.optionId, s.quantity);
+          m.set(k, inner);
+        }
+        return m;
+      });
+    }
+    return Array.from({ length: effectiveConfig.comboUnitCount || 0 }, () => new Map());
+  });
+  const [comboStep, setComboStep] = useState(initialDraft?.comboStep ?? 0);
+  const [note, setNote] = useState(initialDraft?.note ?? "");
   const [upsellOpen, setUpsellOpen] = useState(false);
 
   const upsellSuggestions = useMemo(
@@ -120,9 +162,11 @@ export default function ProductCustomizationFlow({
 
   useEffect(() => {
     if (editingItem?.configuration) return;
+    if (initialDraft) return;
     setGlobalState(buildDefaultSelectionState(globalGroups));
     setUnitStates(buildDefaultUnitStates(unitGroups, effectiveConfig.comboUnitCount || 0));
     setComboStep(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id, effectiveConfig.groups, effectiveConfig.comboUnitCount, editingItem?.id, globalGroups, unitGroups]);
 
   useEffect(() => {
@@ -155,6 +199,36 @@ export default function ProductCustomizationFlow({
       );
     }
   }, [editingItem?.id]);
+
+  // Persistir rascunho a cada alteração para não perder ao voltar
+  useEffect(() => {
+    if (editingItem?.configuration) return;
+    if (typeof window === "undefined") return;
+    try {
+      const globalSelections: Array<{ groupId: string; optionId: string; quantity: number }> = [];
+      globalState.forEach((options, groupId) => {
+        options.forEach((qty, optionId) => {
+          if (qty > 0) globalSelections.push({ groupId, optionId, quantity: qty });
+        });
+      });
+      const unitSelections = unitStates.map((unit, idx) => {
+        const out: Array<{ groupId: string; optionId: string; quantity: number }> = [];
+        unit.forEach((options, key) => {
+          const groupId = key.split("::")[0];
+          options.forEach((qty, optionId) => {
+            if (qty > 0) out.push({ groupId, optionId, quantity: qty });
+          });
+        });
+        return out;
+      });
+      window.sessionStorage.setItem(
+        draftKey,
+        JSON.stringify({ quantity, note, comboStep, globalSelections, unitSelections }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [draftKey, editingItem?.configuration, globalState, unitStates, quantity, note, comboStep]);
 
   const activeGroups = useStepWizard
     ? currentWizardStep?.kind === "global"
@@ -292,13 +366,19 @@ export default function ProductCustomizationFlow({
         productType: effectiveConfig.productType,
       };
 
+      const clearDraft = () => {
+        try { window.sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+      };
+
       if (editingItem) {
         updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity, totalPrice: unitPrice * editingItem.quantity });
+        clearDraft();
         onBack();
         return;
       }
 
       addItem(payload);
+      clearDraft();
 
       if (upsellSuggestions.length > 0) {
         setUpsellOpen(true);

@@ -145,6 +145,10 @@ const PaymentScreen = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  // Checkout em 2 etapas: dados → pagamento. Mesas saltam directamente para pagamento.
+  const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">(
+    orderType === "here" ? "payment" : "details",
+  );
   const { subscribe: subscribePush } = usePushNotifications();
   const channel = orderType === "delivery" ? "delivery" : "store";
   const openStatus = useStoreOpenStatus(channel);
@@ -275,24 +279,11 @@ const PaymentScreen = () => {
     });
   }, [checkoutMethods]);
 
-  const validate = () => {
-    if (!orderType) {
-      setShowError("method");
-      return false;
-    }
-    if (isTableOrder) {
-      if (!mesaValidated || !mesaTableId) {
-        setShowError("table");
-        return false;
-      }
-    } else if (!customerName.trim() || customerName.trim().length < 2) {
-      setShowError("name");
-      return false;
-    }
-    if (!isValidCustomerPhone(phoneDialCode, customerPhone)) {
-      setShowError("phone");
-      return false;
-    }
+  const validateDetailsStep = () => {
+    if (!orderType) { setShowError("method"); return false; }
+    if (isTableOrder) return true;
+    if (!customerName.trim() || customerName.trim().length < 2) { setShowError("name"); return false; }
+    if (!isValidCustomerPhone(phoneDialCode, customerPhone)) { setShowError("phone"); return false; }
     if (orderType === "delivery") {
       if (!deliveryAddress.trim()) { setShowError("address"); return false; }
       if (!deliveryNumber.trim()) { setShowError("number"); return false; }
@@ -301,22 +292,21 @@ const PaymentScreen = () => {
       if (!deliveryQuote.zoneMatched) { setShowError("zone"); return false; }
       if (deliveryQuote.belowMinimum) { setShowError("minOrder"); return false; }
     }
-    if (checkoutMethods.length === 0) {
-      setShowError("method");
-      return false;
-    }
-    if (!selected) {
-      setShowError("method");
-      return false;
-    }
-    if (prepaymentRequired && selected !== "card") {
-      setShowError("method");
-      return false;
-    }
-    if (selected === "card" && stripeIssue) {
-      setShowError("method");
-      return false;
-    }
+    setShowError(null);
+    return true;
+  };
+
+  const handleContinueToPayment = () => {
+    if (!validateDetailsStep()) return;
+    setCheckoutStep("payment");
+  };
+
+  const validate = () => {
+    if (!validateDetailsStep()) return false;
+    if (checkoutMethods.length === 0) { setShowError("method"); return false; }
+    if (!selected) { setShowError("method"); return false; }
+    if (prepaymentRequired && selected !== "card") { setShowError("method"); return false; }
+    if (selected === "card" && stripeIssue) { setShowError("method"); return false; }
     setShowError(null);
     return true;
   };
@@ -624,9 +614,15 @@ const PaymentScreen = () => {
         }}
       />
       <ScreenHeader
-        eyebrow={t("finalStep")}
-        title={isTableOrder ? "Pagamento na mesa" : t("pay")}
-        onBack={() => setScreen("review")}
+        eyebrow={checkoutStep === "details" && !isTableOrder ? "Etapa 1 de 2" : t("finalStep")}
+        title={isTableOrder ? "Pagamento na mesa" : checkoutStep === "details" ? "Os teus dados" : t("pay")}
+        onBack={() => {
+          if (checkoutStep === "payment" && !isTableOrder) {
+            setCheckoutStep("details");
+          } else {
+            setScreen("review");
+          }
+        }}
         sticky
       />
 
@@ -802,7 +798,7 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {orderType === "takeaway" && (
+            {orderType === "takeaway" && checkoutStep === "details" && (
               <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
                 <div className={`px-3 py-2.5 ${showError === "name" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
@@ -842,7 +838,7 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {orderType === "delivery" && (
+            {orderType === "delivery" && checkoutStep === "details" && (
               <div className={`mt-3 space-y-0 bg-card rounded-2xl border border-border overflow-hidden ${showError === "name" || showError === "phone" || showError === "address" ? "ring-2 ring-destructive/40" : ""}`}>
                 <div className={`px-3 py-2.5 ${showError === "name" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
@@ -970,7 +966,7 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {checkoutMethods.length === 0 && !settingsLoading && (
+            {(isTableOrder || checkoutStep === "payment") && checkoutMethods.length === 0 && !settingsLoading && (
               <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-amber-500/40 bg-amber-500/5 p-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
@@ -985,7 +981,7 @@ const PaymentScreen = () => {
               <div className="mt-3 flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin" />
               </div>
-            ) : checkoutMethods.length > 0 && (
+            ) : (isTableOrder || checkoutStep === "payment") && checkoutMethods.length > 0 && (
               <div className={`mt-3 ${showError === "method" ? "ring-2 ring-destructive/40 rounded-2xl p-0.5" : ""}`}>
                 <p className="text-[10px] font-bold uppercase text-muted-foreground px-1 mb-1.5">
                   {isTableOrder ? "Forma de pagamento *" : t("pickMethod")}
@@ -1026,15 +1022,7 @@ const PaymentScreen = () => {
                       Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
                     </p>
                   )}
-                  {(selected === "cash" || selected === "counter") && (
-                    <div className="mt-1.5 flex gap-2.5 items-start rounded-2xl border-2 border-amber-500/35 bg-amber-500/5 p-3">
-                      <Store className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
-                      <div className="min-w-0 text-left">
-                        <p className="text-sm font-bold text-foreground">{t("cashCheckoutTitle")}</p>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t("cashCheckoutHint")}</p>
-                      </div>
-                    </div>
-                  )}
+                  {/* Aviso amber abaixo de Efectivo removido — confirmação acontece em tela dedicada após finalizar */}
                 </div>
                 {showError === "method" && (
                   <p className="text-xs text-destructive font-bold mt-1.5 px-1">Seleccione uma forma de pagamento para continuar.</p>
@@ -1053,18 +1041,29 @@ const PaymentScreen = () => {
               {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
             </p>
           )}
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={!canFinalize}
-            className="w-full flex items-center justify-between gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base disabled:opacity-40 touch-action-manipulation"
-          >
-            <span className="flex items-center gap-2">
-              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-              {processing ? t("processing") : isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
-            </span>
-            <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
-          </button>
+          {checkoutStep === "details" && !isTableOrder ? (
+            <button
+              type="button"
+              onClick={handleContinueToPayment}
+              className="w-full flex items-center justify-between gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base touch-action-manipulation"
+            >
+              <span>Continuar</span>
+              <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={!canFinalize}
+              className="w-full flex items-center justify-between gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base disabled:opacity-40 touch-action-manipulation"
+            >
+              <span className="flex items-center gap-2">
+                {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                {processing ? t("processing") : isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
+              </span>
+              <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
+            </button>
+          )}
         </div>
       )}
     </div>

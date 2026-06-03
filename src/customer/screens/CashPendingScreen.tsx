@@ -17,6 +17,7 @@ const CashPendingScreen = () => {
   const { t } = useLanguage();
   const [order, setOrder] = useState<PublicOrderTrack | null>(null);
   const [loading, setLoading] = useState(true);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const onOrder = useCallback((next: PublicOrderTrack | null) => setOrder(next), []);
   useOrderTracking(activeOrderId || null, onOrder, setLoading);
@@ -40,6 +41,14 @@ const CashPendingScreen = () => {
 
   const displayNumber = order?.order_number || orderNumber;
 
+  const handleAcknowledge = () => {
+    setAcknowledged(true);
+    if (activeOrderId) {
+      setTrackingOrderId(activeOrderId);
+      setScreen("tracking");
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <div
@@ -55,28 +64,38 @@ const CashPendingScreen = () => {
         <h1 className="text-[26px] font-black tracking-tight text-foreground leading-tight">
           {t("cashPendingTitle")}
         </h1>
-        <p className="mt-3 max-w-[300px] text-[15px] leading-relaxed text-muted-foreground">
+        <p className="mt-3 max-w-[320px] text-[15px] leading-relaxed text-muted-foreground">
           {t("cashPendingBody")}
         </p>
 
-        <div className="mt-8 flex items-center gap-2 rounded-2xl border border-border/70 bg-card px-4 py-3 text-left">
+        <div className="mt-6 flex items-center gap-2 rounded-2xl border border-border/70 bg-card px-4 py-3 text-left max-w-[320px]">
           <Store className="h-5 w-5 shrink-0 text-primary" />
           <p className="text-sm font-semibold text-foreground">{t("cashPendingHint")}</p>
         </div>
 
         {displayNumber ? (
-          <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-            {t("cashPendingReference")}
-          </p>
-        ) : null}
-        {displayNumber ? (
-          <p className="mt-1 text-[40px] font-black tabular-nums leading-none text-foreground">#{displayNumber}</p>
+          <>
+            <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+              {t("cashPendingReference")}
+            </p>
+            <p className="mt-1 text-[40px] font-black tabular-nums leading-none text-foreground">#{displayNumber}</p>
+          </>
         ) : null}
 
-        <div className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : null}
-          <span>{t("cashPendingWaiting")}</span>
-        </div>
+        {!acknowledged ? (
+          <button
+            type="button"
+            onClick={handleAcknowledge}
+            className="mt-8 h-14 w-full max-w-[320px] rounded-2xl bg-gradient-cta text-success-foreground font-black text-base shadow-primary active:scale-[0.98] transition-transform"
+          >
+            Entendi
+          </button>
+        ) : (
+          <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : null}
+            <span>{t("cashPendingWaiting")}</span>
+          </div>
+        )}
       </div>
     </div>
   );

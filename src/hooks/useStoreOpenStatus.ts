@@ -55,6 +55,12 @@ export function useStoreOpenStatus(channel: StoreChannel = "store"): OpenStatus 
     if (readForceOpenFlag()) {
       return { open: true, nextOpenLabel: null, nextOpenDayLabel: null, currentRange: null };
     }
+    // Bypass administrativo: quando "Aplicar horário de funcionamento" está desactivado,
+    // a loja é considerada sempre aberta (útil para testes e homologação).
+    const applySchedule = (settings as any)?.apply_schedule_enabled;
+    if (applySchedule === false) {
+      return { open: true, nextOpenLabel: null, nextOpenDayLabel: null, currentRange: null };
+    }
     const tz = (settings as any)?.schedule_timezone || "Europe/Madrid";
     const raw =
       channel === "delivery"

@@ -12,8 +12,10 @@ export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = SINGLE_TENANT_MODE
   ? "pk_live_51R9ZJLGdymad9Lk9B5XUkb4FcdewOt7PCavKpGl6pitpYf0QngWoO4EBsBMKQAv8CeGZflC0BdqP3mgYSVPm6gb0004WMwRvvV"
   : "";
 
-/** Cole aqui a pk_test da Stripe (modo Test) se preferir em vez de config/stripe.public.env */
-export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE ? "" : "";
+/** pk_test da Stripe — Kebab Turco (modo Test). Segura no browser. */
+export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE
+  ? "pk_test_51R9ZJLGdymad9Lk988WG8Sp98AuGBCLYpIuxwvn5gL81g8478fksVTRwj7z2Do2WVHb6SDLwBe0mZ3dgrtBQC9P900tcKxn8yd"
+  : "";
 
 export type StripePublishableEnvironment = "live" | "test";
 
