@@ -69,7 +69,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
               key={opt.id}
               title={tName(opt.name)}
               subtitle={t("included")}
-              imageUrl={opt.imageUrl}
+              imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
               selected={sel}
               onClick={() => pick(opt.id)}
               layout="horizontal"
