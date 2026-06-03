@@ -1049,9 +1049,21 @@ const PaymentScreen = () => {
       {!stripeClientSecret && (
         <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           {showError === "store" && (
-            <p className="text-xs text-destructive font-bold mb-2 px-1">
-              {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
-            </p>
+            <div className="mb-2 px-1">
+              <p className="text-xs text-destructive font-bold">
+                {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
+              </p>
+              {isEmergencyFallbackStoreId(storeId) && (
+                <a
+                  href="https://kebabturco.lovable.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-black text-primary underline"
+                >
+                  Abrir site publicado →
+                </a>
+              )}
+            </div>
           )}
           {checkoutStep === "details" && !isTableOrder ? (
             <button
