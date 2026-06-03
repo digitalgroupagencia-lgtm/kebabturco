@@ -269,7 +269,39 @@ export default function OrderSimulatorPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><ListChecks className="h-4 w-4" /> Teste Guiado — Validação Completa</CardTitle>
+          <CardDescription>
+            Executa em sequência: diagnóstico → limpar fila → som/vibração/push → pedido teste → verificar impressão → cleanup.
+            Mantém o painel operador (/panel/live) aberto noutro separador para ver o pedido chegar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button onClick={runGuidedTest} disabled={wizardBusy || !!busy} className="w-full">
+            {wizardBusy ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> A executar teste guiado…</> : "▶ Iniciar Teste Guiado"}
+          </Button>
+          <div className="space-y-2">
+            {steps.map((s) => (
+              <div key={s.id} className="flex items-start gap-2 text-sm bg-muted/40 rounded-md p-2">
+                <div className="mt-0.5">
+                  {s.status === "ok" && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                  {s.status === "fail" && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                  {s.status === "running" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                  {s.status === "pending" && <Circle className="h-4 w-4 text-muted-foreground" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={s.status === "fail" ? "text-destructive font-medium" : ""}>{s.label}</div>
+                  {s.detail && <div className="text-xs text-muted-foreground font-mono mt-0.5 break-all">{s.detail}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid md:grid-cols-2 gap-4">
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2"><Coffee className="h-4 w-4" /> Pedido Teste — Mesa</CardTitle>
