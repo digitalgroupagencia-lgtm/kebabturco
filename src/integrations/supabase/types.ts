@@ -648,6 +648,7 @@ export type Database = {
       }
       operations_settings: {
         Row: {
+          apply_schedule_enabled: boolean
           avg_prep_minutes: number
           banner_enabled: boolean
           banner_interval_ms: number
@@ -677,6 +678,7 @@ export type Database = {
           weekly_schedule: Json
         }
         Insert: {
+          apply_schedule_enabled?: boolean
           avg_prep_minutes?: number
           banner_enabled?: boolean
           banner_interval_ms?: number
@@ -706,6 +708,7 @@ export type Database = {
           weekly_schedule?: Json
         }
         Update: {
+          apply_schedule_enabled?: boolean
           avg_prep_minutes?: number
           banner_enabled?: boolean
           banner_interval_ms?: number

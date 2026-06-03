@@ -127,19 +127,22 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
   const [saving, setSaving] = useState(false);
   const [storeSched, setStoreSched] = useState<WeeklySchedule>(STORE_DEFAULTS);
   const [delivSched, setDelivSched] = useState<WeeklySchedule>(DELIVERY_STORE_DEFAULTS);
+  const [applyEnabled, setApplyEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     if (!storeId) return;
     setLoading(true);
     supabase
       .from("operations_settings")
-      .select("weekly_schedule, delivery_schedule")
+      .select("weekly_schedule, delivery_schedule, apply_schedule_enabled")
       .eq("store_id", storeId)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setStoreSched(parseSchedule((data as any).weekly_schedule, STORE_DEFAULTS));
           setDelivSched(parseSchedule((data as any).delivery_schedule, DELIVERY_STORE_DEFAULTS));
+          const v = (data as any).apply_schedule_enabled;
+          setApplyEnabled(v === undefined || v === null ? true : Boolean(v));
         }
         setLoading(false);
       });
@@ -153,11 +156,27 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
       .update({
         weekly_schedule: storeSched as any,
         delivery_schedule: delivSched as any,
-      })
+        apply_schedule_enabled: applyEnabled,
+      } as any)
       .eq("store_id", storeId);
     setSaving(false);
     if (error) toast.error(error.message);
     else toast.success("Horários guardados");
+  };
+
+  const toggleApply = async (next: boolean) => {
+    setApplyEnabled(next);
+    if (!storeId) return;
+    const { error } = await supabase
+      .from("operations_settings")
+      .update({ apply_schedule_enabled: next } as any)
+      .eq("store_id", storeId);
+    if (error) {
+      setApplyEnabled(!next);
+      toast.error(error.message);
+    } else {
+      toast.success(next ? "Validação de horário ativa" : "Validação de horário desativada — pedidos aceitos fora do horário");
+    }
   };
 
   const applyKebabDefaults = () => {
@@ -176,6 +195,23 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
 
   return (
     <div className="space-y-4">
+      <div className={`rounded-xl border p-4 flex items-start justify-between gap-4 ${applyEnabled ? "border-border bg-muted/20" : "border-amber-500/40 bg-amber-500/10"}`}>
+        <div className="space-y-1">
+          <div className="font-bold text-sm">Aplicar horário de funcionamento</div>
+          <p className="text-xs text-muted-foreground max-w-xl">
+            Quando ativo, a loja só aceita pedidos dentro dos horários configurados.
+            Quando desativado, permite testar e aceitar pedidos mesmo fora do horário.
+            Os horários abaixo permanecem guardados.
+          </p>
+          {!applyEnabled && (
+            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
+              ⚠ Modo teste: pedidos serão aceitos em qualquer horário.
+            </p>
+          )}
+        </div>
+        <Switch checked={applyEnabled} onCheckedChange={toggleApply} />
+      </div>
+
       <div className="flex flex-wrap gap-2 justify-between items-center">
         <p className="text-xs text-muted-foreground">
           Timezone: <span className="font-bold">Europe/Madrid</span> · DST automático
@@ -205,5 +241,6 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
     </div>
   );
 };
+
 
 export default WeeklyHoursEditor;

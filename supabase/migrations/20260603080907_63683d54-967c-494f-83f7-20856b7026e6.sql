@@ -1,0 +1,1 @@
+ALTER TABLE public.operations_settings ADD COLUMN IF NOT EXISTS apply_schedule_enabled boolean NOT NULL DEFAULT true;
