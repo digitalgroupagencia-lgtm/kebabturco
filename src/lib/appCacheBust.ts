@@ -47,9 +47,11 @@ function extractMeta(html: string, name: string): string | null {
 function extractMainScript(html: string): string | null {
   const moduleMatch = html.match(/<script type="module"[^>]*src="([^"]+)"/i);
   if (moduleMatch) return moduleMatch[1];
-  // Boot diferido (produção): var src="/assets/index-….js"
-  const deferMatch = html.match(/var src=(["'])(\/assets\/index-[^"']+\.js)\1/);
-  if (deferMatch) return deferMatch[2];
+  // Boot diferido (produção): <script src="/snaporder-boot.js" data-app-src="/assets/index-….js">
+  const dataSrcMatch = html.match(/data-app-src="([^"]*\/assets\/index-[^"]+\.js)"/i);
+  if (dataSrcMatch) return dataSrcMatch[1];
+  const legacyDeferMatch = html.match(/var src=(["'])(\/assets\/index-[^"']+\.js)\1/);
+  if (legacyDeferMatch) return legacyDeferMatch[2];
   return null;
 }
 

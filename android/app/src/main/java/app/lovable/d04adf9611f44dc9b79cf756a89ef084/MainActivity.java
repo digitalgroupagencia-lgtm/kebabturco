@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         // Registro explícito para garantir que o APK Android inclua o plugin TCP,
         // mesmo se o auto-registro do Capacitor falhar ou o schema de plugins estiver antigo.
         registerPlugin(TcpSocketPlugin.class);
+        registerPlugin(AndroidEscPosPrinterPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

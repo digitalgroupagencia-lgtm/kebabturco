@@ -9,6 +9,21 @@
   status = 200
 
 [[headers]]
+  for = "/snaporder-boot.js"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+
+[[headers]]
   for = "/manifest.json"
   [headers.values]
     Content-Type = "application/manifest+json; charset=utf-8"

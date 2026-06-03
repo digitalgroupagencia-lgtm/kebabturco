@@ -30,6 +30,14 @@ type TcpSocketPluginInstance = {
   disconnect(options: { client: number }): Promise<void | { client?: number }>;
 };
 
+type AndroidEscPosPrinterPluginInstance = {
+  printEscPos(options: { host: string; port: number; base64: string; copies?: number }): Promise<{
+    ok?: boolean;
+    bytes?: number;
+    copies?: number;
+  }>;
+};
+
 type CapacitorRuntime = typeof Capacitor & {
   Plugins?: Record<string, unknown>;
   PluginHeaders?: Array<{ name: string; methods?: Array<{ name: string; rtype?: string }> }>;
@@ -59,10 +67,12 @@ type AndroidBridgeWindow = Window & {
 };
 
 const TAG = "[AndroidPrint]";
+const BUILD_VERSION = "tcp-native-v3";
 let started = false;
 const channels: RealtimeChannel[] = [];
 const directBridgeCallbacks = new Map<string, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: number }>();
 let directBridgeCounter = Math.floor(Math.random() * 100000);
+let runtimeCacheCleanupStarted = false;
 
 function log(...args: unknown[]) {
   console.log(TAG, ...args);
@@ -139,10 +149,14 @@ function patchAndroidBridgeResponses(win: AndroidBridgeWindow) {
   cap.__androidPrintFromNativePatched = true;
 }
 
-function callAndroidPluginDirect(methodName: "connect" | "send" | "disconnect", options: unknown): Promise<unknown> {
+function callAndroidPluginDirect(
+  pluginId: "TcpSocket" | "AndroidEscPosPrinter",
+  methodName: "connect" | "send" | "disconnect" | "printEscPos",
+  options: unknown,
+): Promise<unknown> {
   const win = window as AndroidBridgeWindow;
   if (!win.androidBridge?.postMessage || !win.Capacitor) {
-    return Promise.reject(new Error("Bridge Android nativo indisponível para TcpSocket."));
+    return Promise.reject(new Error(`Bridge Android nativo indisponível para ${pluginId}.`));
   }
 
   patchAndroidBridgeResponses(win);
@@ -150,12 +164,29 @@ function callAndroidPluginDirect(methodName: "connect" | "send" | "disconnect", 
     const callbackId = `android-print-${Date.now()}-${++directBridgeCounter}`;
     const timeout = window.setTimeout(() => {
       directBridgeCallbacks.delete(callbackId);
-      reject(new Error(`Timeout chamando TcpSocket.${methodName}`));
+      reject(new Error(`Timeout chamando ${pluginId}.${methodName}`));
     }, 15000);
 
     directBridgeCallbacks.set(callbackId, { resolve, reject, timeout });
-    win.androidBridge!.postMessage(JSON.stringify({ callbackId, pluginId: "TcpSocket", methodName, options: options ?? {} }));
+    win.androidBridge!.postMessage(JSON.stringify({ callbackId, pluginId, methodName, options: options ?? {} }));
   });
+}
+
+function resolveAndroidEscPosPrinterPlugin(): AndroidEscPosPrinterPluginInstance | null {
+  const win = typeof window !== "undefined" ? (window as AndroidBridgeWindow) : undefined;
+  if (Capacitor.getPlatform() === "android" && win?.androidBridge?.postMessage) {
+    return {
+      printEscPos: (options) =>
+        callAndroidPluginDirect("AndroidEscPosPrinter", "printEscPos", options) as Promise<{
+          ok?: boolean;
+          bytes?: number;
+          copies?: number;
+        }>,
+    };
+  }
+
+  const plugin = getWindowCapacitor()?.Plugins?.AndroidEscPosPrinter as AndroidEscPosPrinterPluginInstance | undefined;
+  return typeof plugin?.printEscPos === "function" ? plugin : null;
 }
 
 function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
@@ -165,9 +196,9 @@ function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
 
   if (Capacitor.getPlatform() === "android" && win?.androidBridge?.postMessage) {
     return {
-      connect: (options) => callAndroidPluginDirect("connect", options) as Promise<{ client: number }>,
-      send: (options) => callAndroidPluginDirect("send", options) as Promise<void>,
-      disconnect: (options) => callAndroidPluginDirect("disconnect", options) as Promise<void | { client?: number }>,
+      connect: (options) => callAndroidPluginDirect("TcpSocket", "connect", options) as Promise<{ client: number }>,
+      send: (options) => callAndroidPluginDirect("TcpSocket", "send", options) as Promise<void>,
+      disconnect: (options) => callAndroidPluginDirect("TcpSocket", "disconnect", options) as Promise<void | { client?: number }>,
     };
   }
 
@@ -187,25 +218,53 @@ function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
 function logTcpSocketDiagnostics() {
   const platform = Capacitor.getPlatform();
   const available = Capacitor.isPluginAvailable("TcpSocket");
+  const androidPrinterAvailable = Capacitor.isPluginAvailable("AndroidEscPosPrinter");
   const importedRuntime = Capacitor as CapacitorRuntime;
   const windowRuntime = getWindowCapacitor();
   const plugin = resolveTcpSocketPlugin();
+  const androidPrinter = resolveAndroidEscPosPrinterPlugin();
 
+  console.log("[AndroidPrint] BUILD_VERSION", BUILD_VERSION);
+  console.log("[AndroidPrint] Location", typeof window !== "undefined" ? window.location.href : "n/a");
   console.log("[AndroidPrint] Platform", platform);
   console.log("[AndroidPrint] TcpSocket available", available);
+  console.log("[AndroidPrint] AndroidEscPosPrinter available", androidPrinterAvailable);
   console.log("[AndroidPrint] Native platform", Capacitor.isNativePlatform());
   console.log("[AndroidPrint] Plugins", getPluginKeys(importedRuntime));
   console.log("[AndroidPrint] window.Capacitor.Plugins", getPluginKeys(windowRuntime));
   console.log("[AndroidPrint] PluginHeaders", getPluginHeaderNames(windowRuntime ?? importedRuntime));
   console.log("[AndroidPrint] TcpSocket plugin", importedRuntime.Plugins?.TcpSocket);
   console.log("[AndroidPrint] window TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket);
+  console.log("[AndroidPrint] AndroidEscPosPrinter plugin", windowRuntime?.Plugins?.AndroidEscPosPrinter ?? importedRuntime.Plugins?.AndroidEscPosPrinter);
   console.log("[AndroidPrint] nativePromise", typeof (windowRuntime?.nativePromise ?? importedRuntime.nativePromise));
   console.log("[AndroidPrint] Resolved TcpSocket plugin", plugin);
+  console.log("[AndroidPrint] Resolved AndroidEscPosPrinter plugin", androidPrinter);
   console.log("Platform", platform);
   console.log("Plugins", getPluginKeys(windowRuntime ?? importedRuntime));
   console.log("TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket ?? importedRuntime.Plugins?.TcpSocket);
 
   return { platform, available, plugin };
+}
+
+async function clearOldPwaRuntimeCaches() {
+  if (runtimeCacheCleanupStarted || typeof window === "undefined") return;
+  runtimeCacheCleanupStarted = true;
+  try {
+    const registrations = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistrations() : [];
+    await Promise.all(
+      registrations.map((registration) => {
+        const scriptUrl = registration.active?.scriptURL || registration.waiting?.scriptURL || registration.installing?.scriptURL || "";
+        return scriptUrl.includes("push-handler") ? Promise.resolve(false) : registration.unregister();
+      }),
+    );
+    if ("caches" in window) {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    }
+    console.log("[AndroidPrint] PWA runtime cache cleanup done");
+  } catch (error) {
+    console.warn("[AndroidPrint] PWA runtime cache cleanup failed", error);
+  }
 }
 
 function getTcpSocketOrThrow(): TcpSocketPluginInstance {
@@ -232,15 +291,25 @@ async function fetchAndroidStores(): Promise<string[]> {
 }
 
 async function sendEscPos(job: PrintJob): Promise<void> {
-  const tcpSocket = getTcpSocketOrThrow();
   const host = job.printer_ip;
   const port = job.printer_port || 9100;
+  const copies = Math.max(1, job.copies || 1);
+  const androidPrinter = resolveAndroidEscPosPrinterPlugin();
+
   console.log("[AndroidPrint] Connecting to", host, port);
-  console.log("[AndroidPrint] Plugin object:", tcpSocket);
+  console.log("[AndroidPrint] AndroidEscPosPrinter object:", androidPrinter);
+
+  if (androidPrinter) {
+    const result = await androidPrinter.printEscPos({ host, port, base64: job.ticket_data, copies });
+    console.log("[AndroidPrint] AndroidEscPosPrinter send complete", result);
+    return;
+  }
+
+  const tcpSocket = getTcpSocketOrThrow();
+  console.log("[AndroidPrint] Fallback TcpSocket object:", tcpSocket);
   const { client } = await tcpSocket.connect({ ipAddress: host, port });
-  console.log("[AndroidPrint] Connected, client=", client);
+  console.log("[AndroidPrint] Fallback TcpSocket connected, client=", client);
   try {
-    const copies = Math.max(1, job.copies || 1);
     for (let i = 0; i < copies; i++) {
       console.log("[AndroidPrint] Sending copy", i + 1, "of", copies);
       await tcpSocket.send({
@@ -325,6 +394,8 @@ export async function startAndroidPrintListener() {
   }
   started = true;
   log("iniciando (plataforma nativa)");
+  console.log("[AndroidPrint] BUILD_VERSION", BUILD_VERSION);
+  void clearOldPwaRuntimeCaches();
   logTcpSocketDiagnostics();
 
   const stores = await fetchAndroidStores();
@@ -354,11 +425,20 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");
   }
-  const tcpSocket = getTcpSocketOrThrow();
   const host = opts.ip;
   const port = opts.port || 9100;
   console.log("[AndroidPrint] Connecting to", host, port);
-  console.log("[AndroidPrint] Plugin object:", tcpSocket);
+  console.log("[AndroidPrint] BUILD_VERSION", BUILD_VERSION);
+  const androidPrinter = resolveAndroidEscPosPrinterPlugin();
+  console.log("[AndroidPrint] AndroidEscPosPrinter object:", androidPrinter);
+  if (androidPrinter) {
+    const result = await androidPrinter.printEscPos({ host, port, base64: opts.ticketBase64, copies: 1 });
+    console.log("[AndroidPrint] Test send complete", result);
+    return;
+  }
+
+  const tcpSocket = getTcpSocketOrThrow();
+  console.log("[AndroidPrint] Fallback TcpSocket object:", tcpSocket);
   const { client } = await tcpSocket.connect({ ipAddress: host, port });
   console.log("[AndroidPrint] Connected, client=", client);
   try {
