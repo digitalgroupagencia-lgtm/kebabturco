@@ -139,8 +139,10 @@ for (const rpc of [...CRITICAL_RPCS, ...OTHER_RPCS]) {
     if (critical) findings.critical.push(entry);
     else findings.warning.push(entry);
   } else {
-    findings.ok.push(`${rpc} — activa`);
+    const suffix = result.detail ? ` (${result.detail})` : "";
+    findings.ok.push(`${rpc} — activa${suffix}`);
   }
+
 }
 
 for (const fn of EDGES) {
