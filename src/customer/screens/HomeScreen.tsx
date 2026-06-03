@@ -201,11 +201,12 @@ const HomeScreen = () => {
                   }`}
                 >
                   <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[10px] bg-secondary/40">
-                    <img
+                    <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
+                      targetWidth={160}
+                      priority
                       className="h-full w-full object-cover object-center"
-                      loading="lazy"
                     />
                   </div>
                   <span
