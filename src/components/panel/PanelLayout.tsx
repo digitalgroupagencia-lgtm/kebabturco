@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
+import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 
 type Props = {
