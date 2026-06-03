@@ -331,6 +331,29 @@ export default function ChoiceGroupSection({
       );
     }
 
+    // Grupo de carne (Pollo / Ternera / etc) — só texto, sem imagens
+    const isMeatChoice =
+      /elige la carne|escolhe a carne|choose meat|choisir viande|carne|meat/i.test(tName(group.name)) ||
+      group.id.includes("choice-main");
+    if (isMeatChoice && isSingle) {
+      return (
+        <div className="space-y-2">
+          {group.options.map((opt) => {
+            const sel = (selected.get(opt.id) || 0) > 0;
+            return (
+              <ModifierRadioRow
+                key={opt.id}
+                title={tName(opt.name)}
+                priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                selected={sel}
+                onClick={() => toggleSingle(opt.id, sel)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
     return (
       <div className={`grid gap-2.5 ${choiceGridCols(group.options.length)}`}>
         {group.options.map((opt) => {
