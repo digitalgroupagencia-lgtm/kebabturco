@@ -295,10 +295,38 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
                 summary={printSummary}
                 loading={printLoading}
                 onRetryFailed={retryFailed}
+                onClearJobs={clearJobs}
                 onRefresh={refreshPrint}
               />
             )}
-            <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={orders} />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={visibleOrders} />
+              </div>
+              {testOrdersCount > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleHideTests}
+                    className={`shrink-0 px-3 py-2 rounded-xl border-2 font-bold text-xs ${
+                      hideTests
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-card border-border text-foreground"
+                    }`}
+                  >
+                    {hideTests ? "👁 Mostrar testes" : "🚫 Ocultar testes"} ({testOrdersCount})
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cleaningTests}
+                    onClick={() => void handleCleanupTests()}
+                    className="shrink-0 px-3 py-2 rounded-xl border-2 border-destructive text-destructive font-bold text-xs disabled:opacity-50"
+                  >
+                    {cleaningTests ? "A limpar..." : "🗑 Limpar testes"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         }
       >
