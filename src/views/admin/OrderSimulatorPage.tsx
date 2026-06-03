@@ -170,6 +170,78 @@ export default function OrderSimulatorPage() {
 
   useEffect(() => { if (isAdmin && storeId) refreshDiag(); /* eslint-disable-next-line */ }, [isAdmin, storeId]);
 
+  const runGuidedTest = async () => {
+    if (!storeId) { toast.error("Seleciona uma loja primeiro"); return; }
+    setSteps(initialSteps.map((s) => ({ ...s, status: "pending", detail: undefined })));
+    setWizardBusy(true);
+    try {
+      // Step 1: Diagnostic
+      setStep("diag", "running");
+      const { data: d1, error: e1 } = await supabase.rpc("admin_print_jobs_diagnostic", { _store_id: storeId });
+      if (e1) { setStep("diag", "fail", e1.message); return; }
+      setDiag(d1);
+      const subs = (d1 as any)?.push_subscribers || {};
+      const subsTxt = `web:${subs.web ?? 0} android:${subs.android ?? 0} ios:${subs.ios ?? 0}`;
+      const androidWarn = (subs.android ?? 0) === 0 ? " ⚠️ Sem Android FCM" : "";
+      setStep("diag", "ok", `${subsTxt}${androidWarn}`);
+
+      // Step 2: Clear queue
+      setStep("clean", "running");
+      const { data: d2, error: e2 } = await supabase.rpc("admin_clear_print_jobs", { _store_id: storeId, _statuses: ["pending", "failed"] });
+      if (e2) { setStep("clean", "fail", e2.message); return; }
+      setStep("clean", "ok", `${(d2 as any)?.deleted ?? 0} jobs removidos`);
+
+      // Step 3: Notifications
+      setStep("notif", "running");
+      try {
+        await playTestAlert();
+        if (navigator.vibrate) navigator.vibrate([300, 120, 300, 120, 500]);
+        await supabase.functions.invoke("send-push-notification", {
+          body: { storeId, title: "[TESTE GUIADO] Notificação", body: "Som + vibração + push", tag: `guided-${Date.now()}`, url: "/panel/live" },
+        });
+        setStep("notif", "ok", "Som, vibração e push disparados");
+      } catch (err: any) {
+        setStep("notif", "fail", err.message || "Erro");
+      }
+
+      // Step 4: Create test order
+      setStep("order", "running");
+      const { data: orderData, error: orderErr } = await supabase.functions.invoke("simulate-test-order", {
+        body: { storeId, mode: "takeaway" },
+      });
+      if (orderErr || !orderData) { setStep("order", "fail", orderErr?.message || "Falha"); return; }
+      setStep("order", "ok", `Pedido #${orderData.orderNumber} criado`);
+
+      // Step 5: Verify print job
+      setStep("verify", "running");
+      await new Promise((r) => setTimeout(r, 3000));
+      const { data: jobs, error: jobErr } = await supabase
+        .from("print_jobs")
+        .select("id, status, error_message, created_at")
+        .eq("order_id", orderData.orderId)
+        .order("created_at", { ascending: false });
+      if (jobErr) { setStep("verify", "fail", jobErr.message); return; }
+      if (!jobs || jobs.length === 0) {
+        setStep("verify", "fail", "Nenhum print_job criado (verifica printer_category_map e printers ativos)");
+      } else {
+        const j = jobs[0];
+        const statusLabel = j.status === "printed" ? "✅ impresso" : j.status === "failed" ? `❌ falhou: ${j.error_message || "?"}` : `⏳ ${j.status}`;
+        setStep("verify", j.status === "printed" ? "ok" : j.status === "failed" ? "fail" : "ok", `${jobs.length} job(s) — último: ${statusLabel}`);
+      }
+
+      // Step 6: Cleanup
+      setStep("cleanup", "running");
+      const { data: d6, error: e6 } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
+      if (e6) { setStep("cleanup", "fail", e6.message); return; }
+      setStep("cleanup", "ok", `${(d6 as any)?.deleted ?? 0} pedidos teste removidos`);
+
+      await refreshDiag();
+      toast.success("Teste guiado concluído");
+    } finally {
+      setWizardBusy(false);
+    }
+  };
+
   if (roleLoading) return <div className="p-8 flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> A carregar…</div>;
   if (!isAdmin) return <div className="p-8 text-muted-foreground">Acesso restrito a admin_master.</div>;
 
