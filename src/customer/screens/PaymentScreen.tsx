@@ -654,7 +654,8 @@ const PaymentScreen = () => {
           </div>
         </div>
 
-        {!stripeClientSecret && (
+        {/* Resumo subtotal removido — já mostrado na tela de revisão */}
+        {false && !stripeClientSecret && (
           <div className={`mt-3 bg-card rounded-2xl border border-border/80 ${compact ? "p-3 space-y-1.5 text-xs" : "p-4 space-y-2 text-sm"}`}>
             <div className="flex justify-between gap-2">
               <span className="text-muted-foreground">Subtotal</span>
