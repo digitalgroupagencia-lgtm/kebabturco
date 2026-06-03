@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
-const supabase = _supabaseRaw as unknown as any;
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -29,6 +28,12 @@ const PAY_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
   { key: "pay_counter_enabled", label: "Pagar en mostrador", desc: "Sin cobro online" },
 ];
 
+const RULE_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
+  { key: "pay_cash_dine_in", label: "Dinheiro na mesa (QR)", desc: "Permite pagar em dinheiro num pedido de mesa validado." },
+  { key: "require_prepayment_delivery", label: "Entrega: pagar antes de enviar", desc: "Cliente só conclui após pagamento online confirmado." },
+  { key: "print_pending_dine_in", label: "Imprimir mesa QR mesmo pendente", desc: "Envia para cozinha após pedido de mesa validado, mesmo sem pagamento." },
+];
+
 const OperationsPage = () => {
   const { storeId: STORE_ID, loading: loadingStore } = useAdminStoreId();
   const [s, setS] = useState<Ops | null>(null);
@@ -51,7 +56,7 @@ const OperationsPage = () => {
     });
   }, [STORE_ID]);
 
-  const update = (k: keyof Ops, v: any) => setS((p) => p ? { ...p, [k]: v } as Ops : p);
+  const update = (k: keyof Ops, v: Ops[keyof Ops]) => setS((p) => p ? { ...p, [k]: v } : p);
 
   const save = async () => {
     if (!s || !STORE_ID) return;
@@ -60,12 +65,12 @@ const OperationsPage = () => {
       payment_mode: s.payment_mode,
       pay_card_enabled: s.pay_card_enabled,
       pay_cash_enabled: s.pay_cash_enabled ?? true,
-      pay_cash_dine_in: (s as any).pay_cash_dine_in ?? true,
+      pay_cash_dine_in: s.pay_cash_dine_in ?? true,
       pay_cash_takeaway: true,
-      pay_cash_delivery: false,
+      pay_cash_delivery: true,
       require_prepayment_takeaway: false,
-      require_prepayment_delivery: (s as any).require_prepayment_delivery ?? true,
-      print_pending_dine_in: (s as any).print_pending_dine_in ?? true,
+      require_prepayment_delivery: s.require_prepayment_delivery ?? false,
+      print_pending_dine_in: s.print_pending_dine_in ?? true,
       pay_pix_enabled: s.pay_pix_enabled,
       pay_apple_enabled: s.pay_apple_enabled,
       pay_google_enabled: s.pay_google_enabled,
@@ -73,8 +78,8 @@ const OperationsPage = () => {
       pay_link_enabled: s.pay_link_enabled,
       msg_paid: s.msg_paid,
       msg_counter: s.msg_counter,
-      avg_prep_minutes: (s as any).avg_prep_minutes ?? 12,
-      require_phone_takeaway: (s as any).require_phone_takeaway ?? true,
+      avg_prep_minutes: s.avg_prep_minutes ?? 12,
+      require_phone_takeaway: s.require_phone_takeaway ?? true,
     }).eq("store_id", STORE_ID);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Configuración guardada");
@@ -163,19 +168,15 @@ const OperationsPage = () => {
       <Card>
         <CardHeader><CardTitle className="text-lg">Regras por tipo de pedido</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {[
-            { key: "pay_cash_dine_in", label: "Dinheiro na mesa (QR)", desc: "Permite pagar em dinheiro num pedido de mesa validado." },
-            { key: "require_prepayment_delivery", label: "Entrega: pagar antes de enviar", desc: "Cliente só conclui após pagamento online confirmado." },
-            { key: "print_pending_dine_in", label: "Imprimir mesa QR mesmo pendente", desc: "Envia para cozinha após pedido de mesa validado, mesmo sem pagamento." },
-          ].map((f) => (
+          {RULE_FIELDS.map((f) => (
             <div key={f.key} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
               <div className="min-w-0 flex-1">
                 <Label className="text-base">{f.label}</Label>
                 <p className="text-xs text-muted-foreground line-clamp-3">{f.desc}</p>
               </div>
               <Switch
-                checked={Boolean((s as any)[f.key])}
-                onCheckedChange={(v) => update(f.key as keyof Ops, v as any)}
+                checked={Boolean(s[f.key])}
+                onCheckedChange={(v) => update(f.key, v)}
                 className="shrink-0"
               />
             </div>
@@ -209,8 +210,8 @@ const OperationsPage = () => {
               <p className="text-xs text-muted-foreground">El nombre siempre es obligatorio. Activa esto para pedir también el teléfono.</p>
             </div>
             <Switch
-              checked={Boolean((s as any).require_phone_takeaway ?? true)}
-              onCheckedChange={(v) => update("require_phone_takeaway" as any, v)}
+              checked={Boolean(s.require_phone_takeaway ?? true)}
+              onCheckedChange={(v) => update("require_phone_takeaway", v)}
               className="shrink-0"
             />
           </div>
@@ -234,8 +235,8 @@ const OperationsPage = () => {
               type="number"
               min={1}
               max={120}
-              value={(s as any).avg_prep_minutes ?? 12}
-              onChange={(e) => update("avg_prep_minutes" as any, Number(e.target.value))}
+              value={s.avg_prep_minutes ?? 12}
+              onChange={(e) => update("avg_prep_minutes", Number(e.target.value))}
             />
             <p className="text-xs text-muted-foreground mt-1">Aparece en la pantalla de confirmación del totem.</p>
           </div>

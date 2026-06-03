@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { applyBrowserChromeColor, applyStaffAppChrome } from "@/lib/brandTokens";
 import { isStaffAppPath } from "@/lib/appRouteKind";
 import { dismissBootShell } from "@/lib/bootShell";
+import { setAndroidOrientation } from "@/services/androidOrientation";
 
 /** Mantém a cor do topo correcta ao navegar entre site do cliente e admin/painel. */
 export default function AppChromeEffect() {
@@ -12,8 +13,10 @@ export default function AppChromeEffect() {
     if (isStaffAppPath(pathname)) {
       applyStaffAppChrome();
       dismissBootShell();
+      void setAndroidOrientation("unspecified");
     } else {
       applyBrowserChromeColor();
+      void setAndroidOrientation("portrait");
     }
   }, [pathname]);
 

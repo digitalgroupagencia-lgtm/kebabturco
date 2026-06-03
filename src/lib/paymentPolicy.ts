@@ -23,7 +23,7 @@ function cashAllowedForOrderType(
 ): boolean {
   if (orderType === "here") return opsFlag(settings, "pay_cash_dine_in", true);
   if (orderType === "takeaway") return opsFlag(settings, "pay_cash_takeaway", true);
-  if (orderType === "delivery") return opsFlag(settings, "pay_cash_delivery", false);
+  if (orderType === "delivery") return opsFlag(settings, "pay_cash_delivery", true);
   return false;
 }
 
@@ -66,7 +66,7 @@ export function requiresPrepayment(
   settings: OperationsSettings | null,
 ): boolean {
   if (orderType === "takeaway") return false;
-  if (orderType === "delivery") return opsFlag(settings, "require_prepayment_delivery", true);
+  if (orderType === "delivery") return opsFlag(settings, "require_prepayment_delivery", false);
   return false;
 }
 
@@ -98,9 +98,6 @@ export function shouldPrintAfterCheckout(
 export function stripeConfigIssue(stripeReady: boolean, hasPublishableKey: boolean): string | null {
   if (!hasPublishableKey) {
     return "Pagamento com cartão indisponível — peça ao administrador para configurar a Stripe no site.";
-  }
-  if (!stripeReady) {
-    return "Pagamentos online ainda não activos — complete os dados bancários em Recebimentos.";
   }
   return null;
 }

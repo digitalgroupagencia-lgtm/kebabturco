@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
         // mesmo se o auto-registro do Capacitor falhar ou o schema de plugins estiver antigo.
         registerPlugin(TcpSocketPlugin.class);
         registerPlugin(AndroidEscPosPrinterPlugin.class);
+        registerPlugin(AndroidScreenOrientationPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

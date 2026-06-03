@@ -116,7 +116,6 @@ export function buildTenantPublicPreviewUrl(options: {
   seedCheckout?: boolean;
 }): string {
   const url = new URL(buildTenantUrl(options.tenant, "/"));
-  url.searchParams.set("preview", "1");
   url.searchParams.set("screen", options.screen);
   if (options.productId) url.searchParams.set("productId", options.productId);
   if (options.seedCheckout) url.searchParams.set("seedCheckout", "1");
