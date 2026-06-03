@@ -12,6 +12,7 @@ import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
+import SmartImage from "@/components/SmartImage";
 
 
 const HomeScreen = () => {
