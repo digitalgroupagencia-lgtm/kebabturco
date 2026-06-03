@@ -44,7 +44,7 @@ export async function prefetchStoreModifierConfigs(storeId: string | null | unde
 
     const productIds = prodsRes.data.map((p: any) => p.id);
 
-    const [linksRes, groupsRes, optionsRes] = await Promise.all([
+    const [linksRes, groupsRes] = await Promise.all([
       supabase
         .from("product_modifier_groups")
         .select("product_id, group_id, sort_order, repeat_per_unit")
@@ -55,7 +55,6 @@ export async function prefetchStoreModifierConfigs(storeId: string | null | unde
         .select("*")
         .eq("store_id", storeId)
         .eq("is_active", true),
-      Promise.resolve({ data: [] as any[], error: null }),
     ]);
 
     const groupIds = (groupsRes.data || []).map((g: any) => g.id);
@@ -66,7 +65,7 @@ export async function prefetchStoreModifierConfigs(storeId: string | null | unde
           .in("group_id", groupIds)
           .eq("is_active", true)
           .order("sort_order", { ascending: true })
-      : { data: [], error: null };
+      : { data: [] as any[], error: null };
 
     const groupsById = new Map<string, any>((groupsRes.data || []).map((g: any) => [g.id, g]));
     const optionsByGroup = new Map<string, ModifierOption[]>();
