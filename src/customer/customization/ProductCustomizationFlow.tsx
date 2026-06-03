@@ -398,6 +398,7 @@ export default function ProductCustomizationFlow({
             tDesc={tProduct}
             hideHeader={onUnitStep && group.repeatPerUnit}
             stepMode={useStepWizard && currentWizardStep?.kind === "global"}
+            menuProducts={menuProducts}
           />
         ))}
 
