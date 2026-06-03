@@ -351,6 +351,8 @@ const PrinterPage = () => {
         </CardContent>
       </Card>
 
+      <PrintQueueCard storeId={storeId} />
+
       <Card className="border-accent/40 bg-accent/5">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
