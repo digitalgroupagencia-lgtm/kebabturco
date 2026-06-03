@@ -366,13 +366,19 @@ export default function ProductCustomizationFlow({
         productType: effectiveConfig.productType,
       };
 
+      const clearDraft = () => {
+        try { window.sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+      };
+
       if (editingItem) {
         updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity, totalPrice: unitPrice * editingItem.quantity });
+        clearDraft();
         onBack();
         return;
       }
 
       addItem(payload);
+      clearDraft();
 
       if (upsellSuggestions.length > 0) {
         setUpsellOpen(true);
