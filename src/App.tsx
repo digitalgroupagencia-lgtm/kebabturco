@@ -69,32 +69,39 @@ const LovablePreviewRoutes = () => (
   </Routes>
 );
 
-const App = () => (
-  <TotemErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <ThemeProvider>
-          <BrowserRouter>
-            <AppChromeEffect />
-            <AppCacheBustRouter>
-              <LovablePreviewGate />
-              <PreviewPathGuard />
-              <ResolvedStoreProvider>
-                <SiteBrandingEffect />
-                <BrandingProvider>
-                  <OperationsSettingsProvider>
-                    <LovablePreviewRoutes />
-                  </OperationsSettingsProvider>
-                </BrandingProvider>
-              </ResolvedStoreProvider>
-            </AppCacheBustRouter>
-          </BrowserRouter>
-        </ThemeProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </TotemErrorBoundary>
-);
+const App = () => {
+  useEffect(() => {
+    // No-op em web/PWA. Só ativa quando rodando dentro do APK Android (Capacitor).
+    void startAndroidPrintListener();
+  }, []);
+
+  return (
+    <TotemErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ThemeProvider>
+            <BrowserRouter>
+              <AppChromeEffect />
+              <AppCacheBustRouter>
+                <LovablePreviewGate />
+                <PreviewPathGuard />
+                <ResolvedStoreProvider>
+                  <SiteBrandingEffect />
+                  <BrandingProvider>
+                    <OperationsSettingsProvider>
+                      <LovablePreviewRoutes />
+                    </OperationsSettingsProvider>
+                  </BrandingProvider>
+                </ResolvedStoreProvider>
+              </AppCacheBustRouter>
+            </BrowserRouter>
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </TotemErrorBoundary>
+  );
+};
 
 export default App;
