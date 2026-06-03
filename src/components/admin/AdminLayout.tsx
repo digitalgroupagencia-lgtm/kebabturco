@@ -57,7 +57,7 @@ const AdminLayout = ({ page: Page }: Props) => {
   return (
     <SelectedTenantProvider>
       <AdminStoreProvider>
-        <SidebarProvider>
+        <SidebarProvider defaultOpen={false}>
           <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
             <AdminSidebar />
             <div className="flex-1 flex flex-col min-w-0">
