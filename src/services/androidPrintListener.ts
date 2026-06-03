@@ -34,23 +34,24 @@ function log(...args: unknown[]) {
   console.log(TAG, ...args);
 }
 
-async function logTcpSocketDiagnostics() {
-  const platform = await Promise.resolve(Capacitor.getPlatform());
+function logTcpSocketDiagnostics() {
+  const platform = Capacitor.getPlatform();
   const available = Capacitor.isPluginAvailable("TcpSocket");
-  // Logs pedidos para validar no tablet via Logcat/console remota.
   // eslint-disable-next-line no-console
-  console.log(platform);
+  console.log("[AndroidPrint] Platform:", platform);
   // eslint-disable-next-line no-console
-  console.log(available);
+  console.log("[AndroidPrint] TcpSocket available:", available);
   // eslint-disable-next-line no-console
-  console.log(TAG, "Capacitor.getPlatform()", platform);
+  console.log("[AndroidPrint] Plugin object:", TcpSocket);
   // eslint-disable-next-line no-console
-  console.log(TAG, "Capacitor.isPluginAvailable('TcpSocket')", available);
+  console.log("[AndroidPrint] Native platform:", Capacitor.isNativePlatform());
+  // eslint-disable-next-line no-console
+  try { console.log("[AndroidPrint] Registered plugins keys:", Object.keys((Capacitor as unknown as { Plugins?: Record<string, unknown> }).Plugins ?? {})); } catch { /* noop */ }
   return { platform, available };
 }
 
-async function assertTcpSocketAvailable() {
-  const { available } = await logTcpSocketDiagnostics();
+function assertTcpSocketAvailable() {
+  const { available } = logTcpSocketDiagnostics();
   if (!available) {
     throw new Error(
       "TcpSocket plugin indisponível neste APK. Gere novamente depois de npm install + npx cap sync android e reinstale no tablet.",
