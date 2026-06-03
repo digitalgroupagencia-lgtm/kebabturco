@@ -201,10 +201,20 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");
   }
-  await assertTcpSocketAvailable();
-  const { client } = await TcpSocket.connect({ ipAddress: opts.ip, port: opts.port || 9100 });
+  assertTcpSocketAvailable();
+  const host = opts.ip;
+  const port = opts.port || 9100;
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connecting to", host, port);
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Plugin object:", TcpSocket);
+  const { client } = await TcpSocket.connect({ ipAddress: host, port });
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connected, client=", client);
   try {
     await TcpSocket.send({ client, data: opts.ticketBase64, encoding: DataEncoding.BASE64 });
+    // eslint-disable-next-line no-console
+    console.log("[AndroidPrint] Test send complete");
   } finally {
     try { await TcpSocket.disconnect({ client }); } catch { /* noop */ }
   }
