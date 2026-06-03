@@ -19,7 +19,7 @@ const SellerLayout = ({ page: Page }: Props) => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) navigate(nav.auth());
+    if (!loading && !user) navigate(nav.staff(), { replace: true });
   }, [user, loading, navigate]);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ const SellerLayout = ({ page: Page }: Props) => {
           O acesso ao app de vendedor foi desactivado pela plataforma para este restaurante.
           Contacte o administrador.
         </p>
-        <Button variant="outline" onClick={signOut}>
+        <Button variant="outline" onClick={() => void signOut("/staff")}>
           <LogOut className="w-4 h-4 mr-2" /> Sair
         </Button>
       </div>
@@ -55,7 +55,7 @@ const SellerLayout = ({ page: Page }: Props) => {
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-black text-primary text-sm">Kebab Turco · Vendedor</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sair">
+        <Button variant="ghost" size="icon" onClick={() => void signOut("/staff")} aria-label="Sair">
           <LogOut className="w-4 h-4" />
         </Button>
       </header>

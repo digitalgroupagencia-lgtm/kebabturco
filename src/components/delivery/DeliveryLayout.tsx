@@ -27,7 +27,7 @@ export default function DeliveryLayout({ page: Page }: Props) {
             variant="ghost"
             size="sm"
             className="text-white hover:bg-white/10"
-            onClick={() => void signOut()}
+            onClick={() => void signOut("/staff")}
           >
             <LogOut className="h-4 w-4 mr-1" /> Sair
           </Button>

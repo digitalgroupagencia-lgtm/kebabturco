@@ -58,9 +58,18 @@ export function useAuth() {
     };
   }, []);
 
-  const signOut = async () => {
+  const signOut = async (redirectTo: string = "/staff") => {
     clearStaffSessionFlag();
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore — we still force navigation below
+    }
+    if (typeof window !== "undefined") {
+      // Hard navigation guarantees all in-memory state is wiped and
+      // any guard hooks re-evaluate cleanly on the login screen.
+      window.location.assign(redirectTo);
+    }
   };
 
   return { user: state.user, session: state.session, loading: state.loading, signOut };

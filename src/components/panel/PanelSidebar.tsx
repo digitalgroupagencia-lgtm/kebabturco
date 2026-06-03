@@ -131,7 +131,7 @@ export function PanelSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <Button variant="ghost" className="w-full justify-start rounded-lg" onClick={() => void signOut()}>
+        <Button variant="ghost" className="w-full justify-start rounded-lg" onClick={() => void signOut("/staff")}>
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && t("common.signout")}
         </Button>
