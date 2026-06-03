@@ -465,7 +465,7 @@ export default function ProductCustomizationFlow({
             productCode={productCode}
             quantity={quantity}
             onQuantityChange={setQuantity}
-            showQuantity={!editingItem && (!useStepWizard || currentWizardStep?.kind === "intro")}
+            showQuantity={!useStepWizard || currentWizardStep?.kind === "intro"}
           />
         )}
 
