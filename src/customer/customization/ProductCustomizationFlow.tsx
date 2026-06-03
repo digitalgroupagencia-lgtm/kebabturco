@@ -346,7 +346,7 @@ export default function ProductCustomizationFlow({
       const cfg = buildConfiguration();
       const flat = flattenConfiguration(cfg);
       const { extras, removedIngredients } = selectionsToLegacyFields(flat);
-      const orderQty = editingItem ? editingItem.quantity : quantity;
+      const orderQty = quantity;
 
       const payload = {
         productId: product.id,
@@ -371,7 +371,13 @@ export default function ProductCustomizationFlow({
       };
 
       if (editingItem) {
-        updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity, totalPrice: unitPrice * editingItem.quantity });
+        // O item editado vira sempre 1 unidade, com a nova configuração.
+        updateItem(editingItem.id, { ...payload, quantity: 1, totalPrice: unitPrice });
+        // Unidades adicionais entram como itens separados, editáveis individualmente.
+        const extraUnits = Math.max(0, orderQty - 1);
+        for (let i = 0; i < extraUnits; i++) {
+          addItem({ ...payload, quantity: 1, totalPrice: unitPrice });
+        }
         clearDraft();
         onBack();
         return;
@@ -459,7 +465,7 @@ export default function ProductCustomizationFlow({
             productCode={productCode}
             quantity={quantity}
             onQuantityChange={setQuantity}
-            showQuantity={!editingItem && (!useStepWizard || currentWizardStep?.kind === "intro")}
+            showQuantity={!useStepWizard || currentWizardStep?.kind === "intro"}
           />
         )}
 
@@ -504,7 +510,7 @@ export default function ProductCustomizationFlow({
               productCode={productCode}
               quantity={quantity}
               onQuantityChange={setQuantity}
-              showQuantity={!editingItem}
+              showQuantity={true}
             />
             {summaryLines.length > 0 && (
               <section className="space-y-2 rounded-[22px] border border-border/50 bg-card p-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.2)]">
@@ -552,7 +558,7 @@ export default function ProductCustomizationFlow({
                   : t("addToCartBtn")}
             </span>
             <span className="text-lg font-black tabular-nums">
-              {(unitPrice * (editingItem ? 1 : quantity)).toFixed(2)}€
+              {(unitPrice * quantity).toFixed(2)}€
             </span>
           </button>
         </div>

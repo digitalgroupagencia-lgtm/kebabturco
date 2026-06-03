@@ -1,0 +1,1 @@
+UPDATE public.delivery_zones SET min_order = 0 WHERE name = 'Gandia';
