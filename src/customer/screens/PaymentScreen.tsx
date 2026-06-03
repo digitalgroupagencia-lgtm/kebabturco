@@ -1026,15 +1026,7 @@ const PaymentScreen = () => {
                       Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
                     </p>
                   )}
-                  {(selected === "cash" || selected === "counter") && (
-                    <div className="mt-1.5 flex gap-2.5 items-start rounded-2xl border-2 border-amber-500/35 bg-amber-500/5 p-3">
-                      <Store className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
-                      <div className="min-w-0 text-left">
-                        <p className="text-sm font-bold text-foreground">{t("cashCheckoutTitle")}</p>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t("cashCheckoutHint")}</p>
-                      </div>
-                    </div>
-                  )}
+                  {/* Aviso amber abaixo de Efectivo removido — confirmação acontece em tela dedicada após finalizar */}
                 </div>
                 {showError === "method" && (
                   <p className="text-xs text-destructive font-bold mt-1.5 px-1">Seleccione uma forma de pagamento para continuar.</p>
