@@ -224,6 +224,28 @@ const PrinterPage = () => {
       <Card>
         <CardHeader><CardTitle className="text-lg">Configuración</CardTitle></CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Modo de impressão</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => upd("print_mode", "bridge")}
+                className={`rounded-lg border p-3 text-left transition ${cfg.print_mode === "bridge" ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
+              >
+                <div className="font-medium text-sm">PrintBridge / PC</div>
+                <div className="text-xs text-muted-foreground">Computador Windows na loja envia o ticket à impressora.</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => upd("print_mode", "android_direct")}
+                className={`rounded-lg border p-3 text-left transition ${cfg.print_mode === "android_direct" ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
+              >
+                <div className="font-medium text-sm">Android direto</div>
+                <div className="text-xs text-muted-foreground">App Android no tablet imprime direto via TCP/IP — sem PC.</div>
+              </button>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
               <Label>Impresión automática</Label>
@@ -260,6 +282,7 @@ const PrinterPage = () => {
           </div>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
