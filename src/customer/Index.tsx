@@ -93,9 +93,7 @@ const ScreenRouter = () => {
     case "home":
       return (
         <CustomerScreenErrorBoundary scope="home">
-          <LazyScreen>
-            <HomeScreen />
-          </LazyScreen>
+          <HomeScreen />
         </CustomerScreenErrorBoundary>
       );
     case "product":
@@ -107,33 +105,25 @@ const ScreenRouter = () => {
     case "review":
       return (
         <CustomerScreenErrorBoundary scope="checkout">
-          <LazyInlineScreen>
-            <ReviewScreen />
-          </LazyInlineScreen>
+          <ReviewScreen />
         </CustomerScreenErrorBoundary>
       );
     case "payment":
       return (
         <CustomerScreenErrorBoundary scope="checkout">
-          <LazyScreen>
-            <PaymentScreen />
-          </LazyScreen>
+          <PaymentScreen />
         </CustomerScreenErrorBoundary>
       );
     case "cashPending":
       return (
         <CustomerScreenErrorBoundary scope="checkout">
-          <LazyScreen>
-            <CashPendingScreen />
-          </LazyScreen>
+          <CashPendingScreen />
         </CustomerScreenErrorBoundary>
       );
     case "confirmation":
       return (
         <CustomerScreenErrorBoundary scope="checkout">
-          <LazyScreen>
-            <ConfirmationScreen />
-          </LazyScreen>
+          <ConfirmationScreen />
         </CustomerScreenErrorBoundary>
       );
     case "tracking":
