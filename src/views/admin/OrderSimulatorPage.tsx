@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2 } from "lucide-react";
+import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2, Printer, RefreshCw, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -24,6 +24,7 @@ export default function OrderSimulatorPage() {
   const [tableId, setTableId] = useState<string>("");
   const [busy, setBusy] = useState<string | null>(null);
   const [simLog, setSimLog] = useState<string[]>([]);
+  const [diag, setDiag] = useState<any>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -122,6 +123,35 @@ export default function OrderSimulatorPage() {
     }
   };
 
+  const refreshDiag = async () => {
+    setBusy("diag");
+    const { data, error } = await supabase.rpc("admin_print_jobs_diagnostic", { _store_id: storeId || null });
+    setBusy(null);
+    if (error) { toast.error(error.message); return; }
+    setDiag(data);
+  };
+
+  const clearJobs = async (statuses: string[], label: string) => {
+    if (!confirm(`Apagar todos os print_jobs com status: ${statuses.join(", ")}?`)) return;
+    setBusy("clear");
+    const { data, error } = await supabase.rpc("admin_clear_print_jobs", { _store_id: storeId || null, _statuses: statuses });
+    setBusy(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${(data as any)?.deleted ?? 0} jobs (${label}) removidos`);
+    refreshDiag();
+  };
+
+  const requeueJobs = async () => {
+    setBusy("requeue");
+    const { data, error } = await supabase.rpc("admin_requeue_print_jobs", { _store_id: storeId || null });
+    setBusy(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${(data as any)?.requeued ?? 0} jobs reenfileirados`);
+    refreshDiag();
+  };
+
+  useEffect(() => { if (isAdmin && storeId) refreshDiag(); /* eslint-disable-next-line */ }, [isAdmin, storeId]);
+
   if (roleLoading) return <div className="p-8 flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> A carregar…</div>;
   if (!isAdmin) return <div className="p-8 text-muted-foreground">Acesso restrito a admin_master.</div>;
 
@@ -217,6 +247,58 @@ export default function OrderSimulatorPage() {
           {simLog.length > 0 && (
             <div className="bg-muted rounded-md p-3 text-xs font-mono space-y-1 max-h-60 overflow-auto">
               {simLog.map((l, i) => <div key={i}>{l}</div>)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Printer className="h-4 w-4" /> Fila de Impressão & Bridge</CardTitle>
+          <CardDescription>Diagnóstico da fila de impressão e dos subscritores de push (web / Android / iOS).</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={refreshDiag} disabled={!!busy} variant="secondary" size="sm">
+              {busy === "diag" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Activity className="h-4 w-4 mr-1" /> Atualizar diagnóstico</>}
+            </Button>
+            <Button onClick={() => clearJobs(["pending"], "pending")} disabled={!!busy} variant="outline" size="sm">
+              <Trash2 className="h-4 w-4 mr-1" /> Limpar pendentes
+            </Button>
+            <Button onClick={() => clearJobs(["failed"], "failed")} disabled={!!busy} variant="outline" size="sm">
+              <Trash2 className="h-4 w-4 mr-1" /> Limpar falhados
+            </Button>
+            <Button onClick={requeueJobs} disabled={!!busy} variant="default" size="sm">
+              <RefreshCw className="h-4 w-4 mr-1" /> Reprocessar falhados
+            </Button>
+          </div>
+          {diag && (
+            <div className="grid sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-muted rounded-md p-3">
+                <div className="font-semibold mb-1">Jobs por status</div>
+                <pre className="font-mono whitespace-pre-wrap">{JSON.stringify(diag.by_status, null, 2)}</pre>
+              </div>
+              <div className="bg-muted rounded-md p-3">
+                <div className="font-semibold mb-1">Subscritores de push</div>
+                <pre className="font-mono whitespace-pre-wrap">{JSON.stringify(diag.push_subscribers, null, 2)}</pre>
+                {(diag.push_subscribers?.android ?? 0) === 0 && (
+                  <div className="mt-2 text-yellow-700 dark:text-yellow-400">
+                    ⚠️ Nenhum dispositivo Android registado em FCM. Push em background não funcionará no tablet.
+                  </div>
+                )}
+              </div>
+              {diag.oldest_pending && (
+                <div className="bg-muted rounded-md p-3 sm:col-span-2">
+                  <div className="font-semibold mb-1">Job pendente mais antigo</div>
+                  <pre className="font-mono whitespace-pre-wrap text-[11px]">{JSON.stringify(diag.oldest_pending, null, 2)}</pre>
+                </div>
+              )}
+              {diag.last_failed && (
+                <div className="bg-muted rounded-md p-3 sm:col-span-2">
+                  <div className="font-semibold mb-1">Última falha</div>
+                  <pre className="font-mono whitespace-pre-wrap text-[11px]">{JSON.stringify(diag.last_failed, null, 2)}</pre>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

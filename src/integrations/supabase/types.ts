@@ -2810,6 +2810,15 @@ export type Database = {
         }
         Returns: string
       }
+      admin_clear_print_jobs: {
+        Args: { _statuses?: string[]; _store_id?: string }
+        Returns: Json
+      }
+      admin_print_jobs_diagnostic: {
+        Args: { _store_id?: string }
+        Returns: Json
+      }
+      admin_requeue_print_jobs: { Args: { _store_id?: string }; Returns: Json }
       advance_test_order_status: {
         Args: { _new_status: string; _order_id: string }
         Returns: Json
