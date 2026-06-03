@@ -762,7 +762,8 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
-            {hasCustomerProfile() && (
+            {/* "Datos guardados" hint removido a pedido — perfil é usado em background */}
+            {false && hasCustomerProfile() && (
               <p className="mt-3 text-[11px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-xl px-3 py-2">
                 {t("savedProfileHint")}
               </p>
