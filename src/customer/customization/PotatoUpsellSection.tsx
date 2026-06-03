@@ -91,7 +91,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
                     title={tName(opt.name)}
                     priceLabel={`+${opt.priceDelta.toFixed(2)}€`}
                     subtitle={t("potatoUpgradeHint")}
-                    imageUrl={opt.imageUrl}
+                    imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
                     selected={sel}
                     onClick={() => pick(opt.id)}
                     layout="vertical"
