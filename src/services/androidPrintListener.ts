@@ -291,15 +291,25 @@ async function fetchAndroidStores(): Promise<string[]> {
 }
 
 async function sendEscPos(job: PrintJob): Promise<void> {
-  const tcpSocket = getTcpSocketOrThrow();
   const host = job.printer_ip;
   const port = job.printer_port || 9100;
+  const copies = Math.max(1, job.copies || 1);
+  const androidPrinter = resolveAndroidEscPosPrinterPlugin();
+
   console.log("[AndroidPrint] Connecting to", host, port);
-  console.log("[AndroidPrint] Plugin object:", tcpSocket);
+  console.log("[AndroidPrint] AndroidEscPosPrinter object:", androidPrinter);
+
+  if (androidPrinter) {
+    const result = await androidPrinter.printEscPos({ host, port, base64: job.ticket_data, copies });
+    console.log("[AndroidPrint] AndroidEscPosPrinter send complete", result);
+    return;
+  }
+
+  const tcpSocket = getTcpSocketOrThrow();
+  console.log("[AndroidPrint] Fallback TcpSocket object:", tcpSocket);
   const { client } = await tcpSocket.connect({ ipAddress: host, port });
-  console.log("[AndroidPrint] Connected, client=", client);
+  console.log("[AndroidPrint] Fallback TcpSocket connected, client=", client);
   try {
-    const copies = Math.max(1, job.copies || 1);
     for (let i = 0; i < copies; i++) {
       console.log("[AndroidPrint] Sending copy", i + 1, "of", copies);
       await tcpSocket.send({
@@ -384,6 +394,8 @@ export async function startAndroidPrintListener() {
   }
   started = true;
   log("iniciando (plataforma nativa)");
+  console.log("[AndroidPrint] BUILD_VERSION", BUILD_VERSION);
+  void clearOldPwaRuntimeCaches();
   logTcpSocketDiagnostics();
 
   const stores = await fetchAndroidStores();
@@ -413,11 +425,20 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");
   }
-  const tcpSocket = getTcpSocketOrThrow();
   const host = opts.ip;
   const port = opts.port || 9100;
   console.log("[AndroidPrint] Connecting to", host, port);
-  console.log("[AndroidPrint] Plugin object:", tcpSocket);
+  console.log("[AndroidPrint] BUILD_VERSION", BUILD_VERSION);
+  const androidPrinter = resolveAndroidEscPosPrinterPlugin();
+  console.log("[AndroidPrint] AndroidEscPosPrinter object:", androidPrinter);
+  if (androidPrinter) {
+    const result = await androidPrinter.printEscPos({ host, port, base64: opts.ticketBase64, copies: 1 });
+    console.log("[AndroidPrint] Test send complete", result);
+    return;
+  }
+
+  const tcpSocket = getTcpSocketOrThrow();
+  console.log("[AndroidPrint] Fallback TcpSocket object:", tcpSocket);
   const { client } = await tcpSocket.connect({ ipAddress: host, port });
   console.log("[AndroidPrint] Connected, client=", client);
   try {
