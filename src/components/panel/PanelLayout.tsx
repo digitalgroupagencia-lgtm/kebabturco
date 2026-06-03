@@ -61,6 +61,7 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1 min-w-0">{headerTitle}</h1>
                 <PanelStoreSwitcher />
                 <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
+                <PanelUpdateButton />
                 <AdminThemeToggle />
               </header>
               <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
