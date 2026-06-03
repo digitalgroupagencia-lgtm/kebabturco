@@ -1,106 +1,118 @@
-# Análise de Impacto — Fase 2 (separação física da área cliente)
+# Plano: APK Capacitor com impressão direta + Wake Lock
 
-## 1. Ficheiros que seriam movidos
+## Objetivo
+Gerar um APK Android (Capacitor) que:
+- escuta novos pedidos em tempo real
+- imprime direto na impressora ESC/POS (192.168.x.x:9100)
+- mantém a tela do tablet sempre acesa enquanto o app estiver aberto
+- não quebra PrintBridge das outras lojas (fallback automático)
 
-| Grupo | Ficheiros | Destino proposto |
-|---|---|---|
-| Ecrãs cliente | 14 (`src/components/screens/*.tsx`) | `src/customer/screens/` |
-| Customização de produto | 12 (`src/components/customization/*.tsx`) | `src/customer/customization/` |
-| Componentes `Customer*` na raiz | 9 (`CustomerTabBar`, `CustomerBottomDock`, `CustomerPushPromptHost`, `CustomerNotificationOptInDialog`, `CustomerAreaBoundary`, `CustomerScreenErrorBoundary`, etc.) | `src/customer/components/` |
-| `features/customer/` | 3 (`ActiveOrderBar`, `useActiveOrder`, `useActiveOrderStorage`) | `src/customer/active-order/` |
-| Página de entrada | 1 (`src/pages/Index.tsx`) | `src/customer/Index.tsx` |
+Você vai instalar esse APK no tablet via cabo USB pelo seu Mac.
 
-**Total: ~39 ficheiros físicos a mover.**
+---
 
-## 2. Imports a actualizar
+## O que vou fazer no código (automático, sem você editar nada)
 
-- **33 ficheiros distintos** importam de pelo menos um dos caminhos a mover.
-- Detalhe por símbolo:
-  - `@/components/screens/*` → 2 importadores
-  - `@/components/customization/*` → 7 importadores
-  - `@/contexts/CartContext` → 17 importadores
-  - `@/contexts/OrderContext` → 24 importadores
-  - `@/features/customer/*` → poucos (≤3)
-  - `@/pages/Index` → 1 (`AppRoutes`)
+1. **Instalar dependências Capacitor**
+   - `@capacitor/core`, `@capacitor/cli`, `@capacitor/android`
+   - `@capacitor-community/keep-awake` (Wake Lock — tela sempre acesa)
+   - `capacitor-tcp-socket` já instalado ✓
 
-## 3. Contextos afectados
+2. **Ajustar `capacitor.config.ts`**
+   - `appId`: `app.lovable.d04adf9611f44dc9b79cf756a89ef084`
+   - `appName`: `kebabturco`
+   - `server.url` apontando pro app publicado (`https://kebabturco.lovable.app`) — assim você não precisa rebuildar o APK toda vez que mudar algo no painel
+   - `allowNavigation` pras faixas LAN da impressora
 
-| Contexto | Uso só-cliente? | Decisão |
-|---|---|---|
-| `CartContext` | ✅ Sim | mover para `src/customer/contexts/` |
-| `OrderContext` | ⚠ Usado também por `services/orderService`, `services/checkoutPrintHelper`, `lib/paymentMethods`, `lib/paymentPolicy`, `lib/modifiers/legacyBridge` | **NÃO mover** — só re-exportar via barrel. Mexer aqui = risco de partir checkout/Stripe/impressão. |
-| `LanguageContext` | ⚠ Usado por `panel/MenuPage`, `panel/TablesPage`, `panel/ModifierGroupsPage` (i18n partilhado) | **NÃO mover** — é infra partilhada |
-| `BrandingContext` | ⚠ Usado por `pages/Install`, componentes legais, ThemeToggle | **NÃO mover** |
-| `ThemeContext` | ⚠ Usado por `AdminThemeToggle` | **NÃO mover** |
+3. **Integrar Wake Lock no `App.tsx`**
+   - Quando rodar em Android nativo, ativa `KeepAwake.keepAwake()` na inicialização
+   - Tela do tablet nunca dorme enquanto o app está aberto
 
-→ Apenas **1 contexto** (`CartContext`) é seguro de mover fisicamente.
+4. **Listener Android já existe** (`androidPrintListener.ts`)
+   - Já escuta `print_jobs` via Realtime
+   - Já abre socket TCP e manda ESC/POS
+   - Já tem `drainPending` (puxa pedidos perdidos quando reabrir)
+   - Já marca sucesso/erro no banco
 
-## 4. Riscos por área
+5. **Botão "Testar impressão" no painel admin** já adaptado pro modo Android direto ✓
 
-| Área | Risco | Mitigação |
-|---|---|---|
-| **Carrinho** | Baixo. `CartContext` é só-cliente. | Mover + actualizar 17 imports |
-| **Checkout** | **Médio-alto.** `PaymentScreen` mover é OK, mas `paymentMethods`/`paymentPolicy`/`checkoutPrintHelper` partilham `OrderContext`. | **Não mover** `OrderContext`. |
-| **Produto/modificadores** | Baixo. `customization/` é só-cliente. | Mover + actualizar 7 imports |
-| **Pagamento (Stripe)** | Nenhum se não tocarmos em `services/*Stripe*` nem em `paymentMethods`/`paymentPolicy`. | Não mexer nestes ficheiros |
-| **Notificações push** | Baixo. Já separadas na Fase 3. `CustomerPushPromptHost` move junto. | Mover sem tocar lógica |
-| **Impressão** | **Médio.** `checkoutPrintHelper` importa `OrderContext`. Se mexermos no caminho, partimos. | Manter `OrderContext` no lugar |
+6. **Fila de impressão / reimpressão manual** já existe em `/admin/printer` ✓
 
-## 5. Pode ser só "mover ficheiros + ajustar imports"?
+---
 
-**Sim — desde que o escopo seja reduzido.** A versão "mover tudo" parte coisas (contextos partilhados). A versão segura é:
+## O que você vai fazer (passo a passo no Mac)
 
-- Mover apenas o que é **exclusivamente** consumido pelo cliente: `screens/`, `customization/`, `Customer*.tsx`, `features/customer/`, `pages/Index.tsx`, `CartContext`.
-- **Manter no lugar** `OrderContext`, `LanguageContext`, `BrandingContext`, `ThemeContext`, `services/*`, `lib/payment*`, `lib/modifiers/*`, `services/printerService`, `services/checkoutPrintHelper`.
-- Operação 100% mecânica: `git mv` + reescrita de paths de import. Zero alterações de lógica, UI, regras, comportamento.
+Tudo via terminal. Sem edição manual de arquivos.
 
-## Plano de execução (Fase 2 — escopo reduzido)
+### 1. Exportar para GitHub
+- No Lovable, clicar em **GitHub → Connect to GitHub** (canto superior direito)
+- Criar/conectar o repositório
+- No Mac, abrir o terminal e:
+```bash
+git clone <url-do-seu-repo>
+cd <pasta-do-projeto>
+npm install
+```
 
-1. **Criar estrutura**
-   ```text
-   src/customer/
-     Index.tsx
-     screens/        (14 ficheiros)
-     customization/  (12 ficheiros)
-     components/     (9 ficheiros Customer*)
-     active-order/   (3 ficheiros)
-     contexts/CartContext.tsx
-   ```
+### 2. Adicionar plataforma Android (uma vez só)
+```bash
+npx cap add android
+npx cap update android
+```
 
-2. **Mover ficheiros** (39 no total) preservando nomes.
+### 3. Build + sync
+```bash
+npm run build
+npx cap sync android
+```
 
-3. **Reescrever imports**:
-   - `@/components/screens/X` → `@/customer/screens/X`
-   - `@/components/customization/X` → `@/customer/customization/X`
-   - `@/components/Customer*` → `@/customer/components/Customer*`
-   - `@/features/customer/*` → `@/customer/active-order/*`
-   - `@/contexts/CartContext` → `@/customer/contexts/CartContext`
-   - `@/pages/Index` → `@/customer/Index` (e actualizar `AppRoutes`)
+### 4. Abrir no Android Studio
+```bash
+npx cap open android
+```
+(Precisa ter Android Studio instalado — download grátis em developer.android.com/studio)
 
-4. **NÃO tocar** em: `OrderContext`, `LanguageContext`, `BrandingContext`, `ThemeContext`, qualquer `services/*`, `lib/payment*`, `lib/modifiers/*`, `lib/push/*` (mantém barris da Fase 3), `printerService`, `stripe*`, `print-bridge`.
+### 5. Conectar o tablet no Mac via cabo USB
+- No tablet: ativar **Modo desenvolvedor** (Configurações → Sobre → tocar 7x em "Número da versão")
+- Em Opções do desenvolvedor → ativar **Depuração USB**
+- Conectar cabo USB e autorizar o Mac no popup do tablet
 
-5. **Actualizar `scripts/customer-smoke-test.mjs`** para apontar para os novos caminhos críticos (`src/customer/screens/...`).
+### 6. Instalar e rodar no tablet
+- No Android Studio: selecionar o tablet no dropdown de dispositivos (topo)
+- Clicar no botão ▶ **Run**
+- O APK instala e abre sozinho no tablet
 
-6. **Actualizar `vite.config.ts`** — ajustar o pattern do chunk `customer` para apanhar `src/customer/**`.
+### 7. Configurar no painel admin
+Pela web, em **Admin → Impressora** da loja Kebab Turco Gandia:
+- Modo: **Android direto**
+- IP da impressora: (o que está na etiqueta da impressora)
+- Porta: `9100`
+- Habilitado: ✅
+- Clicar em **Imprimir teste** — deve sair ticket na impressora
 
-7. **Validação obrigatória** (deploy bloqueia se falhar):
-   - `node scripts/customer-smoke-test.mjs` → verde
-   - `tsc --noEmit` (via build) → sem erros
-   - Build dos chunks `customer` e `internal` separados
+### 8. Deixar o tablet pronto pro restaurante
+- Tablet na tomada (carregador permanente)
+- Wi-Fi conectado na mesma rede da impressora
+- Login com usuário operador/cozinha da loja
+- App aberto na tela de pedidos
+- Wake Lock já cuida da tela ✓
 
-8. **Se qualquer passo falhar → reverter o move desse grupo** (commits separados por grupo: screens / customization / components / active-order / Index+CartContext).
+---
 
-## Regras respeitadas
+## Atualizações futuras (sem reinstalar APK)
 
-- ✅ Zero alteração de comportamento
-- ✅ Zero alteração de UI
-- ✅ Zero alteração de regras de produto
-- ✅ Zero alteração de checkout
-- ✅ Zero alteração de Stripe
-- ✅ Zero alteração de impressão
+Como o `server.url` aponta pro app publicado, sempre que você fizer mudanças no Lovable e clicar em **Publish**, o tablet recebe a nova versão automaticamente ao reabrir o app. **Só precisa rebuildar o APK se mudar algo nativo** (plugin novo, permissão, ícone).
 
-## Recomendação
+---
 
-**Avançar com a Fase 2 no escopo reduzido acima.** É uma operação mecânica (move + rename de imports) que entrega a separação física pedida sem tocar nas zonas críticas (Order/checkout/Stripe/impressão).
+## Confirmações importantes
 
-Confirma para eu executar?
+- **PrintBridge das outras lojas**: continua 100% intacto. O Android só age em lojas com `print_mode = 'android_direct'`.
+- **PWA/web**: continua igual. Wake Lock e TCP são no-op no navegador.
+- **KDS, painel, Stripe, caixa, fluxo de pedidos**: nada muda.
+
+---
+
+## Próximo passo
+
+Aprove o plano e eu implemento as mudanças de código. Depois você só roda os 6 comandos no Mac.
