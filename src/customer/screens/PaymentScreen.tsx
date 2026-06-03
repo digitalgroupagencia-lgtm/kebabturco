@@ -306,7 +306,7 @@ const PaymentScreen = () => {
     if (checkoutMethods.length === 0) { setShowError("method"); return false; }
     if (!selected) { setShowError("method"); return false; }
     if (prepaymentRequired && selected !== "card") { setShowError("method"); return false; }
-    if (selected === "card" && stripeIssue) { setShowError("method"); return false; }
+    if (selected === "card" && !stripePublishableKey) { setShowError("method"); return false; }
     setShowError(null);
     return true;
   };
@@ -568,7 +568,7 @@ const PaymentScreen = () => {
     }
 
     if (selected === "card") {
-      if (!stripeEnabled || !stripePublishableKey) {
+      if (!stripePublishableKey) {
         setShowError("method");
         return;
       }
@@ -1031,7 +1031,7 @@ const PaymentScreen = () => {
                       </button>
                     );
                   })}
-                  {selected === "card" && stripeEnabled && (
+                  {selected === "card" && stripePublishableKey && (
                     <p className="text-[10px] text-muted-foreground px-1 pt-1">
                       Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
                     </p>
