@@ -3,6 +3,8 @@ import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import ProductChoiceCard from "@/customer/customization/ProductChoiceCard";
 import ModifierGroupHeader from "@/customer/customization/ModifierGroupHeader";
+import { resolveModifierOptionImage } from "@/lib/modifiers/optionImageResolver";
+import type { MenuProduct } from "@/hooks/useMenuData";
 
 type Props = {
   group: ModifierGroup;
@@ -11,6 +13,7 @@ type Props = {
   onChange: (next: SelectionState) => void;
   tName: (n: Record<string, string>) => string;
   stepMode?: boolean;
+  menuProducts?: MenuProduct[];
 };
 
 function pickSingleOption(
