@@ -61,9 +61,13 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     reprintOrder,
     refresh,
   } = usePanelOrders(storeId);
-  const { summary: printSummary, loading: printLoading, refresh: refreshPrint, retryFailed } = usePanelPrintStatus(storeId);
+  const { summary: printSummary, loading: printLoading, refresh: refreshPrint, retryFailed, clearJobs } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
   const [viewMode, setViewMode] = useState<OpsViewMode>("all");
+  const [hideTests, setHideTests] = useState<boolean>(() => {
+    try { return localStorage.getItem("panel-hide-tests") === "1"; } catch { return false; }
+  });
+  const [cleaningTests, setCleaningTests] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [etaDialogOrder, setEtaDialogOrder] = useState<PanelOrder | null>(null);
