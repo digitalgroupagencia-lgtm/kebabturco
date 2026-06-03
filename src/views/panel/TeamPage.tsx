@@ -457,6 +457,7 @@ const TeamPage = () => {
       <div className="flex flex-wrap gap-2">
         {(Object.entries(roleLabels) as [AppRole, { label: string; color: string }][])
           .filter(([key]) => key !== "admin_master")
+          .filter(([key]) => key !== "seller" || sellerEnabled)
           .map(([key, val]) => (
             <Badge key={key} className={val.color}>{val.label}</Badge>
           ))}
