@@ -47,6 +47,11 @@ export function useEffectiveModifierConfig(
     [product, config],
   );
 
+  const finalConfig = useMemo(
+    () => adaptConfigForSandwichSpicy(product, drinkAdapted),
+    [product, drinkAdapted],
+  );
+
   return {
     config: drinkAdapted,
     loading: dbLoading,
