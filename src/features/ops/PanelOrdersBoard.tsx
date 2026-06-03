@@ -17,6 +17,7 @@ import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelAlertsPermissionDialog from "@/features/ops/PanelAlertsPermissionDialog";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { isPanelAlertsEnabled, preparePanelAlertsIfEnabled } from "@/lib/panelAlerts";
+import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } from "@/services/nativePush";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
@@ -83,10 +84,13 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
   useEffect(() => {
     if (mode !== "live") return;
     void preparePanelAlertsIfEnabled(storeId);
+    void restoreNativeStaffPushIfPossible(storeId);
+    void enableKeepAwake();
     if (!isPanelAlertsEnabled()) {
       setPermissionOpen(true);
     }
-  }, [mode]);
+    return () => { void disableKeepAwake(); };
+  }, [mode, storeId]);
 
   useEffect(() => {
     if (!storeId) return;
