@@ -54,7 +54,7 @@ type NativeBridgeResult = {
 };
 
 type AndroidBridgeWindow = Window & {
-  androidBridge?: { postMessage: (message: string) => void };
+  androidBridge?: { postMessage: (message: string) => void; onmessage?: (event: MessageEvent<string>) => void };
   Capacitor?: CapacitorRuntime & { __androidPrintFromNativePatched?: boolean };
 };
 
