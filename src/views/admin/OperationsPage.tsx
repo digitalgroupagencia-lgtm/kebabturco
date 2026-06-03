@@ -56,7 +56,7 @@ const OperationsPage = () => {
     });
   }, [STORE_ID]);
 
-  const update = <K extends keyof Ops>(k: K, v: Ops[K]) => setS((p) => p ? { ...p, [k]: v } : p);
+  const update = (k: keyof Ops, v: Ops[keyof Ops]) => setS((p) => p ? { ...p, [k]: v } : p);
 
   const save = async () => {
     if (!s || !STORE_ID) return;
@@ -176,7 +176,7 @@ const OperationsPage = () => {
               </div>
               <Switch
                 checked={Boolean(s[f.key])}
-                onCheckedChange={(v) => update(f.key, v as Ops[typeof f.key])}
+                onCheckedChange={(v) => update(f.key, v)}
                 className="shrink-0"
               />
             </div>
