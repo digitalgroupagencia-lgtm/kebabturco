@@ -933,6 +933,18 @@ const PaymentScreen = () => {
                     placeholder={t("addressCity")}
                     className={`w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
                   />
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                      Observações para entrega
+                    </label>
+                    <textarea
+                      value={deliveryNotes}
+                      onChange={(e) => setDeliveryNotes(e.target.value.slice(0, 300))}
+                      placeholder="Ex: tocar campainha, deixar na portaria, referência..."
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm font-medium bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary resize-none"
+                    />
+                  </div>
                   {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
                     <p className="text-xs text-destructive font-bold">Pedido mínimo: {deliveryQuote.minOrder.toFixed(2)}€</p>
                   )}
