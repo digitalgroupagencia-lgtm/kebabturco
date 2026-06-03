@@ -1,144 +1,161 @@
-## Diagnóstico atual (item por item)
+## Simulador de Pedidos — Admin Master
 
-### 1. Perfil que deve ficar logado no tablet
+Ferramenta profissional dentro do Admin Master para validar todo o fluxo operacional (impressão, push, som, vibração, painéis) sem criar pedidos reais.
 
-- **Operador (operator)** é o perfil correto para o tablet do restaurante. Ele acessa o **/panel/live** (PanelOrdersBoard) — tela operacional de pedidos.
-- `kitchen` é mais restrito (só vê itens prontos para cozinha).
-- `restaurant_admin` tem acesso ao painel mas também a configurações/relatórios — risco de alguém alterar preço/menu por engano.
-- `admin_master` é da plataforma, não do restaurante.
-- **Recomendação:** criar um PIN de operador e deixar o tablet logado nesse perfil, com a tela do painel ao vivo aberta.
+### Localização
 
-### 2. Painel precisa ficar aberto?
+`Admin Master → Ferramentas → Simulador de Pedidos` (nova rota `/admin/tools/order-simulator`).
 
-**Hoje, sim — parcialmente.** Como está implementado:
+### Marcação de pedidos de teste
 
-- Som de alerta + flash visual + loop até "Aceitar pedido" → **só dispara se o painel estiver aberto na aba ativa** (`panelAlerts.ts` + `usePanelOrders`).
-- Realtime via Supabase channel + polling de fallback (30s ativo / 8s backup) → **só roda enquanto o painel está montado**.
-- Push notification para staff: **existe a função `notifyStaffNewOrder()` em `src/services/pushService.ts` mas ela NÃO é chamada em lugar nenhum**. Ou seja, hoje o backend nunca notifica a equipa quando entra pedido novo.
-- Impressão automática: idem, depende do painel estar aberto.
+Adicionar coluna `is_test BOOLEAN DEFAULT false` na tabela `orders` via migração. Todo pedido criado pelo simulador grava `is_test = true` e `notes` começando com `[TESTE]`.
 
-### 3. Notificação sonora estilo iFood
+**Exclusão de métricas:** atualizar todas as funções/queries de relatório para filtrar `is_test = false`:
 
-**Parcialmente implementado:**
+- `get_sales_summary`, `get_top_products`, `get_hourly_sales`, `get_admin_dashboard_stats`, `get_top_tenants_by_revenue`, `get_tenant_monthly_usage`
+- Páginas: `Dashboard`, `ReportsPage`, `PanelFinancePage`, `FinancePage`, `CashierPage` (qualquer consulta direta a `orders` para totais)
+- Estoque: o trigger `deduct_stock_on_order_item` passa a sair cedo quando o pedido pai tem `is_test = true`
+- Ledger Stripe: pedidos teste nunca tocam `store_payment_ledger` (já não entram por não serem pagos via Stripe real)
 
-- ✅ Som imediato ao chegar pedido (`playNewOrderAlert`).
-- ✅ Loop a cada 4s enquanto o pedido estiver em "Recebido" (`registerNewPendingOrderAlert` + `ensurePendingAlertLoop`).
-- ✅ Flash visual (`PANEL_ALERT_FLASH_EVENT`).
-- ❌ Vibração: **não implementada** (não há `navigator.vibrate` no panelAlerts).
-- ❌ Tudo isso **só funciona com o painel aberto e o som desbloqueado** (precisa toque inicial em "Ativar alertas" por causa de autoplay policy).
+Pedidos teste **continuam** entrando em: lista de pedidos ao vivo, KDS, painel operador, painel entregador, impressão, push, sons — para validar o fluxo.
 
-### 4. Comportamento por cenário (estado atual)
+### UI da página
 
+Card de seleção de loja (admin master escolhe a loja onde os testes vão rodar — usa `AdminStoreContext` ou seletor próprio).
 
-| Cenário                              | Som                                                            | Vibração | Notif. visual     | Impressão | Push                                              |
-| ------------------------------------ | -------------------------------------------------------------- | -------- | ----------------- | --------- | ------------------------------------------------- |
-| **A. App aberto na tela de pedidos** | ✅ loop                                                         | ❌        | ✅ flash + toast   | ✅         | ❌ (não chamado)                                   |
-| **B. App minimizado (background)**   | ⚠️ se Web Push ativo → notificação do sistema; sem som de loop | ❌        | ⚠️ só notificação | ❌         | ❌ (porque `notifyStaffNewOrder` nunca é invocado) |
-| **C. Tela bloqueada**                | ❌ hoje nada chega                                              | ❌        | ❌                 | ❌         | ❌                                                 |
-| **D. App totalmente fechado**        | ❌                                                              | ❌        | ❌                 | ❌         | ❌                                                 |
+Cinco blocos com botão grande e descrição curta:
 
+1. **Pedido Teste — Mesa**
+  - Selector de mesa (carrega `tables` da loja)
+  - Botão "Enviar Pedido Teste – Mesa"
+2. **Pedido Teste — Balcão** (takeaway)
+  - Botão único
+3. **Pedido Teste — Delivery**
+  - Botão único; usa endereço fake (`Rua Teste 123, Cidade Teste`) e a primeira `delivery_zone` ativa da loja
+4. **Testar Notificações** (não cria pedido)
+  - Chama edge function `send-push-notification` com payload de teste + dispara som/vibração local via `panelAlerts`
+5. **Simulação Completa Automática**
+  - Cria pedido delivery teste
+  - Avança status a cada N segundos (configurável, default 5s): `pending → preparing → ready → out_for_delivery → delivered`
+  - Log visual em tempo real do progresso
 
-### 5. Push Notifications reais (FCM/APNs)
+Banner permanente no topo: "Pedidos de teste aparecem com a tag [TESTE] e não entram em métricas/faturamento."
 
-**Hoje o sistema usa Web Push (VAPID) via Service Worker (`/push-handler.js`)**, não FCM/APNs nativos. Implicações:
+### Visual diferenciado
 
-- **Android (Chrome / PWA instalado)**: Web Push funciona em background **se** o usuário ativou notificações. O APK Capacitor também recebe porque carrega no WebView, mas é frágil quando o sistema mata o processo.
-- **APK Capacitor fechado**: **não recebe** Web Push de forma confiável (Android encerra o WebView; só FCM nativo garante entrega).
-- **iPad/iPhone Safari**: Web Push só funciona se o cliente instalar como PWA (Adicionar à Tela Inicial) **e** estiver em iOS 16.4+.
-- **iPhone com app fechado**: Web Push em PWA é entregue pelo APNs do Apple Push Service, mas só se o PWA foi instalado.
+Cards de pedido (`OpsOrderCard`, KDS, painel) detectam `is_test` e adicionam:
 
-### 6. Gaps críticos identificados
+- Badge amarelo "[TESTE]" no topo
+- Borda tracejada amarela (`border-dashed border-yellow-400`)
+- Tooltip "Pedido de teste — não conta em métricas"
 
-1. `**notifyStaffNewOrder` órfã** — função existe mas nunca é invocada. Resultado: nenhum push chega à equipe.
-2. **Sem trigger no backend** — deveria haver um trigger no insert em `orders` (DB trigger ou edge function chamada pelo cliente após submit) que dispara push para todas as `push_subscriptions` com tag `__staff__` daquela loja.
-3. **Sem vibração** no `panelAlerts.ts`.
-4. **Sem push nativo (FCM)** no APK Android — necessário para confiabilidade quando app está fechado.
-5. **Sem Wake Lock** ativo no painel — tablet pode dormir e perder pedidos mesmo com painel aberto.
-6. **Tela do painel não tem keep-awake garantido** quando perfil é operador.
+### Edge function
 
----
+Nova função `simulate-test-order` (server-side) que:
 
-## Plano de implementação
+- Valida que o caller é `admin_master`
+- Recebe `{ storeId, mode: 'dine_in'|'takeaway'|'delivery', tableId? }`
+- Pega 1-2 produtos aleatórios ativos da loja
+- Insere direto em `orders` + `order_items` com `is_test = true`, `payment_status = 'paid'` (não passa por Stripe), `notes = '[TESTE] Pedido de teste do sistema.'`
+- Retorna o `order_id` criado
+- O trigger `trg_orders_staff_push` já dispara push automaticamente
 
-### Fase 1 — Push para staff funcionar em background (web/PWA) [CRÍTICO]
+Função auxiliar `advance-test-order-status` para o modo "Simulação Completa" (avança um status).
 
-1. Chamar `notifyStaffNewOrder(store_id, order_id, order_number)` automaticamente quando um pedido novo entra. Duas opções (escolher uma):
-  - **Opção A (mais simples):** chamar no cliente após o `INSERT` em `orders` (ex.: dentro de `PaymentScreen`/`ReviewScreen` após confirmar pedido).
-  - **Opção B (mais robusta):** criar **DB trigger** que chama edge function `notify-staff-new-order` via `pg_net`/HTTP, garantindo disparo mesmo se o cliente perder rede após submit.
-2. Adicionar **vibração** em `panelAlerts.ts` (`navigator.vibrate([300,100,300,100,500])` no loop).
-3. Garantir que o `push-handler.js` mostra notificação com `requireInteraction: true` para pedido de staff (não some sozinha).
+### Permissões
 
-### Fase 2 — Confiabilidade no tablet Android (APK Capacitor) [CRÍTICO]
+Toda a página e edge functions exigem `has_role(auth.uid(), 'admin_master')`. Operadores comuns nunca veem nem disparam.
 
-1. Instalar plugin `@capacitor/push-notifications` + configurar **Firebase Cloud Messaging (FCM)**:
-  - Criar projeto Firebase (precisa do usuário criar conta gratuita).
-  - Adicionar `google-services.json` no APK.
-  - Registrar device token na tabela `push_subscriptions` com `audience='staff_native'`.
-  - Edge function `send-push-notification` passa a enviar via FCM HTTP v1 quando a subscription é nativa, e via Web Push (VAPID) quando é browser.
-2. Configurar canal de notificação Android com som customizado (`alert-beep.wav`), prioridade `MAX`, vibração e bypass do "Não perturbe".
-3. Garantir `@capacitor/keep-awake` ou Wake Lock API quando o painel operador estiver ativo.
+### Arquivos
 
-### Fase 3 — iOS (iPad/iPhone) [se houver demanda]
+**Novos:**
 
-1. Web Push via PWA: instruir cliente a "Adicionar à Tela Inicial" e exigir iOS 16.4+.
-2. Para app nativo iOS: precisaria de conta Apple Developer ($99/ano) + APNs configurado — fora do escopo atual a menos que o cliente queira.
+- `supabase/migrations/<ts>_orders_is_test.sql` — adiciona coluna + atualiza RPCs
+- `supabase/functions/simulate-test-order/index.ts`
+- `supabase/functions/advance-test-order-status/index.ts`
+- `src/views/admin/OrderSimulatorPage.tsx`
+- `src/components/admin/simulator/SimulatorCard.tsx`
+- `src/components/admin/simulator/TestOrderBadge.tsx`
 
-### Fase 4 — UX operacional do tablet
+**Editados:**
 
-1. Criar perfil **"Operador de balcão"** com PIN simples no `staff_access_pins` e tela de "boot" que abre direto no `/panel/live` ao acordar.
-2. Banner persistente "Alertas ativos ✓ • Som ✓ • Vibração ✓ • Push ✓" para o operador ter certeza visual.
-3. Botão "Testar alerta agora" visível no painel (já existe parcialmente em `playTestAlert`).
-4. Auto-reativar alertas após reload (já parcialmente implementado).
+- `src/routes/AppRoutes.tsx` (+ registry) — registrar rota
+- Sidebar do Admin Master — link "Ferramentas → Simulador de Pedidos"
+- `src/features/ops/OpsOrderCard.tsx` + KDS card — render do badge `[TESTE]`
+- `src/integrations/supabase/types.ts` — regenerado após migration
 
-### Fase 5 — Testes e validação técnica
+### Notas técnicas
 
-Após Fases 1 e 2, validar cada cenário com checklist real:
-
-- ✅ App aberto → som loop + vibração + flash + push redundante
-- ✅ App minimizado → push FCM com som + vibração + notificação fixa
-- ✅ Tela bloqueada → push FCM acorda a tela (Android: priority MAX)
-- ✅ App fechado/swipeado → push FCM ainda chega (FCM mantém canal)
-- ✅ Impressão automática quando app aberto; backup: edge function `print-order` pode imprimir via job na fila quando há impressora Cloud (não LAN)
-
----
-
-## Decisões que preciso de você antes de codar
-
-**1. Trigger do push staff:** prefere **Opção A** (chamada no cliente, simples e rápida de implementar hoje) ou **Opção B** (DB trigger no backend, mais robusta mas exige criar pg_net e migration)?
-
-**2. FCM (Firebase):** posso preparar todo o código no projeto, mas você vai precisar:
-
-- Criar conta Firebase (grátis) e baixar `google-services.json`
-- Gerar chave de serviço FCM e adicionar como secret `FCM_SERVER_KEY` no Lovable Cloud
-- Rebuildar o APK com o plugin instalado
-
-   Quer seguir com FCM agora, ou primeiro só consertamos o Web Push (Fase 1) e validamos?
-
-**3. iOS:** vamos cobrir só Android no tablet do restaurante, ou também precisa que iPhone do dono receba notificação em background?
-
-Me responda essas 3 perguntas e eu já implemento na ordem certa.  
+- O simulador **não** chama Stripe; marca `payment_status = 'paid'` direto para não travar fluxo
+- A migração filtra `is_test` em todos os agregados existentes mantendo assinatura das funções
+- Para "Testar Notificações" sem pedido, chamamos `send-push-notification` direto com `audience='staff'` + `storeId`, e localmente disparamos `panelAlerts.playNewOrderAlert()` para o som/vibração imediatos  
   
-Escolho a Opção B.
-
-Quero trigger no backend para garantir que todo pedido novo gere notificação independentemente do navegador, dispositivo ou estado da tela.
-
-Não quero depender de chamada do frontend para alertar o restaurante.
-
-2. Quero implementar FCM agora.
-
-Preparem toda a estrutura Firebase necessária.
-
-Depois me informem exatamente:
-
-- quais credenciais preciso criar
-- onde baixar o google-services.json
-- quais secrets preciso adicionar
-- quais passos preciso executar para rebuildar o APK
-
-Quero o sistema funcionando com notificações Android em background, tela bloqueada e aplicativo fechado.
-
-3. Neste momento o foco principal é Android.
-
-O tablet do restaurante é prioridade absoluta.
-
-Depois que Android estiver 100% confiável, avaliamos iPhone/iPad para os proprietários do restaurante.
+só acrescentaria 4 melhorias para evitar problemas futuros:
+  ### 1. Limpeza automática dos pedidos teste
+  Adicionar:
+  > Criar botão "Limpar Todos os Pedidos de Teste" que remove automaticamente todos os pedidos com `is_test = true`.
+  >
+  > Também adicionar limpeza automática após 7 dias para evitar acúmulo de registros desnecessários no banco.
+  ---
+  ### 2. Teste específico da impressora
+  Hoje você só testa o pedido completo.
+  Adicionar:
+  > Botão "Testar Impressora".
+  >
+  > Deve imprimir imediatamente um ticket padrão de diagnóstico contendo:
+  >
+  > - Nome da loja
+  > - Data e hora
+  > - Modelo da impressora
+  > - Endereço IP da impressora
+  > - Texto "IMPRESSÃO DE TESTE"
+  >
+  > Sem criar pedido.
+  Isso ajuda quando o restaurante fala:
+  > "Não sei se o problema é a impressora ou o pedido."
+  ---
+  ### 3. Teste específico do entregador
+  Adicionar:
+  > Botão "Simular Entregador".
+  >
+  > Cria pedido delivery teste e envia imediatamente para o painel do entregador.
+  >
+  > Deve gerar:
+  >
+  > - Código de confirmação
+  > - Notificação do entregador
+  > - Fluxo de aceite
+  > - Fluxo de entrega
+  Porque delivery costuma ser o ponto mais difícil de validar.
+  ---
+  ### 4. Painel de diagnóstico
+  Essa é a melhoria mais importante.
+  Adicionar uma seção:
+  # Diagnóstico do Sistema
+  Mostrar em tempo real:
+  ✅ Impressora conectada
+  ✅ Push configurado
+  ✅ Firebase conectado
+  ✅ Operador online
+  ✅ Cozinha online
+  ✅ Entregador online
+  ✅ Som habilitado
+  ✅ Vibração habilitada
+  ✅ Permissão de notificação concedida
+  ✅ Tablet em Keep Awake
+  Última impressão: 21:44
+  Último push enviado: 21:45
+  Último pedido recebido: 21:46
+  ---
+  Com isso você transforma o simulador em uma ferramenta de suporte.
+  Quando um restaurante disser:
+  > "Não está chegando pedido"
+  Você entra no Admin Master e em 10 segundos sabe exatamente se o problema é:
+  - impressora
+  - internet
+  - push
+  - operador offline
+  - entregador offline
+  - Firebase
+  - permissão do tablet
+  Sem precisar ficar investigando manualmente.
