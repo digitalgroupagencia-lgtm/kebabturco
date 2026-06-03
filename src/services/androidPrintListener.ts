@@ -172,7 +172,7 @@ export async function startAndroidPrintListener() {
   }
   started = true;
   log("iniciando (plataforma nativa)");
-  void logTcpSocketDiagnostics();
+  logTcpSocketDiagnostics();
 
   const stores = await fetchAndroidStores();
   if (stores.length === 0) {
