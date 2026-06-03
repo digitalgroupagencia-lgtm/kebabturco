@@ -121,7 +121,7 @@ function patchAndroidBridgeResponses(win: AndroidBridgeWindow) {
   };
 
   const originalOnMessage = win.androidBridge?.onmessage?.bind(win.androidBridge) as ((event: MessageEvent<string>) => void) | undefined;
-  if (win.androidBridge && originalOnMessage) {
+  if (win.androidBridge) {
     win.androidBridge.onmessage = (event: MessageEvent<string>) => {
       try {
         const result = JSON.parse(event.data) as NativeBridgeResult;
@@ -132,7 +132,7 @@ function patchAndroidBridgeResponses(win: AndroidBridgeWindow) {
       } catch {
         // mantém o fluxo padrão do Capacitor para mensagens que não são nossas
       }
-      originalOnMessage(event);
+      originalOnMessage?.(event);
     };
   }
 
