@@ -74,6 +74,7 @@ const App = () => {
   useEffect(() => {
     // No-op em web/PWA. Só ativa quando rodando dentro do APK Android (Capacitor).
     void startAndroidPrintListener();
+    void enableTabletKeepAwake();
   }, []);
 
   return (
