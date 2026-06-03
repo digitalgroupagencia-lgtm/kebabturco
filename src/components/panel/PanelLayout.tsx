@@ -29,10 +29,9 @@ const PanelLayout = ({ page: Page }: Props) => {
 
   useEffect(() => {
     if (!loading && !user) {
-      const next = encodeURIComponent(location.pathname + location.search);
-      navigate(`${nav.auth()}?next=${next}`, { replace: true });
+      navigate(nav.staff(), { replace: true });
     }
-  }, [user, loading, navigate, location.pathname, location.search]);
+  }, [user, loading, navigate]);
 
 
   if (loading) {
