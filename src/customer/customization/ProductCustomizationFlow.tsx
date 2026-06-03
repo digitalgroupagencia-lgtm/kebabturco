@@ -510,7 +510,7 @@ export default function ProductCustomizationFlow({
               productCode={productCode}
               quantity={quantity}
               onQuantityChange={setQuantity}
-              showQuantity={!editingItem}
+              showQuantity={true}
             />
             {summaryLines.length > 0 && (
               <section className="space-y-2 rounded-[22px] border border-border/50 bg-card p-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.2)]">
