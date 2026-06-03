@@ -10,7 +10,7 @@
  *  3. Abre TCP → envia ESC/POS (ticket_data base64) → fecha
  *  4. Marca job como 'printed' (sucesso) ou 'failed' + error_message
  */
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -33,13 +33,36 @@ type TcpSocketPluginInstance = {
 type CapacitorRuntime = typeof Capacitor & {
   Plugins?: Record<string, unknown>;
   PluginHeaders?: Array<{ name: string; methods?: Array<{ name: string; rtype?: string }> }>;
+  toNative?: (
+    pluginName: string,
+    methodName: string,
+    options?: unknown,
+    storedCallback?: { resolve?: (value: unknown) => void; reject?: (reason?: unknown) => void },
+  ) => string | null;
+  fromNative?: (result: NativeBridgeResult) => void;
   nativePromise?: (pluginName: string, methodName: string, options?: unknown) => Promise<unknown>;
+};
+
+type NativeBridgeResult = {
+  callbackId?: string;
+  pluginId?: string;
+  methodName?: string;
+  success?: boolean;
+  save?: boolean;
+  data?: unknown;
+  error?: { message?: string } | string | unknown;
+};
+
+type AndroidBridgeWindow = Window & {
+  androidBridge?: { postMessage: (message: string) => void; onmessage?: (event: MessageEvent<string>) => void };
+  Capacitor?: CapacitorRuntime & { __androidPrintFromNativePatched?: boolean };
 };
 
 const TAG = "[AndroidPrint]";
 let started = false;
 const channels: RealtimeChannel[] = [];
-let registeredTcpSocketFallback: TcpSocketPluginInstance | null = null;
+const directBridgeCallbacks = new Map<string, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: number }>();
+let directBridgeCounter = Math.floor(Math.random() * 100000);
 
 function log(...args: unknown[]) {
   console.log(TAG, ...args);
@@ -47,7 +70,7 @@ function log(...args: unknown[]) {
 
 function getWindowCapacitor(): CapacitorRuntime | undefined {
   if (typeof window === "undefined") return undefined;
-  return (window as unknown as { Capacitor?: CapacitorRuntime }).Capacitor;
+  return (window as AndroidBridgeWindow).Capacitor;
 }
 
 function getPluginKeys(runtime?: CapacitorRuntime) {
@@ -71,19 +94,84 @@ function isTcpSocketPlugin(value: unknown): value is TcpSocketPluginInstance {
   );
 }
 
+function formatNativeError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === "string") return new Error(error);
+  if (error && typeof error === "object" && "message" in error) {
+    return new Error(String((error as { message?: unknown }).message));
+  }
+  return new Error(String(error ?? "Erro nativo desconhecido"));
+}
+
+function patchAndroidBridgeResponses(win: AndroidBridgeWindow) {
+  const cap = win.Capacitor;
+  if (!cap || cap.__androidPrintFromNativePatched) return;
+
+  const originalFromNative = cap.fromNative?.bind(cap);
+  cap.fromNative = (result: NativeBridgeResult) => {
+    if (result?.callbackId?.startsWith("android-print-") && directBridgeCallbacks.has(result.callbackId)) {
+      const callback = directBridgeCallbacks.get(result.callbackId)!;
+      window.clearTimeout(callback.timeout);
+      directBridgeCallbacks.delete(result.callbackId);
+      if (result.success) callback.resolve(result.data);
+      else callback.reject(formatNativeError(result.error));
+      return;
+    }
+    originalFromNative?.(result);
+  };
+
+  const originalOnMessage = win.androidBridge?.onmessage?.bind(win.androidBridge) as ((event: MessageEvent<string>) => void) | undefined;
+  if (win.androidBridge) {
+    win.androidBridge.onmessage = (event: MessageEvent<string>) => {
+      try {
+        const result = JSON.parse(event.data) as NativeBridgeResult;
+        if (result?.callbackId?.startsWith("android-print-") && directBridgeCallbacks.has(result.callbackId)) {
+          cap.fromNative?.(result);
+          return;
+        }
+      } catch {
+        // mantém o fluxo padrão do Capacitor para mensagens que não são nossas
+      }
+      originalOnMessage?.(event);
+    };
+  }
+
+  cap.__androidPrintFromNativePatched = true;
+}
+
+function callAndroidPluginDirect(methodName: "connect" | "send" | "disconnect", options: unknown): Promise<unknown> {
+  const win = window as AndroidBridgeWindow;
+  if (!win.androidBridge?.postMessage || !win.Capacitor) {
+    return Promise.reject(new Error("Bridge Android nativo indisponível para TcpSocket."));
+  }
+
+  patchAndroidBridgeResponses(win);
+  return new Promise((resolve, reject) => {
+    const callbackId = `android-print-${Date.now()}-${++directBridgeCounter}`;
+    const timeout = window.setTimeout(() => {
+      directBridgeCallbacks.delete(callbackId);
+      reject(new Error(`Timeout chamando TcpSocket.${methodName}`));
+    }, 15000);
+
+    directBridgeCallbacks.set(callbackId, { resolve, reject, timeout });
+    win.androidBridge!.postMessage(JSON.stringify({ callbackId, pluginId: "TcpSocket", methodName, options: options ?? {} }));
+  });
+}
+
 function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
   const importedRuntime = Capacitor as CapacitorRuntime;
   const windowRuntime = getWindowCapacitor();
-  const candidates = ["TcpSocket", "TcpSockets", "TCPSocket", "Socket"];
+  const win = typeof window !== "undefined" ? (window as AndroidBridgeWindow) : undefined;
 
-  const nativePromise = windowRuntime?.nativePromise ?? importedRuntime.nativePromise;
-  if (Capacitor.getPlatform() === "android" && typeof nativePromise === "function") {
+  if (Capacitor.getPlatform() === "android" && win?.androidBridge?.postMessage) {
     return {
-      connect: (options) => nativePromise("TcpSocket", "connect", options) as Promise<{ client: number }>,
-      send: (options) => nativePromise("TcpSocket", "send", options) as Promise<void>,
-      disconnect: (options) => nativePromise("TcpSocket", "disconnect", options) as Promise<void | { client?: number }>,
+      connect: (options) => callAndroidPluginDirect("connect", options) as Promise<{ client: number }>,
+      send: (options) => callAndroidPluginDirect("send", options) as Promise<void>,
+      disconnect: (options) => callAndroidPluginDirect("disconnect", options) as Promise<void | { client?: number }>,
     };
   }
+
+  const candidates = ["TcpSocket", "TcpSockets", "TCPSocket", "Socket"];
 
   for (const name of candidates) {
     const fromWindow = windowRuntime?.Plugins?.[name];
@@ -93,11 +181,7 @@ function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
     if (isTcpSocketPlugin(fromImported)) return fromImported;
   }
 
-  if (!registeredTcpSocketFallback && Capacitor.isPluginAvailable("TcpSocket")) {
-    registeredTcpSocketFallback = registerPlugin<TcpSocketPluginInstance>("TcpSocket");
-  }
-
-  return registeredTcpSocketFallback;
+  return null;
 }
 
 function logTcpSocketDiagnostics() {
