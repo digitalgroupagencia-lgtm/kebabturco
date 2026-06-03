@@ -218,25 +218,53 @@ function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
 function logTcpSocketDiagnostics() {
   const platform = Capacitor.getPlatform();
   const available = Capacitor.isPluginAvailable("TcpSocket");
+  const androidPrinterAvailable = Capacitor.isPluginAvailable("AndroidEscPosPrinter");
   const importedRuntime = Capacitor as CapacitorRuntime;
   const windowRuntime = getWindowCapacitor();
   const plugin = resolveTcpSocketPlugin();
+  const androidPrinter = resolveAndroidEscPosPrinterPlugin();
 
+  console.log("[AndroidPrint] BUILD_VERSION", BUILD_VERSION);
+  console.log("[AndroidPrint] Location", typeof window !== "undefined" ? window.location.href : "n/a");
   console.log("[AndroidPrint] Platform", platform);
   console.log("[AndroidPrint] TcpSocket available", available);
+  console.log("[AndroidPrint] AndroidEscPosPrinter available", androidPrinterAvailable);
   console.log("[AndroidPrint] Native platform", Capacitor.isNativePlatform());
   console.log("[AndroidPrint] Plugins", getPluginKeys(importedRuntime));
   console.log("[AndroidPrint] window.Capacitor.Plugins", getPluginKeys(windowRuntime));
   console.log("[AndroidPrint] PluginHeaders", getPluginHeaderNames(windowRuntime ?? importedRuntime));
   console.log("[AndroidPrint] TcpSocket plugin", importedRuntime.Plugins?.TcpSocket);
   console.log("[AndroidPrint] window TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket);
+  console.log("[AndroidPrint] AndroidEscPosPrinter plugin", windowRuntime?.Plugins?.AndroidEscPosPrinter ?? importedRuntime.Plugins?.AndroidEscPosPrinter);
   console.log("[AndroidPrint] nativePromise", typeof (windowRuntime?.nativePromise ?? importedRuntime.nativePromise));
   console.log("[AndroidPrint] Resolved TcpSocket plugin", plugin);
+  console.log("[AndroidPrint] Resolved AndroidEscPosPrinter plugin", androidPrinter);
   console.log("Platform", platform);
   console.log("Plugins", getPluginKeys(windowRuntime ?? importedRuntime));
   console.log("TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket ?? importedRuntime.Plugins?.TcpSocket);
 
   return { platform, available, plugin };
+}
+
+async function clearOldPwaRuntimeCaches() {
+  if (runtimeCacheCleanupStarted || typeof window === "undefined") return;
+  runtimeCacheCleanupStarted = true;
+  try {
+    const registrations = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistrations() : [];
+    await Promise.all(
+      registrations.map((registration) => {
+        const scriptUrl = registration.active?.scriptURL || registration.waiting?.scriptURL || registration.installing?.scriptURL || "";
+        return scriptUrl.includes("push-handler") ? Promise.resolve(false) : registration.unregister();
+      }),
+    );
+    if ("caches" in window) {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    }
+    console.log("[AndroidPrint] PWA runtime cache cleanup done");
+  } catch (error) {
+    console.warn("[AndroidPrint] PWA runtime cache cleanup failed", error);
+  }
 }
 
 function getTcpSocketOrThrow(): TcpSocketPluginInstance {
