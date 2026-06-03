@@ -26,6 +26,24 @@ export default function OrderSimulatorPage() {
   const [simLog, setSimLog] = useState<string[]>([]);
   const [diag, setDiag] = useState<any>(null);
 
+  // Guided test wizard state
+  type StepStatus = "pending" | "running" | "ok" | "fail";
+  type Step = { id: string; label: string; status: StepStatus; detail?: string };
+  const initialSteps: Step[] = [
+    { id: "diag", label: "1. Verificar diagnóstico inicial (subscritores + fila)", status: "pending" },
+    { id: "clean", label: "2. Limpar fila (pending + failed) antes do teste", status: "pending" },
+    { id: "notif", label: "3. Disparar som + vibração + push de teste", status: "pending" },
+    { id: "order", label: "4. Criar pedido teste (balcão) e gerar print_job", status: "pending" },
+    { id: "verify", label: "5. Verificar se print_job foi criado e processado", status: "pending" },
+    { id: "cleanup", label: "6. Remover pedidos de teste criados", status: "pending" },
+  ];
+  const [steps, setSteps] = useState<Step[]>(initialSteps);
+  const [wizardBusy, setWizardBusy] = useState(false);
+
+  const setStep = (id: string, status: StepStatus, detail?: string) =>
+    setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, status, detail } : s)));
+
+
   useEffect(() => {
     if (!isAdmin) return;
     supabase.from("stores").select("id, name").eq("is_active", true).order("name").then(({ data }) => {
