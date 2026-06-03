@@ -371,7 +371,13 @@ export default function ProductCustomizationFlow({
       };
 
       if (editingItem) {
-        updateItem(editingItem.id, { ...payload, quantity: editingItem.quantity, totalPrice: unitPrice * editingItem.quantity });
+        // O item editado vira sempre 1 unidade, com a nova configuração.
+        updateItem(editingItem.id, { ...payload, quantity: 1, totalPrice: unitPrice });
+        // Unidades adicionais entram como itens separados, editáveis individualmente.
+        const extraUnits = Math.max(0, orderQty - 1);
+        for (let i = 0; i < extraUnits; i++) {
+          addItem({ ...payload, quantity: 1, totalPrice: unitPrice });
+        }
         clearDraft();
         onBack();
         return;
