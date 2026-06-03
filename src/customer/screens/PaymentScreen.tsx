@@ -944,7 +944,8 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {!isTableOrder && (
+            {/* Cupón oculto — código mantido, será reativado posteriormente */}
+            {false && !isTableOrder && (
               <div className="mt-3 bg-card rounded-2xl border border-border p-3">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Cupón</p>
                 <div className="flex gap-2">
@@ -961,7 +962,8 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {stripeIssue && prepaymentRequired && (
+            {/* Aviso "Pagamentos online não activos" oculto — não bloqueia checkout (fallback automático para dinheiro/balcão) */}
+            {false && stripeIssue && prepaymentRequired && (
               <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">{stripeIssue}</p>
