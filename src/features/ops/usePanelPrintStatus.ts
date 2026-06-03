@@ -129,7 +129,7 @@ export function usePanelPrintStatus(storeId: string | undefined) {
         .from("print_jobs")
         .delete()
         .eq("store_id", storeId)
-        .in("status", statuses)
+        .in("status", statuses as ("pending" | "failed" | "printed" | "printing")[])
         .select("id");
       if (error) throw error;
       await refresh();
