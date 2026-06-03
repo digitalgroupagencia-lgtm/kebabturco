@@ -5,6 +5,7 @@ import { parseProductCode } from "@/lib/parseProductCode";
 import { splitProductName } from "@/lib/splitProductName";
 import { resolveMenuProductDisplayImage } from "@/lib/modifiers/productDisplayImage";
 import { Plus } from "lucide-react";
+import SmartImage from "@/components/SmartImage";
 
 type Props = {
   product: MenuProduct;
