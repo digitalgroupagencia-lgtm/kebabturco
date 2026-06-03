@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
-const supabase = _supabaseRaw as unknown as any;
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -29,6 +28,12 @@ const PAY_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
   { key: "pay_counter_enabled", label: "Pagar en mostrador", desc: "Sin cobro online" },
 ];
 
+const RULE_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
+  { key: "pay_cash_dine_in", label: "Dinheiro na mesa (QR)", desc: "Permite pagar em dinheiro num pedido de mesa validado." },
+  { key: "require_prepayment_delivery", label: "Entrega: pagar antes de enviar", desc: "Cliente só conclui após pagamento online confirmado." },
+  { key: "print_pending_dine_in", label: "Imprimir mesa QR mesmo pendente", desc: "Envia para cozinha após pedido de mesa validado, mesmo sem pagamento." },
+];
+
 const OperationsPage = () => {
   const { storeId: STORE_ID, loading: loadingStore } = useAdminStoreId();
   const [s, setS] = useState<Ops | null>(null);
@@ -51,7 +56,7 @@ const OperationsPage = () => {
     });
   }, [STORE_ID]);
 
-  const update = (k: keyof Ops, v: any) => setS((p) => p ? { ...p, [k]: v } as Ops : p);
+  const update = <K extends keyof Ops>(k: K, v: Ops[K]) => setS((p) => p ? { ...p, [k]: v } : p);
 
   const save = async () => {
     if (!s || !STORE_ID) return;
@@ -60,12 +65,12 @@ const OperationsPage = () => {
       payment_mode: s.payment_mode,
       pay_card_enabled: s.pay_card_enabled,
       pay_cash_enabled: s.pay_cash_enabled ?? true,
-      pay_cash_dine_in: (s as any).pay_cash_dine_in ?? true,
+      pay_cash_dine_in: s.pay_cash_dine_in ?? true,
       pay_cash_takeaway: true,
       pay_cash_delivery: true,
       require_prepayment_takeaway: false,
-      require_prepayment_delivery: (s as any).require_prepayment_delivery ?? false,
-      print_pending_dine_in: (s as any).print_pending_dine_in ?? true,
+      require_prepayment_delivery: s.require_prepayment_delivery ?? false,
+      print_pending_dine_in: s.print_pending_dine_in ?? true,
       pay_pix_enabled: s.pay_pix_enabled,
       pay_apple_enabled: s.pay_apple_enabled,
       pay_google_enabled: s.pay_google_enabled,
@@ -73,8 +78,8 @@ const OperationsPage = () => {
       pay_link_enabled: s.pay_link_enabled,
       msg_paid: s.msg_paid,
       msg_counter: s.msg_counter,
-      avg_prep_minutes: (s as any).avg_prep_minutes ?? 12,
-      require_phone_takeaway: (s as any).require_phone_takeaway ?? true,
+      avg_prep_minutes: s.avg_prep_minutes ?? 12,
+      require_phone_takeaway: s.require_phone_takeaway ?? true,
     }).eq("store_id", STORE_ID);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Configuración guardada");
