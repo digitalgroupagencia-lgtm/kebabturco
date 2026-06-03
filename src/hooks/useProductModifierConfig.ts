@@ -157,15 +157,17 @@ export function useProductModifierConfig(productId: string | undefined) {
           })
           .filter(Boolean) as ModifierGroup[];
 
+        const finalConfig: ProductModifierConfig = {
+          productId,
+          productType: (product.product_type as ProductType) || "simple",
+          comboUnitCount: Math.max(0, product.combo_unit_count || 0),
+          unitLabel: asName(product.unit_label),
+          groups: sortModifierGroups(groups),
+          hasStructuredModifiers: groups.length > 0,
+        };
+        setCachedModifierConfig(productId, finalConfig);
         if (active) {
-          setConfig({
-            productId,
-            productType: (product.product_type as ProductType) || "simple",
-            comboUnitCount: Math.max(0, product.combo_unit_count || 0),
-            unitLabel: asName(product.unit_label),
-            groups: sortModifierGroups(groups),
-            hasStructuredModifiers: groups.length > 0,
-          });
+          setConfig(finalConfig);
         }
       } catch (err) {
         console.warn("[useProductModifierConfig]", err);
