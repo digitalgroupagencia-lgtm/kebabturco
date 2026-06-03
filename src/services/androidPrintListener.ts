@@ -39,6 +39,10 @@ async function logTcpSocketDiagnostics() {
   const available = Capacitor.isPluginAvailable("TcpSocket");
   // Logs pedidos para validar no tablet via Logcat/console remota.
   // eslint-disable-next-line no-console
+  console.log(platform);
+  // eslint-disable-next-line no-console
+  console.log(available);
+  // eslint-disable-next-line no-console
   console.log(TAG, "Capacitor.getPlatform()", platform);
   // eslint-disable-next-line no-console
   console.log(TAG, "Capacitor.isPluginAvailable('TcpSocket')", available);
