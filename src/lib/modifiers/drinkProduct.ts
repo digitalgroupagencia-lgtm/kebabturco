@@ -164,7 +164,13 @@ export function adaptConfigForDrinkProduct(
     hasStructuredModifiers: false,
   };
 
-  let groups = (base.groups ?? []).filter((g) => g.groupKind !== "removal");
+  const water = isWaterProduct(product);
+  // Para água: remove qualquer grupo de gelo já existente.
+  let groups = (base.groups ?? []).filter((g) => {
+    if (g.groupKind === "removal") return false;
+    if (water && /hielo|gelo|\bice\b|glaçon/i.test(groupLabel(g))) return false;
+    return true;
+  });
 
   groups = groups.map((g) => {
     const meatLabel = MEAT_LABEL_RE.test(groupLabel(g));
@@ -184,7 +190,7 @@ export function adaptConfigForDrinkProduct(
     return g;
   });
 
-  groups = [...groups, ...synthDrinkPreferenceGroups(product.id, groups)];
+  groups = [...groups, ...synthDrinkPreferenceGroups(product.id, groups, water)];
 
   return {
     ...base,
