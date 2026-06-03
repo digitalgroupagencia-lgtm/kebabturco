@@ -376,6 +376,21 @@ export const STAFF_I18N = {
   "tables.toast.regen_error": { es: "Error al regenerar QR", pt: "Erro ao regenerar QR", en: "Failed to regenerate QR" },
   "tables.toast.no_active": { es: "Ninguna mesa activa", pt: "Nenhuma mesa activa", en: "No active tables" },
   "tables.toast.batch_ready": { es: "{n} QR codes listos para imprimir o guardar como PDF", pt: "{n} QR codes prontos para imprimir ou guardar em PDF", en: "{n} QR codes ready to print or save as PDF" },
+
+  // --- Marketing broadcast card ---
+  "mkt.push.default_title": { es: "¿Qué tal un kebab hoy?", pt: "Que tal um kebab hoje?", en: "How about a kebab today?" },
+  "mkt.push.default_body": { es: "Pide desde la app y recíbelo en casa 🥙", pt: "Peça pela app e receba em casa 🥙", en: "Order in the app and get it at home 🥙" },
+  "mkt.push.title": { es: "Promoción push a los clientes", pt: "Promoção push aos clientes", en: "Push promo to customers" },
+  "mkt.push.hint": { es: "Enviado a quien tiene la app y activó notificaciones — incluso sin pedido previo.", pt: "Envia a quem tem a app e activou notificações — mesmo sem pedido feito.", en: "Sent to anyone with the app and notifications on — even without prior orders." },
+  "mkt.push.disabled": { es: "Función desactivada por el administrador o el plan.", pt: "Função desactivada pelo administrador ou plano.", en: "Disabled by admin or plan." },
+  "mkt.push.field.title": { es: "Título", pt: "Título", en: "Title" },
+  "mkt.push.field.body": { es: "Mensaje", pt: "Mensagem", en: "Message" },
+  "mkt.push.btn.send": { es: "Enviar ahora", pt: "Enviar agora", en: "Send now" },
+  "mkt.push.btn.sending": { es: "Enviando…", pt: "A enviar…", en: "Sending…" },
+  "mkt.push.err.feature_off": { es: "Las notificaciones push no están activas para este restaurante. Contacte al administrador.", pt: "Notificações push não estão activas para este restaurante. Contacte o administrador.", en: "Push notifications are not active for this restaurant. Contact the administrator." },
+  "mkt.push.err.empty": { es: "Complete título y mensaje", pt: "Preencha título e mensagem", en: "Fill in title and message" },
+  "mkt.push.toast.sent": { es: "¡Notificación enviada a los clientes con la app instalada!", pt: "Notificação enviada aos clientes com a app instalada!", en: "Notification sent to customers with the app installed!" },
+  "mkt.push.toast.error": { es: "No se pudo enviar. Inténtelo de nuevo.", pt: "Não foi possível enviar. Tente novamente.", en: "Couldn't send. Try again." },
 } as const satisfies Record<string, Record<StaffUiLang, string>>;
 
 
