@@ -2,12 +2,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import { buildEscPosTicket, buildTestTicket, sampleOrder, TicketOrder } from "@/services/escPosTicketBuilder";
 
+export type PrintMode = "bridge" | "android_direct";
+
 export interface PrinterConfig {
   printer_name: string;
   ip_address: string;
   port: number;
   printer_copies: number;
   enabled: boolean;
+  print_mode: PrintMode;
 }
 
 export const defaultConfig: PrinterConfig = {
@@ -16,6 +19,7 @@ export const defaultConfig: PrinterConfig = {
   port: 9100,
   printer_copies: 1,
   enabled: false,
+  print_mode: "bridge",
 };
 
 const BRIDGE_ONLINE_SECONDS = 90;
@@ -23,16 +27,19 @@ const BRIDGE_ONLINE_SECONDS = 90;
 export async function fetchPrinterConfig(storeId: string): Promise<PrinterConfig> {
   const { data } = await supabase
     .from("printer_settings")
-    .select("printer_name, ip_address, port, printer_copies, enabled")
+    .select("printer_name, ip_address, port, printer_copies, enabled, print_mode")
     .eq("store_id", storeId)
     .maybeSingle();
   if (!data) return defaultConfig;
+  const raw = data as typeof data & { print_mode?: string | null };
+  const mode: PrintMode = raw.print_mode === "android_direct" ? "android_direct" : "bridge";
   return {
     printer_name: data.printer_name || defaultConfig.printer_name,
     ip_address: data.ip_address || defaultConfig.ip_address,
     port: data.port || defaultConfig.port,
     printer_copies: data.printer_copies || 1,
     enabled: !!data.enabled,
+    print_mode: mode,
   };
 }
 
@@ -47,6 +54,7 @@ export async function savePrinterConfig(storeId: string, cfg: Partial<PrinterCon
       port: cfg.port ?? defaultConfig.port,
       printer_copies: cfg.printer_copies ?? 1,
       enabled: cfg.enabled ?? false,
+      print_mode: cfg.print_mode ?? defaultConfig.print_mode,
     });
     if (error) throw error;
   } else {
@@ -54,6 +62,7 @@ export async function savePrinterConfig(storeId: string, cfg: Partial<PrinterCon
     if (error) throw error;
   }
 }
+
 
 export async function createPrintJob(
   storeId: string,
