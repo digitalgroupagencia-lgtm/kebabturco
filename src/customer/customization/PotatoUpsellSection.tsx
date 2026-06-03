@@ -28,7 +28,7 @@ function pickSingleOption(
   return next;
 }
 
-export default function PotatoUpsellSection({ group, state, unitIndex, onChange, tName, stepMode }: Props) {
+export default function PotatoUpsellSection({ group, state, unitIndex, onChange, tName, stepMode, menuProducts = [] }: Props) {
   const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const key = groupKey(group.id, unitIndex);
