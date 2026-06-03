@@ -346,7 +346,7 @@ export default function ProductCustomizationFlow({
       const cfg = buildConfiguration();
       const flat = flattenConfiguration(cfg);
       const { extras, removedIngredients } = selectionsToLegacyFields(flat);
-      const orderQty = editingItem ? editingItem.quantity : quantity;
+      const orderQty = quantity;
 
       const payload = {
         productId: product.id,
