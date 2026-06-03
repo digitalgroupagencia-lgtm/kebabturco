@@ -51,7 +51,7 @@ const PanelLayout = ({ page: Page }: Props) => {
   return (
     <SelectedTenantProvider>
       <PanelStoreProvider>
-        <SidebarProvider>
+        <SidebarProvider defaultOpen={false}>
           <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
             <PanelSidebar />
             <div className="flex-1 flex flex-col min-w-0">

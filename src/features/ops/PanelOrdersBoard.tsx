@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -61,9 +63,13 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     reprintOrder,
     refresh,
   } = usePanelOrders(storeId);
-  const { summary: printSummary, loading: printLoading, refresh: refreshPrint, retryFailed } = usePanelPrintStatus(storeId);
+  const { summary: printSummary, loading: printLoading, refresh: refreshPrint, retryFailed, clearJobs } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
   const [viewMode, setViewMode] = useState<OpsViewMode>("all");
+  const [hideTests, setHideTests] = useState<boolean>(() => {
+    try { return localStorage.getItem("panel-hide-tests") === "1"; } catch { return false; }
+  });
+  const [cleaningTests, setCleaningTests] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [etaDialogOrder, setEtaDialogOrder] = useState<PanelOrder | null>(null);
@@ -174,11 +180,44 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     [assignDriver],
   );
 
-  const filteredOrders = useMemo(() => filterOrdersByMode(orders, viewMode), [orders, viewMode]);
+  const testOrdersCount = useMemo(
+    () => orders.filter((o) => (o as unknown as { is_test?: boolean }).is_test === true).length,
+    [orders],
+  );
+  const visibleOrders = useMemo(
+    () => (hideTests ? orders.filter((o) => !(o as unknown as { is_test?: boolean }).is_test) : orders),
+    [orders, hideTests],
+  );
+  const filteredOrders = useMemo(() => filterOrdersByMode(visibleOrders, viewMode), [visibleOrders, viewMode]);
   const visibleColumns = BASE_COLUMNS;
   const getOrdersByStatus = (status: OrderStatus) =>
     filteredOrders.filter((o) => panelColumnStatus(o.status) === status);
   const detailOrder = detailOrderId ? orders.find((o) => o.id === detailOrderId) ?? null : null;
+
+  const toggleHideTests = () => {
+    setHideTests((v) => {
+      const next = !v;
+      try { localStorage.setItem("panel-hide-tests", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const handleCleanupTests = async () => {
+    if (!storeId) return;
+    if (!confirm(`Apagar ${testOrdersCount} pedido(s) de teste desta loja? Esta ação não pode ser desfeita.`)) return;
+    setCleaningTests(true);
+    try {
+      const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
+      if (error) throw error;
+      const removed = (data as { deleted?: number } | null)?.deleted ?? 0;
+      toast.success(`${removed} pedido(s) de teste removido(s)`);
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao limpar pedidos teste");
+    } finally {
+      setCleaningTests(false);
+    }
+  };
 
   const cardProps = (order: PanelOrder) => ({
     order,
@@ -256,10 +295,38 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
                 summary={printSummary}
                 loading={printLoading}
                 onRetryFailed={retryFailed}
+                onClearJobs={clearJobs}
                 onRefresh={refreshPrint}
               />
             )}
-            <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={orders} />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <OpsModeFilter selected={viewMode} onSelect={setViewMode} orders={visibleOrders} />
+              </div>
+              {testOrdersCount > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleHideTests}
+                    className={`shrink-0 px-3 py-2 rounded-xl border-2 font-bold text-xs ${
+                      hideTests
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-card border-border text-foreground"
+                    }`}
+                  >
+                    {hideTests ? "👁 Mostrar testes" : "🚫 Ocultar testes"} ({testOrdersCount})
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cleaningTests}
+                    onClick={() => void handleCleanupTests()}
+                    className="shrink-0 px-3 py-2 rounded-xl border-2 border-destructive text-destructive font-bold text-xs disabled:opacity-50"
+                  >
+                    {cleaningTests ? "A limpar..." : "🗑 Limpar testes"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         }
       >
