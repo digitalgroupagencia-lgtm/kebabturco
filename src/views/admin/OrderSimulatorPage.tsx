@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2, Printer, RefreshCw, Activity } from "lucide-react";
+import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2, Printer, RefreshCw, Activity, CheckCircle2, Circle, ListChecks, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -25,6 +25,24 @@ export default function OrderSimulatorPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [simLog, setSimLog] = useState<string[]>([]);
   const [diag, setDiag] = useState<any>(null);
+
+  // Guided test wizard state
+  type StepStatus = "pending" | "running" | "ok" | "fail";
+  type Step = { id: string; label: string; status: StepStatus; detail?: string };
+  const initialSteps: Step[] = [
+    { id: "diag", label: "1. Verificar diagnóstico inicial (subscritores + fila)", status: "pending" },
+    { id: "clean", label: "2. Limpar fila (pending + failed) antes do teste", status: "pending" },
+    { id: "notif", label: "3. Disparar som + vibração + push de teste", status: "pending" },
+    { id: "order", label: "4. Criar pedido teste (balcão) e gerar print_job", status: "pending" },
+    { id: "verify", label: "5. Verificar se print_job foi criado e processado", status: "pending" },
+    { id: "cleanup", label: "6. Remover pedidos de teste criados", status: "pending" },
+  ];
+  const [steps, setSteps] = useState<Step[]>(initialSteps);
+  const [wizardBusy, setWizardBusy] = useState(false);
+
+  const setStep = (id: string, status: StepStatus, detail?: string) =>
+    setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, status, detail } : s)));
+
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -152,6 +170,78 @@ export default function OrderSimulatorPage() {
 
   useEffect(() => { if (isAdmin && storeId) refreshDiag(); /* eslint-disable-next-line */ }, [isAdmin, storeId]);
 
+  const runGuidedTest = async () => {
+    if (!storeId) { toast.error("Seleciona uma loja primeiro"); return; }
+    setSteps(initialSteps.map((s) => ({ ...s, status: "pending", detail: undefined })));
+    setWizardBusy(true);
+    try {
+      // Step 1: Diagnostic
+      setStep("diag", "running");
+      const { data: d1, error: e1 } = await supabase.rpc("admin_print_jobs_diagnostic", { _store_id: storeId });
+      if (e1) { setStep("diag", "fail", e1.message); return; }
+      setDiag(d1);
+      const subs = (d1 as any)?.push_subscribers || {};
+      const subsTxt = `web:${subs.web ?? 0} android:${subs.android ?? 0} ios:${subs.ios ?? 0}`;
+      const androidWarn = (subs.android ?? 0) === 0 ? " ⚠️ Sem Android FCM" : "";
+      setStep("diag", "ok", `${subsTxt}${androidWarn}`);
+
+      // Step 2: Clear queue
+      setStep("clean", "running");
+      const { data: d2, error: e2 } = await supabase.rpc("admin_clear_print_jobs", { _store_id: storeId, _statuses: ["pending", "failed"] });
+      if (e2) { setStep("clean", "fail", e2.message); return; }
+      setStep("clean", "ok", `${(d2 as any)?.deleted ?? 0} jobs removidos`);
+
+      // Step 3: Notifications
+      setStep("notif", "running");
+      try {
+        await playTestAlert();
+        if (navigator.vibrate) navigator.vibrate([300, 120, 300, 120, 500]);
+        await supabase.functions.invoke("send-push-notification", {
+          body: { storeId, title: "[TESTE GUIADO] Notificação", body: "Som + vibração + push", tag: `guided-${Date.now()}`, url: "/panel/live" },
+        });
+        setStep("notif", "ok", "Som, vibração e push disparados");
+      } catch (err: any) {
+        setStep("notif", "fail", err.message || "Erro");
+      }
+
+      // Step 4: Create test order
+      setStep("order", "running");
+      const { data: orderData, error: orderErr } = await supabase.functions.invoke("simulate-test-order", {
+        body: { storeId, mode: "takeaway" },
+      });
+      if (orderErr || !orderData) { setStep("order", "fail", orderErr?.message || "Falha"); return; }
+      setStep("order", "ok", `Pedido #${orderData.orderNumber} criado`);
+
+      // Step 5: Verify print job
+      setStep("verify", "running");
+      await new Promise((r) => setTimeout(r, 3000));
+      const { data: jobs, error: jobErr } = await supabase
+        .from("print_jobs")
+        .select("id, status, error_message, created_at")
+        .eq("order_id", orderData.orderId)
+        .order("created_at", { ascending: false });
+      if (jobErr) { setStep("verify", "fail", jobErr.message); return; }
+      if (!jobs || jobs.length === 0) {
+        setStep("verify", "fail", "Nenhum print_job criado (verifica printer_category_map e printers ativos)");
+      } else {
+        const j = jobs[0];
+        const statusLabel = j.status === "printed" ? "✅ impresso" : j.status === "failed" ? `❌ falhou: ${j.error_message || "?"}` : `⏳ ${j.status}`;
+        setStep("verify", j.status === "printed" ? "ok" : j.status === "failed" ? "fail" : "ok", `${jobs.length} job(s) — último: ${statusLabel}`);
+      }
+
+      // Step 6: Cleanup
+      setStep("cleanup", "running");
+      const { data: d6, error: e6 } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
+      if (e6) { setStep("cleanup", "fail", e6.message); return; }
+      setStep("cleanup", "ok", `${(d6 as any)?.deleted ?? 0} pedidos teste removidos`);
+
+      await refreshDiag();
+      toast.success("Teste guiado concluído");
+    } finally {
+      setWizardBusy(false);
+    }
+  };
+
   if (roleLoading) return <div className="p-8 flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> A carregar…</div>;
   if (!isAdmin) return <div className="p-8 text-muted-foreground">Acesso restrito a admin_master.</div>;
 
@@ -179,7 +269,39 @@ export default function OrderSimulatorPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><ListChecks className="h-4 w-4" /> Teste Guiado — Validação Completa</CardTitle>
+          <CardDescription>
+            Executa em sequência: diagnóstico → limpar fila → som/vibração/push → pedido teste → verificar impressão → cleanup.
+            Mantém o painel operador (/panel/live) aberto noutro separador para ver o pedido chegar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button onClick={runGuidedTest} disabled={wizardBusy || !!busy} className="w-full">
+            {wizardBusy ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> A executar teste guiado…</> : "▶ Iniciar Teste Guiado"}
+          </Button>
+          <div className="space-y-2">
+            {steps.map((s) => (
+              <div key={s.id} className="flex items-start gap-2 text-sm bg-muted/40 rounded-md p-2">
+                <div className="mt-0.5">
+                  {s.status === "ok" && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                  {s.status === "fail" && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                  {s.status === "running" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                  {s.status === "pending" && <Circle className="h-4 w-4 text-muted-foreground" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={s.status === "fail" ? "text-destructive font-medium" : ""}>{s.label}</div>
+                  {s.detail && <div className="text-xs text-muted-foreground font-mono mt-0.5 break-all">{s.detail}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid md:grid-cols-2 gap-4">
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2"><Coffee className="h-4 w-4" /> Pedido Teste — Mesa</CardTitle>
