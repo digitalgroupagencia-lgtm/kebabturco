@@ -10,7 +10,7 @@
  *  3. Abre TCP → envia ESC/POS (ticket_data base64) → fecha
  *  4. Marca job como 'printed' (sucesso) ou 'failed' + error_message
  */
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -33,13 +33,36 @@ type TcpSocketPluginInstance = {
 type CapacitorRuntime = typeof Capacitor & {
   Plugins?: Record<string, unknown>;
   PluginHeaders?: Array<{ name: string; methods?: Array<{ name: string; rtype?: string }> }>;
+  toNative?: (
+    pluginName: string,
+    methodName: string,
+    options?: unknown,
+    storedCallback?: { resolve?: (value: unknown) => void; reject?: (reason?: unknown) => void },
+  ) => string | null;
+  fromNative?: (result: NativeBridgeResult) => void;
   nativePromise?: (pluginName: string, methodName: string, options?: unknown) => Promise<unknown>;
+};
+
+type NativeBridgeResult = {
+  callbackId?: string;
+  pluginId?: string;
+  methodName?: string;
+  success?: boolean;
+  save?: boolean;
+  data?: unknown;
+  error?: { message?: string } | string | unknown;
+};
+
+type AndroidBridgeWindow = Window & {
+  androidBridge?: { postMessage: (message: string) => void };
+  Capacitor?: CapacitorRuntime & { __androidPrintFromNativePatched?: boolean };
 };
 
 const TAG = "[AndroidPrint]";
 let started = false;
 const channels: RealtimeChannel[] = [];
-let registeredTcpSocketFallback: TcpSocketPluginInstance | null = null;
+const directBridgeCallbacks = new Map<string, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: number }>();
+let directBridgeCounter = Math.floor(Math.random() * 100000);
 
 function log(...args: unknown[]) {
   console.log(TAG, ...args);
@@ -47,7 +70,7 @@ function log(...args: unknown[]) {
 
 function getWindowCapacitor(): CapacitorRuntime | undefined {
   if (typeof window === "undefined") return undefined;
-  return (window as unknown as { Capacitor?: CapacitorRuntime }).Capacitor;
+  return (window as AndroidBridgeWindow).Capacitor;
 }
 
 function getPluginKeys(runtime?: CapacitorRuntime) {
