@@ -406,7 +406,8 @@ async function playAlertSoundOnce(): Promise<boolean> {
   }
 
   if (typeof navigator !== "undefined" && navigator.vibrate) {
-    navigator.vibrate(soundOk ? [80] : [120]);
+    // padrão tipo iFood: vibra forte e repete enquanto o pedido não for aceite
+    navigator.vibrate([300, 120, 300, 120, 500]);
   }
 
   deployDebugLog({

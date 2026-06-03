@@ -1733,33 +1733,39 @@ export type Database = {
       }
       push_subscriptions: {
         Row: {
-          auth: string
+          auth: string | null
           created_at: string
           customer_phone: string | null
           endpoint: string
+          fcm_token: string | null
           id: string
           order_id: string | null
-          p256dh: string
+          p256dh: string | null
+          platform: string
           store_id: string | null
         }
         Insert: {
-          auth: string
+          auth?: string | null
           created_at?: string
           customer_phone?: string | null
           endpoint: string
+          fcm_token?: string | null
           id?: string
           order_id?: string | null
-          p256dh: string
+          p256dh?: string | null
+          platform?: string
           store_id?: string | null
         }
         Update: {
-          auth?: string
+          auth?: string | null
           created_at?: string
           customer_phone?: string | null
           endpoint?: string
+          fcm_token?: string | null
           id?: string
           order_id?: string | null
-          p256dh?: string
+          p256dh?: string | null
+          platform?: string
           store_id?: string | null
         }
         Relationships: [
