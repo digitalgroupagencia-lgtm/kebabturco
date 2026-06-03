@@ -160,6 +160,33 @@ export default function ChoiceGroupSection({
     }
 
     if (isExtra) {
+      // Patatas-extra (e produtos com código numérico tipo "21. Patatas Fritas") → cards com imagem do cardápio
+      const isPotatoExtraGroup =
+        /patatas|batatas|fries|frites/i.test(tName(group.name)) ||
+        group.options.every((o) => /^\s*\d+\.\s/.test(tName(o.name)));
+
+      if (isPotatoExtraGroup) {
+        const cols = group.options.length >= 3 ? "grid-cols-3" : "grid-cols-2";
+        return (
+          <div className={`grid gap-2.5 ${cols}`}>
+            {group.options.map((opt) => {
+              const sel = (selected.get(opt.id) || 0) > 0;
+              return (
+                <ProductChoiceCard
+                  key={opt.id}
+                  title={tName(opt.name)}
+                  priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                  imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
+                  selected={sel}
+                  compact={group.options.length >= 3}
+                  onClick={() => onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex))}
+                />
+              );
+            })}
+          </div>
+        );
+      }
+
       return (
         <div className="space-y-2">
           {group.options.map((opt) => {
@@ -167,13 +194,15 @@ export default function ChoiceGroupSection({
             const max = opt.maxQty || 5;
             const sel = qty > 0;
             const useStepper = max > 1;
+            const priceLabel =
+              opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null;
 
             if (useStepper) {
               return (
                 <ModifierCheckboxRow
                   key={opt.id}
                   title={tName(opt.name)}
-                  priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                  priceLabel={priceLabel}
                   selected={sel}
                   quantity={qty}
                   maxQty={max}
@@ -195,7 +224,7 @@ export default function ChoiceGroupSection({
               <ModifierCheckboxRow
                 key={opt.id}
                 title={tName(opt.name)}
-                priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                priceLabel={priceLabel}
                 selected={sel}
                 onClick={() => onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex))}
               />
@@ -290,6 +319,29 @@ export default function ChoiceGroupSection({
             const sel = (selected.get(opt.id) || 0) > 0;
             return (
               <ModifierCheckboxRow
+                key={opt.id}
+                title={tName(opt.name)}
+                priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                selected={sel}
+                onClick={() => toggleSingle(opt.id, sel)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Grupo de carne (Pollo / Ternera / etc) — só texto, sem imagens
+    const isMeatChoice =
+      /elige la carne|escolhe a carne|choose meat|choisir viande|carne|meat/i.test(tName(group.name)) ||
+      group.id.includes("choice-main");
+    if (isMeatChoice && isSingle) {
+      return (
+        <div className="space-y-2">
+          {group.options.map((opt) => {
+            const sel = (selected.get(opt.id) || 0) > 0;
+            return (
+              <ModifierRadioRow
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
