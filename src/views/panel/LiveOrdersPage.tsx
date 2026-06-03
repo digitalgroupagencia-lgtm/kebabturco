@@ -21,11 +21,8 @@ const LiveOrdersPage = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <PanelPageHeader
-        title={t("page.live.title")}
-        description="Mantenha esta página aberta no monitor da cozinha ou balcão. Só pedidos em tempo real — sem resumos nem avisos administrativos."
-      />
+    <div className="space-y-2">
+      <h1 className="text-sm font-bold text-foreground px-1">{t("page.live.title")}</h1>
       <PanelOrdersBoard storeId={storeId} mode="live" />
     </div>
   );
