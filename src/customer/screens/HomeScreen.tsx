@@ -12,6 +12,7 @@ import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
+import SmartImage from "@/components/SmartImage";
 
 
 const HomeScreen = () => {
@@ -200,11 +201,12 @@ const HomeScreen = () => {
                   }`}
                 >
                   <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[10px] bg-secondary/40">
-                    <img
+                    <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
+                      targetWidth={160}
+                      priority
                       className="h-full w-full object-cover object-center"
-                      loading="lazy"
                     />
                   </div>
                   <span
@@ -244,9 +246,11 @@ const HomeScreen = () => {
           </div>
 
           <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
-            {filteredProducts.map((product) => {
+            {filteredProducts.map((product, index) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
+              // Primeiros 6 produtos (acima da dobra em grid 2 cols) ganham priority.
+              const isPriority = index < 6;
               return (
               <button
                 key={product.id}
@@ -267,14 +271,16 @@ const HomeScreen = () => {
                 {/* Imagem dentro da moldura do card — alinhada ao grid */}
                 <div className="aspect-[5/4] p-2 pb-1">
                   <div className="relative h-full w-full overflow-hidden rounded-[14px] bg-secondary/30 ring-1 ring-border/30">
-                    <img
+                    <SmartImage
                       src={product.image}
                       alt={cleanName}
+                      targetWidth={360}
+                      priority={isPriority}
                       className="h-full w-full object-cover object-center transition-transform group-hover:scale-[1.02]"
-                      loading="lazy"
                     />
                   </div>
                 </div>
+
 
                 {/* Bloco inferior compacto: nome, preço e botão integrado */}
                 <div className="px-2.5 pt-1 pb-2.5 flex flex-col gap-1.5">

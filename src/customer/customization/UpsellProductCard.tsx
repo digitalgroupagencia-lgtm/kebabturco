@@ -5,6 +5,7 @@ import { parseProductCode } from "@/lib/parseProductCode";
 import { splitProductName } from "@/lib/splitProductName";
 import { resolveMenuProductDisplayImage } from "@/lib/modifiers/productDisplayImage";
 import { Plus } from "lucide-react";
+import SmartImage from "@/components/SmartImage";
 
 type Props = {
   product: MenuProduct;
@@ -31,12 +32,11 @@ export default function UpsellProductCard({ product, menuProducts = [], onClick,
     >
       <div className="aspect-[5/4] p-2 pb-1">
         <div className="relative h-full w-full overflow-hidden rounded-[14px] bg-secondary/30 ring-1 ring-border/30">
-          <img
+          <SmartImage
             src={imageSrc}
             alt={cleanName}
+            targetWidth={200}
             className="h-full w-full object-cover object-center"
-            loading="lazy"
-            draggable={false}
             onError={() => setBroken(true)}
           />
         </div>
