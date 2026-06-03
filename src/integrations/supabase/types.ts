@@ -2887,6 +2887,7 @@ export type Database = {
       enqueue_print_job: {
         Args: {
           _copies_override?: number
+          _force_reprint?: boolean
           _order_id?: string
           _store_id: string
           _ticket_data: string
@@ -3196,6 +3197,7 @@ export type Database = {
         }
         Returns: Json
       }
+      retry_failed_print_jobs: { Args: { _store_id: string }; Returns: number }
       set_tenant_feature_override: {
         Args: {
           _enabled: boolean
