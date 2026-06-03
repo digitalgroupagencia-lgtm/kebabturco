@@ -21,6 +21,7 @@ import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialo
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember, verifyStaffMemberLogin } from "@/services/createStaffMember";
 import { updateStaffMember } from "@/services/updateStaffMember";
+import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import {
   loadTeamOnboardingCache,
   mergeOnboardingInput,
@@ -70,6 +71,7 @@ const TeamPage = () => {
   const { roleData } = useUserRole(user?.id);
   const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
+  const { enabled: sellerEnabled } = useSellerModuleEnabled(tenantId);
   const { primaryLang } = useStoreLanguages(storeId);
 
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -457,6 +459,7 @@ const TeamPage = () => {
       <div className="flex flex-wrap gap-2">
         {(Object.entries(roleLabels) as [AppRole, { label: string; color: string }][])
           .filter(([key]) => key !== "admin_master")
+          .filter(([key]) => key !== "seller" || sellerEnabled)
           .map(([key, val]) => (
             <Badge key={key} className={val.color}>{val.label}</Badge>
           ))}
