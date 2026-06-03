@@ -55,7 +55,7 @@ const SellerLayout = ({ page: Page }: Props) => {
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-black text-primary text-sm">Kebab Turco · Vendedor</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sair">
+        <Button variant="ghost" size="icon" onClick={() => void signOut("/staff")} aria-label="Sair">
           <LogOut className="w-4 h-4" />
         </Button>
       </header>
