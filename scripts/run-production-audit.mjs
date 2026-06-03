@@ -112,7 +112,13 @@ const EDGES = [
 console.log("=== Auditoria produção ===");
 console.log(`URL: ${SUPABASE_URL}`);
 console.log(`Loja: ${storeId ?? "(não especificada)"}`);
+console.log(
+  "Nota: as sondas são anónimas. RPCs que devolvem 401/403 ou 'permission denied'\n" +
+  "são consideradas ACTIVAS (existem e exigem autenticação). Só 'function not found'\n" +
+  "(PGRST202) marca como NÃO ACTIVA.",
+);
 console.log("");
+
 
 const findings = { ok: [], critical: [], warning: [] };
 
