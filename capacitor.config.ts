@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   server: {
     // Aponta para o app publicado — atualizações no Lovable chegam ao tablet
     // automaticamente ao reabrir o app, sem precisar rebuildar o APK.
-    url: "https://kebabturco.lovable.app",
+    url: "https://kebabturco.net",
     cleartext: true,
     androidScheme: "https",
     // Permite acesso à LAN (impressora ESC/POS) e domínios do app
