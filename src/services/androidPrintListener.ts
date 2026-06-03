@@ -72,7 +72,10 @@ async function sendEscPos(job: PrintJob): Promise<void> {
 }
 
 async function markJob(jobId: string, status: "printing" | "printed" | "failed", errorMessage?: string) {
-  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+  const patch: { status: typeof status; updated_at: string; error_message?: string } = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
   if (errorMessage !== undefined) patch.error_message = errorMessage;
   const { error } = await supabase.from("print_jobs").update(patch).eq("id", jobId);
   if (error) log("falha update job", jobId, error.message);
