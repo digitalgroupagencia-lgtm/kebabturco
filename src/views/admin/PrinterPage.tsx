@@ -145,9 +145,10 @@ const PrinterPage = () => {
       : await printSampleOrder(storeId, companyName);
     setTesting(null);
     if (result.success) {
-      toast.success(type === "basic"
-        ? "Teste enviado — aguarde impressão no PC da loja"
-        : "Ticket exemplo enviado — aguarde impressão");
+      const target = cfg.print_mode === "android_direct"
+        ? "tablet Android desta loja"
+        : "PC da loja";
+      toast.success(`Teste enviado — aguarde impressão no ${target}`);
     } else {
       toast.error("Erro: " + (result.error || "Falha ao criar job"));
     }
