@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2, Printer, RefreshCw, Activity } from "lucide-react";
+import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2, Printer, RefreshCw, Activity, CheckCircle2, Circle, ListChecks, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
