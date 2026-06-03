@@ -178,11 +178,44 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     [assignDriver],
   );
 
-  const filteredOrders = useMemo(() => filterOrdersByMode(orders, viewMode), [orders, viewMode]);
+  const testOrdersCount = useMemo(
+    () => orders.filter((o) => (o as unknown as { is_test?: boolean }).is_test === true).length,
+    [orders],
+  );
+  const visibleOrders = useMemo(
+    () => (hideTests ? orders.filter((o) => !(o as unknown as { is_test?: boolean }).is_test) : orders),
+    [orders, hideTests],
+  );
+  const filteredOrders = useMemo(() => filterOrdersByMode(visibleOrders, viewMode), [visibleOrders, viewMode]);
   const visibleColumns = BASE_COLUMNS;
   const getOrdersByStatus = (status: OrderStatus) =>
     filteredOrders.filter((o) => panelColumnStatus(o.status) === status);
   const detailOrder = detailOrderId ? orders.find((o) => o.id === detailOrderId) ?? null : null;
+
+  const toggleHideTests = () => {
+    setHideTests((v) => {
+      const next = !v;
+      try { localStorage.setItem("panel-hide-tests", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const handleCleanupTests = async () => {
+    if (!storeId) return;
+    if (!confirm(`Apagar ${testOrdersCount} pedido(s) de teste desta loja? Esta ação não pode ser desfeita.`)) return;
+    setCleaningTests(true);
+    try {
+      const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
+      if (error) throw error;
+      const removed = (data as { deleted?: number } | null)?.deleted ?? 0;
+      toast.success(`${removed} pedido(s) de teste removido(s)`);
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao limpar pedidos teste");
+    } finally {
+      setCleaningTests(false);
+    }
+  };
 
   const cardProps = (order: PanelOrder) => ({
     order,
