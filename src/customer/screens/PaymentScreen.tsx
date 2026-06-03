@@ -145,6 +145,10 @@ const PaymentScreen = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  // Checkout em 2 etapas: dados → pagamento. Mesas saltam directamente para pagamento.
+  const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">(
+    orderType === "here" ? "payment" : "details",
+  );
   const { subscribe: subscribePush } = usePushNotifications();
   const channel = orderType === "delivery" ? "delivery" : "store";
   const openStatus = useStoreOpenStatus(channel);
