@@ -42,6 +42,18 @@ function isRpcMissing(msg) {
   return m.includes("pgrst202") || m.includes("could not find the function");
 }
 
+function isAuthRequired(status, msg) {
+  if (status === 401 || status === 403) return true;
+  const m = (msg ?? "").toLowerCase();
+  return (
+    m.includes("permission denied") ||
+    m.includes("not authorized") ||
+    m.includes("jwt") ||
+    m.includes("rls") ||
+    m.includes("row-level security")
+  );
+}
+
 async function probeRpc(name, args) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: "POST",
@@ -55,9 +67,15 @@ async function probeRpc(name, args) {
   if (res.ok) return { status: "present" };
   const body = await res.json().catch(() => ({}));
   const msg = body.message || body.error || res.statusText;
+  // Sondas anónimas: permission denied / 401 / 403 significam que a função
+  // EXISTE mas exige autenticação. Não confundir com função inexistente.
+  if (isAuthRequired(res.status, msg)) {
+    return { status: "present", detail: "requer autenticação (anon sem permissão)" };
+  }
   if (isRpcMissing(msg)) return { status: "missing", detail: msg };
   return { status: "present", detail: msg };
 }
+
 
 async function probeEdge(name) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
