@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.notify_staff_new_order() FROM PUBLIC, anon, authenticated;
