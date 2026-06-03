@@ -21,6 +21,14 @@ export function isDrinkProduct(product: MenuProduct | undefined): boolean {
   return DRINK_NAME_RE.test(text);
 }
 
+/** Detecta especificamente água (mineral/sem gás), onde gelo não faz sentido. */
+export function isWaterProduct(product: MenuProduct | undefined): boolean {
+  if (!product) return false;
+  const text = `${product.name?.es || ""} ${product.name?.pt || ""} ${product.name?.en || ""} ${product.name?.fr || ""}`.toLowerCase();
+  // "agua", "água", "water", "eau" — evita "aguardiente" etc.
+  return /\b(agua|[áa]gua|water|eau)\b/.test(text);
+}
+
 /** Prefer active drink products from the menu when synthesizing combo drink choices. */
 export function resolveDrinkExtrasFromMenu(product: MenuProduct, menuProducts: MenuProduct[]): Extra[] {
   const rule = resolveDrinkSizeRuleForProduct(product);
@@ -58,7 +66,7 @@ function groupLabel(group: ModifierGroup): string {
   return `${group.name.es} ${group.name.pt} ${group.name.en}`.toLowerCase();
 }
 
-function synthDrinkPreferenceGroups(productId: string, existing: ModifierGroup[]): ModifierGroup[] {
+function synthDrinkPreferenceGroups(productId: string, existing: ModifierGroup[], skipIce = false): ModifierGroup[] {
   const hasTemp = existing.some((g) => /temperatura|temperature|fr[ií]a|gelada/i.test(groupLabel(g)));
   const hasIce = existing.some((g) => /hielo|gelo|ice/i.test(groupLabel(g)));
   const out: ModifierGroup[] = [];
@@ -100,7 +108,7 @@ function synthDrinkPreferenceGroups(productId: string, existing: ModifierGroup[]
     });
   }
 
-  if (!hasIce) {
+  if (!hasIce && !skipIce) {
     out.push({
       id: `synth-${productId}-drink-ice`,
       storeId: "",
@@ -156,7 +164,13 @@ export function adaptConfigForDrinkProduct(
     hasStructuredModifiers: false,
   };
 
-  let groups = (base.groups ?? []).filter((g) => g.groupKind !== "removal");
+  const water = isWaterProduct(product);
+  // Para água: remove qualquer grupo de gelo já existente.
+  let groups = (base.groups ?? []).filter((g) => {
+    if (g.groupKind === "removal") return false;
+    if (water && /hielo|gelo|\bice\b|glaçon/i.test(groupLabel(g))) return false;
+    return true;
+  });
 
   groups = groups.map((g) => {
     const meatLabel = MEAT_LABEL_RE.test(groupLabel(g));
@@ -176,7 +190,7 @@ export function adaptConfigForDrinkProduct(
     return g;
   });
 
-  groups = [...groups, ...synthDrinkPreferenceGroups(product.id, groups)];
+  groups = [...groups, ...synthDrinkPreferenceGroups(product.id, groups, water)];
 
   return {
     ...base,
