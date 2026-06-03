@@ -53,9 +53,9 @@ export function useEffectiveModifierConfig(
   );
 
   return {
-    config: drinkAdapted,
+    config: finalConfig,
     loading: dbLoading,
-    hasStructuredModifiers: Boolean(drinkAdapted?.hasStructuredModifiers),
+    hasStructuredModifiers: Boolean(finalConfig?.hasStructuredModifiers),
     isDrink: isDrinkProduct(product),
   };
 }
