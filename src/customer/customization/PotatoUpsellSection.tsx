@@ -3,6 +3,8 @@ import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import ProductChoiceCard from "@/customer/customization/ProductChoiceCard";
 import ModifierGroupHeader from "@/customer/customization/ModifierGroupHeader";
+import { resolveModifierOptionImage } from "@/lib/modifiers/optionImageResolver";
+import type { MenuProduct } from "@/hooks/useMenuData";
 
 type Props = {
   group: ModifierGroup;
@@ -11,6 +13,7 @@ type Props = {
   onChange: (next: SelectionState) => void;
   tName: (n: Record<string, string>) => string;
   stepMode?: boolean;
+  menuProducts?: MenuProduct[];
 };
 
 function pickSingleOption(
@@ -25,7 +28,7 @@ function pickSingleOption(
   return next;
 }
 
-export default function PotatoUpsellSection({ group, state, unitIndex, onChange, tName, stepMode }: Props) {
+export default function PotatoUpsellSection({ group, state, unitIndex, onChange, tName, stepMode, menuProducts = [] }: Props) {
   const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
   const key = groupKey(group.id, unitIndex);
@@ -66,7 +69,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
               key={opt.id}
               title={tName(opt.name)}
               subtitle={t("included")}
-              imageUrl={opt.imageUrl}
+              imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
               selected={sel}
               onClick={() => pick(opt.id)}
               layout="horizontal"
@@ -88,7 +91,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
                     title={tName(opt.name)}
                     priceLabel={`+${opt.priceDelta.toFixed(2)}€`}
                     subtitle={t("potatoUpgradeHint")}
-                    imageUrl={opt.imageUrl}
+                    imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
                     selected={sel}
                     onClick={() => pick(opt.id)}
                     layout="vertical"

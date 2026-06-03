@@ -16,6 +16,8 @@ import {
   shouldUseImageCarousel,
   shouldUseRadioList,
 } from "@/lib/modifiers/groupRenderStyle";
+import { resolveModifierOptionImage } from "@/lib/modifiers/optionImageResolver";
+import type { MenuProduct } from "@/hooks/useMenuData";
 
 type Props = {
   group: ModifierGroup;
@@ -26,6 +28,7 @@ type Props = {
   tDesc?: (n: Record<string, string>) => string;
   hideHeader?: boolean;
   stepMode?: boolean;
+  menuProducts?: MenuProduct[];
 };
 
 const INCLUDED = "border-emerald-500/45 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100";
@@ -71,6 +74,7 @@ export default function ChoiceGroupSection({
   tDesc,
   hideHeader,
   stepMode,
+  menuProducts = [],
 }: Props) {
   const { t } = useLanguage();
   const count = getGroupSelectionCount(state, group.id, unitIndex);
@@ -91,6 +95,7 @@ export default function ChoiceGroupSection({
         onChange={onChange}
         tName={tName}
         stepMode={stepMode}
+        menuProducts={menuProducts}
       />
     );
   }
@@ -229,7 +234,7 @@ export default function ChoiceGroupSection({
                 <ProductChoiceCard
                   title={tName(opt.name)}
                   priceLabel={opt.priceDelta > 0 ? `${opt.priceDelta.toFixed(2)}€` : null}
-                  imageUrl={opt.imageUrl}
+                  imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
                   selected={sel}
                   compact
                   onClick={() => toggleSingle(opt.id, sel)}
@@ -307,7 +312,7 @@ export default function ChoiceGroupSection({
               key={opt.id}
               title={tName(opt.name)}
               priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
-              imageUrl={opt.imageUrl}
+              imageUrl={resolveModifierOptionImage(opt, menuProducts, tName)}
               selected={sel}
               compact={compact}
               onClick={() => toggleSingle(opt.id, sel)}
