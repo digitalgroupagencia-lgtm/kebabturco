@@ -29,6 +29,7 @@ import {
   Package,
   BarChart3,
   ShoppingBag,
+  Play,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,6 +62,7 @@ const overviewItems = [
   { title: "Estado do sistema", url: nav.admin("diagnostics"), icon: Activity },
   { title: "Centro de testes", url: nav.admin("diagnostics-hub"), icon: Wrench },
   { title: "Teste push", url: nav.admin("push-test"), icon: Bell },
+  { title: "Simulador de pedidos", url: nav.admin("order-simulator"), icon: Play },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
 ];

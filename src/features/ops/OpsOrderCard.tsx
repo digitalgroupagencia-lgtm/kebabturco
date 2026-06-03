@@ -95,11 +95,12 @@ const OpsOrderCard = memo(function OpsOrderCard({
     }
   };
 
+  const isTest = Boolean((order as unknown as { is_test?: boolean }).is_test);
   return (
     <article
       className={`rounded-md border bg-card overflow-hidden ${borderClass} ${
         needsAttention ? "ring-2 ring-red-500/50 animate-pulse" : ""
-      }`}
+      } ${isTest ? "border-dashed border-yellow-500 bg-yellow-500/5" : ""}`}
     >
       <button
         type="button"
@@ -107,6 +108,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
         className="w-full text-left px-2 py-1.5 hover:bg-muted/40 transition-colors touch-action-manipulation"
       >
         <div className="flex items-center gap-1.5 min-w-0 text-xs">
+          {isTest && (
+            <Badge className="h-4 px-1 text-[9px] font-black bg-yellow-500 text-black shrink-0" title="Pedido de teste — não conta em métricas">
+              TESTE
+            </Badge>
+          )}
           <span className="font-black text-sm tabular-nums shrink-0">#{order.order_number}</span>
           <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold shrink-0">
             {getModalityShortLabel(order)}
@@ -116,6 +122,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
           <span className="font-black text-primary text-xs tabular-nums shrink-0">€{Number(order.total).toFixed(2)}</span>
           <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
         </div>
+
 
         <div className="mt-0.5 flex flex-wrap items-center gap-1">
           <Badge className={`h-4 px-1 ${paymentBadgeClass[payment.tone]}`}>{payment.label}</Badge>

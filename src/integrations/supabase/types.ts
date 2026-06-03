@@ -840,6 +840,7 @@ export type Database = {
           discount_amount: number
           estimated_ready_at: string | null
           id: string
+          is_test: boolean
           kitchen_printed_at: string | null
           net_to_store_cents: number | null
           notes: string | null
@@ -887,6 +888,7 @@ export type Database = {
           discount_amount?: number
           estimated_ready_at?: string | null
           id?: string
+          is_test?: boolean
           kitchen_printed_at?: string | null
           net_to_store_cents?: number | null
           notes?: string | null
@@ -934,6 +936,7 @@ export type Database = {
           discount_amount?: number
           estimated_ready_at?: string | null
           id?: string
+          is_test?: boolean
           kitchen_printed_at?: string | null
           net_to_store_cents?: number | null
           notes?: string | null
@@ -2807,11 +2810,19 @@ export type Database = {
         }
         Returns: string
       }
+      advance_test_order_status: {
+        Args: { _new_status: string; _order_id: string }
+        Returns: Json
+      }
       assign_delivery_driver: {
         Args: { _driver_user_id: string; _order_id: string }
         Returns: Json
       }
       claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
+      cleanup_test_orders: {
+        Args: { _older_than?: string; _store_id?: string }
+        Returns: Json
+      }
       close_table_customer: {
         Args: { _customer_id: string; _payment_method: string }
         Returns: Json
