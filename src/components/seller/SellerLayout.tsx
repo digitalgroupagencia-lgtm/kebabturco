@@ -42,7 +42,7 @@ const SellerLayout = ({ page: Page }: Props) => {
           O acesso ao app de vendedor foi desactivado pela plataforma para este restaurante.
           Contacte o administrador.
         </p>
-        <Button variant="outline" onClick={signOut}>
+        <Button variant="outline" onClick={() => void signOut("/staff")}>
           <LogOut className="w-4 h-4 mr-2" /> Sair
         </Button>
       </div>
