@@ -16,6 +16,8 @@ import {
   shouldUseImageCarousel,
   shouldUseRadioList,
 } from "@/lib/modifiers/groupRenderStyle";
+import { resolveModifierOptionImage } from "@/lib/modifiers/optionImageResolver";
+import type { MenuProduct } from "@/hooks/useMenuData";
 
 type Props = {
   group: ModifierGroup;
@@ -26,6 +28,7 @@ type Props = {
   tDesc?: (n: Record<string, string>) => string;
   hideHeader?: boolean;
   stepMode?: boolean;
+  menuProducts?: MenuProduct[];
 };
 
 const INCLUDED = "border-emerald-500/45 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100";
