@@ -42,7 +42,6 @@ const channels: RealtimeChannel[] = [];
 let registeredTcpSocketFallback: TcpSocketPluginInstance | null = null;
 
 function log(...args: unknown[]) {
-  // eslint-disable-next-line no-console
   console.log(TAG, ...args);
 }
 
@@ -152,17 +151,13 @@ async function sendEscPos(job: PrintJob): Promise<void> {
   const tcpSocket = getTcpSocketOrThrow();
   const host = job.printer_ip;
   const port = job.printer_port || 9100;
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Connecting to", host, port);
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Plugin object:", tcpSocket);
   const { client } = await tcpSocket.connect({ ipAddress: host, port });
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Connected, client=", client);
   try {
     const copies = Math.max(1, job.copies || 1);
     for (let i = 0; i < copies; i++) {
-      // eslint-disable-next-line no-console
       console.log("[AndroidPrint] Sending copy", i + 1, "of", copies);
       await tcpSocket.send({
         client,
@@ -170,12 +165,10 @@ async function sendEscPos(job: PrintJob): Promise<void> {
         encoding: "base64",
       });
     }
-    // eslint-disable-next-line no-console
     console.log("[AndroidPrint] Send complete");
   } finally {
     try {
       await tcpSocket.disconnect({ client });
-      // eslint-disable-next-line no-console
       console.log("[AndroidPrint] Disconnected");
     } catch (e) {
       log("disconnect warn", (e as Error).message);
@@ -280,16 +273,12 @@ export async function androidDirectTestPrint(opts: { ip: string; port: number; t
   const tcpSocket = getTcpSocketOrThrow();
   const host = opts.ip;
   const port = opts.port || 9100;
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Connecting to", host, port);
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Plugin object:", tcpSocket);
   const { client } = await tcpSocket.connect({ ipAddress: host, port });
-  // eslint-disable-next-line no-console
   console.log("[AndroidPrint] Connected, client=", client);
   try {
     await tcpSocket.send({ client, data: opts.ticketBase64, encoding: "base64" });
-    // eslint-disable-next-line no-console
     console.log("[AndroidPrint] Test send complete");
   } finally {
     try { await tcpSocket.disconnect({ client }); } catch { /* noop */ }
