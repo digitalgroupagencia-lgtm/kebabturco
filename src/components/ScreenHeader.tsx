@@ -34,7 +34,7 @@ const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenH
 
   return (
     <header
-      className={`relative text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] bg-[var(--browser-chrome-hex,#5C1419)] ${
+      className={`relative text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] bg-gradient-header ${
         sticky ? "sticky top-0 z-40" : ""
       }`}
       style={{
