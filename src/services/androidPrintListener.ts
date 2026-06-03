@@ -30,6 +30,14 @@ type TcpSocketPluginInstance = {
   disconnect(options: { client: number }): Promise<void | { client?: number }>;
 };
 
+type AndroidEscPosPrinterPluginInstance = {
+  printEscPos(options: { host: string; port: number; base64: string; copies?: number }): Promise<{
+    ok?: boolean;
+    bytes?: number;
+    copies?: number;
+  }>;
+};
+
 type CapacitorRuntime = typeof Capacitor & {
   Plugins?: Record<string, unknown>;
   PluginHeaders?: Array<{ name: string; methods?: Array<{ name: string; rtype?: string }> }>;
@@ -59,10 +67,12 @@ type AndroidBridgeWindow = Window & {
 };
 
 const TAG = "[AndroidPrint]";
+const BUILD_VERSION = "tcp-native-v3";
 let started = false;
 const channels: RealtimeChannel[] = [];
 const directBridgeCallbacks = new Map<string, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: number }>();
 let directBridgeCounter = Math.floor(Math.random() * 100000);
+let runtimeCacheCleanupStarted = false;
 
 function log(...args: unknown[]) {
   console.log(TAG, ...args);
