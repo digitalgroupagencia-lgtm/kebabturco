@@ -168,19 +168,15 @@ const OperationsPage = () => {
       <Card>
         <CardHeader><CardTitle className="text-lg">Regras por tipo de pedido</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {[
-            { key: "pay_cash_dine_in", label: "Dinheiro na mesa (QR)", desc: "Permite pagar em dinheiro num pedido de mesa validado." },
-            { key: "require_prepayment_delivery", label: "Entrega: pagar antes de enviar", desc: "Cliente só conclui após pagamento online confirmado." },
-            { key: "print_pending_dine_in", label: "Imprimir mesa QR mesmo pendente", desc: "Envia para cozinha após pedido de mesa validado, mesmo sem pagamento." },
-          ].map((f) => (
+          {RULE_FIELDS.map((f) => (
             <div key={f.key} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
               <div className="min-w-0 flex-1">
                 <Label className="text-base">{f.label}</Label>
                 <p className="text-xs text-muted-foreground line-clamp-3">{f.desc}</p>
               </div>
               <Switch
-                checked={Boolean((s as any)[f.key])}
-                onCheckedChange={(v) => update(f.key as keyof Ops, v as any)}
+                checked={Boolean(s[f.key])}
+                onCheckedChange={(v) => update(f.key, v as Ops[typeof f.key])}
                 className="shrink-0"
               />
             </div>
@@ -214,8 +210,8 @@ const OperationsPage = () => {
               <p className="text-xs text-muted-foreground">El nombre siempre es obligatorio. Activa esto para pedir también el teléfono.</p>
             </div>
             <Switch
-              checked={Boolean((s as any).require_phone_takeaway ?? true)}
-              onCheckedChange={(v) => update("require_phone_takeaway" as any, v)}
+              checked={Boolean(s.require_phone_takeaway ?? true)}
+              onCheckedChange={(v) => update("require_phone_takeaway", v)}
               className="shrink-0"
             />
           </div>
@@ -239,8 +235,8 @@ const OperationsPage = () => {
               type="number"
               min={1}
               max={120}
-              value={(s as any).avg_prep_minutes ?? 12}
-              onChange={(e) => update("avg_prep_minutes" as any, Number(e.target.value))}
+              value={s.avg_prep_minutes ?? 12}
+              onChange={(e) => update("avg_prep_minutes", Number(e.target.value))}
             />
             <p className="text-xs text-muted-foreground mt-1">Aparece en la pantalla de confirmación del totem.</p>
           </div>
