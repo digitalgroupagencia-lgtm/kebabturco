@@ -71,6 +71,7 @@ const TeamPage = () => {
   const { roleData } = useUserRole(user?.id);
   const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
+  const { enabled: sellerEnabled } = useSellerModuleEnabled(tenantId);
   const { primaryLang } = useStoreLanguages(storeId);
 
   const [members, setMembers] = useState<TeamMember[]>([]);
