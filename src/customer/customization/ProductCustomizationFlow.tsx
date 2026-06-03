@@ -558,7 +558,7 @@ export default function ProductCustomizationFlow({
                   : t("addToCartBtn")}
             </span>
             <span className="text-lg font-black tabular-nums">
-              {(unitPrice * (editingItem ? 1 : quantity)).toFixed(2)}€
+              {(unitPrice * quantity).toFixed(2)}€
             </span>
           </button>
         </div>
