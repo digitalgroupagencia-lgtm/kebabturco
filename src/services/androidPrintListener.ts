@@ -73,24 +73,34 @@ async function fetchAndroidStores(): Promise<string[]> {
 }
 
 async function sendEscPos(job: PrintJob): Promise<void> {
-  await assertTcpSocketAvailable();
-  log(`conectando ${job.printer_ip}:${job.printer_port}`);
-  const { client } = await TcpSocket.connect({
-    ipAddress: job.printer_ip,
-    port: job.printer_port || 9100,
-  });
+  assertTcpSocketAvailable();
+  const host = job.printer_ip;
+  const port = job.printer_port || 9100;
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connecting to", host, port);
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Plugin object:", TcpSocket);
+  const { client } = await TcpSocket.connect({ ipAddress: host, port });
+  // eslint-disable-next-line no-console
+  console.log("[AndroidPrint] Connected, client=", client);
   try {
     const copies = Math.max(1, job.copies || 1);
     for (let i = 0; i < copies; i++) {
+      // eslint-disable-next-line no-console
+      console.log("[AndroidPrint] Sending copy", i + 1, "of", copies);
       await TcpSocket.send({
         client,
         data: job.ticket_data, // already base64
         encoding: DataEncoding.BASE64,
       });
     }
+    // eslint-disable-next-line no-console
+    console.log("[AndroidPrint] Send complete");
   } finally {
     try {
       await TcpSocket.disconnect({ client });
+      // eslint-disable-next-line no-console
+      console.log("[AndroidPrint] Disconnected");
     } catch (e) {
       log("disconnect warn", (e as Error).message);
     }
