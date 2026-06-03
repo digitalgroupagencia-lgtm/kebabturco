@@ -20,7 +20,12 @@ export default function DeliveryAccessGuard({ children }: Props) {
   const returnPath = `${pathname}${search}`;
 
   useEffect(() => {
-    if (authLoading || roleLoading || !user) return;
+    if (authLoading) return;
+    if (!user) {
+      navigate(nav.staff(), { replace: true });
+      return;
+    }
+    if (roleLoading) return;
 
     const role = roleData?.role ?? null;
 
