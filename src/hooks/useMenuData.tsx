@@ -222,6 +222,8 @@ export function useMenuData() {
       writeMenuCache(effectiveStoreId, mappedCategories, mappedProducts);
       setError(null);
       setLoading(false);
+      // Pré-carrega configs de modificadores em segundo plano para abrir produto instantâneo
+      void prefetchStoreModifierConfigs(effectiveStoreId);
     })();
 
     return () => {
