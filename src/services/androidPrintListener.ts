@@ -33,6 +33,7 @@ type TcpSocketPluginInstance = {
 type CapacitorRuntime = typeof Capacitor & {
   Plugins?: Record<string, unknown>;
   PluginHeaders?: Array<{ name: string; methods?: Array<{ name: string; rtype?: string }> }>;
+  nativePromise?: (pluginName: string, methodName: string, options?: unknown) => Promise<unknown>;
 };
 
 const TAG = "[AndroidPrint]";
@@ -76,6 +77,15 @@ function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
   const windowRuntime = getWindowCapacitor();
   const candidates = ["TcpSocket", "TcpSockets", "TCPSocket", "Socket"];
 
+  const nativePromise = windowRuntime?.nativePromise ?? importedRuntime.nativePromise;
+  if (Capacitor.getPlatform() === "android" && typeof nativePromise === "function") {
+    return {
+      connect: (options) => nativePromise("TcpSocket", "connect", options) as Promise<{ client: number }>,
+      send: (options) => nativePromise("TcpSocket", "send", options) as Promise<void>,
+      disconnect: (options) => nativePromise("TcpSocket", "disconnect", options) as Promise<void | { client?: number }>,
+    };
+  }
+
   for (const name of candidates) {
     const fromWindow = windowRuntime?.Plugins?.[name];
     if (isTcpSocketPlugin(fromWindow)) return fromWindow;
@@ -106,16 +116,20 @@ function logTcpSocketDiagnostics() {
   console.log("[AndroidPrint] PluginHeaders", getPluginHeaderNames(windowRuntime ?? importedRuntime));
   console.log("[AndroidPrint] TcpSocket plugin", importedRuntime.Plugins?.TcpSocket);
   console.log("[AndroidPrint] window TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket);
+  console.log("[AndroidPrint] nativePromise", typeof (windowRuntime?.nativePromise ?? importedRuntime.nativePromise));
   console.log("[AndroidPrint] Resolved TcpSocket plugin", plugin);
+  console.log("Platform", platform);
+  console.log("Plugins", getPluginKeys(windowRuntime ?? importedRuntime));
+  console.log("TcpSocket plugin", windowRuntime?.Plugins?.TcpSocket ?? importedRuntime.Plugins?.TcpSocket);
 
   return { platform, available, plugin };
 }
 
 function getTcpSocketOrThrow(): TcpSocketPluginInstance {
   const { available, plugin } = logTcpSocketDiagnostics();
-  if (!available || !plugin) {
+  if (!plugin) {
     throw new Error(
-      "TcpSocket plugin indisponível neste APK. Gere novamente depois de npm install + npx cap sync android e reinstale no tablet.",
+      `TcpSocket plugin indisponível no JS deste APK. isPluginAvailable=${available}. Verifique PluginHeaders/nativePromise no Logcat.`,
     );
   }
   return plugin;
