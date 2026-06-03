@@ -55,12 +55,18 @@ export async function prefetchStoreModifierConfigs(storeId: string | null | unde
         .select("*")
         .eq("store_id", storeId)
         .eq("is_active", true),
-      supabase
-        .from("modifier_options")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true }),
+      Promise.resolve({ data: [] as any[], error: null }),
     ]);
+
+    const groupIds = (groupsRes.data || []).map((g: any) => g.id);
+    const optionsRes = groupIds.length
+      ? await supabase
+          .from("modifier_options")
+          .select("*")
+          .in("group_id", groupIds)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+      : { data: [], error: null };
 
     const groupsById = new Map<string, any>((groupsRes.data || []).map((g: any) => [g.id, g]));
     const optionsByGroup = new Map<string, ModifierOption[]>();
