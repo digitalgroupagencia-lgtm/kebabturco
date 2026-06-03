@@ -1,5 +1,6 @@
 import { Suspense, useEffect, type ReactNode } from "react";
 import { startAndroidPrintListener } from "@/services/androidPrintListener";
+import { enableTabletKeepAwake } from "@/services/tabletKeepAwake";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";

@@ -5,11 +5,22 @@ const config: CapacitorConfig = {
   appName: "kebabturco",
   webDir: "dist",
   server: {
-    url: "https://d04adf96-11f4-4dc9-b79c-f756a89ef084.lovableproject.com?forceHideBadge=true",
+    // Aponta para o app publicado — atualizações no Lovable chegam ao tablet
+    // automaticamente ao reabrir o app, sem precisar rebuildar o APK.
+    url: "https://kebabturco.lovable.app",
     cleartext: true,
     androidScheme: "https",
-    // Allow LAN access to the printer (cleartext HTTP/TCP to local IPs)
-    allowNavigation: ["192.168.*", "10.*", "172.16.*", "*.lovableproject.com", "*.lovable.app"],
+    // Permite acesso à LAN (impressora ESC/POS) e domínios do app
+    allowNavigation: [
+      "192.168.*",
+      "10.*",
+      "172.16.*",
+      "*.lovable.app",
+      "*.lovableproject.com",
+      "kebabturco.net",
+      "*.kebabturco.net",
+      "snaporder.digitalgroupsti.com",
+    ],
   },
   android: {
     allowMixedContent: true,
