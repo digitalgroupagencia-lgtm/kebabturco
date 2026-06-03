@@ -66,7 +66,7 @@ function groupLabel(group: ModifierGroup): string {
   return `${group.name.es} ${group.name.pt} ${group.name.en}`.toLowerCase();
 }
 
-function synthDrinkPreferenceGroups(productId: string, existing: ModifierGroup[]): ModifierGroup[] {
+function synthDrinkPreferenceGroups(productId: string, existing: ModifierGroup[], skipIce = false): ModifierGroup[] {
   const hasTemp = existing.some((g) => /temperatura|temperature|fr[ií]a|gelada/i.test(groupLabel(g)));
   const hasIce = existing.some((g) => /hielo|gelo|ice/i.test(groupLabel(g)));
   const out: ModifierGroup[] = [];
