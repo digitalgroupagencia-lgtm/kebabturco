@@ -6,6 +6,7 @@ import { useOptionalAdminStore } from "@/contexts/AdminStoreContext";
 import { inferChoiceVariantsFromDescription, inferVariantsFromText } from "@/lib/parseProductCustomization";
 import { safeHasFixedProtein } from "@/lib/modifiers/safeCustomization";
 import { readMenuCache, writeMenuCache } from "@/lib/menuCache";
+import { prefetchStoreModifierConfigs } from "@/lib/modifierConfigCache";
 import { normalizeProductClassification } from "@/lib/modifiers/productClassification";
 import type { Category, Extra, Product, Variant } from "@/data/products";
 
@@ -221,6 +222,8 @@ export function useMenuData() {
       writeMenuCache(effectiveStoreId, mappedCategories, mappedProducts);
       setError(null);
       setLoading(false);
+      // Pré-carrega configs de modificadores em segundo plano para abrir produto instantâneo
+      void prefetchStoreModifierConfigs(effectiveStoreId);
     })();
 
     return () => {

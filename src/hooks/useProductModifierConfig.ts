@@ -3,6 +3,7 @@ import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import type { ModifierGroup, ModifierOption, ProductModifierConfig, ProductType } from "@/lib/modifiers/types";
 import { sortModifierGroups } from "@/lib/modifiers/groupOrder";
+import { getCachedModifierConfig, setCachedModifierConfig } from "@/lib/modifierConfigCache";
 
 const asName = (value: unknown): Record<string, string> => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
@@ -19,14 +20,25 @@ const emptyConfig = (productId: string): ProductModifierConfig => ({
 });
 
 export function useProductModifierConfig(productId: string | undefined) {
-  const [config, setConfig] = useState<ProductModifierConfig | null>(null);
-  const [loading, setLoading] = useState(false);
+  const cached = productId ? getCachedModifierConfig(productId) : null;
+  const [config, setConfig] = useState<ProductModifierConfig | null>(cached);
+  const [loading, setLoading] = useState(productId ? !cached : false);
 
   useEffect(() => {
     if (!productId) {
       setConfig(null);
+      setLoading(false);
       return;
     }
+
+    // Hit cache imediato — sem spinner
+    const fromCache = getCachedModifierConfig(productId);
+    if (fromCache) {
+      setConfig(fromCache);
+      setLoading(false);
+      return;
+    }
+
 
     let active = true;
     (async () => {
@@ -145,15 +157,17 @@ export function useProductModifierConfig(productId: string | undefined) {
           })
           .filter(Boolean) as ModifierGroup[];
 
+        const finalConfig: ProductModifierConfig = {
+          productId,
+          productType: (product.product_type as ProductType) || "simple",
+          comboUnitCount: Math.max(0, product.combo_unit_count || 0),
+          unitLabel: asName(product.unit_label),
+          groups: sortModifierGroups(groups),
+          hasStructuredModifiers: groups.length > 0,
+        };
+        setCachedModifierConfig(productId, finalConfig);
         if (active) {
-          setConfig({
-            productId,
-            productType: (product.product_type as ProductType) || "simple",
-            comboUnitCount: Math.max(0, product.combo_unit_count || 0),
-            unitLabel: asName(product.unit_label),
-            groups: sortModifierGroups(groups),
-            hasStructuredModifiers: groups.length > 0,
-          });
+          setConfig(finalConfig);
         }
       } catch (err) {
         console.warn("[useProductModifierConfig]", err);
