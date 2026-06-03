@@ -5,6 +5,7 @@ import type { ProductModifierConfig } from "@/lib/modifiers/types";
 import { safeSynthesizeModifierConfig } from "@/lib/modifiers/safeCustomization";
 import { sanitizeProductModifierConfig } from "@/lib/modifiers/sanitizeGroups";
 import { adaptConfigForDrinkProduct, isDrinkProduct } from "@/lib/modifiers/drinkProduct";
+import { adaptConfigForSandwichSpicy } from "@/lib/modifiers/sandwichSpicy";
 import { applyComboDescriptionRules, applySimpleProductRules } from "@/lib/modifiers/comboConfigFilter";
 import { filterProductModifierConfig } from "@/lib/modifiers/proteinRules";
 import { resolveIsComboProduct } from "@/lib/modifiers/productClassification";
