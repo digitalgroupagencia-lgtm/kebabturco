@@ -933,6 +933,18 @@ const PaymentScreen = () => {
                     placeholder={t("addressCity")}
                     className={`w-full h-10 px-3 text-sm font-bold bg-secondary/60 rounded-xl border-2 ${showError === "city" ? "border-destructive/60" : "border-transparent"}`}
                   />
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                      Observações para entrega
+                    </label>
+                    <textarea
+                      value={deliveryNotes}
+                      onChange={(e) => setDeliveryNotes(e.target.value.slice(0, 300))}
+                      placeholder="Ex: tocar campainha, deixar na portaria, referência..."
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm font-medium bg-secondary/60 rounded-xl border-2 border-transparent focus:border-primary resize-none"
+                    />
+                  </div>
                   {showError === "minOrder" && deliveryQuote.minOrder > 0 && (
                     <p className="text-xs text-destructive font-bold">Pedido mínimo: {deliveryQuote.minOrder.toFixed(2)}€</p>
                   )}
@@ -1037,9 +1049,21 @@ const PaymentScreen = () => {
       {!stripeClientSecret && (
         <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           {showError === "store" && (
-            <p className="text-xs text-destructive font-bold mb-2 px-1">
-              {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
-            </p>
+            <div className="mb-2 px-1">
+              <p className="text-xs text-destructive font-bold">
+                {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
+              </p>
+              {isEmergencyFallbackStoreId(storeId) && (
+                <a
+                  href="https://kebabturco.lovable.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-black text-primary underline"
+                >
+                  Abrir site publicado →
+                </a>
+              )}
+            </div>
           )}
           {checkoutStep === "details" && !isTableOrder ? (
             <button
