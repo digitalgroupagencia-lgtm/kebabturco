@@ -149,10 +149,14 @@ function patchAndroidBridgeResponses(win: AndroidBridgeWindow) {
   cap.__androidPrintFromNativePatched = true;
 }
 
-function callAndroidPluginDirect(methodName: "connect" | "send" | "disconnect", options: unknown): Promise<unknown> {
+function callAndroidPluginDirect(
+  pluginId: "TcpSocket" | "AndroidEscPosPrinter",
+  methodName: "connect" | "send" | "disconnect" | "printEscPos",
+  options: unknown,
+): Promise<unknown> {
   const win = window as AndroidBridgeWindow;
   if (!win.androidBridge?.postMessage || !win.Capacitor) {
-    return Promise.reject(new Error("Bridge Android nativo indisponível para TcpSocket."));
+    return Promise.reject(new Error(`Bridge Android nativo indisponível para ${pluginId}.`));
   }
 
   patchAndroidBridgeResponses(win);
@@ -160,12 +164,29 @@ function callAndroidPluginDirect(methodName: "connect" | "send" | "disconnect", 
     const callbackId = `android-print-${Date.now()}-${++directBridgeCounter}`;
     const timeout = window.setTimeout(() => {
       directBridgeCallbacks.delete(callbackId);
-      reject(new Error(`Timeout chamando TcpSocket.${methodName}`));
+      reject(new Error(`Timeout chamando ${pluginId}.${methodName}`));
     }, 15000);
 
     directBridgeCallbacks.set(callbackId, { resolve, reject, timeout });
-    win.androidBridge!.postMessage(JSON.stringify({ callbackId, pluginId: "TcpSocket", methodName, options: options ?? {} }));
+    win.androidBridge!.postMessage(JSON.stringify({ callbackId, pluginId, methodName, options: options ?? {} }));
   });
+}
+
+function resolveAndroidEscPosPrinterPlugin(): AndroidEscPosPrinterPluginInstance | null {
+  const win = typeof window !== "undefined" ? (window as AndroidBridgeWindow) : undefined;
+  if (Capacitor.getPlatform() === "android" && win?.androidBridge?.postMessage) {
+    return {
+      printEscPos: (options) =>
+        callAndroidPluginDirect("AndroidEscPosPrinter", "printEscPos", options) as Promise<{
+          ok?: boolean;
+          bytes?: number;
+          copies?: number;
+        }>,
+    };
+  }
+
+  const plugin = getWindowCapacitor()?.Plugins?.AndroidEscPosPrinter as AndroidEscPosPrinterPluginInstance | undefined;
+  return typeof plugin?.printEscPos === "function" ? plugin : null;
 }
 
 function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
@@ -175,9 +196,9 @@ function resolveTcpSocketPlugin(): TcpSocketPluginInstance | null {
 
   if (Capacitor.getPlatform() === "android" && win?.androidBridge?.postMessage) {
     return {
-      connect: (options) => callAndroidPluginDirect("connect", options) as Promise<{ client: number }>,
-      send: (options) => callAndroidPluginDirect("send", options) as Promise<void>,
-      disconnect: (options) => callAndroidPluginDirect("disconnect", options) as Promise<void | { client?: number }>,
+      connect: (options) => callAndroidPluginDirect("TcpSocket", "connect", options) as Promise<{ client: number }>,
+      send: (options) => callAndroidPluginDirect("TcpSocket", "send", options) as Promise<void>,
+      disconnect: (options) => callAndroidPluginDirect("TcpSocket", "disconnect", options) as Promise<void | { client?: number }>,
     };
   }
 
