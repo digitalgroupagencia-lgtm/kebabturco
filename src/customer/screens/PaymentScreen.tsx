@@ -83,6 +83,8 @@ const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   counter: { pt: "Pague ao retirar", en: "Pay when picking up", es: "Paga al recoger tu pedido", fr: "Payer au retrait" },
 };
 
+const hiddenCheckoutFeature = (_name: string) => false;
+
 const PaymentScreen = () => {
   const {
     setScreen,
@@ -154,10 +156,6 @@ const PaymentScreen = () => {
   const openStatus = useStoreOpenStatus(channel);
   const [closedDialog, setClosedDialog] = useState(false);
   const sellerMode = useSellerMode();
-
-  if (sellerMode.active) {
-    return <SellerCheckoutForm />;
-  }
 
 
   const isTableOrder = orderType === "here";
@@ -601,6 +599,10 @@ const PaymentScreen = () => {
   };
 
   const compact = isTableOrder;
+
+  if (sellerMode.active) {
+    return <SellerCheckoutForm />;
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
