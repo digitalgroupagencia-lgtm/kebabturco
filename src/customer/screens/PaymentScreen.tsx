@@ -279,24 +279,11 @@ const PaymentScreen = () => {
     });
   }, [checkoutMethods]);
 
-  const validate = () => {
-    if (!orderType) {
-      setShowError("method");
-      return false;
-    }
-    if (isTableOrder) {
-      if (!mesaValidated || !mesaTableId) {
-        setShowError("table");
-        return false;
-      }
-    } else if (!customerName.trim() || customerName.trim().length < 2) {
-      setShowError("name");
-      return false;
-    }
-    if (!isValidCustomerPhone(phoneDialCode, customerPhone)) {
-      setShowError("phone");
-      return false;
-    }
+  const validateDetailsStep = () => {
+    if (!orderType) { setShowError("method"); return false; }
+    if (isTableOrder) return true;
+    if (!customerName.trim() || customerName.trim().length < 2) { setShowError("name"); return false; }
+    if (!isValidCustomerPhone(phoneDialCode, customerPhone)) { setShowError("phone"); return false; }
     if (orderType === "delivery") {
       if (!deliveryAddress.trim()) { setShowError("address"); return false; }
       if (!deliveryNumber.trim()) { setShowError("number"); return false; }
@@ -305,22 +292,21 @@ const PaymentScreen = () => {
       if (!deliveryQuote.zoneMatched) { setShowError("zone"); return false; }
       if (deliveryQuote.belowMinimum) { setShowError("minOrder"); return false; }
     }
-    if (checkoutMethods.length === 0) {
-      setShowError("method");
-      return false;
-    }
-    if (!selected) {
-      setShowError("method");
-      return false;
-    }
-    if (prepaymentRequired && selected !== "card") {
-      setShowError("method");
-      return false;
-    }
-    if (selected === "card" && stripeIssue) {
-      setShowError("method");
-      return false;
-    }
+    setShowError(null);
+    return true;
+  };
+
+  const handleContinueToPayment = () => {
+    if (!validateDetailsStep()) return;
+    setCheckoutStep("payment");
+  };
+
+  const validate = () => {
+    if (!validateDetailsStep()) return false;
+    if (checkoutMethods.length === 0) { setShowError("method"); return false; }
+    if (!selected) { setShowError("method"); return false; }
+    if (prepaymentRequired && selected !== "card") { setShowError("method"); return false; }
+    if (selected === "card" && stripeIssue) { setShowError("method"); return false; }
     setShowError(null);
     return true;
   };
