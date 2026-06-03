@@ -125,8 +125,9 @@ export async function enableKeepAwake(): Promise<void> {
   // Fallback browser: Screen Wake Lock API
   try {
     if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
-      // @ts-expect-error tipo experimental
-      await navigator.wakeLock.request("screen").catch(() => null);
+      await (navigator as unknown as { wakeLock: { request: (t: string) => Promise<unknown> } })
+        .wakeLock.request("screen")
+        .catch(() => null);
     }
   } catch { /* ignore */ }
 }
