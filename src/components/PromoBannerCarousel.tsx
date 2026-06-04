@@ -61,6 +61,12 @@ const PromoBannerCarousel = () => {
   const currentIsAudio = currentMediaType === "audio";
   const ytId = currentIsVideo ? getYoutubeId(currentItem?.video_url || "") : null;
 
+  useEffect(() => {
+    if (currentIsVideo || currentIsAudio) {
+      setMuted(currentItem?.video_muted ?? currentIsVideo);
+    }
+  }, [currentItem?.id, currentItem?.video_muted, currentIsAudio, currentIsVideo]);
+
   return (
     <div className="w-full">
       <div className="relative aspect-[16/9] w-full rounded-[22px] overflow-hidden shadow-card border border-border/70 bg-secondary/40">
