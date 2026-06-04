@@ -617,7 +617,7 @@ const CustomerAccountScreen = () => {
                 <Package className="w-4 h-4" /> {t("trackMyOrders")}
               </button>
               <button
-                onClick={() => reorder(order)}
+                onClick={() => void reorder(order)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success/15 text-success text-sm font-bold"
               >
                 <RotateCcw className="w-4 h-4" /> Pedir de novo
