@@ -71,7 +71,6 @@ const BUILD_VERSION = "tcp-native-v4-polling";
 let started = false;
 const channels: RealtimeChannel[] = [];
 const subscribedStores = new Set<string>();
-const pollTimers = new Map<string, number>();
 const directBridgeCallbacks = new Map<string, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: number }>();
 let directBridgeCounter = Math.floor(Math.random() * 100000);
 let runtimeCacheCleanupStarted = false;
@@ -419,8 +418,7 @@ function subscribeStore(storeId: string) {
   channels.push(ch);
   // Drain imediato + polling contínuo: não depende só do Realtime.
   void drainPending(storeId);
-  const timer = window.setInterval(() => void drainPending(storeId), 3_000);
-  pollTimers.set(storeId, timer);
+  window.setInterval(() => void drainPending(storeId), 3_000);
 }
 
 export async function startAndroidPrintListener() {
