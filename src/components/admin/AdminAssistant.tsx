@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff } from "lucide-react";
+import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
@@ -43,6 +43,12 @@ function extractText(content: Msg["content"]): string {
 function extractImages(content: Msg["content"]): string[] {
   if (typeof content === "string") return [];
   return content.filter((p): p is { type: "image_url"; image_url: { url: string } } => p.type === "image_url").map((p) => p.image_url.url);
+}
+
+async function copyText(text: string) {
+  if (!text.trim()) return;
+  await navigator.clipboard.writeText(text);
+  toast.success("Resposta copiada");
 }
 
 export default function AdminAssistant() {
@@ -245,7 +251,7 @@ export default function AdminAssistant() {
             </button>
           </header>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 bg-muted/20">
             {messages.length === 0 && (
               <div className="space-y-3">
                 <div className="bg-card border rounded-2xl p-3 text-sm text-muted-foreground">
@@ -271,12 +277,23 @@ export default function AdminAssistant() {
               return (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm space-y-2 ${
+                    className={`group relative max-w-[92%] min-w-0 rounded-2xl px-3 py-2 text-sm space-y-2 overflow-hidden select-text [overflow-wrap:anywhere] ${
                       m.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-card border rounded-bl-sm"
                     }`}
                   >
+                    {m.role === "assistant" && text.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => void copyText(text)}
+                        className="absolute right-1.5 top-1.5 z-10 w-7 h-7 rounded-full bg-background/90 border text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center transition-opacity"
+                        aria-label="Copiar resposta"
+                        title="Copiar resposta"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     {imgs.length > 0 && (
                       <div className="grid grid-cols-2 gap-1">
                         {imgs.map((url, k) => (
@@ -285,11 +302,11 @@ export default function AdminAssistant() {
                       </div>
                     )}
                     {m.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none prose-p:my-1 prose-ol:my-1 prose-ul:my-1 prose-strong:text-foreground prose-headings:text-foreground prose-headings:font-bold prose-headings:text-sm">
+                      <div className="prose prose-sm max-w-none pr-6 break-words [overflow-wrap:anywhere] prose-p:my-1 prose-p:break-words prose-ol:my-1 prose-ul:my-1 prose-li:break-words prose-strong:text-foreground prose-headings:text-foreground prose-headings:font-bold prose-headings:text-sm prose-pre:max-w-full prose-pre:overflow-x-hidden prose-pre:whitespace-pre-wrap prose-pre:break-words prose-code:whitespace-pre-wrap prose-code:break-words prose-code:[overflow-wrap:anywhere]">
                         <ReactMarkdown>{text || "…"}</ReactMarkdown>
                       </div>
                     ) : (
-                      text && <p>{text}</p>
+                      text && <p className="break-words [overflow-wrap:anywhere]">{text}</p>
                     )}
                   </div>
                 </div>

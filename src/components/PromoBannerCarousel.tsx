@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePromoBanners } from "@/hooks/usePromoBanners";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import bannerDefault from "@/assets/elrey/banner-default-1.jpg";
-import { Volume2, VolumeX } from "lucide-react";
+import { Music, Volume2, VolumeX } from "lucide-react";
 
 /**
  * Extrai o ID de um link do YouTube (várias formas suportadas).
@@ -37,76 +37,86 @@ const PromoBannerCarousel = () => {
     if (showFallback) return [{ id: "fallback", image_url: bannerDefault, media_type: "image" } as any];
     return [] as any[];
   }, [banners, showFallback]);
+  const goNext = () => setIndex((i) => (i + 1) % Math.max(items.length, 1));
+
+  useEffect(() => {
+    if (index >= items.length) setIndex(0);
+  }, [index, items.length]);
 
   useEffect(() => {
     if (items.length <= 1) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % items.length), interval);
-    return () => clearInterval(t);
-  }, [items.length, interval]);
+    const current = items[index];
+    const mediaType = current?.media_type ?? "image";
+    if (mediaType !== "image") return;
+    const t = window.setTimeout(goNext, interval);
+    return () => window.clearTimeout(t);
+  }, [items, index, interval]);
 
   if (!enabled && banners.length === 0 && !showFallback) return null;
   if (items.length === 0) return null;
 
   const currentItem = items[index];
-  const currentIsVideo = currentItem?.media_type === "video";
+  const currentMediaType = currentItem?.media_type ?? "image";
+  const currentIsVideo = currentMediaType === "video";
+  const currentIsAudio = currentMediaType === "audio";
+  const ytId = currentIsVideo ? getYoutubeId(currentItem?.video_url || "") : null;
 
   return (
     <div className="w-full">
       <div className="relative aspect-[16/9] w-full rounded-[22px] overflow-hidden shadow-card border border-border/70 bg-secondary/40">
-        {items.map((b, i) => {
-          const isActive = i === index;
-          const isVideo = b.media_type === "video";
-          if (isVideo) {
-            const ytId = getYoutubeId(b.video_url || "");
-            // Sempre autoplay, sem controles, sem botão de pause, sem informações do YouTube.
-            // Só o áudio é controlável pelo botão flutuante.
-            const mute = muted ? 1 : 0;
-            if (ytId) {
-              return (
-                <iframe
-                  key={b.id}
-                  src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${mute}&loop=1&playlist=${ytId}&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&showinfo=0&cc_load_policy=0`}
-                  title="Vídeo promocional"
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-700 pointer-events-none ${isActive ? "opacity-100" : "opacity-0"}`}
-                  allow="autoplay; encrypted-media"
-                  frameBorder={0}
-                />
-              );
-            }
-            // MP4 nativo
-            return (
-              <video
-                key={b.id}
-                src={b.video_url || ""}
-                autoPlay
-                muted={muted}
-                loop
-                playsInline
-                disablePictureInPicture
-                controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 pointer-events-none ${isActive ? "opacity-100" : "opacity-0"}`}
-              />
-            );
-          }
-          return (
-            <img
-              key={b.id}
-              src={b.image_url ?? ""}
-              alt="Promoção"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${isActive ? "opacity-100" : "opacity-0"}`}
-              loading={i === 0 ? "eager" : "lazy"}
+        {currentIsVideo && ytId ? (
+          <iframe
+            key={currentItem.id}
+            src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&showinfo=0&cc_load_policy=0`}
+            title="Vídeo promocional"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            allow="autoplay; encrypted-media"
+            frameBorder={0}
+          />
+        ) : currentIsVideo ? (
+          <video
+            key={currentItem.id}
+            src={currentItem.video_url || ""}
+            autoPlay
+            muted={muted}
+            playsInline
+            onEnded={items.length > 1 ? goNext : undefined}
+            onError={items.length > 1 ? goNext : undefined}
+            disablePictureInPicture
+            controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          />
+        ) : currentIsAudio ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-secondary text-secondary-foreground">
+            <Music className="w-12 h-12" />
+            <span className="text-sm font-semibold">Áudio promocional</span>
+            <audio
+              key={currentItem.id}
+              src={currentItem.video_url || ""}
+              autoPlay
+              muted={muted}
+              onEnded={items.length > 1 ? goNext : undefined}
+              onError={items.length > 1 ? goNext : undefined}
             />
-          );
-        })}
-        {/* Camada que bloqueia interação com YouTube/MP4 (sem controles, sem pause). */}
-        {currentIsVideo && <div className="absolute inset-0 z-10" aria-hidden />}
-        {/* Botão único: ligar/desligar áudio do vídeo atual. */}
-        {currentIsVideo && (
+          </div>
+        ) : (
+          <img
+            key={currentItem.id}
+            src={currentItem.image_url ?? ""}
+            alt="Promoção"
+            className="absolute inset-0 w-full h-full object-cover"
+            loading={index === 0 ? "eager" : "lazy"}
+          />
+        )}
+        {/* Camada que bloqueia interação com YouTube/MP4/áudio (sem controles, sem pause). */}
+        {(currentIsVideo || currentIsAudio) && <div className="absolute inset-0 z-10" aria-hidden />}
+        {/* Botão único: ligar/desligar áudio da mídia atual. */}
+        {(currentIsVideo || currentIsAudio) && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
             aria-label={muted ? "Activar audio" : "Silenciar"}
-            className="absolute z-20 bottom-2 right-2 w-9 h-9 rounded-full bg-black/55 backdrop-blur-sm text-white flex items-center justify-center active:scale-90 transition-transform border border-white/20"
+            className="absolute z-20 bottom-2 right-2 w-9 h-9 rounded-full bg-background/70 backdrop-blur-sm text-foreground flex items-center justify-center active:scale-90 transition-transform border border-border"
           >
             {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
@@ -116,7 +126,7 @@ const PromoBannerCarousel = () => {
             {items.map((_, i) => (
               <span
                 key={i}
-                className={`h-1.5 rounded-full transition-all ${i === index ? "w-5 bg-white" : "w-1.5 bg-white/60"}`}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-5 bg-background" : "w-1.5 bg-background/60"}`}
               />
             ))}
           </div>
