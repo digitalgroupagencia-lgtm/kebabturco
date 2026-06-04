@@ -385,6 +385,21 @@ async function drainPending(storeId: string) {
   }
 }
 
+export async function processAndroidDirectPrintJob(jobId: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  const { data, error } = await supabase
+    .from("print_jobs")
+    .select("id, store_id, ticket_data, printer_ip, printer_port, copies, status")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (error || !data) {
+    log("job não encontrado para impressão direta", jobId, error?.message);
+    return false;
+  }
+  await processJob(data as PrintJob);
+  return true;
+}
+
 function subscribeStore(storeId: string) {
   if (subscribedStores.has(storeId)) return;
   subscribedStores.add(storeId);
