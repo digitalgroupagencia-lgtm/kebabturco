@@ -23,6 +23,9 @@ export function productIncludesSidePotato(product: MenuProduct): boolean {
   const desc = productDescriptionText(product);
   const blob = `${name} ${desc}`;
 
+  // "Plato combinado" já inclui pequena porção dentro do prato — não oferecer upgrade separado.
+  if (/plato\s+combinado/i.test(blob)) return false;
+
   if (/patatas?\s+(fritas\s+)?incluid|incluye\s+patatas|ración\s+de\s+patatas/i.test(blob)) {
     return true;
   }
