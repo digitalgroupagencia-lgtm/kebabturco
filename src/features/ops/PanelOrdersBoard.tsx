@@ -206,16 +206,16 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
 
   const handleCleanupTests = async () => {
     if (!storeId) return;
-    if (!confirm(`Apagar ${testOrdersCount} pedido(s) de teste desta loja? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(t("panel.delete_test.confirm").replace("{count}", String(testOrdersCount)))) return;
     setCleaningTests(true);
     try {
       const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
       if (error) throw error;
       const removed = (data as { deleted?: number } | null)?.deleted ?? 0;
-      toast.success(`${removed} pedido(s) de teste removido(s)`);
+      toast.success(`${removed} ${t("ops.card.test_badge").toLowerCase() === "test" ? "test order(s) removed" : "pedido(s) de prueba eliminado(s)"}`);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao limpar pedidos teste");
+      toast.error(e instanceof Error ? e.message : "Error al limpiar pedidos de prueba");
     } finally {
       setCleaningTests(false);
     }
