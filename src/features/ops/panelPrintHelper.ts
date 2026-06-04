@@ -6,6 +6,22 @@ import type { Tables } from "@/integrations/supabase/types";
 type OrderItem = Tables<"order_items">;
 type PanelOrder = Tables<"orders"> & { kitchen_printed_at?: string | null };
 
+function resolveProductName(n: unknown): string {
+  if (typeof n === "string") {
+    const t = n.trim();
+    if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
+      try { return resolveProductName(JSON.parse(t)); } catch { return t; }
+    }
+    return t;
+  }
+  if (n && typeof n === "object") {
+    const o = n as Record<string, unknown>;
+    const v = o.es ?? o.en ?? o.pt ?? Object.values(o)[0];
+    return typeof v === "string" ? v : String(v ?? "");
+  }
+  return String(n ?? "");
+}
+
 export function panelOrderToTicket(
   order: PanelOrder,
   items: OrderItem[],
