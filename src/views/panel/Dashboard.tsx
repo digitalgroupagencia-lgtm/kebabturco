@@ -117,7 +117,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <PanelPageHeader
         title={t("page.dashboard.title")}
-        description="Visão geral da loja — faturamento, pedidos e estado do sistema. Para operação em tempo real, use Pedidos ao vivo."
+        description={t("dashboard.subtitle")}
         actions={
           <Button asChild size="sm" className="gap-1.5">
             <Link to={nav.panel("live")}>
