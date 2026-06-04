@@ -110,7 +110,7 @@ function synthDrinkPreferenceGroups(productId: string, existing: ModifierGroup[]
     });
   }
 
-  if (!hasIce && !skipIce) {
+  if (!hasIce) {
     out.push({
       id: `synth-${productId}-drink-ice`,
       storeId: "",
