@@ -242,6 +242,50 @@ const PrinterPage = () => {
             <Network className="w-3.5 h-3.5" />
             <span>{cfg.printer_name} — <span className="text-foreground font-mono">{cfg.ip_address}:{cfg.port}</span></span>
           </div>
+
+          {(bridge === "inactive" || bridge === "unknown") && (
+            <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-destructive">
+                    {bridge === "inactive" ? "Print Bridge offline" : "Print Bridge ainda não respondeu"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{status.help}</p>
+                </div>
+              </div>
+
+              <div className="text-xs text-foreground bg-background/60 rounded-md p-3 space-y-2">
+                <p className="font-semibold">O que dizer ao restaurante para fazer agora:</p>
+                {isAndroidMode ? (
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                    <li>Verifique se o <strong>tablet Android da loja está ligado</strong> e com Wi-Fi.</li>
+                    <li>Abra a <strong>app do painel</strong> no tablet (ou recarregue se já estiver aberta).</li>
+                    <li>Confirme que o tablet está na <strong>mesma rede Wi-Fi</strong> da impressora ({cfg.ip_address}).</li>
+                    <li>Toque em <strong>Verificar</strong> aqui em cima — deve mudar para <strong>Bridge activo</strong> em segundos.</li>
+                  </ol>
+                ) : (
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                    <li>Vá ao <strong>PC da loja</strong> que tem o Print Bridge instalado.</li>
+                    <li>Confirme que o PC está <strong>ligado</strong> e com <strong>internet</strong>.</li>
+                    <li>Verifique se o ícone do <strong>Kebab Print Bridge</strong> está na barra de tarefas (ao lado do relógio). Se não estiver, abra o programa pelo menu Iniciar.</li>
+                    <li>Se aparecer fechado, abra <strong>C:\kebab-print-bridge\</strong> e execute <strong>start.bat</strong>.</li>
+                    <li>Confirme que a impressora está <strong>ligada</strong> e a responder no IP <strong className="font-mono">{cfg.ip_address}:{cfg.port}</strong>.</li>
+                    <li>Toque em <strong>Verificar</strong> aqui em cima — deve mudar para <strong>Bridge activo</strong> em segundos.</li>
+                  </ol>
+                )}
+                <p className="text-[11px] text-muted-foreground pt-1 border-t border-border">
+                  Enquanto estiver inactivo os pedidos ficam guardados na fila e imprimem assim que o Bridge voltar.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {bridge === "active" && (
+            <p className="mt-3 text-xs text-green-700 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+              ✓ {status.help}
+            </p>
+          )}
         </CardContent>
       </Card>
 
