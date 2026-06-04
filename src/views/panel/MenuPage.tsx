@@ -357,7 +357,7 @@ const MenuPage = () => {
         .from("products")
         .update(payload)
         .eq("id", editingProduct.id);
-      if (error) { toast.error("Erro ao atualizar produto"); return; }
+      if (error) { toast.error(`Erro ao atualizar produto: ${error.message}`); return; }
       try {
         await saveProductModifierLinks(editingProduct.id, modifierLinks);
       } catch {
@@ -365,7 +365,7 @@ const MenuPage = () => {
       }
     } else {
       const { data: inserted, error } = await supabase.from("products").insert(payload).select("id").single();
-      if (error) { toast.error("Erro ao criar produto"); return; }
+      if (error) { toast.error(`Erro ao criar produto: ${error.message}`); return; }
       if (inserted?.id && modifierLinks.length) {
         try {
           await saveProductModifierLinks(inserted.id, modifierLinks);
