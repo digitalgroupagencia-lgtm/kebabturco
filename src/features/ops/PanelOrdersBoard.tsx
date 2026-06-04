@@ -21,6 +21,7 @@ import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { isPanelAlertsEnabled, preparePanelAlertsIfEnabled } from "@/lib/panelAlerts";
 import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } from "@/services/nativePush";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
+import { useStaffT } from "@/hooks/useStaffT";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { listStoreDrivers } from "@/services/orderService";
