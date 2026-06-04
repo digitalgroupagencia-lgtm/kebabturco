@@ -179,7 +179,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
                     e.stopPropagation();
                     onCancel(order.id);
                   }}
-                  aria-label="Cancelar pedido"
+                  aria-label={t("ops.card.cancel")}
                 >
                   <XCircle className="h-3.5 w-3.5" />
                 </Button>
