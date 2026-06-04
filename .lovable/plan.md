@@ -1,48 +1,90 @@
-## Objetivo
-Gerar um único arquivo `.sql` com `INSERT INTO` de **todos os dados** do projeto atual, pronto para colar num remix novo e replicar 100% (layout, imagens via URL, posicionamentos, configs, produtos, modificadores, etc).
+# Plano — Correções críticas para entrega
 
-## Tabelas a exportar (na ordem correta de dependência)
+Vou executar em **3 ondas** por ordem de bloqueio. Cada onda termina compilando antes de avançar.
 
-1. `tenants`
-2. `stores`
-3. `company_settings`
-4. `operations_settings`
-5. `totem_config`
-6. `splash_media`
-7. `promo_banners`
-8. `delivery_zones`
-9. `categories`
-10. `products`
-11. `product_sizes`
-12. `product_extras`
-13. `product_stock` (se houver dados)
-14. `stock_items`
-15. `printer_settings` / `printers` / `printer_category_map`
-16. `tables`
-17. `coupons`
-18. `platform_plans` / `platform_features` / `plan_features`
-19. `tenant_plan_assignments` / `tenant_feature_overrides`
-20. `tenant_subscriptions`
+---
 
-> Observação: as tabelas `modifier_groups`, `modifiers`, `product_modifiers`, `extras`, `sizes`, `site_branding`, `payment_policy` que você citou **não existem** no schema atual. Os modificadores hoje vivem dentro de `products` (campo JSON) + `product_sizes` + `product_extras`. O branding vive em `company_settings` + `totem_config`. As regras de pagamento ficam em `operations_settings`. Vou incluir tudo isso.
+## ONDA 1 — Bloqueadores de segurança/UX para o cliente
 
-## Como vou gerar
+### 1. Cliente NÃO pode tocar bip operacional (crítico)
+- `src/customer/**`: garantir que nenhum hook/componente cliente importe `panelAlerts`, `usePushNotifications` em modo staff, ou `pushService` de staff.
+- `src/hooks/usePushNotifications.ts` e `src/lib/push/staff.ts`: adicionar guarda hard — `if (!userRole || role === 'customer') return null`.
+- `src/features/ops/PanelAlertsBar.tsx` + `usePanelOrders.ts`: validar `useUserRole` antes de qualquer `audio.play()` / `navigator.vibrate()`.
+- Auditar `src/main.tsx` / `src/customer/Index.tsx` para garantir que `service-worker.js` cliente NÃO registra subscription staff.
 
-1. Para cada tabela, rodo `SELECT * FROM <tabela>` e converto cada linha num `INSERT INTO ... VALUES (...)` com escaping correto (strings, JSONB, arrays, UUIDs, timestamps, nulls).
-2. Cabeçalho do arquivo: `BEGIN;` + `SET session_replication_role = replica;` (desativa triggers/FKs durante a importação) e no fim `SET session_replication_role = DEFAULT; COMMIT;`.
-3. Cada bloco com comentário `-- ===== <tabela> (N linhas) =====`.
-4. Uso `ON CONFLICT (id) DO NOTHING` em todas as tabelas com PK `id`, para o script poder ser reexecutado.
-5. Imagens: ficam como URLs (Lovable Cloud Storage). Funcionam direto no remix sem precisar re-upload — desde que o novo projeto consiga acessar as URLs públicas atuais (e conseguirá, pois o bucket é público).
-6. Salvo em `/mnt/documents/export-completo.sql` e disponibilizo via `<presentation-artifact>` para download.
+### 2. Stripe debug overlay no celular do cliente
+- Procurar em `index.html`, `src/customer/screens/PaymentScreen.tsx`, `ConfirmationScreen.tsx` por qualquer `stripe.js` carregado com `debug: true`, `appearance: { theme: 'stripe' }` em modo dev, ou Stripe Elements em ambiente errado.
+- Causa provável: script `stripe-shell` ou `stripe.js?dev=true` carregado. Remover e travar carregamento de Stripe só no fluxo de pagamento.
+- Verificar service worker e `public/sw.js` por scripts injetados.
 
-## O que **não** vai no export (de propósito)
+### 3. Tablet toca em loop até aceitar TODOS pedidos pendentes
+- `PanelAlertsBar.tsx` / `usePanelOrders.ts`: ajustar lógica para tocar enquanto `orders.filter(o => o.status === 'received' && !o.accepted_at).length > 0`.
+- Adicionar timer em loop (a cada 8s) até count = 0.
+- Validar role antes (ver item 1).
 
-- `auth.users`, `user_roles`, `staff_access_pins`, `profiles` → contas/senhas/PINs não devem ser migrados (segurança). No remix você cria a conta admin nova.
-- `orders`, `order_items`, `cash_registers`, `payment_history`, `store_payouts`, `store_payment_ledger`, `loyalty_accounts`, `print_jobs`, `push_subscriptions`, `table_sessions` → dados transacionais, não fazem sentido no remix.
-- Configs do Stripe Connect (account IDs) → ficam vazias no remix, você reconfigura.
+---
 
-Se quiser incluir algum desses, me diga antes de executar.
+## ONDA 2 — Impressão e idioma
 
-## Próximo passo
+### 4. Ticket imprime detalhes do combo separadamente
+- `supabase/functions/_shared/escPosTicketBuilder.ts` + `src/services/escPosTicketBuilder.ts`: detectar quando `item.extras` contém modifiers com padrão regex `/pan pita (\d+)/i`, `/unidad (\d+)/i`, `/(\d+)º/`, etc.
+- Agrupar extras por índice, imprimir bloco "PAN PITA 1\n Carne: X\n Verduras: sin Y\n Picante: Sí/No" para cada unidade.
+- Não resumir múltiplas remoções na mesma linha.
+- Mesma lógica em `src/features/ops/panelPrintHelper.ts` (já tem `resolveProductName`).
 
-Confirma e eu rodo o script — entrego o `.sql` pronto para colar no SQL Editor do remix.
+### 5. Idioma do painel staff respeita `company_settings.default_language`
+- `src/lib/staffI18n.ts` e `useStaffT.ts`: ler default da loja via `useCompanySettings()` se usuário não escolheu.
+- Adicionar chaves faltantes em ES para: "Pedidos en vivo", "Operación en vivo", "Panel del repartidor", "Iniciar entrega", "Marcar listo", "Aceptar", "Rechazar", "Recibido", "En preparación", "Listo", "Entregado", "Cancelado", "Mostrador", "Para llevar", "Entrega a domicilio".
+- Substituir strings hard-coded em PT em: `PanelOrdersBoard.tsx`, `OpsOrdersLayout.tsx`, `OpsStatusTabs.tsx`, `OpsOrderCard.tsx`, `OpsModeFilter.tsx`, `DeliveryHomePage.tsx`, `SellerHome.tsx`.
+
+### 6. Ticket impresso em espanhol + correções de label
+- `escPosTicketBuilder.ts` (shared + src): já está em ES, mas validar "Forma de pago", "Pago con tarjeta", "Pago en efectivo", "Para llevar" (não "llebar"), "Entrega a domicilio".
+- Tradução por `order.language` ou `company.default_language`.
+
+---
+
+## ONDA 3 — Delivery, rota, painel e housekeeping
+
+### 7. Código de entrega NÃO visível ao entregador
+- `DeliveryHomePage.tsx`: remover bloco do código.
+- Adicionar texto "Pide el código al cliente para finalizar la entrega".
+- Adicionar `<Input>` "Introducir código" + botão "Confirmar entrega".
+- Validar via RPC (criar `confirm_delivery_code(order_id, code)` se não existir, ou validar client-side comparando com `delivery_code`).
+- Erro: "Código incorrecto".
+
+### 8. Botão "Abrir ruta" funcional
+- `DeliveryHomePage.tsx`: trocar handler para `window.location.href = \`https://www.google.com/maps/search/?api=1&query=\${encodeURIComponent(address)}\``.
+- Em Capacitor Android: detectar `window.Capacitor` e usar `App.openUrl({ url: \`geo:0,0?q=\${encoded}\` })` para abrir picker nativo.
+
+### 9. Tablet sempre landscape + sidebar compacto
+- `src/services/androidOrientation.ts`: forçar landscape em rotas staff (`/panel`, `/admin`, `/kds`).
+- Cliente: portrait. Delivery: portrait.
+- Sidebar (provavelmente `src/views/panel/` layout): collapse por default mostrando só ícones, expandir on click.
+
+### 10. Fila de impressão — botões admin
+- Página de printer (provavelmente `SettingsPage.tsx` ou `DiagnosticsPage.tsx`): adicionar 4 botões "Limpiar fallidos", "Limpiar tests", "Reintentar pendientes", "Eliminar jobs antiguos".
+- Migrations: RPCs `cleanup_failed_print_jobs`, `cleanup_test_print_jobs`, `retry_pending_print_jobs`, `cleanup_old_print_jobs(days)`.
+- Confirm dialog antes.
+
+### 11. Testes de validação
+- Após cada onda: rodar `bun run build` para garantir que nada quebrou.
+- No fim: validar via browser na preview os 5 cenários do brief.
+
+---
+
+## Notas técnicas
+
+- **Idioma:** vou ler `default_language` da loja em runtime e passar para o `staffT()` e para o `escPosTicketBuilder` (novo argumento `lang`).
+- **Combo parsing:** regex `/(?:pan pita|pita|unidad|item|hamburguesa|durum)\s*(\d+)/i` capturando índice, agrupando extras pelo número.
+- **Cliente sem som:** guard pattern com `useUserRole()` retornando `null` ou role `customer` → block.
+- **Stripe debug:** investigar `index.html` e qualquer `<script src*="stripe">` com flags de dev.
+
+---
+
+## Não inclui
+
+- Refatoração de schema (combo_index nos extras) — fica pra depois, parseio pelo nome agora.
+- Mudanças em produtos/categorias — só apresentação.
+- Multi-tenant: idioma é por loja via `company_settings.default_language` já existente.
+
+Aprova que eu já começo pela Onda 1?
