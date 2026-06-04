@@ -168,14 +168,7 @@ function buildBytes(order: TicketOrder): Uint8Array {
   for (const it of order.items) {
     const name = it.size ? `${it.name} (${it.size})` : it.name;
     w.line(cols(it.quantity.toString(), sanitize(name), it.price.toFixed(2), (it.price * it.quantity).toFixed(2)));
-    if (it.extras?.length) {
-      for (const e of it.extras) {
-        const ex = e.price ? `+ ${e.name} (${e.price.toFixed(2)}€)` : `+ ${e.name}`;
-        w.line(`    ${sanitize(ex)}`);
-      }
-    }
-    if (it.removed?.length) w.line(`    - sin ${it.removed.map(sanitize).join(", ")}`);
-    if (it.notes?.trim()) w.line(`    >> ${sanitize(it.notes.trim())}`);
+    renderItemExtras(w, it);
   }
 
   w.line(sep("-"));
