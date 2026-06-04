@@ -168,26 +168,7 @@ function buildBytes(order: TicketOrder): Uint8Array {
   for (const it of order.items) {
     const name = it.size ? `${it.name} (${it.size})` : it.name;
     w.line(cols(it.quantity.toString(), sanitize(name), it.price.toFixed(2), (it.price * it.quantity).toFixed(2)));
-    let spicyLine: string | null = null;
-    if (it.extras?.length) {
-      for (const e of it.extras) {
-        const lbl = (e.name || "").toLowerCase();
-        if (/picant|spicy|piquant/.test(lbl)) {
-          const isYes = /\b(con|com|sí|si|yes|with|avec)\b/.test(lbl) && !/\b(sin|sem|no|sans|without)\b/.test(lbl);
-          spicyLine = `PICANTE: ${isYes ? "SÍ" : "NO"}`;
-          continue;
-        }
-        const ex = e.price ? `+ ${e.name} (${e.price.toFixed(2)}€)` : `+ ${e.name}`;
-        w.line(`    ${sanitize(ex)}`);
-      }
-    }
-    if (spicyLine) {
-      w.cmd(BOLD_ON);
-      w.line(`    >> ${spicyLine}`);
-      w.cmd(BOLD_OFF);
-    }
-    if (it.removed?.length) w.line(`    - sin ${it.removed.map(sanitize).join(", ")}`);
-    if (it.notes?.trim()) w.line(`    >> ${sanitize(it.notes.trim())}`);
+    renderItemExtras(w, it);
   }
 
 
