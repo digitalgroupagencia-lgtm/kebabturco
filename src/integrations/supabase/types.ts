@@ -2898,6 +2898,10 @@ export type Database = {
         Args: { _new_status: string; _order_id: string }
         Returns: Json
       }
+      apply_template_catchup: {
+        Args: { _target_version: string }
+        Returns: Json
+      }
       assign_delivery_driver: {
         Args: { _driver_user_id: string; _order_id: string }
         Returns: Json

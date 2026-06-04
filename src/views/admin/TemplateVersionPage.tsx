@@ -55,6 +55,8 @@ export default function TemplateVersionPage() {
   const [status, setStatus] = useState<TemplateStatus | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [applying, setApplying] = useState(false);
+
 
   // form
   const [projectName, setProjectName] = useState("");
@@ -115,8 +117,42 @@ export default function TemplateVersionPage() {
     void load();
   };
 
+  const applyCatchup = async () => {
+    setApplying(true);
+    const { data, error } = await supabase.rpc("apply_template_catchup", {
+      _target_version: TEMPLATE_VERSION,
+    });
+    setApplying(false);
+    if (error) {
+      toast({
+        title: "Falha ao atualizar banco",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    const result = data as { ok: boolean; error?: string; already_up_to_date?: boolean; new_version?: string; previous_version?: string };
+    if (!result?.ok) {
+      toast({
+        title: "Não foi possível atualizar",
+        description: result?.error ?? "Erro desconhecido",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: result.already_up_to_date ? "Banco já estava atualizado" : "Banco atualizado com sucesso",
+      description: result.already_up_to_date
+        ? `Versão ${result.new_version ?? TEMPLATE_VERSION}`
+        : `${result.previous_version ?? "—"} → ${result.new_version}`,
+    });
+    void load();
+  };
+
   const badge = status ? statusBadge(status) : null;
   const StatusIcon = badge?.icon ?? RefreshCw;
+  const needsCatchup = status?.kind === "db_outdated" || status?.kind === "bootstrap_missing";
+
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -166,8 +202,34 @@ export default function TemplateVersionPage() {
               </p>
             </div>
           </div>
+          {needsCatchup && (
+            <div className="rounded-lg border border-warning/40 bg-warning/5 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  Atualizar banco para v{TEMPLATE_VERSION} agora
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aplica a versão do código no banco e registra no histórico.
+                  Operação segura e idempotente — pode rodar quantas vezes precisar.
+                </p>
+              </div>
+              <Button
+                onClick={() => void applyCatchup()}
+                disabled={applying}
+                className="gap-2"
+              >
+                {applying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {applying ? "Aplicando…" : `Atualizar banco para v${TEMPLATE_VERSION}`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
