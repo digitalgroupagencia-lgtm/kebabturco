@@ -53,8 +53,23 @@ Deno.serve(async (req) => {
       .eq("is_active", true)
       .limit(2);
 
+    const resolveName = (n: unknown): string => {
+      if (typeof n === "string") {
+        const t = n.trim();
+        if (t.startsWith("{") && t.endsWith("}")) {
+          try { return resolveName(JSON.parse(t)); } catch { return t; }
+        }
+        return t;
+      }
+      if (n && typeof n === "object") {
+        const o = n as Record<string, unknown>;
+        const v = o.es || o.en || o.pt || Object.values(o)[0];
+        return typeof v === "string" ? v : String(v ?? "");
+      }
+      return String(n ?? "");
+    };
     const items = (products && products.length > 0)
-      ? products.map((p) => ({ product_id: p.id, product_name: p.name, quantity: 1, unit_price: Number(p.price) || 0, total_price: Number(p.price) || 0 }))
+      ? products.map((p) => ({ product_id: p.id, product_name: resolveName(p.name), quantity: 1, unit_price: Number(p.price) || 0, total_price: Number(p.price) || 0 }))
       : [{ product_id: null, product_name: "[TESTE] Item de teste", quantity: 1, unit_price: 1.00, total_price: 1.00 }];
 
     const subtotal = items.reduce((s, it) => s + it.total_price, 0);
