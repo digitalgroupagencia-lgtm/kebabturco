@@ -96,6 +96,7 @@ const systemItems = [
   { title: "Monitorização", url: nav.admin("monitoring"), icon: Activity },
   { title: "Guia", url: nav.admin("guide"), icon: BookOpen },
   { title: "Conversas IA", url: nav.admin("conversations"), icon: MessageSquare },
+  { title: "Versão do Template", url: nav.admin("template-version"), icon: GitBranch },
   { title: "Definições", url: nav.admin("settings"), icon: Settings },
 ];
 
