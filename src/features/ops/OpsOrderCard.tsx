@@ -138,11 +138,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
           )}
           {awaitingDriver && (
             <Badge variant="secondary" className="h-4 px-1 text-[9px] gap-0.5">
-              <Bike className="h-2 w-2" /> {driverName || "Atribuído"}
+              <Bike className="h-2 w-2" /> {driverName || t("ops.card.assigned")}
             </Badge>
           )}
           {onTheWay && (
-            <Badge className="h-4 px-1 text-[9px] bg-orange-600">A caminho</Badge>
+            <Badge className="h-4 px-1 text-[9px] bg-orange-600">{t("ops.card.on_the_way")}</Badge>
           )}
         </div>
 
