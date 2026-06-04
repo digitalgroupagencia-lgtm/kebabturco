@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _template_version: {
+        Row: {
+          applied_at: string
+          codename: string | null
+          id: boolean
+          notes: string | null
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          codename?: string | null
+          id?: boolean
+          notes?: string | null
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          codename?: string | null
+          id?: boolean
+          notes?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           created_at: string
