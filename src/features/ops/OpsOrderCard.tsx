@@ -54,6 +54,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onRequestAssignDriver,
   onMarkPaid,
 }: OpsOrderCardProps) {
+  const { t } = useStaffT();
   const payment = getPanelPaymentBadge(order);
   const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
   const actionLabel = getCompactActionLabel(order, viewerRole);
