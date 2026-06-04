@@ -30,6 +30,7 @@ import {
   BarChart3,
   ShoppingBag,
   Play,
+  GitBranch,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,6 +97,7 @@ const systemItems = [
   { title: "Monitorização", url: nav.admin("monitoring"), icon: Activity },
   { title: "Guia", url: nav.admin("guide"), icon: BookOpen },
   { title: "Conversas IA", url: nav.admin("conversations"), icon: MessageSquare },
+  { title: "Versão do Template", url: nav.admin("template-version"), icon: GitBranch },
   { title: "Definições", url: nav.admin("settings"), icon: Settings },
 ];
 

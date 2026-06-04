@@ -2359,6 +2359,48 @@ export type Database = {
           },
         ]
       }
+      template_update_history: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          created_at: string
+          id: string
+          migration_names: string[]
+          notes: string | null
+          project_name: string | null
+          requires_apk_rebuild: boolean
+          success: boolean
+          update_type: string
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          migration_names?: string[]
+          notes?: string | null
+          project_name?: string | null
+          requires_apk_rebuild?: boolean
+          success?: boolean
+          update_type?: string
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          migration_names?: string[]
+          notes?: string | null
+          project_name?: string | null
+          requires_apk_rebuild?: boolean
+          success?: boolean
+          update_type?: string
+          version?: string
+        }
+        Relationships: []
+      }
       tenant_ai_modules: {
         Row: {
           config: Json
@@ -3101,6 +3143,14 @@ export type Database = {
           payment_method: string
           status: string
           total_amount: number
+        }[]
+      }
+      get_template_version_status: {
+        Args: never
+        Returns: {
+          applied_at: string
+          project_name: string
+          version: string
         }[]
       }
       get_tenant_billing: {
