@@ -52,9 +52,6 @@ const PromoBannerCarousel = () => {
     return () => window.clearTimeout(t);
   }, [items, index, interval]);
 
-  if (!enabled && banners.length === 0 && !showFallback) return null;
-  if (items.length === 0) return null;
-
   const currentItem = items[index];
   const currentMediaType = currentItem?.media_type ?? "image";
   const currentIsVideo = currentMediaType === "video";
@@ -66,6 +63,9 @@ const PromoBannerCarousel = () => {
       setMuted(currentItem?.video_muted ?? currentIsVideo);
     }
   }, [currentItem?.id, currentItem?.video_muted, currentIsAudio, currentIsVideo]);
+
+  if (!enabled && banners.length === 0 && !showFallback) return null;
+  if (items.length === 0 || !currentItem) return null;
 
   return (
     <div className="w-full">
