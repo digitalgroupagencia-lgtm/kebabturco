@@ -4,19 +4,24 @@ import { sortModifierGroups } from "./groupOrder";
 import { isDrinkProduct } from "./drinkProduct";
 
 const SANDWICH_CATEGORY_RE =
-  /sandu|sandw|bocadi|durum|d[üu]r[üu]m|pita|kebab|wrap|rollo|hamburg|burger/i;
+  /sandu|sandw|bocadi|durum|d[üu]r[üu]m|pita|kebab|wrap|rollo|hamburg|burger|burgu|plato|combinad|men[uú]|box|crispy|pollo/i;
 const SANDWICH_NAME_RE =
-  /sandu|sandw|bocadi|durum|d[üu]r[üu]m|pita|kebab|wrap|rollo|hamburg|burger|d[üu]rum/i;
+  /sandu|sandw|bocadi|durum|d[üu]r[üu]m|pita|kebab|wrap|rollo|hamburg|burger|burgu|plato|combinad|men[uú]\b|\bbox\b|crispy|pollo/i;
+const EXCLUDE_CATEGORY_RE = /ensalad|salad|patata|fries|chips|bebid|drink|boisson|refresc|postre|dessert|salsa|sauce|molho/i;
+const EXCLUDE_NAME_RE = /^(ensalad|salad|patata|fries|chips|salsa|sauce|molho|postre|dessert)/i;
 
-/** Detecta sanduíches/wraps/kebabs/durum/hamburguer. */
+/** Detecta sanduíches/wraps/kebabs/durum/hamburguer/platos/menús/box/crispy. */
 export function isSandwichProduct(product: MenuProduct | undefined): boolean {
   if (!product) return false;
   if (isDrinkProduct(product)) return false;
   const cat = `${product.category || ""} ${product.categorySlug || ""}`.toLowerCase();
-  if (SANDWICH_CATEGORY_RE.test(cat)) return true;
   const text = `${product.name?.es || ""} ${product.name?.pt || ""} ${product.name?.en || ""}`.toLowerCase();
+  if (EXCLUDE_CATEGORY_RE.test(cat) && !SANDWICH_CATEGORY_RE.test(cat)) return false;
+  if (EXCLUDE_NAME_RE.test(text.trim())) return false;
+  if (SANDWICH_CATEGORY_RE.test(cat)) return true;
   return SANDWICH_NAME_RE.test(text);
 }
+
 
 function groupLabel(group: ModifierGroup): string {
   return `${group.name.es || ""} ${group.name.pt || ""} ${group.name.en || ""}`.toLowerCase();
