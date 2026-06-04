@@ -202,8 +202,34 @@ export default function TemplateVersionPage() {
               </p>
             </div>
           </div>
+          {needsCatchup && (
+            <div className="rounded-lg border border-warning/40 bg-warning/5 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  Atualizar banco para v{TEMPLATE_VERSION} agora
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aplica a versão do código no banco e registra no histórico.
+                  Operação segura e idempotente — pode rodar quantas vezes precisar.
+                </p>
+              </div>
+              <Button
+                onClick={() => void applyCatchup()}
+                disabled={applying}
+                className="gap-2"
+              >
+                {applying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {applying ? "Aplicando…" : `Atualizar banco para v${TEMPLATE_VERSION}`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
