@@ -7,6 +7,7 @@ import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
 import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
+import { useStaffT } from "@/hooks/useStaffT";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   compactCardBorderClass,
