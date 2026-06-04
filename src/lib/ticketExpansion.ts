@@ -17,11 +17,21 @@ function pickLabel(name: Record<string, string> | null | undefined): string {
   return name.es || name.pt || name.en || name.fr || Object.values(name)[0] || "";
 }
 
-function unitTag(unitIndex: number | null | undefined, unitLabel?: Record<string, string> | null): string {
-  // Usa "Pita N" como prefixo canônico — reconhecido pelo regex do builder.
-  if (typeof unitIndex === "number" && unitIndex > 0) return `Pita ${unitIndex}`;
+function extractUnitNumber(unitLabel?: Record<string, string> | null): number | null {
   const lbl = pickLabel(unitLabel || undefined);
-  return lbl || "Item";
+  const match = lbl.match(/(?:pita|unidad|item|hamburguesa|burger|durum|wrap|kebab)\s*(\d+)/i)
+    || lbl.match(/\b(\d+)\s*[º°ª\.]?\s*(?:pan|pita|unidad|item|hamburguesa|burger|durum|wrap|kebab)\b/i);
+  if (!match) return null;
+  const n = Number.parseInt(match[1], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function unitTag(unitIndex: number | null | undefined, unitLabel: Record<string, string> | null | undefined, zeroBased: boolean): string {
+  // Usa "Pita N" como prefixo canônico — reconhecido pelo regex do builder.
+  const fromLabel = extractUnitNumber(unitLabel);
+  if (fromLabel) return `Pita ${fromLabel}`;
+  if (typeof unitIndex === "number" && unitIndex >= 0) return `Pita ${zeroBased ? unitIndex + 1 : unitIndex}`;
+  return "Item";
 }
 
 function pushSelection(
@@ -53,11 +63,23 @@ function buildFromConfiguration(config: CartConfiguration): {
 } {
   const acc = { extras: [] as { name: string; price?: number }[], removed: [] as string[] };
   for (const s of config.globalSelections || []) pushSelection(acc, s, null);
+  const numericUnitIndexes = (config.comboUnits || [])
+    .map((u) => u.unitIndex)
+    .filter((n): n is number => typeof n === "number" && Number.isFinite(n));
+  const zeroBased = numericUnitIndexes.length > 0 && Math.min(...numericUnitIndexes) === 0;
   for (const u of config.comboUnits || []) {
-    const prefix = unitTag(u.unitIndex, u.unitLabel);
+    const prefix = unitTag(u.unitIndex, u.unitLabel, zeroBased);
     for (const s of u.selections) pushSelection(acc, s, prefix);
   }
   return acc;
+}
+
+function parseJsonValue<T>(raw: unknown): T | null {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    try { return JSON.parse(raw) as T; } catch { return null; }
+  }
+  return raw as T;
 }
 
 /** Constrói TicketItem a partir de um CartItem, expandindo combos. */
@@ -113,8 +135,9 @@ export function orderItemToTicketItem(item: {
     return String(n ?? "");
   };
 
-  const cfg = item.configuration as CartConfiguration | null | undefined;
-  const sels = Array.isArray(item.selections) ? (item.selections as ModifierSelection[]) : [];
+  const cfg = parseJsonValue<CartConfiguration>(item.configuration);
+  const parsedSelections = parseJsonValue<ModifierSelection[]>(item.selections);
+  const sels = Array.isArray(parsedSelections) ? parsedSelections : [];
 
   // Reconstrói a configuração se só tivermos selections planas.
   const effectiveCfg: CartConfiguration | null = cfg && (cfg.globalSelections || cfg.comboUnits)

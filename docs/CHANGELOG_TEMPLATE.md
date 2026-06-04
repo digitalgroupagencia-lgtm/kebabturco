@@ -18,6 +18,28 @@ Checklist de validação: ...
 
 ---
 
+## [1.1.4] — 2026-06-04
+Tipo: bugfix + impressão
+Migrations: não
+Rebuild APK: não
+Risco: baixo
+Arquivos principais:
+- `src/lib/ticketExpansion.ts`
+- `src/lib/ticketExpansion.test.ts`
+- `src/services/escPosTicketBuilder.ts`
+- `supabase/functions/_shared/escPosTicketBuilder.ts`
+Descrição:
+- Corrige impressão de combos reais onde `unitIndex` começa em `0` no banco/carrinho. Agora `0,1,2,3` vira corretamente **Pita 1, Pita 2, Pita 3, Pita 4**.
+- A reimpressão passa a interpretar `configuration` e `selections` mesmo quando chegam como JSON serializado.
+- Remoções do combo deixam de sair agrupadas no item principal e passam para a unidade correta.
+- Classificação da carne reconhece também `Mixed/Mixte`, evitando cair como linha genérica.
+Checklist de validação:
+- Combo 4 Pan Pita com escolhas diferentes → impressão mostra Pita 1–4 individualmente.
+- Remoções Col/Tomate/Cebolla aparecem dentro da Pita correta.
+- Reimpressão pelo painel usa o mesmo formato corrigido.
+
+---
+
 ## [1.1.3] — 2026-06-04
 Tipo: feature + bugfix + frontend
 Migrations: não
