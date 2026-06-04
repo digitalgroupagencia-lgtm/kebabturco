@@ -8,7 +8,7 @@ import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
 import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
-import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
+import { groupOrderItemDetails } from "@/lib/modifiers/formatOrderItem";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   ETA_QUICK_OPTIONS,
