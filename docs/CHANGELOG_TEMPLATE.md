@@ -20,14 +20,14 @@ Checklist de validação: ...
 
 ## [1.1.1] — 2026-06-04
 Tipo: bugfix + frontend + banco
-Migrations: sim — `20260607231000_fix_print_job_cleanup_status_cast.sql`
+Migrations: sim — `20260604183418_f9ed086f-e65e-490a-9088-84a36e0331bb.sql`
 Rebuild APK: não
 Risco: baixo
 Arquivos principais:
 - `src/components/admin/AdminAssistant.tsx`
 - `src/views/admin/BannerPage.tsx`
 - `src/components/PromoBannerCarousel.tsx`
-- `supabase/migrations/20260607231000_fix_print_job_cleanup_status_cast.sql`
+- `supabase/migrations/20260604183418_f9ed086f-e65e-490a-9088-84a36e0331bb.sql`
 - `supabase/functions/admin-assistant/index.ts`
 Descrição: respostas do Assistente Admin Master agora quebram dentro da janela e têm botão copiar; banners aceitam upload direto de imagem, MP4/MOV e MP3; carrossel respeita intervalo só para imagens e troca vídeo/áudio ao terminar; teste guiado corrige limpeza de print_jobs com enum.
 Checklist de validação:
