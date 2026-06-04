@@ -151,7 +151,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
         )}
         {blockedUntilPaid && (
           <p className="mt-0.5 text-[9px] font-semibold text-foreground">
-            Balcão só vai para cozinha após confirmar pagamento.
+            {t("ops.card.blocked_until_paid")}
           </p>
         )}
       </button>
