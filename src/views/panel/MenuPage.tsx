@@ -357,7 +357,7 @@ const MenuPage = () => {
         .from("products")
         .update(payload)
         .eq("id", editingProduct.id);
-      if (error) { toast.error("Erro ao atualizar produto"); return; }
+      if (error) { toast.error(`Erro ao atualizar produto: ${error.message}`); return; }
       try {
         await saveProductModifierLinks(editingProduct.id, modifierLinks);
       } catch {
