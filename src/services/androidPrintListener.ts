@@ -67,9 +67,11 @@ type AndroidBridgeWindow = Window & {
 };
 
 const TAG = "[AndroidPrint]";
-const BUILD_VERSION = "tcp-native-v3";
+const BUILD_VERSION = "tcp-native-v4-polling";
 let started = false;
 const channels: RealtimeChannel[] = [];
+const subscribedStores = new Set<string>();
+const pollTimers = new Map<string, number>();
 const directBridgeCallbacks = new Map<string, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: number }>();
 let directBridgeCounter = Math.floor(Math.random() * 100000);
 let runtimeCacheCleanupStarted = false;
@@ -339,11 +341,27 @@ async function markJob(jobId: string, status: "printing" | "printed" | "failed",
   if (error) log("falha update job", jobId, error.message);
 }
 
+async function claimPendingJob(jobId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("print_jobs")
+    .update({ status: "printing", error_message: null, updated_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("status", "pending")
+    .select("id")
+    .limit(1);
+  if (error) {
+    log("falha ao reservar job", jobId, error.message);
+    return false;
+  }
+  return !!data?.length;
+}
+
 async function processJob(job: PrintJob) {
   if (job.status !== "pending") return;
   log("novo job", job.id, `(copies=${job.copies})`);
   try {
-    await markJob(job.id, "printing");
+    const claimed = await claimPendingJob(job.id);
+    if (!claimed) return;
     await sendEscPos(job);
     await markJob(job.id, "printed");
     log("✓ impresso", job.id);
@@ -368,6 +386,8 @@ async function drainPending(storeId: string) {
 }
 
 function subscribeStore(storeId: string) {
+  if (subscribedStores.has(storeId)) return;
+  subscribedStores.add(storeId);
   const ch = supabase
     .channel(`android-print:${storeId}`)
     .on(
@@ -382,8 +402,10 @@ function subscribeStore(storeId: string) {
       if (status === "SUBSCRIBED") log("escutando loja", storeId);
     });
   channels.push(ch);
-  // Drain any jobs pendentes deixados enquanto offline
+  // Drain imediato + polling contínuo: não depende só do Realtime.
   void drainPending(storeId);
+  const timer = window.setInterval(() => void drainPending(storeId), 3_000);
+  pollTimers.set(storeId, timer);
 }
 
 export async function startAndroidPrintListener() {
@@ -409,9 +431,8 @@ export async function startAndroidPrintListener() {
   // Reavalia lojas a cada 5 min (caso admin troque o modo)
   setInterval(async () => {
     const current = await fetchAndroidStores();
-    const knownIds = new Set(channels.map((c) => c.topic.replace("realtime:android-print:", "")));
     for (const id of current) {
-      if (!knownIds.has(id)) subscribeStore(id);
+      if (!subscribedStores.has(id)) subscribeStore(id);
     }
   }, 5 * 60 * 1000);
 }
