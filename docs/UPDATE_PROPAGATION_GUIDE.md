@@ -7,124 +7,101 @@ restaurantes já criados (clones via Remix).
 
 ## 1. Tipos de atualização
 
-| Tipo | Exemplo | Onde aplicar | Como propagar |
+| Tipo | Exemplo | Onde aplicar | Propagação |
 |---|---|---|---|
-| **Código** | Nova tela, fix de UI, edge function | Frontend / functions | GitHub central OU pedir no Lovable de cada projeto |
-| **Banco** | Nova tabela, coluna, RPC, RLS | Migration SQL | Copiar `.sql` e aplicar em cada projeto |
-| **Dados** | Novo produto, banner, preço | Catálogo do restaurante | Não propagar — local a cada loja |
+| **Frontend (web)** | Tela, fix UI, hook | `src/` | `git pull` + rebuild web |
+| **Edge function** | Nova RPC, webhook | `supabase/functions/` | `git pull` (auto deploy) |
+| **Banco** | Tabela, coluna, RPC, RLS | Migration SQL | Aplicar `.sql` em cada clone |
+| **Native / Android** | Plugin Capacitor, permissões | `android/`, `capacitor.config.ts` | **Rebuild + reinstalar APK** |
+| **Dados** | Produto, banner, preço | Catálogo do tenant | NÃO propagar (local) |
 
 ---
 
-## 2. Fluxo para atualizar CÓDIGO em todos os restaurantes
+## 2. Atualização de CÓDIGO em um restaurante clonado
 
-### Opção A — GitHub central (recomendada para 5+ restaurantes)
+```bash
+git pull
+npm install
+npm run build
+npx cap sync android   # apenas se mexer em nativo
+```
 
-1. No **Master (Kebab Turco)**: faça a alteração e commit.
-2. Em cada restaurante clone:
-   - Conecte ao mesmo repo GitHub OU faça `git pull` do master.
-   - Lovable detecta e aplica os arquivos automaticamente.
-3. Bumpa `TEMPLATE_VERSION` em `src/lib/templateVersion.ts` no Master.
+### Quando precisa rebuildar / reinstalar APK?
 
-### Opção B — Manual via Lovable (até 5 restaurantes)
-
-1. No Master, copie o texto da alteração (arquivos + diff).
-2. Em cada restaurante, abra o Lovable e peça:
-   > "Aplica esta alteração do Master: [colar]"
-3. Verifique a versão depois.
-
----
-
-## 3. Fluxo para aplicar MIGRATIONS novas
-
-1. No Master, ao criar uma migration, ela fica em
-   `supabase/migrations/AAAAMMDDHHMMSS_nome.sql`.
-2. Copie o **conteúdo completo** do arquivo.
-3. Em cada restaurante:
-   - Abra o Lovable.
-   - Cole o SQL no chat com a instrução:
-     > "Cria migration com este SQL: [colar]"
-   - O Lovable cria a migration localmente e o usuário aprova.
-4. A migration deve **atualizar a tabela `_template_version`** no final:
-   ```sql
-   UPDATE public._template_version SET version = '1.1.0', applied_at = now();
-   ```
-
-> ⚠️ **Sempre escreva migrations idempotentes**
-> (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`, `ADD COLUMN IF NOT EXISTS`).
+| Tipo de mudança | Precisa rebuild APK? |
+|---|---|
+| Só HTML/CSS/React | ❌ Não — basta deploy web |
+| Edge function nova | ❌ Não |
+| Migration SQL | ❌ Não |
+| Plugin Capacitor novo / removido | ✅ Sim |
+| Firebase / FCM atualizado | ✅ Sim |
+| Permissão Android nova (`AndroidManifest.xml`) | ✅ Sim |
+| Impressão nativa / Bluetooth nativo | ✅ Sim |
+| `capacitor.config.ts` (appId/url/plugins) | ✅ Sim |
 
 ---
 
-## 4. Verificar versão do banco
+## 3. Atualização de BANCO (migrations)
 
+1. No Master, localize as novas migrations em `supabase/migrations/`.
+2. Copie o **SQL completo** do arquivo.
+3. No restaurante clone, abra o Lovable e peça:
+   > "Cria migration com este SQL: [colar]"
+4. Aprove a migration.
+5. Confirme que ela faz `UPDATE public._template_version SET version = 'X.Y.Z', applied_at = now();` no final.
+6. Registre o update em `template_update_history` (a tela admin faz isso automaticamente).
+
+> ⚠️ Migrations **devem ser idempotentes**:
+> `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `ON CONFLICT DO NOTHING`.
+
+---
+
+## 4. Atualização de DADOS — NUNCA SOBRESCREVER
+
+Estes dados são exclusivos de cada restaurante e **não** devem ser propagados:
+
+- `products`, `categories`, `product_sizes`, `product_extras`
+- `promo_banners`
+- `orders`, `order_items`
+- `customers`, `customer_saved_profiles`
+- `payment_history`, `store_payouts`, `store_payment_ledger`
+- `stripe_account_id`, secrets Stripe
+- FCM tokens / `push_subscriptions`
+- `print_jobs` reais
+- `company_settings` (logo, cores, nome)
+- `stores` (nome, endereço, telefone, horários)
+- `delivery_zones`, `printer_settings`, `totem_config`
+
+Sempre propague:
+
+- `src/`, `public/`, `docs/`
+- `supabase/functions/`
+- `supabase/migrations/` novas
+- `capacitor.config.ts` / `android/` (com rebuild APK)
+
+---
+
+## 5. Verificar versões
+
+**Código:** `src/lib/templateVersion.ts` → `TEMPLATE_VERSION`.
+
+**Banco:**
 ```sql
 SELECT version, applied_at FROM public._template_version ORDER BY applied_at DESC LIMIT 1;
 ```
 
-## 5. Verificar versão do código
-
-Abra `src/lib/templateVersion.ts` no projeto e leia `TEMPLATE_VERSION`.
-
-Ou no console do navegador (página /admin):
-```js
-import("/src/lib/templateVersion.ts").then(m => console.log(m.TEMPLATE_VERSION));
-```
+**UI:** `Admin Master → Sistema → Versão do Template`.
 
 ---
 
-## 6. Identificar restaurantes desatualizados
+## 6. Checklist rápido pré-deploy
 
-Mantenha uma planilha simples:
-
-| Restaurante | Versão Código | Versão Banco | Última atualização |
-|---|---|---|---|
-| Kebab Turco Gandia (Master) | 1.0.0 | 1.0.0 | 2026-06-04 |
-| Pastelanche | 1.0.0 | 1.0.0 | 2026-06-04 |
-| Pizzaria X | 0.9.0 | 0.9.0 | 2026-04-01 |
-
-Quando lançar 1.1.0 no Master, qualquer linha com versão menor precisa atualizar.
-
----
-
-## 7. Não sobrescrever customizações locais
-
-**Nunca** copie estas pastas/tabelas do Master para um clone:
-
-| Local | Conteúdo customizado | Por quê |
-|---|---|---|
-| `company_settings` (linha do tenant) | Logo, cores, nome | Cada restaurante tem identidade própria |
-| `stores` (nome, endereço, telefone) | Identidade da loja | Idem |
-| `products`, `categories`, `product_extras`, `product_sizes` | Cardápio | Cardápio é local |
-| `promo_banners` | Banners da loja | Idem |
-| `delivery_zones`, `printer_settings`, `totem_config` | Configurações operacionais | Idem |
-| Secrets (Stripe, FCM, etc.) | Chaves privadas | Cada restaurante tem as suas |
-
-**Sempre** propague:
-
-- `src/` (todo o frontend)
-- `supabase/functions/` (edge functions)
-- `supabase/migrations/` novas
-- `public/` (assets compartilhados)
-- `docs/`
-
----
-
-## 8. Checklist rápido pré-deploy de uma atualização
-
-- [ ] Migration é idempotente?
-- [ ] `TEMPLATE_VERSION` foi incrementado?
+- [ ] Migration idempotente?
+- [ ] `TEMPLATE_VERSION` incrementado?
 - [ ] Migration atualiza `_template_version`?
 - [ ] `CHANGELOG_TEMPLATE.md` tem a entrada nova?
-- [ ] Testado no Master antes de propagar?
-- [ ] Lista de restaurantes a atualizar está pronta?
+- [ ] Testado no Master?
+- [ ] Lista de restaurantes a atualizar pronta?
+- [ ] Sinalizado se precisa rebuild APK?
 
----
-
-## 9. Resumo executivo
-
-| Cenário | Ação |
-|---|---|
-| Alterei só o frontend | `git pull` em cada clone OU pedir ao Lovable |
-| Criei uma migration | Copiar `.sql` e pedir ao Lovable para criar em cada clone |
-| Alterei produto/banner | Não propagar |
-| Criei novo secret | Adicionar manualmente em cada projeto |
-| Subi um plan/feature global | Migration idempotente que faz `INSERT ON CONFLICT DO NOTHING` |
+Veja também `docs/RESTAURANT_UPDATE_CHECKLIST.md` e `docs/MASTER_UPDATE_WORKFLOW.md`.
