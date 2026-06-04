@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import DeliveryAccessGuard from "@/components/delivery/DeliveryAccessGuard";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
   page?: ComponentType<object>;
@@ -11,14 +12,15 @@ type Props = {
 
 export default function DeliveryLayout({ page: Page }: Props) {
   const { signOut } = useAuth();
+  const { t } = useStaffT("es");
 
   return (
     <DeliveryAccessGuard>
       <div className="min-h-dvh bg-background flex flex-col">
         <header className="sticky top-0 z-30 border-b bg-orange-600 text-white px-4 py-3 flex items-center justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-widest font-bold opacity-80">Entregas</p>
-            <h1 className="text-lg font-black">Painel do entregador</h1>
+            <p className="text-[10px] uppercase tracking-widest font-bold opacity-80">{t("delivery.layout.section")}</p>
+            <h1 className="text-lg font-black">{t("delivery.layout.title")}</h1>
           </div>
           <div className="flex items-center gap-1">
             <StaffLanguageToggle compact defaultLang="es" />
@@ -29,7 +31,7 @@ export default function DeliveryLayout({ page: Page }: Props) {
             className="text-white hover:bg-white/10"
             onClick={() => void signOut("/staff")}
           >
-            <LogOut className="h-4 w-4 mr-1" /> Sair
+            <LogOut className="h-4 w-4 mr-1" /> {t("common.signout")}
           </Button>
           </div>
         </header>

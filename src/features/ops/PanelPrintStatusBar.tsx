@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader2, AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useStaffT } from "@/hooks/useStaffT";
 import type { PrintQueueSummary } from "./usePanelPrintStatus";
 
 interface PanelPrintStatusBarProps {
@@ -20,6 +21,7 @@ interface PanelPrintStatusBarProps {
  */
 const PanelPrintStatusBar = ({ summary, loading, onRetryFailed, onRefresh }: PanelPrintStatusBarProps) => {
   const [retrying, setRetrying] = useState(false);
+  const { t } = useStaffT();
 
   if (loading || !summary?.printerEnabled) return null;
   if (!summary.failed || summary.failed <= 0) return null;
@@ -30,11 +32,11 @@ const PanelPrintStatusBar = ({ summary, loading, onRetryFailed, onRefresh }: Pan
     try {
       const count = await onRetryFailed();
       toast[count > 0 ? "success" : "info"](
-        count > 0 ? `${count} pedido(s) reenviado(s) para impressão` : "Nenhum pedido para reenviar",
+        count > 0 ? t("print.status.resent").replace("{count}", String(count)) : t("print.status.none_to_resend"),
       );
       onRefresh?.();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao reenviar");
+      toast.error(e instanceof Error ? e.message : t("print.status.resend_error"));
     } finally {
       setRetrying(false);
     }
@@ -44,9 +46,9 @@ const PanelPrintStatusBar = ({ summary, loading, onRetryFailed, onRefresh }: Pan
     <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 flex flex-wrap items-center gap-2 text-xs">
       <AlertTriangle className="w-4 h-4 text-destructive" />
       <span className="font-semibold text-destructive">
-        {summary.failed} pedido(s) não foram impressos
+        {t("print.status.failed").replace("{count}", String(summary.failed))}
       </span>
-      <span className="text-muted-foreground">— verifica a impressora ou reimprime abaixo.</span>
+      <span className="text-muted-foreground">{t("print.status.hint")}</span>
       {onRetryFailed && (
         <Button
           variant="default"
@@ -56,7 +58,7 @@ const PanelPrintStatusBar = ({ summary, loading, onRetryFailed, onRefresh }: Pan
           onClick={() => void handleRetry()}
         >
           {retrying ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-          Reimprimir
+          {t("print.status.reprint")}
         </Button>
       )}
     </div>

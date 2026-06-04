@@ -2837,6 +2837,15 @@ export type Database = {
         Returns: Json
       }
       claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
+      cleanup_print_jobs: {
+        Args: {
+          _older_than_hours?: number
+          _only_tests?: boolean
+          _statuses?: string[]
+          _store_id: string
+        }
+        Returns: Json
+      }
       cleanup_test_orders: {
         Args: { _older_than?: string; _store_id?: string }
         Returns: Json
