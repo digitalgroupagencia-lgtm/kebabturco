@@ -111,8 +111,8 @@ const OpsOrderCard = memo(function OpsOrderCard({
       >
         <div className="flex items-center gap-1.5 min-w-0 text-xs">
           {isTest && (
-            <Badge className="h-4 px-1 text-[9px] font-black bg-yellow-500 text-black shrink-0" title="Pedido de teste — não conta em métricas">
-              TESTE
+            <Badge className="h-4 px-1 text-[9px] font-black bg-yellow-500 text-black shrink-0" title={t("ops.card.test_hint")}>
+              {t("ops.card.test_badge")}
             </Badge>
           )}
           <span className="font-black text-sm tabular-nums shrink-0">#{order.order_number}</span>
