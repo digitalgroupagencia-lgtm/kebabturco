@@ -225,3 +225,28 @@
     animation: shimmer 1.6s infinite;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Hard-block visual de overlays/inspectors do Stripe injetados por
+   extensões de browser ("Stripe Shell", "Stripe Elements Inspector",
+   "Stripe Developers Tools"). Estes vêm de extensões instaladas no
+   browser do utilizador, NÃO do nosso código — mas escondemos por
+   segurança para o cliente final nunca ver UI de dev em produção.
+   ────────────────────────────────────────────────────────────────────────── */
+[id^="stripe-shell"],
+[id^="stripe-dev"],
+[id^="stripe-elements-inspector"],
+[class*="stripe-shell"],
+[class*="stripe-dev-tools"],
+[class*="stripe-elements-inspector"],
+iframe[src*="stripe.com/v3/dev"],
+iframe[name*="stripe-shell"],
+iframe[name*="stripe-elements-inspector"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
