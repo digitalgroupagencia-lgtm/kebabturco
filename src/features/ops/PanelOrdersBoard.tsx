@@ -51,6 +51,7 @@ type Props = {
 const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
+  const { t } = useStaffT();
   const {
     orders,
     itemsByOrder,
