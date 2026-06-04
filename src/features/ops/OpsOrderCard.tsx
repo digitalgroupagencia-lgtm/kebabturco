@@ -203,7 +203,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
               }}
             >
               <Banknote className="h-3 w-3 mr-1" />
-              {payingNow ? "A registar…" : `Confirmar pagamento €${Number(order.total).toFixed(2)}`}
+              {payingNow ? t("ops.card.registering") : `${t("ops.card.confirm_payment")} €${Number(order.total).toFixed(2)}`}
             </Button>
           )}
         </div>
