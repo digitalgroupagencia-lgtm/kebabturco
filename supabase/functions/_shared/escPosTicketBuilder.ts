@@ -109,7 +109,7 @@ function classifyChoice(label: string): { type: "carne" | "verdura" | "salsa" | 
   const l = label.toLowerCase();
   const isRemoval = /\b(sin|sem|no|sans|without)\b/.test(l);
   const value = stripUnitPrefix(label);
-  if (/carne|meat|viande|pollo|ternera|cordero|mixto|kebab|d[oö]ner/.test(l)) return { type: "carne", value, isRemoval };
+  if (/carne|meat|viande|pollo|ternera|cordero|mixto|mixed|mixte|kebab|d[oö]ner/.test(l)) return { type: "carne", value, isRemoval };
   if (/verdura|veggie|lechuga|tomate|cebol|col\b|salad|pepin|pimien/.test(l)) return { type: "verdura", value, isRemoval };
   if (/salsa|sauce|molho|ali[oñ]l[ií]|mayo|ketchup|barbacoa|bbq/.test(l)) return { type: "salsa", value, isRemoval };
   return { type: "otro", value, isRemoval };
