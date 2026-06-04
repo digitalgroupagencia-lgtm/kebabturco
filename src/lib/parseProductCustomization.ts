@@ -48,11 +48,13 @@ export function parseRemovableIngredients(description: string, skipGenericCarne 
 
   const seen = new Set<string>();
   const out: string[] = [];
+  const HIDDEN_INGREDIENTS = /^(pepino|cucumber|concombre)$/i;
 
   for (const raw of normalized.split(",")) {
     const segment = raw.trim();
     if (!segment || isMeatChoiceSegment(segment)) continue;
     if (skipGenericCarne && /^carne$/i.test(segment)) continue;
+    if (HIDDEN_INGREDIENTS.test(segment)) continue;
 
     const label = segment.charAt(0).toUpperCase() + segment.slice(1);
     const key = label.toLowerCase();
@@ -66,6 +68,7 @@ export function parseRemovableIngredients(description: string, skipGenericCarne 
     for (const raw of conSuffix[1].split(/\s+(?:y|e|and|et)\s+/i)) {
       const segment = raw.trim();
       if (!segment || isMeatChoiceSegment(segment)) continue;
+      if (HIDDEN_INGREDIENTS.test(segment)) continue;
       const label = segment.charAt(0).toUpperCase() + segment.slice(1);
       const key = label.toLowerCase();
       if (!seen.has(key) && label.length <= 48) {

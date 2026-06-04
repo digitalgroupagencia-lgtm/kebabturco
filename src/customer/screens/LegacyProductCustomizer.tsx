@@ -20,10 +20,10 @@ import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const ingredientMap: Record<string, string[]> = {
-  "pita-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
-  "rollo-kebab": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
-  "rollo-casero": ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
-  platos: ["Lechuga", "Cebolla", "Tomate", "Col", "Zanahoria", "Maíz", "Pepino", "Salsa"],
+  "pita-kebab": ["Lechuga", "Col", "Tomate", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
+  "rollo-kebab": ["Lechuga", "Col", "Tomate", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
+  "rollo-casero": ["Lechuga", "Col", "Tomate", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
+  platos: ["Lechuga", "Cebolla", "Tomate", "Col", "Zanahoria", "Maíz", "Salsa"],
   hamburguesas: ["Lechuga", "Tomate", "Cebolla", "Salsa"],
   ensaladas: ["Lechuga", "Tomate", "Cebolla"],
   box: ["Salsa"],
