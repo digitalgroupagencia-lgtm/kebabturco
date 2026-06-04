@@ -36,7 +36,19 @@ type PastOrder = {
   total: number;
   order_type: string;
   created_at: string;
-  items: Array<{ product_name: string; quantity: number; unit_price: number; extras?: unknown; removed?: string[]; notes?: string }>;
+  items: Array<{
+    product_id?: string | null;
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    total_price?: number;
+    size_name?: string | null;
+    extras?: unknown;
+    removed?: string[];
+    notes?: string;
+    selections?: unknown;
+    configuration?: unknown;
+  }>;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -210,24 +222,111 @@ const CustomerAccountScreen = () => {
     setScreen("tracking");
   };
 
-  const reorder = (order: PastOrder) => {
-    for (const item of order.items || []) {
-      addItem({
-        productId: `reorder-${Date.now()}-${Math.random()}`,
-        productName: { es: item.product_name, en: item.product_name, pt: item.product_name, fr: item.product_name },
-        productImage: "",
-        basePrice: Number(item.unit_price),
-        sizeName: null,
-        sizeAdd: 0,
-        extras: [],
-        removedIngredients: item.removed || [],
-        note: item.notes,
-        unitPrice: Number(item.unit_price),
-        quantity: item.quantity || 1,
-        totalPrice: Number(item.unit_price) * (item.quantity || 1),
-      });
+  const reorder = async (order: PastOrder) => {
+    const items = order.items || [];
+    if (items.length === 0) {
+      appToastError("Pedido vazio");
+      return;
     }
-    appToastSuccess("Produtos adicionados ao carrinho");
+
+    // Recolhe todos os product_id reais (quando existem) para buscar imagem/nome/preço actuais.
+    const productIds = Array.from(
+      new Set(items.map((i) => i.product_id).filter((id): id is string => !!id)),
+    );
+
+    type ProductRow = {
+      id: string;
+      name: unknown;
+      image_url: string | null;
+      price: number;
+      product_type: string | null;
+    };
+    let productsById = new Map<string, ProductRow>();
+    if (productIds.length > 0) {
+      const { data: prods, error } = await supabase
+        .from("products")
+        .select("id, name, image_url, price, product_type")
+        .in("id", productIds);
+      if (error) {
+        appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
+        return;
+      }
+      productsById = new Map(((prods ?? []) as ProductRow[]).map((p) => [p.id, p]));
+    }
+
+    let addedCount = 0;
+    let missingCount = 0;
+
+    for (const item of items) {
+      const prod = item.product_id ? productsById.get(item.product_id) : undefined;
+      if (item.product_id && !prod) {
+        // Produto removido do menu — pula para não meter imagem vazia.
+        missingCount += 1;
+        continue;
+      }
+
+      const productNameI18n =
+        prod && prod.name && typeof prod.name === "object"
+          ? (prod.name as Record<string, string>)
+          : { es: item.product_name, en: item.product_name, pt: item.product_name, fr: item.product_name };
+
+      const sizeName = item.size_name
+        ? { es: item.size_name, en: item.size_name, pt: item.size_name, fr: item.size_name }
+        : null;
+
+      const extrasArr = Array.isArray(item.extras) ? (item.extras as Array<Record<string, unknown>>) : [];
+      const cartExtras = extrasArr
+        .filter((e) => e && typeof e === "object")
+        .map((e, idx) => {
+          const rawName = (e.name ?? e.product_name ?? "") as unknown;
+          const name =
+            rawName && typeof rawName === "object"
+              ? (rawName as Record<string, string>)
+              : { es: String(rawName), en: String(rawName), pt: String(rawName), fr: String(rawName) };
+          return {
+            id: String(e.id ?? `extra-${idx}`),
+            name,
+            price: Number(e.price ?? 0),
+            quantity: Number(e.quantity ?? 1),
+          };
+        });
+
+      const qty = Math.max(1, Number(item.quantity) || 1);
+      const unit = Number(item.unit_price) || 0;
+      const total = item.total_price != null ? Number(item.total_price) : unit * qty;
+
+      addItem({
+        productId: prod?.id || `reorder-${Date.now()}-${Math.random()}`,
+        productName: productNameI18n,
+        productImage: prod?.image_url || null,
+        basePrice: prod?.price != null ? Number(prod.price) : unit,
+        sizeName,
+        sizeAdd: 0,
+        extras: cartExtras,
+        removedIngredients: Array.isArray(item.removed) ? (item.removed as string[]) : [],
+        note: item.notes,
+        unitPrice: unit,
+        quantity: qty,
+        totalPrice: total,
+        selections: Array.isArray(item.selections) ? (item.selections as never) : undefined,
+        configuration:
+          item.configuration && typeof item.configuration === "object"
+            ? (item.configuration as never)
+            : undefined,
+        productType: (prod?.product_type as never) ?? undefined,
+      });
+      addedCount += 1;
+    }
+
+    if (addedCount === 0) {
+      appToastError("Los productos de este pedido ya no están disponibles.");
+      return;
+    }
+    if (missingCount > 0) {
+      appToastSuccess(`${addedCount} producto(s) añadido(s). ${missingCount} ya no disponible(s).`);
+    } else {
+      appToastSuccess("Productos añadidos al carrito");
+    }
     setScreen("review");
   };
 
@@ -518,7 +617,7 @@ const CustomerAccountScreen = () => {
                 <Package className="w-4 h-4" /> {t("trackMyOrders")}
               </button>
               <button
-                onClick={() => reorder(order)}
+                onClick={() => void reorder(order)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success/15 text-success text-sm font-bold"
               >
                 <RotateCcw className="w-4 h-4" /> Pedir de novo
