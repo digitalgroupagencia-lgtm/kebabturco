@@ -119,7 +119,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
           <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold shrink-0">
             {getModalityShortLabel(order)}
           </Badge>
-          <span className="truncate font-medium flex-1 min-w-0">{order.customer_name || "Cliente"}</span>
+          <span className="truncate font-medium flex-1 min-w-0">{order.customer_name || t("common.customer")}</span>
           <span className="text-[10px] text-muted-foreground shrink-0">{itemCount}it</span>
           <span className="font-black text-primary text-xs tabular-nums shrink-0">€{Number(order.total).toFixed(2)}</span>
           <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
