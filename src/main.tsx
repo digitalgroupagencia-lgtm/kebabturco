@@ -4,6 +4,9 @@ import "./index.css";
 import { applyBrowserChromeColor, applyStaffAppChrome } from "./lib/brandTokens";
 import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
+import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
+
+startStripeDebugOverlayGuard();
 
 if (isStaffAppPath()) {
   applyStaffAppChrome();
