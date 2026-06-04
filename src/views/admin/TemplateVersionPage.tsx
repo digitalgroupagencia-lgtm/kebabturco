@@ -55,6 +55,8 @@ export default function TemplateVersionPage() {
   const [status, setStatus] = useState<TemplateStatus | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [applying, setApplying] = useState(false);
+
 
   // form
   const [projectName, setProjectName] = useState("");
