@@ -276,7 +276,7 @@ function StepCard({ n, title, children }: { n: number; title: string; children: 
 
 export default function WhiteLabelCentralPage() {
   const { user } = useAuth();
-  const { roleData, isLoading: roleLoading } = useUserRole(user?.id);
+  const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const [status, setStatus] = useState<TemplateStatus | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
