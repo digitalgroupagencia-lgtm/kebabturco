@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import ScreenHeader from "@/components/ScreenHeader";
 import OrderTypeIcon from "@/components/OrderTypeIcon";
 import UpsellProductCard from "@/customer/customization/UpsellProductCard";
-import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight, UtensilsCrossed } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
