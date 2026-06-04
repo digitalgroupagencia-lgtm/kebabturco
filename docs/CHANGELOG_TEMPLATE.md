@@ -18,6 +18,26 @@ Checklist de validação: ...
 
 ---
 
+## [1.1.5] — 2026-06-04
+Tipo: native/android + bugfix impressão
+Migrations: não
+Rebuild APK: sim
+Risco: médio
+Arquivos principais:
+- `src/services/androidPrintListener.ts`
+- `src/services/printerService.ts`
+Descrição:
+- Corrige caso crítico em que pedidos e reimpressões entravam em `print_jobs`, mas ficavam parados como `pending` no modo `android_direct`.
+- O APK Android agora varre a fila a cada 3 segundos, além de ouvir Realtime, então não depende só do evento chegar.
+- Ao criar uma reimpressão/pedido no próprio app Android, tenta processar o job imediatamente.
+- A reserva do job agora é atômica (`pending` → `printing`) para evitar impressão duplicada.
+Checklist de validação:
+- Reimprimir pedido existente no APK → job sai de `pending` e imprime.
+- Criar novo pedido no APK → imprime sem precisar reiniciar app.
+- Se o tablet estava fechado/offline, ao abrir novamente ele drena os jobs pendentes.
+
+---
+
 ## [1.1.4] — 2026-06-04
 Tipo: bugfix + impressão
 Migrations: não

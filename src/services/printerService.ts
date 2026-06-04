@@ -1,5 +1,6 @@
 // Printer Service — fila de impressão via Supabase + Print Bridge local.
 import { supabase } from "@/integrations/supabase/client";
+import { processAndroidDirectPrintJob } from "@/services/androidPrintListener";
 import { buildEscPosTicket, buildTestTicket, sampleOrder, TicketOrder } from "@/services/escPosTicketBuilder";
 
 export type PrintMode = "bridge" | "android_direct";
@@ -90,7 +91,11 @@ export async function printOrder(
 ) {
   const data = buildEscPosTicket(order);
   const copies = order.order_type === "delivery" ? 2 : undefined;
-  return createPrintJob(storeId, data, orderId, copies, options?.forceReprint ?? false);
+  const result = await createPrintJob(storeId, data, orderId, copies, options?.forceReprint ?? false);
+  if (result.success && result.jobId) {
+    void processAndroidDirectPrintJob(result.jobId);
+  }
+  return result;
 }
 
 export async function printTestTicket(storeId: string) {

@@ -4,7 +4,7 @@
  * Identifica esta versão do código-fonte do Master Template.
  * Incrementar a cada release significativo.
  */
-export const TEMPLATE_VERSION = "1.1.4" as const;
+export const TEMPLATE_VERSION = "1.1.5" as const;
 
 export const TEMPLATE_CODENAME = "Kebab Master" as const;
 
