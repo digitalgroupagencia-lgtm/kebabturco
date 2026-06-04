@@ -21,6 +21,7 @@ Este projeto (Kebab Turco) é o **Master Template oficial** para gerar novos res
 - Nunca sobrescrever: `company_settings`, `stores`, `products`, `categories`, `promo_banners`, `delivery_zones`, `printer_settings`, `totem_config`, secrets.
 - Sempre propagar: `src/`, `supabase/functions/`, `supabase/migrations/` novas, `public/`, `docs/`.
 - Fallbacks UI obrigatórios (splash, idioma, loja, modalidade) caso DB esteja vazio.
+- Banners aceitam imagem, MP4/MOV e MP3; intervalo vale só para imagens, vídeo/áudio avançam ao terminar.
 
 ## Fluxo de criação de novo restaurante (<30 min)
 1. Remix → 2. Ativar Cloud → 3. Rodar BOOTSTRAP_MASTER_TEMPLATE.sql → 4. Trocar logo/cores/nome → 5. Cardápio.
