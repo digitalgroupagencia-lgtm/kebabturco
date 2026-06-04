@@ -26,7 +26,7 @@ export function panelOrderToTicket(
     contact_phone: order.customer_phone,
     notes: order.notes,
     items: items.map((it) => ({
-      name: it.product_name,
+      name: resolveProductName(it.product_name),
       price: Number(it.unit_price),
       quantity: it.quantity,
       size: it.size_name ?? undefined,
