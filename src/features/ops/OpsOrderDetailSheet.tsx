@@ -8,7 +8,7 @@ import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
 import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
-import { formatOrderItemDetailLines } from "@/lib/modifiers/formatOrderItem";
+import { groupOrderItemDetails } from "@/lib/modifiers/formatOrderItem";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   ETA_QUICK_OPTIONS,
@@ -204,19 +204,31 @@ const OpsOrderDetailSheet = ({
             </p>
             <ul className="space-y-2 text-sm">
               {items.map((it) => {
-                const details = formatOrderItemDetailLines(it);
+                const groups = groupOrderItemDetails(it);
                 return (
-                  <li key={it.id} className="rounded-lg border p-2.5 space-y-1">
+                  <li key={it.id} className="rounded-lg border p-2.5 space-y-2">
                     <div className="flex justify-between gap-2 font-semibold">
                       <span>
                         {it.quantity}x {it.product_name}
                       </span>
                       <span className="shrink-0">€{Number(it.total_price).toFixed(2)}</span>
                     </div>
-                    {details.map((d) => (
-                      <p key={d} className="text-xs text-muted-foreground pl-1">
-                        · {d}
-                      </p>
+                    {groups.map((g, idx) => (
+                      <div
+                        key={`${it.id}-${g.unitIndex ?? "g"}-${idx}`}
+                        className={g.unitLabel ? "rounded-md border border-border/60 bg-muted/40 p-2" : ""}
+                      >
+                        {g.unitLabel && (
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-1">
+                            {g.unitLabel}
+                          </p>
+                        )}
+                        {g.lines.map((d, li) => (
+                          <p key={`${it.id}-${idx}-${li}`} className="text-xs text-muted-foreground pl-1">
+                            · {d}
+                          </p>
+                        ))}
+                      </div>
                     ))}
                   </li>
                 );
