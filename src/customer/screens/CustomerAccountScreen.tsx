@@ -313,7 +313,12 @@ const CustomerAccountScreen = () => {
           item.configuration && typeof item.configuration === "object"
             ? (item.configuration as never)
             : undefined,
-        productType: (prod?.product_type as never) ?? undefined,
+        productType:
+          (prod?.product_type as never) ??
+          ((item.configuration && (item.configuration as { comboUnits?: unknown[] }).comboUnits?.length) ||
+          (Array.isArray(item.selections) && (item.selections as { unitIndex?: number | null }[]).some((s) => s?.unitIndex != null))
+            ? ("combo" as never)
+            : undefined),
       });
       addedCount += 1;
     }
