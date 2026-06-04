@@ -36,7 +36,19 @@ type PastOrder = {
   total: number;
   order_type: string;
   created_at: string;
-  items: Array<{ product_name: string; quantity: number; unit_price: number; extras?: unknown; removed?: string[]; notes?: string }>;
+  items: Array<{
+    product_id?: string | null;
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    total_price?: number;
+    size_name?: string | null;
+    extras?: unknown;
+    removed?: string[];
+    notes?: string;
+    selections?: unknown;
+    configuration?: unknown;
+  }>;
 };
 
 const STATUS_LABEL: Record<string, string> = {
