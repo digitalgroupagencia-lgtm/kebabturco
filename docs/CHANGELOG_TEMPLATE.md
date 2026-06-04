@@ -18,6 +18,30 @@ Checklist de validação: ...
 
 ---
 
+## [1.1.2] — 2026-06-04
+Tipo: bugfix + frontend
+Migrations: não
+Rebuild APK: não
+Risco: baixo
+Arquivos principais:
+- `src/lib/ticketExpansion.ts` (novo)
+- `src/lib/ticketExpansion.test.ts` (novo)
+- `src/services/checkoutPrintHelper.ts`
+- `src/features/ops/panelPrintHelper.ts`
+Descrição:
+- 🚨 Correção crítica: combos com múltiplos kebabs (ex.: Combo 4 Pan Pita Mixto) agora aparecem **expandidos** no ticket de cozinha. Cada unidade (Pita 1, Pita 2, …) é impressa com sua própria carne, molhos, removidos e observações — independentes.
+- Helper único `cartItemToTicketItem` / `orderItemToTicketItem` usado em checkout e reimpressão (painel/KDS), garantindo o mesmo formato.
+- O builder ESC/POS já agrupa por unidade via regex `pita N` — agora alimentamos os extras com o prefixo correto a partir de `configuration.comboUnits`.
+- Selections planas vindas do banco (com `unit_index`) também são reconstruídas em unidades para reimpressão fiel.
+Checklist de validação:
+- Combo 2 / 3 / 4 itens com carnes diferentes → ticket mostra cada Pita N com sua carne.
+- Combo com remoções diferentes por unidade → "Sin X" aparece sob a unidade correta.
+- Bebida do combo aparece como linha compartilhada (sem prefixo).
+- Reimpressão pelo painel produz o mesmo ticket detalhado.
+- Produto simples (sem combo) mantém comportamento anterior.
+
+---
+
 ## [1.1.1] — 2026-06-04
 Tipo: bugfix + frontend + banco
 Migrations: sim — `20260604183418_f9ed086f-e65e-490a-9088-84a36e0331bb.sql`

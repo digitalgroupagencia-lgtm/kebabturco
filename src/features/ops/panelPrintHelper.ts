@@ -2,25 +2,10 @@ import { orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import type { TicketOrder } from "@/services/escPosTicketBuilder";
 import { fetchPrinterConfig, hasActivePrintJob, printOrder } from "@/services/printerService";
 import type { Tables } from "@/integrations/supabase/types";
+import { orderItemToTicketItem } from "@/lib/ticketExpansion";
 
 type OrderItem = Tables<"order_items">;
 type PanelOrder = Tables<"orders"> & { kitchen_printed_at?: string | null };
-
-function resolveProductName(n: unknown): string {
-  if (typeof n === "string") {
-    const t = n.trim();
-    if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
-      try { return resolveProductName(JSON.parse(t)); } catch { return t; }
-    }
-    return t;
-  }
-  if (n && typeof n === "object") {
-    const o = n as Record<string, unknown>;
-    const v = o.es ?? o.en ?? o.pt ?? Object.values(o)[0];
-    return typeof v === "string" ? v : String(v ?? "");
-  }
-  return String(n ?? "");
-}
 
 export function panelOrderToTicket(
   order: PanelOrder,
@@ -41,20 +26,7 @@ export function panelOrderToTicket(
     address,
     contact_phone: order.customer_phone,
     notes: order.notes,
-    items: items.map((it) => ({
-      name: resolveProductName(it.product_name),
-      price: Number(it.unit_price),
-      quantity: it.quantity,
-      size: it.size_name ?? undefined,
-      notes: it.notes ?? undefined,
-      extras: Array.isArray(it.extras)
-        ? (it.extras as { name?: string; quantity?: number; price?: number }[]).map((e) => ({
-            name: e.name || "",
-            price: e.price,
-          }))
-        : undefined,
-      removed: Array.isArray(it.removed) ? (it.removed as string[]) : undefined,
-    })),
+    items: items.map((it) => orderItemToTicketItem(it as unknown as Parameters<typeof orderItemToTicketItem>[0])),
     total: Number(order.total),
     subtotal: Number(order.subtotal ?? order.total),
     created_at: order.created_at,

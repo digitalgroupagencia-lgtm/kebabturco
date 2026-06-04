@@ -4,6 +4,7 @@ import { shouldPrintAfterCheckout } from "@/lib/paymentPolicy";
 import type { OperationsSettings } from "@/hooks/useOperationsSettings";
 import type { TicketOrder } from "@/services/escPosTicketBuilder";
 import { fetchPrinterConfig, printOrder } from "@/services/printerService";
+import { cartItemToTicketItem } from "@/lib/ticketExpansion";
 
 type CheckoutPrintInput = {
   storeId: string;
@@ -34,17 +35,7 @@ function resolveOrderTypeDb(orderType: string): TicketOrder["order_type"] {
 }
 
 function cartItemsToTicketItems(items: CartItem[]) {
-  return items.map((i) => ({
-    name: (i.productName?.es || i.productName?.en || Object.values(i.productName)[0]) as string,
-    price: i.unitPrice,
-    quantity: i.quantity,
-    size: i.sizeName ? (i.sizeName.es || i.sizeName.en || Object.values(i.sizeName)[0]) : undefined,
-    extras: i.extras.map((e) => ({
-      name: (e.name?.es || e.name?.en || Object.values(e.name)[0]) as string,
-      price: e.price,
-    })),
-    removed: i.removedIngredients,
-  }));
+  return items.map(cartItemToTicketItem);
 }
 
 export function checkoutPayloadToTicket(input: CheckoutPrintInput): TicketOrder {
