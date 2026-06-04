@@ -155,11 +155,33 @@ const PrinterPage = () => {
     }
   };
 
+  const isAndroidMode = cfg.print_mode === "android_direct";
+  const deviceLabel = isAndroidMode ? "tablet Android" : "PC";
   const statusMap = {
-    active: { icon: <Wifi className="w-4 h-4 text-green-500" />, label: "Bridge activo", color: "text-green-600" },
-    inactive: { icon: <WifiOff className="w-4 h-4 text-destructive" />, label: "Bridge inactivo", color: "text-destructive" },
-    unknown: { icon: <HelpCircle className="w-4 h-4 text-muted-foreground" />, label: "Sin datos recientes", color: "text-muted-foreground" },
-    checking: { icon: <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />, label: "Verificando...", color: "text-muted-foreground" },
+    active: {
+      icon: <Wifi className="w-4 h-4 text-green-500" />,
+      label: "Bridge activo",
+      color: "text-green-600",
+      help: `O ${deviceLabel} desta unidade está ligado e a receber pedidos. Tudo OK.`,
+    },
+    inactive: {
+      icon: <WifiOff className="w-4 h-4 text-destructive" />,
+      label: "Bridge inactivo",
+      color: "text-destructive",
+      help: `O ${deviceLabel} desta unidade não está a comunicar com o servidor há mais de 2 minutos. Os pedidos NÃO serão impressos até voltar online.`,
+    },
+    unknown: {
+      icon: <HelpCircle className="w-4 h-4 text-muted-foreground" />,
+      label: "Sem sinal recente",
+      color: "text-muted-foreground",
+      help: `Ainda não recebemos sinal do ${deviceLabel} desta unidade. Se acabou de configurar, abra o Print Bridge no ${deviceLabel} e aguarde alguns segundos.`,
+    },
+    checking: {
+      icon: <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />,
+      label: "A verificar...",
+      color: "text-muted-foreground",
+      help: "A consultar o estado do Print Bridge.",
+    },
   };
   const status = statusMap[bridge];
 
