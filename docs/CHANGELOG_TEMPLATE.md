@@ -18,6 +18,22 @@ Checklist de validação: ...
 
 ---
 
+## [1.1.3] — 2026-06-04
+Tipo: feature + bugfix + frontend
+Migrations: não
+Rebuild APK: não
+Risco: baixo
+Arquivos principais:
+- `src/lib/modifiers/formatOrderItem.ts` (agora agrupa por unidade)
+- `src/features/ops/OpsOrderDetailSheet.tsx` (cards por unidade)
+- `src/customer/screens/CustomerAccountScreen.tsx` (pedir novamente)
+Descrição:
+- Detalhe do pedido no painel agora mostra **um card por unidade do combo** (Pita 1, Pita 2, …) com seus modificadores, em vez de uma lista corrida.
+- "Pedir novamente" passa a forçar `productType = combo` quando o pedido original tinha `comboUnits` ou `selections` com `unitIndex`, garantindo que o carrinho mantém o combo agrupado e restaura todas as escolhas individuais.
+- Helper `groupOrderItemDetails` reutilizável também pelo KDS quando passar a exibir itens.
+
+---
+
 ## [1.1.2] — 2026-06-04
 Tipo: bugfix + frontend
 Migrations: não
