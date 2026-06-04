@@ -170,9 +170,10 @@ export function adaptConfigForDrinkProduct(
   // Para água: remove qualquer grupo de gelo já existente.
   let groups = (base.groups ?? []).filter((g) => {
     if (g.groupKind === "removal") return false;
-    if (water && /hielo|gelo|\bice\b|glaçon/i.test(groupLabel(g))) return false;
+    if (water && /hielo|gelo|\bice\b|glaçon|temperatura|temperature|fr[ií]a|gelada/i.test(groupLabel(g))) return false;
     return true;
   });
+
 
   groups = groups.map((g) => {
     const meatLabel = MEAT_LABEL_RE.test(groupLabel(g));
