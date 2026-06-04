@@ -1573,7 +1573,9 @@ export type Database = {
       }
       products: {
         Row: {
+          after_add_suggestions: Json
           category_id: string
+          combo_unit_count: number
           created_at: string
           description: Json | null
           id: string
@@ -1584,12 +1586,15 @@ export type Database = {
           name: Json
           price: number
           price_modifiers: Json
+          product_type: string
           sort_order: number | null
           store_id: string
           updated_at: string
         }
         Insert: {
+          after_add_suggestions?: Json
           category_id: string
+          combo_unit_count?: number
           created_at?: string
           description?: Json | null
           id?: string
@@ -1600,12 +1605,15 @@ export type Database = {
           name?: Json
           price?: number
           price_modifiers?: Json
+          product_type?: string
           sort_order?: number | null
           store_id: string
           updated_at?: string
         }
         Update: {
+          after_add_suggestions?: Json
           category_id?: string
+          combo_unit_count?: number
           created_at?: string
           description?: Json | null
           id?: string
@@ -1616,6 +1624,7 @@ export type Database = {
           name?: Json
           price?: number
           price_modifiers?: Json
+          product_type?: string
           sort_order?: number | null
           store_id?: string
           updated_at?: string
