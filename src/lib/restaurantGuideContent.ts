@@ -79,4 +79,25 @@ export const RESTAURANT_GUIDE_SECTIONS: FaqSection[] = [
       },
     ],
   },
+  {
+    title: "Notificações no tablet (som, impressão e push)",
+    items: [
+      {
+        q: "Quando o tablet toca, imprime e mostra notificação?",
+        a: "Resumo por cenário no tablet do restaurante (com o app instalado da Play Store e sessão iniciada no painel):\n\n**1) App aberto, tela ligada** ✅\nSom toca, alerta visual aparece e a impressora dispara automaticamente. Cenário ideal — é como o tablet deve ficar durante o serviço.\n\n**2) App aberto, tela bloqueada** ✅\nSom toca (alerta sonoro nativo) e push aparece no ecrã de bloqueio. A impressão dispara assim que a tela é desbloqueada e o app volta ao primeiro plano. Recomenda-se ativar «Manter ecrã ligado» nas Configurações do tablet.\n\n**3) App aberto e outro aplicativo em primeiro plano** ✅\nPush chega na barra superior + som. Ao tocar na notificação, abre o painel e imprime o pedido pendente. Se ignorar, o pedido fica na fila e imprime ao voltar ao painel.\n\n**4) App fechado, tela ligada** ⚠️\nPush chega na barra de notificações e toca o som padrão do sistema. **A impressão só dispara depois de abrir o app.** Por isso recomendamos deixar o app SEMPRE aberto durante o serviço.\n\n**5) App fechado, tela bloqueada** ⚠️\nPush chega normalmente (Android acorda o ecrã). Mesmo caso anterior: a impressão automática só acontece ao abrir o app. Pedido fica seguro no servidor e imprime ao reentrar.",
+      },
+      {
+        q: "Recomendações para o restaurante",
+        a: "**Para garantir que NUNCA perde um pedido:**\n\n• Deixe o app do painel SEMPRE aberto no tablet durante o expediente.\n• Ative «Manter ecrã ligado» (Configurações Android → Ecrã → Tempo limite → Nunca, ou use o modo Quiosque).\n• Ligue o tablet à corrente — não dependa da bateria.\n• Active os «Alertas» dentro de Pedidos ao Vivo (botão «Activar alertas»). Sem isso, o som não toca.\n• Mantenha o volume do tablet no máximo.\n• Wi-Fi estável é essencial (impressora LAN + app dependem da mesma rede).\n• Permissões obrigatórias: Notificações, Som, Manter ativo em segundo plano (em alguns Androids: Configurações → Apps → SnapOrder → Bateria → Sem restrições).",
+      },
+      {
+        q: "A impressora imprime mesmo com o tablet bloqueado?",
+        a: "Depende. A impressão é disparada pelo painel — então:\n\n• Se o app está aberto (mesmo com a tela bloqueada), a impressora dispara normalmente assim que o pedido chega, porque o painel continua escutando.\n• Se o app foi fechado pelo Android (por economia de bateria ou tempo de inatividade), o pedido só será impresso quando alguém abrir o painel novamente.\n\nPor isso a regra de ouro: **app sempre aberto + tablet ligado à corrente + bateria sem restrições.**",
+      },
+      {
+        q: "O som não está tocando, o que verifico?",
+        a: "1. Botão «Activar alertas» está verde em Pedidos ao Vivo?\n2. Volume do tablet no máximo (volume de mídia + notificações)?\n3. Modo Não Perturbe desligado?\n4. App tem permissão de notificações? (Configurações Android → Apps → SnapOrder → Notificações → Permitir tudo)\n5. Bateria sem restrições para o app?\n\nSe tudo OK e ainda não toca, peça ao admin master para abrir a aba «Diagnóstico» e rodar o teste de som/push.",
+      },
+    ],
+  },
 ];
