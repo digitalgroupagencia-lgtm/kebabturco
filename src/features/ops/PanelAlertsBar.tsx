@@ -60,7 +60,7 @@ const PanelAlertsBar = ({ storeId }: Props) => {
       if (storeId && isStaffPushSupported()) {
         const push = await subscribeStaffPush(storeId);
         if (push.ok) {
-          toast.success("Push activo para novos pedidos neste dispositivo", { duration: 3000 });
+          toast.success("Push activo para nuevos pedidos en este dispositivo", { duration: 3000 });
         }
       }
       const lastDiag = getLastAlertDiagnostic();
@@ -68,12 +68,12 @@ const PanelAlertsBar = ({ storeId }: Props) => {
         toast.success(
           isIOSPanelDevice()
             ? lastDiag?.ok
-              ? "Alertas activos — som repete até mudar o estado do pedido."
-              : "Alertas activos — flash e vibração até mudar o estado."
-            : "Alertas activos — som repete até mudar o estado do pedido",
+              ? "Alertas activos — el sonido se repite hasta cambiar el estado del pedido."
+              : "Alertas activos — flash y vibración hasta cambiar el estado."
+            : "Alertas activos — el sonido se repite hasta cambiar el estado del pedido",
         );
       } else {
-        toast.warning("Não foi possível activar. Toca outra vez.");
+        toast.warning("No se pudo activar. Toca de nuevo.");
       }
     } finally {
       setBusy(false);
@@ -92,7 +92,7 @@ const PanelAlertsBar = ({ storeId }: Props) => {
   const handleSilence = () => {
     silenceAllPendingAlerts();
     setUnackCount(0);
-    toast.success("Alertas silenciados — pedidos novos já vistos");
+    toast.success("Alertas silenciados — pedidos nuevos ya vistos");
   };
 
   const handleTest = async () => {
@@ -103,19 +103,19 @@ const PanelAlertsBar = ({ storeId }: Props) => {
     const heard = await playTestAlert();
     refreshDiag();
     if (heard) {
-      toast.success(isIOSPanelDevice() ? "Teste OK — bip curto." : "Som de teste OK");
+      toast.success(isIOSPanelDevice() ? "Test OK — bip corto." : "Sonido de prueba OK");
     } else if (isIOSPanelDevice()) {
-      toast.success("Teste enviado — flash activo. Som pode variar no iPhone.");
+      toast.success("Test enviado — flash activo. El sonido puede variar en iPhone.");
     } else {
-      toast.warning("Sem som — verifica volume");
+      toast.warning("Sin sonido — verifica el volumen");
     }
   };
 
   const diagLine =
     diag && isIOSPanelDevice()
       ? diag.ok
-        ? "Último aviso: som enviado"
-        : "Último aviso: flash + vibração (sem som confirmado)"
+        ? "Último aviso: sonido enviado"
+        : "Último aviso: flash + vibración (sin sonido confirmado)"
       : null;
 
   if (!enabled) {

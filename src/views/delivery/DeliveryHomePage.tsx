@@ -111,11 +111,10 @@ const DeliveryHomePage = () => {
               )}
             </div>
 
-            {order.delivery_confirmation_code && (
+            {isOut && (
               <div className="mx-4 mb-3 rounded-xl border border-orange-500/40 bg-orange-500/10 p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Código</p>
-                <p className="text-3xl font-black tracking-[0.25em] tabular-nums text-orange-600">
-                  {order.delivery_confirmation_code}
+                <p className="text-xs font-bold text-orange-700">
+                  Pide el código al cliente para finalizar la entrega
                 </p>
               </div>
             )}
