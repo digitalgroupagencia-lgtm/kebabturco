@@ -117,8 +117,42 @@ export default function TemplateVersionPage() {
     void load();
   };
 
+  const applyCatchup = async () => {
+    setApplying(true);
+    const { data, error } = await supabase.rpc("apply_template_catchup", {
+      _target_version: TEMPLATE_VERSION,
+    });
+    setApplying(false);
+    if (error) {
+      toast({
+        title: "Falha ao atualizar banco",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    const result = data as { ok: boolean; error?: string; already_up_to_date?: boolean; new_version?: string; previous_version?: string };
+    if (!result?.ok) {
+      toast({
+        title: "Não foi possível atualizar",
+        description: result?.error ?? "Erro desconhecido",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: result.already_up_to_date ? "Banco já estava atualizado" : "Banco atualizado com sucesso",
+      description: result.already_up_to_date
+        ? `Versão ${result.new_version ?? TEMPLATE_VERSION}`
+        : `${result.previous_version ?? "—"} → ${result.new_version}`,
+    });
+    void load();
+  };
+
   const badge = status ? statusBadge(status) : null;
   const StatusIcon = badge?.icon ?? RefreshCw;
+  const needsCatchup = status?.kind === "db_outdated" || status?.kind === "bootstrap_missing";
+
 
   return (
     <div className="space-y-6 max-w-4xl">
