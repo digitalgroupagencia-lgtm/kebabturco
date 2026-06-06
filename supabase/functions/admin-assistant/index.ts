@@ -151,13 +151,13 @@ admin-assistant, ai-menu-import, ai-product-image, create-staff-member, create-t
 - **Baixa (<50%, exige dev)**: Mercado/Minimercado (falta multi-código de barras massivo, fiscal específico), Adega (controle de safra), Farmácia (receita controlada, ANVISA/AEMPS), Cosméticos, Pet Shop com serviços/banho.
 
 ## CONCORRENTES (resumo)
-- **Toast** (USA) — referência POS restaurante, hardware proprietário caro, ecossistema fechado. WGM ganha em flexibilidade web + multi-idioma EU + preço.
-- **Square** — fortíssimo em pagamento + simplicidade. WGM ganha em KDS, modificadores complexos, multi-unidade nativa.
-- **Lightspeed (K-Series)** — robusto, caro, complexo. WGM ganha em UX moderna + onboarding rápido + IA.
-- **Zonal (UK)** — enterprise pubs. WGM ganha em cloud-first + custo.
-- **GloriaFood** — só online ordering grátis, não é POS. WGM é stack completo.
-- **Oracle Micros (Simphony)** — enterprise hotel/casino. WGM ainda não compete (falta PMS, fiscal multi-país completo).
-- **Loyverse** — POS gratuito mobile. WGM ganha em delivery + totem + multi-tenant.
+- **Toast** (USA) — referência POS restaurante, hardware proprietário caro, ecossistema fechado. Kebab Turco ganha em flexibilidade web + multi-idioma EU + preço.
+- **Square** — fortíssimo em pagamento + simplicidade. Kebab Turco ganha em KDS, modificadores complexos, multi-unidade nativa.
+- **Lightspeed (K-Series)** — robusto, caro, complexo. Kebab Turco ganha em UX moderna + onboarding rápido + IA.
+- **Zonal (UK)** — enterprise pubs. Kebab Turco ganha em cloud-first + custo.
+- **GloriaFood** — só online ordering grátis, não é POS. Kebab Turco é stack completo.
+- **Oracle Micros (Simphony)** — enterprise hotel/casino. Kebab Turco ainda não compete (falta PMS, fiscal multi-país completo).
+- **Loyverse** — POS gratuito mobile. Kebab Turco ganha em delivery + totem + multi-tenant.
 
 ## PRINT BRIDGE (FAQ)
 - Android direct: tablet do painel É o bridge. Heartbeat só com aba aberta+ativa. >2min sem sinal = inativo. Cura: abrir painel no tablet, manter acordado.
@@ -230,7 +230,7 @@ accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
 (1) Web Serial direta (limitada desktop). (2) Android APK: androidPrintListener subscreve realtime em print_jobs → plugin nativo → ESC/POS TCP/IP ou Bluetooth. (3) Windows Print Bridge: serviço Node em print-bridge/, polling por store_id, installer .bat. Setores: cozinha, bar, balcão (printer_category_map). Template em escPosTicketBuilder.ts.
 
 ### PDF de Auditoria disponível
-/mnt/documents/WGM_Auditoria_Master_Template_v2.pdf (52 páginas, gerado em 2026-06). Cobre 26 capítulos com mesma profundidade deste prompt.
+/mnt/documents/KebabTurco_Auditoria_Master_Template_v2.pdf (52 páginas, gerado em 2026-06). Cobre 26 capítulos com mesma profundidade deste prompt.
 
 ## PAGAMENTOS — MULTI GATEWAY (STRIPE + REDSYS + BIZUM)
 
@@ -408,7 +408,7 @@ Para perguntas tipo "quando isto foi criado?", "isto é novo?":
 - Se pedirem "qual tabela X", "qual hook Y", "que edge faz Z" — responda com base no inventário acima, citando nome exato.
 - Quando não souber, use o protocolo de ESCALONAMENTO acima — nunca invente.
 
-Você É a especialista total do WGM System — suporte técnico + gerente de produto + consultor operacional + auditor + treinador. Responda como tal.`;
+Você É a especialista total do Kebab Turco — suporte técnico + gerente de produto + consultor operacional + auditor + treinador. Responda como tal.`;
 
 
 const TOOLS = [
