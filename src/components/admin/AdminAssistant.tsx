@@ -58,15 +58,41 @@ export default function AdminAssistant() {
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    try { return localStorage.getItem(ACTIVE_CONV_KEY); } catch { return null; }
+  });
   const [recording, setRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<SpeechRecognitionLike>(null);
 
+  // Restaura mensagens da conversa ativa ao montar / ao abrir
+  useEffect(() => {
+    if (!conversationId || messages.length > 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("ai_messages")
+        .select("role, content")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        setMessages(data.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })));
+      }
+    })();
+  }, [conversationId, messages.length]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    setPendingImages([]);
+    setInput("");
+    try { localStorage.removeItem(ACTIVE_CONV_KEY); } catch {}
+    toast.success("Conversa nova iniciada");
+  };
 
   const ensureConversation = async (firstUserMsg: string): Promise<string | null> => {
     if (conversationId) return conversationId;
