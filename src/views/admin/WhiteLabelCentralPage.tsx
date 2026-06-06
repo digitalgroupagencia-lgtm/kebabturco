@@ -579,11 +579,11 @@ export default function WhiteLabelCentralPage() {
                 </AlertDescription>
               </Alert>
               <div className="flex gap-2 flex-wrap">
-                <CopyButton text={bootstrapSql} label="BOOTSTRAP SQL completo" variant="default" />
-                <Badge variant="outline">{bootstrapSql.length.toLocaleString()} caracteres</Badge>
+                <CopyButton text={RESOLVED_BOOTSTRAP_SQL} label="BOOTSTRAP SQL completo" variant="default" />
+                <Badge variant="outline">{RESOLVED_BOOTSTRAP_SQL.length.toLocaleString()} caracteres</Badge>
                 <Badge variant="outline">idempotente</Badge>
               </div>
-              <FilePreview content={bootstrapSql} />
+              <FilePreview content={RESOLVED_BOOTSTRAP_SQL} />
             </CardContent>
           </Card>
         </TabsContent>
