@@ -70,7 +70,7 @@ Fala português simples, sem jargão. Direto, prático, executa mudanças quando
 - App entregador: pedidos atribuídos, aceitar ETA, confirmar entrega.
 
 ### Staff Login (/staff)
-- Login por email/PIN (staff_access_pins). Redireciona por role (admin_master, restaurant_admin, manager, operator/attendant, cashier, kitchen, seller, delivery).
+- **Apenas e-mail + senha** (login por PIN foi removido). Acesso escondido para clientes: o dono e a equipa abrem a tela tocando 5x no logo do restaurante ou segurando o dedo no logo por ~9s (em qualquer tela onde o logo aparece). Após login, redireciona pela função.
 
 ## BANCO DE DADOS (49 tabelas — principais)
 - **Core multi-tenant**: tenants, stores, user_roles (admin_master/restaurant_admin/operator/kitchen/seller), profiles, _template_version, template_update_history.
