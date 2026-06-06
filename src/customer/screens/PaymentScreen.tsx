@@ -587,6 +587,11 @@ const PaymentScreen = () => {
       return;
     }
 
+    if (UNDER_CONSTRUCTION_METHODS.has(selected)) {
+      setUnderConstructionMethod(selected);
+      return;
+    }
+
     if (selected === "card") {
       if (!stripePublishableKey) {
         setShowError("method");
