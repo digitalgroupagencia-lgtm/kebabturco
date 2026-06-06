@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
-import { Copy, Gift, Tag, TrendingUp, Wallet } from "lucide-react";
-import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
-import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
-import { PremiumCard } from "@/components/premium/PremiumCard";
-import { PremiumTable } from "@/components/premium/PremiumTable";
-import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
-import { PremiumStatusBadge } from "@/components/premium/PremiumStatusBadge";
-import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
+import { Plus, Trash2, Tag, MoreVertical } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 type Coupon = {
   id: string;
@@ -34,17 +36,6 @@ function formatCouponSummary(c: Coupon): string {
   const uses = c.max_uses ? `${c.uses_count}/${c.max_uses} usos` : `${c.uses_count} usos`;
   return `${discount} · ${min} · ${uses}`;
 }
-
-type CouponRow = {
-  code: string;
-  type: string;
-  value: string;
-  validity: string;
-  usage: string;
-  limit: string;
-  revenue: string;
-  status: string;
-};
 
 const CouponsPage = () => {
   const { storeId } = useAdminStoreId();
@@ -101,48 +92,42 @@ const CouponsPage = () => {
 
   if (!storeId) return <div className="p-6 text-sm text-muted-foreground">Sem loja vinculada</div>;
 
-  const activeCoupons = coupons.filter((c) => c.is_active);
-  const totalUsage = coupons.reduce((sum, c) => sum + (c.uses_count || 0), 0);
-  const estimatedRevenue = coupons.reduce((sum, c) => sum + (c.uses_count || 0) * 12.5, 0);
-  const estimatedDiscount = coupons.reduce((sum, c) => {
-    if (c.discount_type === "percent") return sum + c.uses_count * (c.discount_value * 0.15);
-    return sum + c.uses_count * c.discount_value;
-  }, 0);
-  const conversion = coupons.length ? ((activeCoupons.length / coupons.length) * 100).toFixed(1) : "0.0";
-
-  const tableRows: CouponRow[] = coupons.map((c) => ({
-    code: c.code,
-    type: c.discount_type === "percent" ? "Percentagem" : "Valor fixo",
-    value: c.discount_type === "percent" ? `${c.discount_value}%` : `€ ${c.discount_value.toFixed(2)}`,
-    validity: c.expires_at ? new Date(c.expires_at).toLocaleDateString("pt-PT") : "Sem validade",
-    usage: `${c.uses_count}`,
-    limit: c.max_uses ? `${c.max_uses}` : "Ilimitado",
-    revenue: `€ ${(c.uses_count * 12.5).toFixed(2)}`,
-    status: c.is_active ? "Ativo" : "Pausado",
-  }));
-
   return (
-    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
-      <PremiumPageHeader
-        title="Cupons"
-        subtitle="Gestão de campanhas e conversão de pedidos"
-        actions={
-          <PremiumActionButton tone="primary" onClick={() => setCreateOpen((v) => !v)}>
-            {createOpen ? "Fechar" : "Novo cupom"}
-          </PremiumActionButton>
-        }
+    <div className="mx-auto max-w-lg space-y-4 pb-8">
+      <HowToUsePanel
+        purpose="Crie códigos de desconto para campanhas pontuais (datas, redes sociais, recuperação de cliente)."
+        whenToUse="Promoções com duração definida. Para retenção contínua use Fidelidade."
+        steps={[
+          "Toque em 'Novo cupom' e dê um código curto (ex: WELCOME10).",
+          "Escolha tipo (% ou valor fixo) e o valor do desconto.",
+          "Defina pedido mínimo e limite de usos (evita prejuízo).",
+          "Defina data de expiração.",
+          "Ative o cupom e teste no checkout.",
+        ]}
+        howToConfirm="O cupom aparece na lista com badge 'Ativo' e o cliente vê desconto no carrinho ao digitar o código."
+        assistantQuestion="Como crio um cupom eficiente de fim de semana e quais limites evitam prejuízo?"
       />
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <PremiumMetricCard title="Cupons ativos" value={activeCoupons.length} subtitle="em funcionamento" icon={Tag} color="brand" />
-        <PremiumMetricCard title="Usos hoje" value={totalUsage} subtitle="resgates acumulados" icon={Gift} color="purple" />
-        <PremiumMetricCard title="Receita gerada" value={`€ ${estimatedRevenue.toFixed(2)}`} subtitle="estimativa atual" icon={TrendingUp} color="green" />
-        <PremiumMetricCard title="Desconto concedido" value={`€ ${estimatedDiscount.toFixed(2)}`} subtitle="impacto promocional" icon={Wallet} color="orange" />
-        <PremiumMetricCard title="Conversão" value={`${conversion}%`} subtitle="ativos vs total" icon={Copy} color="blue" />
-      </section>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black flex items-center gap-2">
+            <Tag className="w-5 h-5 text-primary" />
+            Cupões
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">{coupons.length} cupões · activos no checkout</p>
+        </div>
+        <Button
+          variant={createOpen ? "secondary" : "default"}
+          size="sm"
+          className="h-10 rounded-xl font-bold shrink-0"
+          onClick={() => setCreateOpen((v) => !v)}
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          {createOpen ? "Fechar" : "Novo"}
+        </Button>
+      </div>
 
       {createOpen && (
-        <PremiumCard title="Criar cupom" subtitle="Defina tipo, valor e condição mínima" className="bg-[#111111]">
+        <div className="rounded-2xl border bg-card p-3.5 space-y-2.5 shadow-sm ring-1 ring-primary/10">
           <div>
             <Label className="text-xs">Código</Label>
             <Input
@@ -176,60 +161,49 @@ const CouponsPage = () => {
           <Button className="w-full h-11 font-bold" onClick={create} disabled={saving}>
             {saving ? "A guardar…" : "Criar cupón"}
           </Button>
-        </PremiumCard>
+        </div>
       )}
 
-      <PremiumTable
-        title="Tabela de cupons"
-        subtitle="Acompanhe uso e estado em tempo real"
-        rows={tableRows}
-        columns={[
-          { key: "code", label: "Código", render: (row) => <span className="font-bold">{row.code}</span> },
-          { key: "type", label: "Tipo", render: (row) => row.type },
-          { key: "value", label: "Valor", render: (row) => row.value },
-          { key: "validity", label: "Validade", render: (row) => row.validity },
-          { key: "usage", label: "Uso", render: (row) => row.usage },
-          { key: "limit", label: "Limite", render: (row) => row.limit },
-          { key: "revenue", label: "Receita", render: (row) => row.revenue },
-          {
-            key: "status",
-            label: "Status",
-            render: (row) => (
-              <PremiumStatusBadge status={row.status === "Ativo" ? "success" : "neutral"}>
-                {row.status}
-              </PremiumStatusBadge>
-            ),
-          },
-        ]}
-        empty={
-          <PremiumEmptyState
-            icon={Tag}
-            title="Você ainda não tem cupons ativos"
-            description="Crie o primeiro cupom para incentivar novas compras."
-            actionLabel="Criar primeiro cupom"
-            onAction={() => setCreateOpen(true)}
-          />
-        }
-      />
-
-      <PremiumCard title="Ações rápidas" className="bg-[#111111]">
-        <div className="space-y-3">
-          {coupons.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div>
-                <p className="font-bold">{c.code}</p>
-                <p className="text-xs text-zinc-500">{formatCouponSummary(c)}</p>
-              </div>
-              <div className="flex items-center gap-2">
+      <div className="space-y-2">
+        {coupons.map((c) => (
+          <OpsCompactCard
+            key={c.id}
+            title={c.code}
+            summary={formatCouponSummary(c)}
+            inactive={!c.is_active}
+            badges={c.is_active ? ["Activo"] : ["Pausado"]}
+            editable={false}
+            actions={
+              <>
                 <Switch checked={c.is_active} onCheckedChange={() => toggle(c)} />
-                <PremiumActionButton tone="ghost" className="h-9 px-3" onClick={() => remove(c.id)}>
-                  Remover
-                </PremiumActionButton>
-              </div>
-            </div>
-          ))}
-        </div>
-      </PremiumCard>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem className="text-destructive" onClick={() => remove(c.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" /> Remover
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            }
+          />
+        ))}
+        {coupons.length === 0 && !createOpen && (
+          <p className="text-center text-sm text-muted-foreground py-10 border border-dashed rounded-2xl">
+            Nenhum cupón. Toque em Novo para criar.
+          </p>
+        )}
+      </div>
+
+      <p className="text-xs text-center text-muted-foreground pt-2">
+        <a href="/admin/diagnostics-hub?tab=coupons" className="text-primary underline">
+          Testar validação de cupões no Centro de testes
+        </a>
+      </p>
     </div>
   );
 };

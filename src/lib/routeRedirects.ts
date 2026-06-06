@@ -22,7 +22,8 @@ const CUSTOMER_ROUTE_ALIASES: Readonly<Record<string, CustomerRouteAliasScreen>>
 
 /** Rotas antigas ou alias → destino canónico (sem 404). */
 const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
-  "/admin/payment": nav.admin("payments"),
+  "/admin/payments": nav.admin("operations"),
+  "/admin/payment": nav.admin("operations"),
   "/admin/config": nav.admin("settings"),
   "/admin/configuration": nav.admin("settings"),
   "/panel/orders": nav.panel("live"),
@@ -41,6 +42,7 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/panel/banners": nav.admin("banner"),
   "/panel/modifiers": nav.admin("modifiers"),
   "/panel/delivery-zones": nav.admin("delivery-zones"),
+  "/panel/payments": nav.admin("operations"),
   "/cashier": nav.panel("cashier"),
   "/painel": nav.panel(),
   "/painel/pedidos": nav.panel(),
@@ -67,6 +69,7 @@ const ADMIN_RESTAURANT_PANEL_ALIASES: Readonly<Record<string, string>> = {
   "/admin/qrcode": nav.panel("tables"),
   "/admin/qr-codes": nav.panel("tables"),
   "/admin/qr": nav.panel("tables"),
+  "/admin/settings": nav.panel("settings"),
 };
 
 export function normalizePathname(pathname: string): string {

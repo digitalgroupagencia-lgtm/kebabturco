@@ -13,7 +13,6 @@ import {
 import { estimatedStripeFeeInServiceFee } from "../_shared/stripeFees.ts";
 import {
   getStripeSecretKey,
-  getStripePublishableKey,
   getStripeSecretKeyTest,
   pickStripeSecretForEnvironment,
   stripeKeyMode,
@@ -171,8 +170,7 @@ Deno.serve(async (req) => {
     }
 
     const connectEnv = await resolveStoreConnectEnvironment(store);
-    const resolvedEnvironment = connectEnv === "test" || testSimulated ? "test" : connectEnv;
-    const stripeKey = pickStripeSecretForEnvironment(resolvedEnvironment);
+    const stripeKey = pickStripeSecretForEnvironment(connectEnv === "test" || testSimulated ? "test" : connectEnv);
     if (!stripeKey) {
       return json(
         {
@@ -246,8 +244,7 @@ Deno.serve(async (req) => {
       platformFeeCents: PLATFORM_FEE_CENTS,
       estimatedStripeFeeCents,
       stripeConnectAccountId: store.stripe_connect_account_id,
-      connectEnvironment: resolvedEnvironment,
-      publishableKey: getStripePublishableKey(resolvedEnvironment),
+      connectEnvironment: connectEnv === "test" || testSimulated ? "test" : "live",
       testSimulated,
     });
   } catch (e) {

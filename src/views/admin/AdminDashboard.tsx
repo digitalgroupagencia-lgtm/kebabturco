@@ -1,55 +1,50 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  ArrowRight,
-  Building2,
-  CreditCard,
-  DollarSign,
-  Loader2,
-  ShoppingBag,
-  TrendingUp,
-} from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { nav } from "@/lib/navPaths";
+import {
+  Building2,
+  ShoppingBag,
+  DollarSign,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  ArrowRight,
+  Bot,
+  Heart,
+  Megaphone,
+  Bell,
+  MessageSquare,
+  CreditCard,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import PlatformPageShell from "@/components/admin/premium/PlatformPageShell";
-import MetricTile from "@/components/admin/premium/MetricTile";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import RankingCard, { type RankingItem } from "@/components/admin/premium/RankingCard";
+import AlertCard, { type AlertItem } from "@/components/admin/premium/AlertCard";
 import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
 import StatusPill from "@/components/admin/premium/StatusPill";
+import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
+import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
+import { nav } from "@/lib/navPaths.ts";
 import { Button } from "@/components/ui/button";
+import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
-type TenantRow = {
-  id: string;
-  name: string;
-  slug: string;
-  is_active: boolean;
-  created_at: string;
-};
+const fmtMoney = (v: number, cur = "EUR") =>
+  new Intl.NumberFormat("pt-PT", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(v || 0);
 
-type StoreRow = {
-  id: string;
-  tenant_id: string;
-};
-
-type OrderRow = {
-  id: string;
-  order_number: number | null;
-  store_id: string;
-  total: number | null;
-  status: string;
-  created_at: string;
-};
-
-const fmtMoney = (value: number) =>
-  new Intl.NumberFormat("pt-PT", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-
-const monthLabel = (date: Date) =>
-  new Intl.DateTimeFormat("pt-PT", { month: "short" }).format(date);
+const centralIcons = [Bot, Megaphone, Heart, Bell, MessageSquare];
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -61,259 +56,415 @@ function relativeTime(iso: string): string {
   return days === 1 ? "ontem" : `há ${days}d`;
 }
 
-export default function AdminDashboard() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-dashboard-functional-overview"],
+const AdminDashboard = () => {
+  const { data: stats, isLoading: l1 } = useQuery({
+    queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [tenantsRes, storesRes, ordersRes] = await Promise.all([
-        supabase
-          .from("tenants")
-          .select("id, name, slug, is_active, created_at, is_template")
-          .eq("is_template", false)
-          .order("created_at", { ascending: false }),
-        supabase.from("stores").select("id, tenant_id").eq("is_active", true),
-        supabase
-          .from("orders")
-          .select("id, order_number, store_id, total, status, created_at")
-          .gte(
-            "created_at",
-            new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1).toISOString(),
-          )
-          .order("created_at", { ascending: false }),
-      ]);
-
-      if (tenantsRes.error) throw tenantsRes.error;
-      if (storesRes.error) throw storesRes.error;
-      if (ordersRes.error) throw ordersRes.error;
-
-      return {
-        tenants: (tenantsRes.data ?? []) as TenantRow[],
-        stores: (storesRes.data ?? []) as StoreRow[],
-        orders: (ordersRes.data ?? []) as OrderRow[],
-      };
+      const { data, error } = await supabase.rpc("get_admin_dashboard_stats");
+      if (error) throw error;
+      return data?.[0];
     },
-    refetchInterval: 45000,
   });
 
-  const derived = useMemo(() => {
-    const tenants = data?.tenants ?? [];
-    const stores = data?.stores ?? [];
-    const orders = data?.orders ?? [];
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const { data: revenueSeries } = useQuery({
+    queryKey: ["admin-revenue-series"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_monthly_revenue_series");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
-    const storeToTenant = new Map(stores.map((s) => [s.id, s.tenant_id]));
+  const { data: topTenants } = useQuery({
+    queryKey: ["admin-top-tenants"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_top_tenants_by_revenue", { _limit: 8 });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
-    const validOrders = orders.filter((o) => o.status !== "cancelled");
-    const todayOrders = validOrders.filter((o) => new Date(o.created_at) >= dayStart);
-    const monthOrders = validOrders.filter((o) => new Date(o.created_at) >= monthStart);
+  const { data: upcoming } = useQuery({
+    queryKey: ["admin-upcoming"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_upcoming_payments");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
-    const revenueToday = todayOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
-    const revenueMonth = monthOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
-    const avgTicket = todayOrders.length > 0 ? revenueToday / todayOrders.length : 0;
+  const { data: tenants } = useQuery({
+    queryKey: ["admin-tenants-overview"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id, name, slug, plan, is_active, created_at, tenant_plan_assignments(is_beta)")
+        .eq("is_template", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
-    const topByTenant = new Map<string, { name: string; revenue: number; orders: number }>();
-    for (const order of monthOrders) {
-      const tenantId = storeToTenant.get(order.store_id);
-      if (!tenantId) continue;
-      const tenant = tenants.find((t) => t.id === tenantId);
-      if (!tenant) continue;
-      if (!topByTenant.has(tenantId)) {
-        topByTenant.set(tenantId, { name: tenant.name, revenue: 0, orders: 0 });
-      }
-      const row = topByTenant.get(tenantId)!;
-      row.revenue += Number(order.total ?? 0);
-      row.orders += 1;
-    }
+  const { data: recentOrders } = useQuery({
+    queryKey: ["admin-recent-orders-feed"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_number, total, created_at, store_id, stores(tenant_id, tenants(name, slug))")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
-    const topTenants = [...topByTenant.values()]
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 6);
-
-    const monthlyMap = new Map<string, number>();
-    for (let i = 11; i >= 0; i -= 1) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      monthlyMap.set(`${d.getFullYear()}-${d.getMonth()}`, 0);
-    }
-    for (const order of validOrders) {
-      const d = new Date(order.created_at);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (monthlyMap.has(key)) {
-        monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + Number(order.total ?? 0));
-      }
-    }
-    const monthlySeries = [...monthlyMap.entries()].map(([k, v]) => {
-      const [year, month] = k.split("-").map(Number);
-      return { monthLabel: monthLabel(new Date(year, month, 1)), revenue: v };
-    });
-
-    const recentActivity: ActivityItem[] = (orders.slice(0, 8) ?? []).map((o) => {
-      const tenantId = storeToTenant.get(o.store_id);
-      const tenantName = tenants.find((t) => t.id === tenantId)?.name ?? "Restaurante";
-      return {
-        id: `order-${o.id}`,
-        title: `Pedido #${o.order_number ?? "—"} · ${tenantName}`,
-        detail: fmtMoney(Number(o.total ?? 0)),
-        time: relativeTime(o.created_at),
-        icon: ShoppingBag,
-        tone: o.status === "cancelled" ? "warning" : "success",
-      };
-    });
-
-    const pendingCount = orders.filter((o) => o.status === "pending").length;
-    const lateCount = orders.filter((o) => o.status === "ready").length;
-
-    return {
-      activeTenants: tenants.filter((t) => t.is_active).length,
-      totalTenants: tenants.length,
-      ordersToday: todayOrders.length,
-      revenueToday,
-      revenueMonth,
-      avgTicket,
-      pendingCount,
-      lateCount,
-      topTenants,
-      monthlySeries,
-      recentActivity,
-    };
-  }, [data]);
-
-  if (isLoading) {
+  if (l1) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  const alertCount =
+    Number(stats?.overdue_count || 0) + Number(stats?.pending_count || 0);
+
+  const activityItems: ActivityItem[] = [];
+
+  (recentOrders ?? []).forEach((o: Record<string, unknown>) => {
+    const stores = o.stores as { tenants?: { name?: string; slug?: string } } | null;
+    const tenantName = stores?.tenants?.name ?? "Restaurante";
+    activityItems.push({
+      id: `order-${o.id}`,
+      title: `Pedido #${o.order_number ?? "—"} · ${tenantName}`,
+      detail: fmtMoney(Number(o.total || 0)),
+      time: relativeTime(String(o.created_at)),
+      icon: ShoppingBag,
+      tone: "success",
+    });
+  });
+
+  (upcoming ?? []).slice(0, 3).forEach((u: Record<string, unknown>) => {
+    activityItems.push({
+      id: `due-${u.tenant_id}`,
+      title: `Vencimento · ${u.tenant_name}`,
+      detail: fmtMoney(Number(u.monthly_amount || 0), String(u.currency || "EUR")),
+      time: relativeTime(String(u.next_due_date)),
+      icon: CreditCard,
+      tone: u.status === "overdue" ? "warning" : "muted",
+    });
+  });
+
+  (tenants ?? []).slice(0, 2).forEach((t) => {
+    if (SINGLE_TENANT_MODE) return;
+    activityItems.push({
+      id: `tenant-${t.id}`,
+      title: `Cliente activo · ${t.name}`,
+      detail: PLAN_LABELS[(t.plan as PlanKey) || "start"],
+      time: relativeTime(t.created_at),
+      icon: Building2,
+      tone: "default",
+    });
+  });
+
+  const sortedActivity = activityItems.slice(0, 10);
+
   return (
     <PlatformPageShell width="full">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <HowToUsePanel
+        purpose="Visão geral da plataforma: restaurantes, pedidos do dia, faturamento e atalhos para as centrais (IA, push, planos, etc.)."
+        whenToUse="Tela inicial do administrador. Use para tomar decisões rápidas e abrir as áreas mais profundas."
+        steps={[
+          "Cartões do topo mostram totais consolidados em tempo real.",
+          "Use os atalhos das Centrais para mexer em IA, Push, Fidelidade e Campanhas.",
+          "O feed da direita mostra as últimas ações relevantes na plataforma.",
+        ]}
+        howToConfirm="Se os números bater com Monitoramento e com o painel de cada restaurante, está tudo sincronizado."
+        assistantQuestion="O que cada cartão e cada atalho deste dashboard significa, e quando devo usar cada um?"
+      />
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <div className="mb-1 flex items-center gap-2">
-            <StatusPill label="Admin" tone="active" dot />
-            <StatusPill label="Dados reais" tone="neutral" />
+          <div className="flex items-center gap-2 mb-1">
+            <StatusPill label={APP_NAME} tone="neutral" />
+            <StatusPill label="Command Center" tone="active" dot />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Dashboard de administração
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {SINGLE_TENANT_MODE ? "Visão geral" : "Visão global"}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Visão funcional da operação, financeira e saúde geral.
+          <p className="text-sm text-muted-foreground mt-1">
+            {SINGLE_TENANT_MODE
+              ? "Painel de administração do restaurante"
+              : "Todos os restaurantes · sem cliente seleccionado"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
+          {!SINGLE_TENANT_MODE && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={nav.admin("tenants")}>Ver clientes</Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
-            <Link to={nav.admin("monitoring")}>Monitoramento</Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link to={nav.admin("diagnostics")}>Estado do sistema</Link>
+            <Link to={nav.admin("branding")}>Identidade visual</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link to={nav.panel("live")}>Operação ao vivo</Link>
+            <Link to={centralAdminPath()}>Centrais</Link>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <MetricTile
+      {/* KPI strip — premium */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <PremiumMetricCard
           icon={Building2}
-          label="Restaurantes ativos"
-          value={derived.activeTenants}
-          sub={`${derived.totalTenants} no total`}
+          tone="primary"
+          label={SINGLE_TENANT_MODE ? "Estado da loja" : "Restaurantes activos"}
+          value={SINGLE_TENANT_MODE ? (stats?.active_tenants ? "Activa" : "—") : (stats?.active_tenants ?? 0)}
+          sub={SINGLE_TENANT_MODE ? APP_NAME : `${stats?.total_tenants ?? 0} no total`}
         />
-        <MetricTile
+        <PremiumMetricCard
           icon={DollarSign}
-          label="Receita do mês"
-          value={fmtMoney(derived.revenueMonth)}
-          sub={`Hoje ${fmtMoney(derived.revenueToday)}`}
+          tone="success"
+          label="Faturamento do mês"
+          value={fmtMoney(Number(stats?.revenue_month || 0))}
+          sub={`MRR ${fmtMoney(Number(stats?.mrr || 0))}`}
         />
-        <MetricTile
+        <PremiumMetricCard
           icon={ShoppingBag}
+          tone="info"
           label="Pedidos hoje"
-          value={derived.ordersToday}
-          sub={`Ticket médio ${fmtMoney(derived.avgTicket)}`}
+          value={stats?.orders_today ?? 0}
+          sub={fmtMoney(Number(stats?.revenue_today || 0))}
         />
-        <MetricTile
+        <PremiumMetricCard
           icon={AlertCircle}
-          label="Atenção operacional"
-          value={derived.pendingCount + derived.lateCount}
-          sub={`${derived.pendingCount} pendentes · ${derived.lateCount} prontos`}
-          delta={derived.pendingCount + derived.lateCount > 0 ? "Requer atenção" : "Tudo sob controle"}
-          deltaUp={!(derived.pendingCount + derived.lateCount > 0)}
+          tone={alertCount > 0 ? "danger" : "success"}
+          label="Alertas críticos"
+          value={alertCount}
+          delta={alertCount > 0 ? "Requer atenção" : "Tudo em dia"}
+          deltaDirection={alertCount > 0 ? "down" : "up"}
+          sub={`${stats?.overdue_count ?? 0} atrasados · ${stats?.pending_count ?? 0} pendentes`}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-border/70 bg-card p-4 xl:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Receita dos últimos 12 meses</h3>
-            <StatusPill label="Atualização automática" tone="active" dot />
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-            {derived.monthlySeries.map((item) => (
-              <div key={item.monthLabel} className="rounded-lg border border-border/60 bg-background/70 p-2 text-center">
-                <p className="text-[10px] uppercase text-muted-foreground">{item.monthLabel}</p>
-                <p className="mt-1 text-xs font-bold text-foreground">{fmtMoney(item.revenue)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <ActivityFeed items={derived.recentActivity} />
+      {/* Sub-strip: indicadores rápidos */}
+      <div className="grid grid-cols-3 gap-4">
+        <PremiumMetricCard icon={CheckCircle2} tone="success" label="Pagos" value={stats?.paid_count ?? 0} />
+        <PremiumMetricCard icon={Clock} tone="warning" label="Pendentes" value={stats?.pending_count ?? 0} />
+        <PremiumMetricCard icon={TrendingUp} tone="primary" label="Receita hoje" value={fmtMoney(Number(stats?.revenue_today || 0))} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {/* Main grid: chart + ranking + alerts */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <PremiumChartCard
+          title="Faturamento da rede"
+          subtitle="Últimos 12 meses"
+          action={<StatusPill label="Dados reais" tone="active" dot />}
+          className="xl:col-span-7"
+        >
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueSeries || []} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="adminRevFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.32} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="month_label"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v) => `€${v}`}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 12,
+                    fontSize: 12,
+                    boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18)",
+                  }}
+                  formatter={(v: number) => [fmtMoney(Number(v)), "Receita"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2.5}
+                  fill="url(#adminRevFill)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </PremiumChartCard>
+
+        <RankingCard
+          className="xl:col-span-3"
+          title="Top restaurantes"
+          subtitle="Por faturamento no mês"
+          items={(topTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
+            id: String(t.tenant_id),
+            name: String(t.tenant_name ?? "—"),
+            primary: fmtMoney(Number(t.total_revenue || 0)),
+            secondary: `${Number(t.orders_count ?? 0)} pedidos`,
+            value: Number(t.total_revenue || 0),
+            icon: Building2,
+          }))}
+          action={
+            !SINGLE_TENANT_MODE && (
+              <Link to={nav.admin("tenants")} className="text-xs font-semibold text-primary hover:underline">
+                Ver todos
+              </Link>
+            )
+          }
+        />
+
+        <AlertCard
+          className="xl:col-span-2"
+          title="Alertas inteligentes"
+          items={((): AlertItem[] => {
+            const out: AlertItem[] = [];
+            if (Number(stats?.overdue_count || 0) > 0) {
+              out.push({
+                id: "overdue",
+                title: `${stats?.overdue_count} pagamentos atrasados`,
+                description: "Verifique cobranças e renovação",
+                severity: "critical",
+              });
+            }
+            if (Number(stats?.pending_count || 0) > 0) {
+              out.push({
+                id: "pending",
+                title: `${stats?.pending_count} cobranças pendentes`,
+                description: "Faturas aguardando confirmação",
+                severity: "warning",
+              });
+            }
+            if (out.length === 0) {
+              out.push({
+                id: "ok",
+                title: "Tudo em dia",
+                description: "Sem alertas críticos no momento",
+                severity: "resolved",
+              });
+            }
+            return out;
+          })()}
+        />
+      </div>
+
+      {/* Activity feed full width below */}
+      <ActivityFeed items={sortedActivity} />
+
+
+      {/* Tenants + centrals */}
+      <div className={`grid grid-cols-1 ${SINGLE_TENANT_MODE ? "" : "xl:grid-cols-2"} gap-4`}>
+        {!SINGLE_TENANT_MODE && (
         <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-            <h3 className="text-sm font-semibold">Top restaurantes</h3>
-            <Link to={nav.admin("stores")} className="text-xs font-semibold text-primary hover:underline">
-              Abrir lista
+            <h3 className="text-sm font-semibold">Clientes</h3>
+            <Link to={nav.admin("tenants")} className="text-xs font-semibold text-primary hover:underline">
+              Ver todos
             </Link>
           </div>
           <div className="divide-y divide-border/50">
-            {derived.topTenants.length === 0 && (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Sem dados suficientes para ranking.
-              </p>
+            {(topTenants ?? []).length === 0 && (tenants ?? []).length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum cliente</p>
             )}
-            {derived.topTenants.map((tenant, idx) => (
-              <div key={`${tenant.name}-${idx}`} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-sm">
-                  {idx + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{tenant.name}</p>
-                  <p className="text-xs text-muted-foreground">{tenant.orders} pedidos no mês</p>
-                </div>
-                <p className="text-sm font-bold">{fmtMoney(tenant.revenue)}</p>
-              </div>
-            ))}
+            {(topTenants ?? []).slice(0, 6).map((t: Record<string, unknown>) => {
+              const tid = String(t.tenant_id);
+              const slug =
+                (tenants ?? []).find((x) => x.id === tid)?.slug ??
+                String(t.tenant_name ?? "").toLowerCase().replace(/\s+/g, "-");
+              return (
+                <Link
+                  key={tid}
+                  to={nav.admin("tenants", slug)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{String(t.tenant_name)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fmtMoney(Number(t.total_revenue || 0))} este mês
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                </Link>
+              );
+            })}
+            {(topTenants ?? []).length === 0 &&
+              (tenants ?? []).slice(0, 6).map((t) => (
+                <Link
+                  key={t.id}
+                  to={nav.admin("tenants", t.slug)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{t.name}</p>
+                    <StatusPill
+                      label={PLAN_LABELS[(t.plan as PlanKey) || "start"]}
+                      tone={t.is_active ? "active" : "standby"}
+                      className="mt-1"
+                    />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                </Link>
+              ))}
           </div>
         </div>
+        )}
 
-        <div className="rounded-xl border border-border/70 bg-card p-4">
-          <h3 className="text-sm font-semibold">Ações rápidas</h3>
-          <div className="mt-4 space-y-2">
-            {[
-              { label: "Configurar pagamentos", to: nav.admin("payments"), icon: CreditCard },
-              { label: "Rever monitoramento", to: nav.admin("monitoring"), icon: TrendingUp },
-              { label: "Validar operação ao vivo", to: nav.panel("live"), icon: ShoppingBag },
-            ].map((entry) => (
-              <Link
-                key={entry.label}
-                to={entry.to}
-                className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2.5 transition-colors hover:bg-muted/40"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <entry.icon className="h-4 w-4 text-primary" />
-                  {entry.label}
-                </span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            ))}
+        <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+            <h3 className="text-sm font-semibold">Centrais · pulse global</h3>
+            <Link to={centralAdminPath()} className="text-xs font-semibold text-primary hover:underline">
+              Hub
+            </Link>
+          </div>
+          <div className="divide-y divide-border/50">
+            {ADMIN_CENTRALS.map((c, i) => {
+              const Icon = centralIcons[i] ?? Bot;
+              const activeEst = Math.max(1, Math.floor((tenants?.length ?? 1) * (0.15 + i * 0.05)));
+              return (
+                <Link
+                  key={c.segment}
+                  to={centralAdminPath(c.segment)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{c.title.replace("Central ", "")}</p>
+                    <p className="text-xs text-muted-foreground truncate">{c.desc}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <StatusPill label={`${activeEst} activos`} tone="active" dot />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
     </PlatformPageShell>
   );
-}
+};
+
+export default AdminDashboard;

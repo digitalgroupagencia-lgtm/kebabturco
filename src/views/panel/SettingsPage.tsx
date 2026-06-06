@@ -24,10 +24,7 @@ import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
-import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
-import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
-import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
-import { PremiumCard } from "@/components/premium/PremiumCard";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -101,18 +98,12 @@ const PanelSettingsPage = () => {
   };
 
   return (
-    <div className="space-y-5 max-w-6xl rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+    <div className="space-y-6 max-w-5xl">
       <PremiumPageHeader
+        icon={SettingsIcon}
         title={t("page.settings.title")}
         subtitle={t("page.settings.subtitle")}
       />
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <PremiumMetricCard title="Perfil da loja" value={storeName || "Loja"} subtitle="dados principais" icon={Store} color="brand" />
-        <PremiumMetricCard title="Notificações" value={pushNotifications ? "Ativas" : "Desativadas"} subtitle="push e sons" icon={Bell} color={pushNotifications ? "green" : "red"} />
-        <PremiumMetricCard title="Horários" value={closedToday ? "Fechado" : "Aberto"} subtitle={`${openTime} - ${closeTime}`} icon={Clock} color="blue" />
-        <PremiumMetricCard title="Impressão" value={printAutoOnNew ? "Auto" : "Manual"} subtitle="novos pedidos" icon={Receipt} color="orange" />
-      </section>
 
       <Tabs defaultValue="store" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">
@@ -148,7 +139,7 @@ const PanelSettingsPage = () => {
                 <Label>{t("settings.store.address")}</Label>
                 <Textarea rows={2} value={storeAddress} onChange={(e) => setStoreAddress(e.target.value)} />
               </div>
-              <PremiumActionButton onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</PremiumActionButton>
+              <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
 
             </CardContent>
           </Card>
@@ -190,7 +181,7 @@ const PanelSettingsPage = () => {
                     placeholder="Ex: A, B, MESA" maxLength={5} />
                 </div>
               </div>
-              <PremiumActionButton onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</PremiumActionButton>
+              <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
 
             </CardContent>
           </Card>
@@ -227,7 +218,7 @@ const PanelSettingsPage = () => {
                   onChange={(e) => setTaxRate(Number(e.target.value))} />
                 <p className="text-xs text-muted-foreground mt-1">{t("settings.print.tax.desc")}</p>
               </div>
-              <PremiumActionButton onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</PremiumActionButton>
+              <Button onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
 
             </CardContent>
           </Card>
@@ -271,7 +262,7 @@ const PanelSettingsPage = () => {
                   tenantId={roleData.tenant_id}
                 />
               )}
-              <PremiumActionButton onClick={() => save(t("settings.notif.title"))}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</PremiumActionButton>
+              <Button onClick={() => save(t("settings.notif.title"))}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -297,7 +288,7 @@ const PanelSettingsPage = () => {
         </TabsContent>
       </Tabs>
 
-      <PremiumCard title="Zona perigosa" subtitle="Apague pedidos, caixa e outros dados deste projeto." className="border-destructive/40 bg-[#111111]">
+      <Card className="border-destructive/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="w-5 h-5" /> Zona perigosa
@@ -307,15 +298,15 @@ const PanelSettingsPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PremiumActionButton
-            className="from-[#B91C1C] to-[#D62300]"
+          <Button
+            variant="destructive"
             onClick={() => setResetOpen(true)}
             disabled={!roleData?.tenant_id}
           >
             <Trash2 className="w-4 h-4 mr-2" /> Zerar dados do projeto
-          </PremiumActionButton>
+          </Button>
         </CardContent>
-      </PremiumCard>
+      </Card>
 
       {roleData?.tenant_id && (
         <ResetDataDialog

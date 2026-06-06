@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,12 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { toast } from "sonner";
 import { Users, UserPlus, KeyRound, Power, Trash2, ShoppingBag, Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
-import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
-import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
-import { PremiumCard } from "@/components/premium/PremiumCard";
-import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
-import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
-import { PremiumStatusBadge } from "@/components/premium/PremiumStatusBadge";
 
 interface Seller {
   role_id: string;
@@ -171,31 +166,23 @@ const SellersPage = () => {
   }
 
   return (
-    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+    <div className="space-y-5">
       <PremiumPageHeader
+        icon={Users}
         title={t("page.sellers.title")}
         subtitle={t("page.sellers.subtitle")}
         actions={
-          <PremiumActionButton onClick={() => setOpen(true)} disabled={overLimit}>
+          <Button onClick={() => setOpen(true)} disabled={overLimit} size="sm" className="h-9">
             <UserPlus className="w-4 h-4 mr-2" /> {t("page.sellers.new")}
-          </PremiumActionButton>
+          </Button>
         }
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <PremiumMetricCard title="Vendedores ativos" value={active} subtitle="na equipa atual" icon={Users} color="brand" />
-        <PremiumMetricCard title="Limite do plano" value={allowed} subtitle="vagas disponíveis" icon={AlertCircle} color={overLimit ? "red" : "green"} />
-        <PremiumMetricCard title="Em rota" value={Math.max(0, Math.floor(active * 0.35))} subtitle="entregas no momento" icon={Power} color="orange" />
-        <PremiumMetricCard title="Entregas hoje" value={sellers?.reduce((sum, seller) => sum + (stats?.get(seller.user_id)?.count || 0), 0) || 0} subtitle="total do período" icon={ShoppingBag} color="blue" />
-        <PremiumMetricCard title="Tempo médio" value="18 min" subtitle="estimativa" icon={Loader2} color="purple" />
-        <PremiumMetricCard title="Avaliação média" value="4.8" subtitle="base recente" icon={KeyRound} color="yellow" />
-      </section>
-
       {/* Limite */}
-      <PremiumCard title="Capacidade do plano" className="bg-[#111111]">
+      <Card>
         <CardContent className="p-4 flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <PremiumStatusBadge status={overLimit ? "danger" : "info"}>{active}/{allowed} {t("sellers.units")}</PremiumStatusBadge>
+            <Badge variant={overLimit ? "destructive" : "secondary"}>{active}/{allowed} {t("sellers.units")}</Badge>
             {overLimit && (
               <span className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5" /> {t("sellers.limit_reached")}
@@ -211,7 +198,7 @@ const SellersPage = () => {
             </div>
           )}
         </CardContent>
-      </PremiumCard>
+      </Card>
 
       {isLoading ? (
         <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
@@ -220,14 +207,14 @@ const SellersPage = () => {
           {sellers?.map((s) => {
             const st = stats?.get(s.user_id);
             return (
-              <PremiumCard key={s.role_id} className="bg-[#111111]">
-                <div className="space-y-2">
+              <Card key={s.role_id}>
+                <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-bold truncate">{s.full_name || t("sellers.no_name")}</p>
                       <p className="text-xs text-muted-foreground">{t("sellers.since")} {format(new Date(s.created_at), "dd/MM/yyyy")}</p>
                     </div>
-                    <PremiumStatusBadge status="success" className="shrink-0">{t("common.active")}</PremiumStatusBadge>
+                    <Badge variant="secondary" className="shrink-0">{t("common.active")}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm pt-1 border-t border-border">
                     <div>
@@ -247,20 +234,16 @@ const SellersPage = () => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
-                </div>
-              </PremiumCard>
+                </CardContent>
+              </Card>
             );
           })}
           {sellers?.length === 0 && (
-            <div className="col-span-full">
-              <PremiumEmptyState
-                icon={Users}
-                title={t("sellers.empty")}
-                description="Adicione o primeiro vendedor para começar a operação."
-                actionLabel={t("page.sellers.new")}
-                onAction={() => setOpen(true)}
-              />
-            </div>
+            <Card className="col-span-full">
+              <CardContent className="p-8 text-center text-muted-foreground">
+                {t("sellers.empty")}
+              </CardContent>
+            </Card>
           )}
         </div>
       )}

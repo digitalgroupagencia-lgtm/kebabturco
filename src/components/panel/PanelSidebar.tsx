@@ -78,23 +78,10 @@ export function PanelSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="gap-1 border-r border-white/10 bg-[#080808]">
-        <div className="px-3 pt-4">
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#111111] p-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#D62300] to-[#8B0F1A] text-sm font-black text-white">
-              KT
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-white">Kebab Turco</p>
-                <p className="text-xs text-zinc-500">Painel operacional</p>
-              </div>
-            )}
-          </div>
-        </div>
+      <SidebarContent className="gap-1">
         {navGroups.map((group) => (
           <SidebarGroup key={group.id}>
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-zinc-600">
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -114,8 +101,8 @@ export function PanelSidebar() {
                               const p = (typeof window !== "undefined" ? window.location.pathname : "").replace(/\/+$/, "") || "/";
                               const active = isActive || p === "/panel" || p === "/panel/live";
                               return cn(
-                                "rounded-lg flex w-full items-center gap-2 px-2 py-1.5 text-sm text-zinc-300 hover:bg-white/5 hover:text-white",
-                                active && "bg-gradient-to-r from-[#8B0F1A] to-[#D62300] text-white font-semibold",
+                                "hover:bg-muted/50 rounded-lg flex w-full items-center gap-2 px-2 py-1.5 text-sm",
+                                active && "bg-primary/10 text-primary font-semibold",
                               );
                             }}
                           >
@@ -126,8 +113,8 @@ export function PanelSidebar() {
                           <NavLink
                             to={url}
                             end
-                            className="rounded-lg text-zinc-300 hover:bg-white/5 hover:text-white"
-                            activeClassName="bg-gradient-to-r from-[#8B0F1A] to-[#D62300] text-white font-semibold"
+                            className="hover:bg-muted/50 rounded-lg"
+                            activeClassName="bg-primary/10 text-primary font-semibold"
                             onClick={handleNav}
                           >
                             <Icon className="mr-2 h-4 w-4 shrink-0" />
@@ -143,8 +130,8 @@ export function PanelSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter className="border-t border-white/10 bg-[#080808]">
-        <Button variant="ghost" className="w-full justify-start rounded-lg text-zinc-300 hover:bg-white/5 hover:text-white" onClick={() => void signOut("/staff")}>
+      <SidebarFooter>
+        <Button variant="ghost" className="w-full justify-start rounded-lg" onClick={() => void signOut("/staff")}>
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && t("common.signout")}
         </Button>

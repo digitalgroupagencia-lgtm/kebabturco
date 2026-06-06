@@ -1,21 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Wallet, CheckCircle2, Building2, TrendingUp, AlertTriangle, CreditCard, Receipt } from "lucide-react";
+import { Loader2, Wallet, CheckCircle2, Building2 } from "lucide-react";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import {
   fetchStorePayoutIntake,
   saveStorePayoutIntake,
   type StorePayoutIntake,
 } from "@/services/payoutIntakeService";
-import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
-import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
-import { PremiumCard } from "@/components/premium/PremiumCard";
-import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
-import { PremiumStatusBadge } from "@/components/premium/PremiumStatusBadge";
 
 const PanelFinancePage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
@@ -107,20 +104,18 @@ const PanelFinancePage = () => {
   }
 
   return (
-    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+    <div className="mx-auto max-w-lg space-y-5 pb-10">
       <PanelStoreSwitcher />
 
-      <PremiumPageHeader
-        title="Recebimentos"
-        subtitle="Configure conta bancária e acompanhe repasses"
-      />
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <PremiumMetricCard title="Receita bruta" value="€ 2.450,00" subtitle="hoje" icon={Wallet} color="green" />
-        <PremiumMetricCard title="Receita líquida" value="€ 2.129,50" subtitle="após taxas" icon={TrendingUp} color="brand" />
-        <PremiumMetricCard title="Taxas" value="€ 320,50" subtitle="custos operacionais" icon={CreditCard} color="orange" />
-        <PremiumMetricCard title="Pendências" value={saved ? "0" : "1"} subtitle="dados a validar" icon={AlertTriangle} color="red" />
-      </section>
+      <div>
+        <h1 className="text-xl font-black flex items-center gap-2">
+          <Wallet className="h-5 w-5 text-primary" />
+          Recebimentos
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+          Preencha os dados da sua conta para activarmos os pagamentos online e os repasses para o seu banco.
+        </p>
+      </div>
 
       {saved && (
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 flex gap-3">
@@ -136,13 +131,17 @@ const PanelFinancePage = () => {
         </div>
       )}
 
-      <PremiumCard
-        title="Dados bancários"
-        subtitle="Use os dados exatos da conta onde quer receber os repasses"
-        className="bg-[#111111]"
-        action={<PremiumStatusBadge status={saved ? "success" : "warning"}>{saved ? "Configurado" : "Pendente"}</PremiumStatusBadge>}
-      >
-        <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Dados bancários
+          </CardTitle>
+          <CardDescription>
+            Use os dados exactos da conta onde quer receber o dinheiro dos pedidos online.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
             <Label>Nome do negócio / empresa</Label>
             <Input
@@ -208,56 +207,12 @@ const PanelFinancePage = () => {
               className="mt-1"
             />
           </div>
-
-          <PremiumActionButton className="w-full" onClick={() => void save()} disabled={saving}>
+          <Button className="w-full h-11 font-bold" onClick={() => void save()} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {saved ? "Atualizar dados" : "Enviar dados"}
-          </PremiumActionButton>
-        </div>
-      </PremiumCard>
-
-      <PremiumCard title="Entradas e saídas" subtitle="Resumo do dia" className="bg-[#111111]">
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
-            <span className="text-zinc-400">Entradas</span>
-            <b>€ 2.450,00</b>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
-            <span className="text-zinc-400">Saídas</span>
-            <b>€ 520,50</b>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
-            <span className="text-zinc-400">Repasses pendentes</span>
-            <b>€ 1.928,50</b>
-          </div>
-        </div>
-      </PremiumCard>
-
-      <PremiumCard title="Movimentações recentes" className="bg-[#111111]">
-        <div className="space-y-2">
-          {[
-            ["Hoje 10:21", "Pagamento online", "€ 28,90"],
-            ["Hoje 09:48", "Pagamento online", "€ 41,50"],
-            ["Hoje 09:15", "Pagamento presencial", "€ 19,80"],
-          ].map(([date, label, amount]) => (
-            <div key={`${date}-${label}`} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div>
-                <p className="font-semibold">{label}</p>
-                <p className="text-xs text-zinc-500">{date}</p>
-              </div>
-              <span className="font-black">{amount}</span>
-            </div>
-          ))}
-        </div>
-      </PremiumCard>
-
-      <PremiumCard title="Ações financeiras" className="bg-[#111111]">
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-          <PremiumActionButton tone="secondary"><Receipt className="mr-2 h-4 w-4" />Exportar CSV</PremiumActionButton>
-          <PremiumActionButton tone="secondary"><Receipt className="mr-2 h-4 w-4" />Exportar PDF</PremiumActionButton>
-          <PremiumActionButton tone="secondary"><Building2 className="mr-2 h-4 w-4" />Configurar banco</PremiumActionButton>
-        </div>
-      </PremiumCard>
+            {saved ? "Actualizar dados" : "Enviar dados"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };
