@@ -133,7 +133,7 @@ const Dashboard = () => {
       const byChannel = new Map<string, { count: number; total: number }>();
       orders.forEach((o) => {
         if (o.status === "cancelled") return;
-        const ch = (o.channel as string) || "salao";
+        const ch = (o.order_type as string) || (o.source as string) || "salao";
         const cur = byChannel.get(ch) ?? { count: 0, total: 0 };
         cur.count++;
         cur.total += Number(o.total ?? 0);
@@ -281,7 +281,7 @@ const Dashboard = () => {
       severity: "warning",
     });
   }
-  if (printSummary && printSummary.offline > 0) {
+  if (printSummary && (printSummary.failed > 0 || printSummary.bridge === "inactive")) {
     alerts.push({
       id: "printer",
       title: "Impressora offline",
@@ -497,7 +497,7 @@ const Dashboard = () => {
                     <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">#{o.order_number ?? "—"} · {(o.channel as string) || "Salão"}</p>
+                    <p className="text-sm font-semibold truncate">#{o.order_number ?? "—"} · {(o.order_type as string) || "Salão"}</p>
                     <p className="text-xs text-muted-foreground">há {mins} min</p>
                   </div>
                   <p className="text-sm font-bold tabular-nums">{fmt(Number(o.total ?? 0))}</p>
