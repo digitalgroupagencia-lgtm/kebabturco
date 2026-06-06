@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import { Gift, Megaphone, Plus, ChevronDown } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type LoyaltyRow = {
@@ -94,6 +95,18 @@ const LoyaltyPage = () => {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-8">
+      <HowToUsePanel
+        purpose="Programa de carimbos para retorno de clientes (a cada N pedidos ganha um prêmio)."
+        whenToUse="Retenção contínua. Para campanhas pontuais use Cupons."
+        steps={[
+          "Defina quantos carimbos para ganhar um prêmio (ex: 10).",
+          "Escreva o prêmio (ex: 1 kebab grátis).",
+          "Ative o programa. Cada pedido pago soma 1 carimbo ao telefone do cliente.",
+          "Em 'Campanhas' crie mensagens automáticas (cliente inativo, aniversário, prêmio próximo).",
+        ]}
+        howToConfirm="Faça um pedido teste com um telefone novo e veja o carimbo subir na lista."
+        assistantQuestion="Que regra de fidelidade dá melhor retenção sem virar prejuízo?"
+      />
       <div>
         <h2 className="text-xl font-black flex items-center gap-2">
           <Gift className="w-5 h-5 text-primary" />

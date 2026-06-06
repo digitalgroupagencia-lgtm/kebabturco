@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Image as ImageIcon, Upload, Trash2, ArrowUp, ArrowDown, Youtube, Plus, Music, Video } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Loader2 } from "lucide-react";
@@ -181,6 +182,18 @@ const BannerPage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
+      <HowToUsePanel
+        purpose="Banners de imagem, vídeo ou áudio que aparecem no PWA e totem."
+        whenToUse="Lançamento, promoção, anúncio sazonal."
+        steps={[
+          "Clique 'Adicionar banner'.",
+          "Suba imagem (JPG/PNG), vídeo (MP4/MOV/WEBM) ou áudio (MP3). Limite 100 MB.",
+          "Use as setas ↑/↓ para reordenar.",
+          "Ative o switch — o banner aparece imediatamente no cliente.",
+        ]}
+        howToConfirm="Abra a loja em outra aba — o banner aparece no topo do cardápio."
+        assistantQuestion="Qual formato e duração de banner converte melhor no totem?"
+      />
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6" /> Banner Promocional</h2>
         <p className="text-sm text-muted-foreground mt-1">

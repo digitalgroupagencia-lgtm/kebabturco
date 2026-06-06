@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart3, TrendingUp, ShoppingBag, DollarSign, XCircle, Clock } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const periods = [
@@ -113,6 +114,18 @@ const ReportsPage = () => {
 
   return (
     <div className="space-y-6">
+      <HowToUsePanel
+        purpose="Visão de vendas, top produtos, horários de pico e desempenho por vendedor."
+        whenToUse="Diariamente para acompanhar caixa. Semanalmente para decidir cardápio e turnos."
+        steps={[
+          "Escolha o período no topo (Hoje, 7, 30 ou 90 dias).",
+          "Veja o ticket médio (faturação ÷ pedidos).",
+          "No gráfico horário, identifique o pico para reforçar a equipa.",
+          "Em 'Top produtos', priorize os 3 primeiros nas promoções.",
+        ]}
+        howToConfirm="Os totais batem com o caixa fechado em /panel/cashier."
+        assistantQuestion="Como interpreto o ticket médio e que ações concretas tomo se ele cair?"
+      />
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <BarChart3 className="h-6 w-6" /> Relatórios

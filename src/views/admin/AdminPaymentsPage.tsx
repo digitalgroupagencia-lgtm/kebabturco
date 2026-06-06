@@ -64,6 +64,20 @@ export default function AdminPaymentsPage() {
         description="Gateways disponíveis na plataforma. Mantém Stripe, Redsys e Bizum configurados por loja."
       />
 
+      <HowToUsePanel
+        purpose="Configurar credenciais reais de Stripe / Redsys / Bizum por loja. Só admin master."
+        whenToUse="Ao receber as chaves do banco / Stripe Connect, ou ao testar antes de activar para o cliente."
+        steps={[
+          "Escolha a loja no selector lateral.",
+          "Em cada gateway clique 'Editar credenciais' e cole os dados (FUC, terminal, secret key SHA-256 para Redsys; conectar Stripe Express).",
+          "Salve. As credenciais ficam cifradas em store_payment_gateways.credentials.",
+          "Clique 'Testar ligação' para validar antes de mudar status.",
+          "Quando estiver OK, o dono activa o método em /panel/payments.",
+        ]}
+        howToConfirm="O badge da loja muda para 'Sandbox' ou 'Production' (verde) e o teste de ligação devolve OK."
+        assistantQuestion="Por que Redsys precisa de SHA-256 e o que acontece se eu usar a chave errada?"
+      />
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>

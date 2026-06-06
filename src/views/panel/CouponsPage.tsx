@@ -14,6 +14,7 @@ import {
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import { Plus, Trash2, Tag, MoreVertical } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 type Coupon = {
   id: string;
@@ -93,6 +94,19 @@ const CouponsPage = () => {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-8">
+      <HowToUsePanel
+        purpose="Crie códigos de desconto para campanhas pontuais (datas, redes sociais, recuperação de cliente)."
+        whenToUse="Promoções com duração definida. Para retenção contínua use Fidelidade."
+        steps={[
+          "Toque em 'Novo cupom' e dê um código curto (ex: WELCOME10).",
+          "Escolha tipo (% ou valor fixo) e o valor do desconto.",
+          "Defina pedido mínimo e limite de usos (evita prejuízo).",
+          "Defina data de expiração.",
+          "Ative o cupom e teste no checkout.",
+        ]}
+        howToConfirm="O cupom aparece na lista com badge 'Ativo' e o cliente vê desconto no carrinho ao digitar o código."
+        assistantQuestion="Como crio um cupom eficiente de fim de semana e quais limites evitam prejuízo?"
+      />
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-black flex items-center gap-2">
