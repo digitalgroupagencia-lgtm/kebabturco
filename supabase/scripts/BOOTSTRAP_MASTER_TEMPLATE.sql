@@ -1,16 +1,14 @@
 -- =====================================================================
 -- BOOTSTRAP MASTER TEMPLATE — White Label Restaurant
 -- =====================================================================
--- Idempotente. Pode ser rodado várias vezes sem duplicar dados.
--- Cria 1 tenant + 1 loja + catálogo robusto (categorias, produtos,
--- extras, tamanhos), banners, splash, horários, totem, plans e features.
+-- Reaplicável em projeto novo/remixado. Atualiza branding/layout e,
+-- quando ainda não existem pedidos, recria o catálogo template sem duplicar.
 --
 -- COMO USAR (em projeto novo após Remix do Master):
---   1. Ativar Lovable Cloud no novo projeto
---   2. Aguardar as migrations rodarem (cria todas as tabelas)
---   3. Abrir SQL Editor e colar este arquivo inteiro
---   4. Executar
---   5. Trocar nome/logo/cores no Admin → Configurações
+--   1. Abrir More → Nuvem → Editor SQL
+--   2. Colar este arquivo inteiro
+--   3. Clicar em Correr
+--   4. Voltar ao Preview e publicar
 --
 -- NÃO cria: usuários reais, pedidos, clientes, secrets, tokens, financeiro.
 -- =====================================================================
@@ -29,7 +27,32 @@ DECLARE
   v_cat_combos uuid;
   v_prod_id uuid;
   v_placeholder text := '/product-placeholder.svg';
+  v_logo_main text := '/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png';
+  v_logo_main_dark text := '/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png';
+  v_logo_language text := '/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png';
+  v_logo_order_type text := '/__l5e/assets-v1/acf26dc1-0064-4dc9-9968-5de28d63c002/white-label-logo_order_type.png';
+  v_banner_home text := '/__l5e/assets-v1/ae7c7737-28bb-41cd-8abb-05fcf6c85b1f/white-label-banner_home.png';
+  v_icon_dine_in text := '/__l5e/assets-v1/f4156c88-f205-4149-970d-b8278cf4539e/white-label-icon_dine_in.png';
+  v_icon_takeaway text := '/__l5e/assets-v1/aaaae7ff-394a-461e-9146-0cd1e98f4ef1/white-label-icon_takeaway.png';
+  v_icon_delivery text := '/__l5e/assets-v1/79cf0a13-c837-4e45-835f-507d09a2f708/white-label-icon_delivery.png';
+  v_lang_en text := '/__l5e/assets-v1/8bc3600d-1044-40da-b042-300509a95cf8/white-label-lang_en.png';
+  v_lang_es text := '/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png';
+  v_lang_fr text := '/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png';
+  v_lang_pt text := '/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png';
 BEGIN
+  -- Se o bootstrap anterior rodou errado em clone novo, limpa os dados template
+  -- para reaplicar sem duplicar. Não mexe se já existem pedidos reais.
+  IF NOT EXISTS (SELECT 1 FROM public.orders WHERE store_id = v_store_id LIMIT 1) THEN
+    DELETE FROM public.product_stock WHERE product_id IN (SELECT id FROM public.products WHERE store_id = v_store_id);
+    DELETE FROM public.product_extras WHERE product_id IN (SELECT id FROM public.products WHERE store_id = v_store_id);
+    DELETE FROM public.product_sizes WHERE product_id IN (SELECT id FROM public.products WHERE store_id = v_store_id);
+    DELETE FROM public.products WHERE store_id = v_store_id;
+    DELETE FROM public.categories WHERE store_id = v_store_id;
+    DELETE FROM public.promo_banners WHERE store_id = v_store_id;
+    DELETE FROM public.splash_media WHERE store_id = v_store_id;
+    DELETE FROM public.delivery_zones WHERE store_id = v_store_id;
+  END IF;
+
   -- ===========================================================
   -- 1) TENANT + STORE
   -- ===========================================================
