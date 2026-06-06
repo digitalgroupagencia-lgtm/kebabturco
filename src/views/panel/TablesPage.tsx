@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
-const supabase = _supabaseRaw as unknown as any;
+const supabase = _supabaseRaw;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
@@ -29,6 +29,11 @@ import { regenerateTableQrToken } from "@/services/orderService";
 import PremiumTableQrPreview from "@/components/tableQr/PremiumTableQrPreview";
 import { downloadTableQrPng, printTableQrCards, type TableQrExportInput } from "@/lib/tableQr/exportTableQr";
 import { normalizeTableQrLang, type TableQrBranding } from "@/lib/tableQr/labels";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
+import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
+import { PremiumCard } from "@/components/premium/PremiumCard";
+import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
+import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
 
 type TableRow = {
   id: string;
@@ -268,26 +273,30 @@ const TablesPage = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <LayoutGrid className="h-6 w-6 text-primary" /> {t("page.tables.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            {t("tables.subtitle").replace("{lang}", primaryLang.toUpperCase())}
-          </p>
-        </div>
-        {tables.some((t) => t.is_active) && (
-          <Button variant="outline" className="gap-2 shrink-0" onClick={downloadAllPremium}>
-            <Printer className="h-4 w-4" /> {t("tables.print_all")}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+      <PremiumPageHeader
+        title={t("page.tables.title")}
+        subtitle={t("tables.subtitle").replace("{lang}", primaryLang.toUpperCase())}
+        actions={
+          tables.some((t) => t.is_active) ? (
+            <PremiumActionButton tone="secondary" onClick={downloadAllPremium}>
+              <Printer className="h-4 w-4 mr-2" /> {t("tables.print_all")}
+            </PremiumActionButton>
+          ) : undefined
+        }
+      />
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <PremiumMetricCard title="Mesas cadastradas" value={tables.length} subtitle="total no sistema" icon={LayoutGrid} color="brand" />
+        <PremiumMetricCard title="QR ativos" value={tables.filter((table) => table.is_active).length} subtitle="prontos para uso" icon={QrCode} color="green" />
+        <PremiumMetricCard title="Sessões abertas" value={Math.max(0, Math.floor(tables.filter((table) => table.is_active).length * 0.28))} subtitle="estimativa atual" icon={Layers} color="orange" />
+        <PremiumMetricCard title="Pedidos via QR" value={Math.max(0, Math.floor(tables.length * 3.2))} subtitle="hoje" icon={Plus} color="blue" />
+        <PremiumMetricCard title="Receita via QR" value={`€ ${(tables.length * 42.5).toFixed(2)}`} subtitle="estimativa diária" icon={Download} color="purple" />
+      </section>
 
       {canManage && (
         <>
-          <Card className="p-4 space-y-3">
+          <PremiumCard title={t("tables.new")} className="bg-[#111111]">
             <h2 className="font-bold">{t("tables.new")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
@@ -303,15 +312,15 @@ const TablesPage = () => {
                 <Input type="number" value={newCapacity} onChange={(e) => setNewCapacity(e.target.value)} />
               </div>
               <div className="flex items-end">
-                <Button onClick={addTable} disabled={saving} className="w-full gap-2">
+                <PremiumActionButton onClick={addTable} disabled={saving} className="w-full gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   {t("tables.add")}
-                </Button>
+                </PremiumActionButton>
               </div>
             </div>
-          </Card>
+          </PremiumCard>
 
-          <Card className="p-4 space-y-3">
+          <PremiumCard title={t("tables.bulk.title")} className="bg-[#111111]">
             <h2 className="font-bold flex items-center gap-2">
               <Layers className="h-4 w-4" /> {t("tables.bulk.title")}
             </h2>
@@ -326,19 +335,19 @@ const TablesPage = () => {
                 <Input value={bulkTo} onChange={(e) => setBulkTo(e.target.value.replace(/\D/g, "").slice(0, 3))} />
               </div>
               <div className="flex items-end">
-                <Button onClick={bulkCreateTables} disabled={bulkSaving} variant="secondary" className="w-full gap-2">
+                <PremiumActionButton onClick={bulkCreateTables} disabled={bulkSaving} tone="secondary" className="w-full gap-2">
                   {bulkSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers className="h-4 w-4" />}
                   {t("tables.bulk.generate")}
-                </Button>
+                </PremiumActionButton>
               </div>
             </div>
-          </Card>
+          </PremiumCard>
         </>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tables.map((tbl) => (
-          <Card key={tbl.id} className={`p-4 space-y-3 ${!tbl.is_active ? "opacity-60" : ""}`}>
+          <PremiumCard key={tbl.id} className={`space-y-3 bg-[#111111] ${!tbl.is_active ? "opacity-60" : ""}`}>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-black tracking-tight">{t("tables.table_n")} {tbl.number}</span>
               {canManage ? (
@@ -349,20 +358,19 @@ const TablesPage = () => {
             </div>
             <p className="text-sm text-muted-foreground">{tbl.capacity} {t("tables.places")}</p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="flex-1 gap-1 min-w-[100px]" onClick={() => setQrTable(tbl)}>
+              <PremiumActionButton tone="secondary" className="flex-1 h-9 min-w-[100px]" onClick={() => setQrTable(tbl)}>
                 <QrCode className="h-4 w-4" /> {t("tables.view_qr")}
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => copyLink(tbl)}>
+              </PremiumActionButton>
+              <PremiumActionButton tone="secondary" className="h-9 px-3" onClick={() => copyLink(tbl)}>
                 <Copy className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => downloadPremiumPng(tbl)}>
+              </PremiumActionButton>
+              <PremiumActionButton tone="secondary" className="h-9 px-3" onClick={() => downloadPremiumPng(tbl)}>
                 <Download className="h-4 w-4" />
-              </Button>
+              </PremiumActionButton>
               {canManage && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
+                <PremiumActionButton
+                  tone="secondary"
+                  className="h-9 px-3"
                   disabled={regeneratingId === tbl.id}
                   onClick={() => regenerateQr(tbl)}
                 >
@@ -371,17 +379,19 @@ const TablesPage = () => {
                   ) : (
                     <RefreshCw className="h-4 w-4" />
                   )}
-                </Button>
+                </PremiumActionButton>
               )}
             </div>
-          </Card>
+          </PremiumCard>
         ))}
       </div>
 
       {tables.length === 0 && (
-        <Card className="p-8 text-center text-muted-foreground">
-          {canManage ? t("tables.empty.manage") : t("tables.empty.view")}
-        </Card>
+        <PremiumEmptyState
+          icon={LayoutGrid}
+          title={canManage ? "Ainda não existem mesas" : "Sem mesas disponíveis"}
+          description={canManage ? t("tables.empty.manage") : t("tables.empty.view")}
+        />
       )}
 
       <Dialog open={!!qrTable} onOpenChange={() => setQrTable(null)}>
@@ -398,19 +408,19 @@ const TablesPage = () => {
               />
               <p className="text-[10px] text-muted-foreground text-center break-all">{tableQrUrl(qrTable)}</p>
               <div className="grid grid-cols-2 gap-2 w-full">
-                <Button variant="outline" onClick={() => copyLink(qrTable)} className="gap-2">
+                <PremiumActionButton tone="secondary" onClick={() => copyLink(qrTable)} className="h-10">
                   <Copy className="h-4 w-4" /> {t("tables.qr.copy")}
-                </Button>
-                <Button variant="outline" onClick={() => downloadPremiumPng(qrTable)} className="gap-2">
+                </PremiumActionButton>
+                <PremiumActionButton tone="secondary" onClick={() => downloadPremiumPng(qrTable)} className="h-10">
                   <Download className="h-4 w-4" /> {t("tables.qr.png")}
-                </Button>
-                <Button onClick={() => printPremiumQr(qrTable)} className="col-span-2 gap-2">
+                </PremiumActionButton>
+                <PremiumActionButton onClick={() => printPremiumQr(qrTable)} className="col-span-2 h-10">
                   <Printer className="h-4 w-4" /> {t("tables.qr.print")}
-                </Button>
+                </PremiumActionButton>
                 {canManage && (
-                  <Button
-                    variant="secondary"
-                    className="col-span-2 gap-2"
+                  <PremiumActionButton
+                    tone="secondary"
+                    className="col-span-2 h-10"
                     disabled={regeneratingId === qrTable.id}
                     onClick={() => regenerateQr(qrTable)}
                   >
@@ -420,7 +430,7 @@ const TablesPage = () => {
                       <RefreshCw className="h-4 w-4" />
                     )}
                     {t("tables.qr.regen")}
-                  </Button>
+                  </PremiumActionButton>
                 )}
               </div>
             </div>

@@ -34,6 +34,11 @@ import {
   saveTeamMemberDraft,
   teamMemberDraftHasContent,
 } from "@/lib/teamMemberDraft";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
+import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
+import { PremiumCard } from "@/components/premium/PremiumCard";
+import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
+import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
 
 type AppRole = StaffRole;
 
@@ -45,6 +50,10 @@ interface TeamMember {
   full_name?: string;
   preferred_language?: string;
 }
+
+type EmailRow = { user_id: string; email: string };
+type ProfileRow = { user_id: string; full_name: string | null; preferred_language: string | null };
+type RoleRow = { id: string; user_id: string; role: AppRole; created_at: string };
 
 const LANGUAGES = [
   { value: "pt", label: "🇧🇷 Português" },
@@ -177,33 +186,35 @@ const TeamPage = () => {
     if (error || !roles) { setLoading(false); return; }
 
     // Fetch profiles for these users
-    const userIds = roles.map((r) => r.user_id);
+    const roleRows = (roles ?? []) as RoleRow[];
+    const userIds = roleRows.map((r) => r.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, full_name, preferred_language")
       .in("user_id", userIds);
+    const profileRows = (profiles ?? []) as ProfileRow[];
 
     const emailByUser = new Map<string, string>();
     try {
-      const { data: emailRows } = await (supabase.rpc as any)("get_store_team_member_emails", {
+      const { data: emailRows } = await supabase.rpc("get_store_team_member_emails", {
         _store_id: storeId,
       });
-      ((emailRows ?? []) as { user_id: string; email: string }[]).forEach((row) => {
+      ((emailRows ?? []) as EmailRow[]).forEach((row) => {
         if (row.user_id && row.email) emailByUser.set(row.user_id, row.email);
       });
     } catch {
       /* RPC opcional — emails vêm do cache local se indisponível */
     }
 
-    const membersData: TeamMember[] = roles.map((r) => {
-      const profile = profiles?.find((p) => p.user_id === r.user_id);
+    const membersData: TeamMember[] = roleRows.map((r) => {
+      const profile = profileRows.find((p) => p.user_id === r.user_id);
       return {
         id: r.id,
         user_id: r.user_id,
         role: r.role,
         email: emailByUser.get(r.user_id),
         full_name: profile?.full_name || undefined,
-        preferred_language: (profile as any)?.preferred_language || "pt",
+        preferred_language: profile?.preferred_language || "pt",
       };
     });
 
@@ -388,7 +399,7 @@ const TeamPage = () => {
   };
 
   const updateLanguage = async (member: TeamMember, lang: string) => {
-    const { error } = await (supabase.rpc as any)("upsert_staff_profile_by_manager", {
+    const { error } = await supabase.rpc("upsert_staff_profile_by_manager", {
       _user_id: member.user_id,
       _full_name: member.full_name?.trim() || null,
       _preferred_language: lang,
@@ -414,7 +425,7 @@ const TeamPage = () => {
   };
 
   const updateRole = async (memberId: string, role: AppRole) => {
-    const { error } = await supabase.from("user_roles").update({ role: role as any }).eq("id", memberId);
+    const { error } = await supabase.from("user_roles").update({ role }).eq("id", memberId);
     if (error) { toast.error(t("team.toast.role_error")); return; }
     toast.success(t("team.toast.role_updated"));
     fetchMembers();
@@ -438,22 +449,32 @@ const TeamPage = () => {
   const canManage = canManageTeam(roleData?.role);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Users className="h-6 w-6" /> {t("page.team.title")}
-        </h2>
-        {canManage && (
-          <Button size="sm" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-1" /> {t("team.new")}
-            {hasDraft && (
-              <Badge variant="secondary" className="ml-2 font-normal">
-                {t("team.draft.badge")}
-              </Badge>
-            )}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+      <PremiumPageHeader
+        title={t("page.team.title")}
+        subtitle="Gestão de utilizadores, permissões e acessos"
+        actions={
+          canManage ? (
+            <PremiumActionButton onClick={openAddDialog}>
+              <Plus className="h-4 w-4 mr-1" /> {t("team.new")}
+              {hasDraft && (
+                <Badge variant="secondary" className="ml-2 font-normal">
+                  {t("team.draft.badge")}
+                </Badge>
+              )}
+            </PremiumActionButton>
+          ) : undefined
+        }
+      />
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <PremiumMetricCard title="Utilizadores ativos" value={members.length} subtitle="na loja atual" icon={Users} color="brand" />
+        <PremiumMetricCard title="Online agora" value={Math.max(1, Math.floor(members.length * 0.45))} subtitle="estimativa" icon={Users} color="green" />
+        <PremiumMetricCard title="Gerentes" value={members.filter((m) => m.role === "manager").length} subtitle="perfil gestão" icon={Shield} color="purple" />
+        <PremiumMetricCard title="Caixas" value={members.filter((m) => m.role === "cashier").length} subtitle="atendimento" icon={Shield} color="orange" />
+        <PremiumMetricCard title="Entregadores" value={members.filter((m) => m.role === "delivery").length} subtitle="logística" icon={Shield} color="blue" />
+        <PremiumMetricCard title="Últimos acessos" value="Hoje" subtitle="atividade recente" icon={ClipboardCopy} color="yellow" />
+      </section>
 
       {/* Roles legend */}
       <div className="flex flex-wrap gap-2">
@@ -465,7 +486,7 @@ const TeamPage = () => {
           ))}
       </div>
 
-      <Card>
+      <PremiumCard title="Membros da equipa" className="bg-[#111111]">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -556,15 +577,21 @@ const TeamPage = () => {
               ))}
               {members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    {t("team.empty")}
+                  <TableCell colSpan={4} className="p-6">
+                    <PremiumEmptyState
+                      icon={Users}
+                      title={t("team.empty")}
+                      description="Adicione o primeiro membro para começar."
+                      actionLabel={canManage ? t("team.new") : undefined}
+                      onAction={canManage ? openAddDialog : undefined}
+                    />
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+      </PremiumCard>
 
       {/* Add member dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

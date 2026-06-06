@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen, Search, Sparkles } from "lucide-react";
 import { RESTAURANT_GUIDE_SECTIONS } from "@/lib/restaurantGuideContent";
+import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
+import { PremiumCard } from "@/components/premium/PremiumCard";
+import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
+import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
 
 export default function GuidePage() {
   const [q, setQ] = useState("");
@@ -14,26 +18,40 @@ export default function GuidePage() {
   })).filter((s) => s.items.length > 0);
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6" /> Central de Ajuda
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">Guia da operação diária do restaurante (sem administração geral).</p>
-      </div>
+    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+      <PremiumPageHeader
+        title="Central de conhecimento"
+        subtitle="Aprenda operação diária, boas práticas e resolução de problemas"
+        actions={
+          <PremiumActionButton tone="primary">
+            <Sparkles className="mr-2 h-4 w-4" />
+            Perguntar IA
+          </PremiumActionButton>
+        }
+      />
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <PremiumMetricCard title="Artigos totais" value={RESTAURANT_GUIDE_SECTIONS.reduce((sum, section) => sum + section.items.length, 0)} subtitle="base completa" icon={BookOpen} color="brand" />
+        <PremiumMetricCard title="Módulos" value={RESTAURANT_GUIDE_SECTIONS.length} subtitle="secções disponíveis" icon={Search} color="blue" />
+        <PremiumMetricCard title="Resultados atuais" value={filtered.reduce((sum, section) => sum + section.items.length, 0)} subtitle="após pesquisa" icon={Sparkles} color="purple" />
+      </section>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar no guia…" className="pl-9" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar no guia…" className="pl-9 bg-[#111111] border-white/10" />
       </div>
 
       {filtered.length === 0 && (
-        <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum resultado para "{q}"</CardContent></Card>
+        <PremiumEmptyState
+          icon={Search}
+          title="Nenhum resultado encontrado"
+          description={`Não encontramos conteúdos para "${q}". Tente outras palavras.`}
+        />
       )}
 
       {filtered.map((s) => (
-        <Card key={s.title}>
-          <CardContent className="p-4 sm:p-6">
+        <PremiumCard key={s.title} title={s.title} className="bg-[#111111]">
+          <div className="p-0 sm:p-1">
             <h3 className="font-semibold text-base mb-2">{s.title}</h3>
             <Accordion type="multiple">
               {s.items.map((it, i) => (
@@ -49,8 +67,8 @@ export default function GuidePage() {
                 </AccordionItem>
               ))}
             </Accordion>
-          </CardContent>
-        </Card>
+          </div>
+        </PremiumCard>
       ))}
     </div>
   );

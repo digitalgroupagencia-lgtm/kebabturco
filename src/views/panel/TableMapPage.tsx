@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
-const supabase = _supabaseRaw as unknown as any;
+const supabase = _supabaseRaw;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, LayoutGrid, X, CreditCard, Receipt, Unlock } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { closeTableByNumber, closeTableSessionUnified, listStoreOpenTableSessions, markTableSessionPaid, type OpenTableSessionRow } from "@/services/tableSessionService";
 import { toast } from "sonner";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
+import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
+import { PremiumCard } from "@/components/premium/PremiumCard";
+import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
+import { PremiumStatusBadge } from "@/components/premium/PremiumStatusBadge";
+import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 type PaymentStatus = Database["public"]["Enums"]["payment_status"];
@@ -293,15 +297,19 @@ const TableMapPage = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <LayoutGrid className="h-6 w-6 text-primary" /> Mapa de mesas
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Conta aberta até confirmar pagamento. Entregar pedido não fecha a mesa.
-        </p>
-      </div>
+    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+      <PremiumPageHeader
+        title="Mapa de mesas"
+        subtitle="Conta aberta até confirmar pagamento. Entregar pedido não fecha a mesa."
+      />
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <PremiumMetricCard title="Mesas livres" value={tables.filter((table) => resolveTableState(table.number, orders, sessionByTable.get(table.number), openMetaByTable.get(table.number)) === "free").length} subtitle="disponíveis agora" icon={LayoutGrid} color="green" />
+        <PremiumMetricCard title="Ocupadas" value={tables.filter((table) => resolveTableState(table.number, orders, sessionByTable.get(table.number), openMetaByTable.get(table.number)) === "open_account").length} subtitle="com conta aberta" icon={Receipt} color="blue" />
+        <PremiumMetricCard title="Em preparo" value={tables.filter((table) => resolveTableState(table.number, orders, sessionByTable.get(table.number), openMetaByTable.get(table.number)) === "preparing").length} subtitle="pedidos ativos" icon={Clock} color="orange" />
+        <PremiumMetricCard title="A pagar" value={tables.filter((table) => resolveTableState(table.number, orders, sessionByTable.get(table.number), openMetaByTable.get(table.number)) === "payment_pending").length} subtitle="aguardando pagamento" icon={CreditCard} color="yellow" />
+        <PremiumMetricCard title="Faturamento salão" value={`€ ${openAccounts.reduce((sum, row) => sum + Number(row.total_amount || 0), 0).toFixed(2)}`} subtitle="mesas abertas" icon={Receipt} color="brand" />
+      </section>
 
       <div className="flex flex-wrap gap-3 text-xs">
         {(["free", "waiting_order", "pending", "preparing", "open_account", "payment_pending"] as TableVisualState[]).map((k) => (
@@ -312,12 +320,9 @@ const TableMapPage = () => {
       </div>
 
       {openAccounts.length > 0 && (
-        <Card className="p-4 border-primary/40 bg-primary/5 space-y-3">
+        <PremiumCard title={`Contas abertas agora (${openAccounts.length})`} subtitle="Mesas com cliente ligado ou conta em aberto." className="border-primary/40 bg-primary/5 space-y-3">
           <div>
-            <h2 className="text-lg font-black text-primary">Contas abertas agora ({openAccounts.length})</h2>
-            <p className="text-sm text-muted-foreground">
-              Mesas com cliente ligado ou conta em aberto. Feche aqui para libertar o telemóvel do cliente.
-            </p>
+            <p className="text-sm text-muted-foreground">Feche aqui para libertar o telemóvel do cliente.</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {openAccounts.map((row) => (
@@ -348,27 +353,17 @@ const TableMapPage = () => {
                   )}
                 </p>
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 font-bold"
-                    onClick={() => setSelected(row.table_number)}
-                  >
+                  <PremiumActionButton tone="secondary" className="flex-1 h-9" onClick={() => setSelected(row.table_number)}>
                     Ver conta
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 font-bold"
-                    disabled={actionLoading}
-                    onClick={() => handleCloseSession(row.session_id, row.table_number)}
-                  >
+                  </PremiumActionButton>
+                  <PremiumActionButton className="flex-1 h-9" disabled={actionLoading} onClick={() => handleCloseSession(row.session_id, row.table_number)}>
                     Fechar conta
-                  </Button>
+                  </PremiumActionButton>
                 </div>
               </div>
             ))}
           </div>
-        </Card>
+        </PremiumCard>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -397,11 +392,15 @@ const TableMapPage = () => {
       </div>
 
       {tables.length === 0 && (
-        <Card className="p-8 text-center text-muted-foreground">Registe mesas em Gestão de mesas primeiro.</Card>
+        <PremiumEmptyState
+          icon={LayoutGrid}
+          title="Sem mesas cadastradas"
+          description="Registe mesas em Gestão de mesas primeiro."
+        />
       )}
 
       {selected && (
-        <Card className="p-4 space-y-4 border-primary/30">
+        <PremiumCard className="p-4 space-y-4 border-primary/30 bg-[#111111]">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-xl font-black text-primary">Mesa {selected}</h2>
@@ -423,9 +422,9 @@ const TableMapPage = () => {
                 <p className="text-sm text-muted-foreground">Sem conta aberta</p>
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setSelected(null)}>
+            <PremiumActionButton tone="ghost" className="h-9 w-9 p-0" onClick={() => setSelected(null)}>
               <X className="h-4 w-4" />
-            </Button>
+            </PremiumActionButton>
           </div>
 
           {selectedSession && accountOrders.length > 0 && (
@@ -464,45 +463,30 @@ const TableMapPage = () => {
                 <CreditCard className="h-4 w-4 mr-2" />
                 Pagamento recebido
               </Button>
-              <Button
-                variant="default"
-                className="h-11 font-bold"
-                disabled={actionLoading}
-                onClick={handleCloseAccount}
-              >
+              <PremiumActionButton className="h-11 font-bold" disabled={actionLoading} onClick={handleCloseAccount}>
                 <Unlock className="h-4 w-4 mr-2" />
                 Fechar conta / Libertar mesa
-              </Button>
+              </PremiumActionButton>
             </div>
           )}
 
           {!selectedSession && openMetaByTable.has(selected) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button
-                variant="default"
-                className="h-11 font-bold"
-                disabled={actionLoading}
-                onClick={() => {
-                  const row = openMetaByTable.get(selected);
-                  if (row) void handleCloseSession(row.session_id, row.table_number);
-                }}
-              >
+              <PremiumActionButton className="h-11 font-bold" disabled={actionLoading} onClick={() => {
+                const row = openMetaByTable.get(selected);
+                if (row) void handleCloseSession(row.session_id, row.table_number);
+              }}>
                 <Unlock className="h-4 w-4 mr-2" />
                 Fechar conta / Libertar mesa
-              </Button>
+              </PremiumActionButton>
             </div>
           )}
 
           {!selectedSession && !openMetaByTable.has(selected) && (
-            <Button
-              variant="outline"
-              className="w-full h-11 font-bold"
-              disabled={actionLoading}
-              onClick={handleCloseAccount}
-            >
+            <PremiumActionButton tone="secondary" className="w-full h-11 font-bold" disabled={actionLoading} onClick={handleCloseAccount}>
               <Unlock className="h-4 w-4 mr-2" />
               Libertar mesa (sem conta)
-            </Button>
+            </PremiumActionButton>
           )}
 
           <div className="space-y-3">
@@ -523,16 +507,16 @@ const TableMapPage = () => {
                     </p>
                     {o.customer_name && <p className="text-sm font-semibold">{o.customer_name}</p>}
                     {next && (
-                      <Button className="w-full h-11 font-black" onClick={() => advance(o.id, next)}>
+                      <PremiumActionButton className="w-full h-11 font-black" onClick={() => advance(o.id, next)}>
                         {actionLabel(o.status)}
-                      </Button>
+                      </PremiumActionButton>
                     )}
                   </div>
                 );
               })
             )}
           </div>
-        </Card>
+        </PremiumCard>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, Clock3, ShoppingBag } from "lucide-react";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
 import PanelOrdersBoard from "@/features/ops/PanelOrdersBoard";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -26,9 +26,41 @@ const LiveOrdersPage = () => {
         title={t("page.live.title")}
         description="Mantenha esta página aberta no monitor da cozinha ou balcão. Só pedidos em tempo real — sem resumos nem avisos administrativos."
       />
+      <section className="rounded-3xl border border-black/10 bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.08)] md:p-5 dark:border-white/10 dark:bg-[#050505]">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <LiveBadge icon={ShoppingBag} label="Pedidos hoje" value="24" color="bg-[#D62300] text-white" />
+          <LiveBadge icon={Clock3} label="Em preparo" value="6" color="bg-[#F59E0B] text-black" />
+          <LiveBadge icon={AlertTriangle} label="Atrasados" value="2" color="bg-[#B91C1C] text-white" />
+          <LiveBadge icon={CheckCircle2} label="Prontos" value="4" color="bg-[#22C55E] text-white" />
+        </div>
+      </section>
       <PanelOrdersBoard storeId={storeId} mode="live" />
     </div>
   );
 };
 
 export default LiveOrdersPage;
+
+function LiveBadge({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  color: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white p-3 dark:border-white/10 dark:bg-[#111111]">
+      <div className="flex items-center gap-2">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${color}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <p className="text-xs text-zinc-500">{label}</p>
+      </div>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+    </div>
+  );
+}

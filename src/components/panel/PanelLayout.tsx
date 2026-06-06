@@ -15,6 +15,7 @@ import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
+import { Bell } from "lucide-react";
 
 type Props = {
   page?: ComponentType<object>;
@@ -52,17 +53,23 @@ const PanelLayout = ({ page: Page }: Props) => {
     <SelectedTenantProvider>
       <PanelStoreProvider>
         <SidebarProvider defaultOpen={false}>
-          <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
+          <div className="min-h-screen flex w-full max-w-full overflow-x-hidden bg-[#050505] text-white">
             <PanelSidebar />
             <div className="flex-1 flex flex-col min-w-0">
-              <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-2">
+              <header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-white/10 bg-[#050505]/90 px-3 backdrop-blur-xl sm:px-4 gap-2">
                 <SidebarTrigger className="mr-1 sm:mr-2 shrink-0" />
-                <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1 min-w-0">{headerTitle}</h1>
+                <h1 className="text-base sm:text-lg font-black truncate flex-1 min-w-0">{headerTitle}</h1>
                 <PanelStoreSwitcher />
                 <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
+                <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#111111]">
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D62300] text-[9px] font-bold text-white">
+                    3
+                  </span>
+                </button>
                 <AdminThemeToggle />
               </header>
-              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+              <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#050505] p-4 sm:p-6">
                 <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
               </main>
             </div>

@@ -21,6 +21,7 @@ import { parseProductCode } from "@/lib/parseProductCode";
 import type { CartItem } from "@/customer/contexts/CartContext";
 import { comboUnitStepTitle } from "@/lib/modifiers/comboProductRules";
 import { shouldUseCustomizationStepWizard } from "@/lib/modifiers/customizationWizard";
+import { shouldShowUpsellStep } from "@/lib/order-flow/shouldShowUpsellStep";
 
 type Props = {
   product: MenuProduct;
@@ -51,7 +52,7 @@ export default function ProductCustomizationFlow({
   onOpenProduct,
 }: Props) {
   const { t, tProduct } = useLanguage();
-  const { addItem, updateItem } = useCart();
+  const { addItem, updateItem, items: cartItems } = useCart();
 
   const effectiveConfig = useMemo(
     () => applyComboDescriptionRules(product, config, menuProducts) ?? config,
@@ -279,6 +280,61 @@ export default function ProductCustomizationFlow({
   const allSelections = flattenConfiguration(configuration);
   const unitPrice = computeUnitPrice(basePrice, 0, allSelections);
 
+  const selectedModifierNames = useMemo(
+    () =>
+      allSelections.map((selection) => ({
+        id: selection.optionId,
+        name: tProduct(selection.optionName),
+        title: tProduct(selection.optionName),
+        groupName: tProduct(selection.groupName),
+      })),
+    [allSelections, tProduct],
+  );
+
+  const currentSelectionsForUpsell = useMemo(
+    () => [
+      {
+        id: product.id,
+        name: tProduct(product.name),
+        title: tProduct(product.name),
+        category: product.category,
+        categoryName: product.category,
+        modifiers: selectedModifierNames,
+      },
+    ],
+    [product.id, product.name, product.category, selectedModifierNames, tProduct],
+  );
+
+  const cartItemsForUpsell = useMemo(
+    () =>
+      cartItems.map((item) => ({
+        id: item.id,
+        name: tProduct(item.productName),
+        title: tProduct(item.productName),
+        category: item.configuration?.productType || item.productType,
+        categoryName: item.configuration?.productType || item.productType,
+        modifiers: (item.selections || []).map((selection) => ({
+          id: selection.optionId,
+          name: tProduct(selection.optionName),
+          title: tProduct(selection.optionName),
+          groupName: tProduct(selection.groupName),
+        })),
+      })),
+    [cartItems, tProduct],
+  );
+
+  const showPotatoStep = useMemo(
+    () =>
+      shouldShowUpsellStep({
+        stepType: "potatoes",
+        cartItems: cartItemsForUpsell,
+        currentSelections: currentSelectionsForUpsell,
+        selectedModifiers: selectedModifierNames,
+        productCategory: product.category,
+      }),
+    [cartItemsForUpsell, currentSelectionsForUpsell, selectedModifierNames, product.category],
+  );
+
   const validateCurrentStep = (): boolean => {
     if (
       currentWizardStep?.kind === "intro" ||
@@ -386,7 +442,7 @@ export default function ProductCustomizationFlow({
       addItem(payload);
       clearDraft();
 
-      if (upsellSuggestions.length > 0) {
+      if (upsellSuggestions.length > 0 && showPotatoStep) {
         setUpsellOpen(true);
         return;
       }
@@ -570,7 +626,7 @@ export default function ProductCustomizationFlow({
         ) : null}
       </div>
 
-      {upsellOpen && (
+      {upsellOpen && showPotatoStep && (
         <ProductUpsellSheet
           title={upsellTitle}
           suggestions={upsellSuggestions}

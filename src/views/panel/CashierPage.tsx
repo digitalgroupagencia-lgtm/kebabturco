@@ -2,21 +2,26 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone, AlertCircle } from "lucide-react";
+import { DollarSign, ArrowUpCircle, ArrowDownCircle, Clock, CreditCard, Banknote, Smartphone, AlertCircle, Printer, ReceiptText } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { useStaffT } from "@/hooks/useStaffT";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
+import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
+import { PremiumCard } from "@/components/premium/PremiumCard";
+import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
+import { PremiumStatusBadge } from "@/components/premium/PremiumStatusBadge";
+import { PremiumTable } from "@/components/premium/PremiumTable";
+import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
+type OrderItem = Tables<"order_items">;
 
 const CashierPage = () => {
   const { user } = useAuth();
@@ -75,7 +80,9 @@ const CashierPage = () => {
     try {
       await markOrderPaidAtCounter(order.id, method);
       const { data: items } = await supabase.from("order_items").select("*").eq("order_id", order.id);
-      await tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid", payment_method: method } as any, (items ?? []) as any);
+      const printableOrder = { ...order, payment_status: "paid", payment_method: method } as unknown as Parameters<typeof tryPrintPanelOrder>[1];
+      const printableItems = (items ?? []) as unknown as OrderItem[];
+      await tryPrintPanelOrder(storeId!, printableOrder, printableItems);
       toast.success(`${t("toast.payment_registered")} — #${order.order_number}`);
       await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
     } catch (e) {
@@ -173,25 +180,27 @@ const CashierPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <DollarSign className="h-6 w-6" /> {t("cashier.title")}
-        </h2>
-        {!currentRegister ? (
-          <Button onClick={() => setOpenDialogVisible(true)} className="bg-success hover:bg-success/90">
-            <ArrowUpCircle className="h-4 w-4 mr-1" /> {t("cashier.action.open")}
-          </Button>
-        ) : (
-          <Button variant="destructive" onClick={() => setCloseDialogVisible(true)}>
-            <ArrowDownCircle className="h-4 w-4 mr-1" /> {t("cashier.action.close")}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+      <PremiumPageHeader
+        title={t("cashier.title")}
+        subtitle="Gestão de abertura, encerramento e movimentações do caixa"
+        actions={
+          <>
+            {!currentRegister ? (
+              <PremiumActionButton onClick={() => setOpenDialogVisible(true)}>
+                <ArrowUpCircle className="h-4 w-4 mr-1" /> {t("cashier.action.open")}
+              </PremiumActionButton>
+            ) : (
+              <PremiumActionButton onClick={() => setCloseDialogVisible(true)} className="from-[#B91C1C] to-[#D62300]">
+                <ArrowDownCircle className="h-4 w-4 mr-1" /> {t("cashier.action.close")}
+              </PremiumActionButton>
+            )}
+          </>
+        }
+      />
 
-      {/* Status */}
-      <Card className={currentRegister ? "border-success/50 bg-success/5" : "border-destructive/50 bg-destructive/5"}>
-        <CardContent className="p-4 flex items-center gap-3">
+      <PremiumCard className={currentRegister ? "border-success/50 bg-success/5 text-white" : "border-destructive/50 bg-destructive/5 text-white"}>
+        <div className="p-0 flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full ${currentRegister ? "bg-success animate-pulse" : "bg-destructive"}`} />
           <span className="font-semibold">
             {currentRegister ? t("cashier.state.open") : t("cashier.state.closed")}
@@ -202,71 +211,32 @@ const CashierPage = () => {
               {t("cashier.openedAt")} {new Date(currentRegister.opened_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </PremiumCard>
 
 
-      {/* Sales summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">{t("cashier.total.today")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">€ {todaySales.total.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{todaySales.count} {t("cashier.orders.count")}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <CreditCard className="h-4 w-4" /> {t("cashier.method.card")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">€ {todaySales.card.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Banknote className="h-4 w-4" /> {t("cashier.method.cash")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">€ {todaySales.cash.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Smartphone className="h-4 w-4" /> {t("cashier.method.pix")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">€ {todaySales.pix.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-9">
+        <PremiumMetricCard title="Caixa" value={currentRegister ? "Aberto" : "Fechado"} subtitle="estado atual" icon={DollarSign} color={currentRegister ? "green" : "red"} />
+        <PremiumMetricCard title="Saldo inicial" value={`€ ${Number(currentRegister?.opening_balance || 0).toFixed(2)}`} subtitle="abertura" icon={ArrowUpCircle} color="blue" />
+        <PremiumMetricCard title="Vendas dinheiro" value={`€ ${todaySales.cash.toFixed(2)}`} subtitle="hoje" icon={Banknote} color="green" />
+        <PremiumMetricCard title="Vendas cartão" value={`€ ${todaySales.card.toFixed(2)}`} subtitle="hoje" icon={CreditCard} color="purple" />
+        <PremiumMetricCard title="Vendas online" value={`€ ${todaySales.pix.toFixed(2)}`} subtitle="hoje" icon={Smartphone} color="orange" />
+        <PremiumMetricCard title="Sangrias" value="€ 0,00" subtitle="sem registos" icon={ArrowDownCircle} color="red" />
+        <PremiumMetricCard title="Suprimentos" value="€ 0,00" subtitle="sem registos" icon={ArrowUpCircle} color="blue" />
+        <PremiumMetricCard title="Saldo esperado" value={`€ ${(Number(currentRegister?.opening_balance || 0) + todaySales.cash).toFixed(2)}`} subtitle="estimativa" icon={ReceiptText} color="brand" />
+        <PremiumMetricCard title="Divergência" value="€ 0,00" subtitle="a conferir" icon={AlertCircle} color="yellow" />
+      </section>
 
 
       {/* Pending Payments */}
-      <Card className={pendingOrders.length > 0 ? "border-yellow-500/60 bg-yellow-500/5" : ""}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertCircle className={`h-5 w-5 ${pendingOrders.length > 0 ? "text-yellow-600" : "text-muted-foreground"}`} />
-            {t("cashier.pending.title")}
-            <Badge variant={pendingOrders.length > 0 ? "default" : "secondary"} className="ml-auto">
-              {pendingOrders.length}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <PremiumCard
+        title={t("cashier.pending.title")}
+        className={pendingOrders.length > 0 ? "border-yellow-500/60 bg-yellow-500/5 text-white" : "bg-[#111111]"}
+        action={<PremiumStatusBadge status={pendingOrders.length > 0 ? "warning" : "neutral"}>{pendingOrders.length}</PremiumStatusBadge>}
+      >
+        <div>
           {pendingOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">{t("cashier.pending.empty")}</p>
+            <PremiumEmptyState icon={AlertCircle} title="Sem pagamentos pendentes" description={t("cashier.pending.empty")} />
           ) : (
             <ul className="space-y-2">
               {pendingOrders.map((o) => {
@@ -289,40 +259,49 @@ const CashierPage = () => {
                       </p>
                     </div>
                     <span className="font-black text-primary text-base tabular-nums shrink-0">€{Number(o.total).toFixed(2)}</span>
-                    <Button
+                    <PremiumActionButton
                       size="sm"
-                      className="h-9 bg-green-600 hover:bg-green-700 text-white"
+                      className="h-9 px-3 bg-green-600 hover:bg-green-700 text-white"
                       disabled={confirmingId === o.id}
                       onClick={() => void confirmCashPayment(o, "cash")}
                     >
                       <Banknote className="h-4 w-4 mr-1" />
                       {t("cashier.method.cash")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9"
+                    </PremiumActionButton>
+                    <PremiumActionButton
+                      className="h-9 px-3"
+                      tone="secondary"
                       disabled={confirmingId === o.id}
                       onClick={() => void confirmCashPayment(o, "card")}
                     >
                       <CreditCard className="h-4 w-4 mr-1" />
                       {t("cashier.method.card")}
-                    </Button>
+                    </PremiumActionButton>
                   </li>
                 );
               })}
             </ul>
 
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </PremiumCard>
+
+      <PremiumTable
+        title="Movimentações do caixa"
+        subtitle="Registos de entradas e métodos"
+        rows={pendingOrders}
+        columns={[
+          { key: "pedido", label: "Pedido", render: (row) => `#${row.order_number}` },
+          { key: "cliente", label: "Cliente", render: (row) => row.customer_name || "Cliente" },
+          { key: "estado", label: "Estado", render: (row) => row.status },
+          { key: "total", label: "Total", render: (row) => `€ ${Number(row.total).toFixed(2)}` },
+          { key: "hora", label: "Hora", render: (row) => new Date(row.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) },
+        ]}
+      />
 
       {currentRegister && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t("cashier.shift.title")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <PremiumCard title={t("cashier.shift.title")} className="bg-[#111111]">
+          <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("cashier.balance.opening")}</span>
               <span className="font-semibold">€ {Number(currentRegister.opening_balance).toFixed(2)}</span>
@@ -335,9 +314,34 @@ const CashierPage = () => {
               <span className="font-semibold">{t("cashier.balance.expected")}</span>
               <span className="font-bold text-lg">€ {(Number(currentRegister.opening_balance) + todaySales.cash).toFixed(2)}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </PremiumCard>
       )}
+
+      <PremiumCard title="Ações rápidas" className="bg-[#111111]">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
+          <PremiumActionButton onClick={() => setOpenDialogVisible(true)}>
+            <ArrowUpCircle className="mr-2 h-4 w-4" />
+            Abrir caixa
+          </PremiumActionButton>
+          <PremiumActionButton className="from-[#B91C1C] to-[#D62300]" onClick={() => setCloseDialogVisible(true)}>
+            <ArrowDownCircle className="mr-2 h-4 w-4" />
+            Fechar caixa
+          </PremiumActionButton>
+          <PremiumActionButton tone="secondary">
+            <ArrowDownCircle className="mr-2 h-4 w-4" />
+            Sangria
+          </PremiumActionButton>
+          <PremiumActionButton tone="secondary">
+            <ArrowUpCircle className="mr-2 h-4 w-4" />
+            Suprimento
+          </PremiumActionButton>
+          <PremiumActionButton tone="secondary">
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir resumo
+          </PremiumActionButton>
+        </div>
+      </PremiumCard>
 
       {/* Open Dialog */}
       <Dialog open={openDialogVisible} onOpenChange={setOpenDialogVisible}>
@@ -348,8 +352,8 @@ const CashierPage = () => {
             <Input type="number" step="0.01" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} placeholder="0.00" />
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
-            <Button onClick={openRegister}>{t("cashier.action.open")}</Button>
+            <DialogClose asChild><PremiumActionButton tone="secondary">{t("common.cancel")}</PremiumActionButton></DialogClose>
+            <PremiumActionButton onClick={openRegister}>{t("cashier.action.open")}</PremiumActionButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -366,8 +370,8 @@ const CashierPage = () => {
             {t("cashier.today.sold")} <strong>€ {todaySales.total.toFixed(2)}</strong>
           </p>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
-            <Button variant="destructive" onClick={closeRegister}>{t("cashier.action.close")}</Button>
+            <DialogClose asChild><PremiumActionButton tone="secondary">{t("common.cancel")}</PremiumActionButton></DialogClose>
+            <PremiumActionButton className="from-[#B91C1C] to-[#D62300]" onClick={closeRegister}>{t("cashier.action.close")}</PremiumActionButton>
           </DialogFooter>
         </DialogContent>
 

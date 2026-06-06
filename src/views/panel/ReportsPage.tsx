@@ -2,12 +2,43 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart3, TrendingUp, ShoppingBag, DollarSign, XCircle, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
+import { PremiumPageHeader } from "@/components/premium/PremiumPageHeader";
+import { PremiumChartCard } from "@/components/premium/PremiumChartCard";
+import { PremiumTable } from "@/components/premium/PremiumTable";
+import { PremiumActionButton } from "@/components/premium/PremiumActionButton";
+import { PremiumEmptyState } from "@/components/premium/PremiumEmptyState";
+
+type SalesSummaryRpc = {
+  total_orders: number | string | null;
+  total_revenue: number | string | null;
+  avg_ticket: number | string | null;
+  total_cancelled: number | string | null;
+};
+
+type TopProductsRpc = {
+  product_id: string;
+  product_name: string;
+  total_qty: number | string | null;
+  total_revenue: number | string | null;
+};
+
+type HourlySalesRpc = {
+  hour: number | string | null;
+  order_count: number | string | null;
+  revenue: number | string | null;
+};
+
+type SellerReportRpc = {
+  seller_id: string;
+  seller_name: string;
+  order_count: number | string | null;
+  revenue: number | string | null;
+  avg_ticket: number | string | null;
+  cancelled: number | string | null;
+};
 
 const periods = [
   { label: "Hoje", days: 0 },
@@ -52,7 +83,7 @@ const ReportsPage = () => {
     ]);
 
     if (summaryRes.data && Array.isArray(summaryRes.data) && summaryRes.data.length > 0) {
-      const s = summaryRes.data[0] as any;
+      const s = summaryRes.data[0] as SalesSummaryRpc;
       setSummary({
         total_orders: Number(s.total_orders) || 0,
         total_revenue: Number(s.total_revenue) || 0,
@@ -63,7 +94,7 @@ const ReportsPage = () => {
 
     if (productsRes.data) {
       setTopProducts(
-        (productsRes.data as any[]).map((p) => ({
+        (productsRes.data as TopProductsRpc[]).map((p) => ({
           product_id: p.product_id,
           product_name: p.product_name,
           total_qty: Number(p.total_qty),
@@ -74,7 +105,7 @@ const ReportsPage = () => {
 
     if (hourlyRes.data) {
       setHourlyData(
-        (hourlyRes.data as any[]).map((h) => ({
+        (hourlyRes.data as HourlySalesRpc[]).map((h) => ({
           hour: Number(h.hour),
           order_count: Number(h.order_count),
           revenue: Number(h.revenue),
@@ -83,7 +114,7 @@ const ReportsPage = () => {
     }
 
     if (sellerRes.data) {
-      setSellerData((sellerRes.data as any[]).map((r) => ({
+      setSellerData((sellerRes.data as SellerReportRpc[]).map((r) => ({
         seller_id: r.seller_id,
         seller_name: r.seller_name,
         order_count: Number(r.order_count),
@@ -102,6 +133,8 @@ const ReportsPage = () => {
     return { hour: `${String(i).padStart(2, "0")}h`, pedidos: found?.order_count || 0, receita: found?.revenue || 0 };
   });
 
+  const rankedTopProducts = topProducts.map((row, index) => ({ ...row, rank: index + 1 }));
+
   if (!storeId) {
     return (
       <div className="space-y-4">
@@ -112,166 +145,90 @@ const ReportsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart3 className="h-6 w-6" /> Relatórios
-        </h2>
-        <div className="flex gap-1">
-          {periods.map((p, i) => (
-            <Button
-              key={p.label}
-              size="sm"
-              variant={period === i ? "default" : "outline"}
-              onClick={() => setPeriod(i)}
-            >
-              {p.label}
-            </Button>
-          ))}
+    <div className="space-y-5 rounded-3xl border border-white/10 bg-[#050505] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-5">
+      <PremiumPageHeader
+        title="Relatórios"
+        subtitle="BI visual do desempenho do restaurante"
+        actions={
+          <>
+            <PremiumActionButton tone="secondary">Exportar PDF</PremiumActionButton>
+            <PremiumActionButton tone="secondary">Exportar CSV</PremiumActionButton>
+          </>
+        }
+      />
+
+      <div className="flex gap-1">
+        {periods.map((p, i) => (
+          <PremiumActionButton
+            key={p.label}
+            tone={period === i ? "primary" : "secondary"}
+            onClick={() => setPeriod(i)}
+            className="h-9 px-3 text-xs"
+          >
+            {p.label}
+          </PremiumActionButton>
+        ))}
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <PremiumMetricCard title="Receita" value={`€ ${summary.total_revenue.toFixed(2)}`} subtitle="período atual" icon={DollarSign} color="green" />
+        <PremiumMetricCard title="Pedidos" value={summary.total_orders} subtitle="total registado" icon={ShoppingBag} color="brand" />
+        <PremiumMetricCard title="Ticket médio" value={`€ ${summary.avg_ticket.toFixed(2)}`} subtitle="por pedido" icon={TrendingUp} color="blue" />
+        <PremiumMetricCard title="Cancelados" value={summary.total_cancelled} subtitle="requer análise" icon={XCircle} color="red" />
+      </section>
+
+      <PremiumChartCard title="Receita por hora" subtitle="Fluxo de pedidos ao longo do dia">
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={fullHourlyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+              <XAxis dataKey="hour" tick={{ fontSize: 11, fill: "#A1A1AA" }} interval={2} />
+              <YAxis allowDecimals={false} tick={{ fill: "#A1A1AA" }} />
+              <Tooltip />
+              <Bar dataKey="pedidos" fill="#D62300" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      </div>
+      </PremiumChartCard>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <ShoppingBag className="h-4 w-4" /> Pedidos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{summary.total_orders}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <DollarSign className="h-4 w-4" /> Faturamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-success">€ {summary.total_revenue.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <TrendingUp className="h-4 w-4" /> Ticket Médio
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">€ {summary.avg_ticket.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <XCircle className="h-4 w-4" /> Cancelados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-destructive">{summary.total_cancelled}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PremiumTable
+        title="Top produtos"
+        subtitle="Ranking por quantidade e receita"
+        rows={rankedTopProducts}
+        columns={[
+          { key: "rank", label: "#", render: (row) => row.rank },
+          { key: "name", label: "Produto", render: (row) => <span className="font-medium">{row.product_name}</span> },
+          { key: "qty", label: "Qtd", render: (row) => <span className="font-semibold">{row.total_qty}</span> },
+          { key: "revenue", label: "Receita", render: (row) => `€ ${row.total_revenue.toFixed(2)}` },
+        ]}
+        empty={
+          <PremiumEmptyState
+            icon={BarChart3}
+            title="Sem dados no período"
+            description="Não há produtos vendidos para o filtro selecionado."
+          />
+        }
+      />
 
-      {/* Hourly chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Clock className="h-5 w-5" /> Pedidos por Hora
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={fullHourlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval={2} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="pedidos" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top products */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">🏆 Produtos Mais Vendidos</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Qtd</TableHead>
-                <TableHead className="text-right">Receita</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {topProducts.map((p, i) => (
-                <TableRow key={p.product_id}>
-                  <TableCell>
-                    {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">{p.product_name}</TableCell>
-                  <TableCell className="text-right">{p.total_qty}</TableCell>
-                  <TableCell className="text-right font-semibold">€ {p.total_revenue.toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-              {topProducts.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    Nenhum dado para o período selecionado.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Vendedores */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">👤 Desempenho por Vendedor</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vendedor</TableHead>
-                <TableHead className="text-right">Pedidos</TableHead>
-                <TableHead className="text-right">Faturamento</TableHead>
-                <TableHead className="text-right">Ticket Médio</TableHead>
-                <TableHead className="text-right">Cancelados</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sellerData.map((s) => (
-                <TableRow key={s.seller_id}>
-                  <TableCell className="font-medium">{s.seller_name}</TableCell>
-                  <TableCell className="text-right">{s.order_count}</TableCell>
-                  <TableCell className="text-right font-semibold">€ {s.revenue.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">€ {s.avg_ticket.toFixed(2)}</TableCell>
-                  <TableCell className="text-right text-destructive">{s.cancelled}</TableCell>
-                </TableRow>
-              ))}
-              {sellerData.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    Nenhuma venda por vendedor no período.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <PremiumTable
+        title="Desempenho por vendedor"
+        subtitle="Pedidos, faturação e cancelamentos"
+        rows={sellerData}
+        columns={[
+          { key: "seller", label: "Vendedor", render: (row) => row.seller_name },
+          { key: "orders", label: "Pedidos", render: (row) => row.order_count },
+          { key: "revenue", label: "Faturação", render: (row) => `€ ${row.revenue.toFixed(2)}` },
+          { key: "avg", label: "Ticket médio", render: (row) => `€ ${row.avg_ticket.toFixed(2)}` },
+          { key: "cancel", label: "Cancelados", render: (row) => row.cancelled },
+        ]}
+        empty={
+          <PremiumEmptyState
+            icon={Clock}
+            title="Sem vendas por vendedor"
+            description="Ainda não existem dados para este período."
+          />
+        }
+      />
     </div>
   );
 };
