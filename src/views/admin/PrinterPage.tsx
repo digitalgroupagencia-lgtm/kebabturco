@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useResolvedStore } from "@/hooks/useResolvedStore";

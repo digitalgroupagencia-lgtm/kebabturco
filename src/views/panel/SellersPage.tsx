@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";

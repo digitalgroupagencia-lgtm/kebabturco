@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;

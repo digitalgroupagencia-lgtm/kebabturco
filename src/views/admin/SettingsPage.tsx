@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";

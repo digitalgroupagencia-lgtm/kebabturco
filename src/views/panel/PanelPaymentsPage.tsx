@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { Loader2, CreditCard, Smartphone, ShieldCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";

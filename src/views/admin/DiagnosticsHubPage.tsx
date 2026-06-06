@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import {
   Activity,
   Bell,
