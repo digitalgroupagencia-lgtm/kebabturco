@@ -9,10 +9,15 @@ import {
 } from "@/lib/stripePublishableKey";
 
 const stripePromiseCache: Partial<Record<StripePublishableEnvironment, Promise<Stripe | null>>> = {};
+const stripePromiseOverrideCache: Record<string, Promise<Stripe | null>> = {};
 
-function getStripePromise(environment: StripePublishableEnvironment = "live") {
-  const key = getStripePublishableKeyForEnvironment(environment);
+function getStripePromise(environment: StripePublishableEnvironment = "live", publishableKey?: string | null) {
+  const key = publishableKey?.trim() || getStripePublishableKeyForEnvironment(environment);
   if (!key) return null;
+  if (publishableKey) {
+    stripePromiseOverrideCache[key] ||= loadStripe(key);
+    return stripePromiseOverrideCache[key];
+  }
   if (!stripePromiseCache[environment]) {
     stripePromiseCache[environment] = loadStripe(key);
   }
@@ -99,11 +104,15 @@ export default function StripePaymentForm(props: {
   onCancel: () => void;
   compact?: boolean;
   connectEnvironment?: StripePublishableEnvironment;
+  publishableKey?: string | null;
 }) {
   const environment = props.connectEnvironment ?? "live";
-  const stripePromise = useMemo(() => getStripePromise(environment), [environment]);
+  const stripePromise = useMemo(
+    () => getStripePromise(environment, props.publishableKey),
+    [environment, props.publishableKey],
+  );
 
-  if (!hasStripePublishableKey(environment) || !stripePromise) {
+  if ((!props.publishableKey && !hasStripePublishableKey(environment)) || !stripePromise) {
     return (
       <p className="text-sm text-destructive font-bold p-4 bg-destructive/10 rounded-2xl">
         Pagamento online ainda não está disponível neste site. Peça ao restaurante para activar os recebimentos.

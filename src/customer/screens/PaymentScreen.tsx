@@ -150,6 +150,7 @@ const PaymentScreen = () => {
     estimatedStripeFeeCents: number;
     stripeConnectAccountId: string;
     connectEnvironment?: StripePublishableEnvironment;
+    publishableKey?: string | null;
   } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
@@ -534,6 +535,7 @@ const PaymentScreen = () => {
       estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
       stripeConnectAccountId: pi.stripeConnectAccountId,
       connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
+      publishableKey: pi.publishableKey ?? null,
     });
     if (pi.connectEnvironment) {
       setStripeConnectEnvironment(pi.connectEnvironment);
@@ -744,6 +746,7 @@ const PaymentScreen = () => {
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
               connectEnvironment={stripePaymentMeta?.connectEnvironment ?? stripeConnectEnvironment}
+              publishableKey={stripePaymentMeta?.publishableKey}
               onCancel={() => {
                 setStripeClientSecret(null);
                 setStripePaymentIntentId(null);
