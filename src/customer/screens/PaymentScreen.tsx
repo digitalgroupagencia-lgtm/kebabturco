@@ -631,8 +631,60 @@ const PaymentScreen = () => {
     return <SellerCheckoutForm />;
   }
 
+  const underConstructionLabel = underConstructionMethod
+    ? (METHOD_LABELS[underConstructionMethod]?.pt ?? underConstructionMethod)
+    : "";
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+      <Dialog
+        open={!!underConstructionMethod}
+        onOpenChange={(o) => { if (!o) setUnderConstructionMethod(null); }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              {underConstructionLabel} — em implementação
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-left space-y-2">
+              <span className="block">
+                Este método de pagamento está visível no checkout para teste, mas a integração real
+                ainda não foi activada. Para activar é necessário inserir as credenciais reais
+                (Merchant Code, Terminal e Secret Key) no painel de administração.
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Enquanto isso, escolha <strong>Cartão</strong> ou <strong>Efectivo</strong> para
+                finalizar o pedido.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const code = underConstructionMethod;
+                setUnderConstructionMethod(null);
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("assistant:ask", {
+                    detail: {
+                      text: `Como faço para activar o pagamento ${code === "redsys" ? "Redsys (TPV bancário)" : "Bizum"} no checkout? Onde consigo Merchant Code, Terminal e Secret Key, e em que tela do painel cada valor é colado?`,
+                    },
+                  }));
+                }
+              }}
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              Perguntar ao Assistente
+            </Button>
+            <Button type="button" onClick={() => setUnderConstructionMethod(null)}>
+              Voltar e escolher outro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <StoreClosedDialog
         open={closedDialog}
         status={openStatus}
