@@ -1,16 +1,14 @@
 -- =====================================================================
 -- BOOTSTRAP MASTER TEMPLATE — White Label Restaurant
 -- =====================================================================
--- Idempotente. Pode ser rodado várias vezes sem duplicar dados.
--- Cria 1 tenant + 1 loja + catálogo robusto (categorias, produtos,
--- extras, tamanhos), banners, splash, horários, totem, plans e features.
+-- Reaplicável em projeto novo/remixado. Atualiza branding/layout e,
+-- quando ainda não existem pedidos, recria o catálogo template sem duplicar.
 --
 -- COMO USAR (em projeto novo após Remix do Master):
---   1. Ativar Lovable Cloud no novo projeto
---   2. Aguardar as migrations rodarem (cria todas as tabelas)
---   3. Abrir SQL Editor e colar este arquivo inteiro
---   4. Executar
---   5. Trocar nome/logo/cores no Admin → Configurações
+--   1. Abrir More → Nuvem → Editor SQL
+--   2. Colar este arquivo inteiro
+--   3. Clicar em Correr
+--   4. Voltar ao Preview e publicar
 --
 -- NÃO cria: usuários reais, pedidos, clientes, secrets, tokens, financeiro.
 -- =====================================================================
@@ -29,33 +27,113 @@ DECLARE
   v_cat_combos uuid;
   v_prod_id uuid;
   v_placeholder text := '/product-placeholder.svg';
+  v_logo_main text := '/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png';
+  v_logo_main_dark text := '/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png';
+  v_logo_language text := '/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png';
+  v_logo_order_type text := '/__l5e/assets-v1/acf26dc1-0064-4dc9-9968-5de28d63c002/white-label-logo_order_type.png';
+  v_banner_home text := '/__l5e/assets-v1/ae7c7737-28bb-41cd-8abb-05fcf6c85b1f/white-label-banner_home.png';
+  v_icon_dine_in text := '/__l5e/assets-v1/f4156c88-f205-4149-970d-b8278cf4539e/white-label-icon_dine_in.png';
+  v_icon_takeaway text := '/__l5e/assets-v1/aaaae7ff-394a-461e-9146-0cd1e98f4ef1/white-label-icon_takeaway.png';
+  v_icon_delivery text := '/__l5e/assets-v1/79cf0a13-c837-4e45-835f-507d09a2f708/white-label-icon_delivery.png';
+  v_lang_en text := '/__l5e/assets-v1/8bc3600d-1044-40da-b042-300509a95cf8/white-label-lang_en.png';
+  v_lang_es text := '/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png';
+  v_lang_fr text := '/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png';
+  v_lang_pt text := '/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png';
 BEGIN
+  -- Se o bootstrap anterior rodou errado em clone novo, limpa os dados template
+  -- para reaplicar sem duplicar. Não mexe se já existem pedidos reais.
+  IF NOT EXISTS (SELECT 1 FROM public.orders WHERE store_id = v_store_id LIMIT 1) THEN
+    DELETE FROM public.product_stock WHERE product_id IN (SELECT id FROM public.products WHERE store_id = v_store_id);
+    DELETE FROM public.product_extras WHERE product_id IN (SELECT id FROM public.products WHERE store_id = v_store_id);
+    DELETE FROM public.product_sizes WHERE product_id IN (SELECT id FROM public.products WHERE store_id = v_store_id);
+    DELETE FROM public.products WHERE store_id = v_store_id;
+    DELETE FROM public.categories WHERE store_id = v_store_id;
+    DELETE FROM public.promo_banners WHERE store_id = v_store_id;
+    DELETE FROM public.splash_media WHERE store_id = v_store_id;
+    DELETE FROM public.delivery_zones WHERE store_id = v_store_id;
+  END IF;
+
   -- ===========================================================
   -- 1) TENANT + STORE
   -- ===========================================================
-  INSERT INTO public.tenants (id, name, slug, is_active, plan, is_template)
-  VALUES (v_tenant_id, 'Template Restaurant', 'template-restaurant', true, 'premium', true)
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.tenants (id, name, slug, is_active, plan, max_orders_month, is_template, custom_domain, use_master_domain, master_domain, path_slug)
+  VALUES (v_tenant_id, 'Kebab Turco', 'kebab-turco', true, 'premium', 5000, false, null, false, null, null)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    slug = EXCLUDED.slug,
+    is_active = EXCLUDED.is_active,
+    plan = EXCLUDED.plan,
+    max_orders_month = EXCLUDED.max_orders_month,
+    is_template = EXCLUDED.is_template,
+    updated_at = now();
 
-  INSERT INTO public.stores (id, tenant_id, name, address, phone, is_active, sort_order, short_description)
-  VALUES (v_store_id, v_tenant_id, 'Loja Principal', 'Endereço a configurar', '+00 000 000 000', true, 0,
-          'Loja template — substitua nome, logo e cores no Admin')
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.stores (id, tenant_id, name, address, phone, is_active, sort_order, short_description, image_url, latitude, longitude, geocoded_address)
+  VALUES (v_store_id, v_tenant_id, 'Gandia', 'Av. de Beniopa 12, Gandia (Valencia)', '960 224 516 / 632 399 584', true, 0,
+          'Lunes a Domingo, 12:00–00:00h
+
+Domicílio: mínimo 12€ grátis · fora de Gandia +3€ (mín. 18€)
+Seg–qui 12–16h e 19–00h · sex–dom 12–00h
+', v_logo_main, 38.9697408, -0.184002, 'Av. de Beniopa, 12, 46701 Gandia, Valencia, Spain')
+  ON CONFLICT (id) DO UPDATE SET
+    tenant_id = EXCLUDED.tenant_id,
+    name = EXCLUDED.name,
+    address = EXCLUDED.address,
+    phone = EXCLUDED.phone,
+    is_active = EXCLUDED.is_active,
+    sort_order = EXCLUDED.sort_order,
+    short_description = EXCLUDED.short_description,
+    image_url = EXCLUDED.image_url,
+    latitude = EXCLUDED.latitude,
+    longitude = EXCLUDED.longitude,
+    geocoded_address = EXCLUDED.geocoded_address,
+    updated_at = now();
 
   -- ===========================================================
-  -- 2) COMPANY SETTINGS (branding inicial neutro)
+  -- 2) COMPANY SETTINGS (branding visual fiel ao Master)
   -- ===========================================================
   INSERT INTO public.company_settings (
     store_id, company_name, short_name,
+    logo_main_url, logo_secondary_url, logo_language_url, logo_order_type_url,
+    logo_main_dark_url, logo_secondary_dark_url, logo_language_dark_url, logo_order_type_dark_url,
+    banner_home_url, icon_dine_in_url, icon_takeaway_url, icon_delivery_url,
     primary_color, secondary_color, accent_color, cta_color, header_color,
     background_color, text_color, font_family, button_style, is_active,
     meta_description
   ) VALUES (
-    v_store_id, 'Template Restaurant', 'Template',
-    '#D62300', '#FFC72C', '#FFC72C', '#28A745', '#D62300',
+    v_store_id, 'Kebab Turco', 'Kebab Turco',
+    v_logo_main, v_logo_main, v_logo_language, v_logo_order_type,
+    v_logo_main_dark, v_logo_main_dark, v_logo_language, v_logo_order_type,
+    v_banner_home, v_icon_dine_in, v_icon_takeaway, v_icon_delivery,
+    '#D62300', '#F5F5F5', '#FFC72C', '#28A745', '#910318',
     '#FFFFFF', '#1A1A1A', 'Nunito', 'rounded', true,
-    'Peça online — entrega rápida e fácil.'
-  ) ON CONFLICT DO NOTHING;
+    'Peça online no Kebab Turco Gandia.'
+  ) ON CONFLICT (store_id) DO UPDATE SET
+    company_name = EXCLUDED.company_name,
+    short_name = EXCLUDED.short_name,
+    logo_main_url = EXCLUDED.logo_main_url,
+    logo_secondary_url = EXCLUDED.logo_secondary_url,
+    logo_language_url = EXCLUDED.logo_language_url,
+    logo_order_type_url = EXCLUDED.logo_order_type_url,
+    logo_main_dark_url = EXCLUDED.logo_main_dark_url,
+    logo_secondary_dark_url = EXCLUDED.logo_secondary_dark_url,
+    logo_language_dark_url = EXCLUDED.logo_language_dark_url,
+    logo_order_type_dark_url = EXCLUDED.logo_order_type_dark_url,
+    banner_home_url = EXCLUDED.banner_home_url,
+    icon_dine_in_url = EXCLUDED.icon_dine_in_url,
+    icon_takeaway_url = EXCLUDED.icon_takeaway_url,
+    icon_delivery_url = EXCLUDED.icon_delivery_url,
+    primary_color = EXCLUDED.primary_color,
+    secondary_color = EXCLUDED.secondary_color,
+    accent_color = EXCLUDED.accent_color,
+    cta_color = EXCLUDED.cta_color,
+    header_color = EXCLUDED.header_color,
+    background_color = EXCLUDED.background_color,
+    text_color = EXCLUDED.text_color,
+    font_family = EXCLUDED.font_family,
+    button_style = EXCLUDED.button_style,
+    is_active = EXCLUDED.is_active,
+    meta_description = EXCLUDED.meta_description,
+    updated_at = now();
 
   -- ===========================================================
   -- 3) OPERATIONS SETTINGS (horários, pagamentos)
@@ -98,30 +176,79 @@ BEGIN
     ),
     'Pagamento confirmado! Estamos a preparar.',
     'Pague no balcão ao retirar.'
-  ) ON CONFLICT DO NOTHING;
+  ) ON CONFLICT (store_id) DO UPDATE SET
+    banner_enabled = EXCLUDED.banner_enabled,
+    banner_interval_ms = EXCLUDED.banner_interval_ms,
+    payment_mode = EXCLUDED.payment_mode,
+    pay_card_enabled = EXCLUDED.pay_card_enabled,
+    pay_cash_enabled = EXCLUDED.pay_cash_enabled,
+    pay_apple_enabled = EXCLUDED.pay_apple_enabled,
+    pay_google_enabled = EXCLUDED.pay_google_enabled,
+    pay_counter_enabled = EXCLUDED.pay_counter_enabled,
+    pay_link_enabled = EXCLUDED.pay_link_enabled,
+    avg_prep_minutes = EXCLUDED.avg_prep_minutes,
+    require_phone_takeaway = EXCLUDED.require_phone_takeaway,
+    pay_cash_dine_in = EXCLUDED.pay_cash_dine_in,
+    pay_cash_takeaway = EXCLUDED.pay_cash_takeaway,
+    pay_cash_delivery = EXCLUDED.pay_cash_delivery,
+    require_prepayment_takeaway = EXCLUDED.require_prepayment_takeaway,
+    require_prepayment_delivery = EXCLUDED.require_prepayment_delivery,
+    print_pending_dine_in = EXCLUDED.print_pending_dine_in,
+    apply_schedule_enabled = EXCLUDED.apply_schedule_enabled,
+    schedule_timezone = EXCLUDED.schedule_timezone,
+    weekly_schedule = EXCLUDED.weekly_schedule,
+    delivery_schedule = EXCLUDED.delivery_schedule,
+    msg_paid = EXCLUDED.msg_paid,
+    msg_counter = EXCLUDED.msg_counter,
+    updated_at = now();
 
   -- ===========================================================
   -- 4) TOTEM CONFIG
   -- ===========================================================
   INSERT INTO public.totem_config (
-    store_id, primary_color, secondary_color, accent_color, cta_color,
+    store_id, logo_url, primary_color, secondary_color, accent_color, cta_color,
     welcome_message, active_languages, primary_language,
+    language_icons, splash_logo_url, splash_logo_dark_url,
     enable_dine_in, enable_takeaway, enable_delivery,
     splash_title, splash_subtitle, splash_image_duration_ms, splash_show_text,
-    splash_logo_size
+    screen_config, splash_logo_size
   ) VALUES (
-    v_store_id, '#D62300', '#FFC72C', '#FFC72C', '#28A745',
-    jsonb_build_object('pt','Bem-vindo','en','Welcome','es','Bienvenido','fr','Bienvenue'),
-    ARRAY['pt','en','es']::text[], 'es',
+    v_store_id, v_logo_main, '#D62300', '#F5F5F5', '#FFC72C', '#28A745',
+    '{}'::jsonb,
+    ARRAY['es','en']::text[], 'es',
+    jsonb_build_object('en', v_lang_en, 'es', v_lang_es, 'fr', v_lang_fr, 'pt', v_lang_pt),
+    v_logo_language, v_logo_language,
     true, true, true,
-    jsonb_build_object('pt','Template Restaurant','en','Template Restaurant','es','Template Restaurant','fr','Template Restaurant'),
-    jsonb_build_object('pt','Sabor a cada pedido','en','Flavor in every bite','es','Sabor en cada pedido','fr','Saveur à chaque commande'),
-    4000, true, 160
-  ) ON CONFLICT DO NOTHING;
+    '{}'::jsonb,
+    '{}'::jsonb,
+    4000, true, '{}'::jsonb, 160
+  ) ON CONFLICT (store_id) DO UPDATE SET
+    logo_url = EXCLUDED.logo_url,
+    primary_color = EXCLUDED.primary_color,
+    secondary_color = EXCLUDED.secondary_color,
+    accent_color = EXCLUDED.accent_color,
+    cta_color = EXCLUDED.cta_color,
+    welcome_message = EXCLUDED.welcome_message,
+    active_languages = EXCLUDED.active_languages,
+    primary_language = EXCLUDED.primary_language,
+    language_icons = EXCLUDED.language_icons,
+    splash_logo_url = EXCLUDED.splash_logo_url,
+    splash_logo_dark_url = EXCLUDED.splash_logo_dark_url,
+    enable_dine_in = EXCLUDED.enable_dine_in,
+    enable_takeaway = EXCLUDED.enable_takeaway,
+    enable_delivery = EXCLUDED.enable_delivery,
+    splash_title = EXCLUDED.splash_title,
+    splash_subtitle = EXCLUDED.splash_subtitle,
+    splash_image_duration_ms = EXCLUDED.splash_image_duration_ms,
+    splash_show_text = EXCLUDED.splash_show_text,
+    screen_config = EXCLUDED.screen_config,
+    splash_logo_size = EXCLUDED.splash_logo_size,
+    updated_at = now();
 
   -- ===========================================================
   -- 5) DELIVERY ZONES (1 zona padrão vazia, admin configura)
   -- ===========================================================
+  IF NOT EXISTS (SELECT 1 FROM public.orders WHERE store_id = v_store_id LIMIT 1) THEN
   INSERT INTO public.delivery_zones (
     store_id, name, min_order, delivery_fee, postal_codes, is_default, is_active, sort_order
   ) VALUES (
@@ -345,15 +472,16 @@ BEGIN
   -- ===========================================================
   INSERT INTO public.promo_banners (store_id, image_url, sort_order, is_active, media_type)
   VALUES
-    (v_store_id, v_placeholder, 1, true, 'image'),
-    (v_store_id, v_placeholder, 2, true, 'image'),
-    (v_store_id, v_placeholder, 3, true, 'image');
+    (v_store_id, v_banner_home, 1, true, 'image'),
+    (v_store_id, v_banner_home, 2, true, 'image'),
+    (v_store_id, v_banner_home, 3, true, 'image');
 
   -- ===========================================================
   -- 9) SPLASH MEDIA (1 splash padrão)
   -- ===========================================================
   INSERT INTO public.splash_media (store_id, media_type, url, duration_ms, sort_order, is_active)
-  VALUES (v_store_id, 'image', v_placeholder, 4000, 1, true);
+  VALUES (v_store_id, 'image', v_banner_home, 4000, 1, true);
+  END IF;
 
   -- ===========================================================
   -- 10) PRINTER SETTINGS
