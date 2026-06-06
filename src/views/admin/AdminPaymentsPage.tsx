@@ -62,7 +62,6 @@ export default function AdminPaymentsPage() {
       <AdminPageHeader
         title="Pagamentos"
         description="Gateways disponíveis na plataforma. Mantém Stripe, Redsys e Bizum configurados por loja."
-        icon={CreditCard}
       />
 
       <Card>
