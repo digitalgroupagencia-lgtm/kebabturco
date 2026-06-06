@@ -166,8 +166,6 @@ const UsersPage = () => {
         }
       />
       <div className="hidden">
-        <div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <CreateUserDialog />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -234,7 +232,6 @@ const UsersPage = () => {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
 
       <div className="grid gap-3">
