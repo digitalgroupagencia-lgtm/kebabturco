@@ -16,6 +16,7 @@ import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
+import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
 type Props = {
   page?: ComponentType<object>;
@@ -27,6 +28,7 @@ const PanelLayout = ({ page: Page }: Props) => {
   const { primaryLang } = useStoreLanguages(roleData?.store_id);
   const navigate = useNavigate();
   const location = useLocation();
+  usePageTelemetry();
 
   useEffect(() => {
     if (!loading && !user) {

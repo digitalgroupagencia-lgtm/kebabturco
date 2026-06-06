@@ -15,6 +15,7 @@ import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnostic
 import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
+import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
 type Props = {
   page?: ComponentType<object>;
@@ -23,6 +24,7 @@ type Props = {
 const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
+  usePageTelemetry();
 
   if (authLoading || roleLoading) {
     return (
