@@ -53,8 +53,34 @@ import docValidation from "../../../docs/TEMPLATE_VALIDATION_CHECKLIST.md?raw";
 import docRestaurantUpdate from "../../../docs/RESTAURANT_UPDATE_CHECKLIST.md?raw";
 import docMasterWorkflow from "../../../docs/MASTER_UPDATE_WORKFLOW.md?raw";
 import docChangelog from "../../../docs/CHANGELOG_TEMPLATE.md?raw";
+import logoMainAsset from "@/assets/white-label/logo_main.png.asset.json";
+import logoMainDarkAsset from "@/assets/white-label/logo_main_dark.png.asset.json";
+import logoLanguageAsset from "@/assets/white-label/logo_language.png.asset.json";
+import logoOrderTypeAsset from "@/assets/white-label/logo_order_type.png.asset.json";
+import bannerHomeAsset from "@/assets/white-label/banner_home.png.asset.json";
+import iconDineInAsset from "@/assets/white-label/icon_dine_in.png.asset.json";
+import iconTakeawayAsset from "@/assets/white-label/icon_takeaway.png.asset.json";
+import iconDeliveryAsset from "@/assets/white-label/icon_delivery.png.asset.json";
+import langEnAsset from "@/assets/white-label/lang_en.png.asset.json";
+import langEsAsset from "@/assets/white-label/lang_es.png.asset.json";
+import langFrAsset from "@/assets/white-label/lang_fr.png.asset.json";
+import langPtAsset from "@/assets/white-label/lang_pt.png.asset.json";
 
 const BUILD_TIME = new Date().toISOString();
+
+const RESOLVED_BOOTSTRAP_SQL = bootstrapSql
+  .replaceAll("/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png", logoMainAsset.url)
+  .replaceAll("/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png", logoMainDarkAsset.url)
+  .replaceAll("/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png", logoLanguageAsset.url)
+  .replaceAll("/__l5e/assets-v1/acf26dc1-0064-4dc9-9968-5de28d63c002/white-label-logo_order_type.png", logoOrderTypeAsset.url)
+  .replaceAll("/__l5e/assets-v1/ae7c7737-28bb-41cd-8abb-05fcf6c85b1f/white-label-banner_home.png", bannerHomeAsset.url)
+  .replaceAll("/__l5e/assets-v1/f4156c88-f205-4149-970d-b8278cf4539e/white-label-icon_dine_in.png", iconDineInAsset.url)
+  .replaceAll("/__l5e/assets-v1/aaaae7ff-394a-461e-9146-0cd1e98f4ef1/white-label-icon_takeaway.png", iconTakeawayAsset.url)
+  .replaceAll("/__l5e/assets-v1/79cf0a13-c837-4e45-835f-507d09a2f708/white-label-icon_delivery.png", iconDeliveryAsset.url)
+  .replaceAll("/__l5e/assets-v1/8bc3600d-1044-40da-b042-300509a95cf8/white-label-lang_en.png", langEnAsset.url)
+  .replaceAll("/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png", langEsAsset.url)
+  .replaceAll("/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png", langFrAsset.url)
+  .replaceAll("/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png", langPtAsset.url);
 
 type HistoryRow = {
   id: string;
@@ -78,8 +104,8 @@ function copyText(text: string, label = "Conteúdo") {
 const TEMPLATE_FILES: { name: string; desc: string; content: string; path: string }[] = [
   {
     name: "BOOTSTRAP_MASTER_TEMPLATE.sql",
-    desc: "Popula um projeto novo com catálogo template (categorias, produtos, combos, banners, horários).",
-    content: bootstrapSql,
+    desc: "Reaplica identidade visual, tela inicial, catálogo, banners, horários e estrutura template sem duplicar em clone novo.",
+    content: RESOLVED_BOOTSTRAP_SQL,
     path: "supabase/scripts/BOOTSTRAP_MASTER_TEMPLATE.sql",
   },
   {
