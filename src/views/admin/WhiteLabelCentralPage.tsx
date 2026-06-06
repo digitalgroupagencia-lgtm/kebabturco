@@ -464,7 +464,7 @@ export default function WhiteLabelCentralPage() {
           <Alert>
             <Rocket className="h-4 w-4" />
             <AlertTitle>Fluxo: do Remix ao restaurante publicado</AlertTitle>
-            <AlertDescription>Siga os 6 passos abaixo. Tempo médio: 20-30 min.</AlertDescription>
+            <AlertDescription>Siga os passos abaixo: remix, bootstrap no Editor SQL, recarregar preview e publicar.</AlertDescription>
           </Alert>
 
           <StepCard n={1} title="Remixar o projeto Master">
@@ -574,8 +574,8 @@ export default function WhiteLabelCentralPage() {
                 BOOTSTRAP_MASTER_TEMPLATE.sql
               </CardTitle>
               <CardDescription>
-                Popula um projeto remixado com a estrutura template completa: tenant, store, plano,
-                categorias, produtos com extras/tamanhos, combos, banners, splash e horários.
+                Reaplica a estrutura template completa: identidade visual, tela inicial, tenant, store,
+                plano, categorias, produtos com extras/tamanhos, combos, banners, splash e horários.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -583,8 +583,8 @@ export default function WhiteLabelCentralPage() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Atenção</AlertTitle>
                 <AlertDescription>
-                  Rodar <b>apenas em projeto novo/remixado</b>. Não execute em restaurante já em produção —
-                  ele cria dados template que vão poluir o cardápio real.
+                  Rodar <b>apenas em projeto novo/remixado</b>. Se já existirem pedidos reais, ele corrige
+                  identidade/layout, mas não recria o catálogo para proteger operação em produção.
                 </AlertDescription>
               </Alert>
               <div className="flex gap-2 flex-wrap">
