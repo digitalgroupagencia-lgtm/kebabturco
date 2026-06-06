@@ -20,6 +20,7 @@ const SUGGESTIONS = [
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ACTIVE_CONV_KEY = "wgm.assistant.activeConv";
 
 // Web Speech API types (browser-only)
 type SpeechRecognitionLike = any;
