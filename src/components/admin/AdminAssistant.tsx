@@ -107,6 +107,7 @@ export default function AdminAssistant() {
       .single();
     if (error || !data) return null;
     setConversationId(data.id);
+    try { localStorage.setItem(ACTIVE_CONV_KEY, data.id); } catch {}
     return data.id;
   };
 
