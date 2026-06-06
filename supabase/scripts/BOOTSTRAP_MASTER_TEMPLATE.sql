@@ -472,9 +472,9 @@ Seg–qui 12–16h e 19–00h · sex–dom 12–00h
   -- ===========================================================
   INSERT INTO public.promo_banners (store_id, image_url, sort_order, is_active, media_type)
   VALUES
-    (v_store_id, v_placeholder, 1, true, 'image'),
-    (v_store_id, v_placeholder, 2, true, 'image'),
-    (v_store_id, v_placeholder, 3, true, 'image');
+    (v_store_id, v_banner_home, 1, true, 'image'),
+    (v_store_id, v_banner_home, 2, true, 'image'),
+    (v_store_id, v_banner_home, 3, true, 'image');
 
   -- ===========================================================
   -- 9) SPLASH MEDIA (1 splash padrão)
