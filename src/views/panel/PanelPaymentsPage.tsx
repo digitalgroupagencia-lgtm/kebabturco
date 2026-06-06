@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import AskAssistantButton from "@/components/admin/AskAssistantButton";
 
 type Row = {
   id: string;
