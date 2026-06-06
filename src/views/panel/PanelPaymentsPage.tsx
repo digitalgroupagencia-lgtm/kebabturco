@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import AskAssistantButton from "@/components/admin/AskAssistantButton";
 
 type Row = {
   id: string;
@@ -71,10 +73,29 @@ export default function PanelPaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Pagamentos</h1>
-        <p className="text-muted-foreground text-sm">Ative os métodos disponíveis para esta loja.</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Pagamentos</h1>
+          <p className="text-muted-foreground text-sm">Active os métodos de pagamento que este restaurante aceita.</p>
+        </div>
+        <AskAssistantButton
+          question="Estou em Painel → Pagamentos do meu restaurante. Explica em linguagem simples o que é Stripe, Redsys e Bizum, qual a diferença entre 'sandbox' e 'produção', e como saber qual devo activar para começar a receber pagamentos reais em Espanha."
+          label="Explicar esta tela"
+        />
       </div>
+
+      <HowToUsePanel
+        purpose="Aqui você liga ou desliga os métodos de pagamento que aparecem no checkout do cliente (cartão online via Stripe, cartão presencial via Redsys, e Bizum). As credenciais reais são configuradas pelo Admin Master."
+        whenToUse="Quando quiser activar/desactivar um método, ou quando precisar testar se as credenciais estão a funcionar."
+        steps={[
+          { title: "Veja o status de cada método", detail: "verde = a funcionar; cinza = desligado." },
+          { title: "Clique no interruptor", detail: "para ligar (sandbox) ou desligar um método." },
+          { title: "Clique em 'Testar'", detail: "para validar se as credenciais estão correctas." },
+          { title: "Abra a aba 'Logs'", detail: "se algo der erro, ali aparecem as últimas 50 tentativas." },
+        ]}
+        howToConfirm="O método aparece com a badge verde 'sandbox' ou 'production' e o teste devolve mensagem de sucesso."
+        assistantQuestion="No meu painel de Pagamentos um método aparece como 'não configurado' ou o teste falha. Diz-me passo-a-passo o que tenho de fazer para resolver, onde obter as credenciais e a quem pedir no banco/operador."
+      />
 
       <Tabs defaultValue="status">
         <TabsList>

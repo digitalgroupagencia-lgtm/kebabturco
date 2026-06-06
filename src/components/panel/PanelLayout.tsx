@@ -68,7 +68,9 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
               </main>
             </div>
-            {roleData?.role === "admin_master" && <AdminAssistant />}
+            {(roleData?.role === "admin_master" ||
+              roleData?.role === "restaurant_admin" ||
+              roleData?.role === "manager") && <AdminAssistant />}
           </div>
         </SidebarProvider>
       </PanelStoreProvider>
