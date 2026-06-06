@@ -316,6 +316,33 @@ export default function AdminAssistant() {
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            <button
+              onClick={async () => {
+                const snap = getUsageSnapshot();
+                const lastMsgs = messages.slice(-6).map((m) => `${m.role === "user" ? "EU" : "IA"}: ${extractText(m.content).slice(0, 500)}`).join("\n---\n");
+                const ctx = [
+                  `=== ESCALONAMENTO PARA O GERENTE DO PROJECTO ===`,
+                  `Data/hora: ${new Date().toISOString()}`,
+                  `Tela: ${window.location.pathname}`,
+                  `URL: ${window.location.href}`,
+                  `Total de visitas locais: ${snap.totalVisits}`,
+                  `Top 5 rotas: ${snap.routes.slice(0, 5).map((r) => `${r.path}=${r.count}`).join(", ")}`,
+                  ``,
+                  `--- Últimas mensagens da conversa ---`,
+                  lastMsgs || "(sem conversa)",
+                  ``,
+                  `--- Navegador ---`,
+                  navigator.userAgent,
+                ].join("\n");
+                try { await navigator.clipboard.writeText(ctx); toast.success("Contexto copiado. Envie ao gerente do projecto."); }
+                catch { toast.error("Não foi possível copiar"); }
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label="Escalonar para gerente"
+              title="Copia contexto técnico para enviar ao gerente do projecto"
+            >
+              <LifeBuoy className="w-4 h-4" />
+            </button>
             <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
             <button
               onClick={() => setExpanded((v) => !v)}
