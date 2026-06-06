@@ -1,55 +1,60 @@
-## O que vou fazer
 
-### 1. Botão "Atualizar banco agora" no Admin Master
+# Plano — Auditoria completa + Assistente Especialista Total
 
-Adicionar na página **Versão do Template** (`/admin` → Versão do Template) um botão grande **"Atualizar banco para v1.1.5"** que aparece automaticamente quando o diagnóstico detecta `db_outdated` ou `bootstrap_missing`.
+Entrego **3 coisas** numa execução, sem quebrar nada da UI atual.
 
-**Como vai funcionar (sem precisar pedir no chat):**
-
-- O botão chama uma nova edge function `apply-pending-migrations` (roda com service_role, então tem permissão para alterar o schema).
-- A função tem registrado internamente o SQL de cada versão (1.1.2, 1.1.3, 1.1.4, 1.1.5) de forma **idempotente** (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`) — seguro rodar várias vezes.
-- Ela lê a versão atual em `_template_version`, aplica só o que falta, atualiza `_template_version` para 1.1.5 e grava em `template_update_history`.
-- Mostra progresso ("Aplicando 1.1.2… 1.1.3… ✓ Banco atualizado para 1.1.5").
-- Só admin_master pode clicar (verificação de role na função).
-
-**Limitação honesta que preciso te dizer:**
-O botão funciona perfeitamente para **clones de restaurante** (Pastelanche, Playa Gandía, etc.) — eles podem se autoatualizar sozinhos.
-Para o **Master Template (este projeto Kebab Turco)**, novas migrations futuras ainda precisam ser criadas por mim aqui no chat na primeira vez (porque é onde a v1.1.6, 1.1.7 etc. nascem). Depois de criadas aqui, os clones aplicam pelo botão.
-
-### 2. Assistente IA com conhecimento completo
-
-Reescrever o `SYSTEM_PROMPT` da edge function `admin-assistant` para cobrir tudo da plataforma em português simples:
-
-- **Diferença Código vs Banco** — explicar como expliquei agora (código = app publicado, banco = estrutura de dados, por que ficam dessincronizados, como resolver com o botão novo)
-- **Áreas do sistema:**
-  - **Admin Master** — todas as páginas (Tenants, Planos, Domínios, Versão do Template, Configurações Globais, Monitoramento Financeiro, Push, etc.)
-  - **Painel Restaurante** — pedidos, KDS, impressão, entregadores, mesas, vendedor, caixa, relatórios
-  - **App Cliente** — fluxo de pedido (delivery/takeaway/mesa), pagamento, fidelidade, cupons, tracking
-  - **Totem** — fluxo touch, splash, idiomas
-- **Funcionalidades transversais:**
-  - Print Bridge (modo Android vs PC, o que significa cada estado, o que fazer quando inativo)
-  - Push notifications (cliente e tablet)
-  - Multi-idioma (pt/en/es/fr)
-  - Roles e permissões (admin_master, restaurant_admin, operator, kitchen)
-  - Stripe, cupons, fidelidade, entregadores
-- **Como criar novo restaurante** (Wizard IA + clonagem do Master)
-- **Como configurar domínio próprio**
-- **Estilo de resposta:** português simples, sem jargão técnico, com passo a passo numerado quando for ação, e oferecer botão/link quando existir um na interface.
-
-### 3. Detalhes técnicos (resumo)
-
-**Arquivos a criar/editar:**
-
-- `supabase/functions/apply-pending-migrations/index.ts` (nova) — aplica SQL versionado de forma idempotente
-- `src/views/admin/TemplateVersionPage.tsx` — botão "Atualizar banco" + UI de progresso
-- `supabase/functions/admin-assistant/index.ts` — novo SYSTEM_PROMPT completo
-- `.lovable/memory/features/assistant-knowledge.md` — atualizar regra para listar todos os temas que o assistente cobre agora
-
-**Segurança:**
-- Edge function valida `has_role(user, 'admin_master')` antes de qualquer ALTER
-- Lista branca de migrations conhecidas (não executa SQL arbitrário)
-- Log completo em `template_update_history` (quem, quando, o quê)
+> Observação: o projeto no código se chama **Kebab Turco** (Master Template white-label). Vou tratar como **"WGM System"** no relatório conforme você pediu — é o mesmo sistema, só o nome comercial muda.
 
 ---
 
-Posso seguir com isso?
+## Parte 1 — Relatório PDF de Auditoria Completa
+
+Arquivo: `WGM_Auditoria_Completa_Estrategica.pdf` (~30–40 páginas, gerado com `reportlab`, entregue como artifact para download).
+
+Cobre **os 20 pontos** que você listou, baseado em varredura real do código (módulos, rotas, edge functions, schema das 49 tabelas, roles, integrações):
+
+1. Visão geral · 2. Módulos existentes · 3. Funcionalidades detalhadas (pronto / parcial / falta) · 4. Banco (49 tabelas + relações) · 5. Perfis (admin_master, restaurant_admin, operator, kitchen, seller, cliente) · 6. Integrações (Stripe, Lovable AI, Push Web/Capacitor, Print Bridge Android/PC, Capacitor Android) · 7. Apps & PWAs (PWA cliente, APK Android Totem, painel restaurante, admin master) · 8. Recursos comerciais (cupons, fidelidade, banners, combos, modificadores) · 9. Operacionais (KDS, impressão por setor, delivery, mesas, vendedor) · 10. Suporte a redes (multi-tenant, multi-store, white-label) · 11. Comparação Toast / Square / Lightspeed / Zonal / GloriaFood · 12. Roadmap (tabela pronto × faltante × prioridade × estimativa) · 13. Notas 0–10.
+
+Depois a **análise estratégica**:
+
+14. Oportunidades em 26 segmentos (restaurantes, kebab, pizzaria, bar, café, sorveteria, padaria, food truck, dark kitchen, hotel/room service, conveniência, mercado, pet shop, farmácia, franquias, etc.) com % aderência + gaps + potencial · 15. Matriz de expansão · 16. Comparativo com 7 concorrentes · 17. Top 30 funcionalidades de alto impacto · 18. Novas fontes de receita · 19. Visão de futuro + roadmap 3/6/12/24 meses · 20. Nota final + "investiria meu dinheiro?".
+
+**QA visual obrigatório:** converto cada página para imagem e inspeciono antes de entregar (sem texto cortado, sem sobreposição).
+
+---
+
+## Parte 2 — Assistente vira Especialista Total
+
+**Problema atual:** o `SYSTEM_PROMPT` da edge function `admin-assistant` é curto e genérico → ela responde "não tenho acesso ao código".
+
+**Correção:** reescrever **só** o `SYSTEM_PROMPT` em `supabase/functions/admin-assistant/index.ts` embutindo todo o conhecimento da auditoria (módulos, 49 tabelas, roles, integrações, fluxos de pedido, impressão, fiscal, comparativos, roadmap, segmentos). Adiciono instrução explícita: *"Você TEM o mapa completo do sistema; nunca diga que não tem acesso ao código"*.
+
+Resultado: o **mesmo prompt** mandado no chat flutuante roxo gera uma auditoria equivalente, em streaming.
+
+Arquivo alterado: `supabase/functions/admin-assistant/index.ts` (só o prompt — sem mexer em UI).
+
+---
+
+## Parte 3 — Conversa não se perde mais + memória contínua + botão copiar visível
+
+Mudanças em `src/components/admin/AdminAssistant.tsx`:
+
+1. **Não apagar ao fechar/minimizar/recarregar.** Hoje `messages` e `conversationId` vivem só em `useState` → somem quando você fecha. Vou:
+   - Salvar `conversationId` em `localStorage` (`wgm.assistant.activeConv`).
+   - Ao abrir o chat, recarregar as mensagens da conversa ativa de `ai_messages` (já existe a tabela, só não lê de volta).
+   - Botão **lixeira** novo no header → único jeito de zerar (cria conversa nova).
+
+2. **Memória contínua na conversa.** Hoje já envia `messages: next` para a edge function (histórico completo da sessão), então a IA já tem contexto da conversa atual. Com a persistência acima, ao reabrir o chat ela continua sabendo do que estavam falando, porque o histórico volta do banco e é reenviado.
+
+3. **Botão copiar sempre visível** (hoje só aparece no hover): trocar `opacity-0 group-hover:opacity-100` por `opacity-70 hover:opacity-100` no botão de copiar de cada resposta da IA, igual ao padrão dos prompts do Lovable.
+
+---
+
+## Ordem de execução (modo build)
+
+1. Varredura final (rotas, hooks, tabelas) para precisão do PDF.
+2. Reescrever `SYSTEM_PROMPT` da edge function (deploy automático).
+3. Editar `AdminAssistant.tsx` (persistência + lixeira + copiar visível).
+4. Gerar PDF com `reportlab` em `/mnt/documents/`, fazer QA visual, entregar como artifact baixável.
+
+**Sem migration nova, sem mexer em layout, sem quebrar fluxos existentes.** Posso seguir?
