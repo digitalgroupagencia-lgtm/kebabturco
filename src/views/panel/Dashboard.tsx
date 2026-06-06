@@ -23,6 +23,7 @@ import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import { useStaffT } from "@/hooks/useStaffT";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -115,6 +116,17 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      <HowToUsePanel
+        purpose="Resumo do dia: faturamento, número de pedidos, ticket médio e estado da impressão."
+        whenToUse="Abra de manhã para conferir o dia anterior e várias vezes ao longo do serviço para ver como vai."
+        steps={[
+          "Veja os 4 cartões do topo: faturamento, pedidos, ticket médio e cancelados.",
+          "Use o botão Pedidos em Vivo para ir direto à operação.",
+          "A barra de impressão mostra se a impressora está conectada.",
+        ]}
+        howToConfirm="Se os números do dia bater com o caixa, está tudo certo."
+        assistantQuestion="Como o dashboard calcula faturamento e ticket médio do dia?"
+      />
       <PanelPageHeader
         title={t("page.dashboard.title")}
         description={t("dashboard.subtitle")}
