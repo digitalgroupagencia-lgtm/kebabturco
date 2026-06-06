@@ -248,6 +248,7 @@ Seg–qui 12–16h e 19–00h · sex–dom 12–00h
   -- ===========================================================
   -- 5) DELIVERY ZONES (1 zona padrão vazia, admin configura)
   -- ===========================================================
+  IF NOT EXISTS (SELECT 1 FROM public.orders WHERE store_id = v_store_id LIMIT 1) THEN
   INSERT INTO public.delivery_zones (
     store_id, name, min_order, delivery_fee, postal_codes, is_default, is_active, sort_order
   ) VALUES (
@@ -479,7 +480,8 @@ Seg–qui 12–16h e 19–00h · sex–dom 12–00h
   -- 9) SPLASH MEDIA (1 splash padrão)
   -- ===========================================================
   INSERT INTO public.splash_media (store_id, media_type, url, duration_ms, sort_order, is_active)
-  VALUES (v_store_id, 'image', v_placeholder, 4000, 1, true);
+  VALUES (v_store_id, 'image', v_banner_home, 4000, 1, true);
+  END IF;
 
   -- ===========================================================
   -- 10) PRINTER SETTINGS
