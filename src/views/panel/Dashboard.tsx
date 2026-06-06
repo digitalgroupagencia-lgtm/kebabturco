@@ -92,8 +92,8 @@ const Dashboard = () => {
         .gte("created_at", startRange.toISOString())
         .order("created_at", { ascending: false });
       if (error) throw error;
-      const orders = (ordersRaw ?? []) as Array<{
-        id: string; order_number: number | null; total: number | null; status: string;
+      const orders = (ordersRaw ?? []) as unknown as Array<{
+        id: string; order_number: string | number | null; total: number | null; status: string;
         order_type: string | null; source: string | null; payment_method: string | null;
         created_at: string; customer_name: string | null;
       }>;
