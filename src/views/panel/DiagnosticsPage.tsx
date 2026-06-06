@@ -17,7 +17,10 @@ import {
   Truck,
   Store,
   Shield,
+  Copy,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { APP_BUILD_ID } from "@/lib/appCacheBust";
