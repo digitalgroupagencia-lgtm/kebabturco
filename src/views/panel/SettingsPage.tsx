@@ -24,6 +24,7 @@ import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -98,14 +99,11 @@ const PanelSettingsPage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <SettingsIcon className="h-6 w-6" /> {t("page.settings.title")}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {t("page.settings.subtitle")}
-        </p>
-      </div>
+      <PremiumPageHeader
+        icon={SettingsIcon}
+        title={t("page.settings.title")}
+        subtitle={t("page.settings.subtitle")}
+      />
 
       <Tabs defaultValue="store" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">
