@@ -214,53 +214,64 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricTile
+      {/* KPI strip — premium */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <PremiumMetricCard
           icon={Building2}
+          tone="primary"
           label={SINGLE_TENANT_MODE ? "Estado da loja" : "Restaurantes activos"}
           value={SINGLE_TENANT_MODE ? (stats?.active_tenants ? "Activa" : "—") : (stats?.active_tenants ?? 0)}
           sub={SINGLE_TENANT_MODE ? APP_NAME : `${stats?.total_tenants ?? 0} no total`}
         />
-        <MetricTile
+        <PremiumMetricCard
           icon={DollarSign}
-          label="Receita do mês"
+          tone="success"
+          label="Faturamento do mês"
           value={fmtMoney(Number(stats?.revenue_month || 0))}
           sub={`MRR ${fmtMoney(Number(stats?.mrr || 0))}`}
         />
-        <MetricTile
+        <PremiumMetricCard
           icon={ShoppingBag}
+          tone="info"
           label="Pedidos hoje"
           value={stats?.orders_today ?? 0}
           sub={fmtMoney(Number(stats?.revenue_today || 0))}
         />
-        <MetricTile
+        <PremiumMetricCard
           icon={AlertCircle}
-          label="Alertas"
+          tone={alertCount > 0 ? "danger" : "success"}
+          label="Alertas críticos"
           value={alertCount}
-          sub={`${stats?.overdue_count ?? 0} atrasados · ${stats?.pending_count ?? 0} pendentes`}
           delta={alertCount > 0 ? "Requer atenção" : "Tudo em dia"}
-          deltaUp={alertCount > 0 ? false : true}
+          deltaDirection={alertCount > 0 ? "down" : "up"}
+          sub={`${stats?.overdue_count ?? 0} atrasados · ${stats?.pending_count ?? 0} pendentes`}
         />
       </div>
 
-      {/* Financial status row */}
-      <div className="grid grid-cols-3 gap-3">
-        <MetricTile icon={CheckCircle2} label="Pagos" value={stats?.paid_count ?? 0} />
-        <MetricTile icon={Clock} label="Pendentes" value={stats?.pending_count ?? 0} />
-        <MetricTile icon={TrendingUp} label="Receita hoje" value={fmtMoney(Number(stats?.revenue_today || 0))} />
+      {/* Sub-strip: indicadores rápidos */}
+      <div className="grid grid-cols-3 gap-4">
+        <PremiumMetricCard icon={CheckCircle2} tone="success" label="Pagos" value={stats?.paid_count ?? 0} />
+        <PremiumMetricCard icon={Clock} tone="warning" label="Pendentes" value={stats?.pending_count ?? 0} />
+        <PremiumMetricCard icon={TrendingUp} tone="primary" label="Receita hoje" value={fmtMoney(Number(stats?.revenue_today || 0))} />
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 rounded-xl border border-border/70 bg-card p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">Receita · últimos 12 meses</h3>
-            <StatusPill label="Dados reais" tone="active" dot />
-          </div>
-          <div className="h-56 w-full">
+      {/* Main grid: chart + ranking + alerts */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <PremiumChartCard
+          title="Faturamento da rede"
+          subtitle="Últimos 12 meses"
+          action={<StatusPill label="Dados reais" tone="active" dot />}
+          className="xl:col-span-7"
+        >
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueSeries || []}>
+              <AreaChart data={revenueSeries || []} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="adminRevFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.32} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis
                   dataKey="month_label"
@@ -279,8 +290,9 @@ const AdminDashboard = () => {
                   contentStyle={{
                     background: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
+                    borderRadius: 12,
                     fontSize: 12,
+                    boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18)",
                   }}
                   formatter={(v: number) => [fmtMoney(Number(v)), "Receita"]}
                 />
@@ -288,17 +300,72 @@ const AdminDashboard = () => {
                   type="monotone"
                   dataKey="revenue"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.08}
+                  strokeWidth={2.5}
+                  fill="url(#adminRevFill)"
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </PremiumChartCard>
 
-        <ActivityFeed items={sortedActivity} />
+        <RankingCard
+          className="xl:col-span-3"
+          title="Top restaurantes"
+          subtitle="Por faturamento no mês"
+          items={(topTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
+            id: String(t.tenant_id),
+            name: String(t.tenant_name ?? "—"),
+            primary: fmtMoney(Number(t.total_revenue || 0)),
+            secondary: `${Number(t.orders_count ?? 0)} pedidos`,
+            value: Number(t.total_revenue || 0),
+            icon: Building2,
+          }))}
+          action={
+            !SINGLE_TENANT_MODE && (
+              <Link to={nav.admin("tenants")} className="text-xs font-semibold text-primary hover:underline">
+                Ver todos
+              </Link>
+            )
+          }
+        />
+
+        <AlertCard
+          className="xl:col-span-2"
+          title="Alertas inteligentes"
+          items={((): AlertItem[] => {
+            const out: AlertItem[] = [];
+            if (Number(stats?.overdue_count || 0) > 0) {
+              out.push({
+                id: "overdue",
+                title: `${stats?.overdue_count} pagamentos atrasados`,
+                description: "Verifique cobranças e renovação",
+                severity: "critical",
+              });
+            }
+            if (Number(stats?.pending_count || 0) > 0) {
+              out.push({
+                id: "pending",
+                title: `${stats?.pending_count} cobranças pendentes`,
+                description: "Faturas aguardando confirmação",
+                severity: "warning",
+              });
+            }
+            if (out.length === 0) {
+              out.push({
+                id: "ok",
+                title: "Tudo em dia",
+                description: "Sem alertas críticos no momento",
+                severity: "resolved",
+              });
+            }
+            return out;
+          })()}
+        />
       </div>
+
+      {/* Activity feed full width below */}
+      <ActivityFeed items={sortedActivity} />
+
 
       {/* Tenants + centrals */}
       <div className={`grid grid-cols-1 ${SINGLE_TENANT_MODE ? "" : "xl:grid-cols-2"} gap-4`}>
