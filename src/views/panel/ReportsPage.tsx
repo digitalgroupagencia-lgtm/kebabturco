@@ -2,13 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, TrendingUp, ShoppingBag, DollarSign, XCircle, Clock } from "lucide-react";
+import { BarChart3, TrendingUp, ShoppingBag, DollarSign, XCircle, Clock, Trophy, UserCircle2 } from "lucide-react";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import PremiumSection from "@/components/admin/premium/PremiumSection";
+import PremiumTable from "@/components/admin/premium/PremiumTable";
 
 const periods = [
   { label: "Hoje", days: 0 },
