@@ -69,15 +69,11 @@ export default function DiagnosticsHubPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Activity className="h-6 w-6 text-primary" />
-          Centro de testes
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Testes interactivos por módulo e ligação à auditoria completa do sistema.
-        </p>
-      </div>
+      <PremiumPageHeader
+        icon={Activity}
+        title="Centro de testes"
+        subtitle="Testes interactivos por módulo e ligação à auditoria completa do sistema."
+      />
 
       <Tabs
         value={validTab}

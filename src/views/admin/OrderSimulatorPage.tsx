@@ -260,13 +260,11 @@ export default function OrderSimulatorPage() {
         howToConfirm="Se todos os 6 passos ficarem verdes, a operação está pronta. Vermelho = veja o detalhe e corrija."
         assistantQuestion="Quando devo rodar o Simulador de Pedidos e o que cada um dos 6 passos verifica?"
       />
-      <div>
-        <h1 className="text-2xl font-bold">Simulador de Pedidos</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Ferramenta de testes operacionais. Os pedidos criados aqui aparecem com a tag <Badge className="bg-yellow-500 text-black mx-1">[TESTE]</Badge>
-          e <strong>não entram</strong> em faturamento, relatórios, estatísticas, ranking ou estoque.
-        </p>
-      </div>
+      <PremiumPageHeader
+        icon={FlaskConical}
+        title="Simulador de pedidos"
+        subtitle="Pedidos de teste — não entram em faturação, relatórios, ranking ou estoque."
+      />
 
       <Card>
         <CardHeader>

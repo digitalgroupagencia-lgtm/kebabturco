@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Package, Plus, Pencil, Trash2, AlertTriangle, ArrowUpDown } from "lucide-react";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
 type StockItem = Tables<"stock_items">;
@@ -141,14 +142,16 @@ const StockPage = () => {
         howToConfirm="Vendendo um produto ligado ao insumo, a quantidade cai. Falta = badge vermelho."
         assistantQuestion="Como ligo um produto do cardápio a um insumo do estoque?"
       />
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Package className="h-6 w-6" /> Estoque
-        </h2>
-        <Button size="sm" onClick={() => openDialog()}>
-          <Plus className="h-4 w-4 mr-1" /> Novo Item
-        </Button>
-      </div>
+      <PremiumPageHeader
+        icon={Package}
+        title="Estoque"
+        subtitle="Controle de insumos e ingredientes"
+        actions={
+          <Button size="sm" onClick={() => openDialog()} className="h-9">
+            <Plus className="h-4 w-4 mr-1" /> Novo Item
+          </Button>
+        }
+      />
 
       {/* Low stock alert */}
       {lowStockItems.length > 0 && (

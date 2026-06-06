@@ -204,19 +204,16 @@ const PrinterPage = () => {
         <p className="text-xs text-muted-foreground mt-1 font-mono">STORE_ID: {storeId}</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Printer className="h-5 w-5" /> Impressora da cozinha
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Os pedidos desta unidade vão para esta impressora. Um computador na loja recebe e imprime os tickets.
-          </p>
-        </div>
-        <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
-          <Save className="w-4 h-4 mr-2" /> {saving ? "A guardar..." : "Guardar"}
-        </Button>
-      </div>
+      <PremiumPageHeader
+        icon={Printer}
+        title="Impressora da cozinha"
+        subtitle="Os pedidos desta unidade vão para esta impressora."
+        actions={
+          <Button onClick={save} disabled={saving} size="sm" className="h-9">
+            <Save className="w-4 h-4 mr-2" /> {saving ? "A guardar..." : "Guardar"}
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="pt-4">

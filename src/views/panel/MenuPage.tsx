@@ -463,9 +463,10 @@ const MenuPage = () => {
 
   return (
     <div className="space-y-6">
-      <PanelPageHeader
+      <PremiumPageHeader
+        icon={ImageIcon}
         title="Cardápio"
-        description="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
+        subtitle="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
       />
 
       {isAdminMenu && (

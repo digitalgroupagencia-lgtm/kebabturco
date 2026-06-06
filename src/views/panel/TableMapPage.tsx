@@ -294,14 +294,11 @@ const TableMapPage = () => {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <LayoutGrid className="h-6 w-6 text-primary" /> Mapa de mesas
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Conta aberta até confirmar pagamento. Entregar pedido não fecha a mesa.
-        </p>
-      </div>
+      <PremiumPageHeader
+        icon={LayoutGrid}
+        title="Mapa de mesas"
+        subtitle="Conta aberta até confirmar pagamento. Entregar pedido não fecha a mesa."
+      />
 
       <div className="flex flex-wrap gap-3 text-xs">
         {(["free", "waiting_order", "pending", "preparing", "open_account", "payment_pending"] as TableVisualState[]).map((k) => (

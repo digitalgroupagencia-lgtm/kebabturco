@@ -194,12 +194,11 @@ const BannerPage = () => {
         howToConfirm="Abra a loja em outra aba — o banner aparece no topo do cardápio."
         assistantQuestion="Qual formato e duração de banner converte melhor no totem?"
       />
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6" /> Banner Promocional</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Suba até 5 elementos: imagens, vídeos MP4/MOV ou áudio MP3. Imagens seguem o intervalo; vídeos e áudios tocam pela própria duração.
-        </p>
-      </div>
+      <PremiumPageHeader
+        icon={ImageIcon}
+        title="Banner promocional"
+        subtitle="Suba até 5 elementos: imagens, vídeos MP4/MOV ou áudio MP3."
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-lg">Configuración</CardTitle></CardHeader>

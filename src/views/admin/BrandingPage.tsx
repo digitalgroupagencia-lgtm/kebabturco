@@ -179,17 +179,16 @@ const BrandingPage = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2"><Palette className="h-6 w-6" /> Identidade Visual</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Pré-visualização do site real{tenant?.custom_domain ? ` em ${tenant.custom_domain}` : ""}. Alterações reflectem-se ao vivo antes de guardar.
-          </p>
-        </div>
-        <Button onClick={save} disabled={saving} size="lg">
-          <Save className="h-4 w-4 mr-2" /> {saving ? "Salvando..." : "Salvar alterações"}
-        </Button>
-      </div>
+      <PremiumPageHeader
+        icon={Palette}
+        title="Identidade visual"
+        subtitle={`Pré-visualização do site real${tenant?.custom_domain ? ` em ${tenant.custom_domain}` : ""}. Alterações reflectem-se ao vivo antes de guardar.`}
+        actions={
+          <Button onClick={save} disabled={saving} size="sm" className="h-9">
+            <Save className="h-4 w-4 mr-2" /> {saving ? "Salvando..." : "Salvar alterações"}
+          </Button>
+        }
+      />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex flex-wrap h-auto">
