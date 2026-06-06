@@ -318,51 +318,39 @@ export default function AdminAssistant() {
             </button>
             <button
               onClick={async () => {
+                // Pega a última pergunta do utilizador
+                const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+                const pergunta = lastUserMsg ? extractText(lastUserMsg.content).trim() : "";
+                if (!pergunta) {
+                  toast.error("Escreva primeiro a sua dúvida no chat. Depois clique aqui para enviar ao gerente.");
+                  return;
+                }
                 const ok = confirm(
-                  "Vou copiar um resumo desta conversa (em português, fácil de ler) para a sua área de transferência (Ctrl+V / Cmd+V).\n\n" +
-                  "Depois é só colar num e-mail, WhatsApp ou mensagem para o gerente do projeto pedir ajuda.\n\nQuer continuar?"
+                  "Vou copiar a sua dúvida para enviar ao gerente do projeto.\n\n" +
+                  "Depois é só colar (Ctrl+V / Cmd+V) no WhatsApp ou e-mail dele.\n\nQuer continuar?"
                 );
                 if (!ok) return;
-                const snap = getUsageSnapshot();
-                const lastMsgs = messages.slice(-6).map((m) => {
-                  const quem = m.role === "user" ? "Eu perguntei" : "O Assistente respondeu";
-                  return `${quem}:\n${extractText(m.content).slice(0, 600)}`;
-                }).join("\n\n");
-                const topRotas = snap.routes.slice(0, 5).map((r) => `   • ${r.path} (${r.count}x)`).join("\n");
                 const ctx = [
-                  `📩 PEDIDO DE AJUDA — Painel do restaurante / Administração`,
-                  `Gerado em: ${new Date().toLocaleString("pt-BR")}`,
+                  `Olá! Preciso de ajuda com o sistema.`,
                   ``,
-                  `Olá! Estava a usar o Assistente do sistema e preciso de ajuda humana.`,
-                  `Segue abaixo o que aconteceu, para não precisar de explicar tudo de novo:`,
-                  ``,
-                  `— Onde eu estava no app: ${window.location.pathname}`,
-                  `— Link completo: ${window.location.href}`,
-                  ``,
-                  `— Páginas que mais uso ultimamente:`,
-                  topRotas || "   (ainda sem dados)",
-                  ``,
-                  `— Conversa recente com o Assistente:`,
-                  lastMsgs || "(ainda não conversei com o Assistente nesta sessão)",
-                  ``,
-                  `— Informação técnica (só para o gerente, pode ignorar):`,
-                  `Navegador: ${navigator.userAgent}`,
-                  `Total de visitas locais registadas: ${snap.totalVisits}`,
+                  `Minha dúvida:`,
+                  pergunta,
                 ].join("\n");
                 try {
                   await navigator.clipboard.writeText(ctx);
-                  toast.success("Pronto! Texto copiado. Cole (Ctrl+V) no WhatsApp ou e-mail do gerente.");
+                  toast.success("Pronto! Cole (Ctrl+V) no WhatsApp ou e-mail do gerente.");
                 } catch {
                   toast.error("Não foi possível copiar. Tente novamente.");
                 }
               }}
               className="h-8 px-2.5 rounded-full hover:bg-white/15 flex items-center gap-1.5 shrink-0 text-xs font-medium"
-              aria-label="Pedir ajuda humana — copia um resumo desta conversa"
-              title="Copia um resumo desta conversa em português simples para enviar ao gerente do projeto por e-mail ou WhatsApp"
+              aria-label="Pedir ajuda humana — copia a sua dúvida para enviar ao gerente"
+              title="Copia a sua dúvida para enviar ao gerente do projeto por WhatsApp ou e-mail"
             >
               <LifeBuoy className="w-4 h-4" />
               <span className="hidden sm:inline">Pedir ajuda</span>
             </button>
+
             <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
             <button
               onClick={() => setExpanded((v) => !v)}
