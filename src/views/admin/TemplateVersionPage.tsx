@@ -24,6 +24,8 @@ import {
   Save,
   Loader2,
 } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import AskAssistantButton from "@/components/admin/AskAssistantButton";
 
 type HistoryRow = {
   id: string;
