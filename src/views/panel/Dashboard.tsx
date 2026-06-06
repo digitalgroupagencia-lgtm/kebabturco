@@ -82,32 +82,8 @@ const Dashboard = () => {
     refetchInterval: 60000,
   });
 
-  const stats = [
-    {
-      title: "Pedidos Hoje",
-      value: isLoading ? "—" : String(data?.ordersToday ?? 0),
-      icon: ShoppingBag,
-      color: "text-primary",
-    },
-    {
-      title: "Faturamento Hoje",
-      value: isLoading ? "—" : fmt(data?.totalToday ?? 0),
-      icon: DollarSign,
-      color: "text-success",
-    },
-    {
-      title: "Ticket Médio",
-      value: isLoading ? "—" : fmt(data?.avgTicket ?? 0),
-      icon: TrendingUp,
-      color: "text-accent-foreground",
-    },
-    {
-      title: "Faturamento Mês",
-      value: isLoading ? "—" : fmt(data?.totalMonth ?? 0),
-      icon: Calendar,
-      color: "text-primary",
-    },
-  ];
+
+
 
   const opsStats = [
     { key: "pending", label: getStatusLabel("pending"), value: data?.pending ?? 0, icon: Clock },
