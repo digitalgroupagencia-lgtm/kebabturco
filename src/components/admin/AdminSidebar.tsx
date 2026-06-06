@@ -67,6 +67,7 @@ const overviewItems = [
   { title: "Simulador de pedidos", url: nav.admin("order-simulator"), icon: Play },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
+  { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },
 ];
 
 const operationalItems = [
