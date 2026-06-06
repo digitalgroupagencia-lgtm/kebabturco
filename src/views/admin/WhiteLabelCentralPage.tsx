@@ -152,19 +152,20 @@ const TEMPLATE_FILES: { name: string; desc: string; content: string; path: strin
 const PROMPT_NEW_PROJECT = `Este projeto é um restaurante remixado do Master Template (versão ${TEMPLATE_VERSION} — ${TEMPLATE_CODENAME}).
 
 Tarefas obrigatórias na ordem:
-1. Confirme que a Lovable Cloud está ativa.
-2. Execute o BOOTSTRAP_MASTER_TEMPLATE.sql para popular o banco com dados template (categorias, produtos, combos, banners, horários, plano).
-3. Registre a versão ${TEMPLATE_VERSION} na tabela _template_version.
+1. Execute o BOOTSTRAP_MASTER_TEMPLATE.sql no Editor SQL da Nuvem para aplicar identidade, layout, catálogo, banners, horários e plano do Master.
+2. Registre a versão ${TEMPLATE_VERSION} na tabela _template_version.
+3. Publique o projeto.
 4. Mantenha toda a estrutura funcional original (totem, painel restaurante, KDS, entregador, admin, Stripe, Firebase, impressão, push).
-5. Permita apenas customizações de:
+5. Não peça chaves agora; Stripe, Firebase, VAPID e FCM ficam para configuração futura.
+6. Permita apenas customizações de:
    - nome do restaurante
    - logo
    - cores / identidade visual
    - cardápio (categorias, produtos, preços, extras, combos)
    - horários, endereço, telefone
    - chaves Stripe e Firebase
-6. Não remova telas, módulos, contextos, rotas, edge functions ou migrations originais.
-7. Confirme paridade visual com o Master usando TEMPLATE_VALIDATION_CHECKLIST.md.`;
+7. Não remova telas, módulos, contextos, rotas, edge functions ou migrations originais.
+8. Confirme paridade visual com o Master usando TEMPLATE_VALIDATION_CHECKLIST.md.`;
 
 const PROMPT_UPDATE_PROJECT = `Este projeto é um restaurante clonado do Master Template.
 
@@ -466,14 +467,14 @@ export default function WhiteLabelCentralPage() {
             <p className="text-xs text-muted-foreground">⚠️ O Remix NÃO copia dados do banco — por isso o passo 3 é obrigatório.</p>
           </StepCard>
 
-          <StepCard n={2} title="Ativar Lovable Cloud">
-            <p>No novo projeto, ative a Lovable Cloud. Isso cria um banco novo e executa as migrations automaticamente.</p>
+          <StepCard n={2} title="Abrir o Editor SQL da Nuvem">
+            <p>No projeto remixado, abra <b>More → Nuvem → Editor SQL</b>. No remix, a Nuvem já vem criada; não tem botão manual para ativar.</p>
           </StepCard>
 
-          <StepCard n={3} title="Rodar Bootstrap Master">
-            <p>Copie o SQL abaixo e cole no chat do novo projeto pedindo: <i>"execute o bootstrap"</i>.</p>
+          <StepCard n={3} title="Rodar Bootstrap Master corrigido">
+            <p>Copie o SQL, cole no <b>Editor SQL</b> e clique em <b>Correr</b>. Ele corrige clone que já recebeu o bootstrap antigo.</p>
             <div className="flex gap-2">
-              <CopyButton text={bootstrapSql} label="BOOTSTRAP_MASTER_TEMPLATE.sql" variant="default" />
+              <CopyButton text={RESOLVED_BOOTSTRAP_SQL} label="BOOTSTRAP_MASTER_TEMPLATE.sql" variant="default" />
               <CopyButton text={PROMPT_NEW_PROJECT} label="Prompt novo projeto" />
             </div>
           </StepCard>
