@@ -38,18 +38,6 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { nav } from "@/lib/navPaths";
-import PanelPageHeader from "@/components/panel/PanelPageHeader";
-import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
-import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
-import { panelColumnStatus } from "@/lib/orderOperationalFlow";
-import { getStatusLabel } from "@/lib/orderStatusLabels";
-import { useStaffT } from "@/hooks/useStaffT";
-import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
