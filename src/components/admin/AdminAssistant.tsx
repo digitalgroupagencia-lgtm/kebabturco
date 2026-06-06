@@ -85,6 +85,25 @@ export default function AdminAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
+  // Escuta pedidos externos (ex.: botão "Perguntar ao Assistente" da auditoria)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text?: string; autoSend?: boolean }>).detail;
+      const text = (detail?.text ?? "").trim();
+      if (!text) return;
+      setOpen(true);
+      if (detail?.autoSend === false) {
+        setInput(text);
+      } else {
+        // Pequeno delay para garantir que o chat está montado
+        setTimeout(() => { void send(text); }, 50);
+      }
+    };
+    window.addEventListener("assistant:ask", handler as EventListener);
+    return () => window.removeEventListener("assistant:ask", handler as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
   const startNewConversation = () => {
     setMessages([]);
     setConversationId(null);
