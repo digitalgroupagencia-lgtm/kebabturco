@@ -33,10 +33,11 @@ function CheckoutForm({
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const pay = async () => {
-    if (!stripe || !elements || busy) return;
+    if (!stripe || !elements || busy || !ready) return;
     setBusy(true);
     setErr(null);
     const { error, paymentIntent } = await stripe.confirmPayment({
@@ -57,11 +58,17 @@ function CheckoutForm({
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
       <PaymentElement
+        onReady={() => setReady(true)}
         options={{
           layout: compact ? "accordion" : "tabs",
           wallets: { applePay: "auto", googlePay: "auto" },
         }}
       />
+      {!ready && (
+        <div className="flex items-center justify-center py-4 text-xs text-muted-foreground gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" /> A carregar formulário de pagamento…
+        </div>
+      )}
       {err && <p className="text-xs font-bold text-destructive">{err}</p>}
       <div className="flex gap-2">
         <button
@@ -75,8 +82,8 @@ function CheckoutForm({
         <button
           type="button"
           onClick={pay}
-          disabled={!stripe || busy}
-          className={`flex-[2] rounded-xl bg-primary text-primary-foreground font-black flex items-center justify-center gap-2 ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
+          disabled={!stripe || busy || !ready}
+          className={`flex-[2] rounded-xl bg-primary text-primary-foreground font-black flex items-center justify-center gap-2 disabled:opacity-60 ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pagar ${amountLabel}`}
         </button>
