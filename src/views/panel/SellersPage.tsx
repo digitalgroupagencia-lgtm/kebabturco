@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -166,15 +167,16 @@ const SellersPage = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2"><Users className="w-6 h-6" /> {t("page.sellers.title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("page.sellers.subtitle")}</p>
-        </div>
-        <Button onClick={() => setOpen(true)} disabled={overLimit}>
-          <UserPlus className="w-4 h-4 mr-2" /> {t("page.sellers.new")}
-        </Button>
-      </div>
+      <PremiumPageHeader
+        icon={Users}
+        title={t("page.sellers.title")}
+        subtitle={t("page.sellers.subtitle")}
+        actions={
+          <Button onClick={() => setOpen(true)} disabled={overLimit} size="sm" className="h-9">
+            <UserPlus className="w-4 h-4 mr-2" /> {t("page.sellers.new")}
+          </Button>
+        }
+      />
 
       {/* Limite */}
       <Card>

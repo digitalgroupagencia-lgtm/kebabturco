@@ -15,6 +15,8 @@ import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -187,20 +189,22 @@ const CashierPage = () => {
         howToConfirm="Se o total de vendas no fecho bater com o caixa físico, está certo. Se sobrar ou faltar muito, revise pedidos cancelados."
         assistantQuestion="Por que existe a tela de Caixa e o que acontece se eu não abrir/fechar?"
       />
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <DollarSign className="h-6 w-6" /> {t("cashier.title")}
-        </h2>
-        {!currentRegister ? (
-          <Button onClick={() => setOpenDialogVisible(true)} className="bg-success hover:bg-success/90">
-            <ArrowUpCircle className="h-4 w-4 mr-1" /> {t("cashier.action.open")}
-          </Button>
-        ) : (
-          <Button variant="destructive" onClick={() => setCloseDialogVisible(true)}>
-            <ArrowDownCircle className="h-4 w-4 mr-1" /> {t("cashier.action.close")}
-          </Button>
-        )}
-      </div>
+      <PremiumPageHeader
+        icon={DollarSign}
+        title={t("cashier.title")}
+        subtitle={currentRegister ? t("cashier.state.open") : t("cashier.state.closed")}
+        actions={
+          !currentRegister ? (
+            <Button onClick={() => setOpenDialogVisible(true)} className="bg-success hover:bg-success/90 h-9">
+              <ArrowUpCircle className="h-4 w-4 mr-1" /> {t("cashier.action.open")}
+            </Button>
+          ) : (
+            <Button variant="destructive" onClick={() => setCloseDialogVisible(true)} className="h-9">
+              <ArrowDownCircle className="h-4 w-4 mr-1" /> {t("cashier.action.close")}
+            </Button>
+          )
+        }
+      />
 
       {/* Status */}
       <Card className={currentRegister ? "border-success/50 bg-success/5" : "border-destructive/50 bg-destructive/5"}>
@@ -220,50 +224,34 @@ const CashierPage = () => {
 
 
       {/* Sales summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">{t("cashier.total.today")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">€ {todaySales.total.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{todaySales.count} {t("cashier.orders.count")}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <CreditCard className="h-4 w-4" /> {t("cashier.method.card")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">€ {todaySales.card.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Banknote className="h-4 w-4" /> {t("cashier.method.cash")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">€ {todaySales.cash.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <Smartphone className="h-4 w-4" /> {t("cashier.method.pix")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">€ {todaySales.pix.toFixed(2)}</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <PremiumMetricCard
+          icon={DollarSign}
+          label={t("cashier.total.today")}
+          value={`€ ${todaySales.total.toFixed(2)}`}
+          sub={`${todaySales.count} ${t("cashier.orders.count")}`}
+          tone="success"
+        />
+        <PremiumMetricCard
+          icon={CreditCard}
+          label={t("cashier.method.card")}
+          value={`€ ${todaySales.card.toFixed(2)}`}
+          tone="info"
+        />
+        <PremiumMetricCard
+          icon={Banknote}
+          label={t("cashier.method.cash")}
+          value={`€ ${todaySales.cash.toFixed(2)}`}
+          tone="warning"
+        />
+        <PremiumMetricCard
+          icon={Smartphone}
+          label={t("cashier.method.pix")}
+          value={`€ ${todaySales.pix.toFixed(2)}`}
+          tone="purple"
+        />
       </div>
+
 
 
       {/* Pending Payments */}

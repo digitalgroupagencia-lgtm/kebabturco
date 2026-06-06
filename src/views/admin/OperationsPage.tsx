@@ -15,6 +15,7 @@ import { loadOperationsSettingsForStore } from "@/lib/operationsSettingsAdmin";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import { stripeAdminConfigIssue } from "@/lib/paymentPolicy";
 import { nav } from "@/lib/navPaths";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 
 type Ops = Tables<"operations_settings">;
 
@@ -101,13 +102,16 @@ const OperationsPage = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Wallet className="h-5 w-5 sm:h-6 sm:w-6" /> Pagos</h2>
-          <p className="text-sm text-muted-foreground mt-1">Define cómo cobrarás a tus clientes.</p>
-        </div>
-        <Button onClick={save} disabled={saving} className="w-full sm:w-auto"><Save className="w-4 h-4 mr-2" /> {saving ? "Guardando..." : "Guardar"}</Button>
-      </div>
+      <PremiumPageHeader
+        icon={Wallet}
+        title="Pagos"
+        subtitle="Define cómo cobrarás a tus clientes."
+        actions={
+          <Button onClick={save} disabled={saving} size="sm" className="h-9">
+            <Save className="w-4 h-4 mr-2" /> {saving ? "Guardando..." : "Guardar"}
+          </Button>
+        }
+      />
 
       {stripeIssue && (
         <div className="rounded-xl border-2 border-destructive/40 bg-destructive/5 p-4 space-y-2">

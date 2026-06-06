@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
@@ -269,21 +270,18 @@ const TablesPage = () => {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <LayoutGrid className="h-6 w-6 text-primary" /> {t("page.tables.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            {t("tables.subtitle").replace("{lang}", primaryLang.toUpperCase())}
-          </p>
-        </div>
-        {tables.some((t) => t.is_active) && (
-          <Button variant="outline" className="gap-2 shrink-0" onClick={downloadAllPremium}>
-            <Printer className="h-4 w-4" /> {t("tables.print_all")}
-          </Button>
-        )}
-      </div>
+      <PremiumPageHeader
+        icon={LayoutGrid}
+        title={t("page.tables.title")}
+        subtitle={t("tables.subtitle").replace("{lang}", primaryLang.toUpperCase())}
+        actions={
+          tables.some((t) => t.is_active) ? (
+            <Button variant="outline" size="sm" className="h-9 gap-2" onClick={downloadAllPremium}>
+              <Printer className="h-4 w-4" /> {t("tables.print_all")}
+            </Button>
+          ) : null
+        }
+      />
 
       {canManage && (
         <>

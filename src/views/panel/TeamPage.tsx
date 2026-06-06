@@ -34,6 +34,7 @@ import {
   saveTeamMemberDraft,
   teamMemberDraftHasContent,
 } from "@/lib/teamMemberDraft";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 
 type AppRole = StaffRole;
 
@@ -439,21 +440,23 @@ const TeamPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Users className="h-6 w-6" /> {t("page.team.title")}
-        </h2>
-        {canManage && (
-          <Button size="sm" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-1" /> {t("team.new")}
-            {hasDraft && (
-              <Badge variant="secondary" className="ml-2 font-normal">
-                {t("team.draft.badge")}
-              </Badge>
-            )}
-          </Button>
-        )}
-      </div>
+      <PremiumPageHeader
+        icon={Users}
+        title={t("page.team.title")}
+        subtitle="Funcionários, papéis e acessos"
+        actions={
+          canManage ? (
+            <Button size="sm" onClick={openAddDialog} className="h-9">
+              <Plus className="h-4 w-4 mr-1" /> {t("team.new")}
+              {hasDraft && (
+                <Badge variant="secondary" className="ml-2 font-normal">
+                  {t("team.draft.badge")}
+                </Badge>
+              )}
+            </Button>
+          ) : null
+        }
+      />
 
       {/* Roles legend */}
       <div className="flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
@@ -463,9 +464,10 @@ const MenuPage = () => {
 
   return (
     <div className="space-y-6">
-      <PanelPageHeader
+      <PremiumPageHeader
+        icon={ImageIcon}
         title="Cardápio"
-        description="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
+        subtitle="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
       />
 
       {isAdminMenu && (

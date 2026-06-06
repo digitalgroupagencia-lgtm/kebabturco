@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { Loader2, CreditCard, Smartphone, ShieldCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,16 +74,17 @@ export default function PanelPaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Pagamentos</h1>
-          <p className="text-muted-foreground text-sm">Active os métodos de pagamento que este restaurante aceita.</p>
-        </div>
-        <AskAssistantButton
-          question="Estou em Painel → Pagamentos do meu restaurante. Explica em linguagem simples o que é Stripe, Redsys e Bizum, qual a diferença entre 'sandbox' e 'produção', e como saber qual devo activar para começar a receber pagamentos reais em Espanha."
-          label="Explicar esta tela"
-        />
-      </div>
+      <PremiumPageHeader
+        icon={CreditCard}
+        title="Pagamentos"
+        subtitle="Active os métodos de pagamento que este restaurante aceita."
+        actions={
+          <AskAssistantButton
+            question="Estou em Painel → Pagamentos do meu restaurante. Explica em linguagem simples o que é Stripe, Redsys e Bizum, qual a diferença entre 'sandbox' e 'produção', e como saber qual devo activar para começar a receber pagamentos reais em Espanha."
+            label="Explicar esta tela"
+          />
+        }
+      />
 
       <HowToUsePanel
         purpose="Aqui você liga ou desliga os métodos de pagamento que aparecem no checkout do cliente (cartão online via Stripe, cartão presencial via Redsys, e Bizum). As credenciais reais são configuradas pelo Admin Master."

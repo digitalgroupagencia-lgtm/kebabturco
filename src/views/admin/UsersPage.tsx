@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { Plus, Trash2, Users, Loader2, Shield, Building2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import PremiumEmptyState from "@/components/admin/premium/PremiumEmptyState";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -150,16 +152,20 @@ const UsersPage = () => {
 
   return (
     <div className="space-y-6 max-w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Users className="h-5 w-5 sm:h-6 sm:w-6" /> Usuários do Sistema
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Atribua papéis e vincule usuários aos clientes (tenants).
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      <PremiumPageHeader
+        icon={Users}
+        title="Usuários do sistema"
+        subtitle="Atribua papéis e vincule usuários aos clientes (tenants)."
+        actions={
+          <div className="flex flex-col sm:flex-row gap-2">
+            <CreateUserDialog />
+            <Button variant="outline" size="sm" className="h-9" onClick={() => setOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Atribuir papel
+            </Button>
+          </div>
+        }
+      />
+      <div className="hidden">
         <CreateUserDialog />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -226,7 +232,6 @@ const UsersPage = () => {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
 
       <div className="grid gap-3">
