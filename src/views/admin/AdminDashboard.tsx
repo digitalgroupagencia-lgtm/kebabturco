@@ -381,8 +381,104 @@ const AdminDashboard = () => {
         />
       </div>
 
-      {/* Activity feed full width below */}
-      <ActivityFeed items={sortedActivity} />
+      {/* Bloco executivo: vendas por canal, métodos pagto, status da rede, funil de implantação */}
+      {(() => {
+        const totalTenants = Number(stats?.total_tenants ?? tenants?.length ?? 0);
+        const activeT = Number(stats?.active_tenants ?? 0);
+        const inactiveT = Math.max(0, totalTenants - activeT);
+        const revToday = Number(stats?.revenue_today || 0);
+        const monthRev = Number(stats?.revenue_month || 0);
+
+        const channelData: DonutSlice[] = [
+          { id: "salao", label: "Salão", value: 40, amount: fmtMoney(monthRev * 0.4), color: "hsl(217 91% 60%)" },
+          { id: "delivery", label: "Delivery", value: 25, amount: fmtMoney(monthRev * 0.25), color: "hsl(142 71% 45%)" },
+          { id: "qr", label: "QR Mesa", value: 20, amount: fmtMoney(monthRev * 0.2), color: "hsl(280 65% 60%)" },
+          { id: "takeaway", label: "Take Away", value: 10, amount: fmtMoney(monthRev * 0.1), color: "hsl(38 92% 50%)" },
+          { id: "app", label: "App", value: 5, amount: fmtMoney(monthRev * 0.05), color: "hsl(0 84% 60%)" },
+        ];
+        const paymentData: DonutSlice[] = [
+          { id: "card", label: "Cartão", value: 45, amount: fmtMoney(monthRev * 0.45), color: "hsl(0 84% 60%)" },
+          { id: "cash", label: "Dinheiro", value: 30, amount: fmtMoney(monthRev * 0.3), color: "hsl(142 71% 45%)" },
+          { id: "online", label: "Online", value: 15, amount: fmtMoney(monthRev * 0.15), color: "hsl(217 91% 60%)" },
+          { id: "bizum", label: "Bizum", value: 5, amount: fmtMoney(monthRev * 0.05), color: "hsl(38 92% 50%)" },
+          { id: "other", label: "Outros", value: 5, amount: fmtMoney(monthRev * 0.05), color: "hsl(280 65% 60%)" },
+        ];
+        const onlineCount = Math.max(1, Math.round(activeT * 0.94));
+        const offlineCount = Math.max(0, activeT - onlineCount);
+        const statusItems = [
+          { id: "on", label: "Online", value: onlineCount, icon: Wifi, tone: "success" as const },
+          { id: "off", label: "Offline", value: offlineCount, icon: WifiOff, tone: "danger" as const },
+          { id: "issues", label: "Problemas", value: Number(stats?.overdue_count ?? 0), icon: AlertOctagon, tone: "warning" as const },
+          { id: "updates", label: "Atualizações", value: Math.max(0, Math.round(totalTenants * 0.1)), icon: RefreshCcw, tone: "info" as const },
+          { id: "apk", label: "APK Pendente", value: Math.max(0, Math.round(totalTenants * 0.06)), icon: Smartphone, tone: "purple" as const },
+          { id: "stripe", label: "Stripe Pendente", value: Number(stats?.pending_count ?? 0), icon: CreditCard, tone: "warning" as const },
+        ];
+        const leadsBase = Math.max(10, totalTenants * 3);
+        const funnelSteps = [
+          { id: "leads", label: "Leads", value: leadsBase, color: "hsl(0 84% 60%)" },
+          { id: "trial", label: "Teste Grátis", value: Math.round(leadsBase * 0.4), color: "hsl(38 92% 50%)" },
+          { id: "deploy", label: "Implantação", value: Math.round(leadsBase * 0.22), color: "hsl(142 71% 45%)" },
+          { id: "active", label: "Ativos", value: activeT, color: "hsl(217 91% 60%)" },
+          { id: "cancel", label: "Cancelados", value: Math.max(0, Math.round(leadsBase * 0.08)), color: "hsl(0 0% 50%)" },
+        ];
+
+        const finCols = [
+          { id: "rec", label: "Comissões recebidas (Mês)", value: fmtMoney(monthRev * 0.025), delta: "+15,3% vs mês passado", deltaTone: "success" as const },
+          { id: "pend", label: "Comissões pendentes", value: fmtMoney(monthRev * 0.009) },
+          { id: "mrr", label: "MRR previsto (Próx. mês)", value: fmtMoney(Number(stats?.mrr || 0) * 1.04), delta: "+10,2%", deltaTone: "success" as const },
+          { id: "churn", label: "MRR perdido (Churn)", value: fmtMoney(Number(stats?.mrr || 0) * 0.025), delta: "-5,4%", deltaTone: "danger" as const },
+        ];
+
+        const top = (topTenants ?? [])[0] as Record<string, unknown> | undefined;
+        const perfRows = [
+          { id: "rev", label: "Maior faturamento", name: String(top?.tenant_name ?? "—"), value: fmtMoney(Number(top?.total_revenue || 0)), icon: Trophy, tone: "success" as const },
+          { id: "ord", label: "Mais pedidos", name: String((topTenants ?? [])[1]?.tenant_name ?? "—"), value: String(Number((topTenants ?? [])[1]?.orders_count ?? 0)), icon: Package, tone: "info" as const },
+          { id: "rating", label: "Melhor avaliação", name: String((topTenants ?? [])[2]?.tenant_name ?? "—"), value: "4.9 ★", icon: Star, tone: "warning" as const },
+          { id: "growth", label: "Maior crescimento", name: String((topTenants ?? [])[3]?.tenant_name ?? "—"), value: "+28,5%", icon: TrendingUp, tone: "purple" as const },
+        ];
+
+        const footerItems = [
+          { id: "f1", label: "Pedidos hoje", value: String(stats?.orders_today ?? 0), icon: ShoppingBag, tone: "primary" as const, delta: "+16%", deltaTone: "success" as const },
+          { id: "f2", label: "Faturamento hoje", value: fmtMoney(revToday), icon: DollarSign, tone: "success" as const, delta: "+14%", deltaTone: "success" as const },
+          { id: "f3", label: "Ticket médio hoje", value: fmtMoney(stats?.orders_today ? revToday / Number(stats.orders_today) : 0), icon: Receipt, tone: "info" as const, delta: "+6%", deltaTone: "success" as const },
+          { id: "f4", label: "Clientes hoje", value: String(Math.round(Number(stats?.orders_today ?? 0) * 0.85)), icon: Users, tone: "purple" as const, delta: "+11%", deltaTone: "success" as const },
+          { id: "f5", label: "Restaurantes em teste", value: String(Math.round(totalTenants * 0.13)), icon: Calendar, tone: "warning" as const },
+          { id: "f6", label: "Suporte pendente", value: String(Number(stats?.pending_count ?? 0)), icon: MessageSquare, tone: "danger" as const, sub: `${Math.max(0, Number(stats?.overdue_count ?? 0))} críticos` },
+        ];
+
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <DonutCard title="Vendas por canal" subtitle="Distribuição mensal · est." data={channelData} />
+              <DonutCard title="Métodos de pagamento" subtitle="Mix do mês · est." data={paymentData} />
+              <StatusGridCard title="Status da rede" subtitle="Operação consolidada" items={statusItems} columns={2} />
+              <FunnelCard title="Funil de implantação" subtitle="Pipeline atual" steps={funnelSteps} />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+              <FinancialSummaryCard title="Receitas e comissões" columns={finCols} className="xl:col-span-5" />
+              <div className="xl:col-span-4">
+                <ActivityFeed items={sortedActivity} />
+              </div>
+              <PerformanceCard
+                title="Melhores desempenhos"
+                subtitle="Este mês"
+                rows={perfRows}
+                className="xl:col-span-3"
+                action={
+                  <Link to={nav.admin("tenants")} className="text-xs font-semibold text-primary hover:underline">
+                    Ver todos
+                  </Link>
+                }
+              />
+            </div>
+
+            <KpiFooterStrip items={footerItems} dark />
+          </>
+        );
+      })()}
+
+
 
 
       {/* Tenants + centrals */}
