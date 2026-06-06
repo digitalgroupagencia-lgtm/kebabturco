@@ -162,14 +162,32 @@ export default function TemplateVersionPage() {
         <div>
           <h1 className="text-2xl font-bold">Versão do Template</h1>
           <p className="text-sm text-muted-foreground">
-            Diagnóstico do Master Template, código vs banco e histórico de updates.
+            Mostra qual versão do sistema está instalada e permite atualizar o banco do restaurante.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          <span className="ml-1.5">Atualizar</span>
-        </Button>
+        <div className="flex gap-2">
+          <AskAssistantButton
+            question="Estou na tela Versão do Template do Admin Master. Explica em linguagem simples o que cada secção faz, quando devo clicar em 'Atualizar banco', e como saber se o restaurante está actualizado."
+            label="Explicar esta tela"
+          />
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            <span className="ml-1.5">Recarregar</span>
+          </Button>
+        </div>
       </div>
+
+      <HowToUsePanel
+        purpose="Esta tela mostra a versão do sistema que está no código (a que você publica pela Lovable) e a versão que está aplicada no banco deste restaurante. Quando elas ficam diferentes, é preciso clicar em 'Atualizar banco' para que o restaurante receba as novidades."
+        whenToUse="Sempre que publicar uma nova versão pela Lovable, ou quando aparecer um aviso amarelo dizendo que o banco está desactualizado."
+        steps={[
+          { title: "Clique em 'Recarregar'", detail: "para forçar a leitura da versão actual do banco." },
+          { title: "Se aparecer aviso amarelo", detail: "clique no botão 'Atualizar banco para vX'. É seguro, pode clicar quantas vezes precisar." },
+          { title: "Confira no histórico abaixo", detail: "deve aparecer uma nova linha com a versão e a data/hora." },
+        ]}
+        howToConfirm="O cartão de status fica verde com 'Tudo actualizado' e a versão do código é igual à versão do banco."
+        assistantQuestion="A versão do meu banco está diferente da versão do código no Admin Master → Versão do Template. Explica o que isso significa para o restaurante, o que acontece se eu não atualizar, e como faço para resolver agora."
+      />
 
       <Card>
         <CardHeader>
