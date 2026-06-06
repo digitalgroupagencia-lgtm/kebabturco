@@ -85,13 +85,18 @@ const Dashboard = () => {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const { data: orders, error } = await supabase
+      const { data: ordersRaw, error } = await supabase
         .from("orders")
-        .select("id, order_number, total, status, channel, payment_method, created_at, customer_name")
+        .select("id, order_number, total, status, order_type, source, payment_method, created_at, customer_name")
         .eq("store_id", STORE_ID!)
         .gte("created_at", startRange.toISOString())
         .order("created_at", { ascending: false });
       if (error) throw error;
+      const orders = (ordersRaw ?? []) as Array<{
+        id: string; order_number: number | null; total: number | null; status: string;
+        order_type: string | null; source: string | null; payment_method: string | null;
+        created_at: string; customer_name: string | null;
+      }>;
 
       const today = orders.filter((o) => new Date(o.created_at) >= startOfDay);
       const activeToday = today.filter((o) => o.status !== "cancelled");
