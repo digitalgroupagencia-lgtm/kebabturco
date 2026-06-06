@@ -17,6 +17,8 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NavLink } from "react-router-dom";
+import { nav } from "@/lib/navPaths";
 
 type NavItem = {
   label: string;
@@ -26,18 +28,18 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin", icon: Home, group: "Operação" },
-  { label: "Restaurantes", href: "/admin/restaurants", icon: Store, group: "Operação" },
-  { label: "Faturamento", href: "/admin/billing", icon: DollarSign, group: "Financeiro" },
-  { label: "Pedidos", href: "/admin/orders", icon: ShoppingBag, group: "Operação" },
-  { label: "Clientes", href: "/admin/customers", icon: Users, group: "Gestão" },
-  { label: "Produtos", href: "/admin/products", icon: Package, group: "Gestão" },
-  { label: "Comissões", href: "/admin/commissions", icon: CreditCard, group: "Financeiro" },
-  { label: "Relatórios", href: "/admin/reports", icon: BarChart3, group: "Financeiro" },
-  { label: "Suporte", href: "/admin/support", icon: Headphones, group: "Sistema" },
-  { label: "Configurações", href: "/admin/settings", icon: Settings, group: "Sistema" },
-  { label: "Integrações", href: "/admin/integrations", icon: Boxes, group: "Sistema" },
-  { label: "Logs", href: "/admin/logs", icon: FileText, group: "Sistema" },
+  { label: "Dashboard", href: nav.admin(), icon: Home, group: "Operação" },
+  { label: "Restaurantes", href: nav.admin("stores"), icon: Store, group: "Operação" },
+  { label: "Faturamento", href: nav.admin("finance"), icon: DollarSign, group: "Financeiro" },
+  { label: "Pedidos", href: nav.panel("live"), icon: ShoppingBag, group: "Operação" },
+  { label: "Clientes", href: nav.admin("users"), icon: Users, group: "Gestão" },
+  { label: "Produtos", href: nav.admin("menu"), icon: Package, group: "Gestão" },
+  { label: "Comissões", href: nav.admin("monitoring"), icon: CreditCard, group: "Financeiro" },
+  { label: "Relatórios", href: nav.admin("reports"), icon: BarChart3, group: "Financeiro" },
+  { label: "Suporte", href: nav.admin("guide"), icon: Headphones, group: "Sistema" },
+  { label: "Configurações", href: nav.admin("settings"), icon: Settings, group: "Sistema" },
+  { label: "Integrações", href: nav.admin("payments"), icon: Boxes, group: "Sistema" },
+  { label: "Logs", href: nav.admin("diagnostics"), icon: FileText, group: "Sistema" },
 ];
 
 type PremiumShellProps = {
@@ -104,9 +106,9 @@ export function PremiumShell({
                     const active = item.href === activeHref;
 
                     return (
-                      <a
+                      <NavLink
                         key={item.href}
-                        href={item.href}
+                        to={item.href}
                         className={cn(
                           "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
                           active
@@ -118,7 +120,7 @@ export function PremiumShell({
                       >
                         <Icon className="h-4.5 w-4.5" />
                         {item.label}
-                      </a>
+                      </NavLink>
                     );
                   })}
               </div>
