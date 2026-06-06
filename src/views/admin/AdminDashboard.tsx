@@ -28,7 +28,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import PlatformPageShell from "@/components/admin/premium/PlatformPageShell";
-import MetricTile from "@/components/admin/premium/MetricTile";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import RankingCard, { type RankingItem } from "@/components/admin/premium/RankingCard";
+import AlertCard, { type AlertItem } from "@/components/admin/premium/AlertCard";
 import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
 import StatusPill from "@/components/admin/premium/StatusPill";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
