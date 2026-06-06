@@ -240,6 +240,9 @@ const PaymentScreen = () => {
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
+  const { data: extraGatewayVisibility } = useCheckoutExtraGatewayVisibility(storeId);
+  const [underConstructionMethod, setUnderConstructionMethod] = useState<PaymentMethodId | null>(null);
+
   const checkoutMethods = useMemo(() => {
     if (!orderType) return [];
     const ids = resolveCheckoutMethods({
@@ -249,8 +252,16 @@ const PaymentScreen = () => {
       stripeReady: stripeEnabled,
       stripePublishableKey,
     });
-    return METHOD_DEFS.filter((m) => ids.includes(m.id));
-  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
+    const extras: PaymentMethodId[] = [];
+    if (extraGatewayVisibility?.redsys) extras.push("redsys");
+    if (extraGatewayVisibility?.bizum) extras.push("bizum");
+    const filteredExtras = extras.filter((id) => {
+      if (orderType === "here" && !mesaValidated) return false;
+      return true;
+    });
+    const allIds = [...ids, ...filteredExtras];
+    return METHOD_DEFS.filter((m) => allIds.includes(m.id));
+  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey, extraGatewayVisibility]);
 
   const grandTotal = restaurantPortionEur;
 
