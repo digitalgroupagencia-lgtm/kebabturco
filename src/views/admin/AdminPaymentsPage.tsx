@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 type Status = "disabled" | "sandbox" | "production";
 
