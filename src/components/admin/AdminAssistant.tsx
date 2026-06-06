@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy } from "lucide-react";
+import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
@@ -20,6 +20,7 @@ const SUGGESTIONS = [
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ACTIVE_CONV_KEY = "wgm.assistant.activeConv";
 
 // Web Speech API types (browser-only)
 type SpeechRecognitionLike = any;
@@ -57,15 +58,41 @@ export default function AdminAssistant() {
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    try { return localStorage.getItem(ACTIVE_CONV_KEY); } catch { return null; }
+  });
   const [recording, setRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<SpeechRecognitionLike>(null);
 
+  // Restaura mensagens da conversa ativa ao montar / ao abrir
+  useEffect(() => {
+    if (!conversationId || messages.length > 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("ai_messages")
+        .select("role, content")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        setMessages(data.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })));
+      }
+    })();
+  }, [conversationId, messages.length]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    setPendingImages([]);
+    setInput("");
+    try { localStorage.removeItem(ACTIVE_CONV_KEY); } catch {}
+    toast.success("Conversa nova iniciada");
+  };
 
   const ensureConversation = async (firstUserMsg: string): Promise<string | null> => {
     if (conversationId) return conversationId;
@@ -80,6 +107,7 @@ export default function AdminAssistant() {
       .single();
     if (error || !data) return null;
     setConversationId(data.id);
+    try { localStorage.setItem(ACTIVE_CONV_KEY, data.id); } catch {}
     return data.id;
   };
 
@@ -246,7 +274,18 @@ export default function AdminAssistant() {
                 <p className="text-[11px] opacity-80 leading-tight">Edita e configura o sistema por você</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0">
+            <button
+              onClick={() => {
+                if (messages.length === 0 || confirm("Iniciar uma conversa nova? A atual fica salva no histórico.")) startNewConversation();
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label="Nova conversa"
+              title="Nova conversa"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
+            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0" aria-label="Minimizar" title="Minimizar (a conversa fica salva)">
               <X className="w-4 h-4" />
             </button>
           </header>
@@ -287,7 +326,7 @@ export default function AdminAssistant() {
                       <button
                         type="button"
                         onClick={() => void copyText(text)}
-                        className="absolute right-1.5 top-1.5 z-10 w-7 h-7 rounded-full bg-background/90 border text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center transition-opacity"
+                        className="absolute right-1.5 top-1.5 z-10 w-7 h-7 rounded-full bg-background/90 border text-muted-foreground opacity-70 hover:opacity-100 focus:opacity-100 flex items-center justify-center transition-opacity"
                         aria-label="Copiar resposta"
                         title="Copiar resposta"
                       >
