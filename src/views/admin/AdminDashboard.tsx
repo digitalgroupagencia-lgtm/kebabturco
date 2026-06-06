@@ -432,7 +432,7 @@ const AdminDashboard = () => {
         const top = (topTenants ?? [])[0] as Record<string, unknown> | undefined;
         const perfRows = [
           { id: "rev", label: "Maior faturamento", name: String(top?.tenant_name ?? "—"), value: fmtMoney(Number(top?.total_revenue || 0)), icon: Trophy, tone: "success" as const },
-          { id: "ord", label: "Mais pedidos", name: String((topTenants ?? [])[1]?.tenant_name ?? "—"), value: String(Number((topTenants ?? [])[1]?.orders_count ?? 0)), icon: Package, tone: "info" as const },
+          { id: "ord", label: "Mais pedidos", name: String((topTenants ?? [])[1]?.tenant_name ?? "—"), value: String(Number((topTenants ?? [])[1]?.order_count ?? 0)), icon: Package, tone: "info" as const },
           { id: "rating", label: "Melhor avaliação", name: String((topTenants ?? [])[2]?.tenant_name ?? "—"), value: "4.9 ★", icon: Star, tone: "warning" as const },
           { id: "growth", label: "Maior crescimento", name: String((topTenants ?? [])[3]?.tenant_name ?? "—"), value: "+28,5%", icon: TrendingUp, tone: "purple" as const },
         ];
