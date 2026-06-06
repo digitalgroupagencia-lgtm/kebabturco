@@ -70,7 +70,7 @@ const BUILD_TIME = new Date().toISOString();
 
 const replaceToken = (text: string, token: string, value: string) => text.split(token).join(value);
 
-const RESOLVED_BOOTSTRAP_SQL = [
+const BOOTSTRAP_ASSET_REPLACEMENTS: Array<[string, string]> = [
   ["/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png", logoMainAsset.url],
   ["/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png", logoMainDarkAsset.url],
   ["/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png", logoLanguageAsset.url],
@@ -83,7 +83,12 @@ const RESOLVED_BOOTSTRAP_SQL = [
   ["/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png", langEsAsset.url],
   ["/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png", langFrAsset.url],
   ["/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png", langPtAsset.url],
-].reduce((sql, [token, value]) => replaceToken(sql, token, value), bootstrapSql);
+];
+
+const RESOLVED_BOOTSTRAP_SQL = BOOTSTRAP_ASSET_REPLACEMENTS.reduce(
+  (sql, [token, value]) => replaceToken(sql, token, value),
+  bootstrapSql,
+);
 
 type HistoryRow = {
   id: string;
