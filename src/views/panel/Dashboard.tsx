@@ -24,6 +24,8 @@ import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -80,32 +82,8 @@ const Dashboard = () => {
     refetchInterval: 60000,
   });
 
-  const stats = [
-    {
-      title: "Pedidos Hoje",
-      value: isLoading ? "—" : String(data?.ordersToday ?? 0),
-      icon: ShoppingBag,
-      color: "text-primary",
-    },
-    {
-      title: "Faturamento Hoje",
-      value: isLoading ? "—" : fmt(data?.totalToday ?? 0),
-      icon: DollarSign,
-      color: "text-success",
-    },
-    {
-      title: "Ticket Médio",
-      value: isLoading ? "—" : fmt(data?.avgTicket ?? 0),
-      icon: TrendingUp,
-      color: "text-accent-foreground",
-    },
-    {
-      title: "Faturamento Mês",
-      value: isLoading ? "—" : fmt(data?.totalMonth ?? 0),
-      icon: Calendar,
-      color: "text-primary",
-    },
-  ];
+
+
 
   const opsStats = [
     { key: "pending", label: getStatusLabel("pending"), value: data?.pending ?? 0, icon: Clock },
@@ -142,45 +120,60 @@ const Dashboard = () => {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="border-border/60 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg md:text-2xl font-bold">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {data?.ordersMonth ?? 0} pedidos no mês
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        <PremiumMetricCard
+          icon={ShoppingBag}
+          tone="primary"
+          label="Pedidos hoje"
+          value={isLoading ? "—" : String(data?.ordersToday ?? 0)}
+          sub={`${data?.ordersMonth ?? 0} no mês`}
+        />
+        <PremiumMetricCard
+          icon={DollarSign}
+          tone="success"
+          label="Faturamento hoje"
+          value={isLoading ? "—" : fmt(data?.totalToday ?? 0)}
+          sub="Vendas confirmadas"
+        />
+        <PremiumMetricCard
+          icon={TrendingUp}
+          tone="info"
+          label="Ticket médio"
+          value={isLoading ? "—" : fmt(data?.avgTicket ?? 0)}
+          sub="Hoje"
+        />
+        <PremiumMetricCard
+          icon={Calendar}
+          tone="purple"
+          label="Faturamento mês"
+          value={isLoading ? "—" : fmt(data?.totalMonth ?? 0)}
+          sub={`${data?.ordersMonth ?? 0} pedidos`}
+        />
       </div>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Estado operacional hoje</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {opsStats.map((item) => (
-              <div
+      <PremiumChartCard title="Estado operacional hoje" subtitle="Pedidos por etapa do fluxo">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {opsStats.map((item) => {
+            const tone =
+              item.key === "pending"
+                ? "warning"
+                : item.key === "preparing"
+                ? "orange"
+                : item.key === "ready"
+                ? "success"
+                : "danger";
+            return (
+              <PremiumMetricCard
                 key={item.key}
-                className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3"
-              >
-                <item.icon className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-xl font-bold leading-none">{isLoading ? "—" : item.value}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">{item.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                icon={item.icon}
+                tone={tone as "warning" | "orange" | "success" | "danger"}
+                label={item.label}
+                value={isLoading ? "—" : item.value}
+              />
+            );
+          })}
+        </div>
+      </PremiumChartCard>
+
 
       <PanelPrintStatusBar summary={printSummary} loading={printLoading} />
 
