@@ -30,6 +30,8 @@ import {
   BarChart3,
   ShoppingBag,
   Play,
+  GitBranch,
+  Sparkles,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +67,7 @@ const overviewItems = [
   { title: "Simulador de pedidos", url: nav.admin("order-simulator"), icon: Play },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
+  { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },
 ];
 
 const operationalItems = [
@@ -96,6 +99,8 @@ const systemItems = [
   { title: "Monitorização", url: nav.admin("monitoring"), icon: Activity },
   { title: "Guia", url: nav.admin("guide"), icon: BookOpen },
   { title: "Conversas IA", url: nav.admin("conversations"), icon: MessageSquare },
+  { title: "Central White-Label", url: nav.admin("white-label"), icon: Sparkles },
+  { title: "Versão do Template", url: nav.admin("template-version"), icon: GitBranch },
   { title: "Definições", url: nav.admin("settings"), icon: Settings },
 ];
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
@@ -357,7 +358,7 @@ const MenuPage = () => {
         .from("products")
         .update(payload)
         .eq("id", editingProduct.id);
-      if (error) { toast.error("Erro ao atualizar produto"); return; }
+      if (error) { toast.error(`Erro ao atualizar produto: ${error.message}`); return; }
       try {
         await saveProductModifierLinks(editingProduct.id, modifierLinks);
       } catch {
@@ -365,7 +366,7 @@ const MenuPage = () => {
       }
     } else {
       const { data: inserted, error } = await supabase.from("products").insert(payload).select("id").single();
-      if (error) { toast.error("Erro ao criar produto"); return; }
+      if (error) { toast.error(`Erro ao criar produto: ${error.message}`); return; }
       if (inserted?.id && modifierLinks.length) {
         try {
           await saveProductModifierLinks(inserted.id, modifierLinks);
@@ -463,9 +464,10 @@ const MenuPage = () => {
 
   return (
     <div className="space-y-6">
-      <PanelPageHeader
+      <PremiumPageHeader
+        icon={ImageIcon}
         title="Cardápio"
-        description="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
+        subtitle="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
       />
 
       {isAdminMenu && (

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      _template_version: {
+        Row: {
+          applied_at: string
+          codename: string | null
+          id: boolean
+          notes: string | null
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          codename?: string | null
+          id?: boolean
+          notes?: string | null
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          codename?: string | null
+          id?: boolean
+          notes?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           created_at: string
@@ -1007,6 +1031,257 @@ export type Database = {
           },
         ]
       }
+      payment_gateway_logs: {
+        Row: {
+          created_at: string
+          direction: string
+          endpoint: string | null
+          error_message: string | null
+          gateway_code: string
+          http_status: number | null
+          id: string
+          ip_address: string | null
+          order_id: string | null
+          request_payload: Json | null
+          response_payload: Json | null
+          store_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          endpoint?: string | null
+          error_message?: string | null
+          gateway_code: string
+          http_status?: number | null
+          id?: string
+          ip_address?: string | null
+          order_id?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          store_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          endpoint?: string | null
+          error_message?: string | null
+          gateway_code?: string
+          http_status?: number | null
+          id?: string
+          ip_address?: string | null
+          order_id?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          store_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateway_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateway_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateway_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_gateway_transactions: {
+        Row: {
+          amount_cents: number
+          authorization_code: string | null
+          created_at: string
+          currency: string
+          error_message: string | null
+          external_reference: string | null
+          gateway_code: string
+          id: string
+          order_id: string | null
+          raw_notification: Json | null
+          raw_request: Json | null
+          raw_response: Json | null
+          response_code: string | null
+          signature_valid: boolean | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          authorization_code?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          external_reference?: string | null
+          gateway_code: string
+          id?: string
+          order_id?: string | null
+          raw_notification?: Json | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          response_code?: string | null
+          signature_valid?: boolean | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          authorization_code?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          external_reference?: string | null
+          gateway_code?: string
+          id?: string
+          order_id?: string | null
+          raw_notification?: Json | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          response_code?: string | null
+          signature_valid?: boolean | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateway_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateway_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateway_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_gateway_webhooks: {
+        Row: {
+          external_reference: string | null
+          gateway_code: string
+          id: string
+          processed: boolean
+          processing_error: string | null
+          raw_body: string | null
+          raw_headers: Json | null
+          received_at: string
+          signature: string | null
+          signature_valid: boolean | null
+          store_id: string | null
+        }
+        Insert: {
+          external_reference?: string | null
+          gateway_code: string
+          id?: string
+          processed?: boolean
+          processing_error?: string | null
+          raw_body?: string | null
+          raw_headers?: Json | null
+          received_at?: string
+          signature?: string | null
+          signature_valid?: boolean | null
+          store_id?: string | null
+        }
+        Update: {
+          external_reference?: string | null
+          gateway_code?: string
+          id?: string
+          processed?: boolean
+          processing_error?: string | null
+          raw_body?: string | null
+          raw_headers?: Json | null
+          received_at?: string
+          signature?: string | null
+          signature_valid?: boolean | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateway_webhooks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateway_webhooks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_gateways: {
+        Row: {
+          code: string
+          config_schema: Json
+          country: string
+          created_at: string
+          description: string | null
+          id: string
+          is_globally_enabled: boolean
+          name: string
+          supports_refund: boolean
+          supports_webhook: boolean
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          config_schema?: Json
+          country?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_globally_enabled?: boolean
+          name: string
+          supports_refund?: boolean
+          supports_webhook?: boolean
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          config_schema?: Json
+          country?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_globally_enabled?: boolean
+          name?: string
+          supports_refund?: boolean
+          supports_webhook?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_history: {
         Row: {
           amount: number
@@ -1573,7 +1848,9 @@ export type Database = {
       }
       products: {
         Row: {
+          after_add_suggestions: Json
           category_id: string
+          combo_unit_count: number
           created_at: string
           description: Json | null
           id: string
@@ -1584,12 +1861,15 @@ export type Database = {
           name: Json
           price: number
           price_modifiers: Json
+          product_type: string
           sort_order: number | null
           store_id: string
           updated_at: string
         }
         Insert: {
+          after_add_suggestions?: Json
           category_id: string
+          combo_unit_count?: number
           created_at?: string
           description?: Json | null
           id?: string
@@ -1600,12 +1880,15 @@ export type Database = {
           name?: Json
           price?: number
           price_modifiers?: Json
+          product_type?: string
           sort_order?: number | null
           store_id: string
           updated_at?: string
         }
         Update: {
+          after_add_suggestions?: Json
           category_id?: string
+          combo_unit_count?: number
           created_at?: string
           description?: Json | null
           id?: string
@@ -1616,6 +1899,7 @@ export type Database = {
           name?: Json
           price?: number
           price_modifiers?: Json
+          product_type?: string
           sort_order?: number | null
           store_id?: string
           updated_at?: string
@@ -1927,6 +2211,97 @@ export type Database = {
           },
           {
             foreignKeyName: "stock_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payment_gateways: {
+        Row: {
+          config: Json
+          created_at: string
+          currency: string | null
+          enabled_at: string | null
+          failure_url: string | null
+          gateway_code: string
+          id: string
+          last_test_at: string | null
+          last_test_message: string | null
+          last_test_success: boolean | null
+          merchant_code: string | null
+          merchant_name: string | null
+          notification_url: string | null
+          secret_key: string | null
+          status: string
+          store_id: string
+          success_url: string | null
+          terminal: string | null
+          transaction_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          currency?: string | null
+          enabled_at?: string | null
+          failure_url?: string | null
+          gateway_code: string
+          id?: string
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_success?: boolean | null
+          merchant_code?: string | null
+          merchant_name?: string | null
+          notification_url?: string | null
+          secret_key?: string | null
+          status?: string
+          store_id: string
+          success_url?: string | null
+          terminal?: string | null
+          transaction_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          currency?: string | null
+          enabled_at?: string | null
+          failure_url?: string | null
+          gateway_code?: string
+          id?: string
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_success?: boolean | null
+          merchant_code?: string | null
+          merchant_name?: string | null
+          notification_url?: string | null
+          secret_key?: string | null
+          status?: string
+          store_id?: string
+          success_url?: string | null
+          terminal?: string | null
+          transaction_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payment_gateways_gateway_code_fkey"
+            columns: ["gateway_code"]
+            isOneToOne: false
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "store_payment_gateways_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payment_gateways_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores_public"
@@ -2325,6 +2700,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      template_update_history: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          created_at: string
+          id: string
+          migration_names: string[]
+          notes: string | null
+          project_name: string | null
+          requires_apk_rebuild: boolean
+          success: boolean
+          update_type: string
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          migration_names?: string[]
+          notes?: string | null
+          project_name?: string | null
+          requires_apk_rebuild?: boolean
+          success?: boolean
+          update_type?: string
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          migration_names?: string[]
+          notes?: string | null
+          project_name?: string | null
+          requires_apk_rebuild?: boolean
+          success?: boolean
+          update_type?: string
+          version?: string
+        }
+        Relationships: []
       }
       tenant_ai_modules: {
         Row: {
@@ -2823,11 +3240,24 @@ export type Database = {
         Args: { _new_status: string; _order_id: string }
         Returns: Json
       }
+      apply_template_catchup: {
+        Args: { _target_version: string }
+        Returns: Json
+      }
       assign_delivery_driver: {
         Args: { _driver_user_id: string; _order_id: string }
         Returns: Json
       }
       claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
+      cleanup_print_jobs: {
+        Args: {
+          _older_than_hours?: number
+          _only_tests?: boolean
+          _statuses?: string[]
+          _store_id: string
+        }
+        Returns: Json
+      }
       cleanup_test_orders: {
         Args: { _older_than?: string; _store_id?: string }
         Returns: Json
@@ -3059,6 +3489,14 @@ export type Database = {
           payment_method: string
           status: string
           total_amount: number
+        }[]
+      }
+      get_template_version_status: {
+        Args: never
+        Returns: {
+          applied_at: string
+          project_name: string
+          version: string
         }[]
       }
       get_tenant_billing: {

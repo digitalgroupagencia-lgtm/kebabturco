@@ -1,15 +1,17 @@
 import type { ElementType } from "react";
 import { ChefHat, ShoppingBag, UtensilsCrossed, Truck, LayoutGrid } from "lucide-react";
+import { useStaffT } from "@/hooks/useStaffT";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 import type { PanelOrder } from "./usePanelOrders";
 
 export type OpsViewMode = "all" | "kitchen" | "counter" | "table" | "delivery";
 
-const modes: { id: OpsViewMode; label: string; icon: ElementType }[] = [
-  { id: "all", label: "Todos", icon: LayoutGrid },
-  { id: "kitchen", label: "Cozinha", icon: ChefHat },
-  { id: "counter", label: "Balcão", icon: ShoppingBag },
-  { id: "table", label: "Mesa", icon: UtensilsCrossed },
-  { id: "delivery", label: "Entrega", icon: Truck },
+const modes: { id: OpsViewMode; labelKey: StaffI18nKey; icon: ElementType }[] = [
+  { id: "all", labelKey: "ops.mode.all", icon: LayoutGrid },
+  { id: "kitchen", labelKey: "ops.mode.kitchen", icon: ChefHat },
+  { id: "counter", labelKey: "ops.mode.counter", icon: ShoppingBag },
+  { id: "table", labelKey: "ops.mode.table", icon: UtensilsCrossed },
+  { id: "delivery", labelKey: "ops.mode.delivery", icon: Truck },
 ];
 
 function resolveOrderType(order: PanelOrder): string {
@@ -43,9 +45,11 @@ interface OpsModeFilterProps {
   orders: PanelOrder[];
 }
 
-const OpsModeFilter = ({ selected, onSelect, orders }: OpsModeFilterProps) => (
+const OpsModeFilter = ({ selected, onSelect, orders }: OpsModeFilterProps) => {
+  const { t } = useStaffT();
+  return (
   <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-    {modes.map(({ id, label, icon: Icon }) => {
+    {modes.map(({ id, labelKey, icon: Icon }) => {
       const count = countOrdersByMode(orders, id);
       const active = selected === id;
       return (
@@ -60,7 +64,7 @@ const OpsModeFilter = ({ selected, onSelect, orders }: OpsModeFilterProps) => (
           }`}
         >
           <Icon className="w-3.5 h-3.5" />
-          <span className="whitespace-nowrap">{label}</span>
+          <span className="whitespace-nowrap">{t(labelKey)}</span>
           {count > 0 && (
             <span
               className={`min-w-[20px] h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${
@@ -74,6 +78,7 @@ const OpsModeFilter = ({ selected, onSelect, orders }: OpsModeFilterProps) => (
       );
     })}
   </div>
-);
+  );
+};
 
 export default OpsModeFilter;

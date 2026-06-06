@@ -1,161 +1,60 @@
-## Simulador de Pedidos — Admin Master
 
-Ferramenta profissional dentro do Admin Master para validar todo o fluxo operacional (impressão, push, som, vibração, painéis) sem criar pedidos reais.
+# Plano — Auditoria completa + Assistente Especialista Total
 
-### Localização
+Entrego **3 coisas** numa execução, sem quebrar nada da UI atual.
 
-`Admin Master → Ferramentas → Simulador de Pedidos` (nova rota `/admin/tools/order-simulator`).
+> Observação: o projeto no código se chama **Kebab Turco** (Master Template white-label). Vou tratar como **"WGM System"** no relatório conforme você pediu — é o mesmo sistema, só o nome comercial muda.
 
-### Marcação de pedidos de teste
+---
 
-Adicionar coluna `is_test BOOLEAN DEFAULT false` na tabela `orders` via migração. Todo pedido criado pelo simulador grava `is_test = true` e `notes` começando com `[TESTE]`.
+## Parte 1 — Relatório PDF de Auditoria Completa
 
-**Exclusão de métricas:** atualizar todas as funções/queries de relatório para filtrar `is_test = false`:
+Arquivo: `WGM_Auditoria_Completa_Estrategica.pdf` (~30–40 páginas, gerado com `reportlab`, entregue como artifact para download).
 
-- `get_sales_summary`, `get_top_products`, `get_hourly_sales`, `get_admin_dashboard_stats`, `get_top_tenants_by_revenue`, `get_tenant_monthly_usage`
-- Páginas: `Dashboard`, `ReportsPage`, `PanelFinancePage`, `FinancePage`, `CashierPage` (qualquer consulta direta a `orders` para totais)
-- Estoque: o trigger `deduct_stock_on_order_item` passa a sair cedo quando o pedido pai tem `is_test = true`
-- Ledger Stripe: pedidos teste nunca tocam `store_payment_ledger` (já não entram por não serem pagos via Stripe real)
+Cobre **os 20 pontos** que você listou, baseado em varredura real do código (módulos, rotas, edge functions, schema das 49 tabelas, roles, integrações):
 
-Pedidos teste **continuam** entrando em: lista de pedidos ao vivo, KDS, painel operador, painel entregador, impressão, push, sons — para validar o fluxo.
+1. Visão geral · 2. Módulos existentes · 3. Funcionalidades detalhadas (pronto / parcial / falta) · 4. Banco (49 tabelas + relações) · 5. Perfis (admin_master, restaurant_admin, operator, kitchen, seller, cliente) · 6. Integrações (Stripe, Lovable AI, Push Web/Capacitor, Print Bridge Android/PC, Capacitor Android) · 7. Apps & PWAs (PWA cliente, APK Android Totem, painel restaurante, admin master) · 8. Recursos comerciais (cupons, fidelidade, banners, combos, modificadores) · 9. Operacionais (KDS, impressão por setor, delivery, mesas, vendedor) · 10. Suporte a redes (multi-tenant, multi-store, white-label) · 11. Comparação Toast / Square / Lightspeed / Zonal / GloriaFood · 12. Roadmap (tabela pronto × faltante × prioridade × estimativa) · 13. Notas 0–10.
 
-### UI da página
+Depois a **análise estratégica**:
 
-Card de seleção de loja (admin master escolhe a loja onde os testes vão rodar — usa `AdminStoreContext` ou seletor próprio).
+14. Oportunidades em 26 segmentos (restaurantes, kebab, pizzaria, bar, café, sorveteria, padaria, food truck, dark kitchen, hotel/room service, conveniência, mercado, pet shop, farmácia, franquias, etc.) com % aderência + gaps + potencial · 15. Matriz de expansão · 16. Comparativo com 7 concorrentes · 17. Top 30 funcionalidades de alto impacto · 18. Novas fontes de receita · 19. Visão de futuro + roadmap 3/6/12/24 meses · 20. Nota final + "investiria meu dinheiro?".
 
-Cinco blocos com botão grande e descrição curta:
+**QA visual obrigatório:** converto cada página para imagem e inspeciono antes de entregar (sem texto cortado, sem sobreposição).
 
-1. **Pedido Teste — Mesa**
-  - Selector de mesa (carrega `tables` da loja)
-  - Botão "Enviar Pedido Teste – Mesa"
-2. **Pedido Teste — Balcão** (takeaway)
-  - Botão único
-3. **Pedido Teste — Delivery**
-  - Botão único; usa endereço fake (`Rua Teste 123, Cidade Teste`) e a primeira `delivery_zone` ativa da loja
-4. **Testar Notificações** (não cria pedido)
-  - Chama edge function `send-push-notification` com payload de teste + dispara som/vibração local via `panelAlerts`
-5. **Simulação Completa Automática**
-  - Cria pedido delivery teste
-  - Avança status a cada N segundos (configurável, default 5s): `pending → preparing → ready → out_for_delivery → delivered`
-  - Log visual em tempo real do progresso
+---
 
-Banner permanente no topo: "Pedidos de teste aparecem com a tag [TESTE] e não entram em métricas/faturamento."
+## Parte 2 — Assistente vira Especialista Total
 
-### Visual diferenciado
+**Problema atual:** o `SYSTEM_PROMPT` da edge function `admin-assistant` é curto e genérico → ela responde "não tenho acesso ao código".
 
-Cards de pedido (`OpsOrderCard`, KDS, painel) detectam `is_test` e adicionam:
+**Correção:** reescrever **só** o `SYSTEM_PROMPT` em `supabase/functions/admin-assistant/index.ts` embutindo todo o conhecimento da auditoria (módulos, 49 tabelas, roles, integrações, fluxos de pedido, impressão, fiscal, comparativos, roadmap, segmentos). Adiciono instrução explícita: *"Você TEM o mapa completo do sistema; nunca diga que não tem acesso ao código"*.
 
-- Badge amarelo "[TESTE]" no topo
-- Borda tracejada amarela (`border-dashed border-yellow-400`)
-- Tooltip "Pedido de teste — não conta em métricas"
+Resultado: o **mesmo prompt** mandado no chat flutuante roxo gera uma auditoria equivalente, em streaming.
 
-### Edge function
+Arquivo alterado: `supabase/functions/admin-assistant/index.ts` (só o prompt — sem mexer em UI).
 
-Nova função `simulate-test-order` (server-side) que:
+---
 
-- Valida que o caller é `admin_master`
-- Recebe `{ storeId, mode: 'dine_in'|'takeaway'|'delivery', tableId? }`
-- Pega 1-2 produtos aleatórios ativos da loja
-- Insere direto em `orders` + `order_items` com `is_test = true`, `payment_status = 'paid'` (não passa por Stripe), `notes = '[TESTE] Pedido de teste do sistema.'`
-- Retorna o `order_id` criado
-- O trigger `trg_orders_staff_push` já dispara push automaticamente
+## Parte 3 — Conversa não se perde mais + memória contínua + botão copiar visível
 
-Função auxiliar `advance-test-order-status` para o modo "Simulação Completa" (avança um status).
+Mudanças em `src/components/admin/AdminAssistant.tsx`:
 
-### Permissões
+1. **Não apagar ao fechar/minimizar/recarregar.** Hoje `messages` e `conversationId` vivem só em `useState` → somem quando você fecha. Vou:
+   - Salvar `conversationId` em `localStorage` (`wgm.assistant.activeConv`).
+   - Ao abrir o chat, recarregar as mensagens da conversa ativa de `ai_messages` (já existe a tabela, só não lê de volta).
+   - Botão **lixeira** novo no header → único jeito de zerar (cria conversa nova).
 
-Toda a página e edge functions exigem `has_role(auth.uid(), 'admin_master')`. Operadores comuns nunca veem nem disparam.
+2. **Memória contínua na conversa.** Hoje já envia `messages: next` para a edge function (histórico completo da sessão), então a IA já tem contexto da conversa atual. Com a persistência acima, ao reabrir o chat ela continua sabendo do que estavam falando, porque o histórico volta do banco e é reenviado.
 
-### Arquivos
+3. **Botão copiar sempre visível** (hoje só aparece no hover): trocar `opacity-0 group-hover:opacity-100` por `opacity-70 hover:opacity-100` no botão de copiar de cada resposta da IA, igual ao padrão dos prompts do Lovable.
 
-**Novos:**
+---
 
-- `supabase/migrations/<ts>_orders_is_test.sql` — adiciona coluna + atualiza RPCs
-- `supabase/functions/simulate-test-order/index.ts`
-- `supabase/functions/advance-test-order-status/index.ts`
-- `src/views/admin/OrderSimulatorPage.tsx`
-- `src/components/admin/simulator/SimulatorCard.tsx`
-- `src/components/admin/simulator/TestOrderBadge.tsx`
+## Ordem de execução (modo build)
 
-**Editados:**
+1. Varredura final (rotas, hooks, tabelas) para precisão do PDF.
+2. Reescrever `SYSTEM_PROMPT` da edge function (deploy automático).
+3. Editar `AdminAssistant.tsx` (persistência + lixeira + copiar visível).
+4. Gerar PDF com `reportlab` em `/mnt/documents/`, fazer QA visual, entregar como artifact baixável.
 
-- `src/routes/AppRoutes.tsx` (+ registry) — registrar rota
-- Sidebar do Admin Master — link "Ferramentas → Simulador de Pedidos"
-- `src/features/ops/OpsOrderCard.tsx` + KDS card — render do badge `[TESTE]`
-- `src/integrations/supabase/types.ts` — regenerado após migration
-
-### Notas técnicas
-
-- O simulador **não** chama Stripe; marca `payment_status = 'paid'` direto para não travar fluxo
-- A migração filtra `is_test` em todos os agregados existentes mantendo assinatura das funções
-- Para "Testar Notificações" sem pedido, chamamos `send-push-notification` direto com `audience='staff'` + `storeId`, e localmente disparamos `panelAlerts.playNewOrderAlert()` para o som/vibração imediatos  
-  
-só acrescentaria 4 melhorias para evitar problemas futuros:
-  ### 1. Limpeza automática dos pedidos teste
-  Adicionar:
-  > Criar botão "Limpar Todos os Pedidos de Teste" que remove automaticamente todos os pedidos com `is_test = true`.
-  >
-  > Também adicionar limpeza automática após 7 dias para evitar acúmulo de registros desnecessários no banco.
-  ---
-  ### 2. Teste específico da impressora
-  Hoje você só testa o pedido completo.
-  Adicionar:
-  > Botão "Testar Impressora".
-  >
-  > Deve imprimir imediatamente um ticket padrão de diagnóstico contendo:
-  >
-  > - Nome da loja
-  > - Data e hora
-  > - Modelo da impressora
-  > - Endereço IP da impressora
-  > - Texto "IMPRESSÃO DE TESTE"
-  >
-  > Sem criar pedido.
-  Isso ajuda quando o restaurante fala:
-  > "Não sei se o problema é a impressora ou o pedido."
-  ---
-  ### 3. Teste específico do entregador
-  Adicionar:
-  > Botão "Simular Entregador".
-  >
-  > Cria pedido delivery teste e envia imediatamente para o painel do entregador.
-  >
-  > Deve gerar:
-  >
-  > - Código de confirmação
-  > - Notificação do entregador
-  > - Fluxo de aceite
-  > - Fluxo de entrega
-  Porque delivery costuma ser o ponto mais difícil de validar.
-  ---
-  ### 4. Painel de diagnóstico
-  Essa é a melhoria mais importante.
-  Adicionar uma seção:
-  # Diagnóstico do Sistema
-  Mostrar em tempo real:
-  ✅ Impressora conectada
-  ✅ Push configurado
-  ✅ Firebase conectado
-  ✅ Operador online
-  ✅ Cozinha online
-  ✅ Entregador online
-  ✅ Som habilitado
-  ✅ Vibração habilitada
-  ✅ Permissão de notificação concedida
-  ✅ Tablet em Keep Awake
-  Última impressão: 21:44
-  Último push enviado: 21:45
-  Último pedido recebido: 21:46
-  ---
-  Com isso você transforma o simulador em uma ferramenta de suporte.
-  Quando um restaurante disser:
-  > "Não está chegando pedido"
-  Você entra no Admin Master e em 10 segundos sabe exatamente se o problema é:
-  - impressora
-  - internet
-  - push
-  - operador offline
-  - entregador offline
-  - Firebase
-  - permissão do tablet
-  Sem precisar ficar investigando manualmente.
+**Sem migration nova, sem mexer em layout, sem quebrar fluxos existentes.** Posso seguir?

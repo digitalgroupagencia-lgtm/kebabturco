@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -85,14 +86,11 @@ const SettingsPage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <SettingsIcon className="h-6 w-6" /> Configurações Globais
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Tudo aqui é persistido e aplicado em toda a plataforma.
-        </p>
-      </div>
+      <PremiumPageHeader
+        icon={SettingsIcon}
+        title="Configurações globais"
+        subtitle="Tudo aqui é persistido e aplicado em toda a plataforma."
+      />
 
       <Tabs defaultValue="platform" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">

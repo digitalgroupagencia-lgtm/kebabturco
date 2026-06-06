@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, ChefHat, Package, CheckCircle2, RefreshCw, Radio, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
+import { useStaffT } from "@/hooks/useStaffT";
 import type { PanelOrder, PanelConnectionStatus } from "./usePanelOrders";
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -26,12 +27,6 @@ interface OpsOrdersLayoutProps {
   variant?: "live" | "default";
 }
 
-const connectionLabel: Record<PanelConnectionStatus, { text: string; className: string }> = {
-  connecting: { text: "A ligar…", className: "text-muted-foreground" },
-  live: { text: "Tempo real", className: "text-success" },
-  backup: { text: "Modo reserva", className: "text-amber-600" },
-};
-
 const OpsOrdersLayout = ({
   columns,
   orders,
@@ -42,10 +37,17 @@ const OpsOrdersLayout = ({
   headerExtra,
   variant = "default",
 }: OpsOrdersLayoutProps) => {
+  const { t } = useStaffT();
   const countByStatus = (status: OrderStatus) =>
     orders.filter((o) => panelColumnStatus(o.status) === status).length;
 
-  const title = variant === "live" ? "Pedidos ao vivo" : "Pedidos activos";
+  const connectionLabel: Record<PanelConnectionStatus, { text: string; className: string }> = {
+    connecting: { text: t("ops.layout.conn.connecting"), className: "text-muted-foreground" },
+    live: { text: t("ops.layout.conn.live"), className: "text-success" },
+    backup: { text: t("ops.layout.conn.backup"), className: "text-amber-600" },
+  };
+
+  const title = variant === "live" ? t("ops.layout.title.live") : t("ops.layout.title.active");
 
   return (
     <div className="space-y-4">
@@ -71,7 +73,7 @@ const OpsOrdersLayout = ({
               disabled={refreshing}
             >
               <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
-              Actualizar
+              {t("common.refresh")}
             </Button>
           )}
         </div>

@@ -391,6 +391,44 @@ export const STAFF_I18N = {
   "mkt.push.err.empty": { es: "Complete título y mensaje", pt: "Preencha título e mensagem", en: "Fill in title and message" },
   "mkt.push.toast.sent": { es: "¡Notificación enviada a los clientes con la app instalada!", pt: "Notificação enviada aos clientes com a app instalada!", en: "Notification sent to customers with the app installed!" },
   "mkt.push.toast.error": { es: "No se pudo enviar. Inténtelo de nuevo.", pt: "Não foi possível enviar. Tente novamente.", en: "Couldn't send. Try again." },
+
+  // --- Ops layout / board ---
+  "ops.layout.title.live": { es: "Pedidos en vivo", pt: "Pedidos ao vivo", en: "Live orders" },
+  "ops.layout.title.active": { es: "Pedidos activos", pt: "Pedidos ativos", en: "Active orders" },
+  "ops.layout.conn.connecting": { es: "Conectando…", pt: "A ligar…", en: "Connecting…" },
+  "ops.layout.conn.live": { es: "Tiempo real", pt: "Tempo real", en: "Real time" },
+  "ops.layout.conn.backup": { es: "Modo respaldo", pt: "Modo reserva", en: "Backup mode" },
+  "ops.mode.all": { es: "Todos", pt: "Todos", en: "All" },
+  "ops.mode.kitchen": { es: "Cocina", pt: "Cozinha", en: "Kitchen" },
+  "ops.mode.counter": { es: "Mostrador", pt: "Balcão", en: "Counter" },
+  "ops.mode.table": { es: "Mesa", pt: "Mesa", en: "Table" },
+  "ops.mode.delivery": { es: "Entrega", pt: "Entrega", en: "Delivery" },
+  "ops.card.test_badge": { es: "PRUEBA", pt: "TESTE", en: "TEST" },
+  "ops.card.test_hint": { es: "Pedido de prueba — no cuenta en métricas", pt: "Pedido de teste — não conta em métricas", en: "Test order — does not count in metrics" },
+  "ops.card.assigned": { es: "Asignado", pt: "Atribuído", en: "Assigned" },
+  "ops.card.on_the_way": { es: "En camino", pt: "A caminho", en: "On the way" },
+  "ops.card.cancel": { es: "Cancelar pedido", pt: "Cancelar pedido", en: "Cancel order" },
+  "ops.card.blocked_until_paid": { es: "Mostrador solo va a cocina tras confirmar pago.", pt: "Balcão só vai para cozinha após confirmar pagamento.", en: "Counter only goes to kitchen after payment is confirmed." },
+  "ops.card.registering": { es: "Registrando…", pt: "A registar…", en: "Registering…" },
+  "ops.card.confirm_payment": { es: "Confirmar pago", pt: "Confirmar pagamento", en: "Confirm payment" },
+
+  // --- Print status bar ---
+  "print.status.failed": { es: "{count} pedido(s) no se imprimieron", pt: "{count} pedido(s) não foram impressos", en: "{count} order(s) failed to print" },
+  "print.status.hint": { es: "— revise la impresora o reimprima abajo.", pt: "— verifica a impressora ou reimprime abaixo.", en: "— check the printer or reprint below." },
+  "print.status.reprint": { es: "Reimprimir", pt: "Reimprimir", en: "Reprint" },
+  "print.status.resent": { es: "{count} pedido(s) reenviado(s) a impresión", pt: "{count} pedido(s) reenviado(s) para impressão", en: "{count} order(s) resent to printing" },
+  "print.status.none_to_resend": { es: "Ningún pedido para reenviar", pt: "Nenhum pedido para reenviar", en: "No orders to resend" },
+  "print.status.resend_error": { es: "Error al reenviar", pt: "Erro ao reenviar", en: "Resend failed" },
+
+  // --- Delivery layout ---
+  "delivery.layout.section": { es: "Entregas", pt: "Entregas", en: "Deliveries" },
+  "delivery.layout.title": { es: "Panel del repartidor", pt: "Painel do entregador", en: "Driver panel" },
+
+  // --- Dashboard ---
+  "dashboard.subtitle": { es: "Vista general de la tienda — facturación, pedidos y estado del sistema. Para operación en tiempo real, use Pedidos en vivo.", pt: "Visão geral da loja — faturamento, pedidos e estado do sistema. Para operação em tempo real, use Pedidos ao vivo.", en: "Store overview — revenue, orders and system status. For real-time operation, use Live orders." },
+
+  // --- Panel actions ---
+  "panel.delete_test.confirm": { es: "¿Eliminar {count} pedido(s) de prueba de esta tienda? Esta acción no se puede deshacer.", pt: "Apagar {count} pedido(s) de teste desta loja? Esta ação não pode ser desfeita.", en: "Delete {count} test order(s) from this store? This cannot be undone." },
 } as const satisfies Record<string, Record<StaffUiLang, string>>;
 
 

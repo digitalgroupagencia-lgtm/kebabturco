@@ -7,6 +7,7 @@ import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
 import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
+import { useStaffT } from "@/hooks/useStaffT";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   compactCardBorderClass,
@@ -53,6 +54,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onRequestAssignDriver,
   onMarkPaid,
 }: OpsOrderCardProps) {
+  const { t } = useStaffT();
   const payment = getPanelPaymentBadge(order);
   const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
   const actionLabel = getCompactActionLabel(order, viewerRole);
@@ -109,15 +111,15 @@ const OpsOrderCard = memo(function OpsOrderCard({
       >
         <div className="flex items-center gap-1.5 min-w-0 text-xs">
           {isTest && (
-            <Badge className="h-4 px-1 text-[9px] font-black bg-yellow-500 text-black shrink-0" title="Pedido de teste — não conta em métricas">
-              TESTE
+            <Badge className="h-4 px-1 text-[9px] font-black bg-yellow-500 text-black shrink-0" title={t("ops.card.test_hint")}>
+              {t("ops.card.test_badge")}
             </Badge>
           )}
           <span className="font-black text-sm tabular-nums shrink-0">#{order.order_number}</span>
           <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold shrink-0">
             {getModalityShortLabel(order)}
           </Badge>
-          <span className="truncate font-medium flex-1 min-w-0">{order.customer_name || "Cliente"}</span>
+          <span className="truncate font-medium flex-1 min-w-0">{order.customer_name || t("common.customer")}</span>
           <span className="text-[10px] text-muted-foreground shrink-0">{itemCount}it</span>
           <span className="font-black text-primary text-xs tabular-nums shrink-0">€{Number(order.total).toFixed(2)}</span>
           <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -136,11 +138,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
           )}
           {awaitingDriver && (
             <Badge variant="secondary" className="h-4 px-1 text-[9px] gap-0.5">
-              <Bike className="h-2 w-2" /> {driverName || "Atribuído"}
+              <Bike className="h-2 w-2" /> {driverName || t("ops.card.assigned")}
             </Badge>
           )}
           {onTheWay && (
-            <Badge className="h-4 px-1 text-[9px] bg-orange-600">A caminho</Badge>
+            <Badge className="h-4 px-1 text-[9px] bg-orange-600">{t("ops.card.on_the_way")}</Badge>
           )}
         </div>
 
@@ -149,7 +151,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
         )}
         {blockedUntilPaid && (
           <p className="mt-0.5 text-[9px] font-semibold text-foreground">
-            Balcão só vai para cozinha após confirmar pagamento.
+            {t("ops.card.blocked_until_paid")}
           </p>
         )}
       </button>
@@ -177,7 +179,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
                     e.stopPropagation();
                     onCancel(order.id);
                   }}
-                  aria-label="Cancelar pedido"
+                  aria-label={t("ops.card.cancel")}
                 >
                   <XCircle className="h-3.5 w-3.5" />
                 </Button>
@@ -201,7 +203,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
               }}
             >
               <Banknote className="h-3 w-3 mr-1" />
-              {payingNow ? "A registar…" : `Confirmar pagamento €${Number(order.total).toFixed(2)}`}
+              {payingNow ? t("ops.card.registering") : `${t("ops.card.confirm_payment")} €${Number(order.total).toFixed(2)}`}
             </Button>
           )}
         </div>

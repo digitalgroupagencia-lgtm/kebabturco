@@ -37,7 +37,7 @@ import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "cashPending" | "confirmation" | "tracking" | "account";
 export type { Screen };
-export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link";
+export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link" | "redsys" | "bizum";
 export type AccountFocus = "orders" | "profile";
 
 interface OrderContextType {

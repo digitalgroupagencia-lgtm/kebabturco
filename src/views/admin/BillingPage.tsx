@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, CreditCard, Users as UsersIcon, ShoppingBag, DollarSign } from "lucide-react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumSection from "@/components/admin/premium/PremiumSection";
 
 const BillingPage = () => {
   const { data: tenants, isLoading } = useQuery({
@@ -47,71 +49,55 @@ const BillingPage = () => {
   const totalMRR = tenants?.reduce((sum, t) => sum + (planPrices[t.plan || "start"] || 0), 0) ?? 0;
 
   return (
-    <div className="space-y-6 max-w-full">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold">Planos & Cobrança</h2>
-        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-          MRR e preços por plano são valores de referência interna — não usar para facturação real.
-        </p>
+    <div className="space-y-5 max-w-full">
+      <PremiumPageHeader
+        icon={CreditCard}
+        title="Planos & Cobrança"
+        subtitle="MRR e preços por plano são valores de referência interna — não usar para facturação real."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <PremiumMetricCard
+          icon={DollarSign}
+          label="MRR Total (ref.)"
+          value={`R$ ${totalMRR.toFixed(2)}`}
+          tone="success"
+        />
+        <PremiumMetricCard
+          icon={UsersIcon}
+          label="Clientes pagantes"
+          value={tenants?.filter((t) => t.plan && t.plan !== "start").length ?? 0}
+          tone="primary"
+        />
+        <PremiumMetricCard
+          icon={ShoppingBag}
+          label="Pedidos (mês)"
+          value={Object.values(orderCounts ?? {}).reduce((a, b) => a + b, 0)}
+          tone="info"
+        />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">MRR Total (ref.)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ {totalMRR.toFixed(2)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Clientes Pagantes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {tenants?.filter((t) => t.plan && t.plan !== "start").length ?? 0}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Pedidos (mês)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Object.values(orderCounts ?? {}).reduce((a, b) => a + b, 0)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Uso por Cliente</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
+      <PremiumSection icon={UsersIcon} title="Uso por cliente" description="Pedidos do mês por tenant">
+        <div className="space-y-2">
           {tenants?.map((t) => {
             const used = orderCounts?.[t.id] ?? 0;
             return (
-              <div key={t.id} className="space-y-1 pb-4 border-b last:border-b-0 last:pb-0">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    <span className="font-semibold truncate">{t.name}</span>
-                    <Badge variant="outline" className="uppercase">{t.plan || "start"}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      ref. R$ {planPrices[t.plan || "start"] || 0}/mês
-                    </span>
-                  </div>
-                  <span className="text-xs sm:text-sm tabular-nums shrink-0 text-muted-foreground">
-                    {used} pedidos este mês
+              <div key={t.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="font-semibold truncate text-sm">{t.name}</span>
+                  <Badge variant="outline" className="uppercase text-[10px]">{t.plan || "start"}</Badge>
+                  <span className="text-[11px] text-muted-foreground">
+                    ref. R$ {planPrices[t.plan || "start"] || 0}/mês
                   </span>
                 </div>
+                <span className="text-xs sm:text-sm tabular-nums shrink-0 font-semibold">
+                  {used} <span className="text-muted-foreground font-normal">pedidos / mês</span>
+                </span>
               </div>
             );
           })}
-        </CardContent>
-      </Card>
+        </div>
+      </PremiumSection>
     </div>
   );
 };

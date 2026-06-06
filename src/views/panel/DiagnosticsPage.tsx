@@ -17,7 +17,10 @@ import {
   Truck,
   Store,
   Shield,
+  Copy,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { APP_BUILD_ID } from "@/lib/appCacheBust";
@@ -282,6 +285,19 @@ function SummaryTile({
   );
 }
 
+function buildFindingClipboard(f: AuditFinding): string {
+  const lines = [
+    `[Auditoria — ${f.severity.toUpperCase()}] ${f.label}`,
+    f.detail ? `Detalhe: ${f.detail}` : null,
+    f.action ? `Acção sugerida: ${f.action}` : null,
+    f.link ? `Tela: ${f.link}` : null,
+    f.category ? `Categoria: ${f.category}` : null,
+    f.panel ? `Painel: ${f.panel}` : null,
+    `ID interno: ${f.id}`,
+  ].filter(Boolean);
+  return lines.join("\n");
+}
+
 function FindingCard({ f }: { f: AuditFinding }) {
   const meta = SEVERITY_META[f.severity];
   const Icon = meta.icon;
@@ -290,6 +306,23 @@ function FindingCard({ f }: { f: AuditFinding }) {
   const linkPath = f.link?.split("?")[0];
   const isSelfLink = linkPath === currentPath;
   const showLink = f.link && !isSelfLink;
+  const isIssue = f.severity !== "ok";
+  const findingText = buildFindingClipboard(f);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(findingText);
+      toast.success("Detalhes copiados");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  const handleAskAssistant = () => {
+    const text = `Olha este problema da auditoria e me explica passo-a-passo o que é, por que aconteceu, e exactamente o que eu tenho de fazer para resolver (incluindo onde clicar no painel, onde obter credenciais externas e o que digitar no terminal se aplicável):\n\n${findingText}`;
+    window.dispatchEvent(new CustomEvent("assistant:ask", { detail: { text } }));
+  };
+
   return (
     <Card className={`border-2 ${meta.ring}`}>
       <CardContent className="p-4 flex gap-3">
@@ -305,15 +338,39 @@ function FindingCard({ f }: { f: AuditFinding }) {
             <p className="text-xs text-muted-foreground mt-1 break-words">{f.detail}</p>
           )}
           {f.action && <p className="text-xs font-medium mt-1.5">{f.action}</p>}
-          {showLink && (
-            <Link
-              to={f.link!}
-              className="inline-flex items-center gap-1 text-xs font-bold text-primary mt-2 hover:underline"
-            >
-              {f.linkLabel ?? "Resolver"}
-              <ChevronRight className="h-3 w-3" />
-            </Link>
-          )}
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            {showLink && (
+              <Link
+                to={f.link!}
+                className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+              >
+                {f.linkLabel ?? "Resolver"}
+                <ChevronRight className="h-3 w-3" />
+              </Link>
+            )}
+            {isIssue && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleAskAssistant}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-primary px-2 py-1 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors"
+                  title="Envia este problema ao Assistente IA com pedido de instruções detalhadas"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Perguntar ao Assistente IA
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md border border-border hover:border-foreground/30 transition-colors"
+                  title="Copia título, detalhe, acção e tela deste problema"
+                >
+                  <Copy className="h-3 w-3" />
+                  Copiar
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -22,11 +22,12 @@ const SplashScreen = () => {
   const longPressTimer = useRef<number | null>(null);
 
   const isDark = theme === "dark";
+  // Fallbacks Master Template: nunca quebrar se company_settings estiver vazio
   const logo =
     (isDark && (settings as any)?.logo_main_dark_url) ||
     settings?.logo_main_url ||
-    null;
-  const brandName = settings?.company_name || "";
+    "/placeholder.svg";
+  const brandName = settings?.company_name || "Template Restaurant";
 
 
   useEffect(() => {

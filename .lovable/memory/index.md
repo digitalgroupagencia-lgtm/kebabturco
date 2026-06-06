@@ -26,3 +26,4 @@ Usuário prefere instruções simples, sem edição manual. Fala português.
 - [Rotas do preview](mem://features/preview-routes) — Lista curada do dropdown
 - [Módulo Vendedor](mem://features/seller-module) — App vendedor, mesas, pedidos
 - [Conhecimento do Assistente IA](mem://features/assistant-knowledge) — Atualizar SYSTEM_PROMPT a cada mudança
+- [Master Template white-label](mem://features/master-template) — Bootstrap SQL, versionamento, propagação de updates entre clones

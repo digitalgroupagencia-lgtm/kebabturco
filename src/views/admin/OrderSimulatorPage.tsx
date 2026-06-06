@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import { FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { playTestAlert } from "@/lib/panelAlerts";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 type Store = { id: string; name: string };
 type Table = { id: string; number: string };
@@ -247,13 +250,23 @@ export default function OrderSimulatorPage() {
 
   return (
     <div className="space-y-4 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold">Simulador de Pedidos</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Ferramenta de testes operacionais. Os pedidos criados aqui aparecem com a tag <Badge className="bg-yellow-500 text-black mx-1">[TESTE]</Badge>
-          e <strong>não entram</strong> em faturamento, relatórios, estatísticas, ranking ou estoque.
-        </p>
-      </div>
+      <HowToUsePanel
+        purpose="Cria pedidos de teste com a tag [TESTE]. Servem para validar som, push, impressão e fluxo sem sujar a contabilidade."
+        whenToUse="Use ao instalar um restaurante novo, ao trocar de impressora, ou quando alguém reclama que não tocou."
+        steps={[
+          "Escolha a loja a testar.",
+          "Use o assistente em passos: ele dispara som → push → cria pedido → confere impressão → limpa.",
+          "Confirme que tocou som, vibração e que a comanda saiu na impressora.",
+          "Os pedidos teste são removidos automaticamente. NUNCA aparecem em faturamento.",
+        ]}
+        howToConfirm="Se todos os 6 passos ficarem verdes, a operação está pronta. Vermelho = veja o detalhe e corrija."
+        assistantQuestion="Quando devo rodar o Simulador de Pedidos e o que cada um dos 6 passos verifica?"
+      />
+      <PremiumPageHeader
+        icon={FlaskConical}
+        title="Simulador de pedidos"
+        subtitle="Pedidos de teste — não entram em faturação, relatórios, ranking ou estoque."
+      />
 
       <Card>
         <CardHeader>

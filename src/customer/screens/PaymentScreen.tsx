@@ -46,15 +46,20 @@ import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import PhoneInput from "@/components/PhoneInput";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle, Landmark, Wallet, Sparkles } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
 import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
 import { useSellerMode } from "@/contexts/SellerModeContext";
+import { useCheckoutExtraGatewayVisibility } from "@/hooks/useStorePaymentGateways";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
   { id: "card", icon: CreditCard },
+  { id: "redsys", icon: Landmark },
+  { id: "bizum", icon: Wallet },
   { id: "cash", icon: Banknote },
   { id: "pix", icon: QrCode },
   { id: "apple", icon: Smartphone },
@@ -65,6 +70,8 @@ const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
 
 const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Cartão", en: "Card", es: "Tarjeta", fr: "Carte" },
+  redsys: { pt: "Redsys", en: "Redsys", es: "Redsys (TPV)", fr: "Redsys" },
+  bizum: { pt: "Bizum", en: "Bizum", es: "Bizum", fr: "Bizum" },
   cash: { pt: "Dinheiro", en: "Cash", es: "Efectivo", fr: "Espèces" },
   pix: { pt: "Pix", en: "Pix", es: "Pix", fr: "Pix" },
   apple: { pt: "Apple Pay", en: "Apple Pay", es: "Apple Pay", fr: "Apple Pay" },
@@ -75,6 +82,8 @@ const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
 
 const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Pagamento seguro online", en: "Secure online payment", es: "Pago seguro online", fr: "Paiement sécurisé en ligne" },
+  redsys: { pt: "TPV bancário Espanha (em implementação)", en: "Spanish bank TPV (coming soon)", es: "TPV bancario España (en implementación)", fr: "TPV bancaire Espagne (bientôt)" },
+  bizum: { pt: "Pagamento por telemóvel (em implementação)", en: "Mobile payment (coming soon)", es: "Pago con móvil (en implementación)", fr: "Paiement mobile (bientôt)" },
   cash: { pt: "Pagamento no caixa", en: "Pay at register", es: "Pago en caja", fr: "Paiement à la caisse" },
   pix: { pt: "Pagamento instantâneo", en: "Instant payment", es: "Pago instantáneo", fr: "Paiement instantané" },
   apple: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
@@ -82,6 +91,8 @@ const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   link: { pt: "Receba um link", en: "Get a link", es: "Recibe un enlace", fr: "Recevoir un lien" },
   counter: { pt: "Pague ao retirar", en: "Pay when picking up", es: "Paga al recoger tu pedido", fr: "Payer au retrait" },
 };
+
+const UNDER_CONSTRUCTION_METHODS: ReadonlySet<PaymentMethodId> = new Set(["redsys", "bizum"]);
 
 const hiddenCheckoutFeature = (_name: string) => false;
 
@@ -139,6 +150,7 @@ const PaymentScreen = () => {
     estimatedStripeFeeCents: number;
     stripeConnectAccountId: string;
     connectEnvironment?: StripePublishableEnvironment;
+    publishableKey?: string | null;
   } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
@@ -229,6 +241,9 @@ const PaymentScreen = () => {
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
+  const { data: extraGatewayVisibility } = useCheckoutExtraGatewayVisibility(storeId);
+  const [underConstructionMethod, setUnderConstructionMethod] = useState<PaymentMethodId | null>(null);
+
   const checkoutMethods = useMemo(() => {
     if (!orderType) return [];
     const ids = resolveCheckoutMethods({
@@ -238,8 +253,16 @@ const PaymentScreen = () => {
       stripeReady: stripeEnabled,
       stripePublishableKey,
     });
-    return METHOD_DEFS.filter((m) => ids.includes(m.id));
-  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
+    const extras: PaymentMethodId[] = [];
+    if (extraGatewayVisibility?.redsys) extras.push("redsys");
+    if (extraGatewayVisibility?.bizum) extras.push("bizum");
+    const filteredExtras = extras.filter((id) => {
+      if (orderType === "here" && !mesaValidated) return false;
+      return true;
+    });
+    const allIds = [...ids, ...filteredExtras];
+    return METHOD_DEFS.filter((m) => allIds.includes(m.id));
+  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey, extraGatewayVisibility]);
 
   const grandTotal = restaurantPortionEur;
 
@@ -512,6 +535,7 @@ const PaymentScreen = () => {
       estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
       stripeConnectAccountId: pi.stripeConnectAccountId,
       connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
+      publishableKey: pi.publishableKey ?? null,
     });
     if (pi.connectEnvironment) {
       setStripeConnectEnvironment(pi.connectEnvironment);
@@ -565,6 +589,11 @@ const PaymentScreen = () => {
       return;
     }
 
+    if (UNDER_CONSTRUCTION_METHODS.has(selected)) {
+      setUnderConstructionMethod(selected);
+      return;
+    }
+
     if (selected === "card") {
       if (!stripePublishableKey) {
         setShowError("method");
@@ -604,8 +633,41 @@ const PaymentScreen = () => {
     return <SellerCheckoutForm />;
   }
 
+  const underConstructionLabel = underConstructionMethod
+    ? (METHOD_LABELS[underConstructionMethod]?.pt ?? underConstructionMethod)
+    : "";
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+      <Dialog
+        open={!!underConstructionMethod}
+        onOpenChange={(o) => { if (!o) setUnderConstructionMethod(null); }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              {underConstructionLabel} — indisponível
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-left space-y-2">
+              <span className="block">
+                Este método de pagamento ainda não está disponível neste restaurante.
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Por favor escolha <strong>Cartão</strong> ou <strong>Efectivo</strong> para
+                finalizar o pedido.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => setUnderConstructionMethod(null)}>
+              Voltar e escolher outro
+            </Button>
+          </DialogFooter>
+
+        </DialogContent>
+      </Dialog>
+
       <StoreClosedDialog
         open={closedDialog}
         status={openStatus}
@@ -684,6 +746,7 @@ const PaymentScreen = () => {
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
               connectEnvironment={stripePaymentMeta?.connectEnvironment ?? stripeConnectEnvironment}
+              publishableKey={stripePaymentMeta?.publishableKey}
               onCancel={() => {
                 setStripeClientSecret(null);
                 setStripePaymentIntentId(null);

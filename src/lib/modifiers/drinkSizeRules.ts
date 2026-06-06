@@ -76,7 +76,7 @@ export function resolveDrinkSizeRuleForProduct(product: MenuProduct): DrinkSizeR
 }
 
 export const DEFAULT_DRINK_LABELS: Record<DrinkSizeRule, string[]> = {
-  "2l": ["Coca-Cola 2L", "Fanta Naranja 2L", "Sprite 2L", "Nestea 2L"],
+  "2l": ["Coca-Cola 2L", "Fanta Naranja 2L"],
   "33cl": ["Coca-Cola Lata 33cl", "Fanta Naranja Lata 33cl", "Sprite Lata 33cl"],
   "125l": ["Coca-Cola 1.25L", "Fanta Naranja 1.25L", "Sprite 1.25L"],
   small_water: ["Agua Pequeña", "Agua Mineral 50cl"],

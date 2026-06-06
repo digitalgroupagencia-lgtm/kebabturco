@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, DollarSign, TrendingUp, ShoppingBag } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, DollarSign, TrendingUp, ShoppingBag, Activity, Building2, Store } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumSection from "@/components/admin/premium/PremiumSection";
 
 const MonitoringPage = () => {
   const { data: tenants, isLoading } = useQuery({
@@ -94,90 +97,46 @@ const MonitoringPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Monitoramento</h2>
-        <Badge variant="outline" className="text-xs">Auto-refresh 30s</Badge>
-      </div>
+      <HowToUsePanel
+        purpose="Estado do sistema em tempo real: restaurantes ativos, lojas, pedidos da última hora e saúde geral da plataforma."
+        whenToUse="Abra quando suspeitar que algo está parado (sem pedidos, impressão falhando, plataforma lenta)."
+        steps={[
+          "Confira o cartão Restaurantes Ativos — deve mostrar todos os clientes em produção.",
+          "Pedidos da última hora atualiza a cada 30 segundos.",
+          "Se ver muitos vermelhos ou nada chegando, abra Centro de Testes e Diagnóstico.",
+        ]}
+        howToConfirm="Plataforma saudável = restaurantes ativos > 0 e pelo menos um pedido na última hora durante horário comercial."
+        assistantQuestion="Como sei se a plataforma está saudável e o que olhar primeiro quando algo parece travado?"
+      />
+      <PremiumPageHeader
+        icon={Activity}
+        title="Monitoramento"
+        subtitle="Saúde da plataforma em tempo real"
+        badge={<Badge variant="outline" className="text-[10px] gap-1"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Auto-refresh 30s</Badge>}
+      />
 
-      {/* Financial overview */}
       <div>
-        <h3 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Financeiro da plataforma</h3>
+        <h3 className="text-[11px] font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Financeiro da plataforma</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5" /> Faturamento hoje
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{fmt(financial?.totalToday ?? 0)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5" /> Faturamento mês
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{fmt(financial?.totalMonth ?? 0)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <ShoppingBag className="w-3.5 h-3.5" /> Pedidos hoje
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{financial?.ordersToday ?? 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <ShoppingBag className="w-3.5 h-3.5" /> Pedidos mês
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{financial?.ordersMonth ?? 0}</div>
-            </CardContent>
-          </Card>
+          <PremiumMetricCard icon={DollarSign} label="Faturação hoje" value={fmt(financial?.totalToday ?? 0)} tone="success" />
+          <PremiumMetricCard icon={TrendingUp} label="Faturação mês" value={fmt(financial?.totalMonth ?? 0)} tone="primary" />
+          <PremiumMetricCard icon={ShoppingBag} label="Pedidos hoje" value={financial?.ordersToday ?? 0} tone="info" />
+          <PremiumMetricCard icon={ShoppingBag} label="Pedidos mês" value={financial?.ordersMonth ?? 0} tone="purple" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Tenants Ativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tenants?.filter((t) => t.is_active).length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Lojas Ativas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stores?.filter((s) => s.is_active).length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Pedidos (última hora)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recentOrders?.length ?? 0}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <PremiumMetricCard icon={Building2} label="Tenants ativos" value={tenants?.filter((t) => t.is_active).length ?? 0} tone="primary" />
+        <PremiumMetricCard icon={Store} label="Lojas ativas" value={stores?.filter((s) => s.is_active).length ?? 0} tone="info" />
+        <PremiumMetricCard icon={Activity} label="Pedidos (última hora)" value={recentOrders?.length ?? 0} tone="success" />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Status por Cliente</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <PremiumSection
+        icon={Building2}
+        title="Status por cliente"
+        description="Estado operacional e faturação por tenant"
+      >
+        <div className="space-y-2">
           {tenants?.map((t) => {
             const tStores = storesByTenant[t.id] ?? [];
             const hasActivity = tStores.some((s) => (ordersPerStore[s.id] ?? 0) > 0);
@@ -189,35 +148,45 @@ const MonitoringPage = () => {
               (sum, s) => sum + (financial?.byStore[s.id]?.orders ?? 0),
               0,
             );
+            const statusColor = !t.is_active
+              ? "bg-destructive/10 text-destructive"
+              : hasActivity
+                ? "bg-success/10 text-success"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400";
             return (
-              <div key={t.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-muted/30">
+              <div
+                key={t.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
+              >
                 <div className="flex items-center gap-3 min-w-0">
-                  {!t.is_active ? (
-                    <XCircle className="w-5 h-5 text-destructive" />
-                  ) : hasActivity ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                  )}
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${statusColor}`}>
+                    {!t.is_active ? (
+                      <XCircle className="w-5 h-5" />
+                    ) : hasActivity ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5" />
+                    )}
+                  </div>
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{tStores.length} lojas</div>
+                    <div className="font-semibold truncate text-sm">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{tStores.length} {tStores.length === 1 ? "loja" : "lojas"}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
-                    <div className="text-sm font-semibold">{fmt(tenantRevenue)}</div>
-                    <div className="text-[10px] text-muted-foreground">{tenantOrders} pedidos no mês</div>
+                    <div className="text-sm font-bold tabular-nums">{fmt(tenantRevenue)}</div>
+                    <div className="text-[10px] text-muted-foreground">{tenantOrders} pedidos / mês</div>
                   </div>
-                  <Badge variant={t.is_active ? "default" : "destructive"}>
+                  <Badge variant={t.is_active ? "default" : "destructive"} className="text-[10px]">
                     {t.is_active ? "Online" : "Inativo"}
                   </Badge>
                 </div>
               </div>
             );
           })}
-        </CardContent>
-      </Card>
+        </div>
+      </PremiumSection>
     </div>
   );
 };

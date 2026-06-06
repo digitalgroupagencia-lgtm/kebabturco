@@ -29,6 +29,18 @@ export function getStripeSecretKeyTest(): string | null {
   return null;
 }
 
+export function getStripePublishableKey(mode: StripeKeyMode = "live"): string | null {
+  const names =
+    mode === "test"
+      ? ["STRIPE_PUBLISHABLE_KEY_TEST", "STRIPE_TEST_PUBLISHABLE_KEY", "VITE_STRIPE_PUBLISHABLE_KEY_TEST"]
+      : ["STRIPE_PUBLISHABLE_KEY", "STRIPE_PUBLIC_KEY", "VITE_STRIPE_PUBLISHABLE_KEY"];
+  for (const name of names) {
+    const value = Deno.env.get(name)?.trim();
+    if (value?.startsWith(mode === "test" ? "pk_test_" : "pk_live_")) return value;
+  }
+  return null;
+}
+
 const WEBHOOK_SECRET_NAMES: Record<StripeKeyMode, string[]> = {
   live: ["STRIPE_WEBHOOK_SECRET", "STRIPE_WEBHOOK_SIGNING_SECRET"],
   test: [

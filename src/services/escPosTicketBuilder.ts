@@ -85,6 +85,113 @@ function writer() {
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
+type W = ReturnType<typeof writer>;
+
+function detectUnitIndex(label: string): number | null {
+  const l = label.toLowerCase();
+  const m =
+    l.match(/(?:pan\s*pita|pita|unidad|item|hamburguesa|burger|durum|wrap|d[oö]ner|kebab)\s*(\d+)/i) ||
+    l.match(/del\s*(\d+)\s*[º°ª\.]?\s*(?:pan|pita|unidad|item)/i) ||
+    l.match(/\b(\d+)\s*[º°ª]\b/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function stripUnitPrefix(label: string): string {
+  return label
+    .replace(/^.*?(?:pan\s*pita|pita|unidad|item|hamburguesa|burger|durum|wrap|d[oö]ner|kebab)\s*\d+\s*[:\-–]\s*/i, "")
+    .replace(/^.*?del\s*\d+\s*[º°ª\.]?\s*(?:pan|pita|unidad|item|hamburguesa)[^:]*[:\-–]\s*/i, "")
+    .trim();
+}
+
+function classifyChoice(label: string): { type: "carne" | "verdura" | "salsa" | "otro"; value: string; isRemoval: boolean } {
+  const l = label.toLowerCase();
+  const isRemoval = /\b(sin|sem|no|sans|without)\b/.test(l);
+  const value = stripUnitPrefix(label);
+  if (/carne|meat|viande|pollo|ternera|cordero|mixto|mixed|mixte|kebab|d[oö]ner/.test(l)) return { type: "carne", value, isRemoval };
+  if (/verdura|veggie|lechuga|tomate|cebol|col\b|salad|pepin|pimien/.test(l)) return { type: "verdura", value, isRemoval };
+  if (/salsa|sauce|molho|ali[oñ]l[ií]|mayo|ketchup|barbacoa|bbq/.test(l)) return { type: "salsa", value, isRemoval };
+  return { type: "otro", value, isRemoval };
+}
+
+function isSpicyYes(label: string): boolean {
+  const l = label.toLowerCase();
+  return /\b(con|com|s[ií]|yes|with|avec)\b/.test(l) && !/\b(sin|sem|no|sans|without)\b/.test(l);
+}
+
+function renderItemExtras(w: W, it: TicketItem) {
+  const extras = it.extras ?? [];
+  const perUnit = new Map<number, typeof extras>();
+  const shared: typeof extras = [];
+  let spicyShared: string | null = null;
+  const spicyPerUnit = new Map<number, string>();
+
+  for (const e of extras) {
+    const lbl = e.name || "";
+    const idx = detectUnitIndex(lbl);
+    if (/picant|spicy|piquant/i.test(lbl)) {
+      const val = `PICANTE: ${isSpicyYes(lbl) ? "SÍ" : "NO"}`;
+      if (idx !== null) spicyPerUnit.set(idx, val);
+      else spicyShared = val;
+      continue;
+    }
+    if (idx !== null) {
+      const arr = perUnit.get(idx) ?? [];
+      arr.push(e);
+      perUnit.set(idx, arr);
+    } else {
+      shared.push(e);
+    }
+  }
+
+  for (const e of shared) {
+    const ex = e.price ? `+ ${e.name} (${e.price.toFixed(2)}€)` : `+ ${e.name}`;
+    w.line(`    ${sanitize(ex)}`);
+  }
+  if (spicyShared) {
+    w.cmd(BOLD_ON);
+    w.line(`    >> ${spicyShared}`);
+    w.cmd(BOLD_OFF);
+  }
+  if (it.removed?.length) w.line(`    - sin ${it.removed.map(sanitize).join(", ")}`);
+
+  const indices = Array.from(perUnit.keys()).sort((a, b) => a - b);
+  for (const idx of indices) {
+    w.line();
+    w.cmd(BOLD_ON);
+    w.line(`  >> PAN PITA ${idx}`);
+    w.cmd(BOLD_OFF);
+    const items = perUnit.get(idx) ?? [];
+    const carnes: string[] = [];
+    const verduras: string[] = [];
+    const salsas: string[] = [];
+    const otros: string[] = [];
+    for (const e of items) {
+      const c = classifyChoice(e.name || "");
+      const display = c.isRemoval
+        ? `Sin ${c.value.replace(/^(sin|sem|no|sans)\s+/i, "")}`
+        : c.value;
+      if (c.type === "carne") carnes.push(display);
+      else if (c.type === "verdura") verduras.push(display);
+      else if (c.type === "salsa") salsas.push(display);
+      else otros.push(display);
+    }
+    if (carnes.length) w.line(`     Carne: ${sanitize(carnes.join(", "))}`);
+    if (verduras.length) w.line(`     Verduras: ${sanitize(verduras.join(", "))}`);
+    if (salsas.length) w.line(`     Salsas: ${sanitize(salsas.join(", "))}`);
+    for (const o of otros) w.line(`     ${sanitize(o)}`);
+    const sp = spicyPerUnit.get(idx);
+    if (sp) {
+      w.cmd(BOLD_ON);
+      w.line(`     ${sp}`);
+      w.cmd(BOLD_OFF);
+    }
+  }
+
+  if (it.notes?.trim()) w.line(`    >> ${sanitize(it.notes.trim())}`);
+}
+
 export interface TicketItem {
   name: string;
   price: number;
@@ -168,15 +275,9 @@ function buildBytes(order: TicketOrder): Uint8Array {
   for (const it of order.items) {
     const name = it.size ? `${it.name} (${it.size})` : it.name;
     w.line(cols(it.quantity.toString(), sanitize(name), it.price.toFixed(2), (it.price * it.quantity).toFixed(2)));
-    if (it.extras?.length) {
-      for (const e of it.extras) {
-        const ex = e.price ? `+ ${e.name} (${e.price.toFixed(2)}€)` : `+ ${e.name}`;
-        w.line(`    ${sanitize(ex)}`);
-      }
-    }
-    if (it.removed?.length) w.line(`    - sin ${it.removed.map(sanitize).join(", ")}`);
-    if (it.notes?.trim()) w.line(`    >> ${sanitize(it.notes.trim())}`);
+    renderItemExtras(w, it);
   }
+
 
   w.line(sep("-"));
   w.line(line2("BASE IMPONIBLE:", `${base.toFixed(2)}€`));

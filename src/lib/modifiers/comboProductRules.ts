@@ -196,7 +196,7 @@ export function defaultRemovableIngredients(product: MenuProduct): string[] {
     return ["Lechuga", "Tomate", "Cebolla", "Pepinillos", "Queso", "Salsas"];
   }
   if (kind === "pita" || kind === "rollo" || kind === "kebab" || kind === "sandwich") {
-    return ["Lechuga", "Col", "Tomate", "Pepino", "Cebolla", "Maíz", "Zanahoria", "Salsas"];
+    return ["Lechuga", "Col", "Tomate", "Cebolla", "Maíz", "Zanahoria", "Salsas"];
   }
   return [];
 }

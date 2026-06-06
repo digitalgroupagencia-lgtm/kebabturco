@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff } from "lucide-react";
+import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy, Trash2, Maximize2, Minimize2, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getUsageSnapshotForPrompt, getUsageSnapshot } from "@/lib/usageTelemetry";
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -20,6 +21,7 @@ const SUGGESTIONS = [
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ACTIVE_CONV_KEY = "wgm.assistant.activeConv";
 
 // Web Speech API types (browser-only)
 type SpeechRecognitionLike = any;
@@ -45,21 +47,73 @@ function extractImages(content: Msg["content"]): string[] {
   return content.filter((p): p is { type: "image_url"; image_url: { url: string } } => p.type === "image_url").map((p) => p.image_url.url);
 }
 
+async function copyText(text: string) {
+  if (!text.trim()) return;
+  await navigator.clipboard.writeText(text);
+  toast.success("Resposta copiada");
+}
+
 export default function AdminAssistant() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    try { return localStorage.getItem(ACTIVE_CONV_KEY); } catch { return null; }
+  });
   const [recording, setRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<SpeechRecognitionLike>(null);
 
+  // Restaura mensagens da conversa ativa ao montar / ao abrir
+  useEffect(() => {
+    if (!conversationId || messages.length > 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("ai_messages")
+        .select("role, content")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        setMessages(data.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })));
+      }
+    })();
+  }, [conversationId, messages.length]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  // Escuta pedidos externos (ex.: botão "Perguntar ao Assistente" da auditoria)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text?: string; autoSend?: boolean }>).detail;
+      const text = (detail?.text ?? "").trim();
+      if (!text) return;
+      setOpen(true);
+      if (detail?.autoSend === false) {
+        setInput(text);
+      } else {
+        // Pequeno delay para garantir que o chat está montado
+        setTimeout(() => { void send(text); }, 50);
+      }
+    };
+    window.addEventListener("assistant:ask", handler as EventListener);
+    return () => window.removeEventListener("assistant:ask", handler as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    setPendingImages([]);
+    setInput("");
+    try { localStorage.removeItem(ACTIVE_CONV_KEY); } catch {}
+    toast.success("Conversa nova iniciada");
+  };
 
   const ensureConversation = async (firstUserMsg: string): Promise<string | null> => {
     if (conversationId) return conversationId;
@@ -74,6 +128,7 @@ export default function AdminAssistant() {
       .single();
     if (error || !data) return null;
     setConversationId(data.id);
+    try { localStorage.setItem(ACTIVE_CONV_KEY, data.id); } catch {}
     return data.id;
   };
 
@@ -153,13 +208,20 @@ export default function AdminAssistant() {
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
+      // Injecta snapshot de telemetria local como contexto adicional do utilizador
+      const usageMsg: Msg = {
+        role: "user",
+        content: `[Contexto automático — não responder directamente]\nRota actual: ${window.location.pathname}\n${getUsageSnapshotForPrompt()}`,
+      };
+      const payloadMessages = [usageMsg, ...next];
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: payloadMessages }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -227,8 +289,12 @@ export default function AdminAssistant() {
 
       {open && (
         <div
-          className="fixed z-50 right-4 left-4 sm:left-auto sm:right-6 sm:w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100dvh-2rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
-          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+          className={
+            expanded
+              ? "fixed z-50 inset-2 sm:inset-6 rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
+              : "fixed z-50 right-4 left-4 sm:left-auto sm:right-6 sm:w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100dvh-2rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
+          }
+          style={expanded ? undefined : { bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
         >
           <header className="flex items-center justify-between gap-2 px-4 py-3 bg-gradient-to-br from-primary to-accent text-primary-foreground">
             <div className="flex items-center gap-2 min-w-0">
@@ -240,12 +306,66 @@ export default function AdminAssistant() {
                 <p className="text-[11px] opacity-80 leading-tight">Edita e configura o sistema por você</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0">
+            <button
+              onClick={() => {
+                if (messages.length === 0 || confirm("Iniciar uma conversa nova? A atual fica salva no histórico.")) startNewConversation();
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label="Nova conversa"
+              title="Nova conversa"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={async () => {
+                // Pega a última pergunta do utilizador
+                const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+                const pergunta = lastUserMsg ? extractText(lastUserMsg.content).trim() : "";
+                if (!pergunta) {
+                  toast.error("Escreva primeiro a sua dúvida no chat. Depois clique aqui para enviar ao gerente.");
+                  return;
+                }
+                const ok = confirm(
+                  "Vou copiar a sua dúvida para enviar ao gerente do projeto.\n\n" +
+                  "Depois é só colar (Ctrl+V / Cmd+V) no WhatsApp ou e-mail dele.\n\nQuer continuar?"
+                );
+                if (!ok) return;
+                const ctx = [
+                  `Olá! Preciso de ajuda com o sistema.`,
+                  ``,
+                  `Minha dúvida:`,
+                  pergunta,
+                ].join("\n");
+                try {
+                  await navigator.clipboard.writeText(ctx);
+                  toast.success("Pronto! Cole (Ctrl+V) no WhatsApp ou e-mail do gerente.");
+                } catch {
+                  toast.error("Não foi possível copiar. Tente novamente.");
+                }
+              }}
+              className="h-8 px-2.5 rounded-full hover:bg-white/15 flex items-center gap-1.5 shrink-0 text-xs font-medium"
+              aria-label="Pedir ajuda humana — copia a sua dúvida para enviar ao gerente"
+              title="Copia a sua dúvida para enviar ao gerente do projeto por WhatsApp ou e-mail"
+            >
+              <LifeBuoy className="w-4 h-4" />
+              <span className="hidden sm:inline">Pedir ajuda</span>
+            </button>
+
+            <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label={expanded ? "Reduzir" : "Expandir"}
+              title={expanded ? "Reduzir o chat" : "Expandir o chat para tela cheia"}
+            >
+              {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0" aria-label="Minimizar" title="Minimizar (a conversa fica salva)">
               <X className="w-4 h-4" />
             </button>
           </header>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 bg-muted/20">
             {messages.length === 0 && (
               <div className="space-y-3">
                 <div className="bg-card border rounded-2xl p-3 text-sm text-muted-foreground">
@@ -271,12 +391,23 @@ export default function AdminAssistant() {
               return (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm space-y-2 ${
+                    className={`group relative max-w-[92%] min-w-0 rounded-2xl px-3 py-2 text-sm space-y-2 overflow-hidden select-text [overflow-wrap:anywhere] ${
                       m.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-card border rounded-bl-sm"
                     }`}
                   >
+                    {m.role === "assistant" && text.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => void copyText(text)}
+                        className="absolute right-1.5 top-1.5 z-10 w-7 h-7 rounded-full bg-background/90 border text-muted-foreground opacity-70 hover:opacity-100 focus:opacity-100 flex items-center justify-center transition-opacity"
+                        aria-label="Copiar resposta"
+                        title="Copiar resposta"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     {imgs.length > 0 && (
                       <div className="grid grid-cols-2 gap-1">
                         {imgs.map((url, k) => (
@@ -285,11 +416,11 @@ export default function AdminAssistant() {
                       </div>
                     )}
                     {m.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none prose-p:my-1 prose-ol:my-1 prose-ul:my-1 prose-strong:text-foreground prose-headings:text-foreground prose-headings:font-bold prose-headings:text-sm">
+                      <div className="prose prose-sm max-w-none pr-6 break-words [overflow-wrap:anywhere] prose-p:my-1 prose-p:break-words prose-ol:my-1 prose-ul:my-1 prose-li:break-words prose-strong:text-foreground prose-headings:text-foreground prose-headings:font-bold prose-headings:text-sm prose-pre:max-w-full prose-pre:overflow-x-hidden prose-pre:whitespace-pre-wrap prose-pre:break-words prose-code:whitespace-pre-wrap prose-code:break-words prose-code:[overflow-wrap:anywhere]">
                         <ReactMarkdown>{text || "…"}</ReactMarkdown>
                       </div>
                     ) : (
-                      text && <p>{text}</p>
+                      text && <p className="break-words [overflow-wrap:anywhere]">{text}</p>
                     )}
                   </div>
                 </div>

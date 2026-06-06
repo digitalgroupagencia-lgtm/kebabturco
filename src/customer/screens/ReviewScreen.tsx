@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import ScreenHeader from "@/components/ScreenHeader";
 import OrderTypeIcon from "@/components/OrderTypeIcon";
 import UpsellProductCard from "@/customer/customization/UpsellProductCard";
-import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
+import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight, UtensilsCrossed } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
@@ -243,9 +243,7 @@ const ReviewScreen = () => {
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center shrink-0">
-                    <span className="text-xl font-bold text-muted-foreground">
-                      {tProduct(item.productName).charAt(0)}
-                    </span>
+                    <UtensilsCrossed className="w-8 h-8 text-muted-foreground/60" aria-hidden="true" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
