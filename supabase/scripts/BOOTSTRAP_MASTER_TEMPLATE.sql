@@ -176,26 +176,74 @@ Seg–qui 12–16h e 19–00h · sex–dom 12–00h
     ),
     'Pagamento confirmado! Estamos a preparar.',
     'Pague no balcão ao retirar.'
-  ) ON CONFLICT DO NOTHING;
+  ) ON CONFLICT (store_id) DO UPDATE SET
+    banner_enabled = EXCLUDED.banner_enabled,
+    banner_interval_ms = EXCLUDED.banner_interval_ms,
+    payment_mode = EXCLUDED.payment_mode,
+    pay_card_enabled = EXCLUDED.pay_card_enabled,
+    pay_cash_enabled = EXCLUDED.pay_cash_enabled,
+    pay_apple_enabled = EXCLUDED.pay_apple_enabled,
+    pay_google_enabled = EXCLUDED.pay_google_enabled,
+    pay_counter_enabled = EXCLUDED.pay_counter_enabled,
+    pay_link_enabled = EXCLUDED.pay_link_enabled,
+    avg_prep_minutes = EXCLUDED.avg_prep_minutes,
+    require_phone_takeaway = EXCLUDED.require_phone_takeaway,
+    pay_cash_dine_in = EXCLUDED.pay_cash_dine_in,
+    pay_cash_takeaway = EXCLUDED.pay_cash_takeaway,
+    pay_cash_delivery = EXCLUDED.pay_cash_delivery,
+    require_prepayment_takeaway = EXCLUDED.require_prepayment_takeaway,
+    require_prepayment_delivery = EXCLUDED.require_prepayment_delivery,
+    print_pending_dine_in = EXCLUDED.print_pending_dine_in,
+    apply_schedule_enabled = EXCLUDED.apply_schedule_enabled,
+    schedule_timezone = EXCLUDED.schedule_timezone,
+    weekly_schedule = EXCLUDED.weekly_schedule,
+    delivery_schedule = EXCLUDED.delivery_schedule,
+    msg_paid = EXCLUDED.msg_paid,
+    msg_counter = EXCLUDED.msg_counter,
+    updated_at = now();
 
   -- ===========================================================
   -- 4) TOTEM CONFIG
   -- ===========================================================
   INSERT INTO public.totem_config (
-    store_id, primary_color, secondary_color, accent_color, cta_color,
+    store_id, logo_url, primary_color, secondary_color, accent_color, cta_color,
     welcome_message, active_languages, primary_language,
+    language_icons, splash_logo_url, splash_logo_dark_url,
     enable_dine_in, enable_takeaway, enable_delivery,
     splash_title, splash_subtitle, splash_image_duration_ms, splash_show_text,
-    splash_logo_size
+    screen_config, splash_logo_size
   ) VALUES (
-    v_store_id, '#D62300', '#FFC72C', '#FFC72C', '#28A745',
-    jsonb_build_object('pt','Bem-vindo','en','Welcome','es','Bienvenido','fr','Bienvenue'),
-    ARRAY['pt','en','es']::text[], 'es',
+    v_store_id, v_logo_main, '#D62300', '#F5F5F5', '#FFC72C', '#28A745',
+    '{}'::jsonb,
+    ARRAY['es','en']::text[], 'es',
+    jsonb_build_object('en', v_lang_en, 'es', v_lang_es, 'fr', v_lang_fr, 'pt', v_lang_pt),
+    v_logo_language, v_logo_language,
     true, true, true,
-    jsonb_build_object('pt','Template Restaurant','en','Template Restaurant','es','Template Restaurant','fr','Template Restaurant'),
-    jsonb_build_object('pt','Sabor a cada pedido','en','Flavor in every bite','es','Sabor en cada pedido','fr','Saveur à chaque commande'),
-    4000, true, 160
-  ) ON CONFLICT DO NOTHING;
+    '{}'::jsonb,
+    '{}'::jsonb,
+    4000, true, '{}'::jsonb, 160
+  ) ON CONFLICT (store_id) DO UPDATE SET
+    logo_url = EXCLUDED.logo_url,
+    primary_color = EXCLUDED.primary_color,
+    secondary_color = EXCLUDED.secondary_color,
+    accent_color = EXCLUDED.accent_color,
+    cta_color = EXCLUDED.cta_color,
+    welcome_message = EXCLUDED.welcome_message,
+    active_languages = EXCLUDED.active_languages,
+    primary_language = EXCLUDED.primary_language,
+    language_icons = EXCLUDED.language_icons,
+    splash_logo_url = EXCLUDED.splash_logo_url,
+    splash_logo_dark_url = EXCLUDED.splash_logo_dark_url,
+    enable_dine_in = EXCLUDED.enable_dine_in,
+    enable_takeaway = EXCLUDED.enable_takeaway,
+    enable_delivery = EXCLUDED.enable_delivery,
+    splash_title = EXCLUDED.splash_title,
+    splash_subtitle = EXCLUDED.splash_subtitle,
+    splash_image_duration_ms = EXCLUDED.splash_image_duration_ms,
+    splash_show_text = EXCLUDED.splash_show_text,
+    screen_config = EXCLUDED.screen_config,
+    splash_logo_size = EXCLUDED.splash_logo_size,
+    updated_at = now();
 
   -- ===========================================================
   -- 5) DELIVERY ZONES (1 zona padrão vazia, admin configura)
