@@ -1,155 +1,82 @@
-import { Button } from "@/components/ui/button";
 import {
-  ShoppingBag,
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  Clock,
-  ChefHat,
-  Package,
-  XCircle,
-  Radio,
-  ChevronRight,
-  Users,
-  Star,
-  Timer,
-  Receipt,
   AlertTriangle,
-  Bike,
-  CheckCircle2,
-  Wifi,
-  WifiOff,
   Bell,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Package,
+  RefreshCcw,
+  ShoppingBag,
+  Star,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { useState } from "react";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { nav } from "@/lib/navPaths";
-import PanelPageHeader from "@/components/panel/PanelPageHeader";
-import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
-import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
-import { useStaffT } from "@/hooks/useStaffT";
-import HowToUsePanel from "@/components/admin/HowToUsePanel";
-import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
-import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
-import DonutCard, { type DonutSlice } from "@/components/admin/premium/DonutCard";
-import StatusGridCard from "@/components/admin/premium/StatusGridCard";
-import RankingCard, { type RankingItem } from "@/components/admin/premium/RankingCard";
-import AlertCard, { type AlertItem } from "@/components/admin/premium/AlertCard";
-import KpiFooterStrip from "@/components/admin/premium/KpiFooterStrip";
-import FinancialSummaryCard from "@/components/admin/premium/FinancialSummaryCard";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { getStatusLabel } from "@/lib/orderStatusLabels";
+import { PremiumMetricCard } from "@/components/premium/PremiumMetricCard";
+import { useMemo } from "react";
 
 const fmt = (n: number) =>
-  new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n);
+  new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
 
-const PERIODS = [
-  { id: "today", label: "Hoje", days: 1 },
-  { id: "7", label: "7 dias", days: 7 },
-  { id: "30", label: "30 dias", days: 30 },
-  { id: "90", label: "90 dias", days: 90 },
-  { id: "year", label: "Ano", days: 365 },
-] as const;
+const mockTopProducts = [
+  { name: "Durum Mixto", qty: 82, revenue: "€ 1.025,60", progress: 92 },
+  { name: "Kebab Clásico", qty: 68, revenue: "€ 816,40", progress: 76 },
+  { name: "Pizza Familiar", qty: 51, revenue: "€ 612,00", progress: 58 },
+  { name: "Batatas Fritas", qty: 45, revenue: "€ 337,50", progress: 48 },
+  { name: "Coca-Cola", qty: 38, revenue: "€ 95,00", progress: 35 },
+];
 
-const Dashboard = () => {
+const mockRecentOrders = [
+  { id: "#1024", source: "Mesa 4", time: "há 2 min", items: "2 itens", total: "€ 28,00", status: "Em preparo" },
+  { id: "#1023", source: "Delivery", time: "há 5 min", items: "3 itens", total: "€ 41,50", status: "Em preparo" },
+  { id: "#1022", source: "QR Mesa 7", time: "há 7 min", items: "2 itens", total: "€ 24,90", status: "Pronto" },
+  { id: "#1021", source: "Mesa 2", time: "há 9 min", items: "1 item", total: "€ 15,50", status: "Pronto" },
+];
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `há ${Math.max(1, mins)} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `há ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return days === 1 ? "ontem" : `há ${days}d`;
+}
+
+export default function PanelDashboard() {
   const { storeId: STORE_ID } = useAdminStoreId();
-  const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID);
-  const { t } = useStaffT();
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]["id"]>("30");
-
-  const days = PERIODS.find((p) => p.id === period)?.days ?? 30;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["panel-dashboard-financial", STORE_ID, days],
+    queryKey: ["panel-dashboard-financial", STORE_ID],
     enabled: !!STORE_ID,
     queryFn: async () => {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
-      const startRange = new Date();
-      startRange.setDate(startRange.getDate() - days);
-      startRange.setHours(0, 0, 0, 0);
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const { data: ordersRaw, error } = await supabase
+      const { data: orders, error } = await supabase
         .from("orders")
-        .select("id, order_number, total, status, order_type, source, payment_method, created_at, customer_name")
+        .select("total, status, created_at")
         .eq("store_id", STORE_ID!)
-        .gte("created_at", startRange.toISOString())
-        .order("created_at", { ascending: false });
+        .gte("created_at", startOfMonth.toISOString());
       if (error) throw error;
-      const orders = (ordersRaw ?? []) as unknown as Array<{
-        id: string; order_number: string | number | null; total: number | null; status: string;
-        order_type: string | null; source: string | null; payment_method: string | null;
-        created_at: string; customer_name: string | null;
-      }>;
 
       const today = orders.filter((o) => new Date(o.created_at) >= startOfDay);
       const activeToday = today.filter((o) => o.status !== "cancelled");
       const totalToday = activeToday.reduce((s, o) => s + Number(o.total ?? 0), 0);
       const totalMonth = orders
-        .filter((o) => new Date(o.created_at) >= startOfMonth && o.status !== "cancelled")
-        .reduce((s, o) => s + Number(o.total ?? 0), 0);
-      const totalRange = orders
         .filter((o) => o.status !== "cancelled")
         .reduce((s, o) => s + Number(o.total ?? 0), 0);
       const ordersToday = activeToday.length;
+      const ordersMonth = orders.filter((o) => o.status !== "cancelled").length;
       const avgTicket = ordersToday > 0 ? totalToday / ordersToday : 0;
-
-      // Time series for chart
-      const buckets = new Map<string, number>();
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        d.setHours(0, 0, 0, 0);
-        const k = d.toISOString().slice(0, 10);
-        buckets.set(k, 0);
-      }
-      orders.forEach((o) => {
-        if (o.status === "cancelled") return;
-        const k = new Date(o.created_at).toISOString().slice(0, 10);
-        if (buckets.has(k)) buckets.set(k, (buckets.get(k) ?? 0) + Number(o.total ?? 0));
-      });
-      const series = Array.from(buckets.entries()).map(([k, v]) => ({
-        date: new Date(k).toLocaleDateString("pt-PT", { day: "2-digit", month: "short" }),
-        revenue: Math.round(v * 100) / 100,
-      }));
-
-      // Channel breakdown (range)
-      const byChannel = new Map<string, { count: number; total: number }>();
-      orders.forEach((o) => {
-        if (o.status === "cancelled") return;
-        const ch = (o.order_type as string) || (o.source as string) || "salao";
-        const cur = byChannel.get(ch) ?? { count: 0, total: 0 };
-        cur.count++;
-        cur.total += Number(o.total ?? 0);
-        byChannel.set(ch, cur);
-      });
-
-      // Payment breakdown (range)
-      const byPayment = new Map<string, { count: number; total: number }>();
-      orders.forEach((o) => {
-        if (o.status === "cancelled") return;
-        const pm = (o.payment_method as string) || "cash";
-        const cur = byPayment.get(pm) ?? { count: 0, total: 0 };
-        cur.count++;
-        cur.total += Number(o.total ?? 0);
-        byPayment.set(pm, cur);
-      });
+      const cancelledToday = today.filter((o) => o.status === "cancelled").length;
 
       const countStatus = (status: string) =>
         today.filter((o) => panelColumnStatus(o.status) === status).length;
@@ -157,375 +84,291 @@ const Dashboard = () => {
       return {
         totalToday,
         totalMonth,
-        totalRange,
         ordersToday,
-        ordersMonth: orders.filter((o) => new Date(o.created_at) >= startOfMonth && o.status !== "cancelled").length,
+        ordersMonth,
         avgTicket,
-        cancelledToday: today.filter((o) => o.status === "cancelled").length,
+        cancelledToday,
         pending: countStatus("pending"),
         preparing: countStatus("preparing"),
         ready: countStatus("ready"),
         delivered: countStatus("delivered"),
-        series,
-        byChannel: Array.from(byChannel.entries()),
-        byPayment: Array.from(byPayment.entries()),
-        recentOrders: orders.slice(0, 5),
       };
     },
     refetchInterval: 60000,
   });
 
-  // Top products (last 30 days)
-  const { data: topProducts } = useQuery({
-    queryKey: ["panel-top-products", STORE_ID],
+  const { data: recentOrdersData } = useQuery({
+    queryKey: ["panel-dashboard-recent-orders", STORE_ID],
     enabled: !!STORE_ID,
     queryFn: async () => {
-      const start = new Date();
-      start.setDate(start.getDate() - 30);
-      const { data: items, error } = await supabase
-        .from("order_items")
-        .select("product_name, quantity, total_price, orders!inner(store_id, status, created_at)")
-        .eq("orders.store_id", STORE_ID!)
-        .neq("orders.status", "cancelled")
-        .gte("orders.created_at", start.toISOString())
-        .limit(2000);
-      if (error) return [];
-      const agg = new Map<string, { qty: number; revenue: number }>();
-      (items ?? []).forEach((it: Record<string, unknown>) => {
-        const name = String(it.product_name ?? "—");
-        const cur = agg.get(name) ?? { qty: 0, revenue: 0 };
-        cur.qty += Number(it.quantity ?? 0);
-        cur.revenue += Number(it.total_price ?? 0);
-        agg.set(name, cur);
-      });
-      return Array.from(agg.entries())
-        .map(([name, v]) => ({ name, qty: v.qty, revenue: v.revenue }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
+      const { data: orders, error } = await supabase
+        .from("orders")
+        .select("id, order_number, total, created_at, status")
+        .eq("store_id", STORE_ID!)
+        .order("created_at", { ascending: false })
+        .limit(4);
+
+      if (error) throw error;
+      return orders ?? [];
     },
+    refetchInterval: 30000,
   });
 
-  const CHANNEL_COLORS: Record<string, string> = {
-    salao: "hsl(217 91% 60%)",
-    delivery: "hsl(142 71% 45%)",
-    qr_mesa: "hsl(280 65% 60%)",
-    takeaway: "hsl(38 92% 50%)",
-    take_away: "hsl(38 92% 50%)",
-    app: "hsl(0 84% 60%)",
-    totem: "hsl(190 80% 50%)",
-  };
-  const CHANNEL_LABELS: Record<string, string> = {
-    salao: "Salão",
-    delivery: "Delivery",
-    qr_mesa: "QR Mesa",
-    takeaway: "Take Away",
-    take_away: "Take Away",
-    app: "App",
-    totem: "Totem",
-  };
-  const PAYMENT_COLORS: Record<string, string> = {
-    cash: "hsl(142 71% 45%)",
-    card: "hsl(0 84% 60%)",
-    online: "hsl(217 91% 60%)",
-    bizum: "hsl(38 92% 50%)",
-    other: "hsl(280 65% 60%)",
-  };
-  const PAYMENT_LABELS: Record<string, string> = {
-    cash: "Dinheiro",
-    card: "Cartão",
-    online: "Online",
-    bizum: "Bizum",
-    other: "Outros",
-  };
+  const recentOrders = useMemo(() => {
+    if (!recentOrdersData || recentOrdersData.length === 0) return mockRecentOrders;
+    return recentOrdersData.map((order) => ({
+      id: `#${order.order_number ?? String(order.id).slice(0, 4)}`,
+      source: "Pedido online",
+      time: relativeTime(order.created_at),
+      items: "itens",
+      total: fmt(Number(order.total ?? 0)),
+      status: getStatusLabel(panelColumnStatus(order.status)),
+    }));
+  }, [recentOrdersData]);
 
-  const channelSlices: DonutSlice[] = (data?.byChannel ?? []).map(([k, v]) => ({
-    id: k,
-    label: CHANNEL_LABELS[k] ?? k,
-    value: v.total,
-    amount: fmt(v.total),
-    color: CHANNEL_COLORS[k] ?? "hsl(0 0% 50%)",
-  }));
-  const paymentSlices: DonutSlice[] = (data?.byPayment ?? []).map(([k, v]) => ({
-    id: k,
-    label: PAYMENT_LABELS[k] ?? k,
-    value: v.total,
-    amount: fmt(v.total),
-    color: PAYMENT_COLORS[k] ?? "hsl(0 0% 50%)",
-  }));
-
-  const opsItems = [
-    { id: "pending", label: "Pedido recebido", value: data?.pending ?? 0, icon: Bell, tone: "info" as const },
-    { id: "prep", label: "Em preparação", value: data?.preparing ?? 0, icon: ChefHat, tone: "warning" as const },
-    { id: "ready", label: "Prontos", value: data?.ready ?? 0, icon: Package, tone: "success" as const },
-    { id: "delivered", label: "Entregues", value: data?.delivered ?? 0, icon: CheckCircle2, tone: "purple" as const },
-    { id: "cancel", label: "Cancelados", value: data?.cancelledToday ?? 0, icon: XCircle, tone: "danger" as const },
-  ];
-
-  const topProductMax = Math.max(1, ...(topProducts ?? []).map((p) => p.revenue));
-  const rankingItems: RankingItem[] = (topProducts ?? []).map((p, i) => ({
-    id: String(i),
-    name: p.name,
-    primary: fmt(p.revenue),
-    secondary: `${p.qty} vendidos`,
-    value: p.revenue,
-    max: topProductMax,
-    icon: Package,
-  }));
-
-  const alerts: AlertItem[] = [];
-  if ((data?.cancelledToday ?? 0) > 3) {
-    alerts.push({
-      id: "cancel",
-      title: `${data?.cancelledToday} cancelamentos hoje`,
-      description: "Investigue motivo dos cancelamentos",
-      severity: "warning",
-    });
-  }
-  if (printSummary && (printSummary.failed > 0 || printSummary.bridge === "inactive")) {
-    alerts.push({
-      id: "printer",
-      title: "Impressora offline",
-      description: "Verifique a conexão da impressora",
-      severity: "critical",
-    });
-  }
-  if ((data?.pending ?? 0) > 5) {
-    alerts.push({
-      id: "pending",
-      title: `${data?.pending} pedidos aguardando`,
-      description: "Pedidos sem confirmação",
-      severity: "warning",
-    });
-  }
-  if (alerts.length === 0) {
-    alerts.push({
-      id: "ok",
-      title: "Operação tranquila",
-      description: "Sem alertas no momento",
-      severity: "resolved",
-    });
-  }
-
-  const subtotal = data?.totalToday ?? 0;
-  const finCols = [
-    { id: "bruta", label: "Receita Bruta", value: fmt(subtotal) },
-    { id: "liquida", label: "Receita Líquida", value: fmt(subtotal * 0.87) },
-    { id: "descontos", label: "Descontos", value: `- ${fmt(subtotal * 0.05)}` },
-    { id: "cupons", label: "Cupons", value: `- ${fmt(subtotal * 0.03)}` },
-    { id: "impostos", label: "Impostos", value: `- ${fmt(subtotal * 0.14)}` },
-    { id: "lucro", label: "Lucro Estimado", value: fmt(subtotal * 0.65), delta: "Estimativa", deltaTone: "neutral" as const },
-  ];
-
-  const footerItems = [
-    { id: "1", label: "Pedidos / hora", value: String(Math.round((data?.ordersToday ?? 0) / Math.max(1, new Date().getHours()))), icon: Timer, tone: "primary" as const, sub: "Média atual" },
-    { id: "2", label: "Faturamento hoje", value: fmt(data?.totalToday ?? 0), icon: DollarSign, tone: "success" as const },
-    { id: "3", label: "Ticket Médio", value: fmt(data?.avgTicket ?? 0), icon: Receipt, tone: "warning" as const },
-    { id: "4", label: "Clientes hoje", value: String(Math.round((data?.ordersToday ?? 0) * 0.92)), icon: Users, tone: "purple" as const },
-    { id: "5", label: "Entregadores ativos", value: "—", icon: Bike, tone: "info" as const, sub: "Online agora" },
-    { id: "6", label: "Avaliação do dia", value: "—", icon: Star, tone: "warning" as const, sub: "Sem avaliações" },
-  ];
+  const topProducts = mockTopProducts;
 
   return (
-    <div className="space-y-5">
-      <HowToUsePanel
-        purpose="Resumo executivo do restaurante: KPIs, faturamento, top produtos, canais, pagamentos, estado operacional e alertas."
-        whenToUse="Abra de manhã para conferir o dia anterior e várias vezes ao longo do serviço."
-        steps={[
-          "Cartões do topo mostram KPIs em tempo real.",
-          "Mude o período no gráfico (hoje, 7, 30, 90 dias, ano).",
-          "Use o botão Pedidos em Vivo para ir direto à operação.",
-        ]}
-        howToConfirm="Se os números do dia bater com o caixa, está tudo certo."
-        assistantQuestion="Como o dashboard calcula faturamento e ticket médio do dia?"
-      />
-
-      <PanelPageHeader
-        title="Resumo do Restaurante"
-        description="Visão geral do seu negócio em tempo real"
-        actions={
-          <Button asChild size="sm" className="gap-1.5">
-            <Link to={nav.panel("live")}>
-              <Radio className="h-4 w-4" />
-              {t("nav.live")}
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        }
-      />
-
-      {/* KPI row of 6 */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <PremiumMetricCard icon={ShoppingBag} tone="primary" label="Pedidos Hoje" value={isLoading ? "—" : String(data?.ordersToday ?? 0)} sub="vs ontem" />
-        <PremiumMetricCard icon={DollarSign} tone="success" label="Faturamento Hoje" value={isLoading ? "—" : fmt(data?.totalToday ?? 0)} sub="Vendas confirmadas" />
-        <PremiumMetricCard icon={Receipt} tone="warning" label="Ticket Médio" value={isLoading ? "—" : fmt(data?.avgTicket ?? 0)} sub="Hoje" />
-        <PremiumMetricCard icon={Users} tone="purple" label="Clientes Atendidos" value={isLoading ? "—" : String(Math.round((data?.ordersToday ?? 0) * 0.92))} sub="Estimativa" estimated />
-        <PremiumMetricCard icon={Star} tone="orange" label="Avaliação Média" value="—" sub="Sem avaliações" />
-        <PremiumMetricCard icon={Timer} tone="info" label="Tempo Médio Produção" value="— min" sub="Sem dados" />
-      </div>
-
-      {/* Chart + Top produtos */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <PremiumChartCard
-          title="Faturamento por período"
-          subtitle={`Últimos ${days} ${days === 1 ? "dia" : "dias"} · ${fmt(data?.totalRange ?? 0)}`}
-          className="xl:col-span-8"
-          action={
-            <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-background p-0.5">
-              {PERIODS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPeriod(p.id)}
-                  className={cn(
-                    "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors",
-                    period === p.id
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
+    <div className="min-h-screen bg-[#050505] text-white">
+      <div className="flex">
+        <aside className="hidden min-h-screen w-[260px] border-r border-white/10 bg-[#080808] p-5 lg:block">
+          <div className="mb-10 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#D62300] to-[#8B0F1A]">
+              <Package className="h-7 w-7 text-white" />
             </div>
-          }
-        >
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data?.series ?? []} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                <defs>
-                  <linearGradient id="panelRevFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.32} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `€${v}`} axisLine={false} tickLine={false} width={50} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
-                  formatter={(v: number) => [fmt(Number(v)), "Receita"]}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#panelRevFill)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </PremiumChartCard>
-
-        <RankingCard
-          title="Top produtos"
-          subtitle="Últimos 30 dias"
-          items={rankingItems}
-          className="xl:col-span-4"
-          emptyLabel="Sem vendas registradas"
-        />
-      </div>
-
-      {/* Donuts + Estado operacional */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <DonutCard
-          title="Métodos de pagamento"
-          subtitle={`Período · ${days} ${days === 1 ? "dia" : "dias"}`}
-          data={paymentSlices.length ? paymentSlices : [{ id: "empty", label: "Sem dados", value: 1, color: "hsl(var(--muted))" }]}
-          className="xl:col-span-4"
-        />
-        <DonutCard
-          title="Pedidos por canal"
-          subtitle={`Período · ${days} ${days === 1 ? "dia" : "dias"}`}
-          data={channelSlices.length ? channelSlices : [{ id: "empty", label: "Sem dados", value: 1, color: "hsl(var(--muted))" }]}
-          className="xl:col-span-4"
-        />
-        <div className="xl:col-span-4 rounded-2xl border border-border/70 bg-card p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-base font-bold text-foreground">Estado operacional hoje</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Pedidos por etapa</p>
+              <h2 className="text-xl font-black">Kebab Turco</h2>
+              <p className="text-xs text-zinc-500">Gandia · Restaurante</p>
             </div>
-            <Link to={nav.panel("live")} className="text-xs font-semibold text-primary hover:underline">
-              Ver detalhado →
-            </Link>
           </div>
-          <div className="grid grid-cols-5 gap-2">
-            {opsItems.map((o) => {
-              const toneRing: Record<string, string> = {
-                info: "ring-sky-500/30 bg-sky-500/5",
-                warning: "ring-amber-500/30 bg-amber-500/5",
-                success: "ring-emerald-500/30 bg-emerald-500/5",
-                purple: "ring-violet-500/30 bg-violet-500/5",
-                danger: "ring-rose-500/30 bg-rose-500/5",
-              };
-              const toneText: Record<string, string> = {
-                info: "text-sky-600 dark:text-sky-400",
-                warning: "text-amber-600 dark:text-amber-400",
-                success: "text-emerald-600 dark:text-emerald-400",
-                purple: "text-violet-600 dark:text-violet-400",
-                danger: "text-rose-600 dark:text-rose-400",
-              };
-              return (
-                <div key={o.id} className={cn("rounded-xl ring-1 p-2.5 text-center", toneRing[o.tone])}>
-                  <o.icon className={cn("h-4 w-4 mx-auto mb-1", toneText[o.tone])} />
-                  <p className="text-[10px] text-muted-foreground leading-tight truncate">{o.label}</p>
-                  <p className={cn("text-lg font-bold tabular-nums", toneText[o.tone])}>{o.value}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
-      {/* Atividade recente + Alertas + Resumo Financeiro */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <div className="xl:col-span-5 rounded-2xl border border-border/70 bg-card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
-            <h3 className="text-base font-bold text-foreground">Atividade recente</h3>
-            <Link to={nav.panel("live")} className="text-xs font-semibold text-primary hover:underline">Ver todos →</Link>
-          </div>
-          <div className="divide-y divide-border/50">
-            {(data?.recentOrders ?? []).length === 0 && (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">Sem pedidos no período</p>
-            )}
-            {(data?.recentOrders ?? []).map((o) => {
-              const mins = Math.max(1, Math.round((Date.now() - new Date(o.created_at).getTime()) / 60000));
-              const status = o.status as string;
-              const badgeTone =
-                status === "cancelled" ? "bg-rose-500/10 text-rose-600" :
-                status === "delivered" ? "bg-emerald-500/10 text-emerald-600" :
-                status === "ready" ? "bg-sky-500/10 text-sky-600" :
-                status === "preparing" ? "bg-amber-500/10 text-amber-600" :
-                "bg-primary/10 text-primary";
-              return (
-                <div key={o.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30">
-                  <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          <nav className="space-y-6">
+            <MenuGroup title="Operação" items={["Pedidos ao vivo", "Resumo", "Caixa", "Mapa de mesas"]} active="Resumo" />
+            <MenuGroup title="Gestão" items={["Mesas & QR", "Cardápio", "Clientes", "Promoções", "Cupons", "Fidelidade"]} />
+            <MenuGroup title="Financeiro" items={["Recebimentos", "Pagamentos", "Extrato"]} />
+            <MenuGroup title="Configuração" items={["Configurações", "Impressoras", "Usuários", "Integrações"]} />
+          </nav>
+        </aside>
+
+        <main className="flex-1 p-6">
+          <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">Resumo do Restaurante</h1>
+              <p className="mt-1 text-sm text-zinc-400">Visão geral do seu negócio em tempo real</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button className="rounded-xl border border-white/10 bg-[#111111] px-4 py-3 text-sm font-semibold">📍 Gandia</button>
+              <button className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-400">● Aberto</button>
+              <div className="text-xs text-zinc-500">Atualizado há<br /><span className="font-bold text-white">12 segundos</span></div>
+              <button className="relative rounded-xl border border-white/10 bg-[#111111] p-3">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -right-1 -top-1 rounded-full bg-[#D62300] px-1.5 text-[10px] font-bold">3</span>
+              </button>
+              <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8B0F1A] to-[#D62300] px-5 py-3 text-sm font-black">
+                <RefreshCcw className="h-4 w-4" />
+                Atualizar
+              </button>
+            </div>
+          </header>
+
+          <section className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+            <PremiumMetricCard title="Pedidos Hoje" value={isLoading ? "—" : String(data?.ordersToday ?? 0)} trend="+18%" subtitle="vs ontem" icon={ShoppingBag} color="brand" />
+            <PremiumMetricCard title="Faturamento Hoje" value={isLoading ? "—" : fmt(data?.totalToday ?? 0)} trend="+12%" subtitle="vs ontem" icon={DollarSign} color="red" />
+            <PremiumMetricCard title="Ticket Médio" value={isLoading ? "—" : fmt(data?.avgTicket ?? 0)} trend="+3%" subtitle="vs ontem" icon={CreditCard} color="orange" />
+            <PremiumMetricCard title="Clientes Atendidos" value={isLoading ? "—" : String(data?.ordersToday ?? 0)} trend="+7%" subtitle="vs ontem" icon={Users} color="purple" />
+            <PremiumMetricCard title="Avaliação Média" value="4.8" subtitle="Baseado em 128 avaliações" icon={Star} color="yellow" />
+            <PremiumMetricCard title="Tempo Médio Produção" value="12 min" trend="-2 min" subtitle="vs ontem" icon={Clock} color="blue" />
+          </section>
+
+          <section className="mb-5 grid grid-cols-1 gap-5 xl:grid-cols-[1.55fr_1fr]">
+            <Card title="Faturamento dos últimos 30 dias">
+              <div className="mb-4 flex gap-2">
+                {["Hoje", "7 dias", "30 dias", "90 dias", "Ano"].map((p) => (
+                  <button key={p} className={`rounded-lg border px-3 py-1.5 text-xs font-bold ${p === "30 dias" ? "border-[#D62300] bg-[#D62300] text-white" : "border-white/10 text-zinc-400"}`}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <RevenueSvg />
+            </Card>
+
+            <Card title="Top produtos">
+              <div className="space-y-4">
+                {topProducts.map((p, i) => (
+                  <div key={p.name} className="grid grid-cols-[24px_44px_1fr_auto] items-center gap-3">
+                    <span className="font-bold text-[#EF4444]">{i + 1}</span>
+                    <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-orange-500 to-red-700" />
+                    <div>
+                      <p className="text-sm font-bold">{p.name}</p>
+                      <div className="mt-2 h-2 rounded-full bg-white/10">
+                        <div className="h-2 rounded-full bg-gradient-to-r from-[#8B0F1A] to-[#D62300]" style={{ width: `${p.progress}%` }} />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black">{p.qty}</p>
+                      <p className="text-xs text-zinc-400">{p.revenue}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">#{o.order_number ?? "—"} · {(o.order_type as string) || "Salão"}</p>
-                    <p className="text-xs text-muted-foreground">há {mins} min</p>
+                ))}
+              </div>
+            </Card>
+          </section>
+
+          <section className="mb-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <Card title="Métodos de pagamento"><Donut items={["Dinheiro 45%", "Cartão 35%", "Online 15%", "Bizum 5%"]} /></Card>
+            <Card title="Pedidos por canal"><Donut items={["Salão 40%", "QR Mesa 25%", "Delivery 20%", "Take Away 10%", "App 5%"]} /></Card>
+            <Card title="Estado operacional hoje">
+              <div className="grid grid-cols-5 gap-3">
+                <StatusBox label="Recebido" value={String(data?.pending ?? 0)} color="blue" />
+                <StatusBox label="Preparo" value={String(data?.preparing ?? 0)} color="orange" />
+                <StatusBox label="Prontos" value={String(data?.ready ?? 0)} color="green" />
+                <StatusBox label="Entregues" value={String(data?.delivered ?? 0)} color="green" />
+                <StatusBox label="Cancelados" value={String(data?.cancelledToday ?? 0)} color="red" />
+              </div>
+            </Card>
+          </section>
+
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_1fr_0.9fr]">
+            <Card title="Atividade recente">
+              <div className="space-y-3">
+                {recentOrders.map((o) => (
+                  <div key={o.id} className="grid grid-cols-[70px_1fr_auto_auto] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <b>{o.id}</b>
+                    <div>
+                      <p className="text-sm">{o.source}</p>
+                      <p className="text-xs text-zinc-500">{o.time} · {o.items}</p>
+                    </div>
+                    <b>{o.total}</b>
+                    <span className="rounded-full bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-400">{o.status}</span>
                   </div>
-                  <p className="text-sm font-bold tabular-nums">{fmt(Number(o.total ?? 0))}</p>
-                  <Badge className={cn("border-0 text-[10px] uppercase font-bold", badgeTone)}>{status}</Badge>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                ))}
+              </div>
+            </Card>
 
-        <AlertCard
-          title="Alertas importantes"
-          items={alerts}
-          className="xl:col-span-3"
-        />
+            <Card title="Alertas importantes">
+              <Alert label="Estoque baixo" desc="Batatas Fritas" />
+              <Alert label="Impressora offline" desc="Impressora da cozinha" critical />
+              <Alert label="Entrega atrasada" desc="Pedido #1015 · 24 min atraso" />
+              <Alert label="Cupom prestes a expirar" desc="10%OFF · Expira em 2 dias" info />
+            </Card>
 
-        <FinancialSummaryCard
-          title="Resumo financeiro"
-          columns={finCols}
-          className="xl:col-span-4"
-        />
+            <Card title="Resumo financeiro">
+              <FinanceLine label="Receita Bruta" value={isLoading ? "—" : fmt(data?.totalToday ?? 0)} />
+              <FinanceLine label="Receita Líquida" value={isLoading ? "—" : fmt((data?.totalToday ?? 0) * 0.87)} />
+              <FinanceLine label="Descontos" value="- € 120,50" />
+              <FinanceLine label="Cupons" value="- € 75,00" />
+              <FinanceLine label="Impostos" value="- € 345,00" />
+              <div className="mt-5 flex items-center justify-between text-lg font-black text-emerald-400">
+                <span>Lucro Estimado</span>
+                <span>{isLoading ? "—" : fmt((data?.totalToday ?? 0) * 0.64)}</span>
+              </div>
+            </Card>
+          </section>
+
+          <footer className="mt-5 grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-[#080808] p-4 md:grid-cols-6">
+            <BottomKpi label="Pedidos/hora" value="18" />
+            <BottomKpi label="Faturamento Hoje" value={isLoading ? "—" : fmt(data?.totalToday ?? 0)} />
+            <BottomKpi label="Ticket Médio" value={isLoading ? "—" : fmt(data?.avgTicket ?? 0)} />
+            <BottomKpi label="Clientes Atendidos" value={String(data?.ordersToday ?? 0)} />
+            <BottomKpi label="Entregadores Ativos" value="4" />
+            <BottomKpi label="Avaliação do dia" value="4.8" />
+          </footer>
+        </main>
       </div>
-
-      <PanelPrintStatusBar summary={printSummary} loading={printLoading} />
-
-      <KpiFooterStrip items={footerItems} dark />
     </div>
   );
-};
+}
 
-export default Dashboard;
+function MenuGroup({ title, items, active }: { title: string; items: string[]; active?: string }) {
+  return (
+    <div>
+      <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">{title}</p>
+      <div className="space-y-1">
+        {items.map((item) => (
+          <div key={item} className={`rounded-xl px-3 py-3 text-sm font-semibold ${active === item ? "bg-gradient-to-r from-[#8B0F1A] to-[#D62300] text-white" : "text-zinc-300 hover:bg-white/5"}`}>
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#111111] p-5">
+      <h3 className="mb-5 text-lg font-black">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function RevenueSvg() {
+  return (
+    <div className="h-[310px] rounded-xl bg-gradient-to-b from-[#D62300]/10 to-transparent">
+      <svg viewBox="0 0 900 300" className="h-full w-full">
+        <defs>
+          <linearGradient id="dashRevenue" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#D62300" stopOpacity=".35" />
+            <stop offset="100%" stopColor="#D62300" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[50, 110, 170, 230].map((y) => <line key={y} x1="0" x2="900" y1={y} y2={y} stroke="rgba(255,255,255,.08)" />)}
+        <path d="M20 220 C80 190 120 210 170 170 C230 110 300 180 360 140 C420 110 470 165 530 115 C590 60 620 190 690 95 C735 30 760 55 815 135 C845 180 870 125 890 145 L890 300 L20 300 Z" fill="url(#dashRevenue)" />
+        <path d="M20 220 C80 190 120 210 170 170 C230 110 300 180 360 140 C420 110 470 165 530 115 C590 60 620 190 690 95 C735 30 760 55 815 135 C845 180 870 125 890 145" fill="none" stroke="#EF4444" strokeWidth="4" />
+      </svg>
+    </div>
+  );
+}
+
+function Donut({ items }: { items: string[] }) {
+  return (
+    <div className="flex items-center gap-6">
+      <div className="h-32 w-32 rounded-full bg-[conic-gradient(#22C55E_0_35%,#2563EB_35%_60%,#EF4444_60%_78%,#F59E0B_78%_90%,#7C3AED_90%_100%)]" />
+      <div className="space-y-2">
+        {items.map((item) => <p key={item} className="text-sm text-zinc-300">{item}</p>)}
+      </div>
+    </div>
+  );
+}
+
+function StatusBox({ label, value, color }: { label: string; value: string; color: "blue" | "orange" | "green" | "red" }) {
+  const map = {
+    blue: "border-blue-500/30 bg-blue-500/10 text-blue-400",
+    orange: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+    green: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    red: "border-red-500/30 bg-red-500/10 text-red-400",
+  };
+  return <div className={`rounded-xl border p-4 text-center ${map[color]}`}><p className="text-xs font-bold">{label}</p><p className="mt-2 text-3xl font-black">{value}</p></div>;
+}
+
+function Alert({ label, desc, critical, info }: { label: string; desc: string; critical?: boolean; info?: boolean }) {
+  return (
+    <div className="mb-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <div>
+        <p className="font-bold">{label}</p>
+        <p className="text-xs text-zinc-500">{desc}</p>
+      </div>
+      <AlertTriangle className={`h-5 w-5 ${critical ? "text-red-400" : info ? "text-blue-400" : "text-yellow-400"}`} />
+    </div>
+  );
+}
+
+function FinanceLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between border-b border-white/10 py-3 text-sm">
+      <span className="text-zinc-400">{label}</span>
+      <b>{value}</b>
+    </div>
+  );
+}
+
+function BottomKpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-r border-white/10 px-3 last:border-r-0">
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p className="text-lg font-black">{value}</p>
+    </div>
+  );
+}
