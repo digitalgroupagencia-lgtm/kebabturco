@@ -362,7 +362,7 @@ BEGIN
     store_id, enabled, printer_name, ip_address, port,
     printer_copies, print_mode
   ) VALUES (
-    v_store_id, false, 'Cozinha', '192.168.1.100', 9100, 1, 'native'
+    v_store_id, false, 'Cozinha', '192.168.1.100', 9100, 1, 'bridge'
   ) ON CONFLICT DO NOTHING;
 
   -- ===========================================================
