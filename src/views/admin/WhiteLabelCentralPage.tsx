@@ -215,7 +215,7 @@ const NEW_RESTAURANT_CHECKLIST = `# Checklist — Novo restaurante white-label
 
 ## 1. Criação
 - [ ] Remix do Master Template
-- [ ] Lovable Cloud ativada no novo projeto
+- [ ] Abrir More → Nuvem → Editor SQL
 - [ ] Bootstrap SQL executado
 - [ ] Versão registrada em _template_version
 
@@ -484,7 +484,11 @@ export default function WhiteLabelCentralPage() {
             </div>
           </StepCard>
 
-          <StepCard n={4} title="Editar identidade">
+          <StepCard n={4} title="Recarregar preview e publicar">
+            <p>Depois que o SQL retornar resultado sem erro, volte ao Preview, recarregue a página e clique em <b>Publicar</b>.</p>
+          </StepCard>
+
+          <StepCard n={5} title="Editar identidade se for outro restaurante">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               <li>☐ Nome do restaurante</li>
               <li>☐ Logo</li>
@@ -495,7 +499,7 @@ export default function WhiteLabelCentralPage() {
             </ul>
           </StepCard>
 
-          <StepCard n={5} title="Editar cardápio">
+          <StepCard n={6} title="Editar cardápio se for outro restaurante">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               <li>☐ Categorias</li>
               <li>☐ Produtos</li>
@@ -508,7 +512,7 @@ export default function WhiteLabelCentralPage() {
             </ul>
           </StepCard>
 
-          <StepCard n={6} title="Testar tudo">
+          <StepCard n={7} title="Testar tudo">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               <li>☐ Cliente abre e vê catálogo</li>
               <li>☐ Adicionar produto ao carrinho</li>
