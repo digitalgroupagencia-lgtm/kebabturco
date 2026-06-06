@@ -309,6 +309,14 @@ export default function AdminAssistant() {
               <Trash2 className="w-4 h-4" />
             </button>
             <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label={expanded ? "Reduzir" : "Expandir"}
+              title={expanded ? "Reduzir o chat" : "Expandir o chat para tela cheia"}
+            >
+              {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
             <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0" aria-label="Minimizar" title="Minimizar (a conversa fica salva)">
               <X className="w-4 h-4" />
             </button>
