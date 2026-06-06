@@ -663,15 +663,15 @@ const PaymentScreen = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
+              onClick={async () => {
                 const code = underConstructionMethod;
+                const question = `Como faço para activar o pagamento ${code === "redsys" ? "Redsys (TPV bancário)" : "Bizum"} no checkout do meu restaurante? Explica: (1) onde consigo Merchant Code, Terminal e Secret Key reais; (2) em que tela do painel admin eu cólo cada valor; (3) que URL de notificação tenho de registar no painel do banco; (4) como testar em sandbox antes de pôr em produção.`;
                 setUnderConstructionMethod(null);
                 if (typeof window !== "undefined") {
-                  window.dispatchEvent(new CustomEvent("assistant:ask", {
-                    detail: {
-                      text: `Como faço para activar o pagamento ${code === "redsys" ? "Redsys (TPV bancário)" : "Bizum"} no checkout? Onde consigo Merchant Code, Terminal e Secret Key, e em que tela do painel cada valor é colado?`,
-                    },
-                  }));
+                  window.dispatchEvent(new CustomEvent("assistant:ask", { detail: { text: question } }));
+                  try {
+                    await navigator.clipboard.writeText(question);
+                  } catch { /* ignore */ }
                 }
               }}
             >
