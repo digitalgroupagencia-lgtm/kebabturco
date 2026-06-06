@@ -68,19 +68,22 @@ import langPtAsset from "@/assets/white-label/lang_pt.png.asset.json";
 
 const BUILD_TIME = new Date().toISOString();
 
-const RESOLVED_BOOTSTRAP_SQL = bootstrapSql
-  .replaceAll("/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png", logoMainAsset.url)
-  .replaceAll("/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png", logoMainDarkAsset.url)
-  .replaceAll("/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png", logoLanguageAsset.url)
-  .replaceAll("/__l5e/assets-v1/acf26dc1-0064-4dc9-9968-5de28d63c002/white-label-logo_order_type.png", logoOrderTypeAsset.url)
-  .replaceAll("/__l5e/assets-v1/ae7c7737-28bb-41cd-8abb-05fcf6c85b1f/white-label-banner_home.png", bannerHomeAsset.url)
-  .replaceAll("/__l5e/assets-v1/f4156c88-f205-4149-970d-b8278cf4539e/white-label-icon_dine_in.png", iconDineInAsset.url)
-  .replaceAll("/__l5e/assets-v1/aaaae7ff-394a-461e-9146-0cd1e98f4ef1/white-label-icon_takeaway.png", iconTakeawayAsset.url)
-  .replaceAll("/__l5e/assets-v1/79cf0a13-c837-4e45-835f-507d09a2f708/white-label-icon_delivery.png", iconDeliveryAsset.url)
-  .replaceAll("/__l5e/assets-v1/8bc3600d-1044-40da-b042-300509a95cf8/white-label-lang_en.png", langEnAsset.url)
-  .replaceAll("/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png", langEsAsset.url)
-  .replaceAll("/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png", langFrAsset.url)
-  .replaceAll("/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png", langPtAsset.url);
+const replaceToken = (text: string, token: string, value: string) => text.split(token).join(value);
+
+const RESOLVED_BOOTSTRAP_SQL = [
+  ["/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png", logoMainAsset.url],
+  ["/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png", logoMainDarkAsset.url],
+  ["/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png", logoLanguageAsset.url],
+  ["/__l5e/assets-v1/acf26dc1-0064-4dc9-9968-5de28d63c002/white-label-logo_order_type.png", logoOrderTypeAsset.url],
+  ["/__l5e/assets-v1/ae7c7737-28bb-41cd-8abb-05fcf6c85b1f/white-label-banner_home.png", bannerHomeAsset.url],
+  ["/__l5e/assets-v1/f4156c88-f205-4149-970d-b8278cf4539e/white-label-icon_dine_in.png", iconDineInAsset.url],
+  ["/__l5e/assets-v1/aaaae7ff-394a-461e-9146-0cd1e98f4ef1/white-label-icon_takeaway.png", iconTakeawayAsset.url],
+  ["/__l5e/assets-v1/79cf0a13-c837-4e45-835f-507d09a2f708/white-label-icon_delivery.png", iconDeliveryAsset.url],
+  ["/__l5e/assets-v1/8bc3600d-1044-40da-b042-300509a95cf8/white-label-lang_en.png", langEnAsset.url],
+  ["/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png", langEsAsset.url],
+  ["/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png", langFrAsset.url],
+  ["/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png", langPtAsset.url],
+].reduce((sql, [token, value]) => replaceToken(sql, token, value), bootstrapSql);
 
 type HistoryRow = {
   id: string;
