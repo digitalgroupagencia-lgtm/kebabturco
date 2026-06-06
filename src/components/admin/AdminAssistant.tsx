@@ -274,7 +274,18 @@ export default function AdminAssistant() {
                 <p className="text-[11px] opacity-80 leading-tight">Edita e configura o sistema por você</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0">
+            <button
+              onClick={() => {
+                if (messages.length === 0 || confirm("Iniciar uma conversa nova? A atual fica salva no histórico.")) startNewConversation();
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label="Nova conversa"
+              title="Nova conversa"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
+            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0" aria-label="Minimizar" title="Minimizar (a conversa fica salva)">
               <X className="w-4 h-4" />
             </button>
           </header>
