@@ -326,7 +326,7 @@ export default function AdminAssistant() {
                       <button
                         type="button"
                         onClick={() => void copyText(text)}
-                        className="absolute right-1.5 top-1.5 z-10 w-7 h-7 rounded-full bg-background/90 border text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center transition-opacity"
+                        className="absolute right-1.5 top-1.5 z-10 w-7 h-7 rounded-full bg-background/90 border text-muted-foreground opacity-70 hover:opacity-100 focus:opacity-100 flex items-center justify-center transition-opacity"
                         aria-label="Copiar resposta"
                         title="Copiar resposta"
                       >
