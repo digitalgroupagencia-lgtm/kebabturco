@@ -649,38 +649,20 @@ const PaymentScreen = () => {
             </DialogTitle>
             <DialogDescription className="pt-2 text-left space-y-2">
               <span className="block">
-                Este método de pagamento está visível no checkout para teste, mas a integração real
-                ainda não foi activada. Para activar é necessário inserir as credenciais reais
-                (Merchant Code, Terminal e Secret Key) no painel de administração.
+                Este método de pagamento ainda não está disponível neste restaurante.
               </span>
               <span className="block text-xs text-muted-foreground">
-                Enquanto isso, escolha <strong>Cartão</strong> ou <strong>Efectivo</strong> para
+                Por favor escolha <strong>Cartão</strong> ou <strong>Efectivo</strong> para
                 finalizar o pedido.
               </span>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={async () => {
-                const code = underConstructionMethod;
-                const question = `Como faço para activar o pagamento ${code === "redsys" ? "Redsys (TPV bancário)" : "Bizum"} no checkout do meu restaurante? Explica: (1) onde consigo Merchant Code, Terminal e Secret Key reais; (2) em que tela do painel admin eu cólo cada valor; (3) que URL de notificação tenho de registar no painel do banco; (4) como testar em sandbox antes de pôr em produção.`;
-                setUnderConstructionMethod(null);
-                if (typeof window !== "undefined") {
-                  window.dispatchEvent(new CustomEvent("assistant:ask", { detail: { text: question } }));
-                  try {
-                    await navigator.clipboard.writeText(question);
-                  } catch { /* ignore */ }
-                }
-              }}
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              Perguntar ao Assistente
-            </Button>
+          <DialogFooter>
             <Button type="button" onClick={() => setUnderConstructionMethod(null)}>
               Voltar e escolher outro
             </Button>
+          </DialogFooter>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
