@@ -56,29 +56,84 @@ BEGIN
   -- ===========================================================
   -- 1) TENANT + STORE
   -- ===========================================================
-  INSERT INTO public.tenants (id, name, slug, is_active, plan, is_template)
-  VALUES (v_tenant_id, 'Template Restaurant', 'template-restaurant', true, 'premium', true)
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.tenants (id, name, slug, is_active, plan, max_orders_month, is_template, custom_domain, use_master_domain, master_domain, path_slug)
+  VALUES (v_tenant_id, 'Kebab Turco', 'kebab-turco', true, 'premium', 5000, false, null, false, null, null)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    slug = EXCLUDED.slug,
+    is_active = EXCLUDED.is_active,
+    plan = EXCLUDED.plan,
+    max_orders_month = EXCLUDED.max_orders_month,
+    is_template = EXCLUDED.is_template,
+    updated_at = now();
 
-  INSERT INTO public.stores (id, tenant_id, name, address, phone, is_active, sort_order, short_description)
-  VALUES (v_store_id, v_tenant_id, 'Loja Principal', 'Endereço a configurar', '+00 000 000 000', true, 0,
-          'Loja template — substitua nome, logo e cores no Admin')
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.stores (id, tenant_id, name, address, phone, is_active, sort_order, short_description, image_url, latitude, longitude, geocoded_address)
+  VALUES (v_store_id, v_tenant_id, 'Gandia', 'Av. de Beniopa 12, Gandia (Valencia)', '960 224 516 / 632 399 584', true, 0,
+          'Lunes a Domingo, 12:00–00:00h
+
+Domicílio: mínimo 12€ grátis · fora de Gandia +3€ (mín. 18€)
+Seg–qui 12–16h e 19–00h · sex–dom 12–00h
+', v_logo_main, 38.9697408, -0.184002, 'Av. de Beniopa, 12, 46701 Gandia, Valencia, Spain')
+  ON CONFLICT (id) DO UPDATE SET
+    tenant_id = EXCLUDED.tenant_id,
+    name = EXCLUDED.name,
+    address = EXCLUDED.address,
+    phone = EXCLUDED.phone,
+    is_active = EXCLUDED.is_active,
+    sort_order = EXCLUDED.sort_order,
+    short_description = EXCLUDED.short_description,
+    image_url = EXCLUDED.image_url,
+    latitude = EXCLUDED.latitude,
+    longitude = EXCLUDED.longitude,
+    geocoded_address = EXCLUDED.geocoded_address,
+    updated_at = now();
 
   -- ===========================================================
-  -- 2) COMPANY SETTINGS (branding inicial neutro)
+  -- 2) COMPANY SETTINGS (branding visual fiel ao Master)
   -- ===========================================================
   INSERT INTO public.company_settings (
     store_id, company_name, short_name,
+    logo_main_url, logo_secondary_url, logo_language_url, logo_order_type_url,
+    logo_main_dark_url, logo_secondary_dark_url, logo_language_dark_url, logo_order_type_dark_url,
+    banner_home_url, icon_dine_in_url, icon_takeaway_url, icon_delivery_url,
     primary_color, secondary_color, accent_color, cta_color, header_color,
     background_color, text_color, font_family, button_style, is_active,
     meta_description
   ) VALUES (
-    v_store_id, 'Template Restaurant', 'Template',
-    '#D62300', '#FFC72C', '#FFC72C', '#28A745', '#D62300',
+    v_store_id, 'Kebab Turco', 'Kebab Turco',
+    v_logo_main, v_logo_main, v_logo_language, v_logo_order_type,
+    v_logo_main_dark, v_logo_main_dark, v_logo_language, v_logo_order_type,
+    v_banner_home, v_icon_dine_in, v_icon_takeaway, v_icon_delivery,
+    '#D62300', '#F5F5F5', '#FFC72C', '#28A745', '#910318',
     '#FFFFFF', '#1A1A1A', 'Nunito', 'rounded', true,
-    'Peça online — entrega rápida e fácil.'
-  ) ON CONFLICT DO NOTHING;
+    'Peça online no Kebab Turco Gandia.'
+  ) ON CONFLICT (store_id) DO UPDATE SET
+    company_name = EXCLUDED.company_name,
+    short_name = EXCLUDED.short_name,
+    logo_main_url = EXCLUDED.logo_main_url,
+    logo_secondary_url = EXCLUDED.logo_secondary_url,
+    logo_language_url = EXCLUDED.logo_language_url,
+    logo_order_type_url = EXCLUDED.logo_order_type_url,
+    logo_main_dark_url = EXCLUDED.logo_main_dark_url,
+    logo_secondary_dark_url = EXCLUDED.logo_secondary_dark_url,
+    logo_language_dark_url = EXCLUDED.logo_language_dark_url,
+    logo_order_type_dark_url = EXCLUDED.logo_order_type_dark_url,
+    banner_home_url = EXCLUDED.banner_home_url,
+    icon_dine_in_url = EXCLUDED.icon_dine_in_url,
+    icon_takeaway_url = EXCLUDED.icon_takeaway_url,
+    icon_delivery_url = EXCLUDED.icon_delivery_url,
+    primary_color = EXCLUDED.primary_color,
+    secondary_color = EXCLUDED.secondary_color,
+    accent_color = EXCLUDED.accent_color,
+    cta_color = EXCLUDED.cta_color,
+    header_color = EXCLUDED.header_color,
+    background_color = EXCLUDED.background_color,
+    text_color = EXCLUDED.text_color,
+    font_family = EXCLUDED.font_family,
+    button_style = EXCLUDED.button_style,
+    is_active = EXCLUDED.is_active,
+    meta_description = EXCLUDED.meta_description,
+    updated_at = now();
 
   -- ===========================================================
   -- 3) OPERATIONS SETTINGS (horários, pagamentos)
