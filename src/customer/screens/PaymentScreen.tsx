@@ -663,7 +663,6 @@ const PaymentScreen = () => {
             </Button>
           </DialogFooter>
 
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
