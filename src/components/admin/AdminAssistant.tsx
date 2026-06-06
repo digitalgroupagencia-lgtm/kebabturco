@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy, Trash2, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy, Trash2, Maximize2, Minimize2, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getUsageSnapshotForPrompt, getUsageSnapshot } from "@/lib/usageTelemetry";
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -207,13 +208,20 @@ export default function AdminAssistant() {
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
+      // Injecta snapshot de telemetria local como contexto adicional do utilizador
+      const usageMsg: Msg = {
+        role: "user",
+        content: `[Contexto automático — não responder directamente]\nRota actual: ${window.location.pathname}\n${getUsageSnapshotForPrompt()}`,
+      };
+      const payloadMessages = [usageMsg, ...next];
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: payloadMessages }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -307,6 +315,33 @@ export default function AdminAssistant() {
               title="Nova conversa"
             >
               <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={async () => {
+                const snap = getUsageSnapshot();
+                const lastMsgs = messages.slice(-6).map((m) => `${m.role === "user" ? "EU" : "IA"}: ${extractText(m.content).slice(0, 500)}`).join("\n---\n");
+                const ctx = [
+                  `=== ESCALONAMENTO PARA O GERENTE DO PROJECTO ===`,
+                  `Data/hora: ${new Date().toISOString()}`,
+                  `Tela: ${window.location.pathname}`,
+                  `URL: ${window.location.href}`,
+                  `Total de visitas locais: ${snap.totalVisits}`,
+                  `Top 5 rotas: ${snap.routes.slice(0, 5).map((r) => `${r.path}=${r.count}`).join(", ")}`,
+                  ``,
+                  `--- Últimas mensagens da conversa ---`,
+                  lastMsgs || "(sem conversa)",
+                  ``,
+                  `--- Navegador ---`,
+                  navigator.userAgent,
+                ].join("\n");
+                try { await navigator.clipboard.writeText(ctx); toast.success("Contexto copiado. Envie ao gerente do projecto."); }
+                catch { toast.error("Não foi possível copiar"); }
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center shrink-0"
+              aria-label="Escalonar para gerente"
+              title="Copia contexto técnico para enviar ao gerente do projecto"
+            >
+              <LifeBuoy className="w-4 h-4" />
             </button>
             <button onClick={() => setOpen(true) /* minimiza apenas */} className="hidden" />
             <button

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Monitor, Palette, Globe, Save, Sparkles, Upload } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import type { Tables } from "@/integrations/supabase/types";
 import ImageUploadField from "@/components/panel/ImageUploadField";
 import { uploadBrandingImage } from "@/lib/uploadImage";
@@ -261,6 +262,18 @@ const TotemConfigPage = () => {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <HowToUsePanel
+        purpose="Personaliza a tela do totem (cores, idiomas, splash, mensagens de boas-vindas)."
+        whenToUse="Antes de abrir um novo totem para o cliente e quando trocar a campanha."
+        steps={[
+          "Escolha os idiomas oferecidos ao cliente (mínimo 1).",
+          "Suba a imagem ou vídeo de splash.",
+          "Defina as cores principais (devem combinar com a marca).",
+          "Salve. O totem actualiza no próximo reinício.",
+        ]}
+        howToConfirm="Abra o totem no tablet: a splash, idiomas e cores aparecem como configurado."
+        assistantQuestion="Que configuração de totem aumenta conversão em zona turística com 4 idiomas?"
+      />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Monitor className="h-6 w-6" /> Configuração do Totem
