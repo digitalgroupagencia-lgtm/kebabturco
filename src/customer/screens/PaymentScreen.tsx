@@ -645,7 +645,7 @@ const PaymentScreen = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-amber-500" />
-              {underConstructionLabel} — em implementação
+              {underConstructionLabel} — indisponível
             </DialogTitle>
             <DialogDescription className="pt-2 text-left space-y-2">
               <span className="block">
