@@ -281,8 +281,12 @@ export default function AdminAssistant() {
 
       {open && (
         <div
-          className="fixed z-50 right-4 left-4 sm:left-auto sm:right-6 sm:w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100dvh-2rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
-          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+          className={
+            expanded
+              ? "fixed z-50 inset-2 sm:inset-6 rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
+              : "fixed z-50 right-4 left-4 sm:left-auto sm:right-6 sm:w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100dvh-2rem)] rounded-2xl bg-card border shadow-elevated flex flex-col overflow-hidden"
+          }
+          style={expanded ? undefined : { bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
         >
           <header className="flex items-center justify-between gap-2 px-4 py-3 bg-gradient-to-br from-primary to-accent text-primary-foreground">
             <div className="flex items-center gap-2 min-w-0">
