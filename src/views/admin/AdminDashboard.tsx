@@ -17,6 +17,18 @@ import {
   Bell,
   MessageSquare,
   CreditCard,
+  Users,
+  Receipt,
+  Wifi,
+  WifiOff,
+  AlertOctagon,
+  RefreshCcw,
+  Smartphone,
+  Calendar,
+  Trophy,
+  Star,
+  Package,
+  LineChart as LineChartIcon,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -34,6 +46,12 @@ import RankingCard, { type RankingItem } from "@/components/admin/premium/Rankin
 import AlertCard, { type AlertItem } from "@/components/admin/premium/AlertCard";
 import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
 import StatusPill from "@/components/admin/premium/StatusPill";
+import DonutCard, { type DonutSlice } from "@/components/admin/premium/DonutCard";
+import FunnelCard from "@/components/admin/premium/FunnelCard";
+import StatusGridCard from "@/components/admin/premium/StatusGridCard";
+import KpiFooterStrip from "@/components/admin/premium/KpiFooterStrip";
+import PerformanceCard from "@/components/admin/premium/PerformanceCard";
+import FinancialSummaryCard from "@/components/admin/premium/FinancialSummaryCard";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
 import { nav } from "@/lib/navPaths.ts";
