@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy, Trash2, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, Send, X, Loader2, ImagePlus, Mic, MicOff, Copy, Trash2, Maximize2, Minimize2, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getUsageSnapshotForPrompt, getUsageSnapshot } from "@/lib/usageTelemetry";
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -207,13 +208,20 @@ export default function AdminAssistant() {
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
+      // Injecta snapshot de telemetria local como contexto adicional do utilizador
+      const usageMsg: Msg = {
+        role: "user",
+        content: `[Contexto automático — não responder directamente]\nRota actual: ${window.location.pathname}\n${getUsageSnapshotForPrompt()}`,
+      };
+      const payloadMessages = [usageMsg, ...next];
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: payloadMessages }),
       });
 
       if (!resp.ok || !resp.body) {
