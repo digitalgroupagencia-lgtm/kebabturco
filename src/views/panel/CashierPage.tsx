@@ -14,6 +14,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { useStaffT } from "@/hooks/useStaffT";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -174,6 +175,18 @@ const CashierPage = () => {
 
   return (
     <div className="space-y-6">
+      <HowToUsePanel
+        purpose="Controla a abertura e fecho do caixa do dia, e confirma os pagamentos em dinheiro no balcão."
+        whenToUse="Abra ao iniciar o expediente. Feche no fim do dia para conferir o que entrou."
+        steps={[
+          "Toque em Abrir caixa e digite o valor inicial (troco).",
+          "Durante o dia, os pedidos pagos em dinheiro caem na lista de Pendentes — confirme cada um.",
+          "No fim do dia, toque Fechar caixa e digite o valor real contado.",
+          "O sistema mostra a diferença entre o esperado e o contado.",
+        ]}
+        howToConfirm="Se o total de vendas no fecho bater com o caixa físico, está certo. Se sobrar ou faltar muito, revise pedidos cancelados."
+        assistantQuestion="Por que existe a tela de Caixa e o que acontece se eu não abrir/fechar?"
+      />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <DollarSign className="h-6 w-6" /> {t("cashier.title")}

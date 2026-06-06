@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, XCircle, AlertTriangle, DollarSign, TrendingUp, ShoppingBag } from "lucide-react";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 const MonitoringPage = () => {
   const { data: tenants, isLoading } = useQuery({
@@ -94,6 +95,17 @@ const MonitoringPage = () => {
 
   return (
     <div className="space-y-6">
+      <HowToUsePanel
+        purpose="Estado do sistema em tempo real: restaurantes ativos, lojas, pedidos da última hora e saúde geral da plataforma."
+        whenToUse="Abra quando suspeitar que algo está parado (sem pedidos, impressão falhando, plataforma lenta)."
+        steps={[
+          "Confira o cartão Restaurantes Ativos — deve mostrar todos os clientes em produção.",
+          "Pedidos da última hora atualiza a cada 30 segundos.",
+          "Se ver muitos vermelhos ou nada chegando, abra Centro de Testes e Diagnóstico.",
+        ]}
+        howToConfirm="Plataforma saudável = restaurantes ativos > 0 e pelo menos um pedido na última hora durante horário comercial."
+        assistantQuestion="Como sei se a plataforma está saudável e o que olhar primeiro quando algo parece travado?"
+      />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Monitoramento</h2>
         <Badge variant="outline" className="text-xs">Auto-refresh 30s</Badge>

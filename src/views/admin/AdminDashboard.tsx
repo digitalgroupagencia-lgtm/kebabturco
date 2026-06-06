@@ -36,6 +36,7 @@ import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
 import { nav } from "@/lib/navPaths.ts";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
+import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 const fmtMoney = (v: number, cur = "EUR") =>
   new Intl.NumberFormat("pt-PT", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(v || 0);
@@ -168,6 +169,17 @@ const AdminDashboard = () => {
 
   return (
     <PlatformPageShell width="full">
+      <HowToUsePanel
+        purpose="Visão geral da plataforma: restaurantes, pedidos do dia, faturamento e atalhos para as centrais (IA, push, planos, etc.)."
+        whenToUse="Tela inicial do administrador. Use para tomar decisões rápidas e abrir as áreas mais profundas."
+        steps={[
+          "Cartões do topo mostram totais consolidados em tempo real.",
+          "Use os atalhos das Centrais para mexer em IA, Push, Fidelidade e Campanhas.",
+          "O feed da direita mostra as últimas ações relevantes na plataforma.",
+        ]}
+        howToConfirm="Se os números bater com Monitoramento e com o painel de cada restaurante, está tudo sincronizado."
+        assistantQuestion="O que cada cartão e cada atalho deste dashboard significa, e quando devo usar cada um?"
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
