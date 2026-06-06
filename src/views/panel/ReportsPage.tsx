@@ -181,9 +181,8 @@ const ReportsPage = () => {
       </div>
 
       <PremiumChartCard
-        icon={Clock}
         title="Pedidos por hora"
-        description="Identifique horários de pico para escalar a equipa"
+        subtitle="Identifique horários de pico para escalar a equipa"
       >
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
