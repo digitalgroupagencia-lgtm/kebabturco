@@ -108,21 +108,26 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
   }, [effectiveSettings, theme]);
 
   const load = useCallback(async () => {
-    if (!storeId) { setLoading(false); return; }
+    if (!storeId) {
+      setSettings(null);
+      setDraftOverride(null);
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from("company_settings")
       .select("*")
       .eq("store_id", storeId)
       .maybeSingle();
-    if (data) {
-      setSettings(data);
-      setDraftOverride(null);
-    }
+    setSettings(data ?? null);
+    setDraftOverride(null);
     setLoading(false);
   }, [storeId]);
 
   useEffect(() => {
     if (!storeId) {
+      setSettings(null);
+      setDraftOverride(null);
       setLoading(false);
       return;
     }
