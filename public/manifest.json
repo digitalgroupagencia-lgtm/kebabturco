@@ -2,7 +2,7 @@
   "name": "PropioApp",
   "short_name": "PropioApp",
   "description": "PropioApp — plataforma de pedidos para restaurantes.",
-  "lang": "en",
+  "lang": "es",
   "start_url": "/?homescreen=1",
   "scope": "/",
   "display": "standalone",
