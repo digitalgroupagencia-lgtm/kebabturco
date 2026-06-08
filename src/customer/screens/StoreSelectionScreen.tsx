@@ -33,7 +33,7 @@ const StoreSelectionScreen = () => {
     (settings as any)?.logo_order_type_url ||
     settings?.logo_main_url ||
     null;
-  const brandName = settings?.company_name || "EL REY";
+  const brandName = settings?.company_name || "Restaurante";
 
   const handleSelect = (id: string) => {
     setSelectedStoreId(id);

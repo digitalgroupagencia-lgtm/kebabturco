@@ -40,8 +40,8 @@ const LanguageScreen = () => {
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
     (settings as any)?.logo_language_url ||
     settings?.logo_main_url ||
-    "/apple-touch-icon.png";
-  const brandName = settings?.company_name || "EL REY";
+    null;
+  const brandName = settings?.company_name || "Restaurante";
 
   const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
   const titles = Array.from(new Set(langs.map((l) => TITLE_BY_LANG[l] || TITLE_BY_LANG.es)));
@@ -74,12 +74,23 @@ const LanguageScreen = () => {
 
       {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
       <div className="flex flex-col items-center px-6 pt-3 shrink-0">
-        <div
-          className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
-          {...logoGesture}
-        >
-          <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
-        </div>
+        {logo ? (
+          <div
+            className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
+            {...logoGesture}
+          >
+            <img src={logo} alt={brandName} className="w-full h-full object-contain pointer-events-none" draggable={false} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="w-full max-w-[200px] aspect-square flex items-center justify-center select-none touch-none cursor-pointer"
+            aria-label={brandName}
+            {...logoGesture}
+          >
+            <span className="text-center text-3xl font-black leading-tight text-primary">{brandName}</span>
+          </button>
+        )}
 
         <div className="text-center flex flex-col gap-1 w-full">
           {titles.map((tt, idx) => (
