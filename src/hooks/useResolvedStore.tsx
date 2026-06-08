@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { isReservedAppPath } from "@/lib/appPaths";
 import { isLovableEditorHost, normalizeHostname } from "@/lib/platformHosts";
-import { getStoreTenantSlug } from "@/lib/tenantPreview";
-import { getPreviewTenantSlug } from "@/lib/tenantPreview";
+import { getStoreTenantSlug, getPreviewTenantSlug } from "@/lib/tenantPreview";
 import { preferResolvedStores, type StoreOption } from "@/lib/storeResolution";
 
 /**
