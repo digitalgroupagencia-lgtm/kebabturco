@@ -62,7 +62,11 @@ export default function PreviewPathGuard() {
 
     const parts = pathname.split("/").filter(Boolean);
 
-    if (parts[0] === "admin" && LEGACY_ADMIN_SEGMENTS.has(parts[1] ?? "")) {
+    if (
+      parts[0] === "admin" &&
+      LEGACY_ADMIN_SEGMENTS.has(parts[1] ?? "") &&
+      !(parts[1] === "tenants" && parts[2] === "new")
+    ) {
       navigate(nav.admin(), { replace: true });
       return;
     }
