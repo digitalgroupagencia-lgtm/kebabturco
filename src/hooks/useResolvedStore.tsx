@@ -1,9 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { isReservedAppPath } from "@/lib/appPaths";
 import { isLovableEditorHost, normalizeHostname } from "@/lib/platformHosts";
-import { getStoreTenantSlug, getPreviewTenantSlug } from "@/lib/tenantPreview";
+import { getStoreTenantSlug } from "@/lib/tenantPreview";
 import { preferResolvedStores, type StoreOption } from "@/lib/storeResolution";
 
 /**
@@ -201,7 +200,6 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const firstSeg = pathSegments[0] === "preview" ? pathSegments[1] || null : pathSegments[0] || null;
     const tenantParam = getStoreTenantSlug();
-    const explicitTenantParam = getPreviewTenantSlug() || tenantParam;
 
     // Em editor Lovable, evitamos esperar 10s antes de mostrar o tenant template;
     // se a resolução demorar, paramos o loading sem fallback de produção.
@@ -253,12 +251,8 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           tenant = await fetchTenantBySlug(firstSeg);
         }
 
-        // Editor Lovable (preview do Master): cai para tenant template
-        // apenas quando o host é editor E não há slug explícito na URL.
-        // Se o utilizador pediu um slug inexistente, devolve DomainNotConfiguredScreen.
-        if (!tenant && isLovableEditorHost(host) && !explicitTenantParam) {
-          tenant = await fetchTenantBySlug(DEFAULT_TENANT_SLUG);
-        }
+        // Sem fallback automático para o tenant template.
+        // "/" sem tenant resolvido → RootRoute mostra a landing da PropioApp.
 
         if (tenant) {
           const list = await fetchActiveStores({ tenantId: tenant.id });
