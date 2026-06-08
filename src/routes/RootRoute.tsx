@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import PropioLanding from "@/pages/PropioLanding";
+import PropioLanding from "@/pages/PropioLanding.tsx";
 import PageSpinner from "@/components/PageSpinner";
 
 /**
