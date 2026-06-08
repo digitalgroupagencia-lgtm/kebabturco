@@ -1,8 +1,8 @@
 import { Navigate, useLocation } from "react-router-dom";
 import {
+  detectTenantSlugFromLocation,
   isLovableEditorPreview,
   lovableStorefrontLocation,
-  LOVABLE_PREVIEW_SEARCH,
   shouldOpenStorefrontInLovablePreview,
 } from "@/lib/lovablePreview";
 
@@ -13,11 +13,13 @@ export default function LovablePreviewGate() {
   if (!isLovableEditorPreview()) return null;
 
   if (shouldOpenStorefrontInLovablePreview(pathname)) {
-    return <Navigate to={lovableStorefrontLocation()} replace />;
+    const slug = detectTenantSlugFromLocation(pathname, search);
+    return <Navigate to={lovableStorefrontLocation(slug)} replace />;
   }
 
   if (pathname === "/" && !search.includes("preview=1")) {
-    return <Navigate to={{ pathname: "/", search: LOVABLE_PREVIEW_SEARCH }} replace />;
+    const slug = detectTenantSlugFromLocation(pathname, search);
+    return <Navigate to={lovableStorefrontLocation(slug)} replace />;
   }
 
   return null;

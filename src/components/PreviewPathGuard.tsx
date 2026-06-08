@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
-import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 import {
+  detectTenantSlugFromLocation,
   isLovableEditorPreview,
   lovableStorefrontLocation,
   shouldOpenStorefrontInLovablePreview,
@@ -13,8 +13,6 @@ import {
   resolveCustomerRouteRedirect,
   resolveLegacyRouteRedirect,
 } from "@/lib/routeRedirects.ts";
-
-const LEGACY_PREVIEW_SEARCH = `?preview=1&tenant=${DEFAULT_TENANT_SLUG}`;
 
 const LEGACY_ADMIN_SEGMENTS = new Set(["tenants", "domains", "billing"]);
 
@@ -27,7 +25,8 @@ export default function PreviewPathGuard() {
 
   useEffect(() => {
     if (isLovableEditorPreview() && shouldOpenStorefrontInLovablePreview(pathname)) {
-      const target = lovableStorefrontLocation();
+      const slug = detectTenantSlugFromLocation(pathname, search);
+      const target = lovableStorefrontLocation(slug);
       navigate(target, { replace: true });
       return;
     }
@@ -56,7 +55,8 @@ export default function PreviewPathGuard() {
     }
 
     if (pathname === "/preview/kebab-turco" || pathname.startsWith("/preview/")) {
-      navigate({ pathname: nav.home(), search: LEGACY_PREVIEW_SEARCH }, { replace: true });
+      const slug = detectTenantSlugFromLocation(pathname, search);
+      navigate(lovableStorefrontLocation(slug), { replace: true });
       return;
     }
 
@@ -95,7 +95,11 @@ export default function PreviewPathGuard() {
     }
 
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {
-      navigate(nav.home(), { replace: true });
+      // Slug de tenant — preserva como ?tenant= em vez de descartar.
+      navigate(
+        { pathname: nav.home(), search: `?tenant=${parts[0]}` },
+        { replace: true },
+      );
     }
   }, [pathname, search, navigate]);
 
