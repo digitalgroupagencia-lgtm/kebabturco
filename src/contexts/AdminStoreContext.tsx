@@ -13,7 +13,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { fetchActiveStoresForTenant } from "@/lib/fetchActiveStores";
-import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
+import { isLovableEditorHost, normalizeHostname } from "@/lib/platformHosts";
 
 export type AdminStoreOption = {
   id: string;
@@ -32,7 +32,7 @@ type AdminStoreCtx = {
 const AdminStoreContext = createContext<AdminStoreCtx | null>(null);
 
 function storageKey(tenantId: string) {
-  return `kebab-admin-store:${tenantId}`;
+  return `propio-admin-store:${tenantId}`;
 }
 
 async function resolveTenantIdForAdmin(
@@ -55,7 +55,9 @@ async function resolveTenantIdForAdmin(
       );
       if (byDomain?.id) return byDomain.id;
 
-      if (isDefaultKebabContextHost(host)) {
+      // Editor Lovable (preview do Master): cai para tenant template.
+      // Em domínio real desconhecido NÃO há fallback — admin trata.
+      if (isLovableEditorHost(host)) {
         const { data: t } = await supabase
           .from("tenants")
           .select("id")
@@ -66,12 +68,17 @@ async function resolveTenantIdForAdmin(
     }
   }
 
-  const { data: t } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("slug", DEFAULT_TENANT_SLUG)
-    .maybeSingle();
-  return t?.id ?? null;
+  // Último recurso global: tenant template (usado pelo Master só em ambientes
+  // sem domínio resolvido). Em produção real, `roleData.tenant_id` resolve.
+  if (typeof window !== "undefined" && isLovableEditorHost(window.location.hostname)) {
+    const { data: t } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("slug", DEFAULT_TENANT_SLUG)
+      .maybeSingle();
+    return t?.id ?? null;
+  }
+  return null;
 }
 
 async function resolveInitialStoreId(

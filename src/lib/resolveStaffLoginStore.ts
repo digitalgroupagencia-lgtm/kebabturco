@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { DEFAULT_TENANT_SLUG, SINGLE_TENANT_MODE } from "@/lib/appMode";
-import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
+import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
+import { isLovableEditorHost, normalizeHostname } from "@/lib/platformHosts";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 
 const SELECTED_STORE_KEY = "totem.selectedStoreId";
@@ -82,8 +82,10 @@ async function tenantIdForHost(host: string): Promise<string | null> {
   const bySlug = tenants.find((t) => t.slug === DEFAULT_TENANT_SLUG);
   if (bySlug?.id) return bySlug.id;
 
-  if (SINGLE_TENANT_MODE && tenants.length === 1) return tenants[0].id;
-
+  // Editor Lovable: se houver apenas 1 tenant, usa-o (Master template).
+  if (typeof window !== "undefined" && isLovableEditorHost(window.location.hostname) && tenants.length === 1) {
+    return tenants[0].id;
+  }
   return null;
 }
 
@@ -103,7 +105,7 @@ export async function resolveStaffLoginStoreId(): Promise<string | null> {
       if (fromTenant) return fromTenant;
     }
 
-    if (isDefaultKebabContextHost(host)) {
+    if (isLovableEditorHost(host)) {
       const { data: slugTenant } = await supabase
         .from("tenants")
         .select("id")
@@ -117,7 +119,7 @@ export async function resolveStaffLoginStoreId(): Promise<string | null> {
       }
     }
 
-    if (SINGLE_TENANT_MODE || isDefaultKebabContextHost(host)) {
+    if (isLovableEditorHost(host)) {
       const anyStore = await firstPublicStoreId();
       if (anyStore) return anyStore;
     }
