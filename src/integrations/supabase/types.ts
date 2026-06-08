@@ -3231,6 +3231,19 @@ export type Database = {
         Args: { _statuses?: string[]; _store_id?: string }
         Returns: Json
       }
+      admin_create_tenant_basic: {
+        Args: {
+          _city?: string
+          _country?: string
+          _create_default_store?: boolean
+          _custom_domain?: string
+          _name: string
+          _plan?: string
+          _primary_language?: string
+          _slug: string
+        }
+        Returns: Json
+      }
       admin_print_jobs_diagnostic: {
         Args: { _store_id?: string }
         Returns: Json
