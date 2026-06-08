@@ -24,6 +24,7 @@ import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
+import RootRoute from "@/routes/RootRoute.tsx";
 
 export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
 
@@ -58,7 +59,7 @@ const internal = (
  */
 const LovablePreviewRoutes = () => (
   <Routes>
-    <Route path="/" element={tenantStore} />
+    <Route path="/" element={<RootRoute tenantStore={tenantStore} />} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
     <Route
       path="/staff"

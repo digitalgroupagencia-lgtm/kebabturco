@@ -17,10 +17,5 @@ export default function LovablePreviewGate() {
     return <Navigate to={lovableStorefrontLocation(slug)} replace />;
   }
 
-  if (pathname === "/" && !search.includes("preview=1")) {
-    const slug = detectTenantSlugFromLocation(pathname, search);
-    return <Navigate to={lovableStorefrontLocation(slug)} replace />;
-  }
-
   return null;
 }
