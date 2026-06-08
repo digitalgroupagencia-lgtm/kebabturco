@@ -1,9 +1,9 @@
 /**
- * Modo projecto único — Kebab Turco.
- * Futuros clientes = remix/duplicar este projecto (não multi-tenant na mesma app).
+ * PropioApp Master — em migração para SaaS multi-tenant.
+ * Enquanto SINGLE_TENANT_MODE=true o app ainda usa fallbacks do tenant template.
  */
-export const APP_NAME = "Kebab Turco";
-export const DEFAULT_TENANT_SLUG = "kebab-turco";
+export const APP_NAME = "PropioApp";
+export const DEFAULT_TENANT_SLUG = "template-restaurant";
 
 /** IDs de emergência (fallback se a resolução por slug falhar). */
 export const DEFAULT_TENANT_ID = "11111111-1111-1111-1111-111111111111";
