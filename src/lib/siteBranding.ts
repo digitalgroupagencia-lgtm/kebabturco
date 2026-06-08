@@ -57,7 +57,7 @@ export const SNAPORDER_NEUTRAL_BRANDING: SiteBranding = {
   scope: "tenant",
   displayName: APP_NAME,
   shortName: APP_NAME,
-  metaDescription: "Peça online no Kebab Turco",
+  metaDescription: `${APP_NAME} — plataforma de pedidos para restaurantes.`,
   themeColor: BRAND_CHROME_HEX,
   backgroundColor: BRAND_CHROME_HEX,
   primaryColor: BRAND_WINE_HEX,

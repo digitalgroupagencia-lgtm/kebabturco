@@ -1,8 +1,11 @@
 import { normalizeHostname } from "@/lib/platformHosts";
-import { SINGLE_TENANT_MODE } from "@/lib/appMode";
 
-/** Domínio público oficial do Kebab Turco. */
-export const KEBAB_TURCO_PUBLIC_ORIGIN = "https://kebabturco.net";
+/**
+ * @deprecated legado single-tenant. Mantido para compatibilidade de imports
+ * antigos; nenhum fluxo novo deve usar este valor. Para origem pública use
+ * `getTenantPublicOrigin(tenant)` com o tenant resolvido.
+ */
+export const KEBAB_TURCO_PUBLIC_ORIGIN = "";
 
 export type TenantUrlConfig = {
   slug: string;
@@ -22,7 +25,6 @@ export function getTenantPublicOrigin(tenant: TenantUrlConfig, fallbackOrigin = 
   if (tenant.use_master_domain && tenant.master_domain) {
     return `https://${cleanDomain(tenant.master_domain)}`;
   }
-  if (SINGLE_TENANT_MODE) return KEBAB_TURCO_PUBLIC_ORIGIN;
   const fb = fallbackOrigin || (typeof window !== "undefined" ? window.location.origin : "");
   return fb.replace(/\/$/, "");
 }

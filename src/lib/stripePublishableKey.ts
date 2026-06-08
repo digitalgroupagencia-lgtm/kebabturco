@@ -1,21 +1,19 @@
-import { SINGLE_TENANT_MODE } from "@/lib/appMode";
-
 /**
- * Chaves publicáveis Stripe — Kebab Turco.
- * Seguras no browser (pk_*). Versionadas no projecto, NÃO em Segredos Lovable.
+ * Stripe publishable keys (pk_*) — modo SaaS multi-tenant.
  *
- * Ordem de leitura:
- * 1. import.meta.env (build injecta config/stripe.public.env)
- * 2. fallback abaixo (mesmo padrão da chave live)
+ * Sem chaves hardcoded. A chave activa vem de:
+ * 1. `import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY*` (build-time)
+ * 2. Configuração por tenant em `store_payment_gateways` (resolvida noutro
+ *    fluxo — não aqui).
+ *
+ * Estes exports permanecem por compatibilidade de imports antigos e são
+ * sempre string vazia. Não voltar a colocar chaves de um restaurante neste
+ * ficheiro — chaves por tenant vivem na DB.
+ * @deprecated usar `getStripePublishableKey()` / `getStripePublishableKeyForEnvironment()`
  */
-export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = SINGLE_TENANT_MODE
-  ? "pk_live_51R9ZJLGdymad9Lk9B5XUkb4FcdewOt7PCavKpGl6pitpYf0QngWoO4EBsBMKQAv8CeGZflC0BdqP3mgYSVPm6gb0004WMwRvvV"
-  : "";
-
-/** pk_test da Stripe — Kebab Turco (modo Test). Segura no browser. */
-export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE
-  ? "pk_test_51R9ZJLGdymad9Lk988WG8Sp98AuGBCLYpIuxwvn5gL81g8478fksVTRwj7z2Do2WVHb6SDLwBe0mZ3dgrtBQC9P900tcKxn8yd"
-  : "";
+export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = "";
+/** @deprecated ver acima. */
+export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = "";
 
 export type StripePublishableEnvironment = "live" | "test";
 
