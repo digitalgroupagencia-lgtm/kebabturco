@@ -233,6 +233,9 @@ const CustomerAccountScreen = () => {
     const productIds = Array.from(
       new Set(items.map((i) => i.product_id).filter((id): id is string => !!id)),
     );
+    const productNames = Array.from(
+      new Set(items.map((i) => i.product_name).filter((n): n is string => !!n)),
+    );
 
     type ProductRow = {
       id: string;
@@ -242,28 +245,58 @@ const CustomerAccountScreen = () => {
       product_type: string | null;
     };
     let productsById = new Map<string, ProductRow>();
-    if (productIds.length > 0) {
-      const { data: prods, error } = await supabase
-        .from("products")
-        .select("id, name, image_url, price, product_type")
-        .in("id", productIds);
-      if (error) {
-        appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
-        return;
+    const productsByName = new Map<string, ProductRow>();
+    if (productIds.length > 0 || productNames.length > 0) {
+      const queries: Array<PromiseLike<{ data: ProductRow[] | null; error: unknown }>> = [];
+      if (productIds.length > 0) {
+        queries.push(
+          supabase.from("products").select("id, name, image_url, price, product_type").in("id", productIds) as unknown as PromiseLike<{ data: ProductRow[] | null; error: unknown }>,
+        );
       }
-      productsById = new Map(((prods ?? []) as ProductRow[]).map((p) => [p.id, p]));
+      // Fallback by name (covers items saved without product_id, e.g. combos/refrescos).
+      if (productNames.length > 0 && effectiveStoreId) {
+        queries.push(
+          supabase
+            .from("products")
+            .select("id, name, image_url, price, product_type")
+            .eq("store_id", effectiveStoreId)
+            .in("name", productNames as string[]) as unknown as PromiseLike<{ data: ProductRow[] | null; error: unknown }>,
+        );
+      }
+      const results = await Promise.all(queries);
+      for (const r of results) {
+
+        if (r.error) {
+          appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
+          return;
+        }
+        for (const p of r.data ?? []) {
+          productsById.set(p.id, p);
+          const nm =
+            typeof p.name === "string"
+              ? p.name
+              : p.name && typeof p.name === "object"
+              ? Object.values(p.name as Record<string, string>).find(Boolean) || ""
+              : "";
+          if (nm) productsByName.set(nm, p);
+        }
+      }
     }
+
 
     let addedCount = 0;
     let missingCount = 0;
 
     for (const item of items) {
-      const prod = item.product_id ? productsById.get(item.product_id) : undefined;
-      if (item.product_id && !prod) {
+      let prod = item.product_id ? productsById.get(item.product_id) : undefined;
+      // Fallback: lookup by product name when no id or product was removed.
+      if (!prod && item.product_name) prod = productsByName.get(item.product_name);
+      if (item.product_id && !prod && !productsByName.get(item.product_name || "")) {
         // Produto removido do menu — pula para não meter imagem vazia.
         missingCount += 1;
         continue;
       }
+
 
       const productNameI18n =
         prod && prod.name && typeof prod.name === "object"
@@ -561,7 +594,12 @@ const CustomerAccountScreen = () => {
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Pedidos neste dispositivo
             </p>
-            {localOrders.slice(0, 5).map((entry) => (
+            {localOrders.slice(0, 5).map((entry) => {
+              const ageHours = (Date.now() - new Date(entry.createdAt).getTime()) / 36e5;
+              const isActive =
+                entry.status !== "delivered" && entry.status !== "cancelled" && ageHours < 6;
+
+              return (
               <div key={entry.id} className="rounded-2xl border border-border/70 bg-card/80 p-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="font-black">#{entry.orderNumber}</p>
@@ -569,6 +607,7 @@ const CustomerAccountScreen = () => {
                     {new Date(entry.createdAt).toLocaleDateString()} · {STATUS_LABEL[entry.status] || entry.status}
                   </p>
                 </div>
+                {isActive && (
                 <button
                   type="button"
                   onClick={() => trackLocalOrder(entry)}
@@ -576,8 +615,11 @@ const CustomerAccountScreen = () => {
                 >
                   {t("trackMyOrders")}
                 </button>
+                )}
               </div>
-            ))}
+              );
+            })}
+
           </div>
         )}
 
@@ -598,7 +640,14 @@ const CustomerAccountScreen = () => {
           <p className="text-center text-muted-foreground py-4">Nenhum pedido encontrado para este número</p>
         )}
 
-        {orders.map((order) => (
+        {orders.map((order) => {
+          const ageHours = (Date.now() - new Date(order.created_at).getTime()) / 36e5;
+          const isActiveOrder =
+            order.status !== "delivered" &&
+            order.status !== "cancelled" &&
+            ageHours < 6;
+          return (
+
           <div key={order.id} className="rounded-2xl border border-border bg-card p-4 space-y-3">
             <div className="flex justify-between items-start">
               <div>
@@ -615,12 +664,14 @@ const CustomerAccountScreen = () => {
               ))}
             </ul>
             <div className="flex gap-2">
-              <button
-                onClick={() => { setTrackingOrderId(order.id); setScreen("tracking"); }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border text-sm font-bold"
-              >
-                <Package className="w-4 h-4" /> {t("trackMyOrders")}
-              </button>
+              {isActiveOrder && (
+                <button
+                  onClick={() => { setTrackingOrderId(order.id); setScreen("tracking"); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border text-sm font-bold"
+                >
+                  <Package className="w-4 h-4" /> {t("trackMyOrders")}
+                </button>
+              )}
               <button
                 onClick={() => void reorder(order)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success/15 text-success text-sm font-bold"
@@ -629,7 +680,9 @@ const CustomerAccountScreen = () => {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
+
       </div>
     </div>
   );
