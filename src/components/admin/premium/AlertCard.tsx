@@ -58,13 +58,13 @@ export default function AlertCard({ title, subtitle, items, action, className, e
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-foreground leading-tight truncate" title={item.title}>{item.title}</p>
+                    <p className="text-sm font-semibold text-foreground leading-snug break-words flex-1 min-w-0">{item.title}</p>
                     <span className={cn("shrink-0 h-5 inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-1.5 rounded-md border tabular-nums", sev.badge)}>
                       {sev.badgeLabel}
                     </span>
                   </div>
                   {item.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2">{item.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1 leading-snug break-words">{item.description}</p>
                   )}
                   {item.actionLabel && item.onAction && (
                     <Button
