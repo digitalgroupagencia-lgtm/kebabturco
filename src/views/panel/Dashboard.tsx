@@ -26,6 +26,8 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import { useDemoMode } from "@/lib/demoMode";
+import { DEMO_PANEL_DASHBOARD } from "@/lib/demoData";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -34,8 +36,9 @@ const Dashboard = () => {
   const { storeId: STORE_ID } = useAdminStoreId();
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID);
   const { t } = useStaffT();
+  const demoOn = useDemoMode();
 
-  const { data, isLoading } = useQuery({
+  const { data: realData, isLoading: realLoading } = useQuery({
     queryKey: ["panel-dashboard-financial", STORE_ID],
     enabled: !!STORE_ID,
     queryFn: async () => {
@@ -81,6 +84,9 @@ const Dashboard = () => {
     },
     refetchInterval: 60000,
   });
+
+  const data = demoOn ? DEMO_PANEL_DASHBOARD : realData;
+  const isLoading = demoOn ? false : realLoading;
 
 
 
