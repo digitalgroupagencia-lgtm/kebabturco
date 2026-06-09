@@ -16,12 +16,14 @@ import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
+import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
 const AdminLayout = ({ page: Page }: Props) => {
+  useForceDarkTheme();
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
   usePageTelemetry();
