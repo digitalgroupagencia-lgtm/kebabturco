@@ -843,6 +843,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          accepted_at: string | null
+          accepted_by_name: string | null
+          accepted_by_user_id: string | null
           application_fee_cents: number
           assigned_driver_id: string | null
           coupon_code: string | null
@@ -891,6 +894,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by_name?: string | null
+          accepted_by_user_id?: string | null
           application_fee_cents?: number
           assigned_driver_id?: string | null
           coupon_code?: string | null
@@ -939,6 +945,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by_name?: string | null
+          accepted_by_user_id?: string | null
           application_fee_cents?: number
           assigned_driver_id?: string | null
           coupon_code?: string | null
