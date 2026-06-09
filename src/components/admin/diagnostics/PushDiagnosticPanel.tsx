@@ -248,7 +248,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
               </Select>
             </div>
             <div className="flex items-end">
-              <Button className="w-full" disabled={subscribeBusy || !storeId} onClick={() => void handleSubscribe()}>
+              <Button disabled={subscribeBusy || !storeId} onClick={() => void handleSubscribe()}>
                 {subscribeBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bell className="h-4 w-4 mr-2" />}
                 Registar push
               </Button>
