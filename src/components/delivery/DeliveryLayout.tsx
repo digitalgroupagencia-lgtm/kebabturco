@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import DeliveryAccessGuard from "@/components/delivery/DeliveryAccessGuard";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
 export default function DeliveryLayout({ page: Page }: Props) {
+  useForceDarkTheme();
   const { signOut } = useAuth();
   const { t } = useStaffT("es");
 
