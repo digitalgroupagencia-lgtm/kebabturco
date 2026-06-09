@@ -252,16 +252,11 @@ const PaymentScreen = () => {
       stripeReady: stripeEnabled,
       stripePublishableKey,
     });
-    const extras: PaymentMethodId[] = [];
-    if (extraGatewayVisibility?.redsys) extras.push("redsys");
-    if (extraGatewayVisibility?.bizum) extras.push("bizum");
-    const filteredExtras = extras.filter((id) => {
-      if (orderType === "here" && !mesaValidated) return false;
-      return true;
-    });
-    const allIds = [...ids, ...filteredExtras];
-    return METHOD_DEFS.filter((m) => allIds.includes(m.id));
-  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey, extraGatewayVisibility]);
+    // Redsys e Bizum foram removidos da experiência do cliente.
+    // Apenas Stripe (card) e Efectivo (cash/counter) ficam visíveis.
+    return METHOD_DEFS.filter((m) => ids.includes(m.id));
+  }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
+
 
   const grandTotal = restaurantPortionEur;
 
