@@ -9,12 +9,12 @@ import { SINGLE_TENANT_MODE } from "@/lib/appMode";
  * 2. fallback abaixo (mesmo padrão da chave live)
  */
 export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = SINGLE_TENANT_MODE
-  ? "pk_live_51R9ZJLGdymad9Lk9B5XUkb4FcdewOt7PCavKpGl6pitpYf0QngWoO4EBsBMKQAv8CeGZflC0BdqP3mgYSVPm6gb0004WMwRvvV"
+  ? "pk_live_51Tf14qCbdC0WQ0opjJ5sC2whL8TGC5FEyxMEkPI3h2oi6YofKQsPtHWzCijBEWuNeG9wQEwtr486sERx7iYQsxl000sVK6yd0g"
   : "";
 
-/** pk_test da Stripe — Kebab Turco (modo Test). Segura no browser. */
+/** pk_test da Stripe — Kebab Turco / Euro Business Food (modo Test). Segura no browser. */
 export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE
-  ? "pk_test_51R9ZJLGdymad9Lk988WG8Sp98AuGBCLYpIuxwvn5gL81g8478fksVTRwj7z2Do2WVHb6SDLwBe0mZ3dgrtBQC9P900tcKxn8yd"
+  ? "pk_test_51Tf14qCbdC0WQ0opxNuHTvCWOtk4PI2zMt1Gm44w3BUhDwJfhFHs8lvEgLKpPFRYqA49FroS8hFPTgLjhELFYEyq006ocaeqUm"
   : "";
 
 export type StripePublishableEnvironment = "live" | "test";
