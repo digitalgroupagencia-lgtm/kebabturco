@@ -93,7 +93,7 @@ const MonitoringPage = () => {
   });
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+    new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
 
   return (
     <div className="space-y-6">
