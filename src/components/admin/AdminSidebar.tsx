@@ -35,6 +35,8 @@ import {
   Smartphone,
   Hammer,
   Rocket,
+  Building2,
+  Plus,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
