@@ -61,7 +61,7 @@ async function fetchActiveStores(filter: { tenantId?: string } = {}): Promise<St
   const select =
     "id, name, address, image_url, short_description, sort_order, created_at, tenant_id";
   const db = supabase as unknown as {
-    from: (table: string) => ReturnType<typeof supabase.from>;
+    from: (table: string) => any;
   };
 
   const publicQuery = db
