@@ -755,12 +755,11 @@ const PaymentScreen = () => {
                 setStripePaymentMeta(null);
                 setStripePreparedOrder(null);
               }}
-              onBeforeConfirm={createPendingCardOrder}
-              onSuccess={async (preparedOrder) => {
+              onSuccess={async () => {
                 if (!assertStoreReady()) return;
                 setProcessing(true);
                 try {
-                  const result = preparedOrder || stripePreparedOrder || await createPendingCardOrder();
+                  const result = stripePreparedOrder || await createPendingCardOrder();
                   if (!result) throw new Error("Pedido não criado");
 
                   setOrderPaymentStatus("paid");

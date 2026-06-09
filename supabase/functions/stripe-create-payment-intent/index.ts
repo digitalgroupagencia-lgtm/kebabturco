@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
       ? await stripe.paymentIntents.create({
           amount: amountCents,
           currency: "eur",
-          automatic_payment_methods: { enabled: true },
+          payment_method_types: ["card"],
           metadata: {
             ...baseMeta,
             test_simulated: "true",
@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
           application_fee_amount: applicationFeeCents,
           transfer_data: { destination: store.stripe_connect_account_id! },
           on_behalf_of: store.stripe_connect_account_id!,
-          automatic_payment_methods: { enabled: true },
+          payment_method_types: ["card"],
           metadata: baseMeta,
         });
 
