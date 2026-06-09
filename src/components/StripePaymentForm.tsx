@@ -27,7 +27,6 @@ function CheckoutForm({
   compact,
 }: {
   amountLabel: string;
-  onBeforeConfirm?: () => Promise<{ order_id: string; order_number: string } | void>;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
@@ -104,7 +103,6 @@ function CheckoutForm({
 export default function StripePaymentForm(props: {
   clientSecret: string;
   amountLabel: string;
-  onBeforeConfirm?: () => Promise<{ order_id: string; order_number: string } | void>;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
@@ -132,7 +130,6 @@ export default function StripePaymentForm(props: {
     >
       <CheckoutForm
         amountLabel={props.amountLabel}
-        onBeforeConfirm={props.onBeforeConfirm}
         onSuccess={props.onSuccess}
         onCancel={props.onCancel}
         compact={props.compact}
