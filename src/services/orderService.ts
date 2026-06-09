@@ -212,7 +212,7 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
 
   const { data, error } = await supabase.rpc("create_customer_order", args);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message || "Não foi possível criar o pedido");
   const result = data as CreateCustomerOrderResult;
   return result;
 }

@@ -22,14 +22,13 @@ function getStripePromise(environment: StripePublishableEnvironment = "live", pu
 
 function CheckoutForm({
   amountLabel,
-  onBeforeConfirm,
   onSuccess,
   onCancel,
   compact,
 }: {
   amountLabel: string;
   onBeforeConfirm?: () => Promise<{ order_id: string; order_number: string } | void>;
-  onSuccess: (preparedOrder?: { order_id: string; order_number: string }) => Promise<void>;
+  onSuccess: () => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
 }) {
@@ -50,7 +49,6 @@ function CheckoutForm({
         return;
       }
 
-      const preparedOrder = await onBeforeConfirm?.();
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
@@ -61,7 +59,7 @@ function CheckoutForm({
         return;
       }
       if (paymentIntent?.status === "succeeded") {
-        await onSuccess(preparedOrder || undefined);
+        await onSuccess();
       } else {
         setErr("Pagamento ainda não confirmado. Tente novamente em alguns segundos.");
       }
@@ -107,7 +105,7 @@ export default function StripePaymentForm(props: {
   clientSecret: string;
   amountLabel: string;
   onBeforeConfirm?: () => Promise<{ order_id: string; order_number: string } | void>;
-  onSuccess: (preparedOrder?: { order_id: string; order_number: string }) => Promise<void>;
+  onSuccess: () => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
   connectEnvironment?: StripePublishableEnvironment;
