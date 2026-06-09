@@ -167,12 +167,9 @@ export default function TenantsListPage() {
                     <Smartphone className="h-3 w-3" />
                     {dist === "native_app" ? "App nativo" : "PWA"}
                   </Badge>
-                  <Badge
-                    variant={stripeEnabled ? "default" : "outline"}
-                    className="text-[10px] gap-1"
-                  >
+                  <Badge variant="outline" className="text-[10px] gap-1">
                     <CreditCard className="h-3 w-3" />
-                    Stripe {stripeEnabled ? "ON" : "OFF"}
+                    Pagamentos
                   </Badge>
                 </div>
 
