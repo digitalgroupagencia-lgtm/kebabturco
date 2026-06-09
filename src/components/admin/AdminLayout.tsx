@@ -73,8 +73,8 @@ const AdminLayout = ({ page: Page }: Props) => {
                 <StaffLanguageToggle defaultLang="pt" compact />
                 <AdminThemeToggle />
               </header>
-              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <div className="max-w-full mx-auto">
+              <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <div className="w-full max-w-[1400px] px-4 sm:px-6 pt-6 pb-10 space-y-6">
                   <OperationalDiagnosticsBanner area="admin" />
                   <LovableRouteHintBanner />
                   {Page ? <Page /> : <Outlet />}
