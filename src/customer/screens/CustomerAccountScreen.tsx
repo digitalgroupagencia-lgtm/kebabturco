@@ -638,8 +638,13 @@ const CustomerAccountScreen = () => {
         )}
 
         {orders.map((order) => {
-          const isActiveOrder = order.status !== "delivered" && order.status !== "cancelled";
+          const ageHours = (Date.now() - new Date(order.created_at).getTime()) / 36e5;
+          const isActiveOrder =
+            order.status !== "delivered" &&
+            order.status !== "cancelled" &&
+            ageHours < 6;
           return (
+
           <div key={order.id} className="rounded-2xl border border-border bg-card p-4 space-y-3">
             <div className="flex justify-between items-start">
               <div>
