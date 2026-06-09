@@ -233,6 +233,9 @@ const CustomerAccountScreen = () => {
     const productIds = Array.from(
       new Set(items.map((i) => i.product_id).filter((id): id is string => !!id)),
     );
+    const productNames = Array.from(
+      new Set(items.map((i) => i.product_name).filter((n): n is string => !!n)),
+    );
 
     type ProductRow = {
       id: string;
@@ -242,17 +245,44 @@ const CustomerAccountScreen = () => {
       product_type: string | null;
     };
     let productsById = new Map<string, ProductRow>();
-    if (productIds.length > 0) {
-      const { data: prods, error } = await supabase
-        .from("products")
-        .select("id, name, image_url, price, product_type")
-        .in("id", productIds);
-      if (error) {
-        appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
-        return;
+    const productsByName = new Map<string, ProductRow>();
+    if (productIds.length > 0 || productNames.length > 0) {
+      const queries: Promise<unknown>[] = [];
+      if (productIds.length > 0) {
+        queries.push(
+          supabase.from("products").select("id, name, image_url, price, product_type").in("id", productIds),
+        );
       }
-      productsById = new Map(((prods ?? []) as ProductRow[]).map((p) => [p.id, p]));
+      // Fallback by name (covers items saved without product_id, e.g. combos/refrescos).
+      if (productNames.length > 0 && effectiveStoreId) {
+        queries.push(
+          supabase
+            .from("products")
+            .select("id, name, image_url, price, product_type")
+            .eq("store_id", effectiveStoreId)
+            .in("name", productNames as string[]),
+        );
+      }
+      const results = await Promise.all(queries);
+      for (const res of results) {
+        const r = res as { data: ProductRow[] | null; error: unknown };
+        if (r.error) {
+          appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
+          return;
+        }
+        for (const p of r.data ?? []) {
+          productsById.set(p.id, p);
+          const nm =
+            typeof p.name === "string"
+              ? p.name
+              : p.name && typeof p.name === "object"
+              ? Object.values(p.name as Record<string, string>).find(Boolean) || ""
+              : "";
+          if (nm) productsByName.set(nm, p);
+        }
+      }
     }
+
 
     let addedCount = 0;
     let missingCount = 0;
