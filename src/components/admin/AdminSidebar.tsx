@@ -32,6 +32,9 @@ import {
   Play,
   GitBranch,
   Sparkles,
+  Smartphone,
+  Hammer,
+  Rocket,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,6 +71,9 @@ const overviewItems = [
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
   { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },
+  { title: "Distribuição", url: nav.admin("distribution"), icon: Smartphone },
+  { title: "Build Center", url: nav.admin("build-center"), icon: Hammer },
+  { title: "Release Center", url: nav.admin("release-center"), icon: Rocket },
 ];
 
 const operationalItems = [

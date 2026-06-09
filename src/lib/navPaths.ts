@@ -90,6 +90,12 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "admin", segments: ["payments"], loader: () => import("@/views/admin/AdminPaymentsPage.tsx") },
   { area: "panel", segments: ["payments"], loader: () => import("@/views/panel/PanelPaymentsPage.tsx") },
 
+  // Distribuição comercial (PWA / Android / iOS) — admin-only
+  { area: "admin", segments: ["distribution"], loader: () => import("@/views/admin/distribution/DistributionOverviewPage.tsx") },
+  { area: "admin", segments: ["distribution", ":tenantId"], loader: () => import("@/views/admin/distribution/DistributionEditPage.tsx") },
+  { area: "admin", segments: ["build-center"], loader: () => import("@/views/admin/distribution/BuildCenterPage.tsx") },
+  { area: "admin", segments: ["release-center"], loader: () => import("@/views/admin/distribution/ReleaseCenterPage.tsx") },
+
   { area: "seller", segments: [], loader: () => import("@/views/seller/SellerHome.tsx") },
   { area: "seller", segments: ["tables"], loader: () => import("@/views/seller/SellerTables.tsx") },
   { area: "seller", segments: ["tables", ":sessionId"], loader: () => import("@/views/seller/SellerTableDetail.tsx") },
