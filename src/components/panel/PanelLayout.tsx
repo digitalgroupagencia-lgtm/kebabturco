@@ -18,6 +18,7 @@ import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
+import StaffStatusRow, { StaffStatusProvider } from "@/components/staff/StaffStatusRow";
 
 type Props = {
   page?: ComponentType<object>;
@@ -69,9 +70,12 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <AdminThemeToggle />
               </header>
               <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <div data-staff-shell className="w-full max-w-[1400px] px-4 sm:px-6 pt-6 pb-10 space-y-6">
-                  <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
-                </div>
+                <StaffStatusProvider>
+                  <div data-staff-shell className="w-full max-w-[1400px] px-4 sm:px-6 pt-4 pb-10 space-y-4">
+                    <StaffStatusRow />
+                    <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
+                  </div>
+                </StaffStatusProvider>
               </main>
             </div>
             {(roleData?.role === "admin_master" ||
