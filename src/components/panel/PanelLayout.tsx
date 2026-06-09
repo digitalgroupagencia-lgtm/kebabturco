@@ -73,6 +73,20 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <StaffStatusProvider>
                   <div data-staff-shell className="w-full max-w-screen-2xl px-4 sm:px-6 pt-4 pb-10 space-y-4">
                     <StaffStatusRow />
+                    {roleData?.role === "admin_master" && (
+                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-amber-700 dark:text-amber-300">Modo suporte</span>
+                        <span className="text-muted-foreground">
+                          Está a ver o painel como admin master da plataforma.
+                        </span>
+                        <a
+                          href={nav.admin()}
+                          className="ml-auto text-primary font-semibold hover:underline"
+                        >
+                          ← Voltar ao Admin Master
+                        </a>
+                      </div>
+                    )}
                     <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
                   </div>
                 </StaffStatusProvider>
