@@ -193,11 +193,6 @@ const AdminDashboard = () => {
 
   return (
     <PlatformPageShell width="full">
-      {demo && (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
-          <span>⚠️ Modo demonstração activo — gráficos e listas mostram dados de exemplo. Desactivar no Simulador de pedidos.</span>
-        </div>
-      )}
       <HowToUsePanel
         purpose="Visão geral da plataforma: restaurantes, pedidos do dia, faturamento e atalhos para as centrais (IA, push, planos, etc.)."
         whenToUse="Tela inicial do administrador. Use para tomar decisões rápidas e abrir as áreas mais profundas."
