@@ -785,7 +785,7 @@ export type Database = {
           id: string
           notes: string | null
           order_id: string
-          product_id: string
+          product_id: string | null
           product_name: string
           quantity: number
           removed: Json
@@ -800,7 +800,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id: string
-          product_id: string
+          product_id?: string | null
           product_name: string
           quantity?: number
           removed?: Json
@@ -815,7 +815,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id?: string
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           quantity?: number
           removed?: Json
