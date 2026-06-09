@@ -325,7 +325,7 @@ export async function createStripePaymentIntent(params: {
     onlineServiceFeeCents: number;
     platformFeeCents: number;
     estimatedStripeFeeCents: number;
-    stripeConnectAccountId: string;
+    stripeConnectAccountId: string | null;
     connectEnvironment?: "live" | "test";
   };
 }
