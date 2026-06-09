@@ -74,7 +74,7 @@ const AdminLayout = ({ page: Page }: Props) => {
                 <AdminThemeToggle />
               </header>
               <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <div className="w-full max-w-[1400px] px-4 sm:px-6 pt-6 pb-10 space-y-6">
+                <div data-staff-shell className="w-full max-w-[1400px] px-4 sm:px-6 pt-6 pb-10 space-y-6">
                   <OperationalDiagnosticsBanner area="admin" />
                   <LovableRouteHintBanner />
                   {Page ? <Page /> : <Outlet />}

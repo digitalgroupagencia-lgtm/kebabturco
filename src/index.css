@@ -251,3 +251,21 @@ iframe[name*="stripe-elements-inspector"] {
   height: 0 !important;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Padrão de botões dentro do shell staff (Admin Master / Painel):
+   em ecrãs ≥ sm, neutraliza w-full em botões de acção para que fiquem
+   com largura automática e alinhados à esquerda do card.
+   Diálogos (Radix Portal) ficam fora deste selector — submits full-width
+   em diálogos continuam a funcionar normalmente.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  [data-staff-shell] button.w-full,
+  [data-staff-shell] a.w-full[role="button"] {
+    width: auto;
+  }
+  /* Botões dentro de grids de cards de acção — herdam altura padrão h-10 */
+  [data-staff-shell] .grid > * > .card-action-row button {
+    width: auto;
+  }
+}
+
