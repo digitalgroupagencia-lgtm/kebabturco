@@ -128,6 +128,7 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
       { key: "tables", segment: "tables", label: "Mesas & QR" },
       { key: "team", segment: "team", label: "Equipe" },
       { key: "sellers", segment: "sellers", label: "Vendedores" },
+      { key: "reviews", segment: "reviews", label: "Avaliações" },
     ],
   },
   {
