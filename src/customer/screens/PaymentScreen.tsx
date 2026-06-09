@@ -148,6 +148,7 @@ const PaymentScreen = () => {
     connectEnvironment?: StripePublishableEnvironment;
     publishableKey?: string | null;
   } | null>(null);
+  const [stripePreparedOrder, setStripePreparedOrder] = useState<{ order_id: string; order_number: string } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
   const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone" | "store">(null);
@@ -572,6 +573,49 @@ const PaymentScreen = () => {
     setScreen("confirmation");
   };
 
+  const createPendingCardOrder = async () => {
+    if (!assertStoreReady()) return undefined;
+    if (!stripePaymentIntentId) throw new Error("Pagamento não iniciado");
+    if (stripePreparedOrder) return stripePreparedOrder;
+
+    const fin = cardOrderFinancials();
+    const result = await createCustomerOrder({
+      storeId,
+      orderType: orderTypeDb,
+      items,
+      subtotal: totalPrice,
+      total: grandTotal,
+      tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+      tableId: mesaValidated ? mesaTableId : null,
+      qrToken: mesaValidated ? loadSavedMesaToken() : null,
+      customerName: customerName.trim() || null,
+      customerPhone: fullCustomerPhone || null,
+      notes,
+      paymentMethod: "card",
+      paymentStatus: "pending",
+      stripePaymentIntentId,
+      deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
+      deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
+      deliveryComplement: orderType === "delivery" ? deliveryComplementText || null : null,
+      deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
+      deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
+      deliveryNotes: orderType === "delivery" ? deliveryNotes.trim() : null,
+      deliveryFee,
+      deliveryZoneId: deliveryQuote.zone?.id || null,
+      deliveryZoneName: deliveryQuote.zone?.name || null,
+      couponCode: couponId ? couponCode.trim() : null,
+      discountAmount: couponDiscount,
+      couponId,
+      onlineServiceFeeCents: fin.onlineServiceFeeCents,
+      platformFeeCents: fin.platformFeeCents,
+      stripeFeeCents: fin.stripeFeeCents,
+      netToStoreCents: fin.netToStoreCents,
+      stripeConnectAccountId: fin.stripeConnectAccountId,
+    });
+    setStripePreparedOrder(result);
+    return result;
+  };
+
   const confirm = async () => {
     if (processing || !validate() || !selected) return;
 
@@ -709,45 +753,15 @@ const PaymentScreen = () => {
                 setStripeClientSecret(null);
                 setStripePaymentIntentId(null);
                 setStripePaymentMeta(null);
+                setStripePreparedOrder(null);
               }}
-              onSuccess={async () => {
+              onBeforeConfirm={createPendingCardOrder}
+              onSuccess={async (preparedOrder) => {
                 if (!assertStoreReady()) return;
                 setProcessing(true);
                 try {
-                  const fin = cardOrderFinancials();
-                  const result = await createCustomerOrder({
-                    storeId,
-                    orderType: orderTypeDb,
-                    items,
-                    subtotal: totalPrice,
-                    total: grandTotal,
-                    tableNumber: mesaValidated ? tableNumber.trim() || null : null,
-                    tableId: mesaValidated ? mesaTableId : null,
-                    qrToken: mesaValidated ? loadSavedMesaToken() : null,
-                    customerName: customerName.trim() || null,
-                    customerPhone: fullCustomerPhone || null,
-                    notes,
-                    paymentMethod: "card",
-                    paymentStatus: "pending",
-                    stripePaymentIntentId: stripePaymentIntentId,
-                    deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
-                    deliveryNumber: orderType === "delivery" ? deliveryNumber.trim() : null,
-                    deliveryComplement: orderType === "delivery" ? deliveryComplementText || null : null,
-                    deliveryPostalCode: orderType === "delivery" ? deliveryPostalCode.trim() : null,
-                    deliveryCity: orderType === "delivery" ? deliveryCity.trim() : null,
-                    deliveryNotes: orderType === "delivery" ? deliveryNotes.trim() : null,
-                    deliveryFee,
-                    deliveryZoneId: deliveryQuote.zone?.id || null,
-                    deliveryZoneName: deliveryQuote.zone?.name || null,
-                    couponCode: couponId ? couponCode.trim() : null,
-                    discountAmount: couponDiscount,
-                    couponId,
-                    onlineServiceFeeCents: fin.onlineServiceFeeCents,
-                    platformFeeCents: fin.platformFeeCents,
-                    stripeFeeCents: fin.stripeFeeCents,
-                    netToStoreCents: fin.netToStoreCents,
-                    stripeConnectAccountId: fin.stripeConnectAccountId,
-                  });
+                  const result = preparedOrder || stripePreparedOrder || await createPendingCardOrder();
+                  if (!result) throw new Error("Pedido não criado");
 
                   setOrderPaymentStatus("paid");
                   await showCardOrderConfirmation(result);
