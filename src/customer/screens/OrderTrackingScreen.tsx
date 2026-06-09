@@ -9,6 +9,7 @@ import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotificat
 import ScreenHeader from "@/components/ScreenHeader";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
+import OrderReviewForm from "@/customer/components/OrderReviewForm";
 
 const OrderTrackingScreen = () => {
   const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
