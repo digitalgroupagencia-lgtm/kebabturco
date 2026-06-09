@@ -35,6 +35,8 @@ import {
   teamMemberDraftHasContent,
 } from "@/lib/teamMemberDraft";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import { useDemoMode } from "@/lib/demoMode";
+import { DEMO_PANEL_TEAM } from "@/lib/demoData";
 
 type AppRole = StaffRole;
 
@@ -74,8 +76,20 @@ const TeamPage = () => {
   const tenantId = roleData?.tenant_id;
   const { enabled: sellerEnabled } = useSellerModuleEnabled(tenantId);
   const { primaryLang } = useStoreLanguages(storeId);
+  const demoOn = useDemoMode();
 
-  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [realMembers, setRealMembers] = useState<TeamMember[]>([]);
+  const members: TeamMember[] = demoOn
+    ? DEMO_PANEL_TEAM.map((m) => ({
+        id: m.id,
+        user_id: m.id,
+        role: m.role as AppRole,
+        email: m.email,
+        full_name: m.full_name,
+        preferred_language: m.preferred_language,
+      }))
+    : realMembers;
+  const setMembers = setRealMembers;
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
