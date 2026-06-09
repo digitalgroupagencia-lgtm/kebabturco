@@ -10,6 +10,8 @@ import { Loader2, LayoutGrid, X, CreditCard, Receipt, Unlock } from "lucide-reac
 import type { Database } from "@/integrations/supabase/types";
 import { closeTableByNumber, closeTableSessionUnified, listStoreOpenTableSessions, markTableSessionPaid, type OpenTableSessionRow } from "@/services/tableSessionService";
 import { toast } from "sonner";
+import { useDemoMode } from "@/lib/demoMode";
+import { DEMO_PANEL_TABLES, DEMO_PANEL_TABLE_STATES } from "@/lib/demoData";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 type PaymentStatus = Database["public"]["Enums"]["payment_status"];
@@ -85,6 +87,7 @@ function resolveTableState(
 
 const TableMapPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
+  const demoOn = useDemoMode();
   const [tables, setTables] = useState<TableRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
