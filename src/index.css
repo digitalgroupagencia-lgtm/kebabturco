@@ -270,3 +270,37 @@ iframe[name*="stripe-elements-inspector"] {
   }
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Contraste do sidebar no MODO CLARO:
+   força texto preto sólido (sem opacidade) em labels, links, sub-itens e
+   rodapé. Não afecta o modo escuro (.dark) nem o item activo (que usa
+   sidebar-primary-foreground branco). Centralizado para valer em todos os
+   shells (Admin Master, Painel, Vendedor, Entregador).
+   ────────────────────────────────────────────────────────────────────────── */
+html:not(.dark) [data-sidebar="sidebar"],
+html:not(.dark) [data-sidebar="sidebar"] [data-sidebar="menu-button"],
+html:not(.dark) [data-sidebar="sidebar"] [data-sidebar="menu-sub-button"],
+html:not(.dark) [data-sidebar="sidebar"] a,
+html:not(.dark) [data-sidebar="sidebar"] span,
+html:not(.dark) [data-sidebar="sidebar"] button {
+  color: hsl(var(--sidebar-foreground));
+}
+
+html:not(.dark) [data-sidebar="group-label"] {
+  color: hsl(var(--sidebar-foreground)) !important;
+  opacity: 1 !important;
+  font-weight: 600;
+}
+
+/* Texto secundário (muted) dentro do sidebar também precisa ser legível */
+html:not(.dark) [data-sidebar="sidebar"] .text-muted-foreground {
+  color: hsl(var(--sidebar-foreground)) !important;
+}
+
+/* Item activo mantém o texto branco sobre o vermelho da marca */
+html:not(.dark) [data-sidebar="sidebar"] [data-active="true"],
+html:not(.dark) [data-sidebar="sidebar"] .bg-sidebar-primary,
+html:not(.dark) [data-sidebar="sidebar"] .bg-sidebar-primary * {
+  color: hsl(var(--sidebar-primary-foreground)) !important;
+}
+
