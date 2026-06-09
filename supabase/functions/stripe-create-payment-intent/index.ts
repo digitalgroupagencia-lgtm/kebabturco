@@ -231,6 +231,7 @@ Deno.serve(async (req) => {
           currency: "eur",
           application_fee_amount: applicationFeeCents,
           transfer_data: { destination: store.stripe_connect_account_id! },
+          on_behalf_of: store.stripe_connect_account_id!,
           automatic_payment_methods: { enabled: true },
           metadata: baseMeta,
         });
