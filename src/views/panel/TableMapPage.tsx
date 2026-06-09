@@ -373,10 +373,14 @@ const TableMapPage = () => {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {tables.map((t) => {
-          const session = sessionByTable.get(t.number);
-          const openMeta = openMetaByTable.get(t.number);
-          const state = resolveTableState(t.number, orders, session, openMeta);
+        {(demoOn ? DEMO_PANEL_TABLES : tables).map((t) => {
+          const session = demoOn ? undefined : sessionByTable.get(t.number);
+          const openMeta = demoOn ? undefined : openMetaByTable.get(t.number);
+          const demoEntry = demoOn ? DEMO_PANEL_TABLE_STATES[t.number] : undefined;
+          const state = demoOn
+            ? (demoEntry?.state ?? "free")
+            : resolveTableState(t.number, orders, session, openMeta);
+          const demoTotal = demoEntry?.total;
           return (
             <button
               key={t.id}
@@ -387,11 +391,13 @@ const TableMapPage = () => {
               <p className="text-2xl font-black">Mesa {t.number}</p>
               <p className="text-xs font-bold mt-1">{stateLabels[state]}</p>
               <p className="text-[10px] opacity-70 mt-1">{t.capacity} lugares</p>
-              {session && (
+              {session ? (
                 <p className="text-[10px] font-semibold mt-1 opacity-80">
                   €{Number(session.total_amount || 0).toFixed(2)}
                 </p>
-              )}
+              ) : demoTotal !== undefined ? (
+                <p className="text-[10px] font-semibold mt-1 opacity-80">€{demoTotal.toFixed(2)}</p>
+              ) : null}
             </button>
           );
         })}
