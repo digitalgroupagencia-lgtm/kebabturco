@@ -13,7 +13,8 @@ import {
   QrCode,
   Wallet,
   Radio,
-} from "lucide-react";
+  Star,
+
 import { NavLink as RouterNavLink } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
