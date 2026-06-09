@@ -17,12 +17,14 @@ import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
+import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
 const PanelLayout = ({ page: Page }: Props) => {
+  useForceDarkTheme();
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { primaryLang } = useStoreLanguages(roleData?.store_id);
