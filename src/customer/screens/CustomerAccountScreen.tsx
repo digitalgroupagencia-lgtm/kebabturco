@@ -247,10 +247,10 @@ const CustomerAccountScreen = () => {
     let productsById = new Map<string, ProductRow>();
     const productsByName = new Map<string, ProductRow>();
     if (productIds.length > 0 || productNames.length > 0) {
-      const queries: Promise<unknown>[] = [];
+      const queries: Array<PromiseLike<{ data: ProductRow[] | null; error: unknown }>> = [];
       if (productIds.length > 0) {
         queries.push(
-          supabase.from("products").select("id, name, image_url, price, product_type").in("id", productIds),
+          supabase.from("products").select("id, name, image_url, price, product_type").in("id", productIds) as unknown as PromiseLike<{ data: ProductRow[] | null; error: unknown }>,
         );
       }
       // Fallback by name (covers items saved without product_id, e.g. combos/refrescos).
@@ -260,12 +260,12 @@ const CustomerAccountScreen = () => {
             .from("products")
             .select("id, name, image_url, price, product_type")
             .eq("store_id", effectiveStoreId)
-            .in("name", productNames as string[]),
+            .in("name", productNames as string[]) as unknown as PromiseLike<{ data: ProductRow[] | null; error: unknown }>,
         );
       }
       const results = await Promise.all(queries);
-      for (const res of results) {
-        const r = res as { data: ProductRow[] | null; error: unknown };
+      for (const r of results) {
+
         if (r.error) {
           appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
           return;
