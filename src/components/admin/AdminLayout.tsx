@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
-import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
+import StaffStatusRow, { StaffStatusProvider } from "@/components/staff/StaffStatusRow";
 import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
@@ -74,11 +74,13 @@ const AdminLayout = ({ page: Page }: Props) => {
                 <AdminThemeToggle />
               </header>
               <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <div data-staff-shell className="w-full max-w-[1400px] px-4 sm:px-6 pt-6 pb-10 space-y-6">
-                  <OperationalDiagnosticsBanner area="admin" />
-                  <LovableRouteHintBanner />
-                  {Page ? <Page /> : <Outlet />}
-                </div>
+                <StaffStatusProvider>
+                  <div data-staff-shell className="w-full max-w-[1400px] px-4 sm:px-6 pt-4 pb-10 space-y-4">
+                    <StaffStatusRow />
+                    <LovableRouteHintBanner />
+                    {Page ? <Page /> : <Outlet />}
+                  </div>
+                </StaffStatusProvider>
               </main>
             </div>
             <AdminAssistant />
