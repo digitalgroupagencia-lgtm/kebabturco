@@ -14,6 +14,7 @@ import {
   Wallet,
   Radio,
   Star,
+} from "lucide-react";
 
 import { NavLink as RouterNavLink } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
