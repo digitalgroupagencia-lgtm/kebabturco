@@ -52,6 +52,7 @@ const ICONS: Record<string, typeof ShoppingBag> = {
   settings: Settings,
   team: Users,
   sellers: UserCog,
+  reviews: Star,
   guide: BookOpen,
   diagnostics: Activity,
 };
