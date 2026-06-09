@@ -22,12 +22,14 @@ function getStripePromise(environment: StripePublishableEnvironment = "live", pu
 
 function CheckoutForm({
   amountLabel,
+  onBeforeConfirm,
   onSuccess,
   onCancel,
   compact,
 }: {
   amountLabel: string;
-  onSuccess: () => Promise<void>;
+  onBeforeConfirm?: () => Promise<{ order_id: string; order_number: string } | void>;
+  onSuccess: (preparedOrder?: { order_id: string; order_number: string }) => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
 }) {
@@ -40,19 +42,34 @@ function CheckoutForm({
     if (!stripe || !elements || busy) return;
     setBusy(true);
     setErr(null);
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required",
-    });
-    if (error) {
-      setErr(error.message || "Pagamento recusado");
+    try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setErr(submitError.message || "Confirme os dados do cartão");
+        setBusy(false);
+        return;
+      }
+
+      const preparedOrder = await onBeforeConfirm?.();
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
+      if (error) {
+        setErr(error.message || "Pagamento recusado");
+        setBusy(false);
+        return;
+      }
+      if (paymentIntent?.status === "succeeded") {
+        await onSuccess(preparedOrder || undefined);
+      } else {
+        setErr("Pagamento ainda não confirmado. Tente novamente em alguns segundos.");
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Não foi possível finalizar o pagamento");
+    } finally {
       setBusy(false);
-      return;
     }
-    if (paymentIntent?.status === "succeeded") {
-      await onSuccess();
-    }
-    setBusy(false);
   };
 
   return (
@@ -89,7 +106,8 @@ function CheckoutForm({
 export default function StripePaymentForm(props: {
   clientSecret: string;
   amountLabel: string;
-  onSuccess: () => Promise<void>;
+  onBeforeConfirm?: () => Promise<{ order_id: string; order_number: string } | void>;
+  onSuccess: (preparedOrder?: { order_id: string; order_number: string }) => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
   connectEnvironment?: StripePublishableEnvironment;
@@ -116,6 +134,7 @@ export default function StripePaymentForm(props: {
     >
       <CheckoutForm
         amountLabel={props.amountLabel}
+        onBeforeConfirm={props.onBeforeConfirm}
         onSuccess={props.onSuccess}
         onCancel={props.onCancel}
         compact={props.compact}

@@ -226,12 +226,12 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
   }
 
   const expectedRestaurantCents = Math.round(Number(order.total) * 100);
-  const expectedPaymentCents = expectedRestaurantCents + Number(order.online_service_fee_cents ?? 0);
+  const expectedPaymentCents = expectedRestaurantCents;
   if (pi.amount_received !== expectedPaymentCents && pi.amount !== expectedPaymentCents) {
     return json({ error: "Valor do pagamento não corresponde ao pedido" }, 400);
   }
 
-  if (amountCents !== expectedRestaurantCents && amountCents !== expectedPaymentCents) {
+  if (amountCents !== expectedRestaurantCents) {
     return json({ error: "Valor inválido" }, 400);
   }
 
