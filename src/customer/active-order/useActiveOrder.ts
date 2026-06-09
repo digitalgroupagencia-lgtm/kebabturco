@@ -33,15 +33,22 @@ export function useActiveOrder() {
     setOrder(null);
   }, [setActiveOrderId, setTrackingOrderId]);
 
+  // Quando o pedido termina (entregue/cancelado) deixamos de o tratar como activo,
+  // mas mantemos o trackingOrderId para o ecrã de acompanhamento mostrar "Pedido entregue".
+  const finalizeActiveOrder = useCallback(() => {
+    clearStoredActiveOrder();
+    setActiveOrderId("");
+  }, [setActiveOrderId]);
+
   const onOrder = useCallback(
     (row: PublicOrderTrack | null) => {
       setOrder(row);
       setFetchSettled(true);
       if (row && TERMINAL_STATUSES.has(row.status)) {
-        clearActiveOrder();
+        finalizeActiveOrder();
       }
     },
-    [clearActiveOrder],
+    [finalizeActiveOrder],
   );
 
   const onLoading = useCallback((next: boolean) => {
