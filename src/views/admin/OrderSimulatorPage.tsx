@@ -14,11 +14,14 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { playTestAlert } from "@/lib/panelAlerts";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import { useDemoMode, setDemoMode } from "@/lib/demoMode";
+import { Database } from "lucide-react";
 
 type Store = { id: string; name: string };
 type Table = { id: string; number: string };
 
 export default function OrderSimulatorPage() {
+  const demoOn = useDemoMode();
   const { user } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const isAdmin = roleData?.role === "admin_master";
@@ -281,6 +284,46 @@ export default function OrderSimulatorPage() {
               {stores.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+        </CardContent>
+      </Card>
+
+      <Card className={demoOn ? "border-amber-500/40" : undefined}>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="h-4 w-4" /> Dados de demonstração
+          </CardTitle>
+          <CardDescription>
+            Liga um conjunto de dados de exemplo (KPIs, gráficos de rosca, funil, top restaurantes, séries de
+            faturação) no dashboard do admin. <strong>Não toca em pedidos reais nem em faturação</strong> — é apenas
+            visual e totalmente reversível. Útil para avaliar o layout antes de ter volume real.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionBar>
+            {demoOn ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDemoMode(false);
+                  toast.success("Dados de demonstração removidos");
+                }}
+              >
+                Limpar dados de teste
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setDemoMode(true);
+                  toast.success("Dados de demonstração activos no dashboard");
+                }}
+              >
+                Popular dados de teste
+              </Button>
+            )}
+            {demoOn && (
+              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">⚠️ Modo demo activo</span>
+            )}
+          </ActionBar>
         </CardContent>
       </Card>
 
