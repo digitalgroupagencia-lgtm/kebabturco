@@ -403,7 +403,7 @@ const TableMapPage = () => {
         })}
       </div>
 
-      {tables.length === 0 && (
+      {!demoOn && tables.length === 0 && (
         <Card className="p-8 text-center text-muted-foreground">Registe mesas em Gestão de mesas primeiro.</Card>
       )}
 
