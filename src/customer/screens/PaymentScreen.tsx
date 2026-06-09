@@ -52,14 +52,11 @@ import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
 import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
 import { useSellerMode } from "@/contexts/SellerModeContext";
-import { useCheckoutExtraGatewayVisibility } from "@/hooks/useStorePaymentGateways";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
   { id: "card", icon: CreditCard },
-  { id: "redsys", icon: Landmark },
-  { id: "bizum", icon: Wallet },
   { id: "cash", icon: Banknote },
   { id: "pix", icon: QrCode },
   { id: "apple", icon: Smartphone },
@@ -70,7 +67,7 @@ const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
 
 const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Cartão", en: "Card", es: "Tarjeta", fr: "Carte" },
-  redsys: { pt: "Redsys", en: "Redsys", es: "Redsys (TPV)", fr: "Redsys" },
+  redsys: { pt: "Redsys", en: "Redsys", es: "Redsys", fr: "Redsys" },
   bizum: { pt: "Bizum", en: "Bizum", es: "Bizum", fr: "Bizum" },
   cash: { pt: "Dinheiro", en: "Cash", es: "Efectivo", fr: "Espèces" },
   pix: { pt: "Pix", en: "Pix", es: "Pix", fr: "Pix" },
@@ -82,8 +79,8 @@ const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
 
 const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Pagamento seguro online", en: "Secure online payment", es: "Pago seguro online", fr: "Paiement sécurisé en ligne" },
-  redsys: { pt: "TPV bancário Espanha (em implementação)", en: "Spanish bank TPV (coming soon)", es: "TPV bancario España (en implementación)", fr: "TPV bancaire Espagne (bientôt)" },
-  bizum: { pt: "Pagamento por telemóvel (em implementação)", en: "Mobile payment (coming soon)", es: "Pago con móvil (en implementación)", fr: "Paiement mobile (bientôt)" },
+  redsys: { pt: "", en: "", es: "", fr: "" },
+  bizum: { pt: "", en: "", es: "", fr: "" },
   cash: { pt: "Pagamento no caixa", en: "Pay at register", es: "Pago en caja", fr: "Paiement à la caisse" },
   pix: { pt: "Pagamento instantâneo", en: "Instant payment", es: "Pago instantáneo", fr: "Paiement instantané" },
   apple: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
@@ -92,7 +89,6 @@ const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   counter: { pt: "Pague ao retirar", en: "Pay when picking up", es: "Paga al recoger tu pedido", fr: "Payer au retrait" },
 };
 
-const UNDER_CONSTRUCTION_METHODS: ReadonlySet<PaymentMethodId> = new Set(["redsys", "bizum"]);
 
 const hiddenCheckoutFeature = (_name: string) => false;
 
