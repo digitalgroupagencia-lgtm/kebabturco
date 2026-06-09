@@ -52,11 +52,11 @@
     --radius: 1rem;
 
     --sidebar-background: 0 0% 100%;      /* #FFFFFF */
-    --sidebar-foreground: 240 5% 26%;     /* #3F3F46 */
+    --sidebar-foreground: 240 6% 10%;     /* #18181B — texto forte para contraste em fundo claro */
     --sidebar-primary: 10 100% 42%;       /* #D62300 — item activo */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;         /* #F4F4F5 — hover */
-    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-accent: 240 5% 94%;         /* #EFEFF1 — hover */
+    --sidebar-accent-foreground: 240 6% 6%;  /* quase preto no hover */
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 10 100% 42%;
 
