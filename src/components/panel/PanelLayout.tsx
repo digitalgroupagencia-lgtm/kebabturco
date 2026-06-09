@@ -68,8 +68,10 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <PanelUpdateButton />
                 <AdminThemeToggle />
               </header>
-              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
+              <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <div className="w-full max-w-[1400px] px-4 sm:px-6 pt-6 pb-10 space-y-6">
+                  <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
+                </div>
               </main>
             </div>
             {(roleData?.role === "admin_master" ||

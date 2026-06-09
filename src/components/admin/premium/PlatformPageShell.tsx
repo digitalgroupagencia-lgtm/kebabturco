@@ -3,19 +3,16 @@ import { cn } from "@/lib/utils";
 type Props = {
   children: React.ReactNode;
   className?: string;
+  /** Mantido por compatibilidade — ignorado. A largura agora é definida no layout pai. */
   width?: "default" | "wide" | "full";
 };
 
-const widthCls = {
-  default: "max-w-5xl",
-  wide: "max-w-7xl",
-  full: "max-w-[1400px]",
-};
-
-export default function PlatformPageShell({ children, className, width = "wide" }: Props) {
-  return (
-    <div className={cn("mx-auto w-full space-y-6 pb-10", widthCls[width], className)}>
-      {children}
-    </div>
-  );
+/**
+ * Casca de página interna. Não aplica largura/centralização própria:
+ * o container único (max-w-[1400px], padding lateral, alinhamento à esquerda)
+ * está nos layouts (AdminLayout / PanelLayout). Aqui apenas garantimos o
+ * espaçamento vertical entre seções.
+ */
+export default function PlatformPageShell({ children, className }: Props) {
+  return <div className={cn("w-full space-y-6", className)}>{children}</div>;
 }
