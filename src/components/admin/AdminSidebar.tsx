@@ -174,10 +174,10 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Painel operacional</SidebarGroupLabel>
+          <SidebarGroupLabel>Operação do Restaurante</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {operationalItems.map((item) => (
+              {restaurantOpsItems.map((item) => (
                 <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
               ))}
             </SidebarMenu>
@@ -186,10 +186,10 @@ export function AdminSidebar() {
 
         {!financeOnly && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
+            <SidebarGroupLabel>PropioApp Master</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {overviewItems.map((item) => (
+                {masterItems.map((item) => (
                   <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
                 ))}
               </SidebarMenu>
