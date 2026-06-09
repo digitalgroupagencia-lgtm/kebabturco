@@ -756,40 +756,60 @@ const PaymentScreen = () => {
                 setStripePreparedOrder(null);
               }}
               onSuccess={async () => {
-                if (!assertStoreReady()) return;
+                console.log("[checkout] Stripe payment succeeded — criando pedido…");
+                if (!assertStoreReady()) {
+                  console.error("[checkout] Loja indisponível após pagamento aprovado");
+                  window.alert("Pagamento aprovado pela Stripe, mas a loja ficou indisponível. Anote o código do cartão e contacte o restaurante.");
+                  return;
+                }
                 setProcessing(true);
+                let createdOrder: { order_id: string; order_number: string } | null = stripePreparedOrder;
                 try {
-                  const result = stripePreparedOrder || await createPendingCardOrder();
-                  if (!result) throw new Error("Pedido não criado");
+                  if (!createdOrder) {
+                    createdOrder = await createPendingCardOrder() ?? null;
+                  }
+                  if (!createdOrder) throw new Error("Pedido não retornou ID");
 
+                  console.log("[checkout] Pedido criado:", createdOrder.order_number);
                   setOrderPaymentStatus("paid");
-                  await showCardOrderConfirmation(result);
+                  await showCardOrderConfirmation(createdOrder);
+                } catch (orderErr) {
+                  console.error("[checkout] Falha ao criar pedido após pagamento aprovado:", orderErr);
+                  setProcessing(false);
+                  const msg = orderErr instanceof Error ? orderErr.message : "erro desconhecido";
+                  window.alert(
+                    `Pagamento aprovado pela Stripe (${stripePaymentIntentId ?? "—"}), mas houve falha ao registar o pedido: ${msg}. ` +
+                    `Por favor mostre este código ao restaurante para reembolso ou conclusão manual.`,
+                  );
+                  return;
+                }
 
+                // Pedido criado e tela de confirmação activa — daqui em diante nada bloqueia o cliente.
+                setStripeClientSecret(null);
+                setProcessing(false);
+
+                // Verificação do servidor + impressão em background (não bloqueia UI).
+                void (async () => {
                   try {
                     await verifyCardPaymentWithRetry({
                       storeId,
                       paymentIntentId: stripePaymentIntentId!,
-                      orderId: result.order_id,
+                      orderId: createdOrder!.order_id,
                       amountCents: stripePaymentMeta?.restaurantPortionCents ?? Math.round(grandTotal * 100),
                     });
                   } catch (verifyError) {
-                    console.warn("Pagamento confirmado, pedido criado; verificação do servidor ainda pendente.", verifyError);
-                    return;
+                    console.warn("[checkout] verify-payment-intent falhou (webhook irá liquidar):", verifyError);
                   }
-
-                  await enqueueCheckoutPrint(result, {
-                    paymentMethod: "card",
-                    paymentStatus: "paid",
-                    paidViaApp: true,
-                  });
-
-                } catch (e) {
-                  console.error(e);
-                  setShowError("method");
-                } finally {
-                  setProcessing(false);
-                  setStripeClientSecret(null);
-                }
+                  try {
+                    await enqueueCheckoutPrint(createdOrder!, {
+                      paymentMethod: "card",
+                      paymentStatus: "paid",
+                      paidViaApp: true,
+                    });
+                  } catch (printErr) {
+                    console.warn("[checkout] impressão falhou:", printErr);
+                  }
+                })();
               }}
             />
           </div>
