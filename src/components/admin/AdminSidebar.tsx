@@ -173,17 +173,6 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Operação do Restaurante</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {restaurantOpsItems.map((item) => (
-                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {!financeOnly && (
           <SidebarGroup>
             <SidebarGroupLabel>PropioApp Master</SidebarGroupLabel>
@@ -196,6 +185,17 @@ export function AdminSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Operação do Restaurante</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {restaurantOpsItems.map((item) => (
+                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>{financeOnly ? "Recebimentos" : "Configuração da loja"}</SidebarGroupLabel>
