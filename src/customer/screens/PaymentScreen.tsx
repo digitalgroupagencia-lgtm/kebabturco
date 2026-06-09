@@ -144,7 +144,7 @@ const PaymentScreen = () => {
     onlineServiceFeeCents: number;
     platformFeeCents: number;
     estimatedStripeFeeCents: number;
-    stripeConnectAccountId: string;
+    stripeConnectAccountId: string | null;
     connectEnvironment?: StripePublishableEnvironment;
   } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
@@ -755,7 +755,7 @@ const PaymentScreen = () => {
                       storeId,
                       paymentIntentId: stripePaymentIntentId!,
                       orderId: result.order_id,
-                      amountCents,
+                      amountCents: stripePaymentMeta?.restaurantPortionCents ?? Math.round(grandTotal * 100),
                     });
                   } catch (verifyError) {
                     console.warn("Pagamento confirmado, pedido criado; verificação do servidor ainda pendente.", verifyError);
