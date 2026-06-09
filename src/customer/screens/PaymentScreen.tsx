@@ -46,7 +46,7 @@ import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import PhoneInput from "@/components/PhoneInput";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle, Landmark, Wallet, Sparkles } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
