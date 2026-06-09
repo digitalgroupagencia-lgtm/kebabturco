@@ -32,7 +32,7 @@ type Props = {
 
 export default function AlertCard({ title, subtitle, items, action, className, emptyLabel = "Sem alertas no momento" }: Props) {
   return (
-    <div className={cn("rounded-2xl border border-border/70 bg-card p-5", className)}>
+    <div className={cn("rounded-2xl border border-border/70 bg-card p-5 h-full flex flex-col", className)}>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <h3 className="text-base font-bold text-foreground">{title}</h3>
@@ -44,27 +44,27 @@ export default function AlertCard({ title, subtitle, items, action, className, e
       {items.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {items.map((item) => {
             const sev = SEV[item.severity];
             const Icon = item.icon ?? sev.icon;
             return (
               <li
                 key={item.id}
-                className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
+                className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-2.5"
               >
-                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", sev.bg, sev.text)}>
+                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg mt-0.5", sev.bg, sev.text)}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{item.title}</p>
-                    <span className={cn("shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border", sev.badge)}>
+                    <p className="text-sm font-semibold text-foreground leading-tight truncate" title={item.title}>{item.title}</p>
+                    <span className={cn("shrink-0 h-5 inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-1.5 rounded-md border tabular-nums", sev.badge)}>
                       {sev.badgeLabel}
                     </span>
                   </div>
                   {item.description && (
-                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{item.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2">{item.description}</p>
                   )}
                   {item.actionLabel && item.onAction && (
                     <Button
