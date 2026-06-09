@@ -36,6 +36,7 @@ const MANAGER_PANEL_SEGMENTS = new Set([
   "sellers",
   "guide",
   "diagnostics",
+  "reviews",
 ]);
 
 /** Segmentos permitidos por perfil no painel do restaurante. */
