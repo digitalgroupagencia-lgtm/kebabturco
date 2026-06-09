@@ -230,8 +230,13 @@ const CustomerAccountScreen = () => {
     }
 
     // Recolhe todos os product_id reais (quando existem) para buscar imagem/nome/preço actuais.
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const productIds = Array.from(
-      new Set(items.map((i) => i.product_id).filter((id): id is string => !!id)),
+      new Set(
+        items
+          .map((i) => i.product_id)
+          .filter((id): id is string => !!id && uuidRe.test(id)),
+      ),
     );
     const productNames = Array.from(
       new Set(items.map((i) => i.product_name).filter((n): n is string => !!n)),
@@ -265,10 +270,10 @@ const CustomerAccountScreen = () => {
       }
       const results = await Promise.all(queries);
       for (const r of results) {
-
         if (r.error) {
-          appToastError("No se pudo cargar el pedido. Inténtelo de nuevo.");
-          return;
+          // Não bloqueia a recompra — apenas regista e segue com fallback por nome/dados do pedido.
+          console.warn("[reorder] product lookup failed", r.error);
+          continue;
         }
         for (const p of r.data ?? []) {
           productsById.set(p.id, p);
