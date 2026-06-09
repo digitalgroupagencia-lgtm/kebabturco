@@ -62,8 +62,7 @@ export default function TenantsListPage() {
         .from("tenants")
         .select(`
           id, name, slug, plan, is_active, custom_domain, path_slug, created_at,
-          tenant_app_distribution ( distribution_type ),
-          store_payment_gateways:stores!inner(store_payment_gateways(is_enabled, gateway_id))
+          tenant_app_distribution ( distribution_type )
         `)
         .eq("is_template", false)
         .order("created_at", { ascending: false });
@@ -132,8 +131,6 @@ export default function TenantsListPage() {
           {filtered.map((t) => {
             const dist = (t.tenant_app_distribution ?? [])[0]?.distribution_type ?? "pwa";
             const planLabel = PLAN_LABELS[(t.plan as PlanKey) || "start"] ?? "START";
-            const stripeEnabled = (t.store_payment_gateways as unknown as { store_payment_gateways: { is_enabled: boolean }[] }[] | undefined)
-              ?.some((row) => row.store_payment_gateways?.some((g) => g.is_enabled)) ?? false;
 
             return (
               <Card key={t.id} className="p-4 hover:border-primary/30 transition-colors">
