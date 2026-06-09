@@ -3608,28 +3608,17 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
-      record_payment_settlement:
-        | {
-            Args: {
-              _net_to_store_cents: number
-              _platform_fee_cents: number
-              _processing_fee_cents: number
-              _stripe_fee_cents: number
-              _stripe_payment_intent_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _net_to_store_cents: number
-              _online_service_fee_cents?: number
-              _platform_fee_cents: number
-              _processing_fee_cents: number
-              _stripe_fee_cents: number
-              _stripe_payment_intent_id: string
-            }
-            Returns: Json
-          }
+      record_payment_settlement: {
+        Args: {
+          _net_to_store_cents: number
+          _online_service_fee_cents?: number
+          _platform_fee_cents: number
+          _processing_fee_cents: number
+          _stripe_fee_cents: number
+          _stripe_payment_intent_id: string
+        }
+        Returns: Json
+      }
       regenerate_table_qr_token: {
         Args: { _table_id: string }
         Returns: string
