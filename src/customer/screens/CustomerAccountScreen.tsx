@@ -595,7 +595,10 @@ const CustomerAccountScreen = () => {
               Pedidos neste dispositivo
             </p>
             {localOrders.slice(0, 5).map((entry) => {
-              const isActive = entry.status !== "delivered" && entry.status !== "cancelled";
+              const ageHours = (Date.now() - new Date(entry.createdAt).getTime()) / 36e5;
+              const isActive =
+                entry.status !== "delivered" && entry.status !== "cancelled" && ageHours < 6;
+
               return (
               <div key={entry.id} className="rounded-2xl border border-border/70 bg-card/80 p-3 flex items-center justify-between gap-3">
                 <div>
