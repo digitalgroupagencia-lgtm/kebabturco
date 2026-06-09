@@ -712,7 +712,6 @@ const PaymentScreen = () => {
                 setProcessing(true);
                 try {
                   const fin = cardOrderFinancials();
-                  const amountCents = stripePaymentMeta?.amountCents ?? Math.round(grandTotal * 100);
                   const result = await createCustomerOrder({
                     storeId,
                     orderType: orderTypeDb,
