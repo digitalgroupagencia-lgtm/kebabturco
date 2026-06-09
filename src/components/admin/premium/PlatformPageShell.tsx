@@ -9,7 +9,7 @@ type Props = {
 
 /**
  * Casca de página interna. Não aplica largura/centralização própria:
- * o container único (max-w-[1400px], padding lateral, alinhamento à esquerda)
+ * o container único (max-w-screen-2xl, padding lateral, alinhamento à esquerda)
  * está nos layouts (AdminLayout / PanelLayout). Aqui apenas garantimos o
  * espaçamento vertical entre seções.
  */

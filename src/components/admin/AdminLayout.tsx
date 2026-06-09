@@ -75,7 +75,7 @@ const AdminLayout = ({ page: Page }: Props) => {
               </header>
               <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
                 <StaffStatusProvider>
-                  <div data-staff-shell className="w-full max-w-[1400px] px-4 sm:px-6 pt-4 pb-10 space-y-4">
+                  <div data-staff-shell className="w-full max-w-screen-2xl px-4 sm:px-6 pt-4 pb-10 space-y-4">
                     <StaffStatusRow />
                     <LovableRouteHintBanner />
                     {Page ? <Page /> : <Outlet />}
