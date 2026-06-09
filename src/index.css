@@ -288,8 +288,29 @@ html:not(.dark) [data-sidebar="sidebar"] button {
 
 html:not(.dark) [data-sidebar="group-label"] {
   color: hsl(var(--sidebar-foreground)) !important;
-  opacity: 1 !important;
   font-weight: 600;
+}
+
+/* Em modo ícone (sidebar colapsada), esconder por completo rótulos de seção
+   e qualquer texto residual para não vazar na coluna estreita. */
+[data-sidebar="sidebar"][data-collapsible="icon"] [data-sidebar="group-label"] {
+  opacity: 0 !important;
+  pointer-events: none;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+[data-sidebar="sidebar"][data-collapsible="icon"] [data-sidebar="menu-button"] > span,
+[data-sidebar="sidebar"][data-collapsible="icon"] [data-sidebar="menu-sub-button"] > span,
+[data-sidebar="sidebar"][data-collapsible="icon"] a > span,
+[data-sidebar="sidebar"][data-collapsible="icon"] button > span:not([data-keep-collapsed]) {
+  display: none !important;
+}
+[data-sidebar="sidebar"][data-collapsible="icon"] [data-sidebar="menu-button"],
+[data-sidebar="sidebar"][data-collapsible="icon"] [data-sidebar="menu-sub-button"],
+[data-sidebar="sidebar"][data-collapsible="icon"] a {
+  justify-content: center;
 }
 
 /* Texto secundário (muted) dentro do sidebar também precisa ser legível */
