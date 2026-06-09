@@ -78,6 +78,19 @@ const OrderTrackingScreen = () => {
               <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-center">
                 <p className="text-lg font-black text-destructive">{t("orderCancelled")}</p>
               </div>
+            ) : order.status === "delivered" ? (
+              <div className="rounded-2xl border border-success/40 bg-success/10 p-6 text-center space-y-2">
+                <p className="text-4xl">🎉</p>
+                <p className="text-lg font-black text-success">
+                  {t(
+                    order.order_type === "takeaway"
+                      ? "customerStatusCollected"
+                      : order.order_type === "dine_in"
+                        ? "customerStatusServed"
+                        : "customerStatusDelivered",
+                  )}
+                </p>
+              </div>
             ) : (
               <>
                 <div className="text-center space-y-2">
