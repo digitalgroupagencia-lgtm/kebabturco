@@ -620,40 +620,9 @@ const PaymentScreen = () => {
     return <SellerCheckoutForm />;
   }
 
-  const underConstructionLabel = underConstructionMethod
-    ? (METHOD_LABELS[underConstructionMethod]?.pt ?? underConstructionMethod)
-    : "";
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
-      <Dialog
-        open={!!underConstructionMethod}
-        onOpenChange={(o) => { if (!o) setUnderConstructionMethod(null); }}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-              {underConstructionLabel} — indisponível
-            </DialogTitle>
-            <DialogDescription className="pt-2 text-left space-y-2">
-              <span className="block">
-                Este método de pagamento ainda não está disponível neste restaurante.
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                Por favor escolha <strong>Cartão</strong> ou <strong>Efectivo</strong> para
-                finalizar o pedido.
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" onClick={() => setUnderConstructionMethod(null)}>
-              Voltar e escolher outro
-            </Button>
-          </DialogFooter>
 
-        </DialogContent>
-      </Dialog>
 
       <StoreClosedDialog
         open={closedDialog}
