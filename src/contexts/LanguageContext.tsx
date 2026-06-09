@@ -225,6 +225,7 @@ const translations: Translations = {
     en: "Pick a rating from 1 to 5.",
     es: "Elige una valoración de 1 a 5.",
     fr: "Choisissez une note de 1 à 5.",
+  },
   orderCancelled: {
     pt: "Pedido cancelado",
     en: "Order cancelled",
