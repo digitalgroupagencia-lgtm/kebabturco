@@ -34,6 +34,18 @@ import RankingCard, { type RankingItem } from "@/components/admin/premium/Rankin
 import AlertCard, { type AlertItem } from "@/components/admin/premium/AlertCard";
 import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
 import StatusPill from "@/components/admin/premium/StatusPill";
+import DonutChartCard from "@/components/admin/charts/DonutChartCard";
+import FunnelChartCard from "@/components/admin/charts/FunnelChartCard";
+import { useDemoMode } from "@/lib/demoMode";
+import {
+  DEMO_STATS,
+  DEMO_REVENUE_SERIES,
+  DEMO_TOP_TENANTS,
+  DEMO_PAYMENT_METHODS,
+  DEMO_SALES_CHANNELS,
+  DEMO_FUNNEL,
+  DEMO_RECENT_ACTIVITY,
+} from "@/lib/demoData";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
 import { nav } from "@/lib/navPaths.ts";
@@ -57,6 +69,8 @@ function relativeTime(iso: string): string {
 }
 
 const AdminDashboard = () => {
+  const demo = useDemoMode();
+
   const { data: stats, isLoading: l1 } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
@@ -127,8 +141,13 @@ const AdminDashboard = () => {
     );
   }
 
+  // Substitui dados reais por demo quando o modo demonstração está ligado.
+  const liveStats = demo ? DEMO_STATS : stats;
+  const liveRevenue = demo ? DEMO_REVENUE_SERIES : revenueSeries;
+  const liveTopTenants = demo ? DEMO_TOP_TENANTS : topTenants;
+
   const alertCount =
-    Number(stats?.overdue_count || 0) + Number(stats?.pending_count || 0);
+    Number(liveStats?.overdue_count || 0) + Number(liveStats?.pending_count || 0);
 
   const activityItems: ActivityItem[] = [];
 
@@ -168,10 +187,17 @@ const AdminDashboard = () => {
     });
   });
 
-  const sortedActivity = activityItems.slice(0, 10);
+  const sortedActivity = demo
+    ? DEMO_RECENT_ACTIVITY.map((a) => ({ ...a, icon: ShoppingBag })) as ActivityItem[]
+    : activityItems.slice(0, 10);
 
   return (
     <PlatformPageShell width="full">
+      {demo && (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
+          <span>⚠️ Modo demonstração activo — gráficos e listas mostram dados de exemplo. Desactivar no Simulador de pedidos.</span>
+        </div>
+      )}
       <HowToUsePanel
         purpose="Visão geral da plataforma: restaurantes, pedidos do dia, faturamento e atalhos para as centrais (IA, push, planos, etc.)."
         whenToUse="Tela inicial do administrador. Use para tomar decisões rápidas e abrir as áreas mais profundas."
