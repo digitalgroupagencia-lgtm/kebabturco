@@ -288,12 +288,15 @@ const CustomerAccountScreen = () => {
     let missingCount = 0;
 
     for (const item of items) {
-      const prod = item.product_id ? productsById.get(item.product_id) : undefined;
-      if (item.product_id && !prod) {
+      let prod = item.product_id ? productsById.get(item.product_id) : undefined;
+      // Fallback: lookup by product name when no id or product was removed.
+      if (!prod && item.product_name) prod = productsByName.get(item.product_name);
+      if (item.product_id && !prod && !productsByName.get(item.product_name || "")) {
         // Produto removido do menu — pula para não meter imagem vazia.
         missingCount += 1;
         continue;
       }
+
 
       const productNameI18n =
         prod && prod.name && typeof prod.name === "object"
@@ -591,7 +594,9 @@ const CustomerAccountScreen = () => {
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Pedidos neste dispositivo
             </p>
-            {localOrders.slice(0, 5).map((entry) => (
+            {localOrders.slice(0, 5).map((entry) => {
+              const isActive = entry.status !== "delivered" && entry.status !== "cancelled";
+              return (
               <div key={entry.id} className="rounded-2xl border border-border/70 bg-card/80 p-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="font-black">#{entry.orderNumber}</p>
@@ -599,6 +604,19 @@ const CustomerAccountScreen = () => {
                     {new Date(entry.createdAt).toLocaleDateString()} · {STATUS_LABEL[entry.status] || entry.status}
                   </p>
                 </div>
+                {isActive && (
+                <button
+                  type="button"
+                  onClick={() => trackLocalOrder(entry)}
+                  className="shrink-0 rounded-xl bg-primary/10 px-3 py-2 text-xs font-black text-primary"
+                >
+                  {t("trackMyOrders")}
+                </button>
+                )}
+              </div>
+              );
+            })}
+
                 <button
                   type="button"
                   onClick={() => trackLocalOrder(entry)}
