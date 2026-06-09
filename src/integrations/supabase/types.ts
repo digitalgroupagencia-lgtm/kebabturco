@@ -2781,6 +2781,62 @@ export type Database = {
           },
         ]
       }
+      tenant_app_builds: {
+        Row: {
+          artifact_url: string | null
+          build_number: string | null
+          created_at: string
+          created_by: string | null
+          finished_at: string | null
+          id: string
+          notes: string | null
+          platform: Database["public"]["Enums"]["app_build_platform"]
+          started_at: string | null
+          status: Database["public"]["Enums"]["app_build_status"]
+          tenant_id: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          artifact_url?: string | null
+          build_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          platform: Database["public"]["Enums"]["app_build_platform"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["app_build_status"]
+          tenant_id: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          artifact_url?: string | null
+          build_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          platform?: Database["public"]["Enums"]["app_build_platform"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["app_build_status"]
+          tenant_id?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_app_builds_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_app_distribution: {
         Row: {
           android_app_status: Database["public"]["Enums"]["app_store_status"]
@@ -3836,6 +3892,13 @@ export type Database = {
       }
     }
     Enums: {
+      app_build_platform: "android" | "ios"
+      app_build_status:
+        | "planned"
+        | "in_progress"
+        | "success"
+        | "failed"
+        | "cancelled"
       app_distribution_type: "pwa" | "native_app"
       app_role:
         | "admin_master"
@@ -3993,6 +4056,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_build_platform: ["android", "ios"],
+      app_build_status: [
+        "planned",
+        "in_progress",
+        "success",
+        "failed",
+        "cancelled",
+      ],
       app_distribution_type: ["pwa", "native_app"],
       app_role: [
         "admin_master",
