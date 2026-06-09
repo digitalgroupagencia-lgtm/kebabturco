@@ -19,6 +19,7 @@ const ALL_PANEL_SEGMENTS = new Set([
   "sellers",
   "guide",
   "diagnostics",
+  "reviews",
 ]);
 
 const MANAGER_PANEL_SEGMENTS = new Set([
