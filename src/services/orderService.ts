@@ -327,6 +327,7 @@ export async function createStripePaymentIntent(params: {
     estimatedStripeFeeCents: number;
     stripeConnectAccountId: string | null;
     connectEnvironment?: "live" | "test";
+    publishableKey?: string | null;
   };
 }
 
