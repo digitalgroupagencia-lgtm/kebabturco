@@ -134,7 +134,7 @@ function NavItem({
           to={item.url}
           end={item.end}
           className={({ isActive }) =>
-            cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
+            cn("hover:bg-muted/50", isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold")
           }
           onClick={onNav}
         >
@@ -213,7 +213,7 @@ export function AdminSidebar() {
                   end
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/50",
-                    location.pathname === centralAdminPath() && "bg-primary/10 text-primary font-semibold",
+                    location.pathname === centralAdminPath() && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold",
                   )}
                   onClick={handleNav}
                 >
@@ -245,7 +245,7 @@ export function AdminSidebar() {
                                 <NavLink
                                   to={centralAdminPath(c.segment)}
                                   className={({ isActive }) =>
-                                    cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
+                                    cn("hover:bg-muted/50", isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold")
                                   }
                                   onClick={handleNav}
                                 >
@@ -269,7 +269,7 @@ export function AdminSidebar() {
                         <NavLink
                           to={centralAdminPath(c.segment)}
                           className={({ isActive }) =>
-                            cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
+                            cn("hover:bg-muted/50", isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold")
                           }
                           onClick={handleNav}
                         >
