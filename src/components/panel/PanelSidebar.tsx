@@ -13,7 +13,9 @@ import {
   QrCode,
   Wallet,
   Radio,
+  Star,
 } from "lucide-react";
+
 import { NavLink as RouterNavLink } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,6 +52,7 @@ const ICONS: Record<string, typeof ShoppingBag> = {
   settings: Settings,
   team: Users,
   sellers: UserCog,
+  reviews: Star,
   guide: BookOpen,
   diagnostics: Activity,
 };

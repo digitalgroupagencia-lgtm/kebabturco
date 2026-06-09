@@ -12,7 +12,7 @@ export async function fetchActiveStoresForTenant(tenantId: string): Promise<Stor
   const select =
     "id, name, address, image_url, short_description, sort_order, created_at, tenant_id";
   const db = supabase as unknown as {
-    from: (table: string) => ReturnType<typeof supabase.from>;
+    from: (table: string) => any;
   };
 
   const { data, error } = await db

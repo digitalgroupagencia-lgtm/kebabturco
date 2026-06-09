@@ -33,7 +33,7 @@ function readSavedStoreId(): string | null {
 
 async function firstPublicStoreId(tenantId?: string): Promise<string | null> {
   const db = supabase as unknown as {
-    from: (table: string) => ReturnType<typeof supabase.from>;
+    from: (table: string) => any;
   };
 
   let query = db

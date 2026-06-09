@@ -19,6 +19,7 @@ const ALL_PANEL_SEGMENTS = new Set([
   "sellers",
   "guide",
   "diagnostics",
+  "reviews",
 ]);
 
 const MANAGER_PANEL_SEGMENTS = new Set([
@@ -35,6 +36,7 @@ const MANAGER_PANEL_SEGMENTS = new Set([
   "sellers",
   "guide",
   "diagnostics",
+  "reviews",
 ]);
 
 /** Segmentos permitidos por perfil no painel do restaurante. */
@@ -126,6 +128,7 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
       { key: "tables", segment: "tables", label: "Mesas & QR" },
       { key: "team", segment: "team", label: "Equipe" },
       { key: "sellers", segment: "sellers", label: "Vendedores" },
+      { key: "reviews", segment: "reviews", label: "Avaliações" },
     ],
   },
   {

@@ -9,6 +9,7 @@ import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotificat
 import ScreenHeader from "@/components/ScreenHeader";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
+import OrderReviewForm from "@/customer/components/OrderReviewForm";
 
 const OrderTrackingScreen = () => {
   const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
@@ -79,18 +80,21 @@ const OrderTrackingScreen = () => {
                 <p className="text-lg font-black text-destructive">{t("orderCancelled")}</p>
               </div>
             ) : order.status === "delivered" ? (
-              <div className="rounded-2xl border border-success/40 bg-success/10 p-6 text-center space-y-2">
-                <p className="text-4xl">🎉</p>
-                <p className="text-lg font-black text-success">
-                  {t(
-                    order.order_type === "takeaway"
-                      ? "customerStatusCollected"
-                      : order.order_type === "dine_in"
-                        ? "customerStatusServed"
-                        : "customerStatusDelivered",
-                  )}
-                </p>
-              </div>
+              <>
+                <div className="rounded-2xl border border-success/40 bg-success/10 p-6 text-center space-y-2">
+                  <p className="text-4xl">🎉</p>
+                  <p className="text-lg font-black text-success">
+                    {t(
+                      order.order_type === "takeaway"
+                        ? "customerStatusCollected"
+                        : order.order_type === "dine_in"
+                          ? "customerStatusServed"
+                          : "customerStatusDelivered",
+                    )}
+                  </p>
+                </div>
+                <OrderReviewForm orderId={order.id} />
+              </>
             ) : (
               <>
                 <div className="text-center space-y-2">
