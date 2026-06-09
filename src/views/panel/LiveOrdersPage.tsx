@@ -43,9 +43,6 @@ const LiveOrdersPage = () => {
       <h1 className="text-sm font-bold text-foreground px-1">{t("page.live.title")}</h1>
       {demoOn ? (
         <div className="space-y-3">
-          <Card className="border-amber-500/40 bg-amber-500/5 p-3 text-sm">
-            ⚠️ Modo demo ativo — pedidos de exemplo (não reais). Desligue em Admin → Simulador para ver pedidos reais.
-          </Card>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {(["pending", "preparing", "ready"] as const).map((col) => (
               <Card key={col} className="p-3 space-y-2">
