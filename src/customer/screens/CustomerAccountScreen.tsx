@@ -637,7 +637,9 @@ const CustomerAccountScreen = () => {
           <p className="text-center text-muted-foreground py-4">Nenhum pedido encontrado para este número</p>
         )}
 
-        {orders.map((order) => (
+        {orders.map((order) => {
+          const isActiveOrder = order.status !== "delivered" && order.status !== "cancelled";
+          return (
           <div key={order.id} className="rounded-2xl border border-border bg-card p-4 space-y-3">
             <div className="flex justify-between items-start">
               <div>
@@ -654,12 +656,14 @@ const CustomerAccountScreen = () => {
               ))}
             </ul>
             <div className="flex gap-2">
-              <button
-                onClick={() => { setTrackingOrderId(order.id); setScreen("tracking"); }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border text-sm font-bold"
-              >
-                <Package className="w-4 h-4" /> {t("trackMyOrders")}
-              </button>
+              {isActiveOrder && (
+                <button
+                  onClick={() => { setTrackingOrderId(order.id); setScreen("tracking"); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border text-sm font-bold"
+                >
+                  <Package className="w-4 h-4" /> {t("trackMyOrders")}
+                </button>
+              )}
               <button
                 onClick={() => void reorder(order)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success/15 text-success text-sm font-bold"
@@ -668,7 +672,9 @@ const CustomerAccountScreen = () => {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
+
       </div>
     </div>
   );
