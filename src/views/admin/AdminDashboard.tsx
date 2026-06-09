@@ -209,29 +209,31 @@ const AdminDashboard = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <StatusPill label={APP_NAME} tone="neutral" />
-            <StatusPill label="Command Center" tone="active" dot />
+            <StatusPill label="Master · SaaS" tone="active" dot />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {SINGLE_TENANT_MODE ? "Visão geral" : "Visão global"}
+            {SINGLE_TENANT_MODE ? "Visão geral" : "Dashboard Master"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {SINGLE_TENANT_MODE
               ? "Painel de administração do restaurante"
-              : "Todos os restaurantes · sem cliente seleccionado"}
+              : "Visão geral de todos os restaurantes da plataforma PropioApp"}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
           {!SINGLE_TENANT_MODE && (
-            <Button variant="outline" size="sm" asChild>
-              <Link to={nav.admin("tenants")}>Ver clientes</Link>
-            </Button>
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={nav.admin("how-it-works")}>Como funciona</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={nav.admin("tenants")}>Restaurantes</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to={nav.admin("tenants", "new")}>+ Criar restaurante</Link>
+              </Button>
+            </>
           )}
-          <Button variant="outline" size="sm" asChild>
-            <Link to={nav.admin("branding")}>Identidade visual</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to={centralAdminPath()}>Centrais</Link>
-          </Button>
         </div>
       </div>
 
