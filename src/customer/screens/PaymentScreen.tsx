@@ -144,8 +144,9 @@ const PaymentScreen = () => {
     onlineServiceFeeCents: number;
     platformFeeCents: number;
     estimatedStripeFeeCents: number;
-    stripeConnectAccountId: string;
+    stripeConnectAccountId: string | null;
     connectEnvironment?: StripePublishableEnvironment;
+    publishableKey?: string | null;
   } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
@@ -525,6 +526,7 @@ const PaymentScreen = () => {
       estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
       stripeConnectAccountId: pi.stripeConnectAccountId,
       connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
+      publishableKey: pi.publishableKey ?? null,
     });
     if (pi.connectEnvironment) {
       setStripeConnectEnvironment(pi.connectEnvironment);
@@ -702,6 +704,7 @@ const PaymentScreen = () => {
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
               connectEnvironment={stripePaymentMeta?.connectEnvironment ?? stripeConnectEnvironment}
+              publishableKey={stripePaymentMeta?.publishableKey ?? null}
               onCancel={() => {
                 setStripeClientSecret(null);
                 setStripePaymentIntentId(null);
@@ -712,7 +715,6 @@ const PaymentScreen = () => {
                 setProcessing(true);
                 try {
                   const fin = cardOrderFinancials();
-                  const amountCents = stripePaymentMeta?.amountCents ?? Math.round(grandTotal * 100);
                   const result = await createCustomerOrder({
                     storeId,
                     orderType: orderTypeDb,
@@ -755,7 +757,7 @@ const PaymentScreen = () => {
                       storeId,
                       paymentIntentId: stripePaymentIntentId!,
                       orderId: result.order_id,
-                      amountCents,
+                      amountCents: stripePaymentMeta?.restaurantPortionCents ?? Math.round(grandTotal * 100),
                     });
                   } catch (verifyError) {
                     console.warn("Pagamento confirmado, pedido criado; verificação do servidor ainda pendente.", verifyError);

@@ -14,6 +14,7 @@ import { estimatedStripeFeeInServiceFee } from "../_shared/stripeFees.ts";
 import {
   getStripeSecretKey,
   getStripeSecretKeyTest,
+  getStripePublishableKey,
   pickStripeSecretForEnvironment,
   stripeKeyMode,
 } from "../_shared/stripeEnv.ts";
@@ -236,6 +237,8 @@ Deno.serve(async (req) => {
           metadata: baseMeta,
         });
 
+    const responseEnvironment = connectEnv === "test" || testSimulated ? "test" : "live";
+
     return json({
       clientSecret: intent.client_secret,
       paymentIntentId: intent.id,
@@ -245,7 +248,8 @@ Deno.serve(async (req) => {
       platformFeeCents: PLATFORM_FEE_CENTS,
       estimatedStripeFeeCents,
       stripeConnectAccountId: store.stripe_connect_account_id,
-      connectEnvironment: connectEnv === "test" || testSimulated ? "test" : "live",
+      connectEnvironment: responseEnvironment,
+      publishableKey: getStripePublishableKey(responseEnvironment),
       testSimulated,
     });
   } catch (e) {
