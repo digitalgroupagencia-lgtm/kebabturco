@@ -52,8 +52,8 @@ import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
 import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
 import { useSellerMode } from "@/contexts/SellerModeContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+
+
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
   { id: "card", icon: CreditCard },
