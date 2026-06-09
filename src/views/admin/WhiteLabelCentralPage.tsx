@@ -329,6 +329,27 @@ export default function WhiteLabelCentralPage() {
 
   return (
     <div className="space-y-6 max-w-6xl pb-12">
+      {/* Banner de legado — modelo SaaS multi-tenant é o oficial */}
+      <Alert className="border-amber-500/40 bg-amber-500/5">
+        <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <AlertTitle>Modelo legado · Remix por projeto</AlertTitle>
+        <AlertDescription className="text-sm space-y-2">
+          <p>
+            Este fluxo é mantido apenas para referência. O modelo oficial agora é
+            <b> SaaS multi-tenant</b>: novos restaurantes são criados pelo Admin Master,
+            sem clonar projetos Lovable.
+          </p>
+          <div className="flex gap-2 pt-1">
+            <Button asChild size="sm">
+              <Link to={nav.admin("tenants", "new")}>Criar restaurante (novo modelo)</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to={nav.admin("how-it-works")}>Como funciona</Link>
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
