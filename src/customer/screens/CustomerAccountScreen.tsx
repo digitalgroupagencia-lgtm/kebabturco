@@ -617,15 +617,6 @@ const CustomerAccountScreen = () => {
               );
             })}
 
-                <button
-                  type="button"
-                  onClick={() => trackLocalOrder(entry)}
-                  className="shrink-0 rounded-xl bg-primary/10 px-3 py-2 text-xs font-black text-primary"
-                >
-                  {t("trackMyOrders")}
-                </button>
-              </div>
-            ))}
           </div>
         )}
 
