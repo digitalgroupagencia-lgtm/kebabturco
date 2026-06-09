@@ -61,6 +61,28 @@ export function pickStripeSecretForEnvironment(env: StripeKeyMode): string | nul
   return getStripeSecretKey();
 }
 
+export function getStripePublishableKey(mode: StripeKeyMode): string | null {
+  const names = mode === "test"
+    ? [
+        "STRIPE_PUBLISHABLE_KEY_TEST",
+        "VITE_STRIPE_PUBLISHABLE_KEY_TEST",
+        "STRIPE_TEST_PUBLISHABLE_KEY",
+        "STRIPE_PUBLIC_KEY_TEST",
+      ]
+    : [
+        "STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_PUBLISHABLE_KEY_LIVE",
+        "VITE_STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_PUBLIC_KEY",
+      ];
+  const expected = mode === "test" ? "pk_test_" : "pk_live_";
+  for (const name of names) {
+    const value = Deno.env.get(name)?.trim();
+    if (value?.startsWith(expected)) return value;
+  }
+  return null;
+}
+
 export function hasAnyStripeWebhookSecret(): boolean {
   return (
     getStripeWebhookSecretCandidates("live").length > 0 ||
