@@ -76,8 +76,9 @@ type CreateCustomerOrderArgs = {
 };
 
 export function cartItemsToRpcPayload(items: CartItem[]) {
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return items.map((i) => ({
-    product_id: i.productId,
+    product_id: uuidRe.test(i.productId) ? i.productId : null,
     product_name: (i.productName?.es || i.productName?.en || Object.values(i.productName)[0]) as string,
     quantity: i.quantity,
     unit_price: i.unitPrice,
