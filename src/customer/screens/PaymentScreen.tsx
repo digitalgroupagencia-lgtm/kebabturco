@@ -236,8 +236,8 @@ const PaymentScreen = () => {
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
 
-  const { data: extraGatewayVisibility } = useCheckoutExtraGatewayVisibility(storeId);
-  const [underConstructionMethod, setUnderConstructionMethod] = useState<PaymentMethodId | null>(null);
+
+
 
   const checkoutMethods = useMemo(() => {
     if (!orderType) return [];
