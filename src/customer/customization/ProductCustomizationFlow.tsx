@@ -143,6 +143,8 @@ export default function ProductCustomizationFlow({
   const [comboStep, setComboStep] = useState(initialDraft?.comboStep ?? 0);
   const [note, setNote] = useState(initialDraft?.note ?? "");
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const [unitRound, setUnitRound] = useState(0);
+  const [lockedTotalRounds, setLockedTotalRounds] = useState<number | null>(null);
 
   const upsellSuggestions = useMemo(
     () =>
