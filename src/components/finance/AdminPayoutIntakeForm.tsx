@@ -1,0 +1,202 @@
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Building2, Loader2 } from "lucide-react";
+import {
+  fetchStorePayoutIntake,
+  saveStorePayoutIntake,
+  type StorePayoutIntake,
+} from "@/services/payoutIntakeService";
+
+type Props = {
+  storeId: string;
+  onSaved?: (row: StorePayoutIntake) => void;
+};
+
+export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [missingTable, setMissingTable] = useState(false);
+  const [saved, setSaved] = useState<StorePayoutIntake | null>(null);
+
+  const [businessName, setBusinessName] = useState("");
+  const [ownerFullName, setOwnerFullName] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
+  const [taxId, setTaxId] = useState("");
+  const [iban, setIban] = useState("");
+  const [businessAddress, setBusinessAddress] = useState("");
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      setMissingTable(false);
+      try {
+        const row = await fetchStorePayoutIntake(storeId);
+        if (!active) return;
+        setSaved(row);
+        if (row) {
+          setBusinessName(row.business_name);
+          setOwnerFullName(row.owner_full_name);
+          setOwnerEmail(row.owner_email ?? "");
+          setOwnerPhone(row.owner_phone ?? "");
+          setTaxId(row.tax_id ?? "");
+          setIban(row.iban);
+          setBusinessAddress(row.business_address ?? "");
+          setNotes(row.notes ?? "");
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.includes("store_payout_intake") || msg.includes("does not exist")) {
+          setMissingTable(true);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [storeId]);
+
+  const save = async () => {
+    if (!businessName.trim() || !ownerFullName.trim() || !iban.trim() || !ownerEmail.trim()) {
+      toast.error("Preencha nome do negócio, titular, IBAN e e-mail do dono");
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveStorePayoutIntake({
+        storeId,
+        businessName: businessName.trim(),
+        ownerFullName: ownerFullName.trim(),
+        iban: iban.trim(),
+        ownerEmail: ownerEmail.trim(),
+        ownerPhone: ownerPhone.trim() || undefined,
+        taxId: taxId.trim() || undefined,
+        businessAddress: businessAddress.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      const row = await fetchStorePayoutIntake(storeId);
+      if (row) {
+        setSaved(row);
+        onSaved?.(row);
+      }
+      toast.success("Dados do restaurante guardados");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> A carregar dados do restaurante…
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (missingTable) {
+    return (
+      <Card className="border-amber-500/40">
+        <CardContent className="py-4 text-sm text-amber-800 dark:text-amber-200">
+          Falta activar a base de dados dos dados bancários — peça Sync + Publish na Lovable.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary" />
+          Passo 1 — Dados do restaurante
+        </CardTitle>
+        <CardDescription>
+          Preencha aqui os dados do dono e da conta bancária. O e-mail é o do dono do restaurante — é esse que
+          aparece no formulário de verificação.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <div>
+          <Label>Nome do negócio</Label>
+          <Input
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            placeholder="Ex.: Kebab Turco Gandia"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>Nome completo do titular</Label>
+          <Input
+            value={ownerFullName}
+            onChange={(e) => setOwnerFullName(e.target.value)}
+            placeholder="Como no banco"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>E-mail do dono do restaurante</Label>
+          <Input
+            type="email"
+            value={ownerEmail}
+            onChange={(e) => setOwnerEmail(e.target.value)}
+            placeholder="email@restaurante.com"
+            className="mt-1"
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Use o e-mail pessoal ou do negócio do dono — não o seu e-mail de administrador.
+          </p>
+        </div>
+        <div>
+          <Label>IBAN</Label>
+          <Input
+            value={iban}
+            onChange={(e) => setIban(e.target.value.toUpperCase())}
+            placeholder="ES00 0000 0000 0000 0000 0000"
+            className="mt-1 font-mono"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Label>NIF / CIF</Label>
+            <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label>Telefone</Label>
+            <Input value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+        <div>
+          <Label>Morada do negócio</Label>
+          <Textarea
+            rows={2}
+            value={businessAddress}
+            onChange={(e) => setBusinessAddress(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>Notas (opcional)</Label>
+          <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
+        </div>
+        <Button type="button" className="w-full h-11 font-bold" onClick={() => void save()} disabled={saving}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          {saved ? "Actualizar dados do restaurante" : "Guardar dados do restaurante"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

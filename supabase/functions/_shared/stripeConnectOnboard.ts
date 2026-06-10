@@ -93,12 +93,59 @@ async function loadConnectContext(store: ConnectStoreRow): Promise<StripeConnect
   return resolveStripeConnectContext(env, store.stripe_connect_account_id);
 }
 
+type PayoutIntakeRow = {
+  business_name: string;
+  owner_full_name: string;
+  owner_email: string | null;
+  iban: string;
+  tax_id: string | null;
+  business_address: string | null;
+};
+
+async function loadStorePayoutIntake(
+  service: SupabaseClient,
+  storeId: string,
+): Promise<PayoutIntakeRow | null> {
+  const { data, error } = await service.rpc("get_store_payout_intake", { _store_id: storeId });
+  if (error || !data || typeof data !== "object") return null;
+  return data as PayoutIntakeRow;
+}
+
+async function applyIntakeToConnectAccount(
+  stripe: Stripe,
+  accountId: string,
+  intake: PayoutIntakeRow | null,
+  storeName: string | null,
+): Promise<void> {
+  if (!intake) return;
+  const update: Stripe.AccountUpdateParams = {
+    business_profile: {
+      name: intake.business_name || storeName || "Restaurante",
+    },
+  };
+  if (intake.owner_email) update.email = intake.owner_email;
+  await stripe.accounts.update(accountId, update);
+}
+
 export async function ensureConnectAccount(
   ctx: StripeConnectContext,
   service: SupabaseClient,
   store: ConnectStoreRow,
+  intake?: PayoutIntakeRow | null,
 ): Promise<{ accountId: string; environment: StripeKeyMode }> {
+  const payoutIntake = intake ?? (await loadStorePayoutIntake(service, store.id));
+
   if (store.stripe_connect_account_id) {
+    try {
+      await applyIntakeToConnectAccount(
+        ctx.stripe,
+        store.stripe_connect_account_id,
+        payoutIntake,
+        store.name,
+      );
+    } catch (e) {
+      console.warn("[connect] intake prefill on existing account", e);
+    }
     return {
       accountId: store.stripe_connect_account_id,
       environment: (store.stripe_connect_environment as StripeKeyMode) ?? ctx.environment,
@@ -109,12 +156,13 @@ export async function ensureConnectAccount(
     const account = await ctx.stripe.accounts.create({
       type: "express",
       country: "ES",
+      email: payoutIntake?.owner_email ?? undefined,
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
       },
       business_profile: {
-        name: store.name || "Restaurante",
+        name: payoutIntake?.business_name || store.name || "Restaurante",
       },
       metadata: {
         store_id: store.id,
@@ -602,7 +650,22 @@ export async function handleStripeConnectRequest(
     throw e;
   }
 
-  const { accountId, environment } = await ensureConnectAccount(ctx, service, store);
+  const payoutIntake = await loadStorePayoutIntake(service, store.id);
+  if (mode === "embedded_onboarding") {
+    if (
+      !payoutIntake?.owner_email?.trim() ||
+      !payoutIntake?.iban?.trim() ||
+      !payoutIntake?.business_name?.trim()
+    ) {
+      throw new ConnectError(
+        "Preencha e guarde primeiro os dados do restaurante (nome, e-mail do dono e IBAN) no painel de administração.",
+        400,
+        "intake_required",
+      );
+    }
+  }
+
+  const { accountId, environment } = await ensureConnectAccount(ctx, service, store, payoutIntake);
   const stripe = ctx.stripe;
   const meta = connectMeta(ctx);
 

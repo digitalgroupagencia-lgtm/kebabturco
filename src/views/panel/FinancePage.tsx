@@ -8,11 +8,13 @@ import {
   activateLiveStripeConnect,
   createStoreOnboardingLink,
   fetchStoreFinancialProfile,
+  fetchStripePlatformStatus,
   provisionTestStripeConnect,
   syncStripeConnectStatus,
   type StoreFinancialProfile,
   type StripePlatformStatus,
 } from "@/services/orderService";
+import type { StorePayoutIntake } from "@/services/payoutIntakeService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
@@ -35,7 +37,7 @@ import {
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
-import AdminPayoutIntakeCard from "@/components/finance/AdminPayoutIntakeCard";
+import AdminPayoutIntakeForm from "@/components/finance/AdminPayoutIntakeForm";
 
 type LedgerRow = {
   id: string;
@@ -99,9 +101,11 @@ const FinancePage = () => {
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
-  const [activatingLive, setActivatingLive] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [onboardingLink, setOnboardingLink] = useState<string | null>(null);
+  const [intakeSaved, setIntakeSaved] = useState<StorePayoutIntake | null>(null);
+  const [connectingRestaurant, setConnectingRestaurant] = useState(false);
+  const [showTestTools, setShowTestTools] = useState(false);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
@@ -111,14 +115,15 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, schema, ledgerRes, po] = await Promise.all([
+      const [prof, schema, ledgerRes, po, serverPlatform] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         probeSchemaFallback().catch(() => null),
         fetchLedgerSafe(storeId),
         fetchPayoutsSafe(storeId),
+        fetchStripePlatformStatus(storeId).catch(() => null),
       ]);
       setProfile(prof);
-      setPlatformStatus(inferStripePlatformStatus(prof));
+      setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
       setSchemaProbe(schema);
       setLedger(ledgerRes.rows);
       setLedgerTableOk(ledgerRes.ok);
@@ -153,20 +158,31 @@ const FinancePage = () => {
     await refreshStatus();
   }, [refreshStatus]);
 
-  const activateLive = useCallback(async () => {
+  const connectRestaurantAccount = useCallback(async () => {
     if (!storeId) return;
-    setActivatingLive(true);
-    try {
-      await activateLiveStripeConnect(storeId);
-      await load({ silent: true });
-      toast.success("Modo oficial activado — preencha os dados da conta para concluir.");
-      setEmbeddedMode("onboarding");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos oficiais");
-    } finally {
-      setActivatingLive(false);
+    if (!intakeSaved?.owner_email?.trim()) {
+      toast.error("Guarde primeiro os dados do restaurante, incluindo o e-mail do dono.");
+      return;
     }
-  }, [storeId, load]);
+    setConnectingRestaurant(true);
+    try {
+      const inTestMode =
+        profile?.stripe_connect_environment === "test" ||
+        Boolean(profile?.stripe_connect_test_simulated);
+      if (inTestMode) {
+        await activateLiveStripeConnect(storeId);
+        await load({ silent: true });
+      }
+      setEmbeddedMode("onboarding");
+      toast.success(
+        `Formulário aberto — use o e-mail ${intakeSaved.owner_email} (já fica pré-preenchido).`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao ligar a conta do restaurante");
+    } finally {
+      setConnectingRestaurant(false);
+    }
+  }, [storeId, load, intakeSaved, profile]);
 
   const generateOnboardingLink = useCallback(async () => {
     if (!storeId) return;
@@ -222,21 +238,21 @@ const FinancePage = () => {
   const pendingVerification = Boolean(platformStatus?.pendingVerification);
   const testModeActive = connectEnv === "test" || Boolean(profile?.stripe_connect_test_simulated);
   const testSimulated = Boolean(profile?.stripe_connect_test_simulated);
-  const serverHasTestKey = false;
+  const serverHasTestKey = Boolean(platformStatus?.testKeysConfigured);
   const schemaStripeEnv = schemaProbe?.schema_stripe_connect_environment ?? true;
   const schemaTestSimulated = schemaProbe?.schema_stripe_connect_test_simulated ?? true;
   const schemaIncomplete = !schemaStripeEnv || !schemaTestSimulated || !ledgerTableOk;
 
-  /** Modo teste visível sempre que recebimentos não estão prontos ou produção está pendente. */
-  const showTestModeUi = !ready || testModeActive || productionBlocked || pendingVerification || schemaIncomplete;
+  const showTestDiagnostics =
+    testModeActive || testSimulated || showTestTools || (!ready && productionBlocked);
 
   const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
   const exampleDeduction = computePlatformDeductionEur(20);
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
-      <AdminStoreSwitcher hint="Recebimentos e Stripe são configurados por unidade." />
-      <AdminPayoutIntakeCard storeId={storeId} />
+      <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — só administradores." />
+      <AdminPayoutIntakeForm storeId={storeId} onSaved={setIntakeSaved} />
 
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
@@ -279,7 +295,31 @@ const FinancePage = () => {
         </div>
       )}
 
-      {showTestModeUi && (
+      {!ready && embeddedMode === "none" && (
+        <div className="rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
+            <div>
+              <p className="font-black text-base">Passo 2 — Ligar conta do restaurante</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Depois de guardar os dados acima, carregue no botão verde. No ecrã seguinte confirme o e-mail do
+                dono{intakeSaved?.owner_email ? ` (${intakeSaved.owner_email})` : ""} e complete a verificação — é
+                obrigatório por lei, mas o e-mail já fica pré-preenchido.
+              </p>
+            </div>
+          </div>
+          <Button
+            className="w-full h-12 font-black text-base bg-green-700 hover:bg-green-800 text-white disabled:opacity-50"
+            disabled={connectingRestaurant || !intakeSaved?.owner_email}
+            onClick={() => void connectRestaurantAccount()}
+          >
+            {connectingRestaurant ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Ligar conta do restaurante (produção)
+          </Button>
+        </div>
+      )}
+
+      {showTestDiagnostics && (
         <TestCheckoutReadiness
           profile={profile}
           platformStatus={platformStatus}
@@ -290,81 +330,9 @@ const FinancePage = () => {
         />
       )}
 
-      {showTestModeUi && (
+      {(testModeActive || testSimulated) && (
         <div className="rounded-lg border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300 bg-amber-500/10">
-          {testModeActive ? "Modo teste activo" : "Modo teste disponível — produção pendente"}
-        </div>
-      )}
-
-      {(testModeActive || testSimulated) && embeddedMode === "none" && (
-        <div className="rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
-            <div>
-              <p className="font-black text-base">Activar recebimentos oficiais (produção)</p>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Desliga o modo teste deste restaurante e prepara a conta para receber dinheiro real. A seguir,
-                preencha os dados da conta no formulário. Requer chaves de produção publicadas e plataforma aprovada.
-              </p>
-            </div>
-          </div>
-          <Button
-            className="w-full h-12 font-black text-base bg-green-700 hover:bg-green-800 text-white disabled:opacity-50"
-            disabled={activatingLive}
-            onClick={() => void activateLive()}
-          >
-            {activatingLive ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Activar recebimentos oficiais (produção)
-          </Button>
-
-          <div className="border-t pt-3 space-y-2">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Ou envie um link ao restaurante para ele preencher os dados da conta no telemóvel, sem precisar de
-              login.
-            </p>
-            <Button
-              variant="outline"
-              className="w-full h-11 font-bold gap-2"
-              disabled={linkBusy}
-              onClick={() => void generateOnboardingLink()}
-            >
-              {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-              Gerar link para o restaurante
-            </Button>
-
-            {onboardingLink && (
-              <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
-                <p className="text-xs font-mono break-all">{onboardingLink}</p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1 gap-1"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(onboardingLink);
-                      toast.success("Link copiado");
-                    }}
-                  >
-                    <Copy className="h-3.5 w-3.5" /> Copiar
-                  </Button>
-                  <a
-                    className="flex-1"
-                    href={`https://wa.me/?text=${encodeURIComponent(
-                      `Olá! Para activar os recebimentos do restaurante, abra este link e preencha os dados da conta: ${onboardingLink}`,
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Button type="button" size="sm" className="w-full gap-1 bg-green-600 hover:bg-green-700 text-white">
-                      <Share2 className="h-3.5 w-3.5" /> WhatsApp
-                    </Button>
-                  </a>
-                </div>
-                <p className="text-[11px] text-muted-foreground">O link é válido por 7 dias.</p>
-              </div>
-            )}
-          </div>
+          {testModeActive ? "Modo teste activo" : "Modo teste disponível"}
         </div>
       )}
 
@@ -416,56 +384,61 @@ const FinancePage = () => {
         </div>
       </div>
 
-      {!ready && embeddedMode !== "onboarding" && (
-        <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
-            <div>
-              <p className="font-black text-base">Modo teste — recebimentos simulados</p>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Active recebimentos de teste para validar pedidos e pagamento com cartão 4242. Sem dinheiro real. Não
-                depende da aprovação da plataforma Stripe.
-              </p>
-              {schemaIncomplete && (
-                <p className="text-sm text-destructive font-semibold mt-2">
-                  Primeiro aplique o SQL da base de dados (caixa vermelha acima), depois clique no botão laranja.
-                </p>
-              )}
-              {!serverHasTestKey && (
-                <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold mt-2">
-                  Pode activar o modo simulado já agora. Para pagar com cartão 4242 no checkout, configure depois a
-                  chave de teste da Stripe nos segredos do servidor e a chave publicável de teste no projecto.
-                </p>
-              )}
-            </div>
-          </div>
+      {!showTestTools && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs text-muted-foreground"
+          onClick={() => setShowTestTools(true)}
+        >
+          Ferramentas de teste (cartão 4242) — opcional
+        </Button>
+      )}
 
+      {showTestTools && (
+        <div className="rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-bold text-sm">Modo teste (opcional)</p>
+            <Button variant="ghost" size="sm" onClick={() => setShowTestTools(false)}>
+              Fechar
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Só para testar pedidos com cartão 4242 — não precisa disto para vender a sério hoje.
+          </p>
           <Button
-            className="w-full h-12 font-black text-base bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+            className="w-full h-11 font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
             disabled={testProvisionBusy || schemaIncomplete}
             onClick={() => void activateTestReceivables()}
           >
             {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Activar recebimentos de teste
           </Button>
-
-          {!productionBlocked && (
-            <Button
-              className="w-full h-12 font-black text-base"
-              onClick={() => setEmbeddedMode("onboarding")}
-            >
-              Conectar recebimentos do restaurante (produção)
-            </Button>
-          )}
-
-          {(productionBlocked || pendingVerification) && (
-            <Button
-              variant="outline"
-              className="w-full h-11 font-bold"
-              onClick={() => setEmbeddedMode("onboarding")}
-            >
-              Abrir formulário Stripe (opcional)
-            </Button>
+          <Button
+            variant="outline"
+            className="w-full h-10 font-semibold gap-2"
+            disabled={linkBusy}
+            onClick={() => void generateOnboardingLink()}
+          >
+            {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+            Gerar link para o restaurante (alternativa)
+          </Button>
+          {onboardingLink && (
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+              <p className="text-xs font-mono break-all">{onboardingLink}</p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="gap-1"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(onboardingLink);
+                  toast.success("Link copiado");
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" /> Copiar link
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -473,16 +446,22 @@ const FinancePage = () => {
       {embeddedMode === "onboarding" && (
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-black text-sm">Activar recebimentos</p>
+            <p className="font-black text-sm">Verificação da conta</p>
             <Button variant="ghost" size="sm" onClick={() => setEmbeddedMode("none")}>
               Fechar
             </Button>
           </div>
+          {intakeSaved?.owner_email && (
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Use o e-mail <strong className="text-foreground">{intakeSaved.owner_email}</strong> — é o do dono do
+              restaurante. Se pedir login, é só para confirmar a identidade (obrigatório por lei).
+            </p>
+          )}
           <StripeConnectEmbeddedPanel
             storeId={storeId}
             variant="onboarding"
-            connectEnvironment={testModeActive || productionBlocked || pendingVerification ? "test" : "live"}
-            productionBlocked={productionBlocked || pendingVerification}
+            connectEnvironment="live"
+            productionBlocked={false}
             onComplete={onEmbeddedComplete}
             onTestProvisioned={(msg) => toast.success(msg)}
           />
