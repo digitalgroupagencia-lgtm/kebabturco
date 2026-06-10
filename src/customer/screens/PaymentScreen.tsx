@@ -252,7 +252,9 @@ const PaymentScreen = () => {
     });
     // Redsys e Bizum foram removidos da experiência do cliente.
     // Apenas Stripe (card) e Efectivo (cash/counter) ficam visíveis.
-    return METHOD_DEFS.filter((m) => ids.includes(m.id));
+    // Em delivery (domicílio) só aceitamos cartão — nada de efectivo.
+    const filteredIds = orderType === "delivery" ? ids.filter((id) => id === "card") : ids;
+    return METHOD_DEFS.filter((m) => filteredIds.includes(m.id));
   }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
 
 
