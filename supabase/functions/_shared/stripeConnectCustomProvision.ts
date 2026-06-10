@@ -15,6 +15,14 @@ function normalizeIban(iban: string): string {
   return iban.replace(/\s/g, "").toUpperCase();
 }
 
+/** Formato aceite na Espanha: ES-B25979048 */
+function formatSpanishTaxId(taxId: string): string {
+  const t = taxId.trim().toUpperCase();
+  if (t.startsWith("ES-")) return t;
+  if (t.startsWith("ES") && t.length > 2) return t;
+  return `ES-${t}`;
+}
+
 function splitOwnerName(fullName: string): { first_name: string; last_name: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length <= 1) {
@@ -98,7 +106,7 @@ export async function createLiveCustomAccountFromIntake(
     params.business_type = "company";
     params.company = {
       name: intake.business_name,
-      tax_id: taxId!,
+      tax_id: formatSpanishTaxId(taxId!),
       ...(address ? { address } : {}),
     };
   } else {
@@ -145,6 +153,8 @@ export async function createLiveCustomAccountFromIntake(
           country: "ES",
           currency: "eur",
           account_number: iban,
+          account_holder_name: intake.business_name,
+          account_holder_type: isCompany ? "company" : "individual",
         },
       });
     }
