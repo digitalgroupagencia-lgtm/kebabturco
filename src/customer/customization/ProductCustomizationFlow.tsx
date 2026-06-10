@@ -465,6 +465,11 @@ export default function ProductCustomizationFlow({
 
       {useStepWizard && (
         <div className="shrink-0 px-4 pt-2 pb-1">
+          {totalRounds > 1 && (
+            <div className="mb-2 rounded-full bg-primary/10 px-3 py-1.5 text-center text-[12px] font-black uppercase tracking-wider text-primary">
+              {t("unitLabel") || "Unidad"} {unitRound + 1} / {totalRounds}
+            </div>
+          )}
           <div className="flex gap-1">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div
