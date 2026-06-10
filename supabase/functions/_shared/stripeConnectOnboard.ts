@@ -416,7 +416,10 @@ function embeddedSessionComponents(mode: string): Stripe.AccountSessionCreatePar
 
   if (mode === "embedded_onboarding") {
     return {
-      account_onboarding: { enabled: true },
+      account_onboarding: {
+        enabled: true,
+        features: { external_account_collection: true },
+      },
       notification_banner: notification,
     };
   }
