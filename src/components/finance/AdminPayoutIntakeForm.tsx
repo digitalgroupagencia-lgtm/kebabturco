@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
+import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import {
   fetchStorePayoutIntake,
-  saveStorePayoutIntake,
+  saveAndSyncStorePayoutIntake,
   type StorePayoutIntake,
 } from "@/services/payoutIntakeService";
 
@@ -72,7 +73,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
     }
     setSaving(true);
     try {
-      await saveStorePayoutIntake({
+      const result = await saveAndSyncStorePayoutIntake({
         storeId,
         businessName: businessName.trim(),
         ownerFullName: ownerFullName.trim(),
@@ -88,9 +89,19 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         setSaved(row);
         onSaved?.(row);
       }
-      toast.success("Dados do restaurante guardados");
+      toast.success(
+        result.message ||
+          (result.bankSynced
+            ? "Dados guardados e enviados para a conta de recebimentos (incluindo IBAN)."
+            : "Dados guardados e enviados — confirme a verificação se for pedida."),
+      );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao guardar");
+      const msg = extractErrorMessage(e);
+      toast.error(
+        msg.includes("store_payout_intake") || msg.includes("migração")
+          ? "Falta actualizar a base de dados na Lovable — peça Sync + Publish."
+          : msg || "Erro ao guardar",
+      );
     } finally {
       setSaving(false);
     }
@@ -124,8 +135,8 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           Passo 1 — Dados do restaurante
         </CardTitle>
         <CardDescription>
-          Preencha aqui os dados do dono e da conta bancária. O e-mail é o do dono do restaurante — é esse que
-          aparece no formulário de verificação.
+          Preencha e guarde — os dados vão automaticamente para a conta de recebimentos do restaurante (nome,
+          e-mail, IBAN, morada). O e-mail é o do dono, não o seu de administrador.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
@@ -194,7 +205,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         </div>
         <Button type="button" className="w-full h-11 font-bold" onClick={() => void save()} disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          {saved ? "Actualizar dados do restaurante" : "Guardar dados do restaurante"}
+          {saved ? "Actualizar e enviar para recebimentos" : "Guardar e enviar para recebimentos"}
         </Button>
       </CardContent>
     </Card>

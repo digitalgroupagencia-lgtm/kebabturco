@@ -97,34 +97,151 @@ type PayoutIntakeRow = {
   business_name: string;
   owner_full_name: string;
   owner_email: string | null;
+  owner_phone: string | null;
   iban: string;
   tax_id: string | null;
   business_address: string | null;
+  notes: string | null;
 };
+
+function normalizeIban(iban: string): string {
+  return iban.replace(/\s/g, "").toUpperCase();
+}
+
+function intakeTableMissingMessage(): string {
+  return "A base de dados ainda não tem a tabela de dados bancários — peça na Lovable: Sync + Publish (migração store_payout_intake).";
+}
 
 async function loadStorePayoutIntake(
   service: SupabaseClient,
   storeId: string,
 ): Promise<PayoutIntakeRow | null> {
-  const { data, error } = await service.rpc("get_store_payout_intake", { _store_id: storeId });
-  if (error || !data || typeof data !== "object") return null;
+  const { data, error } = await service
+    .from("store_payout_intake")
+    .select(
+      "business_name, owner_full_name, owner_email, owner_phone, iban, tax_id, business_address, notes",
+    )
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (error) {
+    if (error.message?.includes("store_payout_intake") || error.code === "42P01") {
+      throw new ConnectError(intakeTableMissingMessage(), 503, "intake_table_missing");
+    }
+    return null;
+  }
+  if (!data) return null;
   return data as PayoutIntakeRow;
 }
 
-async function applyIntakeToConnectAccount(
+async function upsertStorePayoutIntakeDirect(
+  service: SupabaseClient,
+  storeId: string,
+  fields: {
+    businessName: string;
+    ownerFullName: string;
+    ownerEmail: string;
+    ownerPhone?: string;
+    taxId?: string;
+    iban: string;
+    businessAddress?: string;
+    notes?: string;
+  },
+): Promise<void> {
+  const { error } = await service.from("store_payout_intake").upsert(
+    {
+      store_id: storeId,
+      business_name: fields.businessName.trim(),
+      owner_full_name: fields.ownerFullName.trim(),
+      owner_email: fields.ownerEmail.trim(),
+      owner_phone: fields.ownerPhone?.trim() || null,
+      tax_id: fields.taxId?.trim() || null,
+      iban: normalizeIban(fields.iban),
+      business_address: fields.businessAddress?.trim() || null,
+      notes: fields.notes?.trim() || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "store_id" },
+  );
+  if (error) {
+    if (error.message?.includes("store_payout_intake") || error.code === "42P01") {
+      throw new ConnectError(intakeTableMissingMessage(), 503, "intake_table_missing");
+    }
+    throw new ConnectError(error.message || "Não foi possível guardar os dados.", 500, "intake_save_failed");
+  }
+}
+
+async function assertAdminMaster(service: SupabaseClient, userId: string): Promise<void> {
+  const { data } = await service
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin_master")
+    .limit(1);
+  if (!data?.length) {
+    throw new ConnectError("Apenas a administração pode guardar estes dados.", 403, "forbidden");
+  }
+}
+
+async function syncIntakeToStripeConnect(
   stripe: Stripe,
   accountId: string,
-  intake: PayoutIntakeRow | null,
+  intake: PayoutIntakeRow,
   storeName: string | null,
-): Promise<void> {
-  if (!intake) return;
+): Promise<{ bankSynced: boolean; message: string }> {
   const update: Stripe.AccountUpdateParams = {
+    email: intake.owner_email ?? undefined,
     business_profile: {
       name: intake.business_name || storeName || "Restaurante",
+      ...(intake.business_address
+        ? { support_address: { line1: intake.business_address, country: "ES" } }
+        : {}),
     },
   };
-  if (intake.owner_email) update.email = intake.owner_email;
+
+  if (intake.tax_id?.trim()) {
+    update.company = {
+      tax_id: intake.tax_id.trim(),
+      name: intake.business_name,
+    };
+    update.business_type = "company";
+  }
+
   await stripe.accounts.update(accountId, update);
+
+  const iban = normalizeIban(intake.iban);
+  let bankSynced = false;
+  if (iban.length >= 15) {
+    try {
+      const existing = await stripe.accounts.listExternalAccounts(accountId, {
+        object: "bank_account",
+        limit: 10,
+      });
+      const last4 = iban.slice(-4);
+      const already = existing.data.some(
+        (ba) => ba.object === "bank_account" && (ba as Stripe.BankAccount).last4 === last4,
+      );
+      if (!already) {
+        await stripe.accounts.createExternalAccount(accountId, {
+          external_account: {
+            object: "bank_account",
+            country: "ES",
+            currency: "eur",
+            account_number: iban,
+          },
+        });
+      }
+      bankSynced = true;
+    } catch (e) {
+      console.warn("[connect] IBAN sync", e);
+    }
+  }
+
+  return {
+    bankSynced,
+    message: bankSynced
+      ? "Dados e IBAN registados na conta de recebimentos."
+      : "Dados registados — confirme o IBAN no passo de verificação se for pedido.",
+  };
 }
 
 export async function ensureConnectAccount(
@@ -136,15 +253,17 @@ export async function ensureConnectAccount(
   const payoutIntake = intake ?? (await loadStorePayoutIntake(service, store.id));
 
   if (store.stripe_connect_account_id) {
-    try {
-      await applyIntakeToConnectAccount(
-        ctx.stripe,
-        store.stripe_connect_account_id,
-        payoutIntake,
-        store.name,
-      );
-    } catch (e) {
-      console.warn("[connect] intake prefill on existing account", e);
+    if (payoutIntake) {
+      try {
+        await syncIntakeToStripeConnect(
+          ctx.stripe,
+          store.stripe_connect_account_id,
+          payoutIntake,
+          store.name,
+        );
+      } catch (e) {
+        console.warn("[connect] intake sync on existing account", e);
+      }
     }
     return {
       accountId: store.stripe_connect_account_id,
@@ -452,6 +571,116 @@ export async function handleStripeConnectRequest(
   }
 
   const store = await assertStoreAccess(service, userId, storeId);
+
+  if (mode === "save_and_sync_intake") {
+    await assertAdminMaster(service, userId);
+
+    const businessName = typeof body.businessName === "string" ? body.businessName.trim() : "";
+    const ownerFullName = typeof body.ownerFullName === "string" ? body.ownerFullName.trim() : "";
+    const ownerEmail = typeof body.ownerEmail === "string" ? body.ownerEmail.trim() : "";
+    const iban = typeof body.iban === "string" ? body.iban.trim() : "";
+    const ownerPhone = typeof body.ownerPhone === "string" ? body.ownerPhone.trim() : "";
+    const taxId = typeof body.taxId === "string" ? body.taxId.trim() : "";
+    const businessAddress = typeof body.businessAddress === "string" ? body.businessAddress.trim() : "";
+    const notes = typeof body.notes === "string" ? body.notes.trim() : "";
+
+    if (businessName.length < 2) {
+      throw new ConnectError("Nome do negócio é obrigatório.", 400, "validation");
+    }
+    if (ownerFullName.length < 2) {
+      throw new ConnectError("Nome do titular é obrigatório.", 400, "validation");
+    }
+    if (!ownerEmail.includes("@")) {
+      throw new ConnectError("E-mail do dono é obrigatório.", 400, "validation");
+    }
+    if (normalizeIban(iban).length < 15) {
+      throw new ConnectError("IBAN inválido.", 400, "validation");
+    }
+
+    await upsertStorePayoutIntakeDirect(service, storeId, {
+      businessName,
+      ownerFullName,
+      ownerEmail,
+      ownerPhone,
+      taxId,
+      iban,
+      businessAddress,
+      notes,
+    });
+
+    const intake = await loadStorePayoutIntake(service, storeId);
+    if (!intake) {
+      throw new ConnectError("Dados guardados mas não foi possível reler — tente de novo.", 500, "intake_read_failed");
+    }
+
+    const needsLiveReset =
+      store.stripe_connect_environment === "test" ||
+      Boolean((store as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
+      !store.stripe_connect_account_id ||
+      store.stripe_connect_account_id.startsWith("simulated-");
+
+    let workingStore = store;
+    if (needsLiveReset) {
+      const liveKey = getStripeSecretKey();
+      if (!liveKey) {
+        throw new ConnectError(
+          "Falta a chave de produção no servidor. Publique as chaves live na Lovable.",
+          503,
+          "live_key_missing",
+        );
+      }
+      const { error: liveUpdErr } = await service
+        .from("stores")
+        .update({
+          stripe_connect_account_id: null,
+          stripe_connect_environment: "live",
+          stripe_connect_test_simulated: false,
+          stripe_charges_enabled: false,
+          stripe_payouts_enabled: false,
+          stripe_onboarding_completed: false,
+          stripe_payout_status: "pending",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", store.id);
+      if (liveUpdErr) {
+        throw new ConnectError("Não foi possível preparar modo produção.", 500, "store_update_failed");
+      }
+      workingStore = {
+        ...store,
+        stripe_connect_account_id: null,
+        stripe_connect_environment: "live",
+      };
+    }
+
+    let ctx: StripeConnectContext;
+    try {
+      ctx = await loadConnectContext(workingStore);
+    } catch (e) {
+      if (e instanceof PlatformPendingError) {
+        throw new ConnectError(
+          "A Stripe ainda não aprovou a produção da plataforma.",
+          503,
+          "live_not_allowed",
+        );
+      }
+      throw e;
+    }
+
+    const { accountId, environment } = await ensureConnectAccount(ctx, service, workingStore, intake);
+    const syncResult = await syncIntakeToStripeConnect(ctx.stripe, accountId, intake, store.name);
+    const status = await syncConnectAccountById(ctx.stripe, service, accountId);
+
+    return json({
+      saved: true,
+      synced: true,
+      accountId,
+      connectEnvironment: environment,
+      bankSynced: syncResult.bankSynced,
+      message: syncResult.message,
+      ...statusPayload(status, environment),
+      ...connectMeta(ctx),
+    });
+  }
 
   if (mode === "activate_live") {
     // Switching a store to real (live) receivables is a platform-admin action.
