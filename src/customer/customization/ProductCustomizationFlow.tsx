@@ -365,7 +365,20 @@ export default function ProductCustomizationFlow({
     try {
       const cfg = buildConfiguration();
       const flat = flattenConfiguration(cfg);
-      const { extras, removedIngredients } = selectionsToLegacyFields(flat);
+      const { extras: baseExtras, removedIngredients } = selectionsToLegacyFields(flat);
+      // Mostra o adicional "Solo carne (+1€)" na lista de extras para ficar
+      // visível no carrinho e no ticket (o preço já está embutido em unitPrice).
+      const extras = soloCarne.units > 0
+        ? [
+            ...baseExtras,
+            {
+              id: "solo-carne-surcharge",
+              name: { es: "Solo carne (+1€)", pt: "Só carne (+1€)", en: "Only meat (+1€)", fr: "Seulement viande (+1€)" },
+              price: 0,
+              quantity: soloCarne.units,
+            },
+          ]
+        : baseExtras;
       const orderQty = quantity;
 
       const payload = {
