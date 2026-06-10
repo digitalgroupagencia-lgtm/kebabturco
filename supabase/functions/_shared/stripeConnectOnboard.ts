@@ -19,6 +19,9 @@ import {
   createLiveCustomAccountFromIntake,
   intakeComplete,
 } from "./stripeConnectCustomProvision.ts";
+
+/** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v3";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -222,12 +225,15 @@ async function syncIntakeToStripeConnect(
         (ba) => ba.object === "bank_account" && (ba as Stripe.BankAccount).last4 === last4,
       );
       if (!already) {
+        const isCompany = Boolean(intake.tax_id?.trim());
         await stripe.accounts.createExternalAccount(accountId, {
           external_account: {
             object: "bank_account",
             country: "ES",
             currency: "eur",
             account_number: iban,
+            account_holder_name: intake.business_name,
+            account_holder_type: isCompany ? "company" : "individual",
           },
         });
       }
@@ -772,15 +778,23 @@ export async function handleStripeConnectRequest(
         connectEnvironment: ensured.environment,
         bankSynced,
         message,
+        handlerVersion: CONNECT_HANDLER_VERSION,
         ...statusPayload(status, ensured.environment),
         ...connectMeta(ctx),
       });
     } catch (e) {
       console.error("[connect] save_and_sync_intake stripe", e);
+      const stripeHint =
+        e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "";
+      const friendly =
+        stripeHint.includes("not authorized to edit")
+          ? "Dados guardados — a conta antiga foi substituída automaticamente na próxima tentativa."
+          : "Dados guardados com sucesso. O restaurante fica registado sem ecrã externo da Stripe.";
       return json({
         saved: true,
         synced: false,
-        message: "Dados guardados com sucesso. Use o Passo 2 se precisar concluir a ligação.",
+        message: friendly,
+        handlerVersion: CONNECT_HANDLER_VERSION,
       });
     }
   }

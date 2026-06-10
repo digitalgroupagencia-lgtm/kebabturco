@@ -114,22 +114,27 @@ export async function saveAndSyncStorePayoutIntake(
         return {
           saved: true,
           synced: false,
-          message: "Dados guardados com sucesso. A ligação aos recebimentos conclui no Passo 2.",
+          message: "Dados guardados com sucesso. O restaurante fica registado pela plataforma.",
         };
       }
       throw new Error(msg);
     }
-    if (data && typeof data === "object" && "error" in data && (data as { error?: unknown }).error) {
-      const msg = String((data as { error: unknown }).error);
-      if (isStripeSyncStaleError(msg)) {
-        await savePayoutIntakeRpcOnly(input);
-        return {
-          saved: true,
-          synced: false,
-          message: "Dados guardados com sucesso. A ligação aos recebimentos conclui no Passo 2.",
-        };
+    if (data && typeof data === "object") {
+      if ("saved" in data && (data as { saved?: boolean }).saved === true) {
+        return data as SavePayoutIntakeResult;
       }
-      throw new Error(msg);
+      if ("error" in data && (data as { error?: unknown }).error) {
+        const msg = String((data as { error: unknown }).error);
+        if (isStripeSyncStaleError(msg)) {
+          await savePayoutIntakeRpcOnly(input);
+          return {
+            saved: true,
+            synced: false,
+            message: "Dados guardados com sucesso. O restaurante fica registado pela plataforma.",
+          };
+        }
+        throw new Error(msg);
+      }
     }
 
     return (data ?? { saved: true, synced: false }) as SavePayoutIntakeResult;
@@ -140,7 +145,7 @@ export async function saveAndSyncStorePayoutIntake(
       return {
         saved: true,
         synced: false,
-        message: "Dados guardados com sucesso. A ligação aos recebimentos conclui no Passo 2.",
+        message: "Dados guardados com sucesso. O restaurante fica registado pela plataforma.",
       };
     }
     throw e;

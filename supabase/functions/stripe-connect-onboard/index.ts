@@ -1,4 +1,5 @@
 import {
+  CONNECT_HANDLER_VERSION,
   connectCorsHeaders,
   connectErrorResponse,
   handleStripeConnectRequest,
@@ -15,6 +16,14 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         service: "stripe-connect-onboard",
+        handlerVersion: CONNECT_HANDLER_VERSION,
+        modes: [
+          "save_and_sync_intake",
+          "activate_live",
+          "embedded_onboarding",
+          "platform_status",
+          "sync_status",
+        ],
         stripeConfigured: Boolean(getStripeSecretKey()),
       }),
       { headers: { ...connectCorsHeaders, "Content-Type": "application/json" } },

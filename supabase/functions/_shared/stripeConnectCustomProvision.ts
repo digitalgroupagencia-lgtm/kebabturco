@@ -16,11 +16,16 @@ function normalizeIban(iban: string): string {
 }
 
 /** Formato aceite na Espanha: ES-B25979048 */
-function formatSpanishTaxId(taxId: string): string {
+export function formatSpanishTaxId(taxId: string): string {
   const t = taxId.trim().toUpperCase();
   if (t.startsWith("ES-")) return t;
   if (t.startsWith("ES") && t.length > 2) return t;
   return `ES-${t}`;
+}
+
+function statementDescriptorFromName(name: string): string {
+  const clean = name.replace(/[^a-zA-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+  return (clean || "KEBAB TURCO").slice(0, 22);
 }
 
 function splitOwnerName(fullName: string): { first_name: string; last_name: string } {
@@ -31,19 +36,34 @@ function splitOwnerName(fullName: string): { first_name: string; last_name: stri
   return { first_name: parts[0], last_name: parts.slice(1).join(" ") };
 }
 
-/** Extrai código postal e cidade de moradas espanholas comuns. */
+/** Extrai código postal, cidade e província de moradas espanholas comuns. */
 function parseSpanishAddress(raw: string | null): Stripe.AddressParam | undefined {
   if (!raw?.trim()) return undefined;
   const text = raw.trim();
   const postalMatch = text.match(/\b(\d{5})\b/);
   const postal_code = postalMatch?.[1];
-  const withoutPostal = postal_code ? text.replace(postal_code, "").replace(/,\s*$/, "").trim() : text;
-  const segments = withoutPostal.split(",").map((s) => s.trim()).filter(Boolean);
+  let working = text;
+  if (postal_code) {
+    working = working.replace(postal_code, " ").replace(/\s+/g, " ").trim();
+  }
+  const segments = working
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((s) => !/^(España|Espanha|Spain)$/i.test(s));
   const line1 = segments[0] || text;
-  const city = segments.length > 1 ? segments[segments.length - 1].replace(/España|Espanha|Spain/gi, "").trim() : "Gandia";
+  let city = "Gandia";
+  let state: string | undefined;
+  if (segments.length >= 3) {
+    city = segments[segments.length - 2] || city;
+    state = segments[segments.length - 1];
+  } else if (segments.length === 2) {
+    city = segments[1] || city;
+  }
   return {
     line1,
     city: city || "Gandia",
+    ...(state ? { state } : {}),
     ...(postal_code ? { postal_code } : {}),
     country: "ES",
   };
@@ -90,6 +110,7 @@ export async function createLiveCustomAccountFromIntake(
     tos_acceptance: {
       date: Math.floor(Date.now() / 1000),
       ip: requestIp || "127.0.0.1",
+      service_agreement: "full",
     },
     metadata: {
       store_id: store.id,
@@ -99,6 +120,10 @@ export async function createLiveCustomAccountFromIntake(
     },
     settings: {
       payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
+      dashboard: { type: "none" },
+      payments: {
+        statement_descriptor: statementDescriptorFromName(intake.business_name),
+      },
     },
   };
 
@@ -129,7 +154,13 @@ export async function createLiveCustomAccountFromIntake(
         last_name,
         email: intake.owner_email!,
         phone: intake.owner_phone ?? undefined,
-        relationship: { representative: true, executive: true, title: "Representante legal" },
+        ...(address ? { address } : {}),
+        relationship: {
+          representative: true,
+          executive: true,
+          owner: true,
+          title: "Representante legal",
+        },
       });
     } catch (e) {
       console.warn("[connect] company representative person", e);
