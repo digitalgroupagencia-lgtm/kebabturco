@@ -168,6 +168,9 @@ export async function runFullAppAudit(params: {
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(report));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("kebabturco:full-audit-updated"));
+    }
   } catch {
     /* ignore */
   }

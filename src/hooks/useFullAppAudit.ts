@@ -14,11 +14,11 @@ export function useFullAppAudit(storeId: string | null, tenantId?: string | null
   const run = useCallback(async () => {
     setRunning(true);
     try {
-      await opsDiag.run();
+      const opsResults = await opsDiag.run();
       const next = await runFullAppAudit({
         storeId,
         tenantId: tenantId ?? null,
-        opsItems: opsDiag.items,
+        opsItems: opsResults,
       });
       setReport(next);
       return next;

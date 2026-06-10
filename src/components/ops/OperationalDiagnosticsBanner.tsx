@@ -5,7 +5,11 @@ import { useOperationalDiagnostics } from "@/features/ops/useOperationalDiagnost
 import { nav } from "@/lib/navPaths";
 import { Button } from "@/components/ui/button";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { loadStoredFullAuditReport } from "@/services/fullAppAuditService";
+import {
+  issuesOnly,
+  loadStoredFullAuditReport,
+  type FullAuditReport,
+} from "@/services/fullAppAuditService";
 import { probeStaffAuthAudit } from "@/lib/diagnostics/staffAuthAuditProbe";
 import type { AuditFinding } from "@/services/adminSystemAudit";
 
@@ -14,16 +18,30 @@ type Props = {
   area?: "panel" | "admin";
 };
 
+function severityRank(s: AuditFinding["severity"]): number {
+  return { critical: 0, warning: 1, suggestion: 2, ok: 3 }[s];
+}
+
 const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
-  const { criticalIssues, failCount, warnCount, running, run, lastRun } = useOperationalDiagnostics();
+  const { failCount, warnCount, running, run, lastRun } = useOperationalDiagnostics();
   const { storeId } = useAdminStoreId();
   const diagnosticsPath = nav.admin("diagnostics");
+  const [storedReport, setStoredReport] = useState<FullAuditReport | null>(() =>
+    loadStoredFullAuditReport(),
+  );
   const [staffFindings, setStaffFindings] = useState<AuditFinding[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
 
   useEffect(() => {
-    if (!lastRun) void run();
-  }, [lastRun, run]);
+    const refresh = () => setStoredReport(loadStoredFullAuditReport());
+    refresh();
+    window.addEventListener("kebabturco:full-audit-updated", refresh);
+    return () => window.removeEventListener("kebabturco:full-audit-updated", refresh);
+  }, [lastRun]);
+
+  useEffect(() => {
+    if (!lastRun && !storedReport) void run();
+  }, [lastRun, run, storedReport]);
 
   useEffect(() => {
     const stored = loadStoredFullAuditReport();
@@ -52,27 +70,35 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
     return () => {
       active = false;
     };
-  }, [storeId, lastRun]);
+  }, [storeId, lastRun, storedReport?.ranAt]);
+
+  const useAuditReport = Boolean(storedReport);
+  const auditIssues = useAuditReport ? issuesOnly(storedReport!) : [];
+  const auditCritical = storedReport?.summary.critical ?? 0;
+  const auditWarn = storedReport?.summary.warning ?? 0;
 
   const staffCriticalCount = staffFindings.length;
-  const totalFail = failCount + staffCriticalCount;
-  const totalWarn = warnCount + (staffFindings.some((f) => f.severity === "warning") ? 1 : 0);
+  const totalFail = useAuditReport ? auditCritical : failCount + staffCriticalCount;
+  const totalWarn = useAuditReport ? auditWarn : warnCount;
 
-  const topStaff = staffFindings[0];
-  const topOps = criticalIssues.find((i) => i.status === "fail") ?? criticalIssues[0];
+  const topIssue = useMemo(() => {
+    if (useAuditReport && auditIssues.length > 0) {
+      return [...auditIssues].sort((a, b) => severityRank(a.severity) - severityRank(b.severity))[0];
+    }
+    const topStaff = staffFindings[0];
+    if (topStaff) return topStaff;
+    return null;
+  }, [useAuditReport, auditIssues, staffFindings]);
 
   const bannerMessage = useMemo(() => {
     if (totalFail > 0) {
-      const parts: string[] = [];
-      if (failCount > 0) parts.push(`${failCount} pagamento(s)/sistema`);
-      if (staffCriticalCount > 0) parts.push(`${staffCriticalCount} equipa/servidor`);
-      return `${totalFail} problema(s) crítico(s) — ${parts.join(" · ")}`;
+      return `${totalFail} problema(s) crítico(s) — convém resolver antes de abrir`;
     }
-    if (totalWarn > 0) return `${warnCount + (totalWarn - warnCount)} aviso(s) — convém rever antes de abrir`;
+    if (totalWarn > 0) return `${totalWarn} aviso(s) — convém rever antes de abrir`;
     return null;
-  }, [totalFail, failCount, staffCriticalCount, totalWarn, warnCount]);
+  }, [totalFail, totalWarn]);
 
-  if ((running || staffLoading) && !lastRun && staffFindings.length === 0) {
+  if ((running || staffLoading) && !lastRun && !storedReport && staffFindings.length === 0) {
     return (
       <div className="mb-4 rounded-xl border bg-muted/40 px-4 py-3 flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -89,9 +115,9 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
       ? "border-destructive/40 bg-destructive/5 text-destructive"
       : "border-amber-500/40 bg-amber-500/5 text-amber-800 dark:text-amber-200";
 
-  const topLabel = topStaff?.label ?? topOps?.label;
-  const topDetail = topStaff?.action ?? topStaff?.detail ?? topOps?.detail;
-  const topAction = topStaff ? topStaff.action : topOps?.action;
+  const topLabel = topIssue?.label;
+  const topDetail = topIssue?.detail;
+  const topAction = topIssue?.action;
 
   return (
     <div className={`mb-4 rounded-xl border-2 px-4 py-3 space-y-2 ${tone}`}>
@@ -110,7 +136,7 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
               )}
             </>
           )}
-          {area === "admin" && staffCriticalCount > 0 && (
+          {area === "admin" && staffCriticalCount > 0 && !useAuditReport && (
             <p className="text-xs mt-1 opacity-80">
               Inclui verificação de login da equipa e servidores críticos.
             </p>
