@@ -477,7 +477,7 @@ async function parsePublicEdgeError(error: { message?: string; context?: unknown
     msg.includes("Sessão") ||
     msg.includes("Modo inválido")
   ) {
-    return "El servicio aún no está actualizado. Pide a administración que publique la aplicación.";
+    return "El envío no está disponible todavía. Administración debe publicar las funciones del servidor en Lovable (chat: Deploy all edge functions, especially stripe-connect-onboard).";
   }
   return msg || "No se pudo conectar con el servidor.";
 }

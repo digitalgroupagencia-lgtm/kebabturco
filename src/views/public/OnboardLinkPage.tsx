@@ -26,8 +26,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
         <h1 className="text-xl font-black">Cobros del restaurante</h1>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Rellena los datos donde quieres recibir el dinero de los pedidos online. Formulario seguro de
-        Kebab Turco — sin crear una cuenta aparte.
+        Rellena los datos para recibir el dinero de los pedidos online.
       </p>
       {children}
     </div>
@@ -199,7 +198,6 @@ export default function OnboardLinkPage() {
           <p className="text-sm font-bold">Último paso — confirmar identidad</p>
           <p className="text-xs text-muted-foreground">
             Por ley, falta confirmar la identidad del representante (documento o fecha de nacimiento).
-            Este paso es discreto y no pide crear una cuenta nueva.
           </p>
           <ConnectComponentsProvider connectInstance={connectInstance}>
             <ConnectAccountOnboarding onExit={() => setStep("done")} />

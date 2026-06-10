@@ -323,8 +323,7 @@ const FinancePage = () => {
             <div>
               <p className="font-black text-base">Enviar link ao dono (WhatsApp)</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Gere um link para o dono preencher os dados no telemóvel — formulário da Kebab Turco, sem
-                criar conta estranha. Só se a lei pedir documento aparece um passo extra discreto.
+                Gere um link para o dono preencher os dados de recebimentos no telemóvel.
               </p>
             </div>
           </div>
