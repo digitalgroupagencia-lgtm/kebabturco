@@ -33,6 +33,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
   const [taxId, setTaxId] = useState("");
   const [iban, setIban] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
+  const [businessWebsite, setBusinessWebsite] = useState("https://kebabturco.net");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -70,8 +71,15 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
   }, [storeId]);
 
   const save = async () => {
-    if (!businessName.trim() || !ownerFullName.trim() || !iban.trim() || !ownerEmail.trim()) {
-      toast.error("Preencha nome do negócio, titular, IBAN e e-mail do dono");
+    if (
+      !businessName.trim() ||
+      !ownerFullName.trim() ||
+      !iban.trim() ||
+      !ownerEmail.trim() ||
+      !ownerPhone.trim() ||
+      !taxId.trim()
+    ) {
+      toast.error("Preencha nome, titular, e-mail, telefone, NIF/CIF e IBAN");
       return;
     }
     setSaving(true);
@@ -85,6 +93,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         ownerPhone: ownerPhone.trim() || undefined,
         taxId: taxId.trim() || undefined,
         businessAddress: businessAddress.trim() || undefined,
+        businessWebsite: businessWebsite.trim() || "https://kebabturco.net",
         notes: notes.trim() || undefined,
       });
       const row = await fetchStorePayoutIntake(storeId);
@@ -158,8 +167,8 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           Passo 1 — Dados do restaurante
         </CardTitle>
         <CardDescription>
-          Preencha e guarde — os dados vão automaticamente para a conta de recebimentos do restaurante (nome,
-          e-mail, IBAN, morada). O e-mail é o do dono, não o seu de administrador.
+          Preencha tudo — o sistema envia automaticamente para activar a conta do restaurante: site, tipo de
+          empresa (NIF/CIF), e-mail, telefone, morada e IBAN. O e-mail é o do dono, não o seu de administrador.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
@@ -195,6 +204,18 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           </p>
         </div>
         <div>
+          <Label>Site do negócio</Label>
+          <Input
+            value={businessWebsite}
+            onChange={(e) => setBusinessWebsite(e.target.value)}
+            placeholder="https://kebabturco.net"
+            className="mt-1"
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Obrigatório na Stripe — use o site público do restaurante ou da marca.
+          </p>
+        </div>
+        <div>
           <Label>IBAN</Label>
           <Input
             value={iban}
@@ -205,11 +226,16 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label>NIF / CIF</Label>
-            <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} className="mt-1" />
+            <Label>NIF / CIF (tipo empresa)</Label>
+            <Input
+              value={taxId}
+              onChange={(e) => setTaxId(e.target.value)}
+              placeholder="Ex.: B25979048"
+              className="mt-1"
+            />
           </div>
           <div>
-            <Label>Telefone</Label>
+            <Label>Telefone do dono</Label>
             <Input value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} className="mt-1" />
           </div>
         </div>

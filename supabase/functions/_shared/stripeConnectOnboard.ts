@@ -17,11 +17,14 @@ import {
 import { provisionTestConnectAccount } from "./stripeConnectTestProvision.ts";
 import {
   createLiveCustomAccountFromIntake,
+  DEFAULT_BUSINESS_WEBSITE,
   intakeComplete,
+  isStripeAccountCriticallyIncomplete,
+  syncLiveCustomAccountFromIntake,
 } from "./stripeConnectCustomProvision.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v4";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v5";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -284,14 +287,14 @@ async function persistConnectAccountId(
   }
 }
 
-/** Express pede ecrã «criar conta Stripe» — substituímos por Custom quando há dados do admin. */
-async function shouldReplaceExpressWithCustom(
+/** Substitui contas Express ou Custom incompletas (sem site, NIF, IBAN, e-mail, termos). */
+async function shouldReplaceStripeAccount(
   stripe: Stripe,
   accountId: string,
 ): Promise<boolean> {
   try {
     const acct = await stripe.accounts.retrieve(accountId);
-    return acct.type === "express";
+    return isStripeAccountCriticallyIncomplete(acct);
   } catch {
     return false;
   }
@@ -304,18 +307,25 @@ export async function ensureConnectAccount(
   intake?: PayoutIntakeRow | null,
   requestIp?: string,
 ): Promise<{ accountId: string; environment: StripeKeyMode; accountType: "custom" | "express" }> {
-  const payoutIntake = intake ?? (await loadStorePayoutIntake(service, store.id));
+  const payoutIntakeRaw = intake ?? (await loadStorePayoutIntake(service, store.id));
+  const payoutIntake = payoutIntakeRaw
+    ? { ...payoutIntakeRaw, business_website: DEFAULT_BUSINESS_WEBSITE }
+    : null;
   const useCustom = ctx.environment === "live" && intakeComplete(payoutIntake);
   let accountId = store.stripe_connect_account_id;
 
   if (accountId && useCustom) {
-    const replaceExpress = await shouldReplaceExpressWithCustom(ctx.stripe, accountId);
-    if (replaceExpress) {
+    const replaceAccount = await shouldReplaceStripeAccount(ctx.stripe, accountId);
+    if (replaceAccount) {
       accountId = null;
       await service
         .from("stores")
         .update({
           stripe_connect_account_id: null,
+          stripe_charges_enabled: false,
+          stripe_payouts_enabled: false,
+          stripe_onboarding_completed: false,
+          stripe_payout_status: "pending",
           updated_at: new Date().toISOString(),
         })
         .eq("id", store.id);
@@ -323,7 +333,19 @@ export async function ensureConnectAccount(
   }
 
   if (accountId) {
-    if (payoutIntake) {
+    if (payoutIntake && useCustom) {
+      try {
+        await syncLiveCustomAccountFromIntake(
+          ctx.stripe,
+          accountId,
+          payoutIntake,
+          requestIp ?? "127.0.0.1",
+        );
+      } catch (e) {
+        console.warn("[connect] custom full sync on existing account", e);
+        throw e;
+      }
+    } else if (payoutIntake) {
       try {
         await syncIntakeToStripeConnect(ctx.stripe, accountId, payoutIntake, store.name);
       } catch (e) {
@@ -667,6 +689,10 @@ export async function handleStripeConnectRequest(
     const ownerPhone = typeof body.ownerPhone === "string" ? body.ownerPhone.trim() : "";
     const taxId = typeof body.taxId === "string" ? body.taxId.trim() : "";
     const businessAddress = typeof body.businessAddress === "string" ? body.businessAddress.trim() : "";
+    const businessWebsite =
+      typeof body.businessWebsite === "string" && body.businessWebsite.trim()
+        ? body.businessWebsite.trim()
+        : DEFAULT_BUSINESS_WEBSITE;
     const notes = typeof body.notes === "string" ? body.notes.trim() : "";
 
     if (businessName.length < 2) {
@@ -678,8 +704,17 @@ export async function handleStripeConnectRequest(
     if (!ownerEmail.includes("@")) {
       throw new ConnectError("E-mail do dono é obrigatório.", 400, "validation");
     }
+    if (ownerPhone.length < 6) {
+      throw new ConnectError("Telefone do dono é obrigatório para activar recebimentos.", 400, "validation");
+    }
+    if (taxId.length < 2) {
+      throw new ConnectError("NIF / CIF da empresa é obrigatório para activar recebimentos.", 400, "validation");
+    }
     if (normalizeIban(iban).length < 15) {
       throw new ConnectError("IBAN inválido.", 400, "validation");
+    }
+    if (!/^https?:\/\//i.test(businessWebsite)) {
+      throw new ConnectError("Site do negócio inválido — use https://...", 400, "validation");
     }
 
     await upsertStorePayoutIntakeDirect(service, storeId, {
@@ -693,14 +728,15 @@ export async function handleStripeConnectRequest(
       notes,
     });
 
-    const intake = await loadStorePayoutIntake(service, storeId);
-    if (!intake) {
+    const intakeRow = await loadStorePayoutIntake(service, storeId);
+    if (!intakeRow) {
       return json({
         saved: true,
         synced: false,
         message: "Dados guardados. Recarregue a página e tente de novo.",
       });
     }
+    const intake = { ...intakeRow, business_website: businessWebsite };
 
     // Stripe sync is best-effort — dados do restaurante ficam sempre guardados.
     try {

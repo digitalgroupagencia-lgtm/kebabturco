@@ -23,6 +23,7 @@ export type PayoutIntakeInput = {
   ownerPhone?: string;
   taxId?: string;
   businessAddress?: string;
+  businessWebsite?: string;
   notes?: string;
 };
 
@@ -104,6 +105,7 @@ export async function saveAndSyncStorePayoutIntake(
         ownerPhone: input.ownerPhone ?? "",
         taxId: input.taxId ?? "",
         businessAddress: input.businessAddress ?? "",
+        businessWebsite: input.businessWebsite ?? "https://kebabturco.net",
         notes: input.notes ?? "",
       },
     });

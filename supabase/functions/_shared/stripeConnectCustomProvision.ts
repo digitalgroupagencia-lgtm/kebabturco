@@ -1,6 +1,8 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { ConnectStoreRow } from "./stripeConnectOnboard.ts";
 
+export const DEFAULT_BUSINESS_WEBSITE = "https://kebabturco.net";
+
 export type CustomIntakeRow = {
   business_name: string;
   owner_full_name: string;
@@ -9,6 +11,7 @@ export type CustomIntakeRow = {
   iban: string;
   tax_id: string | null;
   business_address: string | null;
+  business_website?: string | null;
 };
 
 function normalizeIban(iban: string): string {
@@ -34,6 +37,12 @@ function splitOwnerName(fullName: string): { first_name: string; last_name: stri
     return { first_name: parts[0] || "Titular", last_name: "—" };
   }
   return { first_name: parts[0], last_name: parts.slice(1).join(" ") };
+}
+
+function businessWebsite(intake: CustomIntakeRow): string {
+  const raw = intake.business_website?.trim();
+  if (raw && /^https?:\/\//i.test(raw)) return raw;
+  return DEFAULT_BUSINESS_WEBSITE;
 }
 
 /** Extrai código postal, cidade e província de moradas espanholas comuns. */
@@ -74,36 +83,115 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
     intake?.business_name?.trim() &&
       intake?.owner_full_name?.trim() &&
       intake?.owner_email?.includes("@") &&
+      intake?.owner_phone?.trim() &&
+      intake?.tax_id?.trim() &&
       normalizeIban(intake.iban).length >= 15,
   );
 }
 
-/**
- * Cria conta Connect CUSTOM (sub-conta do restaurante na plataforma) com os dados
- * do formulário admin — não abre o ecrã Express «criar conta Stripe».
- */
-export async function createLiveCustomAccountFromIntake(
+/** Conta Stripe incompleta — precisa recriar ou reparar (ex.: Gandia restrita sem IBAN/e-mail). */
+export function isStripeAccountCriticallyIncomplete(acct: Stripe.Account): boolean {
+  if (acct.type !== "custom") return true;
+  if (!acct.email) return true;
+  if (!acct.business_type) return true;
+  if (!acct.business_profile?.url) return true;
+  if (!acct.tos_acceptance?.date) return true;
+  const due = [
+    ...(acct.requirements?.currently_due ?? []),
+    ...(acct.requirements?.past_due ?? []),
+  ];
+  return due.some(
+    (field) =>
+      field.includes("business_profile.url") ||
+      field.includes("business_type") ||
+      field.includes("external_account") ||
+      field.includes("tos_acceptance") ||
+      field.includes("company.tax_id") ||
+      field.includes("company.address") ||
+      field.includes("individual.email"),
+  );
+}
+
+async function attachIbanToAccount(
   stripe: Stripe,
-  store: ConnectStoreRow,
+  accountId: string,
+  intake: CustomIntakeRow,
+  isCompany: boolean,
+): Promise<void> {
+  const iban = normalizeIban(intake.iban);
+  if (iban.length < 15) return;
+  const existing = await stripe.accounts.listExternalAccounts(accountId, {
+    object: "bank_account",
+    limit: 10,
+  });
+  const last4 = iban.slice(-4);
+  const hasBank = existing.data.some(
+    (ba) => ba.object === "bank_account" && (ba as Stripe.BankAccount).last4 === last4,
+  );
+  if (!hasBank) {
+    await stripe.accounts.createExternalAccount(accountId, {
+      external_account: {
+        object: "bank_account",
+        country: "ES",
+        currency: "eur",
+        account_number: iban,
+        account_holder_name: intake.business_name,
+        account_holder_type: isCompany ? "company" : "individual",
+      },
+    });
+  }
+}
+
+async function ensureCompanyRepresentative(
+  stripe: Stripe,
+  accountId: string,
+  intake: CustomIntakeRow,
+  address: Stripe.AddressParam | undefined,
+): Promise<void> {
+  const { first_name, last_name } = splitOwnerName(intake.owner_full_name);
+  const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
+  const hasRep = persons.data.some((p) => p.relationship?.representative);
+  if (hasRep) return;
+  await stripe.accounts.createPerson(accountId, {
+    first_name,
+    last_name,
+    email: intake.owner_email!,
+    phone: intake.owner_phone ?? undefined,
+    ...(address ? { address } : {}),
+    relationship: {
+      representative: true,
+      executive: true,
+      owner: true,
+      title: "Representante legal",
+    },
+  });
+}
+
+function buildAccountCoreFields(
   intake: CustomIntakeRow,
   requestIp: string,
-): Promise<string> {
+): {
+  isCompany: boolean;
+  address: Stripe.AddressParam | undefined;
+  params: Pick<
+    Stripe.AccountCreateParams,
+    "email" | "business_profile" | "business_type" | "company" | "individual" | "tos_acceptance" | "settings"
+  >;
+} {
   const { first_name, last_name } = splitOwnerName(intake.owner_full_name);
   const address = parseSpanishAddress(intake.business_address);
   const taxId = intake.tax_id?.trim() || null;
   const isCompany = Boolean(taxId);
+  const website = businessWebsite(intake);
 
-  const params: Stripe.AccountCreateParams = {
-    type: "custom",
-    country: "ES",
+  const params: Pick<
+    Stripe.AccountCreateParams,
+    "email" | "business_profile" | "business_type" | "company" | "individual" | "tos_acceptance" | "settings"
+  > = {
     email: intake.owner_email!,
-    capabilities: {
-      card_payments: { requested: true },
-      transfers: { requested: true },
-    },
     business_profile: {
       name: intake.business_name,
-      url: "https://kebabturco.net",
+      url: website,
       mcc: "5814",
       ...(address ? { support_address: address } : {}),
     },
@@ -111,12 +199,6 @@ export async function createLiveCustomAccountFromIntake(
       date: Math.floor(Date.now() / 1000),
       ip: requestIp || "127.0.0.1",
       service_agreement: "full",
-    },
-    metadata: {
-      store_id: store.id,
-      platform: "kebabturco",
-      environment: "live",
-      connect_role: "restaurant",
     },
     settings: {
       payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
@@ -131,6 +213,7 @@ export async function createLiveCustomAccountFromIntake(
     params.company = {
       name: intake.business_name,
       tax_id: formatSpanishTaxId(taxId!),
+      phone: intake.owner_phone ?? undefined,
       ...(address ? { address } : {}),
     };
   } else {
@@ -144,52 +227,84 @@ export async function createLiveCustomAccountFromIntake(
     };
   }
 
-  const account = await stripe.accounts.create(params);
+  return { isCompany, address, params };
+}
+
+/**
+ * Actualiza conta Custom existente com TODOS os campos obrigatórios Stripe Espanha.
+ */
+export async function syncLiveCustomAccountFromIntake(
+  stripe: Stripe,
+  accountId: string,
+  intake: CustomIntakeRow,
+  requestIp: string,
+): Promise<void> {
+  const { isCompany, address, params } = buildAccountCoreFields(intake, requestIp);
+
+  await stripe.accounts.update(accountId, {
+    ...params,
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+  });
 
   if (isCompany) {
     try {
-      await stripe.accounts.createPerson(account.id, {
-        first_name,
-        last_name,
-        email: intake.owner_email!,
-        phone: intake.owner_phone ?? undefined,
-        ...(address ? { address } : {}),
-        relationship: {
-          representative: true,
-          executive: true,
-          owner: true,
-          title: "Representante legal",
-        },
-      });
+      await ensureCompanyRepresentative(stripe, accountId, intake, address);
     } catch (e) {
       console.warn("[connect] company representative person", e);
     }
   }
 
-  const iban = normalizeIban(intake.iban);
   try {
-    const existing = await stripe.accounts.listExternalAccounts(account.id, {
-      object: "bank_account",
-      limit: 5,
-    });
-    const last4 = iban.slice(-4);
-    const hasBank = existing.data.some(
-      (ba) => ba.object === "bank_account" && (ba as Stripe.BankAccount).last4 === last4,
-    );
-    if (!hasBank) {
-      await stripe.accounts.createExternalAccount(account.id, {
-        external_account: {
-          object: "bank_account",
-          country: "ES",
-          currency: "eur",
-          account_number: iban,
-          account_holder_name: intake.business_name,
-          account_holder_type: isCompany ? "company" : "individual",
-        },
-      });
+    await attachIbanToAccount(stripe, accountId, intake, isCompany);
+  } catch (e) {
+    console.warn("[connect] custom IBAN attach on sync", e);
+    throw e;
+  }
+}
+
+/**
+ * Cria conta Connect CUSTOM com todos os dados obrigatórios do formulário admin.
+ */
+export async function createLiveCustomAccountFromIntake(
+  stripe: Stripe,
+  store: ConnectStoreRow,
+  intake: CustomIntakeRow,
+  requestIp: string,
+): Promise<string> {
+  const { isCompany, address, params } = buildAccountCoreFields(intake, requestIp);
+
+  const account = await stripe.accounts.create({
+    type: "custom",
+    country: "ES",
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+    metadata: {
+      store_id: store.id,
+      platform: "kebabturco",
+      environment: "live",
+      connect_role: "restaurant",
+    },
+    ...params,
+  });
+
+  if (isCompany) {
+    try {
+      await ensureCompanyRepresentative(stripe, account.id, intake, address);
+    } catch (e) {
+      console.warn("[connect] company representative person", e);
     }
+  }
+
+  try {
+    await attachIbanToAccount(stripe, account.id, intake, isCompany);
   } catch (e) {
     console.warn("[connect] custom IBAN attach", e);
+    throw e;
   }
 
   return account.id;
