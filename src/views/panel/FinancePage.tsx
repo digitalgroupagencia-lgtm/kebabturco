@@ -6,6 +6,7 @@ import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import {
   activateLiveStripeConnect,
+  createStoreOnboardingLink,
   fetchStoreFinancialProfile,
   provisionTestStripeConnect,
   syncStripeConnectStatus,
@@ -28,6 +29,8 @@ import {
   AlertTriangle,
   Info,
   Settings2,
+  Share2,
+  Copy,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
@@ -97,6 +100,8 @@ const FinancePage = () => {
   const [syncing, setSyncing] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
   const [activatingLive, setActivatingLive] = useState(false);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [onboardingLink, setOnboardingLink] = useState<string | null>(null);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
@@ -160,6 +165,22 @@ const FinancePage = () => {
       toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos oficiais");
     } finally {
       setActivatingLive(false);
+    }
+  }, [storeId, load]);
+
+  const generateOnboardingLink = useCallback(async () => {
+    if (!storeId) return;
+    setLinkBusy(true);
+    try {
+      const { path } = await createStoreOnboardingLink(storeId);
+      const url = `${window.location.origin}${path}`;
+      setOnboardingLink(url);
+      await load({ silent: true });
+      toast.success("Link gerado — copie ou envie por WhatsApp.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar o link");
+    } finally {
+      setLinkBusy(false);
     }
   }, [storeId, load]);
 
@@ -295,6 +316,55 @@ const FinancePage = () => {
             {activatingLive ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Activar recebimentos oficiais (produção)
           </Button>
+
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Ou envie um link ao restaurante para ele preencher os dados da conta no telemóvel, sem precisar de
+              login.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full h-11 font-bold gap-2"
+              disabled={linkBusy}
+              onClick={() => void generateOnboardingLink()}
+            >
+              {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+              Gerar link para o restaurante
+            </Button>
+
+            {onboardingLink && (
+              <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                <p className="text-xs font-mono break-all">{onboardingLink}</p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 gap-1"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(onboardingLink);
+                      toast.success("Link copiado");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copiar
+                  </Button>
+                  <a
+                    className="flex-1"
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `Olá! Para activar os recebimentos do restaurante, abra este link e preencha os dados da conta: ${onboardingLink}`,
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button type="button" size="sm" className="w-full gap-1 bg-green-600 hover:bg-green-700 text-white">
+                      <Share2 className="h-3.5 w-3.5" /> WhatsApp
+                    </Button>
+                  </a>
+                </div>
+                <p className="text-[11px] text-muted-foreground">O link é válido por 7 dias.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

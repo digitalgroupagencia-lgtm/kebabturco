@@ -250,6 +250,51 @@ export async function handleStripeConnectRequest(
   const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
   const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
 
+  // Public, no-login onboarding via a shareable token (e.g. sent by WhatsApp).
+  // The whole form is white-label (embedded), so the restaurant never sees the provider.
+  if (mode === "public_onboarding_session") {
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    if (!token) {
+      return json({ error: "Link inválido." }, 400);
+    }
+    const publicService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: link } = await publicService
+      .from("store_onboarding_links")
+      .select("store_id, environment, expires_at, revoked")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (!link || link.revoked || new Date(link.expires_at as string).getTime() < Date.now()) {
+      return json({ error: "Este link expirou ou já não é válido. Peça um novo." }, 410);
+    }
+
+    const { data: linkStore } = await publicService
+      .from("stores")
+      .select("id, name, tenant_id, stripe_connect_account_id, stripe_connect_environment")
+      .eq("id", link.store_id)
+      .maybeSingle();
+
+    if (!linkStore) {
+      return json({ error: "Restaurante não encontrado." }, 404);
+    }
+
+    const linkCtx = await loadConnectContext(linkStore as ConnectStoreRow);
+    const { accountId: linkAccountId, environment: linkEnv } = await ensureConnectAccount(
+      linkCtx,
+      publicService,
+      linkStore as ConnectStoreRow,
+    );
+    const clientSecret = await createEmbeddedAccountSession(
+      linkCtx.stripe,
+      linkAccountId,
+      "embedded_onboarding",
+    );
+    return json({ clientSecret, accountId: linkAccountId, connectEnvironment: linkEnv });
+  }
+
   const userId = await resolveAuthUserId(req);
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -440,6 +485,82 @@ export async function handleStripeConnectRequest(
       connectEnvironment: "live",
       ...platformStatusPayload(livePlatform, "live"),
     });
+  }
+
+  if (mode === "create_onboarding_link") {
+    const { data: adminRoles } = await service
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin_master");
+    if (!adminRoles || adminRoles.length === 0) {
+      throw new ConnectError(
+        "Apenas a administração pode gerar links de recebimentos.",
+        403,
+        "forbidden",
+      );
+    }
+
+    const alreadyRealLive =
+      store.stripe_connect_environment === "live" &&
+      Boolean(store.stripe_connect_account_id) &&
+      !store.stripe_connect_account_id!.startsWith("simulated-");
+
+    if (!alreadyRealLive) {
+      const liveKey = getStripeSecretKey();
+      if (!liveKey || stripeKeyMode(liveKey) !== "live") {
+        throw new ConnectError(
+          "Falta a chave de produção no servidor. Publique as chaves live na Lovable e tente de novo.",
+          503,
+          "live_key_missing",
+        );
+      }
+      const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+      try {
+        const platform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
+        if (!platform.connectLiveAllowed) {
+          throw new ConnectError("A Stripe ainda não aprovou a produção da plataforma.", 503, "live_not_allowed");
+        }
+      } catch (e) {
+        if (e instanceof ConnectError) throw e;
+        if (isPlatformProfileBlockedError(e)) {
+          throw new ConnectError("A Stripe ainda não aprovou a produção da plataforma.", 503, "live_not_allowed");
+        }
+        throw e;
+      }
+
+      await service
+        .from("stores")
+        .update({
+          stripe_connect_account_id: null,
+          stripe_connect_environment: "live",
+          stripe_connect_test_simulated: false,
+          stripe_charges_enabled: false,
+          stripe_payouts_enabled: false,
+          stripe_onboarding_completed: false,
+          stripe_payout_status: "pending",
+          stripe_business_name: null,
+          stripe_iban_last4: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", store.id);
+    }
+
+    const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, "");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: insErr } = await service.from("store_onboarding_links").insert({
+      token,
+      store_id: store.id,
+      environment: "live",
+      created_by: userId,
+      expires_at: expiresAt,
+      revoked: false,
+    });
+    if (insErr) {
+      console.error("[connect] create_onboarding_link insert", insErr);
+      throw new ConnectError("Não foi possível gerar o link.", 500, "link_create_failed");
+    }
+    return json({ token, expiresAt, path: `/ligar-conta/${token}` });
   }
 
   if (mode === "provision_test") {

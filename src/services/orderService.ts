@@ -415,6 +415,35 @@ export async function activateLiveStripeConnect(
   return data as { activated: boolean; connectEnvironment: "live"; alreadyLive?: boolean };
 }
 
+/** Admin-only: generate a shareable, no-login onboarding link for a store. */
+export async function createStoreOnboardingLink(
+  storeId: string,
+): Promise<{ token: string; expiresAt: string; path: string }> {
+  const data = await invokeConnectFunction({ storeId, mode: "create_onboarding_link" });
+  if (!data) {
+    throw new Error(
+      "Não foi possível gerar o link — peça na Lovable para publicar as funções do servidor.",
+    );
+  }
+  return data as { token: string; expiresAt: string; path: string };
+}
+
+/** Public (no auth): open the onboarding form from a shareable token. */
+export async function createPublicOnboardingSession(
+  token: string,
+): Promise<{ clientSecret: string; accountId: string; connectEnvironment: "live" | "test" }> {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    body: { mode: "public_onboarding_session", token },
+  });
+  if (error) {
+    throw new Error(error.message || "Não foi possível abrir o formulário.");
+  }
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: string }).error));
+  }
+  return data as { clientSecret: string; accountId: string; connectEnvironment: "live" | "test" };
+}
+
 export async function createStripeConnectEmbeddedSession(
   storeId: string,
   mode: "embedded_onboarding" | "embedded_management",
