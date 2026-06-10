@@ -122,7 +122,7 @@ export async function ensureConnectAccount(
         environment: ctx.environment,
       },
       settings: {
-        payouts: { schedule: { interval: "daily" } },
+        payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
       },
     });
 
