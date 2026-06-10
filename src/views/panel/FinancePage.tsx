@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   activateLiveStripeConnect,
   createStoreOnboardingLink,
+  createStripeConnectEmbeddedSession,
   fetchStoreFinancialProfile,
   fetchStripePlatformStatus,
   provisionTestStripeConnect,
@@ -14,7 +15,7 @@ import {
   type StoreFinancialProfile,
   type StripePlatformStatus,
 } from "@/services/orderService";
-import type { StorePayoutIntake } from "@/services/payoutIntakeService";
+import type { SavePayoutIntakeResult, StorePayoutIntake } from "@/services/payoutIntakeService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
@@ -104,6 +105,7 @@ const FinancePage = () => {
   const [linkBusy, setLinkBusy] = useState(false);
   const [onboardingLink, setOnboardingLink] = useState<string | null>(null);
   const [intakeSaved, setIntakeSaved] = useState<StorePayoutIntake | null>(null);
+  const [registerResult, setRegisterResult] = useState<SavePayoutIntakeResult | null>(null);
   const [connectingRestaurant, setConnectingRestaurant] = useState(false);
   const [showTestTools, setShowTestTools] = useState(false);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
@@ -173,6 +175,14 @@ const FinancePage = () => {
         await activateLiveStripeConnect(storeId);
         await load({ silent: true });
       }
+      const session = await createStripeConnectEmbeddedSession(storeId, "embedded_onboarding");
+      if (session.skipEmbedded || session.accountType === "custom") {
+        await load({ silent: true });
+        toast.success(
+          session.message || "Restaurante já registado na plataforma — não precisa de formulário extra.",
+        );
+        return;
+      }
       setEmbeddedMode("onboarding");
       toast.success(
         `Formulário aberto — use o e-mail ${intakeSaved.owner_email} (já fica pré-preenchido).`,
@@ -229,6 +239,10 @@ const FinancePage = () => {
 
   const ready = isStripeConnectReady(profile);
   const connectStatus = stripeConnectStatusLabel(profile);
+  const platformRegistered = Boolean(
+    profile?.stripe_connect_account_id || registerResult?.accountId || registerResult?.accountType === "custom",
+  );
+  const showConnectStep = !ready && !platformRegistered && embeddedMode === "none";
   const payoutsActive = Boolean(profile?.stripe_payouts_enabled);
   const connectEnv =
     (profile?.stripe_connect_environment as "live" | "test" | undefined) ??
@@ -252,7 +266,14 @@ const FinancePage = () => {
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
       <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — só administradores." />
-      <AdminPayoutIntakeForm storeId={storeId} onSaved={setIntakeSaved} />
+      <AdminPayoutIntakeForm
+        storeId={storeId}
+        onSaved={(row, result) => {
+          setIntakeSaved(row);
+          setRegisterResult(result);
+          void load({ silent: true });
+        }}
+      />
 
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
@@ -295,15 +316,24 @@ const FinancePage = () => {
         </div>
       )}
 
-      {!ready && embeddedMode === "none" && (
+      {platformRegistered && !ready && (
+        <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm leading-relaxed text-green-900 dark:text-green-200">
+          <p className="font-bold">Restaurante registado na plataforma</p>
+          <p className="text-xs mt-1 opacity-90">
+            Os dados já foram enviados. O dono do restaurante não precisa de criar conta nem abrir formulário
+            externo. Os pagamentos online ficam activos assim que a verificação interna terminar.
+          </p>
+        </div>
+      )}
+
+      {showConnectStep && (
         <div className="rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-4 space-y-3">
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
             <div>
               <p className="font-black text-base">Passo 2 — Confirmar ligação (só se o Passo 1 pedir)</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Depois de guardar, o restaurante fica registado como cliente Connect na plataforma Euro Business
-                Group — não é um novo registo Stripe. Este botão só aparece se faltar algum passo de verificação.
+                Só use este botão se o Passo 1 não tiver conseguido registar o restaurante automaticamente.
               </p>
             </div>
           </div>

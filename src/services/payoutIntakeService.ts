@@ -42,6 +42,7 @@ export type SavePayoutIntakeResult = {
   saved: boolean;
   synced: boolean;
   accountId?: string;
+  accountType?: "custom" | "express";
   bankSynced?: boolean;
   message?: string;
 };

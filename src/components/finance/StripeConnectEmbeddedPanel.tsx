@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ConnectAccountManagement,
   ConnectAccountOnboarding,
@@ -46,11 +46,53 @@ export default function StripeConnectEmbeddedPanel({
   const [useTestProvision, setUseTestProvision] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
   const [alreadyConnected, setAlreadyConnected] = useState<string | null>(null);
+  const [prefetching, setPrefetching] = useState(true);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const sessionMode = variant === "onboarding" ? "embedded_onboarding" : "embedded_management";
   const preferTest = connectEnvironment === "test" || productionBlocked;
 
   const publishableKey = getStripePublishableKeyForEnvironment(sessionEnvironment);
+
+  useEffect(() => {
+    let active = true;
+    setPrefetching(true);
+    setClientSecret(null);
+    setAlreadyConnected(null);
+    setLoadError(null);
+    (async () => {
+      try {
+        const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
+        if (!active) return;
+        if (session.connectEnvironment) {
+          setSessionEnvironment(session.connectEnvironment);
+        }
+        if (session.skipEmbedded || session.accountType === "custom") {
+          setAlreadyConnected(
+            session.message || "Restaurante já registado na plataforma — não precisa de formulário extra.",
+          );
+          return;
+        }
+        if (!session.clientSecret) {
+          throw new Error("Não foi possível abrir o formulário de verificação.");
+        }
+        setClientSecret(session.clientSecret);
+      } catch (e) {
+        if (!active) return;
+        const err = e as Error & { code?: string };
+        const msg = err.message || "Não foi possível abrir o formulário de recebimentos.";
+        setLoadError(msg);
+        if (preferTest || err.code === "embedded_unavailable_use_test_provision") {
+          setUseTestProvision(true);
+        }
+      } finally {
+        if (active) setPrefetching(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [storeId, sessionMode, refreshNonce, preferTest]);
 
   const finish = useCallback(async () => {
     setBusy(true);
@@ -63,43 +105,12 @@ export default function StripeConnectEmbeddedPanel({
   }, [storeId, onComplete]);
 
   const connectInstance = useMemo((): StripeConnectInstance | null => {
-    if (loadError || useTestProvision || alreadyConnected) return null;
+    if (loadError || useTestProvision || alreadyConnected || !clientSecret) return null;
     const key = getStripePublishableKeyForEnvironment(sessionEnvironment);
     if (!key) return null;
-    void refreshNonce;
     return loadConnectAndInitialize({
       publishableKey: key,
-      fetchClientSecret: async () => {
-        try {
-          setLoadError(null);
-          const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
-          if (session.connectEnvironment) {
-            setSessionEnvironment(session.connectEnvironment);
-          }
-          if (session.skipEmbedded) {
-            setAlreadyConnected(
-              session.message ||
-                "Conta Connect do restaurante já registada — não precisa de formulário externo.",
-            );
-            throw new Error("SKIP_EMBEDDED");
-          }
-          if (!session.clientSecret) {
-            throw new Error("Não foi possível abrir o formulário de verificação.");
-          }
-          return session.clientSecret;
-        } catch (e) {
-          const err = e as Error & { code?: string };
-          if (err.message === "SKIP_EMBEDDED") {
-            throw e;
-          }
-          const msg = err.message || "Não foi possível abrir o formulário de recebimentos.";
-          setLoadError(msg);
-          if (preferTest || err.code === "embedded_unavailable_use_test_provision") {
-            setUseTestProvision(true);
-          }
-          throw e;
-        }
-      },
+      fetchClientSecret: async () => clientSecret,
       appearance: {
         overlays: "dialog",
         variables: {
@@ -109,7 +120,7 @@ export default function StripeConnectEmbeddedPanel({
         },
       },
     });
-  }, [sessionEnvironment, storeId, sessionMode, refreshNonce, loadError, useTestProvision, preferTest, alreadyConnected]);
+  }, [sessionEnvironment, clientSecret, loadError, useTestProvision, alreadyConnected]);
 
   const activateTestReceivables = async () => {
     setTestProvisionBusy(true);
@@ -129,8 +140,18 @@ export default function StripeConnectEmbeddedPanel({
   const reloadSession = () => {
     setLoadError(null);
     setUseTestProvision(false);
+    setClientSecret(null);
+    setPrefetching(true);
     setRefreshNonce((n) => n + 1);
   };
+
+  if (prefetching && !alreadyConnected && !loadError && !useTestProvision) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> A preparar formulário…
+      </div>
+    );
+  }
 
   if (alreadyConnected) {
     return (

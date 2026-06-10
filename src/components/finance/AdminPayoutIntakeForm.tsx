@@ -10,12 +10,13 @@ import { extractErrorMessage } from "@/lib/extractErrorMessage";
 import {
   fetchStorePayoutIntake,
   saveAndSyncStorePayoutIntake,
+  type SavePayoutIntakeResult,
   type StorePayoutIntake,
 } from "@/services/payoutIntakeService";
 
 type Props = {
   storeId: string;
-  onSaved?: (row: StorePayoutIntake) => void;
+  onSaved?: (row: StorePayoutIntake, result: SavePayoutIntakeResult) => void;
 };
 
 export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
@@ -23,6 +24,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [missingTable, setMissingTable] = useState(false);
   const [saved, setSaved] = useState<StorePayoutIntake | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
   const [ownerFullName, setOwnerFullName] = useState("");
@@ -41,8 +43,9 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
       try {
         const row = await fetchStorePayoutIntake(storeId);
         if (!active) return;
-        setSaved(row);
         if (row) {
+          setSaved(row);
+          setCollapsed(true);
           setBusinessName(row.business_name);
           setOwnerFullName(row.owner_full_name);
           setOwnerEmail(row.owner_email ?? "");
@@ -87,7 +90,8 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
       const row = await fetchStorePayoutIntake(storeId);
       if (row) {
         setSaved(row);
-        onSaved?.(row);
+        setCollapsed(true);
+        onSaved?.(row, result);
       }
       toast.success(
         result.message ||
@@ -112,6 +116,25 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
       <Card>
         <CardContent className="py-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> A carregar dados do restaurante…
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (collapsed && saved) {
+    return (
+      <Card className="border-green-500/40 bg-green-500/5">
+        <CardContent className="py-4 space-y-2">
+          <p className="text-sm font-bold text-green-800 dark:text-green-300">
+            Dados do restaurante guardados
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {saved.business_name} · {saved.owner_email ?? "sem e-mail"} · IBAN ····{" "}
+            {saved.iban.slice(-4)}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => setCollapsed(false)}>
+            Editar dados
+          </Button>
         </CardContent>
       </Card>
     );
