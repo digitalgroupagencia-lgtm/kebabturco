@@ -689,86 +689,77 @@ export async function handleStripeConnectRequest(
 
     const intake = await loadStorePayoutIntake(service, storeId);
     if (!intake) {
-      throw new ConnectError("Dados guardados mas não foi possível reler — tente de novo.", 500, "intake_read_failed");
+      return json({
+        saved: true,
+        synced: false,
+        message: "Dados guardados. Recarregue a página e tente de novo.",
+      });
     }
 
-    const needsLiveReset =
-      store.stripe_connect_environment === "test" ||
-      Boolean((store as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
-      !store.stripe_connect_account_id ||
-      store.stripe_connect_account_id.startsWith("simulated-");
+    // Stripe sync is best-effort — dados do restaurante ficam sempre guardados.
+    try {
+      const needsLiveReset =
+        store.stripe_connect_environment === "test" ||
+        Boolean((store as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
+        !store.stripe_connect_account_id ||
+        store.stripe_connect_account_id.startsWith("simulated-");
 
-    let workingStore = store;
-    if (needsLiveReset) {
-      const liveKey = getStripeSecretKey();
-      if (!liveKey) {
-        throw new ConnectError(
-          "Falta a chave de produção no servidor. Publique as chaves live na Lovable.",
-          503,
-          "live_key_missing",
-        );
-      }
-      const { error: liveUpdErr } = await service
-        .from("stores")
-        .update({
+      let workingStore = store;
+      if (needsLiveReset) {
+        const liveKey = getStripeSecretKey();
+        if (!liveKey) {
+          return json({
+            saved: true,
+            synced: false,
+            message: "Dados guardados. Falta activar as chaves de produção no servidor.",
+          });
+        }
+        const { error: liveUpdErr } = await service
+          .from("stores")
+          .update({
+            stripe_connect_account_id: null,
+            stripe_connect_environment: "live",
+            stripe_connect_test_simulated: false,
+            stripe_charges_enabled: false,
+            stripe_payouts_enabled: false,
+            stripe_onboarding_completed: false,
+            stripe_payout_status: "pending",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", store.id);
+        if (liveUpdErr) {
+          return json({
+            saved: true,
+            synced: false,
+            message: "Dados guardados. Não foi possível preparar modo produção — tente Passo 2.",
+          });
+        }
+        workingStore = {
+          ...store,
           stripe_connect_account_id: null,
           stripe_connect_environment: "live",
-          stripe_connect_test_simulated: false,
-          stripe_charges_enabled: false,
-          stripe_payouts_enabled: false,
-          stripe_onboarding_completed: false,
-          stripe_payout_status: "pending",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", store.id);
-      if (liveUpdErr) {
-        throw new ConnectError("Não foi possível preparar modo produção.", 500, "store_update_failed");
+        };
       }
-      workingStore = {
-        ...store,
-        stripe_connect_account_id: null,
-        stripe_connect_environment: "live",
-      };
-    }
 
-    let ctx: StripeConnectContext;
-    try {
-      ctx = await loadConnectContext(workingStore);
-    } catch (e) {
-      if (e instanceof PlatformPendingError) {
-        throw new ConnectError(
-          "A Stripe ainda não aprovou a produção da plataforma.",
-          503,
-          "live_not_allowed",
-        );
-      }
-      throw e;
-    }
-
-    let accountId = "";
-    let environment: StripeKeyMode = "live";
-    let syncResult = {
-      bankSynced: false,
-      profileSynced: false,
-      message: "Dados guardados.",
-    };
-
-    try {
+      const ctx = await loadConnectContext(workingStore);
       const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
-      accountId = ensured.accountId;
-      environment = ensured.environment;
-      const status = await syncConnectAccountById(ctx.stripe, service, accountId);
+      const status = await syncConnectAccountById(ctx.stripe, service, ensured.accountId);
 
       let message: string;
       let bankSynced = false;
       if (ensured.accountType === "custom") {
         message =
           status.chargesEnabled && status.onboardingCompleted
-            ? "Restaurante registado como cliente Connect na plataforma — pronto para receber."
-            : "Restaurante registado como cliente Connect — dados enviados (sem ecrã de novo registo Stripe).";
+            ? "Dados guardados — restaurante pronto para receber pagamentos."
+            : "Dados guardados — restaurante registado na plataforma (sem ecrã de novo registo).";
         bankSynced = true;
       } else {
-        syncResult = await syncIntakeToStripeConnect(ctx.stripe, accountId, intake, store.name);
+        const syncResult = await syncIntakeToStripeConnect(
+          ctx.stripe,
+          ensured.accountId,
+          intake,
+          store.name,
+        );
         message = syncResult.message;
         bankSynced = syncResult.bankSynced;
       }
@@ -776,12 +767,12 @@ export async function handleStripeConnectRequest(
       return json({
         saved: true,
         synced: true,
-        accountId,
+        accountId: ensured.accountId,
         accountType: ensured.accountType,
-        connectEnvironment: environment,
+        connectEnvironment: ensured.environment,
         bankSynced,
         message,
-        ...statusPayload(status, environment),
+        ...statusPayload(status, ensured.environment),
         ...connectMeta(ctx),
       });
     } catch (e) {
@@ -789,10 +780,7 @@ export async function handleStripeConnectRequest(
       return json({
         saved: true,
         synced: false,
-        accountId: accountId || null,
-        connectEnvironment: environment,
-        message:
-          "Dados guardados. Carregue em «Ligar conta do restaurante» para concluir e-mail e IBAN.",
+        message: "Dados guardados com sucesso. Use o Passo 2 se precisar concluir a ligação.",
       });
     }
   }
