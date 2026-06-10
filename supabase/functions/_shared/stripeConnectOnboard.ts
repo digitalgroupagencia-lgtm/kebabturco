@@ -25,7 +25,7 @@ import {
 } from "./stripeConnectCustomProvision.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v6";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v7";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -493,7 +493,14 @@ export async function handleStripeConnectRequest(
   req: Request,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  if (!getStripeSecretKey() && !getStripeSecretKeyTest()) {
+  const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
+  const publicModes = new Set(["public_link_info", "public_submit_intake", "public_onboarding_session"]);
+
+  if (
+    !publicModes.has(mode) &&
+    !getStripeSecretKey() &&
+    !getStripeSecretKeyTest()
+  ) {
     return json(
       {
         error: "Recebimentos indisponíveis — configuração do servidor incompleta.",
@@ -502,8 +509,6 @@ export async function handleStripeConnectRequest(
       503,
     );
   }
-
-  const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
   const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
   const requestIp =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -523,7 +528,7 @@ export async function handleStripeConnectRequest(
       .maybeSingle();
 
     if (!link || link.revoked || new Date(link.expires_at as string).getTime() < Date.now()) {
-      return { error: json({ error: "Este link expirou ou já não é válido. Peça um novo." }, 410) };
+      return { error: json({ error: "Este enlace ha caducado o ya no es válido. Pide uno nuevo." }, 410) };
     }
 
     const { data: linkStore } = await publicService
@@ -533,7 +538,7 @@ export async function handleStripeConnectRequest(
       .maybeSingle();
 
     if (!linkStore) {
-      return { error: json({ error: "Restaurante não encontrado." }, 404) };
+      return { error: json({ error: "Restaurante no encontrado." }, 404) };
     }
 
     return { publicService, linkStore: linkStore as ConnectStoreRow };
@@ -542,7 +547,7 @@ export async function handleStripeConnectRequest(
   // Dono do restaurante preenche formulário Kebab (sem marca Stripe) via link WhatsApp.
   if (mode === "public_submit_intake") {
     const token = typeof body.token === "string" ? body.token.trim() : "";
-    if (!token) return json({ error: "Link inválido." }, 400);
+    if (!token) return json({ error: "Enlace no válido." }, 400);
 
     const resolved = await resolvePublicLink(token);
     if ("error" in resolved && resolved.error) return resolved.error;
@@ -561,12 +566,12 @@ export async function handleStripeConnectRequest(
         ? body.businessWebsite.trim()
         : DEFAULT_BUSINESS_WEBSITE;
 
-    if (businessName.length < 2) return json({ error: "Nome do negócio é obrigatório." }, 400);
-    if (ownerFullName.length < 2) return json({ error: "Nome do titular é obrigatório." }, 400);
-    if (!ownerEmail.includes("@")) return json({ error: "E-mail é obrigatório." }, 400);
-    if (ownerPhone.length < 6) return json({ error: "Telefone é obrigatório." }, 400);
-    if (taxId.length < 2) return json({ error: "NIF / CIF é obrigatório." }, 400);
-    if (normalizeIban(iban).length < 15) return json({ error: "IBAN inválido." }, 400);
+    if (businessName.length < 2) return json({ error: "El nombre del negocio es obligatorio." }, 400);
+    if (ownerFullName.length < 2) return json({ error: "El nombre del titular es obligatorio." }, 400);
+    if (!ownerEmail.includes("@")) return json({ error: "El correo electrónico es obligatorio." }, 400);
+    if (ownerPhone.length < 6) return json({ error: "El teléfono es obligatorio." }, 400);
+    if (taxId.length < 2) return json({ error: "El NIF / CIF es obligatorio." }, 400);
+    if (normalizeIban(iban).length < 15) return json({ error: "IBAN no válido." }, 400);
 
     await upsertStorePayoutIntakeDirect(publicService, linkStore.id, {
       businessName,
@@ -612,8 +617,8 @@ export async function handleStripeConnectRequest(
       accountId: ensured.accountId,
       connectEnvironment: ensured.environment,
       message: needsVerification
-        ? "Dados enviados. Falta só confirmar a identidade no passo seguinte."
-        : "Dados enviados — conta em análise pela plataforma de pagamentos.",
+        ? "Datos enviados. Solo falta confirmar la identidad en el siguiente paso."
+        : "Datos enviados — cuenta en revisión.",
       clientSecret,
       ...statusPayload(status, ensured.environment),
     });
@@ -621,11 +626,16 @@ export async function handleStripeConnectRequest(
 
   if (mode === "public_link_info") {
     const token = typeof body.token === "string" ? body.token.trim() : "";
-    if (!token) return json({ error: "Link inválido." }, 400);
+    if (!token) return json({ error: "Enlace no válido." }, 400);
     const resolved = await resolvePublicLink(token);
     if ("error" in resolved && resolved.error) return resolved.error;
     const { publicService, linkStore } = resolved;
-    const intake = await loadStorePayoutIntake(publicService, linkStore.id);
+    let intake: PayoutIntakeRow | null = null;
+    try {
+      intake = await loadStorePayoutIntake(publicService, linkStore.id);
+    } catch {
+      intake = null;
+    }
     let ownerDob = "";
     if (intake?.notes?.startsWith("dob:")) {
       ownerDob = intake.notes.replace("dob:", "").trim();

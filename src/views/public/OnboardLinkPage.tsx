@@ -23,11 +23,11 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
     <div className="mx-auto max-w-md space-y-5">
       <div className="flex items-center gap-2">
         <Wallet className="h-6 w-6 text-primary" />
-        <h1 className="text-xl font-black">Recebimentos do restaurante</h1>
+        <h1 className="text-xl font-black">Cobros del restaurante</h1>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Preencha os dados onde quer receber o dinheiro dos pedidos online. Formulário seguro da Kebab
-        Turco — sem criar conta separada.
+        Rellena los datos donde quieres recibir el dinero de los pedidos online. Formulario seguro de
+        Kebab Turco — sin crear una cuenta aparte.
       </p>
       {children}
     </div>
@@ -77,8 +77,8 @@ export default function OnboardLinkPage() {
           setBusinessAddress(info.prefill.businessAddress ?? "");
           setOwnerDob(info.prefill.ownerDob ?? "");
         }
-      } catch (e) {
-        if (active) setLoadError(e instanceof Error ? e.message : "Link inválido.");
+      } catch {
+        /* El formulario se muestra igual sin datos previos */
       } finally {
         if (active) setLoading(false);
       }
@@ -114,7 +114,7 @@ export default function OnboardLinkPage() {
       !taxId.trim() ||
       !iban.trim()
     ) {
-      setLoadError("Preencha todos os campos obrigatórios.");
+      setLoadError("Rellena todos los campos obligatorios.");
       return;
     }
     setSaving(true);
@@ -138,7 +138,7 @@ export default function OnboardLinkPage() {
         setStep("done");
       }
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Não foi possível enviar.");
+      setLoadError(e instanceof Error ? e.message : "No se pudieron enviar los datos.");
     } finally {
       setSaving(false);
     }
@@ -159,7 +159,7 @@ export default function OnboardLinkPage() {
     return (
       <Shell>
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          Link inválido. Peça um novo link à administração.
+          Enlace no válido. Pide un enlace nuevo a administración.
         </div>
       </Shell>
     );
@@ -169,7 +169,7 @@ export default function OnboardLinkPage() {
     return (
       <Shell>
         <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> A carregar…
+          <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
         </div>
       </Shell>
     );
@@ -181,10 +181,10 @@ export default function OnboardLinkPage() {
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 flex gap-3">
           <CheckCircle2 className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-bold text-green-800 dark:text-green-300">Dados enviados</p>
+            <p className="font-bold text-green-800 dark:text-green-300">Datos enviados</p>
             <p className="text-muted-foreground mt-1">
-              Obrigado. Os seus dados foram enviados para análise. Quando estiver tudo aprovado, o
-              restaurante passa a receber pagamentos online. Pode fechar esta página.
+              Gracias. Tus datos se han enviado para revisión. Cuando todo esté aprobado, el restaurante
+              empezará a recibir pagos online. Puedes cerrar esta página.
             </p>
           </div>
         </div>
@@ -196,10 +196,10 @@ export default function OnboardLinkPage() {
     return (
       <Shell>
         <div className="rounded-xl border bg-card p-4 space-y-3">
-          <p className="text-sm font-bold">Último passo — confirmar identidade</p>
+          <p className="text-sm font-bold">Último paso — confirmar identidad</p>
           <p className="text-xs text-muted-foreground">
-            Por lei, falta confirmar a identidade do representante (documento ou data de nascimento).
-            Este passo é discreto e não pede para criar conta nova.
+            Por ley, falta confirmar la identidad del representante (documento o fecha de nacimiento).
+            Este paso es discreto y no pide crear una cuenta nueva.
           </p>
           <ConnectComponentsProvider connectInstance={connectInstance}>
             <ConnectAccountOnboarding onExit={() => setStep("done")} />
@@ -222,27 +222,27 @@ export default function OnboardLinkPage() {
       )}
       <div className="rounded-2xl border bg-card p-4 space-y-3 text-sm">
         <div>
-          <Label>Nome do negócio</Label>
+          <Label>Nombre del negocio</Label>
           <Input className="mt-1" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
         </div>
         <div>
-          <Label>Nome completo do titular</Label>
+          <Label>Nombre completo del titular</Label>
           <Input className="mt-1" value={ownerFullName} onChange={(e) => setOwnerFullName(e.target.value)} />
         </div>
         <div>
-          <Label>Site do negócio</Label>
+          <Label>Web del negocio</Label>
           <Input className="mt-1" value={businessWebsite} onChange={(e) => setBusinessWebsite(e.target.value)} />
         </div>
         <div>
-          <Label>E-mail</Label>
+          <Label>Correo electrónico</Label>
           <Input type="email" className="mt-1" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
         </div>
         <div>
-          <Label>Telefone</Label>
+          <Label>Teléfono</Label>
           <Input className="mt-1" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
         </div>
         <div>
-          <Label>Data de nascimento (AAAA-MM-DD)</Label>
+          <Label>Fecha de nacimiento (AAAA-MM-DD)</Label>
           <Input
             className="mt-1"
             placeholder="1980-05-15"
@@ -263,7 +263,7 @@ export default function OnboardLinkPage() {
           />
         </div>
         <div>
-          <Label>Morada do negócio</Label>
+          <Label>Dirección del negocio</Label>
           <Textarea
             rows={2}
             className="mt-1"
@@ -273,7 +273,7 @@ export default function OnboardLinkPage() {
         </div>
         <Button className="w-full h-11 font-bold" disabled={saving} onClick={() => void submitForm()}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Enviar dados para análise
+          Enviar datos para revisión
         </Button>
       </div>
     </Shell>

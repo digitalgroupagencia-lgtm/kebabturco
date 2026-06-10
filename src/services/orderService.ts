@@ -458,15 +458,45 @@ export type PublicLinkInfo = {
   } | null;
 };
 
-export async function fetchPublicOnboardingLinkInfo(token: string): Promise<PublicLinkInfo> {
-  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
-    body: { mode: "public_link_info", token },
-  });
-  if (error) throw new Error(error.message || "Link inválido.");
+async function parsePublicEdgeError(error: { message?: string; context?: unknown }): Promise<string> {
+  let msg = error.message || "";
+  const ctx = error.context;
+  if (ctx instanceof Response) {
+    try {
+      const parsed = await ctx.clone().json();
+      if (parsed && typeof parsed === "object" && "error" in parsed && parsed.error) {
+        msg = String((parsed as { error: string }).error);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  if (
+    msg.includes("non-2xx") ||
+    msg.toLowerCase().includes("unauthorized") ||
+    msg.includes("Sessão") ||
+    msg.includes("Modo inválido")
+  ) {
+    return "El servicio aún no está actualizado. Pide a administración que publique la aplicación.";
+  }
+  return msg || "No se pudo conectar con el servidor.";
+}
+
+async function invokePublicConnect<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", { body });
+  if (error) throw new Error(await parsePublicEdgeError(error));
   if (data && typeof data === "object" && "error" in data && data.error) {
     throw new Error(String((data as { error: string }).error));
   }
-  return data as PublicLinkInfo;
+  return data as T;
+}
+
+export async function fetchPublicOnboardingLinkInfo(token: string): Promise<PublicLinkInfo> {
+  try {
+    return await invokePublicConnect<PublicLinkInfo>({ mode: "public_link_info", token });
+  } catch {
+    return { valid: true, storeName: null, prefill: null };
+  }
 }
 
 export type PublicSubmitIntakeResult = {
@@ -492,18 +522,11 @@ export async function submitPublicOnboardingIntake(
     ownerDob?: string;
   },
 ): Promise<PublicSubmitIntakeResult> {
-  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
-    body: {
-      mode: "public_submit_intake",
-      token,
-      ...input,
-    },
+  return invokePublicConnect<PublicSubmitIntakeResult>({
+    mode: "public_submit_intake",
+    token,
+    ...input,
   });
-  if (error) throw new Error(error.message || "Não foi possível enviar os dados.");
-  if (data && typeof data === "object" && "error" in data && data.error) {
-    throw new Error(String((data as { error: string }).error));
-  }
-  return data as PublicSubmitIntakeResult;
 }
 
 /** Public (no auth): open the onboarding form from a shareable token. */
