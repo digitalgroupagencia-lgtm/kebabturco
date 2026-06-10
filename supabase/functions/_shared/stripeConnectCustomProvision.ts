@@ -13,6 +13,8 @@ export type CustomIntakeRow = {
   tax_id: string | null;
   business_address: string | null;
   business_website?: string | null;
+  business_mcc?: string | null;
+  business_type?: "company" | "individual" | null;
 };
 
 function parseOwnerDob(raw: string | null | undefined): Stripe.PersonCreateParams.Dob | undefined {
@@ -211,8 +213,11 @@ function buildAccountCoreFields(
   const { first_name, last_name } = splitOwnerName(intake.owner_full_name);
   const address = parseSpanishAddress(intake.business_address);
   const taxId = intake.tax_id?.trim() || null;
-  const isCompany = Boolean(taxId);
+  const isCompany =
+    intake.business_type === "company" ||
+    (intake.business_type !== "individual" && Boolean(taxId));
   const website = businessWebsite(intake);
+  const mcc = intake.business_mcc?.trim() || "5814";
 
   const params: Pick<
     Stripe.AccountCreateParams,
@@ -222,7 +227,8 @@ function buildAccountCoreFields(
     business_profile: {
       name: intake.business_name,
       url: website,
-      mcc: "5814",
+      mcc,
+      product_description: "Restauración y comida para llevar",
       ...(address ? { support_address: address } : {}),
     },
     tos_acceptance: {

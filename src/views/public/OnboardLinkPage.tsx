@@ -7,11 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getStripePublishableKeyForEnvironment } from "@/lib/stripePublishableKey";
 import {
   fetchPublicOnboardingLinkInfo,
   submitPublicOnboardingIntake,
 } from "@/services/orderService";
+
+const SECTOR_OPTIONS = [
+  { mcc: "5814", label: "Restaurante / comida rápida (kebab, pizza, etc.)" },
+  { mcc: "5812", label: "Restaurante con servicio en mesa" },
+  { mcc: "5813", label: "Bar o cafetería" },
+  { mcc: "5499", label: "Tienda de alimentación" },
+] as const;
+
+const STRIPE_CONNECT_TERMS_URL = "https://stripe.com/es/legal/connect-account";
 
 function parseToken(pathname: string): string {
   const match = pathname.match(/\/(?:recibos\/registro-datos|ligar-conta)\/([^/?#]+)/);
@@ -26,7 +36,8 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
         <h1 className="text-xl font-black">Cobros del restaurante</h1>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Rellena los datos para recibir el dinero de los pedidos online.
+        Rellena todos los datos obligatorios para activar los cobros online. Después se enviarán a
+        revisión.
       </p>
       {children}
     </div>
@@ -44,6 +55,8 @@ export default function OnboardLinkPage() {
   const [saving, setSaving] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
+  const [businessType, setBusinessType] = useState<"company" | "individual">("company");
+  const [businessMcc, setBusinessMcc] = useState("5814");
   const [ownerFullName, setOwnerFullName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
@@ -52,6 +65,7 @@ export default function OnboardLinkPage() {
   const [businessAddress, setBusinessAddress] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("https://kebabturco.net");
   const [ownerDob, setOwnerDob] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const publishableKey = getStripePublishableKeyForEnvironment("live");
 
@@ -111,9 +125,19 @@ export default function OnboardLinkPage() {
       !ownerEmail.trim() ||
       !ownerPhone.trim() ||
       !taxId.trim() ||
-      !iban.trim()
+      !iban.trim() ||
+      !businessAddress.trim() ||
+      !ownerDob.trim()
     ) {
       setLoadError("Rellena todos los campos obligatorios.");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ownerDob.trim())) {
+      setLoadError("La fecha de nacimiento debe ser AAAA-MM-DD (ejemplo: 1980-05-15).");
+      return;
+    }
+    if (!acceptTerms) {
+      setLoadError("Debes aceptar los términos del servicio de pagos.");
       return;
     }
     setSaving(true);
@@ -126,9 +150,12 @@ export default function OnboardLinkPage() {
         ownerPhone: ownerPhone.trim(),
         taxId: taxId.trim(),
         iban: iban.trim(),
-        businessAddress: businessAddress.trim() || undefined,
+        businessAddress: businessAddress.trim(),
         businessWebsite: businessWebsite.trim() || "https://kebabturco.net",
-        ownerDob: ownerDob.trim() || undefined,
+        ownerDob: ownerDob.trim(),
+        businessType,
+        businessMcc,
+        acceptTerms: true,
       });
       if (result.needsVerification && result.clientSecret) {
         setVerifySecret(result.clientSecret);
@@ -144,6 +171,8 @@ export default function OnboardLinkPage() {
   }, [
     token,
     businessName,
+    businessType,
+    businessMcc,
     ownerFullName,
     ownerEmail,
     ownerPhone,
@@ -152,6 +181,7 @@ export default function OnboardLinkPage() {
     businessAddress,
     businessWebsite,
     ownerDob,
+    acceptTerms,
   ]);
 
   if (!token) {
@@ -182,8 +212,8 @@ export default function OnboardLinkPage() {
           <div className="text-sm">
             <p className="font-bold text-green-800 dark:text-green-300">Datos enviados</p>
             <p className="text-muted-foreground mt-1">
-              Gracias. Tus datos se han enviado para revisión. Cuando todo esté aprobado, el restaurante
-              empezará a recibir pagos online. Puedes cerrar esta página.
+              Gracias. Tus datos y la aceptación de términos se han enviado para revisión. Cuando todo
+              esté aprobado, el restaurante empezará a recibir pagos online.
             </p>
           </div>
         </div>
@@ -197,7 +227,7 @@ export default function OnboardLinkPage() {
         <div className="rounded-xl border bg-card p-4 space-y-3">
           <p className="text-sm font-bold">Último paso — confirmar identidad</p>
           <p className="text-xs text-muted-foreground">
-            Por ley, falta confirmar la identidad del representante (documento o fecha de nacimiento).
+            Por ley, puede faltar confirmar la identidad del representante (documento de identidad).
           </p>
           <ConnectComponentsProvider connectInstance={connectInstance}>
             <ConnectAccountOnboarding onExit={() => setStep("done")} />
@@ -209,9 +239,7 @@ export default function OnboardLinkPage() {
 
   return (
     <Shell>
-      {storeName && (
-        <p className="text-sm font-semibold text-primary">{storeName}</p>
-      )}
+      {storeName && <p className="text-sm font-semibold text-primary">{storeName}</p>}
       {loadError && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm flex gap-2">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -224,7 +252,32 @@ export default function OnboardLinkPage() {
           <Input className="mt-1" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
         </div>
         <div>
-          <Label>Nombre completo del titular</Label>
+          <Label>Tipo de empresa</Label>
+          <select
+            className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={businessType}
+            onChange={(e) => setBusinessType(e.target.value as "company" | "individual")}
+          >
+            <option value="company">Empresa (SL, SLU, etc.)</option>
+            <option value="individual">Autónomo / persona física</option>
+          </select>
+        </div>
+        <div>
+          <Label>Sector del negocio</Label>
+          <select
+            className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={businessMcc}
+            onChange={(e) => setBusinessMcc(e.target.value)}
+          >
+            {SECTOR_OPTIONS.map((opt) => (
+              <option key={opt.mcc} value={opt.mcc}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>Nombre completo del representante legal</Label>
           <Input className="mt-1" value={ownerFullName} onChange={(e) => setOwnerFullName(e.target.value)} />
         </div>
         <div>
@@ -240,12 +293,13 @@ export default function OnboardLinkPage() {
           <Input className="mt-1" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
         </div>
         <div>
-          <Label>Fecha de nacimiento (AAAA-MM-DD)</Label>
+          <Label>Fecha de nacimiento del representante (AAAA-MM-DD)</Label>
           <Input
             className="mt-1"
             placeholder="1980-05-15"
             value={ownerDob}
             onChange={(e) => setOwnerDob(e.target.value)}
+            required
           />
         </div>
         <div>
@@ -253,7 +307,7 @@ export default function OnboardLinkPage() {
           <Input className="mt-1" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
         </div>
         <div>
-          <Label>IBAN</Label>
+          <Label>IBAN (cuenta para recibir cobros)</Label>
           <Input
             className="mt-1 font-mono"
             value={iban}
@@ -267,8 +321,29 @@ export default function OnboardLinkPage() {
             className="mt-1"
             value={businessAddress}
             onChange={(e) => setBusinessAddress(e.target.value)}
+            required
           />
         </div>
+        <label className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3 cursor-pointer">
+          <Checkbox
+            checked={acceptTerms}
+            onCheckedChange={(v) => setAcceptTerms(v === true)}
+            className="mt-0.5"
+          />
+          <span className="text-xs leading-relaxed text-muted-foreground">
+            Acepto el{" "}
+            <a
+              href={STRIPE_CONNECT_TERMS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline font-semibold"
+              onClick={(e) => e.stopPropagation()}
+            >
+              acuerdo de cuenta conectada y términos del servicio de pagos
+            </a>{" "}
+            necesarios para recibir cobros online en España, y confirmo que los datos son correctos.
+          </span>
+        </label>
         <Button className="w-full h-11 font-bold" disabled={saving} onClick={() => void submitForm()}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           Enviar datos para revisión

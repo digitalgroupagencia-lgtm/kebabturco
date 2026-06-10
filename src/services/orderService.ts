@@ -517,9 +517,12 @@ export async function submitPublicOnboardingIntake(
     ownerPhone: string;
     taxId: string;
     iban: string;
-    businessAddress?: string;
+    businessAddress: string;
     businessWebsite?: string;
-    ownerDob?: string;
+    ownerDob: string;
+    businessType: "company" | "individual";
+    businessMcc: string;
+    acceptTerms: boolean;
   },
 ): Promise<PublicSubmitIntakeResult> {
   return invokePublicConnect<PublicSubmitIntakeResult>({

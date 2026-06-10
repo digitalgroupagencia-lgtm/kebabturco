@@ -25,7 +25,7 @@ import {
 } from "./stripeConnectCustomProvision.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v7";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v8";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -565,13 +565,24 @@ export async function handleStripeConnectRequest(
       typeof body.businessWebsite === "string" && body.businessWebsite.trim()
         ? body.businessWebsite.trim()
         : DEFAULT_BUSINESS_WEBSITE;
+    const businessMcc = typeof body.businessMcc === "string" ? body.businessMcc.trim() : "5814";
+    const businessType =
+      body.businessType === "individual" ? "individual" : ("company" as const);
+    const acceptTerms = body.acceptTerms === true || body.acceptTerms === "true";
 
     if (businessName.length < 2) return json({ error: "El nombre del negocio es obligatorio." }, 400);
     if (ownerFullName.length < 2) return json({ error: "El nombre del titular es obligatorio." }, 400);
     if (!ownerEmail.includes("@")) return json({ error: "El correo electrónico es obligatorio." }, 400);
     if (ownerPhone.length < 6) return json({ error: "El teléfono es obligatorio." }, 400);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ownerDob)) {
+      return json({ error: "La fecha de nacimiento es obligatoria (AAAA-MM-DD)." }, 400);
+    }
     if (taxId.length < 2) return json({ error: "El NIF / CIF es obligatorio." }, 400);
+    if (businessAddress.length < 5) return json({ error: "La dirección del negocio es obligatoria." }, 400);
     if (normalizeIban(iban).length < 15) return json({ error: "IBAN no válido." }, 400);
+    if (!acceptTerms) {
+      return json({ error: "Debes aceptar los términos del servicio de pagos." }, 400);
+    }
 
     await upsertStorePayoutIntakeDirect(publicService, linkStore.id, {
       businessName,
@@ -588,6 +599,9 @@ export async function handleStripeConnectRequest(
       ...(await loadStorePayoutIntake(publicService, linkStore.id))!,
       business_website: businessWebsite,
       owner_dob: ownerDob || null,
+      business_mcc: businessMcc,
+      business_type: businessType,
+      business_address: businessAddress,
     };
 
     const linkCtx = await loadConnectContext(linkStore);
