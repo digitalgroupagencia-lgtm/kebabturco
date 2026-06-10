@@ -157,8 +157,8 @@ const PanelFinancePage = () => {
           Recebimentos
         </h1>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Ligue a sua conta diretamente à Stripe para receber os pagamentos online dos pedidos. O cliente paga o
-          total; a taxa da plataforma sai do repasse.
+          Ligue a sua conta para receber os pagamentos online dos pedidos. O cliente paga o total; a taxa da
+          plataforma sai do repasse.
         </p>
       </div>
 
@@ -171,8 +171,8 @@ const PanelFinancePage = () => {
             </p>
             <p className="text-muted-foreground mt-1">
               {testModeActive
-                ? "Conta de teste ligada — pode validar o checkout sem dinheiro real."
-                : "A sua conta está ligada à Stripe. Os pagamentos dos pedidos chegam à sua conta bancária."}
+                ? "Conta de validação ligada — pode testar os pedidos sem dinheiro real."
+                : "A sua conta está ligada e pronta. Os pagamentos dos pedidos chegam à sua conta bancária."}
             </p>
           </div>
         </div>
@@ -186,13 +186,13 @@ const PanelFinancePage = () => {
               Ligar a minha conta
             </CardTitle>
             <CardDescription>
-              Preencha os seus dados no formulário seguro da Stripe. A Stripe trata da verificação e da conta
-              bancária — nós não guardamos os dados sensíveis.
+              Preencha os seus dados no formulário seguro de verificação. Os dados sensíveis são tratados pelo nosso
+              parceiro de pagamentos certificado — nós não os guardamos.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button className="w-full h-12 font-black text-base" onClick={() => setEmbeddedMode("onboarding")}>
-              {onboardingEnv === "live" ? "Ligar a minha conta à Stripe" : "Activar recebimentos (modo teste)"}
+              {onboardingEnv === "live" ? "Ligar a minha conta para receber" : "Activar recebimentos (validação)"}
             </Button>
             {connectStatus === "pending" && (
               <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold">
@@ -206,7 +206,7 @@ const PanelFinancePage = () => {
       {embeddedMode === "onboarding" && (
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-black text-sm">Ligar conta à Stripe</p>
+            <p className="font-black text-sm">Ligar a minha conta</p>
             <Button variant="ghost" size="sm" onClick={() => setEmbeddedMode("none")}>
               Fechar
             </Button>
@@ -284,8 +284,8 @@ const PanelFinancePage = () => {
                 <p className="font-bold text-green-800 dark:text-green-300">Dados enviados</p>
                 <p className="text-muted-foreground mt-1">
                   Recebemos a sua informação em{" "}
-                  {new Date(saved.updated_at).toLocaleDateString("pt-PT")}. A equipa regista na Stripe e activa os
-                  recebimentos.
+                  {new Date(saved.updated_at).toLocaleDateString("pt-PT")}. A nossa equipa trata do registo e activa
+                  os recebimentos.
                 </p>
               </div>
             </div>

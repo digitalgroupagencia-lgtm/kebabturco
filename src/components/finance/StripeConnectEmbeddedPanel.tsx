@@ -128,8 +128,8 @@ export default function StripeConnectEmbeddedPanel({
               Modo teste activo — conta simulada para validação do checkout
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              O formulário embutido da Stripe não está disponível enquanto a plataforma aguarda aprovação. Pode activar
-              recebimentos de teste com um clique — sem dinheiro real.
+              O formulário de verificação não está disponível neste momento. Pode activar recebimentos de validação
+              com um clique — sem dinheiro real.
             </p>
             {loadError && (
               <p className="text-xs text-muted-foreground pt-1">{loadError}</p>
@@ -189,7 +189,7 @@ export default function StripeConnectEmbeddedPanel({
           Activar recebimentos de teste
         </Button>
         <button type="button" onClick={reloadSession} className="text-xs text-primary font-semibold underline">
-          Tentar formulário Stripe novamente
+          Tentar formulário de verificação novamente
         </button>
       </div>
     );
