@@ -24,6 +24,7 @@ export default function AppChromeEffect() {
       applyBrowserChromeColor();
       void setAndroidOrientation("portrait");
     }
+    dismissBootShell();
   }, [pathname]);
 
   return null;
