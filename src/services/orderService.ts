@@ -368,12 +368,27 @@ async function invokeConnectFunction(
       const { data, error } = await supabase.functions.invoke(functionName, { body });
       if (error) {
         if (options?.silent || readOnly) return null;
-        const msg = error.message || String(error);
+        const rawMsg = error.message || String(error);
         const notFound =
-          msg.includes("404") ||
-          msg.toLowerCase().includes("not found") ||
-          msg.toLowerCase().includes("failed to send");
+          rawMsg.includes("404") ||
+          rawMsg.toLowerCase().includes("not found") ||
+          rawMsg.toLowerCase().includes("failed to send");
         if (notFound) return null;
+        // supabase-js wraps any non-2xx as a generic "Edge Function returned a
+        // non-2xx status code". The real, human-readable reason lives in the
+        // response body, so surface it when available.
+        let msg = rawMsg;
+        const ctx = (error as { context?: unknown }).context;
+        if (ctx instanceof Response) {
+          try {
+            const parsed = await ctx.clone().json();
+            if (parsed && typeof parsed === "object" && "error" in parsed && (parsed as { error?: unknown }).error) {
+              msg = String((parsed as { error: unknown }).error);
+            }
+          } catch {
+            /* keep the generic message if the body is not JSON */
+          }
+        }
         throw new Error(msg);
       }
       if (data && typeof data === "object" && "error" in data && data.error) {
