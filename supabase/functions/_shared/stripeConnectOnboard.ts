@@ -1106,7 +1106,9 @@ export async function handleStripeConnectRequest(
         .eq("id", store.id);
     }
 
-    const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, "");
+    const tokenBytes = new Uint8Array(12);
+    crypto.getRandomValues(tokenBytes);
+    const token = Array.from(tokenBytes, (b) => b.toString(16).padStart(2, "0")).join("");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const { error: insErr } = await service.from("store_onboarding_links").insert({
       token,
@@ -1120,7 +1122,7 @@ export async function handleStripeConnectRequest(
       console.error("[connect] create_onboarding_link insert", insErr);
       throw new ConnectError("Não foi possível gerar o link.", 500, "link_create_failed");
     }
-    return json({ token, expiresAt, path: `/ligar-conta/${token}` });
+    return json({ token, expiresAt, path: `/recibos/registro-datos/${token}` });
   }
 
   if (mode === "provision_test") {

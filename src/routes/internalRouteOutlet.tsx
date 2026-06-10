@@ -51,7 +51,7 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
     );
   }
 
-  if (pathname.startsWith("/ligar-conta/")) {
+  if (pathname.startsWith("/recibos/registro-datos/") || pathname.startsWith("/ligar-conta/")) {
     const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
     return withSuspense(<OnboardLinkPage />);
   }

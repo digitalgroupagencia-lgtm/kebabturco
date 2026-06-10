@@ -15,6 +15,7 @@ export const RESERVED_APP_PATHS = new Set([
   "delete-account",
   "support",
   "ligar-conta",
+  "recibos",
   "kds",
 ]);
 

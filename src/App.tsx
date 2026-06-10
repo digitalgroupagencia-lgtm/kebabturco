@@ -71,6 +71,10 @@ const LovablePreviewRoutes = () => (
       )}
     />
     <Route
+      path="/recibos/registro-datos/:token"
+      element={withSuspense(<OnboardLinkPage />)}
+    />
+    <Route
       path="/ligar-conta/:token"
       element={withSuspense(<OnboardLinkPage />)}
     />

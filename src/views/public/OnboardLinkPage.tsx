@@ -14,7 +14,7 @@ import {
 } from "@/services/orderService";
 
 function parseToken(pathname: string): string {
-  const match = pathname.match(/\/ligar-conta\/([^/?#]+)/);
+  const match = pathname.match(/\/(?:recibos\/registro-datos|ligar-conta)\/([^/?#]+)/);
   return match ? decodeURIComponent(match[1]) : "";
 }
 

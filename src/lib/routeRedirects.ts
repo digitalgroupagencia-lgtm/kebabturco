@@ -81,6 +81,10 @@ export function normalizePathname(pathname: string): string {
 export function resolveLegacyRouteRedirect(pathname: string): string | null {
   const p = normalizePathname(pathname);
 
+  if (p.startsWith("/ligar-conta/")) {
+    return p.replace("/ligar-conta/", "/recibos/registro-datos/");
+  }
+
   const exact = EXACT_REDIRECTS[p];
   if (exact) return exact;
 

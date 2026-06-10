@@ -359,7 +359,7 @@ const FinancePage = () => {
                   asChild
                 >
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Olá! Preencha os dados para receber os pagamentos do restaurante: ${onboardingLink}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(`Hola! Rellena los datos para recibir los cobros del restaurante: ${onboardingLink}`)}`}
                     target="_blank"
                     rel="noreferrer"
                   >

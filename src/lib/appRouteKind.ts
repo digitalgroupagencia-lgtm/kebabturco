@@ -7,6 +7,7 @@ export function isCustomerStorefrontPath(pathname?: string): boolean {
   if (p.startsWith("/seller")) return false;
   if (p.startsWith("/staff")) return false;
   if (p.startsWith("/ligar-conta")) return false;
+  if (p.startsWith("/recibos/")) return false;
   return true;
 }
 
