@@ -2449,6 +2449,63 @@ export type Database = {
           },
         ]
       }
+      store_payout_intake: {
+        Row: {
+          business_address: string | null
+          business_name: string
+          iban: string
+          notes: string | null
+          owner_email: string | null
+          owner_full_name: string
+          owner_phone: string | null
+          store_id: string
+          submitted_at: string
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_name: string
+          iban: string
+          notes?: string | null
+          owner_email?: string | null
+          owner_full_name: string
+          owner_phone?: string | null
+          store_id: string
+          submitted_at?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_address?: string | null
+          business_name?: string
+          iban?: string
+          notes?: string | null
+          owner_email?: string | null
+          owner_full_name?: string
+          owner_phone?: string | null
+          store_id?: string
+          submitted_at?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payout_intake_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payout_intake_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payouts: {
         Row: {
           amount_cents: number
@@ -3573,6 +3630,28 @@ export type Database = {
           seller_name: string
         }[]
       }
+      get_store_payout_intake: {
+        Args: { _store_id: string }
+        Returns: {
+          business_address: string | null
+          business_name: string
+          iban: string
+          notes: string | null
+          owner_email: string | null
+          owner_full_name: string
+          owner_phone: string | null
+          store_id: string
+          submitted_at: string
+          tax_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "store_payout_intake"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_store_team_member_emails: {
         Args: { _store_id: string }
         Returns: {
@@ -3807,6 +3886,20 @@ export type Database = {
           _full_name?: string
           _preferred_language?: string
           _user_id: string
+        }
+        Returns: undefined
+      }
+      upsert_store_payout_intake: {
+        Args: {
+          _business_address?: string
+          _business_name: string
+          _iban: string
+          _notes?: string
+          _owner_email?: string
+          _owner_full_name: string
+          _owner_phone?: string
+          _store_id: string
+          _tax_id?: string
         }
         Returns: undefined
       }
