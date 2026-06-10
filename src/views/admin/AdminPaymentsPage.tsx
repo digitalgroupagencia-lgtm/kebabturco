@@ -15,17 +15,7 @@ import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 type Status = "disabled" | "sandbox" | "production";
 
-type StoreRow = { id: string; name: string; tenant_id: string; tenants?: { name: string } | null };
-
-type OverviewRow = {
-  store_id: string;
-  store_name: string;
-  tenant_name: string;
-  gateway_code: string;
-  status: Status;
-  last_test_at: string | null;
-  last_test_success: boolean | null;
-};
+type StoreRow = { id: string; name: string };
 
 type GatewayCfg = {
   id?: string;
@@ -58,39 +48,9 @@ export default function AdminPaymentsPage() {
   const { data: stores = [] } = useQuery<StoreRow[]>({
     queryKey: ["admin-payments-stores"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("id, name, tenant_id, tenants(name)")
-        .eq("is_active", true)
-        .order("name");
+      const { data, error } = await supabase.from("stores").select("id, name").eq("is_active", true).order("name");
       if (error) throw error;
-      return (data as StoreRow[]) ?? [];
-    },
-  });
-
-  const { data: overview = [] } = useQuery<OverviewRow[]>({
-    queryKey: ["admin-payments-overview"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("store_payment_gateways")
-        .select("store_id, gateway_code, status, last_test_at, last_test_success, stores(name, tenants(name))");
-      if (error) throw error;
-      return ((data as Array<{
-        store_id: string;
-        gateway_code: string;
-        status: Status;
-        last_test_at: string | null;
-        last_test_success: boolean | null;
-        stores: { name: string; tenants: { name: string } | null } | null;
-      }>) ?? []).map((r) => ({
-        store_id: r.store_id,
-        store_name: r.stores?.name ?? "—",
-        tenant_name: r.stores?.tenants?.name ?? "—",
-        gateway_code: r.gateway_code,
-        status: r.status,
-        last_test_at: r.last_test_at,
-        last_test_success: r.last_test_success,
-      }));
+      return data ?? [];
     },
   });
 
@@ -118,51 +78,6 @@ export default function AdminPaymentsPage() {
         howToConfirm="O badge da loja muda para 'Sandbox' ou 'Production' (verde) e o teste de ligação devolve OK."
         assistantQuestion="Por que Redsys precisa de SHA-256 e o que acontece se eu usar a chave errada?"
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Visão geral por restaurante</CardTitle>
-          <CardDescription>Status de todos os gateways em todas as lojas.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground border-b">
-                <tr>
-                  <th className="py-2 pr-3">Tenant</th>
-                  <th className="py-2 pr-3">Loja</th>
-                  <th className="py-2 pr-3">Gateway</th>
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2 pr-3">Última validação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overview.length === 0 ? (
-                  <tr><td colSpan={5} className="py-4 text-center text-muted-foreground">Sem dados.</td></tr>
-                ) : overview.map((r) => (
-                  <tr key={`${r.store_id}-${r.gateway_code}`} className="border-b last:border-0">
-                    <td className="py-2 pr-3">{r.tenant_name}</td>
-                    <td className="py-2 pr-3">{r.store_name}</td>
-                    <td className="py-2 pr-3 capitalize">{r.gateway_code}</td>
-                    <td className="py-2 pr-3">
-                      <Badge variant={r.status === "production" ? "default" : r.status === "sandbox" ? "secondary" : "outline"}>
-                        {r.status}
-                      </Badge>
-                    </td>
-                    <td className="py-2 pr-3 text-xs text-muted-foreground">
-                      {r.last_test_at ? (
-                        <span className={r.last_test_success ? "text-success" : "text-destructive"}>
-                          {new Date(r.last_test_at).toLocaleString()} {r.last_test_success ? "✓" : "✗"}
-                        </span>
-                      ) : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -244,20 +159,6 @@ function GatewayEditor({ storeId, gatewayCode, note, onSaved }: { storeId: strin
 
   const save = async () => {
     if (!cfg) return;
-    if (cfg.status !== "disabled") {
-      if (gatewayCode === "stripe") {
-        toast.error("Stripe activa-se via Stripe Connect (Admin → Stripe Connect), não aqui.");
-        return;
-      }
-      const missing: string[] = [];
-      if (!cfg.merchant_code?.trim()) missing.push("Merchant Code");
-      if (!cfg.terminal?.trim()) missing.push("Terminal");
-      if (!cfg.secret_key?.trim()) missing.push("Secret Key");
-      if (missing.length) {
-        toast.error(`Preencha antes de activar: ${missing.join(", ")}`);
-        return;
-      }
-    }
     setSaving(true);
     const payload = { ...cfg, store_id: storeId, gateway_code: gatewayCode };
     delete (payload as { id?: string }).id;

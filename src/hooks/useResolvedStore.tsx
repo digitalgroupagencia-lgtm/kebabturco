@@ -1,25 +1,22 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  DEFAULT_STORE_ID,
-  DEFAULT_TENANT_ID,
-  DEFAULT_TENANT_SLUG,
-  SINGLE_TENANT_MODE,
-} from "@/lib/appMode";
+import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { isReservedAppPath } from "@/lib/appPaths";
 import { isDefaultKebabContextHost, isLovableEditorHost, normalizeHostname } from "@/lib/platformHosts";
 import { getStoreTenantSlug } from "@/lib/tenantPreview";
-import { preferResolvedStores, type StoreOption } from "@/lib/storeResolution";
+import {
+  KEBAB_FALLBACK_STORE_ID,
+  preferResolvedStores,
+  type StoreOption,
+} from "@/lib/storeResolution";
 
 /**
  * Resolve store_id para a loja pública:
- *   1. prévia (?tenant= ou /preview/slug) — ambiente de editor/preview
- *   2. custom_domain do tenant
- *   3. master_domain + path_slug
- *   4. primeiro segmento do path como slug do tenant (quando não reservado)
- *   5. contexto Kebab (localhost, Lovable, kebabturco.net) → slug kebab-turco
- *   6. fallback hardcoded de emergência (só SINGLE_TENANT_MODE)
- * Em qualquer outro domínio desconhecido: DomainNotConfiguredScreen.
+ *   1. prévia (?tenant= ou /preview/slug)
+ *   2. custom_domain (ex.: kebabturco.net)
+ *   3. domínio mestre + path_slug
+ *   4. contexto Kebab (localhost, Lovable, kebabturco.net) → slug kebab-turco
+ *   5. fallback hardcoded de emergência (só se não houver dados reais)
  */
 
 export type { StoreOption };
@@ -49,9 +46,9 @@ const Ctx = createContext<ResolvedStore>({
 const SELECTED_STORE_KEY = "totem.selectedStoreId";
 
 const KEBAB_FALLBACK = {
-  tenantId: DEFAULT_TENANT_ID,
+  tenantId: "11111111-1111-1111-1111-111111111111",
   tenantSlug: DEFAULT_TENANT_SLUG,
-  storeId: DEFAULT_STORE_ID,
+  storeId: KEBAB_FALLBACK_STORE_ID,
 };
 
 type StorePublicRow = StoreOption & {
@@ -152,10 +149,6 @@ async function fetchTenantBySlug(slug: string): Promise<TenantRow | null> {
   return data as TenantRow | null;
 }
 
-function isKebabFallbackHost(host: string): boolean {
-  return SINGLE_TENANT_MODE && isDefaultKebabContextHost(host);
-}
-
 function applyKebabFallback(host: string): {
   tenant: TenantRow;
   storeId: string;
@@ -171,15 +164,13 @@ function applyKebabFallback(host: string): {
       use_master_domain: false,
     },
     storeId: KEBAB_FALLBACK.storeId,
-    stores: [
-      {
-        id: KEBAB_FALLBACK.storeId,
-        name: "Kebab Turco",
-        address: null,
-        image_url: null,
-        short_description: null,
-      },
-    ],
+    stores: [{
+      id: KEBAB_FALLBACK.storeId,
+      name: "Kebab Turco",
+      address: null,
+      image_url: null,
+      short_description: null,
+    }],
   };
 }
 
@@ -223,12 +214,38 @@ function commitResolvedState(prev: ResolvedPayload, next: ResolvedPayload): Reso
 }
 
 function createInitialStoreState(): Omit<ResolvedStore, "setSelectedStoreId"> {
+  if (typeof window === "undefined") {
+    return {
+      storeId: null,
+      selectedStoreId: null,
+      stores: [],
+      tenantId: null,
+      tenantSlug: null,
+      basePath: "",
+      loading: true,
+    };
+  }
+
+  const host = normalizeHostname(window.location.hostname);
+  if (!isDefaultKebabContextHost(host)) {
+    return {
+      storeId: null,
+      selectedStoreId: null,
+      stores: [],
+      tenantId: null,
+      tenantSlug: null,
+      basePath: "",
+      loading: true,
+    };
+  }
+
+  const fb = applyKebabFallback(host);
   return {
-    storeId: null,
-    selectedStoreId: null,
-    stores: [],
-    tenantId: null,
-    tenantSlug: null,
+    storeId: fb.storeId,
+    selectedStoreId: fb.storeId,
+    stores: fb.stores,
+    tenantId: fb.tenant.id,
+    tenantSlug: fb.tenant.slug,
     basePath: "",
     loading: true,
   };
@@ -245,24 +262,21 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
     const tenantParam = getStoreTenantSlug();
 
     const emergencyTimeout = window.setTimeout(() => {
-      if (!active) return;
-      if (isKebabFallbackHost(host)) {
+      if (!active || !isDefaultKebabContextHost(host)) return;
+      setState((prev) => {
+        if (!prev.loading || prev.stores.length > 0) return prev;
         const fb = applyKebabFallback(host);
-        setState((prev) =>
-          commitResolvedState(prev, {
-            storeId: fb.storeId,
-            selectedStoreId: fb.storeId,
-            stores: fb.stores,
-            tenantId: fb.tenant.id,
-            tenantSlug: fb.tenant.slug,
-            basePath: "",
-            loading: false,
-          }),
-        );
-        return;
-      }
-      setState((prev) => (prev.loading ? { ...prev, loading: false } : prev));
-    }, isLovableEditorHost(host) ? 5000 : 10000);
+        return commitResolvedState(prev, {
+          storeId: fb.storeId,
+          selectedStoreId: fb.storeId,
+          stores: fb.stores,
+          tenantId: fb.tenant.id,
+          tenantSlug: fb.tenant.slug,
+          basePath: "",
+          loading: false,
+        });
+      });
+    }, isLovableEditorHost(host) ? 2000 : 10000);
 
     (async () => {
       let tenant: TenantRow | null = null;
@@ -307,7 +321,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           tenant = await fetchTenantBySlug(firstSeg);
         }
 
-        if (!tenant && isKebabFallbackHost(host)) {
+        if (!tenant && isDefaultKebabContextHost(host)) {
           tenant = await fetchTenantBySlug(DEFAULT_TENANT_SLUG);
         }
 
@@ -323,34 +337,42 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        if (!storeId && isKebabFallbackHost(host)) {
+        if (!stores.length && isDefaultKebabContextHost(host)) {
+          const list = await fetchActiveStores({ tenantId: KEBAB_FALLBACK.tenantId });
+          if (list.length) {
+            stores = mapStoreOptions(list);
+            storeId = stores[0]?.id ?? null;
+            if (!tenant) {
+              tenant = applyKebabFallback(host).tenant;
+            }
+          }
+        }
+
+        if (!storeId && !stores.length && isDefaultKebabContextHost(host)) {
           const fb = applyKebabFallback(host);
           storeId = fb.storeId;
-          if (!tenant) tenant = fb.tenant;
-          if (!stores.length) {
-            const list = await fetchActiveStores({ tenantId: KEBAB_FALLBACK.tenantId });
-            stores = mapStoreOptions(
-              list.length
-                ? list
-                : [
-                    {
-                      id: fb.storeId,
-                      name: "Kebab Turco",
-                      address: null,
-                      image_url: null,
-                      short_description: null,
-                    },
-                  ],
-            );
-          }
+          tenant = tenant ?? fb.tenant;
+          stores = fb.stores;
         }
       } catch (err) {
         console.error("[ResolvedStore] tenant/store resolution failed", err);
-        if (isKebabFallbackHost(host)) {
-          const fb = applyKebabFallback(host);
-          storeId = fb.storeId;
-          tenant = fb.tenant;
-          stores = fb.stores;
+        if (isDefaultKebabContextHost(host)) {
+          setState((prev) => {
+            if (prev.stores.length > 0) {
+              return { ...prev, loading: false };
+            }
+            const fb = applyKebabFallback(host);
+            return commitResolvedState(prev, {
+              storeId: fb.storeId,
+              selectedStoreId: fb.storeId,
+              stores: fb.stores,
+              tenantId: fb.tenant.id,
+              tenantSlug: fb.tenant.slug,
+              basePath: "",
+              loading: false,
+            });
+          });
+          return;
         }
       }
 

@@ -11,19 +11,17 @@ import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { canAccessGeneralAdmin } from "@/lib/projectAccess";
 import LovableRouteHintBanner from "./LovableRouteHintBanner";
-import StaffStatusRow, { StaffStatusProvider } from "@/components/staff/StaffStatusRow";
+import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
-import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
 const AdminLayout = ({ page: Page }: Props) => {
-  useForceDarkTheme();
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
   usePageTelemetry();
@@ -73,14 +71,12 @@ const AdminLayout = ({ page: Page }: Props) => {
                 <StaffLanguageToggle defaultLang="pt" compact />
                 <AdminThemeToggle />
               </header>
-              <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <StaffStatusProvider>
-                  <div data-staff-shell className="w-full max-w-screen-2xl px-4 sm:px-6 pt-4 pb-10 space-y-4">
-                    <StaffStatusRow />
-                    <LovableRouteHintBanner />
-                    {Page ? <Page /> : <Outlet />}
-                  </div>
-                </StaffStatusProvider>
+              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <div className="max-w-full mx-auto">
+                  <OperationalDiagnosticsBanner area="admin" />
+                  <LovableRouteHintBanner />
+                  {Page ? <Page /> : <Outlet />}
+                </div>
               </main>
             </div>
             <AdminAssistant />

@@ -25,10 +25,10 @@ import {
   syncLiveCustomAccountFromIntake,
   type CustomIntakeRow,
 } from "./stripeConnectCustomProvision.ts";
-import { buildIntakeNotes, enrichIntakeRow, mergeIntakeNotes, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
+import { buildIntakeNotes, enrichIntakeRow, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v11";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v10";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -502,12 +502,7 @@ export async function handleStripeConnectRequest(
   body: Record<string, unknown>,
 ): Promise<Response> {
   const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
-  const publicModes = new Set([
-    "public_link_info",
-    "public_submit_intake",
-    "public_mark_verification",
-    "public_onboarding_session",
-  ]);
+  const publicModes = new Set(["public_link_info", "public_submit_intake", "public_onboarding_session"]);
 
   if (
     !publicModes.has(mode) &&
@@ -599,16 +594,6 @@ export async function handleStripeConnectRequest(
       return json({ error: "Debes aceptar los términos del servicio de pagos." }, 400);
     }
 
-    const priorIntake = await loadStorePayoutIntake(publicService, linkStore.id);
-    const linkSubmittedAt = new Date().toISOString();
-    const intakeNotes = mergeIntakeNotes(priorIntake?.notes, {
-      ownerDob,
-      businessMcc,
-      businessType,
-      representativeId: representativeId || undefined,
-      linkAt: linkSubmittedAt,
-    });
-
     await upsertStorePayoutIntakeDirect(publicService, linkStore.id, {
       businessName,
       ownerFullName,
@@ -617,16 +602,13 @@ export async function handleStripeConnectRequest(
       taxId,
       iban,
       businessAddress,
-      notes: intakeNotes,
+      notes: buildIntakeNotes({
+        ownerDob,
+        businessMcc,
+        businessType,
+        representativeId: representativeId || undefined,
+      }),
     });
-
-    await publicService
-      .from("store_payout_intake")
-      .update({
-        whatsapp_data_at: linkSubmittedAt,
-        updated_at: linkSubmittedAt,
-      })
-      .eq("store_id", linkStore.id);
 
     const intake = enrichIntakeRow((await loadStorePayoutIntake(publicService, linkStore.id))!, {
       business_website: businessWebsite,
@@ -670,48 +652,6 @@ export async function handleStripeConnectRequest(
         "Datos enviados. En el siguiente paso confirme su identidad (documento) si la ley lo exige.",
       clientSecret,
       ...statusPayload(status, ensured.environment),
-    });
-  }
-
-  // Dono conclui passo 2 (documentos) no link público.
-  if (mode === "public_mark_verification") {
-    const token = typeof body.token === "string" ? body.token.trim() : "";
-    if (!token) return json({ error: "Enlace no válido." }, 400);
-
-    const resolved = await resolvePublicLink(token);
-    if ("error" in resolved && resolved.error) return resolved.error;
-    const { publicService, linkStore } = resolved;
-
-    const verifiedAt = new Date().toISOString();
-    const intakeRow = await loadStorePayoutIntake(publicService, linkStore.id);
-    const mergedNotes = mergeIntakeNotes(intakeRow?.notes, { verifyAt: verifiedAt });
-
-    await publicService
-      .from("store_payout_intake")
-      .update({
-        notes: mergedNotes ?? null,
-        whatsapp_verified_at: verifiedAt,
-        updated_at: verifiedAt,
-      })
-      .eq("store_id", linkStore.id);
-
-    let status: ConnectAccountStatus | null = null;
-    let connectEnvironment: StripeKeyMode = "live";
-    if (linkStore.stripe_connect_account_id) {
-      const linkCtx = await loadConnectContext(linkStore);
-      connectEnvironment = linkCtx.environment;
-      status = await syncConnectAccountById(
-        linkCtx.stripe,
-        publicService,
-        linkStore.stripe_connect_account_id,
-      );
-    }
-
-    return json({
-      verified: true,
-      verifiedAt,
-      message: "Verificación registrada — la administración puede seguir el estado en Recebimentos.",
-      ...(status ? statusPayload(status, connectEnvironment) : {}),
     });
   }
 

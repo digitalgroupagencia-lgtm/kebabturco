@@ -17,8 +17,6 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
-import { useDemoMode } from "@/lib/demoMode";
-import { DEMO_PANEL_CASHIER } from "@/lib/demoData";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -28,7 +26,6 @@ const CashierPage = () => {
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
   const { t } = useStaffT();
-  const demoOn = useDemoMode();
 
 
   const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null);
@@ -37,14 +34,8 @@ const CashierPage = () => {
   const [closeDialogVisible, setCloseDialogVisible] = useState(false);
   const [openingBalance, setOpeningBalance] = useState("0");
   const [closingBalance, setClosingBalance] = useState("0");
-  const [todaySalesReal, setTodaySales] = useState({ total: 0, card: 0, cash: 0, pix: 0, count: 0 });
-  const [pendingOrdersReal, setPendingOrders] = useState<PendingOrder[]>([]);
-  const todaySales = demoOn
-    ? { total: DEMO_PANEL_CASHIER.total, card: DEMO_PANEL_CASHIER.card, cash: DEMO_PANEL_CASHIER.cash, pix: DEMO_PANEL_CASHIER.pix, count: DEMO_PANEL_CASHIER.count }
-    : todaySalesReal;
-  const pendingOrders: PendingOrder[] = demoOn
-    ? (DEMO_PANEL_CASHIER.pendingOrders as unknown as PendingOrder[])
-    : pendingOrdersReal;
+  const [todaySales, setTodaySales] = useState({ total: 0, card: 0, cash: 0, pix: 0, count: 0 });
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const fetchPendingOrders = useCallback(async () => {

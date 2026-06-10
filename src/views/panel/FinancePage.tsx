@@ -15,12 +15,7 @@ import {
   type StoreFinancialProfile,
   type StripePlatformStatus,
 } from "@/services/orderService";
-import {
-  fetchStorePayoutIntake,
-  type SavePayoutIntakeResult,
-  type StorePayoutIntake,
-} from "@/services/payoutIntakeService";
-import OwnerLinkActivityBanner from "@/components/finance/OwnerLinkActivityBanner";
+import type { SavePayoutIntakeResult, StorePayoutIntake } from "@/services/payoutIntakeService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
@@ -122,13 +117,12 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, schema, ledgerRes, po, serverPlatform, intakeRow] = await Promise.all([
+      const [prof, schema, ledgerRes, po, serverPlatform] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         probeSchemaFallback().catch(() => null),
         fetchLedgerSafe(storeId),
         fetchPayoutsSafe(storeId),
         fetchStripePlatformStatus(storeId).catch(() => null),
-        fetchStorePayoutIntake(storeId).catch(() => null),
       ]);
       setProfile(prof);
       setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
@@ -136,7 +130,6 @@ const FinancePage = () => {
       setLedger(ledgerRes.rows);
       setLedgerTableOk(ledgerRes.ok);
       setPayouts(po);
-      if (intakeRow) setIntakeSaved(intakeRow);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Erro ao carregar recebimentos");
     } finally {
@@ -147,16 +140,6 @@ const FinancePage = () => {
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    if (!storeId) return;
-    const readyNow = isStripeConnectReady(profile);
-    if (readyNow) return;
-    const id = window.setInterval(() => {
-      void load({ silent: true });
-    }, 45000);
-    return () => window.clearInterval(id);
-  }, [storeId, profile, load]);
 
   const refreshStatus = useCallback(async () => {
     if (!storeId) return;
@@ -283,14 +266,6 @@ const FinancePage = () => {
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
       <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — só administradores." />
-
-      <OwnerLinkActivityBanner
-        intake={intakeSaved}
-        profile={profile}
-        onRefresh={() => void refreshStatus()}
-        refreshing={syncing}
-      />
-
       <AdminPayoutIntakeForm
         storeId={storeId}
         onSaved={(row, result) => {

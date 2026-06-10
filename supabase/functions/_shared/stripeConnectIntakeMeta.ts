@@ -5,8 +5,6 @@ export type ParsedIntakeMeta = {
   businessMcc: string | null;
   businessType: "company" | "individual" | null;
   representativeId: string | null;
-  linkAt: string | null;
-  verifyAt: string | null;
 };
 
 export function parseIntakeNotes(notes: string | null | undefined): ParsedIntakeMeta {
@@ -15,8 +13,6 @@ export function parseIntakeNotes(notes: string | null | undefined): ParsedIntake
     businessMcc: null,
     businessType: null,
     representativeId: null,
-    linkAt: null,
-    verifyAt: null,
   };
   if (!notes?.trim()) return out;
   for (const part of notes.split("|")) {
@@ -28,41 +24,8 @@ export function parseIntakeNotes(notes: string | null | undefined): ParsedIntake
       if (t === "company" || t === "individual") out.businessType = t;
     }
     if (p.startsWith("rep_id:")) out.representativeId = p.slice(7).trim() || null;
-    if (p.startsWith("link_at:")) out.linkAt = p.slice(8).trim() || null;
-    if (p.startsWith("verify_at:")) out.verifyAt = p.slice(10).trim() || null;
   }
   return out;
-}
-
-/** Mantém metadados existentes e acrescenta carimbos de actividade do link WhatsApp. */
-export function mergeIntakeNotes(
-  existing: string | null | undefined,
-  patch: {
-    ownerDob?: string;
-    businessMcc?: string;
-    businessType?: "company" | "individual";
-    representativeId?: string;
-    linkAt?: string;
-    verifyAt?: string;
-  },
-): string | undefined {
-  const meta = parseIntakeNotes(existing);
-  const merged = {
-    ownerDob: patch.ownerDob ?? meta.ownerDob ?? undefined,
-    businessMcc: patch.businessMcc ?? meta.businessMcc ?? undefined,
-    businessType: patch.businessType ?? meta.businessType ?? undefined,
-    representativeId: patch.representativeId ?? meta.representativeId ?? undefined,
-    linkAt: patch.linkAt ?? meta.linkAt ?? undefined,
-    verifyAt: patch.verifyAt ?? meta.verifyAt ?? undefined,
-  };
-  const segments: string[] = [];
-  if (merged.ownerDob) segments.push(`dob:${merged.ownerDob}`);
-  if (merged.businessMcc) segments.push(`mcc:${merged.businessMcc}`);
-  if (merged.businessType) segments.push(`biz:${merged.businessType}`);
-  if (merged.representativeId) segments.push(`rep_id:${merged.representativeId}`);
-  if (merged.linkAt) segments.push(`link_at:${merged.linkAt}`);
-  if (merged.verifyAt) segments.push(`verify_at:${merged.verifyAt}`);
-  return segments.length > 0 ? segments.join("|") : undefined;
 }
 
 export function buildIntakeNotes(parts: {

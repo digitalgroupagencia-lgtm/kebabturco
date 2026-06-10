@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
-import { APP_NAME, DEFAULT_TENANT_SLUG } from "@/lib/appMode";
-import { type TenantUrlConfig } from "@/lib/tenantUrls";
+import { APP_NAME, DEFAULT_TENANT_SLUG, SINGLE_TENANT_MODE } from "@/lib/appMode";
+import { KEBAB_TURCO_PUBLIC_ORIGIN, type TenantUrlConfig } from "@/lib/tenantUrls";
 
 type TenantRow = {
   slug: string;
@@ -74,6 +74,15 @@ export function useTenantUrlConfig() {
         path_slug: row.path_slug,
         master_domain: row.master_domain,
         use_master_domain: row.use_master_domain,
+      };
+    }
+    if (SINGLE_TENANT_MODE) {
+      return {
+        slug: DEFAULT_TENANT_SLUG,
+        custom_domain: KEBAB_TURCO_PUBLIC_ORIGIN.replace(/^https?:\/\//, ""),
+        path_slug: null,
+        master_domain: null,
+        use_master_domain: false,
       };
     }
     return { slug: tenantSlug || DEFAULT_TENANT_SLUG };

@@ -105,7 +105,7 @@ export function PanelSidebar() {
                               const active = isActive || p === "/panel" || p === "/panel/live";
                               return cn(
                                 "hover:bg-muted/50 rounded-lg flex w-full items-center gap-2 px-2 py-1.5 text-sm",
-                                active && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold",
+                                active && "bg-primary/10 text-primary font-semibold",
                               );
                             }}
                           >
@@ -117,7 +117,7 @@ export function PanelSidebar() {
                             to={url}
                             end
                             className="hover:bg-muted/50 rounded-lg"
-                            activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
+                            activeClassName="bg-primary/10 text-primary font-semibold"
                             onClick={handleNav}
                           >
                             <Icon className="mr-2 h-4 w-4 shrink-0" />

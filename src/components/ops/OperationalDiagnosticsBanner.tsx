@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { AlertTriangle, XCircle, ChevronRight, Loader2, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, XCircle, ChevronRight, Loader2 } from "lucide-react";
 import { useOperationalDiagnostics } from "@/features/ops/useOperationalDiagnostics";
 import { nav } from "@/lib/navPaths";
 import { Button } from "@/components/ui/button";
@@ -31,33 +31,6 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
   );
   const [staffFindings, setStaffFindings] = useState<AuditFinding[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
-  const location = useLocation();
-
-  const path = location.pathname;
-  const showOnRoute =
-    path === nav.admin() ||
-    path.startsWith(nav.admin("diagnostics")) ||
-    path.startsWith(nav.admin("system")) ||
-    path === nav.panel() ||
-    path.startsWith(nav.panel("live"));
-
-  const dismissKey = "ops-diagnostics-banner-dismissed";
-  const [dismissed, setDismissed] = useState(false);
-  useEffect(() => {
-    try {
-      setDismissed(sessionStorage.getItem(dismissKey) === "1");
-    } catch {
-      // ignore
-    }
-  }, []);
-  const dismiss = () => {
-    try {
-      sessionStorage.setItem(dismissKey, "1");
-    } catch {
-      // ignore
-    }
-    setDismissed(true);
-  };
 
   useEffect(() => {
     const refresh = () => setStoredReport(loadStoredFullAuditReport());
@@ -134,8 +107,6 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
     );
   }
 
-  if (!showOnRoute) return null;
-  if (dismissed) return null;
   if (!bannerMessage) return null;
 
   const Icon = totalFail > 0 ? XCircle : AlertTriangle;
@@ -177,14 +148,6 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
             <ChevronRight className="h-4 w-4" />
           </Link>
         </Button>
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label="Fechar aviso"
-          className="shrink-0 h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-foreground/10 text-muted-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );

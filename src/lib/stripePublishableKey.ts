@@ -1,18 +1,18 @@
 import { SINGLE_TENANT_MODE } from "@/lib/appMode";
 
 /**
- * Chaves publicáveis Stripe.
- * Seguras no browser (pk_*). Em multi-tenant vêm de env ou store_payment_gateways.
+ * Chaves publicáveis Stripe — Kebab Turco.
+ * Seguras no browser (pk_*). Versionadas no projecto, NÃO em Segredos Lovable.
  *
  * Ordem de leitura:
  * 1. import.meta.env (build injecta config/stripe.public.env)
- * 2. fallback single-tenant (só quando SINGLE_TENANT_MODE)
+ * 2. fallback abaixo (mesmo padrão da chave live)
  */
 export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = SINGLE_TENANT_MODE
   ? "pk_live_51Tf14qCbdC0WQ0opjJ5sC2whL8TGC5FEyxMEkPI3h2oi6YofKQsPtHWzCijBEWuNeG9wQEwtr486sERx7iYQsxl000sVK6yd0g"
   : "";
 
-/** pk_test — modo Test. Segura no browser. */
+/** pk_test da Stripe — Kebab Turco / Euro Business Food (modo Test). Segura no browser. */
 export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE
   ? "pk_test_51Tf14qCbdC0WQ0opxNuHTvCWOtk4PI2zMt1Gm44w3BUhDwJfhFHs8lvEgLKpPFRYqA49FroS8hFPTgLjhELFYEyq006ocaeqUm"
   : "";
