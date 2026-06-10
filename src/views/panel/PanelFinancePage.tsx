@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Loader2, Wallet, CheckCircle2, Building2 } from "lucide-react";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
+import { useStaffT } from "@/hooks/useStaffT";
 import {
   fetchStorePayoutIntake,
   saveStorePayoutIntake,
@@ -16,6 +17,7 @@ import {
 
 const PanelFinancePage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
+  const { t, lang } = useStaffT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<StorePayoutIntake | null>(null);
@@ -49,11 +51,11 @@ const PanelFinancePage = () => {
         setNotes(row.notes ?? "");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao carregar dados");
+      toast.error(e instanceof Error ? e.message : t("finance.toast.load_error"));
     } finally {
       setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
 
   useEffect(() => {
     void load();
@@ -62,7 +64,7 @@ const PanelFinancePage = () => {
   const save = async () => {
     if (!storeId) return;
     if (!businessName.trim() || !ownerFullName.trim() || !iban.trim()) {
-      toast.error("Preencha nome do negócio, titular e IBAN");
+      toast.error(t("finance.toast.required"));
       return;
     }
     setSaving(true);
@@ -78,10 +80,10 @@ const PanelFinancePage = () => {
         businessAddress: businessAddress.trim() || undefined,
         notes: notes.trim() || undefined,
       });
-      toast.success("Dados guardados — a nossa equipa vai activar os recebimentos");
+      toast.success(t("finance.toast.saved"));
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao guardar");
+      toast.error(e instanceof Error ? e.message : t("finance.toast.save_error"));
     } finally {
       setSaving(false);
     }
@@ -90,18 +92,17 @@ const PanelFinancePage = () => {
   if (storeLoading || loading) {
     return (
       <div className="p-8 flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> A carregar…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("finance.loading")}
       </div>
     );
   }
 
   if (!storeId) {
-    return (
-      <div className="p-8 text-muted-foreground">
-        Escolha a unidade no topo da página para configurar os recebimentos.
-      </div>
-    );
+    return <div className="p-8 text-muted-foreground">{t("finance.no_store")}</div>;
   }
+
+  const localeCode = lang === "es" ? "es-ES" : lang === "en" ? "en-US" : "pt-PT";
+  const savedDate = saved ? new Date(saved.updated_at).toLocaleDateString(localeCode) : "";
 
   return (
     <div className="mx-auto max-w-lg space-y-5 pb-10">
@@ -110,10 +111,10 @@ const PanelFinancePage = () => {
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
-          Recebimentos
+          {t("finance.title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Preencha os dados da sua conta para activarmos os pagamentos online e os repasses para o seu banco.
+          {t("finance.subtitle")}
         </p>
       </div>
 
@@ -121,11 +122,9 @@ const PanelFinancePage = () => {
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 flex gap-3">
           <CheckCircle2 className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-bold text-green-800 dark:text-green-300">Dados enviados</p>
+            <p className="font-bold text-green-800 dark:text-green-300">{t("finance.saved.title")}</p>
             <p className="text-muted-foreground mt-1">
-              Recebemos a sua informação em{" "}
-              {new Date(saved.updated_at).toLocaleDateString("pt-PT")}. A equipa SnapOrder regista na Stripe e
-              activa os recebimentos — não precisa fazer mais nada por agora.
+              {t("finance.saved.body").replace("{date}", savedDate)}
             </p>
           </div>
         </div>
@@ -135,33 +134,31 @@ const PanelFinancePage = () => {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Dados bancários
+            {t("finance.card.title")}
           </CardTitle>
-          <CardDescription>
-            Use os dados exactos da conta onde quer receber o dinheiro dos pedidos online.
-          </CardDescription>
+          <CardDescription>{t("finance.card.desc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Nome do negócio / empresa</Label>
+            <Label>{t("finance.field.business")}</Label>
             <Input
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="Ex.: Kebab Turco Gandia S.L."
+              placeholder={t("finance.field.business.ph")}
               className="mt-1"
             />
           </div>
           <div>
-            <Label>Nome completo do titular</Label>
+            <Label>{t("finance.field.owner")}</Label>
             <Input
               value={ownerFullName}
               onChange={(e) => setOwnerFullName(e.target.value)}
-              placeholder="Como aparece no banco"
+              placeholder={t("finance.field.owner.ph")}
               className="mt-1"
             />
           </div>
           <div>
-            <Label>IBAN</Label>
+            <Label>{t("finance.field.iban")}</Label>
             <Input
               value={iban}
               onChange={(e) => setIban(e.target.value.toUpperCase())}
@@ -171,16 +168,16 @@ const PanelFinancePage = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>NIF / CIF</Label>
+              <Label>{t("finance.field.tax")}</Label>
               <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <Label>Telefone</Label>
+              <Label>{t("finance.field.phone")}</Label>
               <Input value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} className="mt-1" />
             </div>
           </div>
           <div>
-            <Label>E-mail de contacto</Label>
+            <Label>{t("finance.field.email")}</Label>
             <Input
               type="email"
               value={ownerEmail}
@@ -189,7 +186,7 @@ const PanelFinancePage = () => {
             />
           </div>
           <div>
-            <Label>Morada do negócio</Label>
+            <Label>{t("finance.field.address")}</Label>
             <Textarea
               rows={2}
               value={businessAddress}
@@ -198,18 +195,18 @@ const PanelFinancePage = () => {
             />
           </div>
           <div>
-            <Label>Notas (opcional)</Label>
+            <Label>{t("finance.field.notes")}</Label>
             <Textarea
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Alguma informação extra para a nossa equipa"
+              placeholder={t("finance.field.notes.ph")}
               className="mt-1"
             />
           </div>
           <Button className="w-full h-11 font-bold" onClick={() => void save()} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {saved ? "Actualizar dados" : "Enviar dados"}
+            {saved ? t("finance.btn.update") : t("finance.btn.send")}
           </Button>
         </CardContent>
       </Card>
