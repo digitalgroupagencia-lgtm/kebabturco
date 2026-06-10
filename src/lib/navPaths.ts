@@ -47,6 +47,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "panel", segments: ["finance"], loader: () => import("@/views/panel/PanelFinancePage.tsx") },
   { area: "panel", segments: ["settings"], loader: () => import("@/views/panel/SettingsPage.tsx") },
   { area: "panel", segments: ["guide"], loader: () => import("@/views/panel/GuidePage.tsx") },
+  { area: "panel", segments: ["reviews"], loader: () => import("@/views/panel/ReviewsPage.tsx") },
   // /panel/diagnostics removido — auditoria geral é admin-only
 
   { area: "admin", segments: [], loader: () => import("@/views/admin/AdminDashboard.tsx") },
@@ -90,6 +91,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "admin", segments: ["template-version"], loader: () => import("@/views/admin/TemplateVersionPage.tsx") },
   { area: "admin", segments: ["white-label"], loader: () => import("@/views/admin/WhiteLabelCentralPage.tsx") },
   { area: "admin", segments: ["payments"], loader: () => import("@/views/admin/AdminPaymentsPage.tsx") },
+  { area: "admin", segments: ["fee-simulator"], loader: () => import("@/views/admin/AdminFeeSimulatorPage.tsx") },
   { area: "panel", segments: ["payments"], loader: () => import("@/views/panel/PanelPaymentsPage.tsx") },
 
   // Distribuição comercial (PWA / Android / iOS) — admin-only

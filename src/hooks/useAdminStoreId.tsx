@@ -10,7 +10,7 @@ import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 
 async function firstActiveStoreForTenant(tenantId: string): Promise<string | null> {
   const db = supabase as unknown as {
-    from: (table: string) => ReturnType<typeof supabase.from>;
+    from: (table: string) => any;
   };
   const { data, error } = await db
     .from("stores_public")

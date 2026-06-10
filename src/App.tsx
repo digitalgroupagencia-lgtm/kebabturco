@@ -1,4 +1,4 @@
-import { Suspense, useEffect, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { startAndroidPrintListener } from "@/services/androidPrintListener";
 import { enableTabletKeepAwake } from "@/services/tabletKeepAwake";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -25,6 +25,8 @@ import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
 import RootRoute from "@/routes/RootRoute.tsx";
+
+const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
 
 export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
 
@@ -68,6 +70,14 @@ const LovablePreviewRoutes = () => (
           <StaffLogin />
         </MobileFrame>,
       )}
+    />
+    <Route
+      path="/recibos/registro-datos/:token"
+      element={withSuspense(<OnboardLinkPage />)}
+    />
+    <Route
+      path="/ligar-conta/:token"
+      element={withSuspense(<OnboardLinkPage />)}
     />
     <Route path="*" element={internal} />
   </Routes>

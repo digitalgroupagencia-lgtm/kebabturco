@@ -184,6 +184,48 @@ const translations: Translations = {
     es: "Servido",
     fr: "Servi",
   },
+  reviewTitle: {
+    pt: "Avalie o seu pedido",
+    en: "Rate your order",
+    es: "Valora tu pedido",
+    fr: "Évaluez votre commande",
+  },
+  reviewSubtitle: {
+    pt: "A sua opinião ajuda o restaurante e o entregador.",
+    en: "Your feedback helps the restaurant and driver.",
+    es: "Tu opinión ayuda al restaurante y al repartidor.",
+    fr: "Votre avis aide le restaurant et le livreur.",
+  },
+  reviewCommentPlaceholder: {
+    pt: "Deixe um comentário (opcional)",
+    en: "Leave a comment (optional)",
+    es: "Deja un comentario (opcional)",
+    fr: "Laissez un commentaire (optionnel)",
+  },
+  reviewSubmit: {
+    pt: "Enviar avaliação",
+    en: "Submit review",
+    es: "Enviar valoración",
+    fr: "Envoyer l'avis",
+  },
+  reviewThanks: {
+    pt: "Obrigado pela sua avaliação!",
+    en: "Thanks for your review!",
+    es: "¡Gracias por tu valoración!",
+    fr: "Merci pour votre avis !",
+  },
+  reviewFailed: {
+    pt: "Não foi possível enviar a avaliação.",
+    en: "Could not submit review.",
+    es: "No se pudo enviar la valoración.",
+    fr: "Impossible d'envoyer l'avis.",
+  },
+  reviewPickRating: {
+    pt: "Escolha uma nota de 1 a 5.",
+    en: "Pick a rating from 1 to 5.",
+    es: "Elige una valoración de 1 a 5.",
+    fr: "Choisissez une note de 1 à 5.",
+  },
   orderCancelled: {
     pt: "Pedido cancelado",
     en: "Order cancelled",

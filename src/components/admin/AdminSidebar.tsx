@@ -37,6 +37,10 @@ import {
   Rocket,
   Building2,
   Plus,
+  Calculator,
+  Bell,
+  Play,
+  Map,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,13 +72,18 @@ const masterItems = [
   { title: "Dashboard Master", url: nav.admin(), icon: LayoutGrid, end: true },
   { title: "Restaurantes", url: nav.admin("tenants"), icon: Building2 },
   { title: "Criar restaurante", url: nav.admin("tenants", "new"), icon: Plus },
+  { title: "Estado do sistema", url: nav.admin("diagnostics"), icon: Activity },
+  { title: "Centro de testes", url: nav.admin("diagnostics-hub"), icon: Wrench },
+  { title: "Teste push", url: nav.admin("push-test"), icon: Bell },
+  { title: "Simulador de pedidos", url: nav.admin("order-simulator"), icon: Play },
+  { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos", url: nav.admin("plans"), icon: CreditCard },
   { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },
+  { title: "Simulador de taxas", url: nav.admin("fee-simulator"), icon: Calculator },
   { title: "Distribuição", url: nav.admin("distribution"), icon: Smartphone },
   { title: "Build Center", url: nav.admin("build-center"), icon: Hammer },
   { title: "Release Center", url: nav.admin("release-center"), icon: Rocket },
   { title: "Relatórios globais", url: nav.admin("reports"), icon: BarChart3 },
-  { title: "Diagnóstico", url: nav.admin("diagnostics"), icon: Activity },
   { title: "Como funciona", url: nav.admin("how-it-works"), icon: BookOpen },
 ];
 

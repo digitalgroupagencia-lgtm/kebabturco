@@ -204,7 +204,7 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("id, store_id, total, subtotal, delivery_fee, discount_amount, payment_status, stripe_payment_intent_id, order_number")
+    .select("id, store_id, total, subtotal, delivery_fee, discount_amount, online_service_fee_cents, payment_status, stripe_payment_intent_id, order_number")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -225,12 +225,13 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
     return json({ error: "Loja inválida para este pagamento" }, 403);
   }
 
-  const expectedCents = Math.round(Number(order.total) * 100);
-  if (pi.amount_received !== expectedCents && pi.amount !== expectedCents) {
+  const expectedRestaurantCents = Math.round(Number(order.total) * 100);
+  const expectedPaymentCents = expectedRestaurantCents;
+  if (pi.amount_received !== expectedPaymentCents && pi.amount !== expectedPaymentCents) {
     return json({ error: "Valor do pagamento não corresponde ao pedido" }, 400);
   }
 
-  if (amountCents !== expectedCents) {
+  if (amountCents !== expectedRestaurantCents) {
     return json({ error: "Valor inválido" }, 400);
   }
 

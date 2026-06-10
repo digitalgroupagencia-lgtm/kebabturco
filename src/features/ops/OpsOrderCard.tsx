@@ -149,11 +149,17 @@ const OpsOrderCard = memo(function OpsOrderCard({
         {order.status === "preparing" && itemSummary && (
           <p className="mt-0.5 text-[9px] text-muted-foreground truncate">{itemSummary}</p>
         )}
+        {(order as unknown as { accepted_by_name?: string | null }).accepted_by_name && order.status !== "pending" && (
+          <p className="mt-0.5 text-[9px] text-muted-foreground truncate">
+            Aceito por: {(order as unknown as { accepted_by_name?: string | null }).accepted_by_name}
+          </p>
+        )}
         {blockedUntilPaid && (
           <p className="mt-0.5 text-[9px] font-semibold text-foreground">
             {t("ops.card.blocked_until_paid")}
           </p>
         )}
+
       </button>
 
       {(action || canQuickPay) && order.status !== "cancelled" && (

@@ -785,7 +785,7 @@ export type Database = {
           id: string
           notes: string | null
           order_id: string
-          product_id: string
+          product_id: string | null
           product_name: string
           quantity: number
           removed: Json
@@ -800,7 +800,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id: string
-          product_id: string
+          product_id?: string | null
           product_name: string
           quantity?: number
           removed?: Json
@@ -815,7 +815,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id?: string
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           quantity?: number
           removed?: Json
@@ -841,8 +841,75 @@ export type Database = {
           },
         ]
       }
+      order_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          driver_name: string | null
+          driver_user_id: string | null
+          id: string
+          order_id: string
+          order_type: string | null
+          rating: number
+          store_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          driver_name?: string | null
+          driver_user_id?: string | null
+          id?: string
+          order_id: string
+          order_type?: string | null
+          rating: number
+          store_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          driver_name?: string | null
+          driver_user_id?: string | null
+          id?: string
+          order_id?: string
+          order_type?: string | null
+          rating?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
+          accepted_at: string | null
+          accepted_by_name: string | null
+          accepted_by_user_id: string | null
           application_fee_cents: number
           assigned_driver_id: string | null
           coupon_code: string | null
@@ -891,6 +958,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by_name?: string | null
+          accepted_by_user_id?: string | null
           application_fee_cents?: number
           assigned_driver_id?: string | null
           coupon_code?: string | null
@@ -939,6 +1009,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by_name?: string | null
+          accepted_by_user_id?: string | null
           application_fee_cents?: number
           assigned_driver_id?: string | null
           coupon_code?: string | null
@@ -2218,6 +2291,51 @@ export type Database = {
           },
         ]
       }
+      store_onboarding_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          environment: string
+          expires_at: string
+          revoked: boolean
+          store_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          environment?: string
+          expires_at?: string
+          revoked?: boolean
+          store_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          environment?: string
+          expires_at?: string
+          revoked?: boolean
+          store_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_onboarding_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_onboarding_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payment_gateways: {
         Row: {
           config: Json
@@ -2371,6 +2489,63 @@ export type Database = {
             foreignKeyName: "store_payment_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payout_intake: {
+        Row: {
+          business_address: string | null
+          business_name: string
+          iban: string
+          notes: string | null
+          owner_email: string | null
+          owner_full_name: string
+          owner_phone: string | null
+          store_id: string
+          submitted_at: string
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_name: string
+          iban: string
+          notes?: string | null
+          owner_email?: string | null
+          owner_full_name: string
+          owner_phone?: string | null
+          store_id: string
+          submitted_at?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_address?: string | null
+          business_name?: string
+          iban?: string
+          notes?: string | null
+          owner_email?: string | null
+          owner_full_name?: string
+          owner_phone?: string | null
+          store_id?: string
+          submitted_at?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payout_intake_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payout_intake_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
@@ -3295,6 +3470,32 @@ export type Database = {
       }
     }
     Views: {
+      driver_review_stats: {
+        Row: {
+          avg_rating: number | null
+          driver_name: string | null
+          driver_user_id: string | null
+          last_review_at: string | null
+          reviews_count: number | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores_public: {
         Row: {
           address: string | null
@@ -3623,6 +3824,28 @@ export type Database = {
           seller_name: string
         }[]
       }
+      get_store_payout_intake: {
+        Args: { _store_id: string }
+        Returns: {
+          business_address: string | null
+          business_name: string
+          iban: string
+          notes: string | null
+          owner_email: string | null
+          owner_full_name: string
+          owner_phone: string | null
+          store_id: string
+          submitted_at: string
+          tax_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "store_payout_intake"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_store_team_member_emails: {
         Args: { _store_id: string }
         Returns: {
@@ -3715,6 +3938,7 @@ export type Database = {
       }
       get_user_store_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      has_order_review: { Args: { _order_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3757,28 +3981,17 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
-      record_payment_settlement:
-        | {
-            Args: {
-              _net_to_store_cents: number
-              _platform_fee_cents: number
-              _processing_fee_cents: number
-              _stripe_fee_cents: number
-              _stripe_payment_intent_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _net_to_store_cents: number
-              _online_service_fee_cents?: number
-              _platform_fee_cents: number
-              _processing_fee_cents: number
-              _stripe_fee_cents: number
-              _stripe_payment_intent_id: string
-            }
-            Returns: Json
-          }
+      record_payment_settlement: {
+        Args: {
+          _net_to_store_cents: number
+          _online_service_fee_cents?: number
+          _platform_fee_cents: number
+          _processing_fee_cents: number
+          _stripe_fee_cents: number
+          _stripe_payment_intent_id: string
+        }
+        Returns: Json
+      }
       regenerate_table_qr_token: {
         Args: { _table_id: string }
         Returns: string
@@ -3829,6 +4042,10 @@ export type Database = {
         Returns: boolean
       }
       start_delivery: { Args: { _order_id: string }; Returns: Json }
+      submit_order_review: {
+        Args: { _comment?: string; _order_id: string; _rating: number }
+        Returns: Json
+      }
       sync_store_stripe_profile: {
         Args: {
           _business_name?: string
@@ -3863,6 +4080,20 @@ export type Database = {
           _full_name?: string
           _preferred_language?: string
           _user_id: string
+        }
+        Returns: undefined
+      }
+      upsert_store_payout_intake: {
+        Args: {
+          _business_address?: string
+          _business_name: string
+          _iban: string
+          _notes?: string
+          _owner_email?: string
+          _owner_full_name: string
+          _owner_phone?: string
+          _store_id: string
+          _tax_id?: string
         }
         Returns: undefined
       }

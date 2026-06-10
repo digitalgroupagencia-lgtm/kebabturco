@@ -1,4 +1,5 @@
 import { extractErrorMessage } from "@/lib/extractErrorMessage";
+import { supabase } from "@/integrations/supabase/client";
 
 export type RpcProbeStatus = "missing" | "present" | "error";
 
@@ -24,9 +25,51 @@ export async function probeRpc(
   return { status: "present", detail: msg };
 }
 
+const EDGE_HEALTH_PING: Record<string, Record<string, unknown>> = {
+  "stripe-create-payment-intent": { ping: true },
+  "stripe-connect-onboard": { ping: true },
+  "print-order": { ping: true },
+  "operational-diagnostics": { ping: true },
+  "stripe-webhook": { ping: true },
+  "send-push-notification": { ping: true },
+};
+
+function isEdgeReachableResponse(functionName: string, data: unknown, error: unknown): boolean {
+  if (data && typeof data === "object") {
+    const row = data as { ok?: boolean; service?: string; error?: string };
+    if (row.ok === true) return true;
+    if (row.service === functionName) return true;
+    // Auth-required functions still prove deploy (e.g. operational-diagnostics).
+    if (row.error === "Autenticação necessária" || row.error === "Sessão expirada — faça login novamente.") {
+      return true;
+    }
+  }
+  if (error) {
+    const msg = extractErrorMessage(error).toLowerCase();
+    if (msg.includes("404") || msg.includes("not found") || msg.includes("function not found")) {
+      return false;
+    }
+    // Non-2xx with a body usually means the function exists.
+    return true;
+  }
+  return false;
+}
+
 export async function probeEdgeFunctionReachable(
   functionName: string,
 ): Promise<{ reachable: boolean; status: number }> {
+  const pingBody = EDGE_HEALTH_PING[functionName];
+  if (pingBody) {
+    try {
+      const { data, error } = await supabase.functions.invoke(functionName, { body: pingBody });
+      if (isEdgeReachableResponse(functionName, data, error)) {
+        return { reachable: true, status: 200 };
+      }
+    } catch {
+      /* fallback abaixo */
+    }
+  }
+
   const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, "");
   const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
   if (!base || !key) return { reachable: false, status: 0 };

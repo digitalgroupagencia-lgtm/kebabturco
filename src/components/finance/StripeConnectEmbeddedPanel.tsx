@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ConnectAccountManagement,
   ConnectAccountOnboarding,
@@ -45,47 +45,54 @@ export default function StripeConnectEmbeddedPanel({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [useTestProvision, setUseTestProvision] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
+  const [alreadyConnected, setAlreadyConnected] = useState<string | null>(null);
+  const [prefetching, setPrefetching] = useState(true);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const sessionMode = variant === "onboarding" ? "embedded_onboarding" : "embedded_management";
   const preferTest = connectEnvironment === "test" || productionBlocked;
 
   const publishableKey = getStripePublishableKeyForEnvironment(sessionEnvironment);
 
-  const connectInstance = useMemo((): StripeConnectInstance | null => {
-    if (loadError || useTestProvision) return null;
-    const key = getStripePublishableKeyForEnvironment(sessionEnvironment);
-    if (!key) return null;
-    void refreshNonce;
-    return loadConnectAndInitialize({
-      publishableKey: key,
-      fetchClientSecret: async () => {
-        try {
-          setLoadError(null);
-          const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
-          if (session.connectEnvironment) {
-            setSessionEnvironment(session.connectEnvironment);
-          }
-          return session.clientSecret;
-        } catch (e) {
-          const err = e as Error & { code?: string };
-          const msg = err.message || "Não foi possível abrir o formulário de recebimentos.";
-          setLoadError(msg);
-          if (preferTest || err.code === "embedded_unavailable_use_test_provision") {
-            setUseTestProvision(true);
-          }
-          throw e;
+  useEffect(() => {
+    let active = true;
+    setPrefetching(true);
+    setClientSecret(null);
+    setAlreadyConnected(null);
+    setLoadError(null);
+    (async () => {
+      try {
+        const session = await createStripeConnectEmbeddedSession(storeId, sessionMode);
+        if (!active) return;
+        if (session.connectEnvironment) {
+          setSessionEnvironment(session.connectEnvironment);
         }
-      },
-      appearance: {
-        overlays: "dialog",
-        variables: {
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          borderRadius: "12px",
-          colorPrimary: "#c2410c",
-        },
-      },
-    });
-  }, [sessionEnvironment, storeId, sessionMode, refreshNonce, loadError, useTestProvision, preferTest]);
+        if (session.skipEmbedded || session.accountType === "custom") {
+          setAlreadyConnected(
+            session.message || "Restaurante já registado na plataforma — não precisa de formulário extra.",
+          );
+          return;
+        }
+        if (!session.clientSecret) {
+          throw new Error("Não foi possível abrir o formulário de verificação.");
+        }
+        setClientSecret(session.clientSecret);
+      } catch (e) {
+        if (!active) return;
+        const err = e as Error & { code?: string };
+        const msg = err.message || "Não foi possível abrir o formulário de recebimentos.";
+        setLoadError(msg);
+        if (preferTest || err.code === "embedded_unavailable_use_test_provision") {
+          setUseTestProvision(true);
+        }
+      } finally {
+        if (active) setPrefetching(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [storeId, sessionMode, refreshNonce, preferTest]);
 
   const finish = useCallback(async () => {
     setBusy(true);
@@ -96,6 +103,24 @@ export default function StripeConnectEmbeddedPanel({
       setBusy(false);
     }
   }, [storeId, onComplete]);
+
+  const connectInstance = useMemo((): StripeConnectInstance | null => {
+    if (loadError || useTestProvision || alreadyConnected || !clientSecret) return null;
+    const key = getStripePublishableKeyForEnvironment(sessionEnvironment);
+    if (!key) return null;
+    return loadConnectAndInitialize({
+      publishableKey: key,
+      fetchClientSecret: async () => clientSecret,
+      appearance: {
+        overlays: "dialog",
+        variables: {
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          borderRadius: "12px",
+          colorPrimary: "#c2410c",
+        },
+      },
+    });
+  }, [sessionEnvironment, clientSecret, loadError, useTestProvision, alreadyConnected]);
 
   const activateTestReceivables = async () => {
     setTestProvisionBusy(true);
@@ -115,8 +140,32 @@ export default function StripeConnectEmbeddedPanel({
   const reloadSession = () => {
     setLoadError(null);
     setUseTestProvision(false);
+    setClientSecret(null);
+    setPrefetching(true);
     setRefreshNonce((n) => n + 1);
   };
+
+  if (prefetching && !alreadyConnected && !loadError && !useTestProvision) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> A preparar formulário…
+      </div>
+    );
+  }
+
+  if (alreadyConnected) {
+    return (
+      <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 space-y-3">
+        <p className="text-sm font-semibold text-green-800 dark:text-green-300 leading-relaxed">
+          {alreadyConnected}
+        </p>
+        <Button type="button" className="w-full h-11 font-bold" disabled={busy} onClick={() => void finish()}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Concluir
+        </Button>
+      </div>
+    );
+  }
 
   if (!publishableKey && preferTest && (loadError || useTestProvision || variant === "onboarding")) {
     return (
@@ -128,8 +177,8 @@ export default function StripeConnectEmbeddedPanel({
               Modo teste activo — conta simulada para validação do checkout
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              O formulário embutido da Stripe não está disponível enquanto a plataforma aguarda aprovação. Pode activar
-              recebimentos de teste com um clique — sem dinheiro real.
+              O formulário de verificação não está disponível neste momento. Pode activar recebimentos de validação
+              com um clique — sem dinheiro real.
             </p>
             {loadError && (
               <p className="text-xs text-muted-foreground pt-1">{loadError}</p>
@@ -189,7 +238,7 @@ export default function StripeConnectEmbeddedPanel({
           Activar recebimentos de teste
         </Button>
         <button type="button" onClick={reloadSession} className="text-xs text-primary font-semibold underline">
-          Tentar formulário Stripe novamente
+          Tentar formulário de verificação novamente
         </button>
       </div>
     );
@@ -226,6 +275,11 @@ export default function StripeConnectEmbeddedPanel({
         )}
         {variant === "onboarding" ? (
           <ConnectAccountOnboarding
+            skipTermsOfServiceCollection
+            collectionOptions={{
+              fields: "eventually_due",
+              futureRequirements: "include",
+            }}
             onExit={() => {
               void finish();
             }}

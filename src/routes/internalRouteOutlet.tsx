@@ -51,6 +51,11 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
     );
   }
 
+  if (pathname.startsWith("/recibos/registro-datos/") || pathname.startsWith("/ligar-conta/")) {
+    const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
+    return withSuspense(<OnboardLinkPage />);
+  }
+
   const legalLoader = legalPageLoader(pathname);
   if (legalLoader) {
     const LegalPage = lazy(legalLoader);

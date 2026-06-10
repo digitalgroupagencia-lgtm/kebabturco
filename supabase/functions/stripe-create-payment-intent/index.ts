@@ -14,6 +14,7 @@ import { estimatedStripeFeeInServiceFee } from "../_shared/stripeFees.ts";
 import {
   getStripeSecretKey,
   getStripeSecretKeyTest,
+  getStripePublishableKey,
   pickStripeSecretForEnvironment,
   stripeKeyMode,
 } from "../_shared/stripeEnv.ts";
@@ -219,7 +220,7 @@ Deno.serve(async (req) => {
       ? await stripe.paymentIntents.create({
           amount: amountCents,
           currency: "eur",
-          automatic_payment_methods: { enabled: true },
+          payment_method_types: ["card"],
           metadata: {
             ...baseMeta,
             test_simulated: "true",
@@ -231,9 +232,12 @@ Deno.serve(async (req) => {
           currency: "eur",
           application_fee_amount: applicationFeeCents,
           transfer_data: { destination: store.stripe_connect_account_id! },
-          automatic_payment_methods: { enabled: true },
+          on_behalf_of: store.stripe_connect_account_id!,
+          payment_method_types: ["card"],
           metadata: baseMeta,
         });
+
+    const responseEnvironment = connectEnv === "test" || testSimulated ? "test" : "live";
 
     return json({
       clientSecret: intent.client_secret,
@@ -244,7 +248,8 @@ Deno.serve(async (req) => {
       platformFeeCents: PLATFORM_FEE_CENTS,
       estimatedStripeFeeCents,
       stripeConnectAccountId: store.stripe_connect_account_id,
-      connectEnvironment: connectEnv === "test" || testSimulated ? "test" : "live",
+      connectEnvironment: responseEnvironment,
+      publishableKey: getStripePublishableKey(responseEnvironment),
       testSimulated,
     });
   } catch (e) {

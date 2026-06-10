@@ -1,4 +1,6 @@
 import { supabase as _client } from "@/integrations/supabase/client";
+import { fetchStorePayoutIntake } from "@/services/payoutIntakeService";
+
 const supabase = _client as unknown as any;
 
 export type AuditSeverity = "critical" | "warning" | "suggestion" | "ok";
@@ -394,13 +396,23 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
       action: "Configure recebimentos para pagamentos com cartão.",
       link: "/admin/finance",
     });
-  } else if (!store.stripe_charges_enabled) {
+  } else if (!store.stripe_charges_enabled || !store.stripe_onboarding_completed) {
+    const intake = await fetchStorePayoutIntake(storeId);
+    const awaitingReview = Boolean(intake?.submitted_at);
     findings.push({
       id: "payments-stripe-incomplete",
       category: "payments",
-      severity: "critical",
-      label: "Stripe Connect incompleto — cobranças desactivadas",
+      severity: awaitingReview ? "warning" : "critical",
+      label: awaitingReview
+        ? "Recebimentos em análise"
+        : "Recebimentos incompletos — cobranças desactivadas",
+      detail: awaitingReview
+        ? "Dados já enviados — pagamentos online ficam activos após aprovação."
+        : "Falta completar os dados bancários do restaurante.",
       panel: "admin",
+      action: awaitingReview
+        ? "Admin → Recebimentos → acompanhar estado."
+        : "Admin → Recebimentos → preencher dados ou enviar link WhatsApp.",
       link: "/admin/finance",
     });
   } else {

@@ -132,10 +132,21 @@ export function usePanelOrders(storeId: string | undefined) {
       });
       const ids = rows.map((o) => o.id);
       setItemsByOrder(ids.length ? await fetchItemsForOrders(ids) : {});
-      syncPendingOrderAlertLoop(rows.some((o) => o.status === "pending"));
+
+      // Safety net: silence alerts for any tracked pending order that is no
+      // longer pending (e.g. accepted from another device, realtime missed).
+      const stillPending = new Set(rows.filter((o) => o.status === "pending").map((o) => o.id));
+      for (const id of Array.from(knownPendingRef.current)) {
+        if (!stillPending.has(id)) {
+          knownPendingRef.current.delete(id);
+          acknowledgePendingOrderAlert(id);
+        }
+      }
+      syncPendingOrderAlertLoop(stillPending.size > 0);
     }
     setLoading(false);
   }, [storeId, notifyNewPending]);
+
 
   useEffect(() => {
     if (!storeId) return;
@@ -299,9 +310,32 @@ export function usePanelOrders(storeId: string | undefined) {
       eta.setMinutes(eta.getMinutes() + prepMinutes);
       patch.estimated_ready_at = eta.toISOString();
     }
+    // Log who accepted the order (pending -> preparing).
+    if (prevStatus === "pending" && newStatus === "preparing") {
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        if (u?.user) {
+          patch.accepted_by_user_id = u.user.id;
+          patch.accepted_at = new Date().toISOString();
+          let name: string | null = (u.user.user_metadata?.full_name as string | undefined) || null;
+          if (!name) {
+            const { data: prof } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("user_id", u.user.id)
+              .maybeSingle();
+            name = (prof?.full_name as string | null) || null;
+          }
+          patch.accepted_by_name = name || u.user.email || "Operador";
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     if (newStatus === "ready" && isDeliveryOrder(order) && !order.delivery_confirmation_code) {
       patch.delivery_confirmation_code = generateDeliveryConfirmationCode();
     }
+
 
     const optimisticPatch = {
       status: newStatus as PanelOrder["status"],

@@ -53,8 +53,42 @@ import docValidation from "../../../docs/TEMPLATE_VALIDATION_CHECKLIST.md?raw";
 import docRestaurantUpdate from "../../../docs/RESTAURANT_UPDATE_CHECKLIST.md?raw";
 import docMasterWorkflow from "../../../docs/MASTER_UPDATE_WORKFLOW.md?raw";
 import docChangelog from "../../../docs/CHANGELOG_TEMPLATE.md?raw";
+import logoMainAsset from "@/assets/white-label/logo_main.png.asset.json";
+import logoMainDarkAsset from "@/assets/white-label/logo_main_dark.png.asset.json";
+import logoLanguageAsset from "@/assets/white-label/logo_language.png.asset.json";
+import logoOrderTypeAsset from "@/assets/white-label/logo_order_type.png.asset.json";
+import bannerHomeAsset from "@/assets/white-label/banner_home.png.asset.json";
+import iconDineInAsset from "@/assets/white-label/icon_dine_in.png.asset.json";
+import iconTakeawayAsset from "@/assets/white-label/icon_takeaway.png.asset.json";
+import iconDeliveryAsset from "@/assets/white-label/icon_delivery.png.asset.json";
+import langEnAsset from "@/assets/white-label/lang_en.png.asset.json";
+import langEsAsset from "@/assets/white-label/lang_es.png.asset.json";
+import langFrAsset from "@/assets/white-label/lang_fr.png.asset.json";
+import langPtAsset from "@/assets/white-label/lang_pt.png.asset.json";
 
 const BUILD_TIME = new Date().toISOString();
+
+const replaceToken = (text: string, token: string, value: string) => text.split(token).join(value);
+
+const BOOTSTRAP_ASSET_REPLACEMENTS: Array<[string, string]> = [
+  ["/__l5e/assets-v1/10b1bdeb-3cf6-4d7f-afda-915c70ecf38b/white-label-logo_main.png", logoMainAsset.url],
+  ["/__l5e/assets-v1/cf247b3d-5c8e-4a69-8128-7649aedc8cab/white-label-logo_main_dark.png", logoMainDarkAsset.url],
+  ["/__l5e/assets-v1/833719f0-07b7-460a-a78b-b19ef7e7aae9/white-label-logo_language.png", logoLanguageAsset.url],
+  ["/__l5e/assets-v1/acf26dc1-0064-4dc9-9968-5de28d63c002/white-label-logo_order_type.png", logoOrderTypeAsset.url],
+  ["/__l5e/assets-v1/ae7c7737-28bb-41cd-8abb-05fcf6c85b1f/white-label-banner_home.png", bannerHomeAsset.url],
+  ["/__l5e/assets-v1/f4156c88-f205-4149-970d-b8278cf4539e/white-label-icon_dine_in.png", iconDineInAsset.url],
+  ["/__l5e/assets-v1/aaaae7ff-394a-461e-9146-0cd1e98f4ef1/white-label-icon_takeaway.png", iconTakeawayAsset.url],
+  ["/__l5e/assets-v1/79cf0a13-c837-4e45-835f-507d09a2f708/white-label-icon_delivery.png", iconDeliveryAsset.url],
+  ["/__l5e/assets-v1/8bc3600d-1044-40da-b042-300509a95cf8/white-label-lang_en.png", langEnAsset.url],
+  ["/__l5e/assets-v1/29cfe4d1-470a-4c70-84da-4addfddf4edc/white-label-lang_es.png", langEsAsset.url],
+  ["/__l5e/assets-v1/0cdf6acd-8db3-4cb7-a8aa-4ebd2b7725c0/white-label-lang_fr.png", langFrAsset.url],
+  ["/__l5e/assets-v1/748bc230-3d89-4928-a8cd-a6da08bda5c7/white-label-lang_pt.png", langPtAsset.url],
+];
+
+const RESOLVED_BOOTSTRAP_SQL = BOOTSTRAP_ASSET_REPLACEMENTS.reduce(
+  (sql, [token, value]) => replaceToken(sql, token, value),
+  bootstrapSql,
+);
 
 type HistoryRow = {
   id: string;
@@ -78,8 +112,8 @@ function copyText(text: string, label = "Conteúdo") {
 const TEMPLATE_FILES: { name: string; desc: string; content: string; path: string }[] = [
   {
     name: "BOOTSTRAP_MASTER_TEMPLATE.sql",
-    desc: "Popula um projeto novo com catálogo template (categorias, produtos, combos, banners, horários).",
-    content: bootstrapSql,
+    desc: "Reaplica identidade visual, tela inicial, catálogo, banners, horários e estrutura template sem duplicar em clone novo.",
+    content: RESOLVED_BOOTSTRAP_SQL,
     path: "supabase/scripts/BOOTSTRAP_MASTER_TEMPLATE.sql",
   },
   {
@@ -123,19 +157,20 @@ const TEMPLATE_FILES: { name: string; desc: string; content: string; path: strin
 const PROMPT_NEW_PROJECT = `Este projeto é um restaurante remixado do Master Template (versão ${TEMPLATE_VERSION} — ${TEMPLATE_CODENAME}).
 
 Tarefas obrigatórias na ordem:
-1. Confirme que a Lovable Cloud está ativa.
-2. Execute o BOOTSTRAP_MASTER_TEMPLATE.sql para popular o banco com dados template (categorias, produtos, combos, banners, horários, plano).
-3. Registre a versão ${TEMPLATE_VERSION} na tabela _template_version.
+1. Execute o BOOTSTRAP_MASTER_TEMPLATE.sql no Editor SQL da Nuvem para aplicar identidade, layout, catálogo, banners, horários e plano do Master.
+2. Registre a versão ${TEMPLATE_VERSION} na tabela _template_version.
+3. Publique o projeto.
 4. Mantenha toda a estrutura funcional original (totem, painel restaurante, KDS, entregador, admin, Stripe, Firebase, impressão, push).
-5. Permita apenas customizações de:
+5. Não peça chaves agora; Stripe, Firebase, VAPID e FCM ficam para configuração futura.
+6. Permita apenas customizações de:
    - nome do restaurante
    - logo
    - cores / identidade visual
    - cardápio (categorias, produtos, preços, extras, combos)
    - horários, endereço, telefone
    - chaves Stripe e Firebase
-6. Não remova telas, módulos, contextos, rotas, edge functions ou migrations originais.
-7. Confirme paridade visual com o Master usando TEMPLATE_VALIDATION_CHECKLIST.md.`;
+7. Não remova telas, módulos, contextos, rotas, edge functions ou migrations originais.
+8. Confirme paridade visual com o Master usando TEMPLATE_VALIDATION_CHECKLIST.md.`;
 
 const PROMPT_UPDATE_PROJECT = `Este projeto é um restaurante clonado do Master Template.
 
@@ -180,7 +215,7 @@ const NEW_RESTAURANT_CHECKLIST = `# Checklist — Novo restaurante white-label
 
 ## 1. Criação
 - [ ] Remix do Master Template
-- [ ] Lovable Cloud ativada no novo projeto
+- [ ] Abrir More → Nuvem → Editor SQL
 - [ ] Bootstrap SQL executado
 - [ ] Versão registrada em _template_version
 
@@ -450,7 +485,7 @@ export default function WhiteLabelCentralPage() {
           <Alert>
             <Rocket className="h-4 w-4" />
             <AlertTitle>Fluxo: do Remix ao restaurante publicado</AlertTitle>
-            <AlertDescription>Siga os 6 passos abaixo. Tempo médio: 20-30 min.</AlertDescription>
+            <AlertDescription>Siga os passos abaixo: remix, bootstrap no Editor SQL, recarregar preview e publicar.</AlertDescription>
           </Alert>
 
           <StepCard n={1} title="Remixar o projeto Master">
@@ -458,19 +493,23 @@ export default function WhiteLabelCentralPage() {
             <p className="text-xs text-muted-foreground">⚠️ O Remix NÃO copia dados do banco — por isso o passo 3 é obrigatório.</p>
           </StepCard>
 
-          <StepCard n={2} title="Ativar Lovable Cloud">
-            <p>No novo projeto, ative a Lovable Cloud. Isso cria um banco novo e executa as migrations automaticamente.</p>
+          <StepCard n={2} title="Abrir o Editor SQL da Nuvem">
+            <p>No projeto remixado, abra <b>More → Nuvem → Editor SQL</b>. No remix, a Nuvem já vem criada; não tem botão manual para ativar.</p>
           </StepCard>
 
-          <StepCard n={3} title="Rodar Bootstrap Master">
-            <p>Copie o SQL abaixo e cole no chat do novo projeto pedindo: <i>"execute o bootstrap"</i>.</p>
+          <StepCard n={3} title="Rodar Bootstrap Master corrigido">
+            <p>Copie o SQL, cole no <b>Editor SQL</b> e clique em <b>Correr</b>. Ele corrige clone que já recebeu o bootstrap antigo.</p>
             <div className="flex gap-2">
-              <CopyButton text={bootstrapSql} label="BOOTSTRAP_MASTER_TEMPLATE.sql" variant="default" />
+              <CopyButton text={RESOLVED_BOOTSTRAP_SQL} label="BOOTSTRAP_MASTER_TEMPLATE.sql" variant="default" />
               <CopyButton text={PROMPT_NEW_PROJECT} label="Prompt novo projeto" />
             </div>
           </StepCard>
 
-          <StepCard n={4} title="Editar identidade">
+          <StepCard n={4} title="Recarregar preview e publicar">
+            <p>Depois que o SQL retornar resultado sem erro, volte ao Preview, recarregue a página e clique em <b>Publicar</b>.</p>
+          </StepCard>
+
+          <StepCard n={5} title="Editar identidade se for outro restaurante">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               <li>☐ Nome do restaurante</li>
               <li>☐ Logo</li>
@@ -481,7 +520,7 @@ export default function WhiteLabelCentralPage() {
             </ul>
           </StepCard>
 
-          <StepCard n={5} title="Editar cardápio">
+          <StepCard n={6} title="Editar cardápio se for outro restaurante">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               <li>☐ Categorias</li>
               <li>☐ Produtos</li>
@@ -494,7 +533,7 @@ export default function WhiteLabelCentralPage() {
             </ul>
           </StepCard>
 
-          <StepCard n={6} title="Testar tudo">
+          <StepCard n={7} title="Testar tudo">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               <li>☐ Cliente abre e vê catálogo</li>
               <li>☐ Adicionar produto ao carrinho</li>
@@ -556,8 +595,8 @@ export default function WhiteLabelCentralPage() {
                 BOOTSTRAP_MASTER_TEMPLATE.sql
               </CardTitle>
               <CardDescription>
-                Popula um projeto remixado com a estrutura template completa: tenant, store, plano,
-                categorias, produtos com extras/tamanhos, combos, banners, splash e horários.
+                Reaplica a estrutura template completa: identidade visual, tela inicial, tenant, store,
+                plano, categorias, produtos com extras/tamanhos, combos, banners, splash e horários.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -565,16 +604,16 @@ export default function WhiteLabelCentralPage() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Atenção</AlertTitle>
                 <AlertDescription>
-                  Rodar <b>apenas em projeto novo/remixado</b>. Não execute em restaurante já em produção —
-                  ele cria dados template que vão poluir o cardápio real.
+                  Rodar <b>apenas em projeto novo/remixado</b>. Se já existirem pedidos reais, ele corrige
+                  identidade/layout, mas não recria o catálogo para proteger operação em produção.
                 </AlertDescription>
               </Alert>
               <div className="flex gap-2 flex-wrap">
-                <CopyButton text={bootstrapSql} label="BOOTSTRAP SQL completo" variant="default" />
-                <Badge variant="outline">{bootstrapSql.length.toLocaleString()} caracteres</Badge>
+                <CopyButton text={RESOLVED_BOOTSTRAP_SQL} label="BOOTSTRAP SQL completo" variant="default" />
+                <Badge variant="outline">{RESOLVED_BOOTSTRAP_SQL.length.toLocaleString()} caracteres</Badge>
                 <Badge variant="outline">idempotente</Badge>
               </div>
-              <FilePreview content={bootstrapSql} />
+              <FilePreview content={RESOLVED_BOOTSTRAP_SQL} />
             </CardContent>
           </Card>
         </TabsContent>

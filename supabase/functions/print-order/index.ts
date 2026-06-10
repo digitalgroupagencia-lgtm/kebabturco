@@ -66,8 +66,20 @@ function payloadToTicket(p: Payload, brandName: string, orderId: string): Ticket
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ ok: true, service: "print-order" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const payload = (await req.json()) as Payload;
+    const raw = await req.json().catch(() => ({}));
+    if (raw?.ping === true || raw?.health === true) {
+      return new Response(JSON.stringify({ ok: true, service: "print-order" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const payload = raw as Payload;
     if (!payload?.storeId || !payload?.orderNumber || !Array.isArray(payload.items)) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
         status: 400,

@@ -76,8 +76,9 @@ type CreateCustomerOrderArgs = {
 };
 
 export function cartItemsToRpcPayload(items: CartItem[]) {
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return items.map((i) => ({
-    product_id: i.productId,
+    product_id: uuidRe.test(i.productId) ? i.productId : null,
     product_name: (i.productName?.es || i.productName?.en || Object.values(i.productName)[0]) as string,
     quantity: i.quantity,
     unit_price: i.unitPrice,
@@ -212,7 +213,7 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
 
   const { data, error } = await supabase.rpc("create_customer_order", args);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message || "Não foi possível criar o pedido");
   const result = data as CreateCustomerOrderResult;
   return result;
 }
@@ -325,8 +326,9 @@ export async function createStripePaymentIntent(params: {
     onlineServiceFeeCents: number;
     platformFeeCents: number;
     estimatedStripeFeeCents: number;
-    stripeConnectAccountId: string;
+    stripeConnectAccountId: string | null;
     connectEnvironment?: "live" | "test";
+    publishableKey?: string | null;
   };
 }
 
@@ -366,12 +368,27 @@ async function invokeConnectFunction(
       const { data, error } = await supabase.functions.invoke(functionName, { body });
       if (error) {
         if (options?.silent || readOnly) return null;
-        const msg = error.message || String(error);
+        const rawMsg = error.message || String(error);
         const notFound =
-          msg.includes("404") ||
-          msg.toLowerCase().includes("not found") ||
-          msg.toLowerCase().includes("failed to send");
+          rawMsg.includes("404") ||
+          rawMsg.toLowerCase().includes("not found") ||
+          rawMsg.toLowerCase().includes("failed to send");
         if (notFound) return null;
+        // supabase-js wraps any non-2xx as a generic "Edge Function returned a
+        // non-2xx status code". The real, human-readable reason lives in the
+        // response body, so surface it when available.
+        let msg = rawMsg;
+        const ctx = (error as { context?: unknown }).context;
+        if (ctx instanceof Response) {
+          try {
+            const parsed = await ctx.clone().json();
+            if (parsed && typeof parsed === "object" && "error" in parsed && (parsed as { error?: unknown }).error) {
+              msg = String((parsed as { error: unknown }).error);
+            }
+          } catch {
+            /* keep the generic message if the body is not JSON */
+          }
+        }
         throw new Error(msg);
       }
       if (data && typeof data === "object" && "error" in data && data.error) {
@@ -400,6 +417,141 @@ async function invokeConnectFunction(
   );
 }
 
+/** Admin-only: switch a store from test/simulated to real (live) receivables. */
+export async function activateLiveStripeConnect(
+  storeId: string,
+): Promise<{ activated: boolean; connectEnvironment: "live"; alreadyLive?: boolean }> {
+  const data = await invokeConnectFunction({ storeId, mode: "activate_live" });
+  if (!data) {
+    throw new Error(
+      "Não foi possível activar recebimentos oficiais — peça na Lovable para publicar as funções do servidor.",
+    );
+  }
+  return data as { activated: boolean; connectEnvironment: "live"; alreadyLive?: boolean };
+}
+
+/** Admin-only: generate a shareable, no-login onboarding link for a store. */
+export async function createStoreOnboardingLink(
+  storeId: string,
+): Promise<{ token: string; expiresAt: string; path: string }> {
+  const data = await invokeConnectFunction({ storeId, mode: "create_onboarding_link" });
+  if (!data) {
+    throw new Error(
+      "Não foi possível gerar o link — peça na Lovable para publicar as funções do servidor.",
+    );
+  }
+  return data as { token: string; expiresAt: string; path: string };
+}
+
+export type PublicLinkInfo = {
+  valid: boolean;
+  storeName: string | null;
+  prefill: {
+    businessName: string;
+    ownerFullName: string;
+    ownerEmail: string | null;
+    ownerPhone: string | null;
+    taxId: string | null;
+    iban: string;
+    businessAddress: string | null;
+    ownerDob: string | null;
+    businessMcc: string | null;
+    businessType: "company" | "individual" | null;
+    representativeId: string | null;
+  } | null;
+};
+
+async function parsePublicEdgeError(error: { message?: string; context?: unknown }): Promise<string> {
+  let msg = error.message || "";
+  const ctx = error.context;
+  if (ctx instanceof Response) {
+    try {
+      const parsed = await ctx.clone().json();
+      if (parsed && typeof parsed === "object" && "error" in parsed && parsed.error) {
+        msg = String((parsed as { error: string }).error);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  if (
+    msg.includes("non-2xx") ||
+    msg.toLowerCase().includes("unauthorized") ||
+    msg.includes("Sessão") ||
+    msg.includes("Modo inválido")
+  ) {
+    return "El envío no está disponible todavía. Administración debe publicar las funciones del servidor en Lovable (chat: Deploy all edge functions, especially stripe-connect-onboard).";
+  }
+  return msg || "No se pudo conectar con el servidor.";
+}
+
+async function invokePublicConnect<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", { body });
+  if (error) throw new Error(await parsePublicEdgeError(error));
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: string }).error));
+  }
+  return data as T;
+}
+
+export async function fetchPublicOnboardingLinkInfo(token: string): Promise<PublicLinkInfo> {
+  try {
+    return await invokePublicConnect<PublicLinkInfo>({ mode: "public_link_info", token });
+  } catch {
+    return { valid: true, storeName: null, prefill: null };
+  }
+}
+
+export type PublicSubmitIntakeResult = {
+  submitted: boolean;
+  needsVerification: boolean;
+  message?: string;
+  clientSecret?: string;
+  accountId?: string;
+};
+
+/** Dono do restaurante envia dados pelo link (formulário Kebab, sem login). */
+export async function submitPublicOnboardingIntake(
+  token: string,
+  input: {
+    businessName: string;
+    ownerFullName: string;
+    ownerEmail: string;
+    ownerPhone: string;
+    taxId: string;
+    iban: string;
+    businessAddress: string;
+    businessWebsite?: string;
+    ownerDob: string;
+    businessType: "company" | "individual";
+    businessMcc: string;
+    acceptTerms: boolean;
+    representativeId?: string;
+  },
+): Promise<PublicSubmitIntakeResult> {
+  return invokePublicConnect<PublicSubmitIntakeResult>({
+    mode: "public_submit_intake",
+    token,
+    ...input,
+  });
+}
+
+/** Public (no auth): open the onboarding form from a shareable token. */
+export async function createPublicOnboardingSession(
+  token: string,
+): Promise<{ clientSecret: string; accountId: string; connectEnvironment: "live" | "test" }> {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    body: { mode: "public_onboarding_session", token },
+  });
+  if (error) {
+    throw new Error(error.message || "Não foi possível abrir o formulário.");
+  }
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: string }).error));
+  }
+  return data as { clientSecret: string; accountId: string; connectEnvironment: "live" | "test" };
+}
+
 export async function createStripeConnectEmbeddedSession(
   storeId: string,
   mode: "embedded_onboarding" | "embedded_management",
@@ -409,9 +561,12 @@ export async function createStripeConnectEmbeddedSession(
     throw new Error("Não foi possível abrir o formulário de recebimentos — tente modo teste.");
   }
   return data as {
-    clientSecret: string;
+    clientSecret?: string;
     accountId: string;
     connectEnvironment?: "live" | "test";
+    skipEmbedded?: boolean;
+    accountType?: "custom" | "express";
+    message?: string;
   };
 }
 

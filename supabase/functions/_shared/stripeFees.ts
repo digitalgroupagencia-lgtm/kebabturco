@@ -1,6 +1,9 @@
 /** Taxa fixa da plataforma por pedido online pago com cartão (€1,00). */
 export const PLATFORM_FEE_CENTS = 100;
 
+/** Custo do Connect retido no repasse: 0,25% do valor transferido ao restaurante. */
+export const CONNECT_TRANSFER_FEE_PCT = 0.0025;
+
 /**
  * Estimativa conservadora cartão UE (1,5% + €0,25).
  * Incluída na taxa de serviço online cobrada ao cliente.
@@ -8,6 +11,15 @@ export const PLATFORM_FEE_CENTS = 100;
 export function estimateStripeFeeCents(amountCents: number): number {
   if (amountCents <= 0) return 0;
   return Math.ceil(amountCents * 0.015 + 25);
+}
+
+/**
+ * Custo variável do Connect (0,25% do repasse) retido para que o €1 da
+ * plataforma fique intacto mesmo após a Stripe cobrar a taxa de transferência.
+ */
+export function estimateConnectFeeCents(restaurantPortionCents: number): number {
+  if (restaurantPortionCents <= 0) return 0;
+  return Math.ceil(restaurantPortionCents * CONNECT_TRANSFER_FEE_PCT);
 }
 
 /** Valor do restaurante: produtos + entrega − desconto (sem taxa online). */
@@ -25,7 +37,10 @@ export function computeRestaurantPortionCents(
  */
 export function computeApplicationFeeCents(restaurantPortionCents: number): number {
   if (restaurantPortionCents <= 0) return 0;
-  const raw = PLATFORM_FEE_CENTS + estimateStripeFeeCents(restaurantPortionCents);
+  const raw =
+    PLATFORM_FEE_CENTS +
+    estimateStripeFeeCents(restaurantPortionCents) +
+    estimateConnectFeeCents(restaurantPortionCents);
   const maxFee = Math.max(0, restaurantPortionCents - 1);
   return Math.min(raw, maxFee);
 }

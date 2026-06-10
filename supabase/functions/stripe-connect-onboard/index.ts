@@ -1,4 +1,5 @@
 import {
+  CONNECT_HANDLER_VERSION,
   connectCorsHeaders,
   connectErrorResponse,
   handleStripeConnectRequest,
@@ -15,6 +16,18 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         service: "stripe-connect-onboard",
+        handlerVersion: CONNECT_HANDLER_VERSION,
+        modes: [
+          "save_and_sync_intake",
+          "activate_live",
+          "embedded_onboarding",
+          "platform_status",
+          "sync_status",
+          "public_link_info",
+          "public_submit_intake",
+          "public_onboarding_session",
+          "create_onboarding_link",
+        ],
         stripeConfigured: Boolean(getStripeSecretKey()),
       }),
       { headers: { ...connectCorsHeaders, "Content-Type": "application/json" } },
@@ -23,6 +36,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    if (body?.ping === true || body?.health === true) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          service: "stripe-connect-onboard",
+          handlerVersion: CONNECT_HANDLER_VERSION,
+          stripeConfigured: Boolean(getStripeSecretKey()),
+        }),
+        { headers: { ...connectCorsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     return await handleStripeConnectRequest(req, body);
   } catch (e) {
     return connectErrorResponse(e);

@@ -10,6 +10,7 @@ import {
   probeSchemaFallback,
 } from "@/services/operationalDiagnosticsService";
 import { fetchStoreFinancialProfile } from "@/services/orderService";
+import { fetchStorePayoutIntake } from "@/services/payoutIntakeService";
 import { APP_BUILD_ID, GIT_SHA, isRunningLatestPublishedVersion } from "@/lib/appCacheBust";
 
 export type DiagnosticStatus = "ok" | "warn" | "fail" | "pending";
@@ -38,15 +39,16 @@ export function useOperationalDiagnostics() {
   const [running, setRunning] = useState(false);
   const [lastRun, setLastRun] = useState<Date | null>(null);
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (): Promise<DiagnosticItem[]> => {
     setRunning(true);
     const results: DiagnosticItem[] = [];
 
-    const [dbDiag, serverDiag, schemaProbe, storeProfile] = await Promise.all([
+    const [dbDiag, serverDiag, schemaProbe, storeProfile, payoutIntake] = await Promise.all([
       fetchDbOperationalDiagnostics(storeId),
       fetchServerOperationalDiagnostics(storeId),
       probeSchemaFallback(),
       storeId ? fetchStoreFinancialProfile(storeId) : Promise.resolve(null),
+      storeId ? fetchStorePayoutIntake(storeId) : Promise.resolve(null),
     ]);
 
     const schemaQr = dbDiag?.schema_qr_token ?? schemaProbe.schema_qr_token;
@@ -321,24 +323,39 @@ export function useOperationalDiagnostics() {
       Boolean(storeProfile?.stripe_connect_test_simulated) ||
       Boolean(serverDiag?.store?.stripe_connect_test_simulated);
 
+    const intakeSubmitted = Boolean(payoutIntake?.submitted_at);
+    const awaitingReview = hasConnect && intakeSubmitted && (!chargesOk || !onboardingOk);
+
     if (!hasConnect || !chargesOk || !onboardingOk) {
-      results.push({
-        id: "stripe-connect",
-        label: "Conta bancária (recebimentos)",
-        status: productionBlocked && testKeysOnServer ? "warn" : "fail",
-        critical: !(productionBlocked && testKeysOnServer),
-        detail: !hasConnect
-          ? productionBlocked && testKeysOnServer
-            ? "Conta do restaurante ainda não criada — pode activar em modo teste."
-            : productionBlocked
-              ? "Conta do restaurante não criada — produção bloqueada até aprovação da plataforma."
-              : "Recebimentos online ainda não foram activados."
-          : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
-        action:
-          productionBlocked && testKeysOnServer
-            ? "Admin → Recebimentos → Activar recebimentos de teste."
-            : "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
-      });
+      if (awaitingReview) {
+        results.push({
+          id: "stripe-connect",
+          label: "Conta bancária (recebimentos)",
+          status: "warn",
+          critical: false,
+          detail:
+            "Dados já enviados — conta em análise. Pagamentos online ficam activos quando a aprovação terminar.",
+          action: "Admin → Recebimentos → acompanhar estado ou reenviar link por WhatsApp.",
+        });
+      } else {
+        results.push({
+          id: "stripe-connect",
+          label: "Conta bancária (recebimentos)",
+          status: productionBlocked && testKeysOnServer ? "warn" : "fail",
+          critical: !(productionBlocked && testKeysOnServer),
+          detail: !hasConnect
+            ? productionBlocked && testKeysOnServer
+              ? "Conta do restaurante ainda não criada — pode activar em modo teste."
+              : productionBlocked
+                ? "Conta do restaurante não criada — produção bloqueada até aprovação da plataforma."
+                : "Recebimentos online ainda não foram activados."
+            : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
+          action:
+            productionBlocked && testKeysOnServer
+              ? "Admin → Recebimentos → Activar recebimentos de teste."
+              : "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
+        });
+      }
     } else if (!payoutsOk) {
       results.push({
         id: "stripe-connect",
@@ -723,6 +740,7 @@ export function useOperationalDiagnostics() {
     setItems(results);
     setLastRun(new Date());
     setRunning(false);
+    return results;
   }, [storeId]);
 
   const criticalIssues = items.filter((i) => i.critical && (i.status === "fail" || i.status === "warn"));

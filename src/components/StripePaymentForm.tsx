@@ -8,15 +8,16 @@ import {
   type StripePublishableEnvironment,
 } from "@/lib/stripePublishableKey";
 
-const stripePromiseCache: Partial<Record<StripePublishableEnvironment, Promise<Stripe | null>>> = {};
+const stripePromiseCache: Partial<Record<string, Promise<Stripe | null>>> = {};
 
-function getStripePromise(environment: StripePublishableEnvironment = "live") {
-  const key = getStripePublishableKeyForEnvironment(environment);
+function getStripePromise(environment: StripePublishableEnvironment = "live", publishableKey?: string | null) {
+  const key = publishableKey?.startsWith("pk_") ? publishableKey : getStripePublishableKeyForEnvironment(environment);
   if (!key) return null;
-  if (!stripePromiseCache[environment]) {
-    stripePromiseCache[environment] = loadStripe(key);
+  const cacheKey = `${environment}:${key}`;
+  if (!stripePromiseCache[cacheKey]) {
+    stripePromiseCache[cacheKey] = loadStripe(key);
   }
-  return stripePromiseCache[environment]!;
+  return stripePromiseCache[cacheKey]!;
 }
 
 function CheckoutForm({
@@ -39,19 +40,33 @@ function CheckoutForm({
     if (!stripe || !elements || busy) return;
     setBusy(true);
     setErr(null);
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required",
-    });
-    if (error) {
-      setErr(error.message || "Pagamento recusado");
+    try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setErr(submitError.message || "Confirme os dados do cartão");
+        setBusy(false);
+        return;
+      }
+
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
+      if (error) {
+        setErr(error.message || "Pagamento recusado");
+        setBusy(false);
+        return;
+      }
+      if (paymentIntent?.status === "succeeded") {
+        await onSuccess();
+      } else {
+        setErr("Pagamento ainda não confirmado. Tente novamente em alguns segundos.");
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Não foi possível finalizar o pagamento");
+    } finally {
       setBusy(false);
-      return;
     }
-    if (paymentIntent?.status === "succeeded") {
-      await onSuccess();
-    }
-    setBusy(false);
   };
 
   return (
@@ -92,11 +107,12 @@ export default function StripePaymentForm(props: {
   onCancel: () => void;
   compact?: boolean;
   connectEnvironment?: StripePublishableEnvironment;
+  publishableKey?: string | null;
 }) {
   const environment = props.connectEnvironment ?? "live";
-  const stripePromise = useMemo(() => getStripePromise(environment), [environment]);
+  const stripePromise = useMemo(() => getStripePromise(environment, props.publishableKey), [environment, props.publishableKey]);
 
-  if (!hasStripePublishableKey(environment) || !stripePromise) {
+  if ((!props.publishableKey && !hasStripePublishableKey(environment)) || !stripePromise) {
     return (
       <p className="text-sm text-destructive font-bold p-4 bg-destructive/10 rounded-2xl">
         Pagamento online ainda não está disponível neste site. Peça ao restaurante para activar os recebimentos.
