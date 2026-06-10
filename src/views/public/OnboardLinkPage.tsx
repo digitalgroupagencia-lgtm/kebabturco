@@ -22,6 +22,7 @@ const SECTOR_OPTIONS = [
 ] as const;
 
 const STRIPE_CONNECT_TERMS_URL = "https://stripe.com/es/legal/connect-account";
+const KEBAB_PRIVACY_URL = "https://kebabturco.net/privacy";
 
 function parseToken(pathname: string): string {
   const match = pathname.match(/\/(?:recibos\/registro-datos|ligar-conta)\/([^/?#]+)/);
@@ -35,10 +36,6 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
         <Wallet className="h-6 w-6 text-primary" />
         <h1 className="text-xl font-black">Cobros del restaurante</h1>
       </div>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Rellena todos los datos obligatorios para activar los cobros online. Después se enviarán a
-        revisión.
-      </p>
       {children}
     </div>
   </div>
@@ -50,7 +47,7 @@ export default function OnboardLinkPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string | null>(null);
-  const [step, setStep] = useState<"form" | "verify" | "done">("form");
+  const [step, setStep] = useState<"form" | "documents" | "done">("form");
   const [verifySecret, setVerifySecret] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -95,7 +92,7 @@ export default function OnboardLinkPage() {
           setRepresentativeId(info.prefill.representativeId ?? "");
         }
       } catch {
-        /* El formulario se muestra igual sin datos previos */
+        /* formulario sin pre-relleno */
       } finally {
         if (active) setLoading(false);
       }
@@ -106,7 +103,7 @@ export default function OnboardLinkPage() {
   }, [token]);
 
   const connectInstance = useMemo<StripeConnectInstance | null>(() => {
-    if (step !== "verify" || !verifySecret || !publishableKey) return null;
+    if (step !== "documents" || !verifySecret || !publishableKey) return null;
     return loadConnectAndInitialize({
       publishableKey,
       fetchClientSecret: async () => verifySecret,
@@ -162,12 +159,12 @@ export default function OnboardLinkPage() {
         acceptTerms: true,
         representativeId: representativeId.trim() || undefined,
       });
-      if (result.needsVerification && result.clientSecret) {
-        setVerifySecret(result.clientSecret);
-        setStep("verify");
-      } else {
-        setStep("done");
+      if (!result.clientSecret) {
+        setLoadError("No se pudo abrir el paso de verificación. Pide un enlace nuevo a administración.");
+        return;
       }
+      setVerifySecret(result.clientSecret);
+      setStep("documents");
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "No se pudieron enviar los datos.");
     } finally {
@@ -216,10 +213,10 @@ export default function OnboardLinkPage() {
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 flex gap-3">
           <CheckCircle2 className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-bold text-green-800 dark:text-green-300">Datos enviados</p>
+            <p className="font-bold text-green-800 dark:text-green-300">Registro completado</p>
             <p className="text-muted-foreground mt-1">
-              Gracias. Tus datos y la aceptación de términos se han enviado para revisión. Cuando todo
-              esté aprobado, el restaurante empezará a recibir pagos online.
+              Datos y documentos enviados para revisión. Cuando esté aprobado, el restaurante recibirá
+              los cobros online. Puede cerrar esta página.
             </p>
           </div>
         </div>
@@ -227,16 +224,27 @@ export default function OnboardLinkPage() {
     );
   }
 
-  if (step === "verify" && connectInstance) {
+  if (step === "documents" && connectInstance) {
     return (
       <Shell>
-        <div className="rounded-xl border bg-card p-4 space-y-3">
-          <p className="text-sm font-bold">Último paso — confirmar identidad</p>
-          <p className="text-xs text-muted-foreground">
-            Por ley, puede faltar confirmar la identidad del representante (documento de identidad).
-          </p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          <span className="font-bold text-foreground">Paso 2 de 2 — Verificación</span>
+          <br />
+          Si la ley lo exige, suba aquí el documento de identidad del representante (DNI/NIE o
+          pasaporte). Este paso es obligatorio para activar los cobros.
+        </p>
+        <div className="rounded-xl border bg-card p-4">
           <ConnectComponentsProvider connectInstance={connectInstance}>
-            <ConnectAccountOnboarding onExit={() => setStep("done")} />
+            <ConnectAccountOnboarding
+              skipTermsOfServiceCollection
+              fullTermsOfServiceUrl={STRIPE_CONNECT_TERMS_URL}
+              privacyPolicyUrl={KEBAB_PRIVACY_URL}
+              collectionOptions={{
+                fields: "eventually_due",
+                futureRequirements: "include",
+              }}
+              onExit={() => setStep("done")}
+            />
           </ConnectComponentsProvider>
         </div>
       </Shell>
@@ -245,6 +253,11 @@ export default function OnboardLinkPage() {
 
   return (
     <Shell>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        <span className="font-bold text-foreground">Paso 1 de 2 — Datos del negocio</span>
+        <br />
+        Rellena todos los campos. Después pasará al paso de verificación de identidad (documento).
+      </p>
       {storeName && <p className="text-sm font-semibold text-primary">{storeName}</p>}
       {loadError && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm flex gap-2">
@@ -313,7 +326,7 @@ export default function OnboardLinkPage() {
           <Input className="mt-1" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
         </div>
         <div>
-          <Label>DNI / NIE del representante (recomendado)</Label>
+          <Label>DNI / NIE del representante</Label>
           <Input
             className="mt-1"
             placeholder="12345678A"
@@ -361,7 +374,7 @@ export default function OnboardLinkPage() {
         </label>
         <Button className="w-full h-11 font-bold" disabled={saving} onClick={() => void submitForm()}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Enviar datos para revisión
+          Continuar al paso de verificación
         </Button>
       </div>
     </Shell>

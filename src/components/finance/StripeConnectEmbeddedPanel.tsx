@@ -275,6 +275,11 @@ export default function StripeConnectEmbeddedPanel({
         )}
         {variant === "onboarding" ? (
           <ConnectAccountOnboarding
+            skipTermsOfServiceCollection
+            collectionOptions={{
+              fields: "eventually_due",
+              futureRequirements: "include",
+            }}
             onExit={() => {
               void finish();
             }}

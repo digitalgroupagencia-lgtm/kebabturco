@@ -28,7 +28,7 @@ import {
 import { buildIntakeNotes, enrichIntakeRow, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v9";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v10";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -425,7 +425,8 @@ function embeddedSessionComponents(mode: string): Stripe.AccountSessionCreatePar
     return {
       account_onboarding: {
         enabled: true,
-        features: { external_account_collection: true },
+        // IBAN já recolhido no formulário Kebab — o passo embutido foca documentos/identidade.
+        features: { external_account_collection: false },
       },
       notification_banner: notification,
     };
@@ -629,25 +630,26 @@ export async function handleStripeConnectRequest(
     );
     const status = await syncConnectAccountById(linkCtx.stripe, publicService, ensured.accountId);
     const acct = await linkCtx.stripe.accounts.retrieve(ensured.accountId);
-    const needsVerification = accountNeedsEmbeddedCompletionStep(acct);
+    const requirementsDue = [
+      ...(acct.requirements?.currently_due ?? []),
+      ...(acct.requirements?.past_due ?? []),
+    ];
 
-    let clientSecret: string | undefined;
-    if (needsVerification) {
-      clientSecret = await createEmbeddedAccountSession(
-        linkCtx.stripe,
-        ensured.accountId,
-        "embedded_onboarding",
-      );
-    }
+    // Passo 2 obrigatório: componente Stripe recolhe documentos de identidade e o que faltar.
+    const clientSecret = await createEmbeddedAccountSession(
+      linkCtx.stripe,
+      ensured.accountId,
+      "embedded_onboarding",
+    );
 
     return json({
       submitted: true,
-      needsVerification,
+      needsVerification: true,
       accountId: ensured.accountId,
       connectEnvironment: ensured.environment,
-      message: needsVerification
-        ? "Datos enviados. Solo falta confirmar la identidad en el siguiente paso."
-        : "Datos enviados — cuenta en revisión.",
+      requirementsDue,
+      message:
+        "Datos enviados. En el siguiente paso confirme su identidad (documento) si la ley lo exige.",
       clientSecret,
       ...statusPayload(status, ensured.environment),
     });
