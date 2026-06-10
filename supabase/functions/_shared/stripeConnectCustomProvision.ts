@@ -15,6 +15,8 @@ export type CustomIntakeRow = {
   business_website?: string | null;
   business_mcc?: string | null;
   business_type?: "company" | "individual" | null;
+  representative_id?: string | null;
+  accept_terms?: boolean;
 };
 
 function parseOwnerDob(raw: string | null | undefined): Stripe.PersonCreateParams.Dob | undefined {
@@ -95,7 +97,13 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
       intake?.owner_email?.includes("@") &&
       intake?.owner_phone?.trim() &&
       intake?.tax_id?.trim() &&
-      normalizeIban(intake.iban).length >= 15,
+      intake?.business_address?.trim() &&
+      intake?.owner_dob?.trim() &&
+      /^\d{4}-\d{2}-\d{2}$/.test(intake.owner_dob.trim()) &&
+      intake?.business_mcc?.trim() &&
+      intake?.business_type &&
+      normalizeIban(intake.iban).length >= 15 &&
+      intake?.accept_terms === true,
   );
 }
 
@@ -162,6 +170,7 @@ async function ensureCompanyRepresentative(
   const dob = parseOwnerDob(intake.owner_dob);
   const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
   const existing = persons.data.find((p) => p.relationship?.representative);
+  const repId = intake.representative_id?.trim();
   const personPayload = {
     first_name,
     last_name,
@@ -169,11 +178,13 @@ async function ensureCompanyRepresentative(
     phone: intake.owner_phone ?? undefined,
     ...(dob ? { dob } : {}),
     ...(address ? { address } : {}),
+    ...(repId ? { id_number: repId } : {}),
     relationship: {
       representative: true,
       executive: true,
       owner: true,
       title: "Representante legal",
+      percent_ownership: 100,
     },
   };
   if (existing?.id) {
@@ -183,20 +194,18 @@ async function ensureCompanyRepresentative(
   await stripe.accounts.createPerson(accountId, personPayload);
 }
 
-/** Campos que só o dono pode completar (documento, data nascimento, etc.). */
-export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean {
+/** Qualquer requisito Stripe ainda em falta — abre onboarding embutido no nosso site. */
+export function accountNeedsEmbeddedCompletionStep(acct: Stripe.Account): boolean {
   const due = [
     ...(acct.requirements?.currently_due ?? []),
     ...(acct.requirements?.past_due ?? []),
   ];
-  return due.some(
-    (field) =>
-      field.includes("person") ||
-      field.includes("verification") ||
-      field.includes("document") ||
-      field.includes("id_number") ||
-      field.includes("dob"),
-  );
+  return due.length > 0;
+}
+
+/** @deprecated use accountNeedsEmbeddedCompletionStep */
+export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean {
+  return accountNeedsEmbeddedCompletionStep(acct);
 }
 
 function buildAccountCoreFields(
@@ -229,13 +238,17 @@ function buildAccountCoreFields(
       url: website,
       mcc,
       product_description: "Restauración y comida para llevar",
+      support_email: intake.owner_email!,
+      support_phone: intake.owner_phone ?? undefined,
       ...(address ? { support_address: address } : {}),
     },
-    tos_acceptance: {
-      date: Math.floor(Date.now() / 1000),
-      ip: requestIp || "127.0.0.1",
-      service_agreement: "full",
-    },
+    tos_acceptance: intake.accept_terms
+      ? {
+          date: Math.floor(Date.now() / 1000),
+          ip: requestIp || "127.0.0.1",
+          service_agreement: "full",
+        }
+      : undefined,
     settings: {
       payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
       payments: {
@@ -250,15 +263,18 @@ function buildAccountCoreFields(
       name: intake.business_name,
       tax_id: formatSpanishTaxId(taxId!),
       phone: intake.owner_phone ?? undefined,
+      structure: "private_corporation",
       ...(address ? { address } : {}),
     };
   } else {
+    const dob = parseOwnerDob(intake.owner_dob);
     params.business_type = "individual";
     params.individual = {
       first_name,
       last_name,
       email: intake.owner_email!,
       phone: intake.owner_phone ?? undefined,
+      ...(dob ? { dob } : {}),
       ...(address ? { address } : {}),
     };
   }
@@ -285,20 +301,15 @@ export async function syncLiveCustomAccountFromIntake(
     },
   });
 
-  if (isCompany) {
-    try {
-      await ensureCompanyRepresentative(stripe, accountId, intake, address);
-    } catch (e) {
-      console.warn("[connect] company representative person", e);
-    }
+  if (!intake.accept_terms) {
+    throw new Error("Términos de servicio no aceptados.");
   }
 
-  try {
-    await attachIbanToAccount(stripe, accountId, intake, isCompany);
-  } catch (e) {
-    console.warn("[connect] custom IBAN attach on sync", e);
-    throw e;
+  if (isCompany) {
+    await ensureCompanyRepresentative(stripe, accountId, intake, address);
   }
+
+  await attachIbanToAccount(stripe, accountId, intake, isCompany);
 }
 
 /**
@@ -328,20 +339,15 @@ export async function createLiveCustomAccountFromIntake(
     ...params,
   });
 
-  if (isCompany) {
-    try {
-      await ensureCompanyRepresentative(stripe, account.id, intake, address);
-    } catch (e) {
-      console.warn("[connect] company representative person", e);
-    }
+  if (!intake.accept_terms) {
+    throw new Error("Términos de servicio no aceptados.");
   }
 
-  try {
-    await attachIbanToAccount(stripe, account.id, intake, isCompany);
-  } catch (e) {
-    console.warn("[connect] custom IBAN attach", e);
-    throw e;
+  if (isCompany) {
+    await ensureCompanyRepresentative(stripe, account.id, intake, address);
   }
+
+  await attachIbanToAccount(stripe, account.id, intake, isCompany);
 
   return account.id;
 }

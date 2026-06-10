@@ -16,16 +16,19 @@ import {
 } from "./stripePlatform.ts";
 import { provisionTestConnectAccount } from "./stripeConnectTestProvision.ts";
 import {
+  accountNeedsEmbeddedCompletionStep,
   accountNeedsOwnerVerificationStep,
   createLiveCustomAccountFromIntake,
   DEFAULT_BUSINESS_WEBSITE,
   intakeComplete,
   isStripeAccountCriticallyIncomplete,
   syncLiveCustomAccountFromIntake,
+  type CustomIntakeRow,
 } from "./stripeConnectCustomProvision.ts";
+import { buildIntakeNotes, enrichIntakeRow, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v8";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v9";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -309,8 +312,12 @@ export async function ensureConnectAccount(
   requestIp?: string,
 ): Promise<{ accountId: string; environment: StripeKeyMode; accountType: "custom" | "express" }> {
   const payoutIntakeRaw = intake ?? (await loadStorePayoutIntake(service, store.id));
-  const payoutIntake = payoutIntakeRaw
-    ? { ...payoutIntakeRaw, business_website: DEFAULT_BUSINESS_WEBSITE }
+  const payoutIntake: CustomIntakeRow | null = payoutIntakeRaw
+    ? intake?.accept_terms
+      ? (intake as CustomIntakeRow)
+      : enrichIntakeRow(payoutIntakeRaw, {
+          business_website: payoutIntakeRaw.business_website ?? DEFAULT_BUSINESS_WEBSITE,
+        })
     : null;
   const useCustom = ctx.environment === "live" && intakeComplete(payoutIntake);
   let accountId = store.stripe_connect_account_id;
@@ -569,6 +576,8 @@ export async function handleStripeConnectRequest(
     const businessType =
       body.businessType === "individual" ? "individual" : ("company" as const);
     const acceptTerms = body.acceptTerms === true || body.acceptTerms === "true";
+    const representativeId =
+      typeof body.representativeId === "string" ? body.representativeId.trim() : "";
 
     if (businessName.length < 2) return json({ error: "El nombre del negocio es obligatorio." }, 400);
     if (ownerFullName.length < 2) return json({ error: "El nombre del titular es obligatorio." }, 400);
@@ -592,17 +601,23 @@ export async function handleStripeConnectRequest(
       taxId,
       iban,
       businessAddress,
-      notes: ownerDob ? `dob:${ownerDob}` : undefined,
+      notes: buildIntakeNotes({
+        ownerDob,
+        businessMcc,
+        businessType,
+        representativeId: representativeId || undefined,
+      }),
     });
 
-    const intake = {
-      ...(await loadStorePayoutIntake(publicService, linkStore.id))!,
+    const intake = enrichIntakeRow((await loadStorePayoutIntake(publicService, linkStore.id))!, {
       business_website: businessWebsite,
-      owner_dob: ownerDob || null,
+      owner_dob: ownerDob,
       business_mcc: businessMcc,
       business_type: businessType,
-      business_address: businessAddress,
-    };
+      representative_id: representativeId || null,
+      accept_terms: acceptTerms,
+    });
+    intake.business_address = businessAddress;
 
     const linkCtx = await loadConnectContext(linkStore);
     const ensured = await ensureConnectAccount(
@@ -614,7 +629,7 @@ export async function handleStripeConnectRequest(
     );
     const status = await syncConnectAccountById(linkCtx.stripe, publicService, ensured.accountId);
     const acct = await linkCtx.stripe.accounts.retrieve(ensured.accountId);
-    const needsVerification = accountNeedsOwnerVerificationStep(acct);
+    const needsVerification = accountNeedsEmbeddedCompletionStep(acct);
 
     let clientSecret: string | undefined;
     if (needsVerification) {
@@ -650,10 +665,7 @@ export async function handleStripeConnectRequest(
     } catch {
       intake = null;
     }
-    let ownerDob = "";
-    if (intake?.notes?.startsWith("dob:")) {
-      ownerDob = intake.notes.replace("dob:", "").trim();
-    }
+    const meta = intake ? parseIntakeNotes(intake.notes) : null;
     return json({
       valid: true,
       storeName: linkStore.name,
@@ -666,7 +678,10 @@ export async function handleStripeConnectRequest(
             taxId: intake.tax_id,
             iban: intake.iban,
             businessAddress: intake.business_address,
-            ownerDob: ownerDob || null,
+            ownerDob: meta?.ownerDob ?? null,
+            businessMcc: meta?.businessMcc ?? "5814",
+            businessType: meta?.businessType ?? "company",
+            representativeId: meta?.representativeId ?? null,
           }
         : null,
     });
@@ -837,8 +852,6 @@ export async function handleStripeConnectRequest(
       typeof body.businessWebsite === "string" && body.businessWebsite.trim()
         ? body.businessWebsite.trim()
         : DEFAULT_BUSINESS_WEBSITE;
-    const notes = typeof body.notes === "string" ? body.notes.trim() : "";
-
     if (businessName.length < 2) {
       throw new ConnectError("Nome do negócio é obrigatório.", 400, "validation");
     }
@@ -861,6 +874,20 @@ export async function handleStripeConnectRequest(
       throw new ConnectError("Site do negócio inválido — use https://...", 400, "validation");
     }
 
+    const ownerDob = typeof body.ownerDob === "string" ? body.ownerDob.trim() : "";
+    const businessMcc = typeof body.businessMcc === "string" ? body.businessMcc.trim() : "5814";
+    const businessType =
+      body.businessType === "individual" ? "individual" : ("company" as const);
+    const representativeId =
+      typeof body.representativeId === "string" ? body.representativeId.trim() : "";
+
+    if (ownerDob && !/^\d{4}-\d{2}-\d{2}$/.test(ownerDob)) {
+      throw new ConnectError("Data de nascimento inválida (AAAA-MM-DD).", 400, "validation");
+    }
+    if (!businessAddress.trim()) {
+      throw new ConnectError("Morada do negócio é obrigatória.", 400, "validation");
+    }
+
     await upsertStorePayoutIntakeDirect(service, storeId, {
       businessName,
       ownerFullName,
@@ -869,18 +896,30 @@ export async function handleStripeConnectRequest(
       taxId,
       iban,
       businessAddress,
-      notes,
+      notes: buildIntakeNotes({
+        ownerDob: ownerDob || undefined,
+        businessMcc,
+        businessType,
+        representativeId: representativeId || undefined,
+      }),
     });
 
-    const intakeRow = await loadStorePayoutIntake(service, storeId);
-    if (!intakeRow) {
+    const intakeRow2 = await loadStorePayoutIntake(service, storeId);
+    if (!intakeRow2) {
       return json({
         saved: true,
         synced: false,
         message: "Dados guardados. Recarregue a página e tente de novo.",
       });
     }
-    const intake = { ...intakeRow, business_website: businessWebsite };
+    const intake = enrichIntakeRow(intakeRow2, {
+      business_website: businessWebsite,
+      owner_dob: ownerDob || parseIntakeNotes(intakeRow2.notes).ownerDob,
+      business_mcc: businessMcc,
+      business_type: businessType,
+      representative_id: representativeId || null,
+      accept_terms: true,
+    });
 
     // Stripe sync is best-effort — dados do restaurante ficam sempre guardados.
     try {

@@ -65,6 +65,7 @@ export default function OnboardLinkPage() {
   const [businessAddress, setBusinessAddress] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("https://kebabturco.net");
   const [ownerDob, setOwnerDob] = useState("");
+  const [representativeId, setRepresentativeId] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   const publishableKey = getStripePublishableKeyForEnvironment("live");
@@ -89,6 +90,9 @@ export default function OnboardLinkPage() {
           setIban(info.prefill.iban ?? "");
           setBusinessAddress(info.prefill.businessAddress ?? "");
           setOwnerDob(info.prefill.ownerDob ?? "");
+          setBusinessMcc(info.prefill.businessMcc ?? "5814");
+          setBusinessType(info.prefill.businessType ?? "company");
+          setRepresentativeId(info.prefill.representativeId ?? "");
         }
       } catch {
         /* El formulario se muestra igual sin datos previos */
@@ -156,6 +160,7 @@ export default function OnboardLinkPage() {
         businessType,
         businessMcc,
         acceptTerms: true,
+        representativeId: representativeId.trim() || undefined,
       });
       if (result.needsVerification && result.clientSecret) {
         setVerifySecret(result.clientSecret);
@@ -181,6 +186,7 @@ export default function OnboardLinkPage() {
     businessAddress,
     businessWebsite,
     ownerDob,
+    representativeId,
     acceptTerms,
   ]);
 
@@ -303,8 +309,17 @@ export default function OnboardLinkPage() {
           />
         </div>
         <div>
-          <Label>NIF / CIF</Label>
+          <Label>NIF / CIF de la empresa</Label>
           <Input className="mt-1" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+        </div>
+        <div>
+          <Label>DNI / NIE del representante (recomendado)</Label>
+          <Input
+            className="mt-1"
+            placeholder="12345678A"
+            value={representativeId}
+            onChange={(e) => setRepresentativeId(e.target.value.toUpperCase())}
+          />
         </div>
         <div>
           <Label>IBAN (cuenta para recibir cobros)</Label>

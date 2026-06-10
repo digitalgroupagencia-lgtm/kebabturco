@@ -455,6 +455,9 @@ export type PublicLinkInfo = {
     iban: string;
     businessAddress: string | null;
     ownerDob: string | null;
+    businessMcc: string | null;
+    businessType: "company" | "individual" | null;
+    representativeId: string | null;
   } | null;
 };
 
@@ -523,6 +526,7 @@ export async function submitPublicOnboardingIntake(
     businessType: "company" | "individual";
     businessMcc: string;
     acceptTerms: boolean;
+    representativeId?: string;
   },
 ): Promise<PublicSubmitIntakeResult> {
   return invokePublicConnect<PublicSubmitIntakeResult>({

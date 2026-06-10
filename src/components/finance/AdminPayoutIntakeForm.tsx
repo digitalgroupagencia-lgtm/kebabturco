@@ -34,7 +34,10 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
   const [iban, setIban] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("https://kebabturco.net");
-  const [notes, setNotes] = useState("");
+  const [ownerDob, setOwnerDob] = useState("");
+  const [businessMcc, setBusinessMcc] = useState("5814");
+  const [businessType, setBusinessType] = useState<"company" | "individual">("company");
+  const [representativeId, setRepresentativeId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -54,7 +57,15 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           setTaxId(row.tax_id ?? "");
           setIban(row.iban);
           setBusinessAddress(row.business_address ?? "");
-          setNotes(row.notes ?? "");
+          const n = row.notes ?? "";
+          const dob = n.match(/dob:([^|]+)/)?.[1]?.trim();
+          const mcc = n.match(/mcc:([^|]+)/)?.[1]?.trim();
+          const biz = n.match(/biz:([^|]+)/)?.[1]?.trim();
+          const rep = n.match(/rep_id:([^|]+)/)?.[1]?.trim();
+          if (dob) setOwnerDob(dob);
+          if (mcc) setBusinessMcc(mcc);
+          if (biz === "company" || biz === "individual") setBusinessType(biz);
+          if (rep) setRepresentativeId(rep);
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : "";
@@ -77,9 +88,11 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
       !iban.trim() ||
       !ownerEmail.trim() ||
       !ownerPhone.trim() ||
-      !taxId.trim()
+      !taxId.trim() ||
+      !businessAddress.trim() ||
+      !ownerDob.trim()
     ) {
-      toast.error("Preencha nome, titular, e-mail, telefone, NIF/CIF e IBAN");
+      toast.error("Preencha todos os campos obrigatórios (inclui morada e data de nascimento)");
       return;
     }
     setSaving(true);
@@ -94,7 +107,10 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         taxId: taxId.trim() || undefined,
         businessAddress: businessAddress.trim() || undefined,
         businessWebsite: businessWebsite.trim() || "https://kebabturco.net",
-        notes: notes.trim() || undefined,
+        ownerDob: ownerDob.trim() || undefined,
+        businessMcc,
+        businessType,
+        representativeId: representativeId.trim() || undefined,
       });
       const row = await fetchStorePayoutIntake(storeId);
       if (row) {
@@ -215,6 +231,40 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
             Obrigatório na Stripe — use o site público do restaurante ou da marca.
           </p>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Label>Tipo de empresa</Label>
+            <select
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value as "company" | "individual")}
+            >
+              <option value="company">Empresa (SL, SLU…)</option>
+              <option value="individual">Autónomo</option>
+            </select>
+          </div>
+          <div>
+            <Label>Setor</Label>
+            <select
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={businessMcc}
+              onChange={(e) => setBusinessMcc(e.target.value)}
+            >
+              <option value="5814">Restaurante / comida rápida</option>
+              <option value="5812">Restaurante com mesa</option>
+              <option value="5813">Bar / cafetaria</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <Label>Data de nascimento do representante (AAAA-MM-DD)</Label>
+          <Input
+            value={ownerDob}
+            onChange={(e) => setOwnerDob(e.target.value)}
+            placeholder="1980-05-15"
+            className="mt-1"
+          />
+        </div>
         <div>
           <Label>IBAN</Label>
           <Input
@@ -226,7 +276,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label>NIF / CIF (tipo empresa)</Label>
+            <Label>NIF / CIF da empresa</Label>
             <Input
               value={taxId}
               onChange={(e) => setTaxId(e.target.value)}
@@ -249,8 +299,13 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           />
         </div>
         <div>
-          <Label>Notas (opcional)</Label>
-          <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
+          <Label>DNI / NIE do representante</Label>
+          <Input
+            value={representativeId}
+            onChange={(e) => setRepresentativeId(e.target.value.toUpperCase())}
+            placeholder="12345678A"
+            className="mt-1"
+          />
         </div>
         <Button type="button" className="w-full h-11 font-bold" onClick={() => void save()} disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

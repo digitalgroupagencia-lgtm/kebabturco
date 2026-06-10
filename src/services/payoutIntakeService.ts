@@ -24,6 +24,10 @@ export type PayoutIntakeInput = {
   taxId?: string;
   businessAddress?: string;
   businessWebsite?: string;
+  ownerDob?: string;
+  businessMcc?: string;
+  businessType?: "company" | "individual";
+  representativeId?: string;
   notes?: string;
 };
 
@@ -106,6 +110,10 @@ export async function saveAndSyncStorePayoutIntake(
         taxId: input.taxId ?? "",
         businessAddress: input.businessAddress ?? "",
         businessWebsite: input.businessWebsite ?? "https://kebabturco.net",
+        ownerDob: input.ownerDob ?? "",
+        businessMcc: input.businessMcc ?? "5814",
+        businessType: input.businessType ?? "company",
+        representativeId: input.representativeId ?? "",
         notes: input.notes ?? "",
       },
     });
