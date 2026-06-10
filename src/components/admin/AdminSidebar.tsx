@@ -32,15 +32,7 @@ import {
   Play,
   GitBranch,
   Sparkles,
-  Smartphone,
-  Hammer,
-  Rocket,
-  Building2,
-  Plus,
   Calculator,
-  Bell,
-  Play,
-  Map,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,32 +60,20 @@ import { cn } from "@/lib/utils";
 import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
 import { nav } from "@/lib/navPaths.ts";
 
-const masterItems = [
-  { title: "Dashboard Master", url: nav.admin(), icon: LayoutGrid, end: true },
-  { title: "Restaurantes", url: nav.admin("tenants"), icon: Building2 },
-  { title: "Criar restaurante", url: nav.admin("tenants", "new"), icon: Plus },
+const overviewItems = [
+  { title: "Command Center", url: nav.admin(), icon: LayoutGrid, end: true },
   { title: "Estado do sistema", url: nav.admin("diagnostics"), icon: Activity },
   { title: "Centro de testes", url: nav.admin("diagnostics-hub"), icon: Wrench },
   { title: "Teste push", url: nav.admin("push-test"), icon: Bell },
   { title: "Simulador de pedidos", url: nav.admin("order-simulator"), icon: Play },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
-  { title: "Planos", url: nav.admin("plans"), icon: CreditCard },
+  { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
   { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },
   { title: "Simulador de taxas", url: nav.admin("fee-simulator"), icon: Calculator },
-  { title: "Distribuição", url: nav.admin("distribution"), icon: Smartphone },
-  { title: "Build Center", url: nav.admin("build-center"), icon: Hammer },
-  { title: "Release Center", url: nav.admin("release-center"), icon: Rocket },
-  { title: "Relatórios globais", url: nav.admin("reports"), icon: BarChart3 },
-  { title: "Como funciona", url: nav.admin("how-it-works"), icon: BookOpen },
 ];
 
-const restaurantOpsItems = [
-  { title: "Abrir painel", url: nav.panel(), icon: ShoppingBag, end: true },
-  { title: "Cardápio", url: nav.admin("menu"), icon: UtensilsCrossed },
-  { title: "Pedidos", url: nav.panel("live"), icon: ShoppingBag },
-  { title: "Financeiro", url: nav.admin("finance"), icon: DollarSign },
-  { title: "Configurações", url: nav.admin("settings"), icon: Settings },
-  { title: "Impressoras", url: nav.admin("printer"), icon: Printer },
+const operationalItems = [
+  { title: "Painel do Restaurante", url: nav.panel(), icon: ShoppingBag, end: true },
 ];
 
 const storeItems = [
@@ -150,7 +130,7 @@ function NavItem({
           to={item.url}
           end={item.end}
           className={({ isActive }) =>
-            cn("hover:bg-muted/50", isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold")
+            cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
           }
           onClick={onNav}
         >
@@ -182,29 +162,29 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Painel operacional</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {operationalItems.map((item) => (
+                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {!financeOnly && (
           <SidebarGroup>
-            <SidebarGroupLabel>PropioApp Master</SidebarGroupLabel>
+            <SidebarGroupLabel>Administração geral</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {masterItems.map((item) => (
+                {overviewItems.map((item) => (
                   <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Operação do Restaurante</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {restaurantOpsItems.map((item) => (
-                <NavItem key={item.url} item={item} collapsed={collapsed} onNav={handleNav} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>{financeOnly ? "Recebimentos" : "Configuração da loja"}</SidebarGroupLabel>
@@ -229,7 +209,7 @@ export function AdminSidebar() {
                   end
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/50",
-                    location.pathname === centralAdminPath() && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold",
+                    location.pathname === centralAdminPath() && "bg-primary/10 text-primary font-semibold",
                   )}
                   onClick={handleNav}
                 >
@@ -261,7 +241,7 @@ export function AdminSidebar() {
                                 <NavLink
                                   to={centralAdminPath(c.segment)}
                                   className={({ isActive }) =>
-                                    cn("hover:bg-muted/50", isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold")
+                                    cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
                                   }
                                   onClick={handleNav}
                                 >
@@ -285,7 +265,7 @@ export function AdminSidebar() {
                         <NavLink
                           to={centralAdminPath(c.segment)}
                           className={({ isActive }) =>
-                            cn("hover:bg-muted/50", isActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold")
+                            cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
                           }
                           onClick={handleNav}
                         >

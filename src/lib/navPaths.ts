@@ -57,9 +57,6 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "admin", segments: ["coupons"], loader: () => import("@/views/panel/CouponsPage.tsx") },
   { area: "admin", segments: ["loyalty"], loader: () => import("@/views/panel/LoyaltyPage.tsx") },
   { area: "admin", segments: ["stores"], loader: () => import("@/views/admin/tenant/TenantStoresPage.tsx") },
-  { area: "admin", segments: ["tenants", "new"], loader: () => import("@/views/admin/tenant/NewTenantWizardPage.tsx") },
-  { area: "admin", segments: ["tenants"], loader: () => import("@/views/admin/TenantsListPage.tsx") },
-  { area: "admin", segments: ["how-it-works"], loader: () => import("@/views/admin/HowItWorksPage.tsx") },
   { area: "admin", segments: ["tables"], loader: () => import("@/views/panel/TablesPage.tsx") },
   { area: "admin", segments: ["screens"], loader: () => import("@/views/admin/tenant/TenantScreensPage.tsx") },
   { area: "admin", segments: ["languages"], loader: () => import("@/views/admin/tenant/TenantLanguagesPage.tsx") },
@@ -93,12 +90,6 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "admin", segments: ["payments"], loader: () => import("@/views/admin/AdminPaymentsPage.tsx") },
   { area: "admin", segments: ["fee-simulator"], loader: () => import("@/views/admin/AdminFeeSimulatorPage.tsx") },
   { area: "panel", segments: ["payments"], loader: () => import("@/views/panel/PanelPaymentsPage.tsx") },
-
-  // Distribuição comercial (PWA / Android / iOS) — admin-only
-  { area: "admin", segments: ["distribution"], loader: () => import("@/views/admin/distribution/DistributionOverviewPage.tsx") },
-  { area: "admin", segments: ["distribution", ":tenantId"], loader: () => import("@/views/admin/distribution/DistributionEditPage.tsx") },
-  { area: "admin", segments: ["build-center"], loader: () => import("@/views/admin/distribution/BuildCenterPage.tsx") },
-  { area: "admin", segments: ["release-center"], loader: () => import("@/views/admin/distribution/ReleaseCenterPage.tsx") },
 
   { area: "seller", segments: [], loader: () => import("@/views/seller/SellerHome.tsx") },
   { area: "seller", segments: ["tables"], loader: () => import("@/views/seller/SellerTables.tsx") },

@@ -1110,6 +1110,16 @@ const PaymentScreen = () => {
               <p className="text-xs text-destructive font-bold">
                 {isEmergencyFallbackStoreId(storeId) ? t("errStorePreviewOnly") : t("errStoreNotReady")}
               </p>
+              {isEmergencyFallbackStoreId(storeId) && (
+                <a
+                  href="https://kebabturco.lovable.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-black text-primary underline"
+                >
+                  Abrir site publicado →
+                </a>
+              )}
             </div>
           )}
           {checkoutStep === "details" && !isTableOrder ? (

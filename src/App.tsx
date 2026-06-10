@@ -24,7 +24,6 @@ import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
-import RootRoute from "@/routes/RootRoute.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
 
@@ -61,7 +60,7 @@ const internal = (
  */
 const LovablePreviewRoutes = () => (
   <Routes>
-    <Route path="/" element={<RootRoute tenantStore={tenantStore} />} />
+    <Route path="/" element={tenantStore} />
     <Route path="/auth" element={withSuspense(<Auth />)} />
     <Route
       path="/staff"
