@@ -14,6 +14,8 @@ export const RESERVED_APP_PATHS = new Set([
   "terms",
   "delete-account",
   "support",
+  "ligar-conta",
+  "kds",
 ]);
 
 export function isReservedAppPath(segment: string | null | undefined): boolean {
