@@ -337,6 +337,16 @@ export default function ProductCustomizationFlow({
 
   const finishFlow = onFinishAfterAdd ?? onBack;
 
+  // Quando o usuário escolhe quantidade > 1 num produto personalizável,
+  // repetimos todo o passo a passo (ingredientes, extras, etc) uma vez
+  // por unidade — cada unidade vira um item separado no carrinho.
+  const perUnitWizardEligible = useStepWizard && !editingItem;
+  const totalRounds = perUnitWizardEligible ? (lockedTotalRounds ?? quantity) : 1;
+  const isLastRound = unitRound >= totalRounds - 1;
+  const firstConfigStepIndex = useStepWizard
+    ? Math.max(1, wizardSteps.findIndex((s) => s.kind !== "intro"))
+    : 0;
+
   const handleAdd = () => {
     if (useStepWizard && !isLastStep) {
       handleNext();
@@ -385,7 +395,24 @@ export default function ProductCustomizationFlow({
         return;
       }
 
-      addItem(payload);
+      // Modo "uma rodada por unidade": adiciona só esta unidade e reinicia o wizard.
+      if (perUnitWizardEligible && !isLastRound) {
+        if (lockedTotalRounds == null) setLockedTotalRounds(orderQty);
+        addItem({ ...payload, quantity: 1, totalPrice: unitPrice });
+        // Reset das seleções para a próxima unidade.
+        setGlobalState(buildDefaultSelectionState(globalGroups));
+        setUnitStates(buildDefaultUnitStates(unitGroups, effectiveConfig.comboUnitCount || 0));
+        setNote("");
+        setUnitRound((r) => r + 1);
+        setComboStep(firstConfigStepIndex);
+        clearDraft();
+        return;
+      }
+
+      // Última (ou única) rodada: se estamos no modo por-unidade,
+      // adicionamos apenas 1 (as outras já foram adicionadas nas rodadas anteriores).
+      const finalQty = perUnitWizardEligible ? 1 : orderQty;
+      addItem({ ...payload, quantity: finalQty, totalPrice: unitPrice * finalQty });
       clearDraft();
 
       if (upsellSuggestions.length > 0) {
