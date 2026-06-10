@@ -429,6 +429,33 @@ export const STAFF_I18N = {
 
   // --- Panel actions ---
   "panel.delete_test.confirm": { es: "¿Eliminar {count} pedido(s) de prueba de esta tienda? Esta acción no se puede deshacer.", pt: "Apagar {count} pedido(s) de teste desta loja? Esta ação não pode ser desfeita.", en: "Delete {count} test order(s) from this store? This cannot be undone." },
+
+  // --- Finance / Payouts page ---
+  "finance.loading": { es: "Cargando…", pt: "A carregar…", en: "Loading…" },
+  "finance.no_store": { es: "Elija la tienda en la parte superior para configurar los pagos.", pt: "Escolha a unidade no topo da página para configurar os recebimentos.", en: "Pick the store at the top to set up payouts." },
+  "finance.title": { es: "Recibos", pt: "Recebimentos", en: "Payouts" },
+  "finance.subtitle": { es: "Complete los datos de su cuenta para activar los pagos en línea y las transferencias al banco.", pt: "Preencha os dados da sua conta para activarmos os pagamentos online e os repasses para o seu banco.", en: "Fill in your account details to enable online payments and bank transfers." },
+  "finance.saved.title": { es: "Datos enviados", pt: "Dados enviados", en: "Details submitted" },
+  "finance.saved.body": { es: "Recibimos su información el {date}. El equipo SnapOrder la registra en Stripe y activa los pagos — no necesita hacer nada más por ahora.", pt: "Recebemos a sua informação em {date}. A equipa SnapOrder regista na Stripe e activa os recebimentos — não precisa fazer mais nada por agora.", en: "We received your details on {date}. The SnapOrder team will register them on Stripe and enable payouts — nothing else to do for now." },
+  "finance.card.title": { es: "Datos bancarios", pt: "Dados bancários", en: "Bank details" },
+  "finance.card.desc": { es: "Use los datos exactos de la cuenta donde quiere recibir el dinero de los pedidos en línea.", pt: "Use os dados exactos da conta onde quer receber o dinheiro dos pedidos online.", en: "Use the exact details of the account where you want to receive online order payouts." },
+  "finance.field.business": { es: "Nombre del negocio / empresa", pt: "Nome do negócio / empresa", en: "Business / company name" },
+  "finance.field.business.ph": { es: "Ej.: Kebab Turco Gandia S.L.", pt: "Ex.: Kebab Turco Gandia S.L.", en: "E.g.: Kebab Turco Gandia S.L." },
+  "finance.field.owner": { es: "Nombre completo del titular", pt: "Nome completo do titular", en: "Account holder full name" },
+  "finance.field.owner.ph": { es: "Como aparece en el banco", pt: "Como aparece no banco", en: "As it appears at the bank" },
+  "finance.field.iban": { es: "IBAN", pt: "IBAN", en: "IBAN" },
+  "finance.field.tax": { es: "NIF / CIF", pt: "NIF / CIF", en: "Tax ID" },
+  "finance.field.phone": { es: "Teléfono", pt: "Telefone", en: "Phone" },
+  "finance.field.email": { es: "E-mail de contacto", pt: "E-mail de contacto", en: "Contact email" },
+  "finance.field.address": { es: "Dirección del negocio", pt: "Morada do negócio", en: "Business address" },
+  "finance.field.notes": { es: "Notas (opcional)", pt: "Notas (opcional)", en: "Notes (optional)" },
+  "finance.field.notes.ph": { es: "Información extra para nuestro equipo", pt: "Alguma informação extra para a nossa equipa", en: "Any extra info for our team" },
+  "finance.btn.send": { es: "Enviar datos", pt: "Enviar dados", en: "Submit details" },
+  "finance.btn.update": { es: "Actualizar datos", pt: "Actualizar dados", en: "Update details" },
+  "finance.toast.required": { es: "Complete el nombre del negocio, el titular y el IBAN", pt: "Preencha nome do negócio, titular e IBAN", en: "Fill in business name, holder and IBAN" },
+  "finance.toast.saved": { es: "Datos guardados — nuestro equipo activará los pagos", pt: "Dados guardados — a nossa equipa vai activar os recebimentos", en: "Saved — our team will enable payouts" },
+  "finance.toast.load_error": { es: "Error al cargar los datos", pt: "Erro ao carregar dados", en: "Failed to load data" },
+  "finance.toast.save_error": { es: "Error al guardar", pt: "Erro ao guardar", en: "Save failed" },
 } as const satisfies Record<string, Record<StaffUiLang, string>>;
 
 
