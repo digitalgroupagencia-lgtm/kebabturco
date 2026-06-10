@@ -32,6 +32,7 @@ import {
   Play,
   GitBranch,
   Sparkles,
+  Calculator,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,6 +69,7 @@ const overviewItems = [
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
   { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },
+  { title: "Simulador de taxas", url: nav.admin("fee-simulator"), icon: Calculator },
 ];
 
 const operationalItems = [
