@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
           "sync_status",
           "public_link_info",
           "public_submit_intake",
+          "public_mark_verification",
           "public_onboarding_session",
           "create_onboarding_link",
         ],
