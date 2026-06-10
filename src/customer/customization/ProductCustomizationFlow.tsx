@@ -21,6 +21,7 @@ import { parseProductCode } from "@/lib/parseProductCode";
 import type { CartItem } from "@/customer/contexts/CartContext";
 import { comboUnitStepTitle } from "@/lib/modifiers/comboProductRules";
 import { shouldUseCustomizationStepWizard } from "@/lib/modifiers/customizationWizard";
+import { computeSoloCarneSurcharge } from "@/lib/modifiers/soloCarneRule";
 
 type Props = {
   product: MenuProduct;
