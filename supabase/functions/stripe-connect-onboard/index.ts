@@ -32,6 +32,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    if (body?.ping === true || body?.health === true) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          service: "stripe-connect-onboard",
+          handlerVersion: CONNECT_HANDLER_VERSION,
+          stripeConfigured: Boolean(getStripeSecretKey()),
+        }),
+        { headers: { ...connectCorsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     return await handleStripeConnectRequest(req, body);
   } catch (e) {
     return connectErrorResponse(e);

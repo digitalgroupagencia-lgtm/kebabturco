@@ -120,7 +120,6 @@ export async function createLiveCustomAccountFromIntake(
     },
     settings: {
       payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
-      dashboard: { type: "none" },
       payments: {
         statement_descriptor: statementDescriptorFromName(intake.business_name),
       },
