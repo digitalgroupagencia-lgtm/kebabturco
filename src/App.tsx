@@ -24,6 +24,7 @@ import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
+import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
 
@@ -39,12 +40,15 @@ const withSuspense = (node: ReactNode) => (
 const tenantStore = (
   <CustomerAreaBoundary>
     {withSuspense(
-      <MobileFrame>
-        <Index />
-      </MobileFrame>,
+      <StaffSessionRootRedirect>
+        <MobileFrame>
+          <Index />
+        </MobileFrame>
+      </StaffSessionRootRedirect>,
     )}
   </CustomerAreaBoundary>
 );
+
 
 // Interno — falhas em admin/painel/equipa/etc. não escapam deste boundary
 const internal = (
