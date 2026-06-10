@@ -187,26 +187,23 @@ async function syncIntakeToStripeConnect(
   accountId: string,
   intake: PayoutIntakeRow,
   storeName: string | null,
-): Promise<{ bankSynced: boolean; message: string }> {
-  const update: Stripe.AccountUpdateParams = {
-    email: intake.owner_email ?? undefined,
-    business_profile: {
-      name: intake.business_name || storeName || "Restaurante",
-      ...(intake.business_address
-        ? { support_address: { line1: intake.business_address, country: "ES" } }
-        : {}),
-    },
-  };
-
-  if (intake.tax_id?.trim()) {
-    update.company = {
-      tax_id: intake.tax_id.trim(),
-      name: intake.business_name,
-    };
-    update.business_type = "company";
+): Promise<{ bankSynced: boolean; profileSynced: boolean; message: string }> {
+  // Express accounts: e-mail, company e business_type só na criação ou no formulário
+  // de verificação — a plataforma não pode alterá-los depois via API.
+  let profileSynced = false;
+  try {
+    await stripe.accounts.update(accountId, {
+      business_profile: {
+        name: intake.business_name || storeName || "Restaurante",
+        ...(intake.business_address
+          ? { support_address: { line1: intake.business_address, country: "ES" } }
+          : {}),
+      },
+    });
+    profileSynced = true;
+  } catch (e) {
+    console.warn("[connect] profile sync", e);
   }
-
-  await stripe.accounts.update(accountId, update);
 
   const iban = normalizeIban(intake.iban);
   let bankSynced = false;
@@ -236,12 +233,18 @@ async function syncIntakeToStripeConnect(
     }
   }
 
-  return {
-    bankSynced,
-    message: bankSynced
-      ? "Dados e IBAN registados na conta de recebimentos."
-      : "Dados registados — confirme o IBAN no passo de verificação se for pedido.",
-  };
+  let message: string;
+  if (profileSynced && bankSynced) {
+    message = "Dados guardados e enviados para a conta de recebimentos.";
+  } else if (profileSynced) {
+    message =
+      "Dados guardados. Carregue em «Ligar conta do restaurante» para confirmar e-mail e IBAN no formulário de verificação.";
+  } else {
+    message =
+      "Dados guardados. Use o Passo 2 abaixo para concluir a ligação da conta.";
+  }
+
+  return { bankSynced, profileSynced, message };
 }
 
 export async function ensureConnectAccount(
@@ -282,11 +285,16 @@ export async function ensureConnectAccount(
       },
       business_profile: {
         name: payoutIntake?.business_name || store.name || "Restaurante",
+        ...(payoutIntake?.business_address
+          ? { support_address: { line1: payoutIntake.business_address, country: "ES" } }
+          : {}),
       },
       metadata: {
         store_id: store.id,
         platform: "snaporder",
         environment: ctx.environment,
+        owner_email: payoutIntake?.owner_email ?? "",
+        tax_id: payoutIntake?.tax_id ?? "",
       },
       settings: {
         payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
@@ -666,20 +674,41 @@ export async function handleStripeConnectRequest(
       throw e;
     }
 
-    const { accountId, environment } = await ensureConnectAccount(ctx, service, workingStore, intake);
-    const syncResult = await syncIntakeToStripeConnect(ctx.stripe, accountId, intake, store.name);
-    const status = await syncConnectAccountById(ctx.stripe, service, accountId);
+    let accountId = "";
+    let environment: StripeKeyMode = "live";
+    let syncResult = {
+      bankSynced: false,
+      profileSynced: false,
+      message: "Dados guardados.",
+    };
 
-    return json({
-      saved: true,
-      synced: true,
-      accountId,
-      connectEnvironment: environment,
-      bankSynced: syncResult.bankSynced,
-      message: syncResult.message,
-      ...statusPayload(status, environment),
-      ...connectMeta(ctx),
-    });
+    try {
+      const ensured = await ensureConnectAccount(ctx, service, workingStore, intake);
+      accountId = ensured.accountId;
+      environment = ensured.environment;
+      syncResult = await syncIntakeToStripeConnect(ctx.stripe, accountId, intake, store.name);
+      const status = await syncConnectAccountById(ctx.stripe, service, accountId);
+      return json({
+        saved: true,
+        synced: syncResult.profileSynced || syncResult.bankSynced,
+        accountId,
+        connectEnvironment: environment,
+        bankSynced: syncResult.bankSynced,
+        message: syncResult.message,
+        ...statusPayload(status, environment),
+        ...connectMeta(ctx),
+      });
+    } catch (e) {
+      console.error("[connect] save_and_sync_intake stripe", e);
+      return json({
+        saved: true,
+        synced: false,
+        accountId: accountId || null,
+        connectEnvironment: environment,
+        message:
+          "Dados guardados. Carregue em «Ligar conta do restaurante» para concluir e-mail e IBAN.",
+      });
+    }
   }
 
   if (mode === "activate_live") {
