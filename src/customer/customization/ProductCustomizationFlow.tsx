@@ -280,7 +280,14 @@ export default function ProductCustomizationFlow({
 
   const configuration = buildConfiguration();
   const allSelections = flattenConfiguration(configuration);
-  const unitPrice = computeUnitPrice(basePrice, 0, allSelections);
+  const soloCarne = computeSoloCarneSurcharge(
+    product.name,
+    product.description,
+    configuration,
+    globalGroups,
+    unitGroups,
+  );
+  const unitPrice = computeUnitPrice(basePrice, 0, allSelections) + soloCarne.surcharge;
 
   const validateCurrentStep = (): boolean => {
     if (
