@@ -443,6 +443,69 @@ export async function createStoreOnboardingLink(
   return data as { token: string; expiresAt: string; path: string };
 }
 
+export type PublicLinkInfo = {
+  valid: boolean;
+  storeName: string | null;
+  prefill: {
+    businessName: string;
+    ownerFullName: string;
+    ownerEmail: string | null;
+    ownerPhone: string | null;
+    taxId: string | null;
+    iban: string;
+    businessAddress: string | null;
+    ownerDob: string | null;
+  } | null;
+};
+
+export async function fetchPublicOnboardingLinkInfo(token: string): Promise<PublicLinkInfo> {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    body: { mode: "public_link_info", token },
+  });
+  if (error) throw new Error(error.message || "Link inválido.");
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: string }).error));
+  }
+  return data as PublicLinkInfo;
+}
+
+export type PublicSubmitIntakeResult = {
+  submitted: boolean;
+  needsVerification: boolean;
+  message?: string;
+  clientSecret?: string;
+  accountId?: string;
+};
+
+/** Dono do restaurante envia dados pelo link (formulário Kebab, sem login). */
+export async function submitPublicOnboardingIntake(
+  token: string,
+  input: {
+    businessName: string;
+    ownerFullName: string;
+    ownerEmail: string;
+    ownerPhone: string;
+    taxId: string;
+    iban: string;
+    businessAddress?: string;
+    businessWebsite?: string;
+    ownerDob?: string;
+  },
+): Promise<PublicSubmitIntakeResult> {
+  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    body: {
+      mode: "public_submit_intake",
+      token,
+      ...input,
+    },
+  });
+  if (error) throw new Error(error.message || "Não foi possível enviar os dados.");
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: string }).error));
+  }
+  return data as PublicSubmitIntakeResult;
+}
+
 /** Public (no auth): open the onboarding form from a shareable token. */
 export async function createPublicOnboardingSession(
   token: string,

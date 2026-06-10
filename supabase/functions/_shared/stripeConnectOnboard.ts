@@ -16,6 +16,7 @@ import {
 } from "./stripePlatform.ts";
 import { provisionTestConnectAccount } from "./stripeConnectTestProvision.ts";
 import {
+  accountNeedsOwnerVerificationStep,
   createLiveCustomAccountFromIntake,
   DEFAULT_BUSINESS_WEBSITE,
   intakeComplete,
@@ -24,7 +25,7 @@ import {
 } from "./stripeConnectCustomProvision.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v5";
+export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v6";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -507,13 +508,7 @@ export async function handleStripeConnectRequest(
     req.headers.get("cf-connecting-ip") ||
     "127.0.0.1";
 
-  // Public, no-login onboarding via a shareable token (e.g. sent by WhatsApp).
-  // The whole form is white-label (embedded), so the restaurant never sees the provider.
-  if (mode === "public_onboarding_session") {
-    const token = typeof body.token === "string" ? body.token.trim() : "";
-    if (!token) {
-      return json({ error: "Link inválido." }, 400);
-    }
+  async function resolvePublicLink(token: string) {
     const publicService = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -525,7 +520,7 @@ export async function handleStripeConnectRequest(
       .maybeSingle();
 
     if (!link || link.revoked || new Date(link.expires_at as string).getTime() < Date.now()) {
-      return json({ error: "Este link expirou ou já não é válido. Peça um novo." }, 410);
+      return { error: json({ error: "Este link expirou ou já não é válido. Peça um novo." }, 410) };
     }
 
     const { data: linkStore } = await publicService
@@ -535,10 +530,132 @@ export async function handleStripeConnectRequest(
       .maybeSingle();
 
     if (!linkStore) {
-      return json({ error: "Restaurante não encontrado." }, 404);
+      return { error: json({ error: "Restaurante não encontrado." }, 404) };
     }
 
-    const linkCtx = await loadConnectContext(linkStore as ConnectStoreRow);
+    return { publicService, linkStore: linkStore as ConnectStoreRow };
+  }
+
+  // Dono do restaurante preenche formulário Kebab (sem marca Stripe) via link WhatsApp.
+  if (mode === "public_submit_intake") {
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    if (!token) return json({ error: "Link inválido." }, 400);
+
+    const resolved = await resolvePublicLink(token);
+    if ("error" in resolved && resolved.error) return resolved.error;
+    const { publicService, linkStore } = resolved;
+
+    const businessName = typeof body.businessName === "string" ? body.businessName.trim() : "";
+    const ownerFullName = typeof body.ownerFullName === "string" ? body.ownerFullName.trim() : "";
+    const ownerEmail = typeof body.ownerEmail === "string" ? body.ownerEmail.trim() : "";
+    const iban = typeof body.iban === "string" ? body.iban.trim() : "";
+    const ownerPhone = typeof body.ownerPhone === "string" ? body.ownerPhone.trim() : "";
+    const taxId = typeof body.taxId === "string" ? body.taxId.trim() : "";
+    const businessAddress = typeof body.businessAddress === "string" ? body.businessAddress.trim() : "";
+    const ownerDob = typeof body.ownerDob === "string" ? body.ownerDob.trim() : "";
+    const businessWebsite =
+      typeof body.businessWebsite === "string" && body.businessWebsite.trim()
+        ? body.businessWebsite.trim()
+        : DEFAULT_BUSINESS_WEBSITE;
+
+    if (businessName.length < 2) return json({ error: "Nome do negócio é obrigatório." }, 400);
+    if (ownerFullName.length < 2) return json({ error: "Nome do titular é obrigatório." }, 400);
+    if (!ownerEmail.includes("@")) return json({ error: "E-mail é obrigatório." }, 400);
+    if (ownerPhone.length < 6) return json({ error: "Telefone é obrigatório." }, 400);
+    if (taxId.length < 2) return json({ error: "NIF / CIF é obrigatório." }, 400);
+    if (normalizeIban(iban).length < 15) return json({ error: "IBAN inválido." }, 400);
+
+    await upsertStorePayoutIntakeDirect(publicService, linkStore.id, {
+      businessName,
+      ownerFullName,
+      ownerEmail,
+      ownerPhone,
+      taxId,
+      iban,
+      businessAddress,
+      notes: ownerDob ? `dob:${ownerDob}` : undefined,
+    });
+
+    const intake = {
+      ...(await loadStorePayoutIntake(publicService, linkStore.id))!,
+      business_website: businessWebsite,
+      owner_dob: ownerDob || null,
+    };
+
+    const linkCtx = await loadConnectContext(linkStore);
+    const ensured = await ensureConnectAccount(
+      linkCtx,
+      publicService,
+      linkStore,
+      intake,
+      requestIp,
+    );
+    const status = await syncConnectAccountById(linkCtx.stripe, publicService, ensured.accountId);
+    const acct = await linkCtx.stripe.accounts.retrieve(ensured.accountId);
+    const needsVerification = accountNeedsOwnerVerificationStep(acct);
+
+    let clientSecret: string | undefined;
+    if (needsVerification) {
+      clientSecret = await createEmbeddedAccountSession(
+        linkCtx.stripe,
+        ensured.accountId,
+        "embedded_onboarding",
+      );
+    }
+
+    return json({
+      submitted: true,
+      needsVerification,
+      accountId: ensured.accountId,
+      connectEnvironment: ensured.environment,
+      message: needsVerification
+        ? "Dados enviados. Falta só confirmar a identidade no passo seguinte."
+        : "Dados enviados — conta em análise pela plataforma de pagamentos.",
+      clientSecret,
+      ...statusPayload(status, ensured.environment),
+    });
+  }
+
+  if (mode === "public_link_info") {
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    if (!token) return json({ error: "Link inválido." }, 400);
+    const resolved = await resolvePublicLink(token);
+    if ("error" in resolved && resolved.error) return resolved.error;
+    const { publicService, linkStore } = resolved;
+    const intake = await loadStorePayoutIntake(publicService, linkStore.id);
+    let ownerDob = "";
+    if (intake?.notes?.startsWith("dob:")) {
+      ownerDob = intake.notes.replace("dob:", "").trim();
+    }
+    return json({
+      valid: true,
+      storeName: linkStore.name,
+      prefill: intake
+        ? {
+            businessName: intake.business_name,
+            ownerFullName: intake.owner_full_name,
+            ownerEmail: intake.owner_email,
+            ownerPhone: intake.owner_phone,
+            taxId: intake.tax_id,
+            iban: intake.iban,
+            businessAddress: intake.business_address,
+            ownerDob: ownerDob || null,
+          }
+        : null,
+    });
+  }
+
+  // Public, no-login onboarding via a shareable token (e.g. sent by WhatsApp).
+  if (mode === "public_onboarding_session") {
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    if (!token) {
+      return json({ error: "Link inválido." }, 400);
+    }
+    const resolved = await resolvePublicLink(token);
+    if ("error" in resolved && resolved.error) return resolved.error;
+    const { publicService, linkStore } = resolved;
+
+    const linkCtx = await loadConnectContext(linkStore);
     const linkIntake = await loadStorePayoutIntake(publicService, linkStore.id);
     const linkEnsured = await ensureConnectAccount(
       linkCtx,

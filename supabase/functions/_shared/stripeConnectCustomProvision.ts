@@ -8,11 +8,19 @@ export type CustomIntakeRow = {
   owner_full_name: string;
   owner_email: string | null;
   owner_phone: string | null;
+  owner_dob?: string | null;
   iban: string;
   tax_id: string | null;
   business_address: string | null;
   business_website?: string | null;
 };
+
+function parseOwnerDob(raw: string | null | undefined): Stripe.PersonCreateParams.Dob | undefined {
+  if (!raw?.trim()) return undefined;
+  const m = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return undefined;
+  return { year: m[1], month: m[2], day: m[3] };
+}
 
 function normalizeIban(iban: string): string {
   return iban.replace(/\s/g, "").toUpperCase();
@@ -149,14 +157,15 @@ async function ensureCompanyRepresentative(
   address: Stripe.AddressParam | undefined,
 ): Promise<void> {
   const { first_name, last_name } = splitOwnerName(intake.owner_full_name);
+  const dob = parseOwnerDob(intake.owner_dob);
   const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
-  const hasRep = persons.data.some((p) => p.relationship?.representative);
-  if (hasRep) return;
-  await stripe.accounts.createPerson(accountId, {
+  const existing = persons.data.find((p) => p.relationship?.representative);
+  const personPayload = {
     first_name,
     last_name,
     email: intake.owner_email!,
     phone: intake.owner_phone ?? undefined,
+    ...(dob ? { dob } : {}),
     ...(address ? { address } : {}),
     relationship: {
       representative: true,
@@ -164,7 +173,28 @@ async function ensureCompanyRepresentative(
       owner: true,
       title: "Representante legal",
     },
-  });
+  };
+  if (existing?.id) {
+    await stripe.accounts.updatePerson(accountId, existing.id, personPayload);
+    return;
+  }
+  await stripe.accounts.createPerson(accountId, personPayload);
+}
+
+/** Campos que só o dono pode completar (documento, data nascimento, etc.). */
+export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean {
+  const due = [
+    ...(acct.requirements?.currently_due ?? []),
+    ...(acct.requirements?.past_due ?? []),
+  ];
+  return due.some(
+    (field) =>
+      field.includes("person") ||
+      field.includes("verification") ||
+      field.includes("document") ||
+      field.includes("id_number") ||
+      field.includes("dob"),
+  );
 }
 
 function buildAccountCoreFields(

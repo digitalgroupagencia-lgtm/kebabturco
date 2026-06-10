@@ -316,12 +316,68 @@ const FinancePage = () => {
         </div>
       )}
 
+      {!ready && (
+        <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <Share2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="font-black text-base">Enviar link ao dono (WhatsApp)</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Gere um link para o dono preencher os dados no telemóvel — formulário da Kebab Turco, sem
+                criar conta estranha. Só se a lei pedir documento aparece um passo extra discreto.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="w-full h-11 font-bold gap-2"
+            disabled={linkBusy}
+            onClick={() => void generateOnboardingLink()}
+          >
+            {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+            Gerar link para WhatsApp
+          </Button>
+          {onboardingLink && (
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+              <p className="text-xs font-mono break-all">{onboardingLink}</p>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(onboardingLink);
+                    toast.success("Link copiado");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copiar
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  asChild
+                >
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Olá! Preencha os dados para receber os pagamentos do restaurante: ${onboardingLink}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Enviar WhatsApp
+                  </a>
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {platformRegistered && !ready && (
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm leading-relaxed text-green-900 dark:text-green-200">
-          <p className="font-bold">Restaurante registado na plataforma</p>
+          <p className="font-bold">Dados guardados na plataforma</p>
           <p className="text-xs mt-1 opacity-90">
-            Os dados já foram enviados. O dono do restaurante não precisa de criar conta nem abrir formulário
-            externo. Os pagamentos online ficam activos assim que a verificação interna terminar.
+            Pode completar aqui ou enviar o link acima ao dono. Pagamentos activos quando a análise terminar.
           </p>
         </div>
       )}
