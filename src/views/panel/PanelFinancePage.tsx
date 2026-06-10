@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Loader2, Wallet, CheckCircle2, Building2, ShieldCheck, Settings2, ChevronDown } from "lucide-react";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbeddedPanel";
-import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
+import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
   fetchStoreFinancialProfile,
   syncStripeConnectStatus,
@@ -138,14 +138,14 @@ const PanelFinancePage = () => {
     );
   }
 
-  const ready = isStripeConnectReady(profile);
-  const connectStatus = stripeConnectStatusLabel(profile);
-  const connectEnv =
-    (profile?.stripe_connect_environment as "live" | "test" | undefined) ?? "live";
-  const testModeActive = connectEnv === "test" || Boolean(profile?.stripe_connect_test_simulated);
-  // The server is the real gate: it only issues a live session when the live keys
-  // are published and Stripe approved live Connect. Otherwise it falls back / errors.
-  const onboardingEnv: "live" | "test" = testModeActive ? "test" : "live";
+  const simulated = Boolean(profile?.stripe_connect_test_simulated);
+  const isLiveEnv = (profile?.stripe_connect_environment ?? "live") === "live";
+  // "Armed for live" = the store is on real production receivables (set by admin),
+  // never the internal test/validation account. The restaurant only ever sees live.
+  const armedForLive = isLiveEnv && !simulated;
+  const hasLiveAccount = armedForLive && Boolean(profile?.stripe_connect_account_id);
+  const liveReady = armedForLive && isStripeConnectReady(profile);
+  const onboardingInProgress = hasLiveAccount && !liveReady;
 
   return (
     <div className="mx-auto max-w-lg space-y-5 pb-10">
@@ -162,23 +162,32 @@ const PanelFinancePage = () => {
         </p>
       </div>
 
-      {ready && (
+      {liveReady && (
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 flex gap-3">
           <ShieldCheck className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-bold text-green-800 dark:text-green-300">
-              {testModeActive ? "Recebimentos em modo teste" : "Recebimentos online activos"}
-            </p>
+            <p className="font-bold text-green-800 dark:text-green-300">Recebimentos online activos</p>
             <p className="text-muted-foreground mt-1">
-              {testModeActive
-                ? "Conta de validação ligada — pode testar os pedidos sem dinheiro real."
-                : "A sua conta está ligada e pronta. Os pagamentos dos pedidos chegam à sua conta bancária."}
+              A sua conta está ligada e pronta. Os pagamentos dos pedidos chegam à sua conta bancária.
             </p>
           </div>
         </div>
       )}
 
-      {!ready && embeddedMode === "none" && (
+      {!armedForLive && embeddedMode === "none" && (
+        <div className="rounded-xl border bg-muted/40 p-4 flex gap-3">
+          <Building2 className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-bold">Recebimentos em preparação</p>
+            <p className="text-muted-foreground mt-1">
+              A administração está a preparar os seus recebimentos. Quando estiver pronto, vai aparecer aqui um botão
+              para ligar a sua conta. Pode voltar mais tarde.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {armedForLive && !liveReady && embeddedMode === "none" && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -192,9 +201,9 @@ const PanelFinancePage = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button className="w-full h-12 font-black text-base" onClick={() => setEmbeddedMode("onboarding")}>
-              {onboardingEnv === "live" ? "Ligar a minha conta para receber" : "Activar recebimentos (validação)"}
+              Ligar a minha conta para receber
             </Button>
-            {connectStatus === "pending" && (
+            {onboardingInProgress && (
               <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold">
                 Já começou a ligação — faltam dados. Carregue no botão para concluir.
               </p>
@@ -214,15 +223,14 @@ const PanelFinancePage = () => {
           <StripeConnectEmbeddedPanel
             storeId={storeId}
             variant="onboarding"
-            connectEnvironment={onboardingEnv}
-            productionBlocked={testModeActive}
+            connectEnvironment="live"
+            productionBlocked={false}
             onComplete={onEmbeddedComplete}
-            onTestProvisioned={(msg) => toast.success(msg)}
           />
         </div>
       )}
 
-      {(ready || profile?.stripe_connect_account_id) && embeddedMode !== "management" && (
+      {hasLiveAccount && embeddedMode !== "management" && (
         <Button
           variant="outline"
           className="w-full h-11 font-bold gap-2"
@@ -244,14 +252,14 @@ const PanelFinancePage = () => {
           <StripeConnectEmbeddedPanel
             storeId={storeId}
             variant="management"
-            connectEnvironment={connectEnv}
-            productionBlocked={testModeActive}
+            connectEnvironment="live"
+            productionBlocked={false}
             onComplete={onEmbeddedComplete}
           />
         </div>
       )}
 
-      {(ready || profile?.stripe_connect_account_id) && (
+      {hasLiveAccount && (
         <Button
           variant="secondary"
           size="sm"

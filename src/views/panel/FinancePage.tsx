@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import {
+  activateLiveStripeConnect,
   fetchStoreFinancialProfile,
   provisionTestStripeConnect,
   syncStripeConnectStatus,
@@ -95,6 +96,7 @@ const FinancePage = () => {
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
+  const [activatingLive, setActivatingLive] = useState(false);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
@@ -145,6 +147,21 @@ const FinancePage = () => {
     setEmbeddedMode("none");
     await refreshStatus();
   }, [refreshStatus]);
+
+  const activateLive = useCallback(async () => {
+    if (!storeId) return;
+    setActivatingLive(true);
+    try {
+      await activateLiveStripeConnect(storeId);
+      await load({ silent: true });
+      toast.success("Modo oficial activado — preencha os dados da conta para concluir.");
+      setEmbeddedMode("onboarding");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos oficiais");
+    } finally {
+      setActivatingLive(false);
+    }
+  }, [storeId, load]);
 
   const activateTestReceivables = useCallback(async () => {
     if (!storeId) return;
@@ -255,6 +272,29 @@ const FinancePage = () => {
       {showTestModeUi && (
         <div className="rounded-lg border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300 bg-amber-500/10">
           {testModeActive ? "Modo teste activo" : "Modo teste disponível — produção pendente"}
+        </div>
+      )}
+
+      {(testModeActive || testSimulated) && embeddedMode === "none" && (
+        <div className="rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
+            <div>
+              <p className="font-black text-base">Activar recebimentos oficiais (produção)</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Desliga o modo teste deste restaurante e prepara a conta para receber dinheiro real. A seguir,
+                preencha os dados da conta no formulário. Requer chaves de produção publicadas e plataforma aprovada.
+              </p>
+            </div>
+          </div>
+          <Button
+            className="w-full h-12 font-black text-base bg-green-700 hover:bg-green-800 text-white disabled:opacity-50"
+            disabled={activatingLive}
+            onClick={() => void activateLive()}
+          >
+            {activatingLive ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Activar recebimentos oficiais (produção)
+          </Button>
         </div>
       )}
 

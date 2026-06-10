@@ -1,6 +1,6 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getStripeSecretKey, getStripeSecretKeyTest } from "./stripeEnv.ts";
+import { getStripeSecretKey, getStripeSecretKeyTest, stripeKeyMode } from "./stripeEnv.ts";
 import {
   fetchConnectAccountStatus,
   syncConnectAccountById,
@@ -359,6 +359,88 @@ export async function handleStripeConnectRequest(
   }
 
   const store = await assertStoreAccess(service, userId, storeId);
+
+  if (mode === "activate_live") {
+    // Switching a store to real (live) receivables is a platform-admin action.
+    const { data: adminRoles } = await service
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin_master");
+    if (!adminRoles || adminRoles.length === 0) {
+      throw new ConnectError(
+        "Apenas a administração pode activar recebimentos oficiais.",
+        403,
+        "forbidden",
+      );
+    }
+
+    // Never reset a store that is already on a real (non-simulated) live account.
+    if (
+      store.stripe_connect_environment === "live" &&
+      store.stripe_connect_account_id &&
+      !store.stripe_connect_account_id.startsWith("simulated-")
+    ) {
+      return json({ activated: true, alreadyLive: true, connectEnvironment: "live" });
+    }
+
+    const liveKey = getStripeSecretKey();
+    if (!liveKey || stripeKeyMode(liveKey) !== "live") {
+      throw new ConnectError(
+        "Falta a chave de produção no servidor. Publique as chaves live na Lovable e tente de novo.",
+        503,
+        "live_key_missing",
+      );
+    }
+
+    const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+    let livePlatform;
+    try {
+      livePlatform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
+    } catch (e) {
+      if (isPlatformProfileBlockedError(e)) {
+        throw new ConnectError(
+          "A Stripe ainda não aprovou a produção da plataforma.",
+          503,
+          "live_not_allowed",
+        );
+      }
+      throw e;
+    }
+    if (!livePlatform.connectLiveAllowed) {
+      throw new ConnectError(
+        "A Stripe ainda não aprovou a produção da plataforma.",
+        503,
+        "live_not_allowed",
+      );
+    }
+
+    const { error: updErr } = await service
+      .from("stores")
+      .update({
+        stripe_connect_account_id: null,
+        stripe_connect_environment: "live",
+        stripe_connect_test_simulated: false,
+        stripe_charges_enabled: false,
+        stripe_payouts_enabled: false,
+        stripe_onboarding_completed: false,
+        stripe_payout_status: "pending",
+        stripe_business_name: null,
+        stripe_iban_last4: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", store.id);
+    if (updErr) {
+      console.error("[connect] activate_live store update", updErr);
+      throw new ConnectError("Não foi possível activar recebimentos oficiais.", 500, "store_update_failed");
+    }
+
+    return json({
+      activated: true,
+      connectEnvironment: "live",
+      ...platformStatusPayload(livePlatform, "live"),
+    });
+  }
 
   if (mode === "provision_test") {
     const result = await provisionTestConnectAccount(service, store);

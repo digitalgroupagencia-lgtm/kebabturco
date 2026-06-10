@@ -402,6 +402,19 @@ async function invokeConnectFunction(
   );
 }
 
+/** Admin-only: switch a store from test/simulated to real (live) receivables. */
+export async function activateLiveStripeConnect(
+  storeId: string,
+): Promise<{ activated: boolean; connectEnvironment: "live"; alreadyLive?: boolean }> {
+  const data = await invokeConnectFunction({ storeId, mode: "activate_live" });
+  if (!data) {
+    throw new Error(
+      "Não foi possível activar recebimentos oficiais — peça na Lovable para publicar as funções do servidor.",
+    );
+  }
+  return data as { activated: boolean; connectEnvironment: "live"; alreadyLive?: boolean };
+}
+
 export async function createStripeConnectEmbeddedSession(
   storeId: string,
   mode: "embedded_onboarding" | "embedded_management",
