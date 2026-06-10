@@ -1,21 +1,13 @@
 import { APP_NAME } from "@/lib/appMode";
 
-/**
- * Informação institucional usada nas páginas legais (lojas de apps, GDPR/LGPD).
- * Valores neutros da plataforma — cada tenant deve sobrepor com os seus
- * próprios dados via `company_settings` / wizard. Aqui ficam apenas defaults
- * seguros para quando não há tenant resolvido.
- */
-const PLATFORM_ORIGIN =
-  typeof window !== "undefined" ? window.location.origin : "https://propioapp.com";
-
+/** Informação institucional usada nas páginas legais (lojas de apps, GDPR/LGPD). */
 export const LEGAL_SITE = {
   appName: APP_NAME,
-  platformName: APP_NAME,
-  companyName: APP_NAME,
-  siteUrl: PLATFORM_ORIGIN,
-  supportEmail: "support@propioapp.com",
-  privacyEmail: "privacy@propioapp.com",
+  platformName: "SnapOrder",
+  companyName: "Euro Business Group",
+  siteUrl: "https://kebabturco.net",
+  supportEmail: "support@kebabturco.net",
+  privacyEmail: "privacy@kebabturco.net",
   lastUpdated: "28 de maio de 2026",
   responseTime: "até 5 dias úteis",
   deletionTime: "até 30 dias corridos",

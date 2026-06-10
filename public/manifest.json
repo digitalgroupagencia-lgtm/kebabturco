@@ -1,14 +1,14 @@
 {
-  "name": "PropioApp",
-  "short_name": "PropioApp",
-  "description": "PropioApp — plataforma de pedidos para restaurantes.",
-  "lang": "es",
+  "name": "Kebab Turco",
+  "short_name": "Kebab Turco",
+  "description": "Peça online no Kebab Turco",
+  "lang": "pt",
   "start_url": "/?homescreen=1",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#111827",
-  "theme_color": "#111827",
+  "background_color": "#5C1419",
+  "theme_color": "#5C1419",
   "icons": [
     {
       "src": "/icon-192.png",
