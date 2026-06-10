@@ -468,9 +468,12 @@ export async function createStripeConnectEmbeddedSession(
     throw new Error("Não foi possível abrir o formulário de recebimentos — tente modo teste.");
   }
   return data as {
-    clientSecret: string;
+    clientSecret?: string;
     accountId: string;
     connectEnvironment?: "live" | "test";
+    skipEmbedded?: boolean;
+    accountType?: "custom" | "express";
+    message?: string;
   };
 }
 

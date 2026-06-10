@@ -15,6 +15,10 @@ import {
   type StripeConnectContext,
 } from "./stripePlatform.ts";
 import { provisionTestConnectAccount } from "./stripeConnectTestProvision.ts";
+import {
+  createLiveCustomAccountFromIntake,
+  intakeComplete,
+} from "./stripeConnectCustomProvision.ts";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -247,34 +251,99 @@ async function syncIntakeToStripeConnect(
   return { bankSynced, profileSynced, message };
 }
 
+async function persistConnectAccountId(
+  service: SupabaseClient,
+  storeId: string,
+  accountId: string,
+  environment: StripeKeyMode,
+): Promise<void> {
+  const { error: updErr } = await service
+    .from("stores")
+    .update({
+      stripe_connect_account_id: accountId,
+      stripe_connect_environment: environment,
+      stripe_connect_created_at: new Date().toISOString(),
+      stripe_payout_status: "pending",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", storeId);
+
+  if (updErr) {
+    console.error("[connect] store update", updErr);
+    throw new ConnectError(
+      "Conta de recebimentos criada mas não foi possível guardar — actualize a base de dados.",
+      500,
+      "store_update_failed",
+    );
+  }
+}
+
+/** Express pede ecrã «criar conta Stripe» — substituímos por Custom quando há dados do admin. */
+async function shouldReplaceExpressWithCustom(
+  stripe: Stripe,
+  accountId: string,
+): Promise<boolean> {
+  try {
+    const acct = await stripe.accounts.retrieve(accountId);
+    return acct.type === "express";
+  } catch {
+    return false;
+  }
+}
+
 export async function ensureConnectAccount(
   ctx: StripeConnectContext,
   service: SupabaseClient,
   store: ConnectStoreRow,
   intake?: PayoutIntakeRow | null,
-): Promise<{ accountId: string; environment: StripeKeyMode }> {
+  requestIp?: string,
+): Promise<{ accountId: string; environment: StripeKeyMode; accountType: "custom" | "express" }> {
   const payoutIntake = intake ?? (await loadStorePayoutIntake(service, store.id));
+  const useCustom = ctx.environment === "live" && intakeComplete(payoutIntake);
+  let accountId = store.stripe_connect_account_id;
 
-  if (store.stripe_connect_account_id) {
+  if (accountId && useCustom) {
+    const replaceExpress = await shouldReplaceExpressWithCustom(ctx.stripe, accountId);
+    if (replaceExpress) {
+      accountId = null;
+      await service
+        .from("stores")
+        .update({
+          stripe_connect_account_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", store.id);
+    }
+  }
+
+  if (accountId) {
     if (payoutIntake) {
       try {
-        await syncIntakeToStripeConnect(
-          ctx.stripe,
-          store.stripe_connect_account_id,
-          payoutIntake,
-          store.name,
-        );
+        await syncIntakeToStripeConnect(ctx.stripe, accountId, payoutIntake, store.name);
       } catch (e) {
         console.warn("[connect] intake sync on existing account", e);
       }
     }
+    const acct = await ctx.stripe.accounts.retrieve(accountId);
     return {
-      accountId: store.stripe_connect_account_id,
+      accountId,
       environment: (store.stripe_connect_environment as StripeKeyMode) ?? ctx.environment,
+      accountType: acct.type === "custom" ? "custom" : "express",
     };
   }
 
   try {
+    if (useCustom && payoutIntake) {
+      const customId = await createLiveCustomAccountFromIntake(
+        ctx.stripe,
+        store,
+        payoutIntake,
+        requestIp ?? "127.0.0.1",
+      );
+      await persistConnectAccountId(service, store.id, customId, ctx.environment);
+      return { accountId: customId, environment: ctx.environment, accountType: "custom" };
+    }
+
     const account = await ctx.stripe.accounts.create({
       type: "express",
       country: "ES",
@@ -291,37 +360,17 @@ export async function ensureConnectAccount(
       },
       metadata: {
         store_id: store.id,
-        platform: "snaporder",
+        platform: "kebabturco",
         environment: ctx.environment,
-        owner_email: payoutIntake?.owner_email ?? "",
-        tax_id: payoutIntake?.tax_id ?? "",
+        connect_role: "restaurant",
       },
       settings: {
         payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
       },
     });
 
-    const { error: updErr } = await service
-      .from("stores")
-      .update({
-        stripe_connect_account_id: account.id,
-        stripe_connect_environment: ctx.environment,
-        stripe_connect_created_at: new Date().toISOString(),
-        stripe_payout_status: "pending",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", store.id);
-
-    if (updErr) {
-      console.error("[connect] store update", updErr);
-      throw new ConnectError(
-        "Conta de recebimentos criada mas não foi possível guardar — actualize a base de dados.",
-        500,
-        "store_update_failed",
-      );
-    }
-
-    return { accountId: account.id, environment: ctx.environment };
+    await persistConnectAccountId(service, store.id, account.id, ctx.environment);
+    return { accountId: account.id, environment: ctx.environment, accountType: "express" };
   } catch (e) {
     if (ctx.environment === "live" && isPlatformProfileBlockedError(e)) {
       throw new PlatformPendingError(ctx.platform);
@@ -424,6 +473,11 @@ export async function handleStripeConnectRequest(
 
   const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
   const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
+  const requestIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    req.headers.get("cf-connecting-ip") ||
+    "127.0.0.1";
 
   // Public, no-login onboarding via a shareable token (e.g. sent by WhatsApp).
   // The whole form is white-label (embedded), so the restaurant never sees the provider.
@@ -457,11 +511,28 @@ export async function handleStripeConnectRequest(
     }
 
     const linkCtx = await loadConnectContext(linkStore as ConnectStoreRow);
-    const { accountId: linkAccountId, environment: linkEnv } = await ensureConnectAccount(
+    const linkIntake = await loadStorePayoutIntake(publicService, linkStore.id);
+    const linkEnsured = await ensureConnectAccount(
       linkCtx,
       publicService,
       linkStore as ConnectStoreRow,
+      linkIntake,
+      requestIp,
     );
+    const { accountId: linkAccountId, environment: linkEnv, accountType: linkAccountType } = linkEnsured;
+
+    if (linkAccountType === "custom") {
+      const status = await syncConnectAccountById(linkCtx.stripe, publicService, linkAccountId);
+      return json({
+        skipEmbedded: true,
+        accountId: linkAccountId,
+        accountType: "custom",
+        connectEnvironment: linkEnv,
+        message: "Conta Connect já registada — não precisa de novo registo.",
+        ...statusPayload(status, linkEnv),
+      });
+    }
+
     const clientSecret = await createEmbeddedAccountSession(
       linkCtx.stripe,
       linkAccountId,
@@ -683,18 +754,33 @@ export async function handleStripeConnectRequest(
     };
 
     try {
-      const ensured = await ensureConnectAccount(ctx, service, workingStore, intake);
+      const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
       accountId = ensured.accountId;
       environment = ensured.environment;
-      syncResult = await syncIntakeToStripeConnect(ctx.stripe, accountId, intake, store.name);
       const status = await syncConnectAccountById(ctx.stripe, service, accountId);
+
+      let message: string;
+      let bankSynced = false;
+      if (ensured.accountType === "custom") {
+        message =
+          status.chargesEnabled && status.onboardingCompleted
+            ? "Restaurante registado como cliente Connect na plataforma — pronto para receber."
+            : "Restaurante registado como cliente Connect — dados enviados (sem ecrã de novo registo Stripe).";
+        bankSynced = true;
+      } else {
+        syncResult = await syncIntakeToStripeConnect(ctx.stripe, accountId, intake, store.name);
+        message = syncResult.message;
+        bankSynced = syncResult.bankSynced;
+      }
+
       return json({
         saved: true,
-        synced: syncResult.profileSynced || syncResult.bankSynced,
+        synced: true,
         accountId,
+        accountType: ensured.accountType,
         connectEnvironment: environment,
-        bankSynced: syncResult.bankSynced,
-        message: syncResult.message,
+        bankSynced,
+        message,
         ...statusPayload(status, environment),
         ...connectMeta(ctx),
       });
@@ -923,9 +1009,23 @@ export async function handleStripeConnectRequest(
     }
   }
 
-  const { accountId, environment } = await ensureConnectAccount(ctx, service, store, payoutIntake);
+  const ensured = await ensureConnectAccount(ctx, service, store, payoutIntake, requestIp);
+  const { accountId, environment, accountType } = ensured;
   const stripe = ctx.stripe;
   const meta = connectMeta(ctx);
+
+  if (mode === "embedded_onboarding" && accountType === "custom") {
+    const status = await syncConnectAccountById(stripe, service, accountId);
+    return json({
+      skipEmbedded: true,
+      accountId,
+      accountType: "custom",
+      message:
+        "Conta Connect do restaurante já registada pela plataforma — não precisa de formulário externo.",
+      ...statusPayload(status, environment),
+      ...meta,
+    });
+  }
 
   if (mode === "provision") {
     return json({ accountId, provisioned: true, ...meta });

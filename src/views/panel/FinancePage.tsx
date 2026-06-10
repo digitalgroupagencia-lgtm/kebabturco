@@ -300,11 +300,10 @@ const FinancePage = () => {
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
             <div>
-              <p className="font-black text-base">Passo 2 — Ligar conta do restaurante</p>
+              <p className="font-black text-base">Passo 2 — Confirmar ligação (só se o Passo 1 pedir)</p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Depois de guardar os dados acima, carregue no botão verde. No ecrã seguinte confirme o e-mail do
-                dono{intakeSaved?.owner_email ? ` (${intakeSaved.owner_email})` : ""} e complete a verificação — é
-                obrigatório por lei, mas o e-mail já fica pré-preenchido.
+                Depois de guardar, o restaurante fica registado como cliente Connect na plataforma Euro Business
+                Group — não é um novo registo Stripe. Este botão só aparece se faltar algum passo de verificação.
               </p>
             </div>
           </div>
