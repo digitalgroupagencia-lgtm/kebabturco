@@ -2291,6 +2291,51 @@ export type Database = {
           },
         ]
       }
+      store_onboarding_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          environment: string
+          expires_at: string
+          revoked: boolean
+          store_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          environment?: string
+          expires_at?: string
+          revoked?: boolean
+          store_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          environment?: string
+          expires_at?: string
+          revoked?: boolean
+          store_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_onboarding_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_onboarding_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payment_gateways: {
         Row: {
           config: Json
