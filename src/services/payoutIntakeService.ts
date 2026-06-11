@@ -12,8 +12,6 @@ export type StorePayoutIntake = {
   notes: string | null;
   submitted_at: string;
   updated_at: string;
-  whatsapp_data_at?: string | null;
-  whatsapp_verified_at?: string | null;
 };
 
 export type PayoutIntakeInput = {

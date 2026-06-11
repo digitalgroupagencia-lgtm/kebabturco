@@ -536,15 +536,6 @@ export async function submitPublicOnboardingIntake(
   });
 }
 
-/** Public (no auth): dono concluiu passo de verificação no link WhatsApp. */
-export async function markPublicOnboardingVerified(token: string): Promise<void> {
-  try {
-    await invokePublicConnect({ mode: "public_mark_verification", token });
-  } catch {
-    /* não bloquear o dono se o aviso ao admin falhar */
-  }
-}
-
 /** Public (no auth): open the onboarding form from a shareable token. */
 export async function createPublicOnboardingSession(
   token: string,

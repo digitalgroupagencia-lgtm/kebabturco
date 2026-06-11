@@ -339,6 +339,56 @@ async function clearStoreConnectAccount(
     .eq("id", storeId);
 }
 
+function normalizeMatchText(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+async function listDuplicateStripeAccountsForStore(
+  stripe: Stripe,
+  store: ConnectStoreRow,
+  intake: PayoutIntakeRow | null,
+): Promise<Stripe.Account[]> {
+  const expectedEmail = normalizeMatchText(intake?.owner_email);
+  const expectedName = normalizeMatchText(intake?.business_name || store.name);
+  const accounts = await stripe.accounts.list({ limit: 100 });
+  return accounts.data.filter((account) => {
+    const metadataStoreId = normalizeMatchText(account.metadata?.store_id);
+    const email = normalizeMatchText(account.email);
+    const profileName = normalizeMatchText(account.business_profile?.name);
+    const companyName = normalizeMatchText(account.company?.name);
+    const displayName = normalizeMatchText(account.settings?.dashboard?.display_name);
+
+    return (
+      account.id === store.stripe_connect_account_id ||
+      metadataStoreId === store.id ||
+      (Boolean(expectedEmail) && email === expectedEmail) ||
+      (Boolean(expectedName) &&
+        (profileName === expectedName || companyName === expectedName || displayName === expectedName))
+    );
+  });
+}
+
+async function deleteDuplicateStripeAccountsForStore(
+  stripe: Stripe,
+  store: ConnectStoreRow,
+  intake: PayoutIntakeRow | null,
+  options?: { preserveAccountId?: string | null },
+): Promise<{ deleted: string[]; failed: { accountId: string; error: string }[] }> {
+  const duplicateAccounts = await listDuplicateStripeAccountsForStore(stripe, store, intake);
+  const deleted: string[] = [];
+  const failed: { accountId: string; error: string }[] = [];
+  for (const account of duplicateAccounts) {
+    if (options?.preserveAccountId && account.id === options.preserveAccountId) continue;
+    try {
+      await stripe.accounts.del(account.id);
+      deleted.push(account.id);
+    } catch (e) {
+      failed.push({ accountId: account.id, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return { deleted, failed };
+}
+
 async function rebuildIncompleteConnectAccount(
   stripe: Stripe,
   service: SupabaseClient,
@@ -495,8 +545,8 @@ function embeddedSessionComponents(mode: string): Stripe.AccountSessionCreatePar
     return {
       account_onboarding: {
         enabled: true,
-        // IBAN já recolhido no formulário Kebab — o passo embutido foca documentos/identidade.
-        features: { external_account_collection: false },
+        // A Stripe exige que account_onboarding e notification_banner usem o mesmo valor aqui.
+        features: { external_account_collection: true },
       },
       notification_banner: notification,
     };
@@ -572,12 +622,7 @@ export async function handleStripeConnectRequest(
   body: Record<string, unknown>,
 ): Promise<Response> {
   const mode = typeof body.mode === "string" ? body.mode : "embedded_onboarding";
-  const publicModes = new Set([
-    "public_link_info",
-    "public_submit_intake",
-    "public_mark_verification",
-    "public_onboarding_session",
-  ]);
+  const publicModes = new Set(["public_link_info", "public_submit_intake", "public_onboarding_session"]);
 
   if (
     !publicModes.has(mode) &&
@@ -669,16 +714,6 @@ export async function handleStripeConnectRequest(
       return json({ error: "Debes aceptar los términos del servicio de pagos." }, 400);
     }
 
-    const priorIntake = await loadStorePayoutIntake(publicService, linkStore.id);
-    const linkSubmittedAt = new Date().toISOString();
-    const intakeNotes = mergeIntakeNotes(priorIntake?.notes, {
-      ownerDob,
-      businessMcc,
-      businessType,
-      representativeId: representativeId || undefined,
-      linkAt: linkSubmittedAt,
-    });
-
     await upsertStorePayoutIntakeDirect(publicService, linkStore.id, {
       businessName,
       ownerFullName,
@@ -687,16 +722,13 @@ export async function handleStripeConnectRequest(
       taxId,
       iban,
       businessAddress,
-      notes: intakeNotes,
+      notes: buildIntakeNotes({
+        ownerDob,
+        businessMcc,
+        businessType,
+        representativeId: representativeId || undefined,
+      }),
     });
-
-    await publicService
-      .from("store_payout_intake")
-      .update({
-        whatsapp_data_at: linkSubmittedAt,
-        updated_at: linkSubmittedAt,
-      })
-      .eq("store_id", linkStore.id);
 
     const intake = enrichIntakeRow((await loadStorePayoutIntake(publicService, linkStore.id))!, {
       business_website: businessWebsite,
@@ -755,48 +787,6 @@ export async function handleStripeConnectRequest(
         "Datos enviados. En el siguiente paso confirme su identidad (documento) si la ley lo exige.",
       clientSecret,
       ...statusPayload(status, ensured.environment),
-    });
-  }
-
-  // Dono conclui passo 2 (documentos) no link público.
-  if (mode === "public_mark_verification") {
-    const token = typeof body.token === "string" ? body.token.trim() : "";
-    if (!token) return json({ error: "Enlace no válido." }, 400);
-
-    const resolved = await resolvePublicLink(token);
-    if ("error" in resolved && resolved.error) return resolved.error;
-    const { publicService, linkStore } = resolved;
-
-    const verifiedAt = new Date().toISOString();
-    const intakeRow = await loadStorePayoutIntake(publicService, linkStore.id);
-    const mergedNotes = mergeIntakeNotes(intakeRow?.notes, { verifyAt: verifiedAt });
-
-    await publicService
-      .from("store_payout_intake")
-      .update({
-        notes: mergedNotes ?? null,
-        whatsapp_verified_at: verifiedAt,
-        updated_at: verifiedAt,
-      })
-      .eq("store_id", linkStore.id);
-
-    let status: ConnectAccountStatus | null = null;
-    let connectEnvironment: StripeKeyMode = "live";
-    if (linkStore.stripe_connect_account_id) {
-      const linkCtx = await loadConnectContext(linkStore);
-      connectEnvironment = linkCtx.environment;
-      status = await syncConnectAccountById(
-        linkCtx.stripe,
-        publicService,
-        linkStore.stripe_connect_account_id,
-      );
-    }
-
-    return json({
-      verified: true,
-      verifiedAt,
-      message: "Verificación registrada — la administración puede seguir el estado en Recebimentos.",
-      ...(status ? statusPayload(status, connectEnvironment) : {}),
     });
   }
 
@@ -985,6 +975,49 @@ export async function handleStripeConnectRequest(
 
   const store = await assertStoreAccess(service, userId, storeId);
 
+  if (mode === "reset_live_connect_accounts") {
+    await assertAdminMaster(service, userId);
+
+    const liveKey = getStripeSecretKey();
+    if (!liveKey || stripeKeyMode(liveKey) !== "live") {
+      throw new ConnectError("Chave live da Stripe em falta no servidor.", 503, "live_key_missing");
+    }
+
+    const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+    const intake = await loadStorePayoutIntake(service, store.id);
+    const { deleted, failed } = await deleteDuplicateStripeAccountsForStore(liveStripe, store, intake);
+
+    const { error: updErr } = await service
+      .from("stores")
+      .update({
+        stripe_connect_account_id: null,
+        stripe_connect_environment: "live",
+        stripe_connect_test_simulated: false,
+        stripe_charges_enabled: false,
+        stripe_payouts_enabled: false,
+        stripe_onboarding_completed: false,
+        stripe_payout_status: "pending",
+        stripe_business_name: null,
+        stripe_iban_last4: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", store.id);
+    if (updErr) {
+      throw new ConnectError("Contas apagadas, mas não foi possível limpar a loja.", 500, "store_update_failed");
+    }
+
+    return json({
+      reset: true,
+      deleted,
+      failed,
+      remainingAction:
+        failed.length > 0
+          ? "Algumas contas não puderam ser apagadas pela Stripe. A loja já foi desligada delas; rejeite/remova manualmente as restantes se necessário."
+          : "Contas duplicadas apagadas. Agora guarde os dados novamente para criar uma única conta correcta.",
+      handlerVersion: CONNECT_HANDLER_VERSION,
+    });
+  }
+
   if (mode === "save_and_sync_intake") {
     await assertAdminMaster(service, userId);
 
@@ -1113,7 +1146,31 @@ export async function handleStripeConnectRequest(
       }
 
       const ctx = await loadConnectContext(workingStore, { requireLive: true });
+      if (ctx.environment === "live") {
+        const cleanup = await deleteDuplicateStripeAccountsForStore(ctx.stripe, workingStore, intake);
+        if (cleanup.deleted.length || cleanup.failed.length) {
+          console.info("[connect] duplicate cleanup before final account", cleanup);
+        }
+        if (
+          workingStore.stripe_connect_account_id &&
+          cleanup.deleted.includes(workingStore.stripe_connect_account_id)
+        ) {
+          await service
+            .from("stores")
+            .update({ stripe_connect_account_id: null, updated_at: new Date().toISOString() })
+            .eq("id", workingStore.id);
+          workingStore = { ...workingStore, stripe_connect_account_id: null };
+        }
+      }
       const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
+      if (ctx.environment === "live") {
+        const cleanup = await deleteDuplicateStripeAccountsForStore(ctx.stripe, workingStore, intake, {
+          preserveAccountId: ensured.accountId,
+        });
+        if (cleanup.deleted.length || cleanup.failed.length) {
+          console.info("[connect] duplicate cleanup after final account", cleanup);
+        }
+      }
       const status = await syncConnectAccountById(ctx.stripe, service, ensured.accountId);
 
       let message: string;

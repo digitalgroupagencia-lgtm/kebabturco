@@ -5,8 +5,6 @@ export interface PremiumTableColumn<T> {
   header: string;
   align?: "left" | "right" | "center";
   width?: string;
-  /** Marca explicitamente a coluna como numérica/estado — força alinhamento à direita e tabular-nums. */
-  numeric?: boolean;
   render: (row: T, index: number) => ReactNode;
 }
 
@@ -35,18 +33,15 @@ export default function PremiumTable<T>({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-muted/40 border-b border-border">
-          {columns.map((c) => {
-            const align = c.numeric ? "right" : (c.align ?? "left");
-            return (
+            {columns.map((c) => (
               <th
                 key={c.key}
                 style={{ width: c.width }}
-                className={`px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-${align}`}
+                className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground text-${c.align ?? "left"}`}
               >
                 {c.header}
               </th>
-            );
-          })}
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -55,17 +50,14 @@ export default function PremiumTable<T>({
               key={rowKey ? rowKey(row, i) : i}
               className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
             >
-              {columns.map((c) => {
-                const align = c.numeric ? "right" : (c.align ?? "left");
-                return (
-                  <td
-                    key={c.key}
-                    className={`px-4 py-2.5 text-${align} text-foreground tabular-nums [&_.badge]:scale-100`}
-                  >
-                    {c.render(row, i)}
-                  </td>
-                );
-              })}
+              {columns.map((c) => (
+                <td
+                  key={c.key}
+                  className={`px-4 py-3 text-${c.align ?? "left"} text-foreground tabular-nums`}
+                >
+                  {c.render(row, i)}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>

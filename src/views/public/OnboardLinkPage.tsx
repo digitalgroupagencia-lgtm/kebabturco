@@ -11,7 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getStripePublishableKeyForEnvironment } from "@/lib/stripePublishableKey";
 import {
   fetchPublicOnboardingLinkInfo,
-  markPublicOnboardingVerified,
   submitPublicOnboardingIntake,
 } from "@/services/orderService";
 
@@ -244,10 +243,7 @@ export default function OnboardLinkPage() {
                 fields: "eventually_due",
                 futureRequirements: "include",
               }}
-              onExit={() => {
-                void markPublicOnboardingVerified(token);
-                setStep("done");
-              }}
+              onExit={() => setStep("done")}
             />
           </ConnectComponentsProvider>
         </div>

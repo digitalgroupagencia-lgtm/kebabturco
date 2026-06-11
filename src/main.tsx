@@ -49,7 +49,9 @@ if (!rootEl) {
   try {
     createRoot(rootEl).render(<App />);
     window.__SNAPORDER_APP_READY__ = true;
-    dismissBootShell();
+    if (isStaffAppPath()) {
+      dismissBootShell();
+    }
   } catch (error) {
     console.error("[boot]", error);
     showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");

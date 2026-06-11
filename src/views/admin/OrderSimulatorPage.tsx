@@ -3,8 +3,6 @@ import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import ActionBar from "@/components/ui/action-bar";
-import EqualCardGrid from "@/components/ui/equal-card-grid";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Coffee, ShoppingBag, Truck, Bell, Play, Trash2, Printer, RefreshCw, Activity, CheckCircle2, Circle, ListChecks, AlertTriangle } from "lucide-react";
@@ -14,14 +12,11 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { playTestAlert } from "@/lib/panelAlerts";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
-import { useDemoMode, setDemoMode } from "@/lib/demoMode";
-import { Database } from "lucide-react";
 
 type Store = { id: string; name: string };
 type Table = { id: string; number: string };
 
 export default function OrderSimulatorPage() {
-  const demoOn = useDemoMode();
   const { user } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const isAdmin = roleData?.role === "admin_master";
@@ -287,46 +282,6 @@ export default function OrderSimulatorPage() {
         </CardContent>
       </Card>
 
-      <Card className={demoOn ? "border-amber-500/40" : undefined}>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Database className="h-4 w-4" /> Dados de demonstração
-          </CardTitle>
-          <CardDescription>
-            Liga um conjunto de dados de exemplo (KPIs, gráficos de rosca, funil, top restaurantes, séries de
-            faturação) no dashboard do admin. <strong>Não toca em pedidos reais nem em faturação</strong> — é apenas
-            visual e totalmente reversível. Útil para avaliar o layout antes de ter volume real.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ActionBar>
-            {demoOn ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDemoMode(false);
-                  toast.success("Dados de demonstração removidos");
-                }}
-              >
-                Limpar dados de teste
-              </Button>
-            ) : (
-              <Button
-                onClick={() => {
-                  setDemoMode(true);
-                  toast.success("Dados de demonstração activos no dashboard");
-                }}
-              >
-                Popular dados de teste
-              </Button>
-            )}
-            {demoOn && (
-              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">⚠️ Modo demo activo</span>
-            )}
-          </ActionBar>
-        </CardContent>
-      </Card>
-
       <Card className="border-primary/40">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><ListChecks className="h-4 w-4" /> Teste Guiado — Validação Completa</CardTitle>
@@ -336,11 +291,9 @@ export default function OrderSimulatorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ActionBar>
-            <Button onClick={runGuidedTest} disabled={wizardBusy || !!busy}>
-              {wizardBusy ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> A executar teste guiado…</> : "▶ Iniciar Teste Guiado"}
-            </Button>
-          </ActionBar>
+          <Button onClick={runGuidedTest} disabled={wizardBusy || !!busy} className="w-full">
+            {wizardBusy ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> A executar teste guiado…</> : "▶ Iniciar Teste Guiado"}
+          </Button>
           <div className="space-y-2">
             {steps.map((s) => (
               <div key={s.id} className="flex items-start gap-2 text-sm bg-muted/40 rounded-md p-2">
@@ -360,25 +313,23 @@ export default function OrderSimulatorPage() {
         </CardContent>
       </Card>
 
-      <EqualCardGrid cols={2} gap={4}>
+      <div className="grid md:grid-cols-2 gap-4">
 
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2"><Coffee className="h-4 w-4" /> Pedido Teste — Mesa</CardTitle>
             <CardDescription>Dispara fluxo completo de pedido em mesa (operador, cozinha, impressora).</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 mt-auto">
+          <CardContent className="space-y-3">
             <Select value={tableId} onValueChange={setTableId} disabled={tables.length === 0}>
               <SelectTrigger><SelectValue placeholder={tables.length ? "Selecionar mesa" : "Sem mesas activas"} /></SelectTrigger>
               <SelectContent>
                 {tables.map((t) => <SelectItem key={t.id} value={t.id}>Mesa {t.number}</SelectItem>)}
               </SelectContent>
             </Select>
-            <ActionBar>
-              <Button onClick={handleDineIn} disabled={!!busy || !tableId}>
-                {busy === "dine_in" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar Pedido Teste - Mesa"}
-              </Button>
-            </ActionBar>
+            <Button onClick={handleDineIn} disabled={!!busy || !tableId} className="w-full">
+              {busy === "dine_in" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar Pedido Teste - Mesa"}
+            </Button>
           </CardContent>
         </Card>
 
@@ -387,12 +338,10 @@ export default function OrderSimulatorPage() {
             <CardTitle className="text-base flex items-center gap-2"><ShoppingBag className="h-4 w-4" /> Pedido Teste — Balcão</CardTitle>
             <CardDescription>Cria pedido de balcão (takeaway) e dispara impressão + notificações.</CardDescription>
           </CardHeader>
-          <CardContent className="mt-auto">
-            <ActionBar>
-              <Button onClick={handleTakeaway} disabled={!!busy}>
-                {busy === "takeaway" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar Pedido Teste - Balcão"}
-              </Button>
-            </ActionBar>
+          <CardContent>
+            <Button onClick={handleTakeaway} disabled={!!busy} className="w-full">
+              {busy === "takeaway" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar Pedido Teste - Balcão"}
+            </Button>
           </CardContent>
         </Card>
 
@@ -401,12 +350,10 @@ export default function OrderSimulatorPage() {
             <CardTitle className="text-base flex items-center gap-2"><Truck className="h-4 w-4" /> Pedido Teste — Delivery</CardTitle>
             <CardDescription>Pedido de entrega com endereço fake. Valida fluxo do entregador.</CardDescription>
           </CardHeader>
-          <CardContent className="mt-auto">
-            <ActionBar>
-              <Button onClick={handleDelivery} disabled={!!busy}>
-                {busy === "delivery" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar Pedido Teste - Delivery"}
-              </Button>
-            </ActionBar>
+          <CardContent>
+            <Button onClick={handleDelivery} disabled={!!busy} className="w-full">
+              {busy === "delivery" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar Pedido Teste - Delivery"}
+            </Button>
           </CardContent>
         </Card>
 
@@ -415,15 +362,13 @@ export default function OrderSimulatorPage() {
             <CardTitle className="text-base flex items-center gap-2"><Bell className="h-4 w-4" /> Testar Notificações</CardTitle>
             <CardDescription>Dispara som, vibração e push sem criar pedido.</CardDescription>
           </CardHeader>
-          <CardContent className="mt-auto">
-            <ActionBar>
-              <Button onClick={handleTestNotifications} disabled={!!busy} variant="secondary">
-                {busy === "notif" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Testar Notificações"}
-              </Button>
-            </ActionBar>
+          <CardContent>
+            <Button onClick={handleTestNotifications} disabled={!!busy} variant="secondary" className="w-full">
+              {busy === "notif" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Testar Notificações"}
+            </Button>
           </CardContent>
         </Card>
-      </EqualCardGrid>
+      </div>
 
       <Card>
         <CardHeader>
@@ -431,11 +376,9 @@ export default function OrderSimulatorPage() {
           <CardDescription>Cria pedido delivery e avança por todos os status (pending → preparing → ready → out_for_delivery → delivered) a cada 4s.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ActionBar>
-            <Button onClick={handleFullSimulation} disabled={!!busy}>
-              {busy === "full" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Executar Simulação Completa"}
-            </Button>
-          </ActionBar>
+          <Button onClick={handleFullSimulation} disabled={!!busy} className="w-full">
+            {busy === "full" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Executar Simulação Completa"}
+          </Button>
           {simLog.length > 0 && (
             <div className="bg-muted rounded-md p-3 text-xs font-mono space-y-1 max-h-60 overflow-auto">
               {simLog.map((l, i) => <div key={i}>{l}</div>)}

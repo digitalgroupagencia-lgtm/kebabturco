@@ -21,6 +21,7 @@ import { parseProductCode } from "@/lib/parseProductCode";
 import type { CartItem } from "@/customer/contexts/CartContext";
 import { comboUnitStepTitle } from "@/lib/modifiers/comboProductRules";
 import { shouldUseCustomizationStepWizard } from "@/lib/modifiers/customizationWizard";
+import { computeSoloCarneSurcharge } from "@/lib/modifiers/soloCarneRule";
 
 type Props = {
   product: MenuProduct;
@@ -143,6 +144,8 @@ export default function ProductCustomizationFlow({
   const [comboStep, setComboStep] = useState(initialDraft?.comboStep ?? 0);
   const [note, setNote] = useState(initialDraft?.note ?? "");
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const [unitRound, setUnitRound] = useState(0);
+  const [lockedTotalRounds, setLockedTotalRounds] = useState<number | null>(null);
 
   const upsellSuggestions = useMemo(
     () =>
@@ -277,7 +280,14 @@ export default function ProductCustomizationFlow({
 
   const configuration = buildConfiguration();
   const allSelections = flattenConfiguration(configuration);
-  const unitPrice = computeUnitPrice(basePrice, 0, allSelections);
+  const soloCarne = computeSoloCarneSurcharge(
+    product.name,
+    product.description,
+    configuration,
+    globalGroups,
+    unitGroups,
+  );
+  const unitPrice = computeUnitPrice(basePrice, 0, allSelections) + soloCarne.surcharge;
 
   const validateCurrentStep = (): boolean => {
     if (
@@ -335,6 +345,16 @@ export default function ProductCustomizationFlow({
 
   const finishFlow = onFinishAfterAdd ?? onBack;
 
+  // Quando o usuário escolhe quantidade > 1 num produto personalizável,
+  // repetimos todo o passo a passo (ingredientes, extras, etc) uma vez
+  // por unidade — cada unidade vira um item separado no carrinho.
+  const perUnitWizardEligible = useStepWizard && !editingItem;
+  const totalRounds = perUnitWizardEligible ? (lockedTotalRounds ?? quantity) : 1;
+  const isLastRound = unitRound >= totalRounds - 1;
+  const firstConfigStepIndex = useStepWizard
+    ? Math.max(1, wizardSteps.findIndex((s) => s.kind !== "intro"))
+    : 0;
+
   const handleAdd = () => {
     if (useStepWizard && !isLastStep) {
       handleNext();
@@ -345,7 +365,20 @@ export default function ProductCustomizationFlow({
     try {
       const cfg = buildConfiguration();
       const flat = flattenConfiguration(cfg);
-      const { extras, removedIngredients } = selectionsToLegacyFields(flat);
+      const { extras: baseExtras, removedIngredients } = selectionsToLegacyFields(flat);
+      // Mostra o adicional "Solo carne (+1€)" na lista de extras para ficar
+      // visível no carrinho e no ticket (o preço já está embutido em unitPrice).
+      const extras = soloCarne.units > 0
+        ? [
+            ...baseExtras,
+            {
+              id: "solo-carne-surcharge",
+              name: { es: "Solo carne (+1€)", pt: "Só carne (+1€)", en: "Only meat (+1€)", fr: "Seulement viande (+1€)" },
+              price: 0,
+              quantity: soloCarne.units,
+            },
+          ]
+        : baseExtras;
       const orderQty = quantity;
 
       const payload = {
@@ -383,7 +416,24 @@ export default function ProductCustomizationFlow({
         return;
       }
 
-      addItem(payload);
+      // Modo "uma rodada por unidade": adiciona só esta unidade e reinicia o wizard.
+      if (perUnitWizardEligible && !isLastRound) {
+        if (lockedTotalRounds == null) setLockedTotalRounds(orderQty);
+        addItem({ ...payload, quantity: 1, totalPrice: unitPrice });
+        // Reset das seleções para a próxima unidade.
+        setGlobalState(buildDefaultSelectionState(globalGroups));
+        setUnitStates(buildDefaultUnitStates(unitGroups, effectiveConfig.comboUnitCount || 0));
+        setNote("");
+        setUnitRound((r) => r + 1);
+        setComboStep(firstConfigStepIndex);
+        clearDraft();
+        return;
+      }
+
+      // Última (ou única) rodada: se estamos no modo por-unidade,
+      // adicionamos apenas 1 (as outras já foram adicionadas nas rodadas anteriores).
+      const finalQty = perUnitWizardEligible ? 1 : orderQty;
+      addItem({ ...payload, quantity: finalQty, totalPrice: unitPrice * finalQty });
       clearDraft();
 
       if (upsellSuggestions.length > 0) {
@@ -436,6 +486,11 @@ export default function ProductCustomizationFlow({
 
       {useStepWizard && (
         <div className="shrink-0 px-4 pt-2 pb-1">
+          {totalRounds > 1 && (
+            <div className="mb-2 rounded-full bg-primary/10 px-3 py-1.5 text-center text-[12px] font-black uppercase tracking-wider text-primary">
+              {t("unitLabel") || "Unidad"} {unitRound + 1} / {totalRounds}
+            </div>
+          )}
           <div className="flex gap-1">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div

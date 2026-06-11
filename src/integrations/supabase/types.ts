@@ -2956,142 +2956,6 @@ export type Database = {
           },
         ]
       }
-      tenant_app_builds: {
-        Row: {
-          artifact_url: string | null
-          build_number: string | null
-          created_at: string
-          created_by: string | null
-          finished_at: string | null
-          id: string
-          notes: string | null
-          platform: Database["public"]["Enums"]["app_build_platform"]
-          started_at: string | null
-          status: Database["public"]["Enums"]["app_build_status"]
-          tenant_id: string
-          updated_at: string
-          version: string | null
-        }
-        Insert: {
-          artifact_url?: string | null
-          build_number?: string | null
-          created_at?: string
-          created_by?: string | null
-          finished_at?: string | null
-          id?: string
-          notes?: string | null
-          platform: Database["public"]["Enums"]["app_build_platform"]
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["app_build_status"]
-          tenant_id: string
-          updated_at?: string
-          version?: string | null
-        }
-        Update: {
-          artifact_url?: string | null
-          build_number?: string | null
-          created_at?: string
-          created_by?: string | null
-          finished_at?: string | null
-          id?: string
-          notes?: string | null
-          platform?: Database["public"]["Enums"]["app_build_platform"]
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["app_build_status"]
-          tenant_id?: string
-          updated_at?: string
-          version?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_app_builds_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tenant_app_distribution: {
-        Row: {
-          android_app_status: Database["public"]["Enums"]["app_store_status"]
-          android_package_id: string | null
-          android_play_console_url: string | null
-          android_published_at: string | null
-          android_version: string | null
-          created_at: string
-          distribution_type: Database["public"]["Enums"]["app_distribution_type"]
-          id: string
-          ios_app_status: Database["public"]["Enums"]["app_store_status"]
-          ios_appstore_connect_url: string | null
-          ios_bundle_id: string | null
-          ios_published_at: string | null
-          ios_version: string | null
-          native_app_icon_url: string | null
-          native_app_screenshots: Json
-          native_app_splash_url: string | null
-          native_app_start_url: string | null
-          notes: string | null
-          pwa_status: Database["public"]["Enums"]["pwa_status"]
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          android_app_status?: Database["public"]["Enums"]["app_store_status"]
-          android_package_id?: string | null
-          android_play_console_url?: string | null
-          android_published_at?: string | null
-          android_version?: string | null
-          created_at?: string
-          distribution_type?: Database["public"]["Enums"]["app_distribution_type"]
-          id?: string
-          ios_app_status?: Database["public"]["Enums"]["app_store_status"]
-          ios_appstore_connect_url?: string | null
-          ios_bundle_id?: string | null
-          ios_published_at?: string | null
-          ios_version?: string | null
-          native_app_icon_url?: string | null
-          native_app_screenshots?: Json
-          native_app_splash_url?: string | null
-          native_app_start_url?: string | null
-          notes?: string | null
-          pwa_status?: Database["public"]["Enums"]["pwa_status"]
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          android_app_status?: Database["public"]["Enums"]["app_store_status"]
-          android_package_id?: string | null
-          android_play_console_url?: string | null
-          android_published_at?: string | null
-          android_version?: string | null
-          created_at?: string
-          distribution_type?: Database["public"]["Enums"]["app_distribution_type"]
-          id?: string
-          ios_app_status?: Database["public"]["Enums"]["app_store_status"]
-          ios_appstore_connect_url?: string | null
-          ios_bundle_id?: string | null
-          ios_published_at?: string | null
-          ios_version?: string | null
-          native_app_icon_url?: string | null
-          native_app_screenshots?: Json
-          native_app_splash_url?: string | null
-          native_app_start_url?: string | null
-          notes?: string | null
-          pwa_status?: Database["public"]["Enums"]["pwa_status"]
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_app_distribution_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: true
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tenant_feature_overrides: {
         Row: {
           enabled: boolean
@@ -3566,19 +3430,6 @@ export type Database = {
       }
       admin_clear_print_jobs: {
         Args: { _statuses?: string[]; _store_id?: string }
-        Returns: Json
-      }
-      admin_create_tenant_basic: {
-        Args: {
-          _city?: string
-          _country?: string
-          _create_default_store?: boolean
-          _custom_domain?: string
-          _name: string
-          _plan?: string
-          _primary_language?: string
-          _slug: string
-        }
         Returns: Json
       }
       admin_print_jobs_diagnostic: {
@@ -4123,14 +3974,6 @@ export type Database = {
       }
     }
     Enums: {
-      app_build_platform: "android" | "ios"
-      app_build_status:
-        | "planned"
-        | "in_progress"
-        | "success"
-        | "failed"
-        | "cancelled"
-      app_distribution_type: "pwa" | "native_app"
       app_role:
         | "admin_master"
         | "restaurant_admin"
@@ -4141,13 +3984,6 @@ export type Database = {
         | "cashier"
         | "attendant"
         | "delivery"
-      app_store_status:
-        | "not_started"
-        | "draft"
-        | "in_review"
-        | "published"
-        | "rejected"
-        | "disabled"
       order_source: "totem" | "ifood" | "counter" | "delivery" | "waiter"
       order_status:
         | "pending"
@@ -4159,7 +3995,6 @@ export type Database = {
       payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       print_job_status: "pending" | "printing" | "printed" | "failed"
-      pwa_status: "draft" | "active" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4287,15 +4122,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_build_platform: ["android", "ios"],
-      app_build_status: [
-        "planned",
-        "in_progress",
-        "success",
-        "failed",
-        "cancelled",
-      ],
-      app_distribution_type: ["pwa", "native_app"],
       app_role: [
         "admin_master",
         "restaurant_admin",
@@ -4306,14 +4132,6 @@ export const Constants = {
         "cashier",
         "attendant",
         "delivery",
-      ],
-      app_store_status: [
-        "not_started",
-        "draft",
-        "in_review",
-        "published",
-        "rejected",
-        "disabled",
       ],
       order_source: ["totem", "ifood", "counter", "delivery", "waiter"],
       order_status: [
@@ -4327,7 +4145,6 @@ export const Constants = {
       payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       print_job_status: ["pending", "printing", "printed", "failed"],
-      pwa_status: ["draft", "active", "disabled"],
     },
   },
 } as const

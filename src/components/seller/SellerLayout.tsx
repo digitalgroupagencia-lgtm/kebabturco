@@ -6,14 +6,12 @@ import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { nav } from "@/lib/navPaths.ts";
-import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
 const SellerLayout = ({ page: Page }: Props) => {
-  useForceDarkTheme();
   const { user, loading, signOut } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const { enabled: sellerEnabled, isLoading: flagLoading } = useSellerModuleEnabled(roleData?.tenant_id);

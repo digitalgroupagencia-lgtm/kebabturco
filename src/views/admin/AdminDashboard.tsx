@@ -34,18 +34,6 @@ import RankingCard, { type RankingItem } from "@/components/admin/premium/Rankin
 import AlertCard, { type AlertItem } from "@/components/admin/premium/AlertCard";
 import ActivityFeed, { type ActivityItem } from "@/components/admin/premium/ActivityFeed";
 import StatusPill from "@/components/admin/premium/StatusPill";
-import DonutChartCard from "@/components/admin/charts/DonutChartCard";
-import FunnelChartCard from "@/components/admin/charts/FunnelChartCard";
-import { useDemoMode } from "@/lib/demoMode";
-import {
-  DEMO_STATS,
-  DEMO_REVENUE_SERIES,
-  DEMO_TOP_TENANTS,
-  DEMO_PAYMENT_METHODS,
-  DEMO_SALES_CHANNELS,
-  DEMO_FUNNEL,
-  DEMO_RECENT_ACTIVITY,
-} from "@/lib/demoData";
 import { PLAN_LABELS, type PlanKey } from "@/lib/platformFeatures";
 import { ADMIN_CENTRALS, centralAdminPath } from "@/lib/adminCentralsNav";
 import { nav } from "@/lib/navPaths.ts";
@@ -69,8 +57,6 @@ function relativeTime(iso: string): string {
 }
 
 const AdminDashboard = () => {
-  const demo = useDemoMode();
-
   const { data: stats, isLoading: l1 } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
@@ -141,13 +127,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Substitui dados reais por demo quando o modo demonstração está ligado.
-  const liveStats = demo ? DEMO_STATS : stats;
-  const liveRevenue = demo ? DEMO_REVENUE_SERIES : revenueSeries;
-  const liveTopTenants = demo ? DEMO_TOP_TENANTS : topTenants;
-
   const alertCount =
-    Number(liveStats?.overdue_count || 0) + Number(liveStats?.pending_count || 0);
+    Number(stats?.overdue_count || 0) + Number(stats?.pending_count || 0);
 
   const activityItems: ActivityItem[] = [];
 
@@ -187,9 +168,7 @@ const AdminDashboard = () => {
     });
   });
 
-  const sortedActivity = demo
-    ? DEMO_RECENT_ACTIVITY.map((a) => ({ ...a, icon: ShoppingBag })) as ActivityItem[]
-    : activityItems.slice(0, 10);
+  const sortedActivity = activityItems.slice(0, 10);
 
   return (
     <PlatformPageShell width="full">
@@ -209,31 +188,29 @@ const AdminDashboard = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <StatusPill label={APP_NAME} tone="neutral" />
-            <StatusPill label="Master · SaaS" tone="active" dot />
+            <StatusPill label="Command Center" tone="active" dot />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {SINGLE_TENANT_MODE ? "Visão geral" : "Dashboard Master"}
+            {SINGLE_TENANT_MODE ? "Visão geral" : "Visão global"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {SINGLE_TENANT_MODE
               ? "Painel de administração do restaurante"
-              : "Visão geral de todos os restaurantes da plataforma PropioApp"}
+              : "Todos os restaurantes · sem cliente seleccionado"}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
           {!SINGLE_TENANT_MODE && (
-            <>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={nav.admin("how-it-works")}>Como funciona</Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={nav.admin("tenants")}>Restaurantes</Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link to={nav.admin("tenants", "new")}>+ Criar restaurante</Link>
-              </Button>
-            </>
+            <Button variant="outline" size="sm" asChild>
+              <Link to={nav.admin("tenants")}>Ver clientes</Link>
+            </Button>
           )}
+          <Button variant="outline" size="sm" asChild>
+            <Link to={nav.admin("branding")}>Identidade visual</Link>
+          </Button>
+          <Button size="sm" asChild>
+            <Link to={centralAdminPath()}>Centrais</Link>
+          </Button>
         </div>
       </div>
 
@@ -243,22 +220,22 @@ const AdminDashboard = () => {
           icon={Building2}
           tone="primary"
           label={SINGLE_TENANT_MODE ? "Estado da loja" : "Restaurantes activos"}
-          value={SINGLE_TENANT_MODE ? (liveStats?.active_tenants ? "Activa" : "—") : (liveStats?.active_tenants ?? 0)}
-          sub={SINGLE_TENANT_MODE ? APP_NAME : `${liveStats?.total_tenants ?? 0} no total`}
+          value={SINGLE_TENANT_MODE ? (stats?.active_tenants ? "Activa" : "—") : (stats?.active_tenants ?? 0)}
+          sub={SINGLE_TENANT_MODE ? APP_NAME : `${stats?.total_tenants ?? 0} no total`}
         />
         <PremiumMetricCard
           icon={DollarSign}
           tone="success"
           label="Faturamento do mês"
-          value={fmtMoney(Number(liveStats?.revenue_month || 0))}
-          sub={`MRR ${fmtMoney(Number(liveStats?.mrr || 0))}`}
+          value={fmtMoney(Number(stats?.revenue_month || 0))}
+          sub={`MRR ${fmtMoney(Number(stats?.mrr || 0))}`}
         />
         <PremiumMetricCard
           icon={ShoppingBag}
           tone="info"
           label="Pedidos hoje"
-          value={liveStats?.orders_today ?? 0}
-          sub={fmtMoney(Number(liveStats?.revenue_today || 0))}
+          value={stats?.orders_today ?? 0}
+          sub={fmtMoney(Number(stats?.revenue_today || 0))}
         />
         <PremiumMetricCard
           icon={AlertCircle}
@@ -267,15 +244,15 @@ const AdminDashboard = () => {
           value={alertCount}
           delta={alertCount > 0 ? "Requer atenção" : "Tudo em dia"}
           deltaDirection={alertCount > 0 ? "down" : "up"}
-          sub={`${liveStats?.overdue_count ?? 0} atrasados · ${liveStats?.pending_count ?? 0} pendentes`}
+          sub={`${stats?.overdue_count ?? 0} atrasados · ${stats?.pending_count ?? 0} pendentes`}
         />
       </div>
 
       {/* Sub-strip: indicadores rápidos */}
       <div className="grid grid-cols-3 gap-4">
-        <PremiumMetricCard icon={CheckCircle2} tone="success" label="Pagos" value={liveStats?.paid_count ?? 0} />
-        <PremiumMetricCard icon={Clock} tone="warning" label="Pendentes" value={liveStats?.pending_count ?? 0} />
-        <PremiumMetricCard icon={TrendingUp} tone="primary" label="Receita hoje" value={fmtMoney(Number(liveStats?.revenue_today || 0))} />
+        <PremiumMetricCard icon={CheckCircle2} tone="success" label="Pagos" value={stats?.paid_count ?? 0} />
+        <PremiumMetricCard icon={Clock} tone="warning" label="Pendentes" value={stats?.pending_count ?? 0} />
+        <PremiumMetricCard icon={TrendingUp} tone="primary" label="Receita hoje" value={fmtMoney(Number(stats?.revenue_today || 0))} />
       </div>
 
       {/* Main grid: chart + ranking + alerts */}
@@ -283,12 +260,12 @@ const AdminDashboard = () => {
         <PremiumChartCard
           title="Faturamento da rede"
           subtitle="Últimos 12 meses"
-          action={<StatusPill label={demo ? "Dados demo" : "Dados reais"} tone={demo ? "standby" : "active"} dot />}
+          action={<StatusPill label="Dados reais" tone="active" dot />}
           className="xl:col-span-7"
         >
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={liveRevenue || []} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <AreaChart data={revenueSeries || []} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="adminRevFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.32} />
@@ -335,7 +312,7 @@ const AdminDashboard = () => {
           className="xl:col-span-3"
           title="Top restaurantes"
           subtitle="Por faturamento no mês"
-          items={(liveTopTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
+          items={(topTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
             id: String(t.tenant_id),
             name: String(t.tenant_name ?? "—"),
             primary: fmtMoney(Number(t.total_revenue || 0)),
@@ -357,18 +334,18 @@ const AdminDashboard = () => {
           title="Alertas inteligentes"
           items={((): AlertItem[] => {
             const out: AlertItem[] = [];
-            if (Number(liveStats?.overdue_count || 0) > 0) {
+            if (Number(stats?.overdue_count || 0) > 0) {
               out.push({
                 id: "overdue",
-                title: `${liveStats?.overdue_count} pagamentos atrasados`,
+                title: `${stats?.overdue_count} pagamentos atrasados`,
                 description: "Verifique cobranças e renovação",
                 severity: "critical",
               });
             }
-            if (Number(liveStats?.pending_count || 0) > 0) {
+            if (Number(stats?.pending_count || 0) > 0) {
               out.push({
                 id: "pending",
-                title: `${liveStats?.pending_count} cobranças pendentes`,
+                title: `${stats?.pending_count} cobranças pendentes`,
                 description: "Faturas aguardando confirmação",
                 severity: "warning",
               });
@@ -383,27 +360,6 @@ const AdminDashboard = () => {
             }
             return out;
           })()}
-        />
-      </div>
-
-      {/* Distribuições + funil de implantação */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <DonutChartCard
-          title="Métodos de pagamento"
-          subtitle="Distribuição do mês"
-          data={demo ? DEMO_PAYMENT_METHODS : []}
-          formatAmount={(n) => fmtMoney(n)}
-        />
-        <DonutChartCard
-          title="Vendas por canal"
-          subtitle="Salão, Delivery, QR, Take Away, App"
-          data={demo ? DEMO_SALES_CHANNELS : []}
-          formatAmount={(n) => fmtMoney(n)}
-        />
-        <FunnelChartCard
-          title="Funil de implantação"
-          subtitle="Leads → Activos"
-          data={demo ? DEMO_FUNNEL : []}
         />
       </div>
 

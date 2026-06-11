@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
-import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
 
 type KdsOrder = {
   id: string;
@@ -65,7 +64,6 @@ function playBeep() {
 }
 
 const KdsPage = () => {
-  useForceDarkTheme();
   const { user, loading: authLoading } = useAuth();
   const { storeId } = useAdminStoreId();
   const { t } = useStaffT();

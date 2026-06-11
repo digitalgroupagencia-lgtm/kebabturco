@@ -16,6 +16,7 @@ function isLandscapeLockedPath(p: string): boolean {
   if (p.startsWith("/admin")) return true;
   if (p.startsWith("/panel")) return true;
   if (p.startsWith("/kds")) return true;
+  if (p.startsWith("/staff")) return true;
   return false;
 }
 

@@ -17,15 +17,12 @@ import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
-import { useForceDarkTheme } from "@/hooks/useForceDarkTheme";
-import StaffStatusRow, { StaffStatusProvider } from "@/components/staff/StaffStatusRow";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
 const PanelLayout = ({ page: Page }: Props) => {
-  useForceDarkTheme();
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { primaryLang } = useStoreLanguages(roleData?.store_id);
@@ -69,27 +66,8 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <PanelUpdateButton />
                 <AdminThemeToggle />
               </header>
-              <main className="flex-1 bg-secondary/50 overflow-x-hidden overflow-y-auto">
-                <StaffStatusProvider>
-                  <div data-staff-shell className="w-full max-w-screen-2xl px-4 sm:px-6 pt-4 pb-10 space-y-4">
-                    <StaffStatusRow />
-                    {roleData?.role === "admin_master" && (
-                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-amber-700 dark:text-amber-300">Modo suporte</span>
-                        <span className="text-muted-foreground">
-                          Está a ver o painel como admin master da plataforma.
-                        </span>
-                        <a
-                          href={nav.admin()}
-                          className="ml-auto text-primary font-semibold hover:underline"
-                        >
-                          ← Voltar ao Admin Master
-                        </a>
-                      </div>
-                    )}
-                    <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
-                  </div>
-                </StaffStatusProvider>
+              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
               </main>
             </div>
             {(roleData?.role === "admin_master" ||
