@@ -156,17 +156,34 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
   if (collapsed && saved) {
     return (
       <Card className="border-green-500/40 bg-green-500/5">
-        <CardContent className="py-4 space-y-2">
+        <CardContent className="py-4 space-y-3">
           <p className="text-sm font-bold text-green-800 dark:text-green-300">
             Dados do restaurante guardados
           </p>
           <p className="text-xs text-muted-foreground">
-            {saved.business_name} · {saved.owner_email ?? "sem e-mail"} · IBAN ····{" "}
-            {saved.iban.slice(-4)}
+            {saved.business_name ?? "sem nome"} · {saved.owner_email ?? "sem e-mail"} ·{" "}
+            {saved.iban && saved.iban.length >= 4
+              ? `IBAN ···· ${saved.iban.slice(-4)}`
+              : "IBAN não preenchido"}
           </p>
-          <Button type="button" variant="outline" size="sm" onClick={() => setCollapsed(false)}>
-            Editar dados
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              className="font-bold"
+              onClick={() => void save()}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Recriar conta Stripe agora (apaga antigas)
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setCollapsed(false)}>
+              Editar dados
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            O sistema apaga automaticamente contas Express/duplicadas e cria uma única conta Custom
+            com os dados acima.
+          </p>
         </CardContent>
       </Card>
     );

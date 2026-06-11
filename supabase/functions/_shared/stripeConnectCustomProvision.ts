@@ -112,6 +112,7 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
       /^\d{4}-\d{2}-\d{2}$/.test(intake.owner_dob.trim()) &&
       intake?.business_mcc?.trim() &&
       intake?.business_type &&
+      intake?.representative_id?.trim() &&
       normalizeIban(intake.iban).length >= 15 &&
       intake?.accept_terms === true,
   );
@@ -119,7 +120,7 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
 
 /** Conta Stripe incompleta — precisa recriar ou reparar (ex.: Gandia restrita sem IBAN/e-mail). */
 export function isStripeAccountCriticallyIncomplete(acct: Stripe.Account): boolean {
-  if (acct.type !== "custom") return true;
+  if (acct.type === "express" || acct.type === "standard") return true;
   if (!acct.email) return true;
   if (!acct.business_type) return true;
   if (!acct.business_profile?.url) return true;
@@ -180,7 +181,7 @@ async function ensureCompanyRepresentative(
   const dob = parseOwnerDob(intake.owner_dob);
   const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
   const existing = persons.data.find((p) => p.relationship?.representative);
-  const repId = intake.representative_id?.trim();
+  const repId = intake.representative_id?.trim().toUpperCase().replace(/\s/g, "");
   const personPayload = {
     first_name,
     last_name,
@@ -192,9 +193,10 @@ async function ensureCompanyRepresentative(
     ...(repId ? { id_number: repId } : {}),
     relationship: {
       representative: true,
+      director: true,
       executive: true,
       owner: true,
-      title: "Representante legal",
+      title: "Director",
       percent_ownership: 100,
     },
   };
@@ -218,6 +220,23 @@ export function accountNeedsEmbeddedCompletionStep(acct: Stripe.Account): boolea
 export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean {
   return accountNeedsEmbeddedCompletionStep(acct);
 }
+
+/** Para SL espanhola: marca diretores/executivos/proprietários como fornecidos. */
+async function markCompanyRolesProvided(stripe: Stripe, accountId: string): Promise<void> {
+  try {
+    await stripe.accounts.update(accountId, {
+      company: {
+        directors_provided: true,
+        executives_provided: true,
+        owners_provided: true,
+      },
+    });
+  } catch (err) {
+    console.warn("[connect] markCompanyRolesProvided failed", err);
+  }
+}
+
+
 
 function buildAccountCoreFields(
   intake: CustomIntakeRow,
@@ -309,6 +328,7 @@ export async function syncLiveCustomAccountFromIntake(
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
+      bizum_payments: { requested: true },
     },
   });
 
@@ -318,6 +338,7 @@ export async function syncLiveCustomAccountFromIntake(
 
   if (isCompany) {
     await ensureCompanyRepresentative(stripe, accountId, intake, address);
+    await markCompanyRolesProvided(stripe, accountId);
   }
 
   await attachIbanToAccount(stripe, accountId, intake, isCompany);
@@ -335,12 +356,12 @@ export async function createLiveCustomAccountFromIntake(
   const { isCompany, address, params } = buildAccountCoreFields(intake, requestIp);
 
   const account = await stripe.accounts.create({
-    type: "custom",
     country: "ES",
     controller: customConnectController(),
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
+      bizum_payments: { requested: true },
     },
     metadata: {
       store_id: store.id,
@@ -358,6 +379,7 @@ export async function createLiveCustomAccountFromIntake(
 
   if (isCompany) {
     await ensureCompanyRepresentative(stripe, account.id, intake, address);
+    await markCompanyRolesProvided(stripe, account.id);
   }
 
   await attachIbanToAccount(stripe, account.id, intake, isCompany);
