@@ -900,21 +900,7 @@ export async function handleStripeConnectRequest(
 
     const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
     const intake = await loadStorePayoutIntake(service, store.id);
-    const duplicateAccounts = await listDuplicateStripeAccountsForStore(liveStripe, store, intake);
-    const deleted: string[] = [];
-    const failed: { accountId: string; error: string }[] = [];
-
-    for (const account of duplicateAccounts) {
-      try {
-        await liveStripe.accounts.del(account.id);
-        deleted.push(account.id);
-      } catch (e) {
-        failed.push({
-          accountId: account.id,
-          error: e instanceof Error ? e.message : String(e),
-        });
-      }
-    }
+    const { deleted, failed } = await deleteDuplicateStripeAccountsForStore(liveStripe, store, intake);
 
     const { error: updErr } = await service
       .from("stores")
@@ -1076,7 +1062,21 @@ export async function handleStripeConnectRequest(
       }
 
       const ctx = await loadConnectContext(workingStore);
+      if (ctx.environment === "live") {
+        const cleanup = await deleteDuplicateStripeAccountsForStore(ctx.stripe, workingStore, intake);
+        if (cleanup.deleted.length || cleanup.failed.length) {
+          console.info("[connect] duplicate cleanup before final account", cleanup);
+        }
+      }
       const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
+      if (ctx.environment === "live") {
+        const cleanup = await deleteDuplicateStripeAccountsForStore(ctx.stripe, workingStore, intake, {
+          preserveAccountId: ensured.accountId,
+        });
+        if (cleanup.deleted.length || cleanup.failed.length) {
+          console.info("[connect] duplicate cleanup after final account", cleanup);
+        }
+      }
       const status = await syncConnectAccountById(ctx.stripe, service, ensured.accountId);
 
       let message: string;
