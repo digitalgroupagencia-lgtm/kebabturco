@@ -1,6 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { resolveStaffLoginDestination } from "@/lib/staffLogin";
+import { resolveStaffLoginDestination, shouldRedirectRootToStaffPanel } from "@/lib/staffLogin";
 import { nav } from "@/lib/navPaths";
+
+describe("shouldRedirectRootToStaffPanel", () => {
+  it("does not redirect logged-in admins without staff tablet session", () => {
+    expect(
+      shouldRedirectRootToStaffPanel({ pathname: "/", staffSessionFlag: false, hasUser: true }),
+    ).toBe(false);
+  });
+
+  it("redirects staff tablet session on root", () => {
+    expect(
+      shouldRedirectRootToStaffPanel({ pathname: "/", staffSessionFlag: true, hasUser: true }),
+    ).toBe(true);
+  });
+
+  it("ignores non-root paths", () => {
+    expect(
+      shouldRedirectRootToStaffPanel({ pathname: "/admin", staffSessionFlag: true, hasUser: true }),
+    ).toBe(false);
+  });
+});
 
 describe("resolveStaffLoginDestination", () => {
   it("routes delivery to delivery panel", () => {

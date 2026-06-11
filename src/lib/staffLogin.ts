@@ -27,6 +27,19 @@ export function isStaffSessionFlagSet(): boolean {
   }
 }
 
+/**
+ * Só tablets com login explícito da equipa (/staff) devem sair do totem em `/`.
+ * Sessão Supabase de desenvolvimento (ex. preview Lovable) não desvia o cliente.
+ */
+export function shouldRedirectRootToStaffPanel(opts: {
+  pathname: string;
+  staffSessionFlag: boolean;
+  hasUser: boolean;
+}): boolean {
+  const root = opts.pathname.replace(/\/+$/, "") || "/";
+  return root === "/" && opts.staffSessionFlag && opts.hasUser;
+}
+
 /** Destino após login da equipa — separado do fluxo do cliente. */
 export function resolveStaffLoginDestination(role: StaffRole | string | null | undefined): string {
   switch (role) {

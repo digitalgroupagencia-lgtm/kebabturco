@@ -16,8 +16,11 @@ export default function LovablePreviewGate() {
     return <Navigate to={lovableStorefrontLocation()} replace />;
   }
 
-  if (pathname === "/" && !search.includes("preview=1")) {
-    return <Navigate to={{ pathname: "/", search: LOVABLE_PREVIEW_SEARCH }} replace />;
+  if (pathname === "/") {
+    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+    if (!params.get("screen")) {
+      return <Navigate to={lovableStorefrontLocation()} replace />;
+    }
   }
 
   return null;

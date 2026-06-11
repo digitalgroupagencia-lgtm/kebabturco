@@ -1,8 +1,12 @@
 import { useEffect, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { isStaffSessionFlagSet, resolveStaffLoginDestination } from "@/lib/staffLogin";
+import {
+  isStaffSessionFlagSet,
+  resolveStaffLoginDestination,
+  shouldRedirectRootToStaffPanel,
+} from "@/lib/staffLogin";
 
 /**
  * Em `/`, se houver sessão de staff activa, redirecciona para o painel
@@ -13,16 +17,24 @@ export default function StaffSessionRootRedirect({ children }: { children: React
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
-    if (!user) return;
-    if (!roleData?.role && !isStaffSessionFlagSet()) return;
+    if (
+      !shouldRedirectRootToStaffPanel({
+        pathname,
+        staffSessionFlag: isStaffSessionFlagSet(),
+        hasUser: Boolean(user),
+      })
+    ) {
+      return;
+    }
     const dest = resolveStaffLoginDestination(roleData?.role ?? null);
     if (dest && dest !== "/") {
       navigate(dest, { replace: true });
     }
-  }, [authLoading, roleLoading, user, roleData?.role, navigate]);
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, pathname]);
 
   return <>{children}</>;
 }
