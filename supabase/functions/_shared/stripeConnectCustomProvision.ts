@@ -234,6 +234,9 @@ async function markCompanyRolesProvided(stripe: Stripe, accountId: string): Prom
   } catch (err) {
     console.warn("[connect] markCompanyRolesProvided failed", err);
   }
+}
+
+
 
 function buildAccountCoreFields(
   intake: CustomIntakeRow,
