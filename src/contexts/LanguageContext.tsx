@@ -731,6 +731,48 @@ const translations: Translations = {
     es: "Número de mesa indicado manualmente",
     fr: "Numéro de table saisi manuellement",
   },
+  mesaQrScanLabel: {
+    pt: "Ler QR da mesa",
+    en: "Scan table QR",
+    es: "Leer QR de la mesa",
+    fr: "Scanner le QR de la table",
+  },
+  mesaQrStarting: {
+    pt: "A abrir a câmara…",
+    en: "Opening camera…",
+    es: "Abriendo la cámara…",
+    fr: "Ouverture de la caméra…",
+  },
+  mesaQrScanning: {
+    pt: "Aponte para o código na mesa",
+    en: "Point at the code on your table",
+    es: "Apunta al código de la mesa",
+    fr: "Pointez vers le code sur la table",
+  },
+  mesaQrValidating: {
+    pt: "A confirmar a mesa…",
+    en: "Confirming table…",
+    es: "Confirmando la mesa…",
+    fr: "Confirmation de la table…",
+  },
+  mesaQrInvalid: {
+    pt: "QR inválido. Use o código da mesa do restaurante.",
+    en: "Invalid QR. Use the restaurant table code.",
+    es: "QR no válido. Usa el código de la mesa del restaurante.",
+    fr: "QR invalide. Utilisez le code de table du restaurant.",
+  },
+  mesaQrCameraDenied: {
+    pt: "Permita o acesso à câmara nas definições do telemóvel, ou escreva o número da mesa abaixo.",
+    en: "Allow camera access in your phone settings, or enter the table number below.",
+    es: "Permite el acceso a la cámara en los ajustes del móvil, o escribe el número de mesa abajo.",
+    fr: "Autorisez la caméra dans les réglages du téléphone, ou saisissez le numéro ci-dessous.",
+  },
+  mesaQrUnsupported: {
+    pt: "Câmara indisponível neste dispositivo. Escreva o número da mesa abaixo.",
+    en: "Camera unavailable on this device. Enter the table number below.",
+    es: "Cámara no disponible en este dispositivo. Escribe el número de mesa abajo.",
+    fr: "Caméra indisponible sur cet appareil. Saisissez le numéro de table ci-dessous.",
+  },
   mesaQrValidated: {
     pt: "Mesa validada por QR code",
     en: "Table confirmed via QR code",

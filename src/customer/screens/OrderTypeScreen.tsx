@@ -78,7 +78,7 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
 );
 
 const OrderTypeScreen = () => {
-  const { setScreen, setTableNumber, mesaLocked, mesaManual, tableNumber, clearMesaLock, confirmManualMesa } = useOrder();
+  const { setScreen, setTableNumber, mesaLocked, mesaManual, tableNumber, clearMesaLock, confirmManualMesa, confirmQrMesa } = useOrder();
   const [mesaDialogOpen, setMesaDialogOpen] = useState(false);
   const { setOrderType } = useCart();
   const { settings, loading: brandingLoading } = useBranding();
@@ -144,6 +144,12 @@ const OrderTypeScreen = () => {
 
   const handleManualMesa = (number: string, tableId: string) => {
     confirmManualMesa(number, tableId);
+    setMesaDialogOpen(false);
+    setScreen("home");
+  };
+
+  const handleQrMesa = (number: string, tableId: string, qrToken: string) => {
+    confirmQrMesa(number, tableId, qrToken);
     setMesaDialogOpen(false);
     setScreen("home");
   };
@@ -247,7 +253,8 @@ const OrderTypeScreen = () => {
         open={mesaDialogOpen}
         storeId={storeId ?? ""}
         onClose={() => setMesaDialogOpen(false)}
-        onConfirm={handleManualMesa}
+        onManualConfirm={handleManualMesa}
+        onQrConfirm={handleQrMesa}
       />
 
       <div

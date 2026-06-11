@@ -65,6 +65,7 @@ interface OrderContextType {
   mesaManual: boolean;
   mesaTableId: string | null;
   confirmManualMesa: (tableNumber: string, tableId: string) => void;
+  confirmQrMesa: (tableNumber: string, tableId: string, qrToken: string) => void;
   clearMesaLock: () => void;
   customerName: string;
   setCustomerName: (n: string) => void;
@@ -395,6 +396,17 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrderType("here");
   }, [setOrderType]);
 
+  const confirmQrMesa = useCallback((tableNumber: string, tableId: string, qrToken: string) => {
+    setTableNumber(tableNumber);
+    saveSavedTableNumber(tableNumber);
+    setMesaTableId(tableId);
+    setMesaManual(false);
+    setMesaLocked(true);
+    setMesaQrToken(qrToken);
+    saveSavedMesaToken(qrToken);
+    setOrderType("here");
+  }, [setOrderType]);
+
   const clearMesaLock = useCallback(() => {
     setMesaLocked(false);
     setMesaManual(false);
@@ -436,6 +448,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         mesaManual,
         mesaTableId,
         confirmManualMesa,
+        confirmQrMesa,
         clearMesaLock,
         customerName,
         setCustomerName,

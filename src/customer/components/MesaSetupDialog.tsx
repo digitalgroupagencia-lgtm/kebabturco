@@ -1,38 +1,97 @@
-import { useState } from "react";
-import { Camera, QrCode } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Hash, QrCode, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { parseMesaQrToken } from "@/lib/mesaQrScan";
+import { openTableSessionOnScan } from "@/services/tableSessionService";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import MesaQrScanner from "@/customer/components/MesaQrScanner";
 
 type MesaSetupDialogProps = {
   open: boolean;
   storeId: string;
   onClose: () => void;
-  onConfirm: (tableNumber: string, tableId: string) => void;
+  onManualConfirm: (tableNumber: string, tableId: string) => void;
+  onQrConfirm: (tableNumber: string, tableId: string, qrToken: string) => void;
 };
 
-const MesaSetupDialog = ({ open, storeId, onClose, onConfirm }: MesaSetupDialogProps) => {
+const MesaSetupDialog = ({
+  open,
+  storeId,
+  onClose,
+  onManualConfirm,
+  onQrConfirm,
+}: MesaSetupDialogProps) => {
   const { t } = useLanguage();
   const [manualNumber, setManualNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [qrLoading, setQrLoading] = useState(false);
+  const qrBusyRef = useRef(false);
 
-  const handleClose = () => {
+  const resetAndClose = () => {
     setManualNumber("");
     setError(null);
+    setLoading(false);
+    setQrLoading(false);
     onClose();
   };
 
-  const handleConfirm = async () => {
+  const resolveTableByToken = async (token: string) => {
+    if (!storeId) return null;
+    const { data } = await supabase
+      .from("tables")
+      .select("id, number")
+      .eq("store_id", storeId)
+      .eq("qr_token", token)
+      .eq("is_active", true)
+      .maybeSingle();
+    return data;
+  };
+
+  const handleQrDetected = useCallback(
+    async (raw: string) => {
+      if (qrBusyRef.current) return;
+      const token = parseMesaQrToken(raw);
+      if (!token) {
+        setError(t("mesaQrInvalid"));
+        return;
+      }
+
+      qrBusyRef.current = true;
+      setQrLoading(true);
+      setError(null);
+      try {
+        const table = await resolveTableByToken(token);
+        if (!table) {
+          setError(t("mesaManualNotFound"));
+          return;
+        }
+        try {
+          await openTableSessionOnScan(storeId, token);
+        } catch {
+          /* sessão pode já existir */
+        }
+        onQrConfirm(table.number, table.id, token);
+        setManualNumber("");
+        setError(null);
+      } finally {
+        qrBusyRef.current = false;
+        setQrLoading(false);
+      }
+    },
+    [onQrConfirm, storeId, t],
+  );
+
+  const handleManualConfirm = async () => {
     const trimmed = manualNumber.trim();
     if (!trimmed) {
       setError(t("mesaManualRequired"));
@@ -59,68 +118,91 @@ const MesaSetupDialog = ({ open, storeId, onClose, onConfirm }: MesaSetupDialogP
       return;
     }
 
-    onConfirm(data.number, data.id);
+    onManualConfirm(data.number, data.id);
     setManualNumber("");
     setError(null);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
-      <DialogContent className="max-w-sm rounded-[28px] border-border/40 p-6 sm:max-w-md">
-        <DialogHeader className="items-center text-center sm:text-center">
-          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <QrCode className="h-7 w-7 text-primary" strokeWidth={1.8} />
-          </div>
-          <DialogTitle className="text-xl font-black tracking-tight">{t("mesaDialogTitle")}</DialogTitle>
-          <DialogDescription className="text-sm leading-relaxed">{t("mesaScanInstruction")}</DialogDescription>
-        </DialogHeader>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-secondary/30 px-4 py-3">
-          <Camera className="h-5 w-5 shrink-0 text-primary" strokeWidth={1.8} />
-          <p className="text-xs leading-relaxed text-muted-foreground">{t("mesaScanCameraHint")}</p>
+    <Dialog open={open} onOpenChange={(next) => !next && resetAndClose()}>
+      <DialogContent className="max-h-[92dvh] max-w-[min(100vw-1.5rem,26rem)] gap-0 overflow-y-auto rounded-[32px] border-0 bg-background p-0 shadow-2xl sm:max-w-md">
+        <div className="relative overflow-hidden rounded-t-[32px] bg-gradient-to-br from-primary/12 via-primary/5 to-background px-6 pb-5 pt-6">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+          <DialogHeader className="items-center space-y-3 text-center">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-primary text-primary-foreground shadow-[0_12px_28px_-10px_rgba(220,38,38,0.55)]">
+              <UtensilsCrossed className="h-8 w-8" strokeWidth={1.8} />
+              <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-card text-primary shadow-sm">
+                <QrCode className="h-4 w-4" strokeWidth={2.2} />
+              </span>
+            </div>
+            <DialogTitle className="text-[22px] font-black tracking-tight">{t("mesaDialogTitle")}</DialogTitle>
+            <DialogDescription className="max-w-[280px] text-sm leading-relaxed text-muted-foreground">
+              {t("mesaScanInstruction")}
+            </DialogDescription>
+          </DialogHeader>
         </div>
 
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border/60" />
+        <div className="space-y-4 px-5 pb-5 pt-4">
+          <div className="space-y-2">
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.22em] text-primary/80">
+              {t("mesaQrScanLabel")}
+            </p>
+            <MesaQrScanner active={open} onDetected={(raw) => void handleQrDetected(raw)} />
+            {qrLoading ? (
+              <p className="text-center text-xs font-medium text-muted-foreground">{t("mesaQrValidating")}</p>
+            ) : null}
           </div>
-          <div className="relative flex justify-center text-[10px] uppercase tracking-[0.2em]">
-            <span className="bg-background px-3 text-muted-foreground">{t("mesaOrManual")}</span>
+
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/70" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="rounded-full bg-background px-4 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                {t("mesaOrManual")}
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-border/60 bg-card/80 p-4 shadow-sm">
+            <label className="mb-2 flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <Hash className="h-3.5 w-3.5 text-primary" />
+              {t("tableNumber")}
+            </label>
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={manualNumber}
+              onChange={(e) => {
+                setManualNumber(e.target.value.replace(/\D/g, "").slice(0, 4));
+                if (error) setError(null);
+              }}
+              placeholder="12"
+              className="h-14 rounded-2xl border-2 border-border/50 bg-background text-center text-3xl font-black tabular-nums shadow-inner"
+              autoComplete="off"
+            />
+          </div>
+
+          {error ? (
+            <p className="rounded-xl bg-destructive/10 px-3 py-2 text-center text-xs font-semibold text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="flex flex-col gap-2 pt-1">
+            <Button
+              type="button"
+              className="h-12 w-full rounded-2xl text-base font-black shadow-primary"
+              disabled={loading || !manualNumber.trim()}
+              onClick={() => void handleManualConfirm()}
+            >
+              {loading ? t("loadingGeneric") : t("mesaManualContinue")}
+            </Button>
+            <Button type="button" variant="ghost" className="h-10 w-full rounded-2xl text-muted-foreground" onClick={resetAndClose}>
+              {t("close")}
+            </Button>
           </div>
         </div>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            {t("tableNumber")}
-          </label>
-          <Input
-            type="text"
-            inputMode="numeric"
-            value={manualNumber}
-            onChange={(e) => {
-              setManualNumber(e.target.value.replace(/\D/g, "").slice(0, 4));
-              if (error) setError(null);
-            }}
-            placeholder="12"
-            className="h-12 text-center text-2xl font-black tabular-nums"
-            autoComplete="off"
-          />
-          {error ? <p className="text-center text-xs text-destructive">{error}</p> : null}
-        </div>
-
-        <DialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button
-            type="button"
-            className="h-12 w-full rounded-2xl text-base font-bold"
-            disabled={loading || !manualNumber.trim()}
-            onClick={() => void handleConfirm()}
-          >
-            {loading ? t("loadingGeneric") : t("mesaManualContinue")}
-          </Button>
-          <Button type="button" variant="ghost" className="h-10 w-full rounded-2xl" onClick={handleClose}>
-            {t("close")}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
