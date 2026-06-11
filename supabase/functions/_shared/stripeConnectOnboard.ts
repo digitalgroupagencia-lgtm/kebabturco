@@ -28,7 +28,7 @@ import {
 import { buildIntakeNotes, enrichIntakeRow, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v10";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v11";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -425,8 +425,8 @@ function embeddedSessionComponents(mode: string): Stripe.AccountSessionCreatePar
     return {
       account_onboarding: {
         enabled: true,
-        // IBAN já recolhido no formulário Kebab — o passo embutido foca documentos/identidade.
-        features: { external_account_collection: false },
+        // A Stripe exige que account_onboarding e notification_banner usem o mesmo valor aqui.
+        features: { external_account_collection: true },
       },
       notification_banner: notification,
     };
