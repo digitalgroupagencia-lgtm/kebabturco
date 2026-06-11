@@ -2,6 +2,36 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ensureConnectChargebackRecoverySettings } from "./stripeConnectCustomProvision.ts";
 
+export function isSimulatedConnectAccountId(accountId: string | null | undefined): boolean {
+  return Boolean(accountId?.startsWith("simulated-"));
+}
+
+async function simulatedConnectStatusFromStore(
+  service: SupabaseClient,
+  accountId: string,
+  storeId?: string,
+): Promise<ConnectAccountStatus | null> {
+  if (!storeId) return null;
+  const { data: store } = await service
+    .from("stores")
+    .select(
+      "stripe_charges_enabled, stripe_payouts_enabled, stripe_onboarding_completed, stripe_payout_status, stripe_business_name, stripe_iban_last4",
+    )
+    .eq("id", storeId)
+    .maybeSingle();
+  if (!store) return null;
+  return {
+    accountId,
+    chargesEnabled: store.stripe_charges_enabled === true,
+    payoutsEnabled: store.stripe_payouts_enabled === true,
+    onboardingCompleted: store.stripe_onboarding_completed === true,
+    payoutStatus: store.stripe_payout_status ?? "pending",
+    businessName: store.stripe_business_name ?? null,
+    ibanLast4: store.stripe_iban_last4 ?? null,
+    requirementsDue: [],
+  };
+}
+
 export type ConnectAccountStatus = {
   accountId: string;
   chargesEnabled: boolean;
@@ -104,6 +134,23 @@ export async function syncConnectAccountById(
   accountId: string,
   storeId?: string,
 ): Promise<ConnectAccountStatus> {
+  if (isSimulatedConnectAccountId(accountId)) {
+    const simulated =
+      (await simulatedConnectStatusFromStore(service, accountId, storeId)) ??
+      ({
+        accountId,
+        chargesEnabled: true,
+        payoutsEnabled: false,
+        onboardingCompleted: true,
+        payoutStatus: "pending",
+        businessName: null,
+        ibanLast4: null,
+        requirementsDue: [],
+      } satisfies ConnectAccountStatus);
+    await persistConnectAccountStatus(service, simulated, storeId);
+    return simulated;
+  }
+
   try {
     await ensureConnectChargebackRecoverySettings(stripe, accountId);
   } catch (e) {

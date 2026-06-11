@@ -44,12 +44,26 @@ import AdminPayoutIntakeForm from "@/components/finance/AdminPayoutIntakeForm";
 type LedgerRow = {
   id: string;
   description: string | null;
+  entry_type?: string | null;
   gross_cents: number;
   platform_fee_cents: number;
   processing_fee_cents: number;
   net_cents: number;
   created_at: string;
 };
+
+function ledgerRowTitle(row: LedgerRow): string {
+  if (row.entry_type === "dispute_fee") return "Taxa de contestação";
+  if (row.entry_type === "dispute_reversal") return "Contestação de pagamento";
+  return row.description || "Pagamento online";
+}
+
+function ledgerRowSummary(row: LedgerRow): string {
+  const value = centsToEur(row.net_cents);
+  if (row.entry_type === "dispute_fee") return `Desconto ${value.replace("-", "−")}€`;
+  if (row.entry_type === "dispute_reversal") return `Valor contestado ${value.replace("-", "−")}€`;
+  return `Valor do pedido ${value}€`;
+}
 
 type PayoutRow = {
   id: string;
@@ -65,7 +79,7 @@ async function fetchLedgerSafe(storeId: string): Promise<{ rows: LedgerRow[]; ok
   try {
     const { data, error } = await supabase
       .from("store_payment_ledger")
-      .select("id,description,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
+      .select("id,description,entry_type,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
       .limit(30);
@@ -650,8 +664,8 @@ const FinancePage = () => {
           {ledger.map((row) => (
             <OpsCompactCard
               key={row.id}
-              title={row.description || "Pagamento online"}
-              summary={`Valor do pedido ${centsToEur(row.net_cents)}€`}
+              title={ledgerRowTitle(row)}
+              summary={ledgerRowSummary(row)}
               meta={`${new Date(row.created_at).toLocaleString("pt-PT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}`}
               editable={false}
             />

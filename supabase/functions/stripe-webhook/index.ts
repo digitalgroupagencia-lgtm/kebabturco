@@ -59,22 +59,50 @@ async function upsertPayout(
   }
 }
 
-/** Recupera do restaurante a parte transferida quando há chargeback (Destination Charge). */
-async function reverseTransferForDispute(stripe: Stripe, dispute: Stripe.Dispute): Promise<void> {
-  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
-  if (!chargeId) return;
+const ESTIMATED_DISPUTE_FEE_CENTS = 1500;
 
-  const charge = await stripe.charges.retrieve(chargeId);
+/** Recupera do restaurante a parte transferida quando há chargeback (Destination Charge). */
+async function reverseTransferForDispute(
+  stripe: Stripe,
+  dispute: Stripe.Dispute,
+): Promise<{
+  reversedCents: number;
+  storeId: string | null;
+  disputeFeeCents: number;
+  connectedAccountId: string | null;
+}> {
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) {
+    return { reversedCents: 0, storeId: null, disputeFeeCents: ESTIMATED_DISPUTE_FEE_CENTS, connectedAccountId: null };
+  }
+
+  const charge = await stripe.charges.retrieve(chargeId, { expand: ["payment_intent"] });
+  const pi = charge.payment_intent as Stripe.PaymentIntent | null;
+  const storeId = typeof pi?.metadata?.store_id === "string" ? pi.metadata.store_id : null;
+
+  let disputeFeeCents = ESTIMATED_DISPUTE_FEE_CENTS;
+  try {
+    const expanded = await stripe.disputes.retrieve(dispute.id, { expand: ["balance_transactions"] });
+    const feeTx = (expanded.balance_transactions as Stripe.BalanceTransaction[] | undefined)?.find(
+      (tx) => tx.fee > 0,
+    );
+    if (feeTx?.fee) disputeFeeCents = feeTx.fee;
+  } catch {
+    /* keep estimate */
+  }
+
   const transferId = typeof charge.transfer === "string" ? charge.transfer : charge.transfer?.id;
-  if (!transferId) return;
+  if (!transferId) return { reversedCents: 0, storeId, disputeFeeCents, connectedAccountId: null };
 
   const transfer = await stripe.transfers.retrieve(transferId);
+  const connectedAccountId =
+    typeof transfer.destination === "string" ? transfer.destination : transfer.destination?.id ?? null;
   const alreadyReversed = transfer.amount_reversed ?? 0;
   const reversible = transfer.amount - alreadyReversed;
-  if (reversible <= 0) return;
+  if (reversible <= 0) return { reversedCents: 0, storeId, disputeFeeCents, connectedAccountId };
 
   const reverseAmount = Math.min(reversible, dispute.amount);
-  if (reverseAmount <= 0) return;
+  if (reverseAmount <= 0) return { reversedCents: 0, storeId, disputeFeeCents, connectedAccountId };
 
   await stripe.transfers.createReversal(transferId, {
     amount: reverseAmount,
@@ -84,6 +112,77 @@ async function reverseTransferForDispute(stripe: Stripe, dispute: Stripe.Dispute
       reason: "chargeback_restaurant_portion",
     },
   });
+
+  return { reversedCents: reverseAmount, storeId, disputeFeeCents, connectedAccountId };
+}
+
+/** Tenta recuperar a taxa de contestação do saldo do restaurante (não via Stripe automaticamente). */
+async function recoverDisputeFeeFromRestaurant(
+  stripe: Stripe,
+  connectedAccountId: string,
+  disputeFeeCents: number,
+  disputeId: string,
+): Promise<boolean> {
+  if (disputeFeeCents <= 0) return false;
+  try {
+    const platform = await stripe.accounts.retrieve();
+    await stripe.transfers.create(
+      {
+        amount: disputeFeeCents,
+        currency: "eur",
+        destination: platform.id,
+        metadata: { dispute_id: disputeId, reason: "dispute_fee_recovery" },
+      },
+      { stripeAccount: connectedAccountId },
+    );
+    return true;
+  } catch (e) {
+    console.warn("[dispute] fee recovery transfer failed", e);
+    return false;
+  }
+}
+
+async function recordDisputeLedgerForStore(
+  supabase: ReturnType<typeof createClient>,
+  storeId: string,
+  dispute: Stripe.Dispute,
+  reversedCents: number,
+  disputeFeeCents: number,
+): Promise<void> {
+  const marker = `dispute:${dispute.id}`;
+  const { data: existing } = await supabase
+    .from("store_payment_ledger")
+    .select("id")
+    .eq("store_id", storeId)
+    .ilike("description", `${marker}%`)
+    .limit(1);
+  if (existing?.length) return;
+
+  if (reversedCents > 0) {
+    await supabase.from("store_payment_ledger").insert({
+      store_id: storeId,
+      entry_type: "dispute_reversal",
+      gross_cents: reversedCents,
+      platform_fee_cents: 0,
+      stripe_fee_cents: 0,
+      processing_fee_cents: 0,
+      net_cents: -reversedCents,
+      description: `${marker}: contestação — valor do pedido`,
+    });
+  }
+
+  if (disputeFeeCents > 0) {
+    await supabase.from("store_payment_ledger").insert({
+      store_id: storeId,
+      entry_type: "dispute_fee",
+      gross_cents: 0,
+      platform_fee_cents: 0,
+      stripe_fee_cents: disputeFeeCents,
+      processing_fee_cents: disputeFeeCents,
+      net_cents: -disputeFeeCents,
+      description: `${marker}: taxa de contestação`,
+    });
+  }
 }
 
 function resolveWebhookContext(body: string, signature: string): {
@@ -188,7 +287,24 @@ Deno.serve(async (req) => {
   if (event.type === "charge.dispute.created") {
     const dispute = event.data.object as Stripe.Dispute;
     try {
-      await reverseTransferForDispute(stripe, dispute);
+      const result = await reverseTransferForDispute(stripe, dispute);
+      if (result.connectedAccountId) {
+        await recoverDisputeFeeFromRestaurant(
+          stripe,
+          result.connectedAccountId,
+          result.disputeFeeCents,
+          dispute.id,
+        );
+      }
+      if (result.storeId) {
+        await recordDisputeLedgerForStore(
+          supabase,
+          result.storeId,
+          dispute,
+          result.reversedCents,
+          result.disputeFeeCents,
+        );
+      }
     } catch (e) {
       console.error("charge.dispute.created transfer reversal failed", e);
     }
