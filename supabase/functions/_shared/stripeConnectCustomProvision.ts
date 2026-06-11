@@ -221,6 +221,20 @@ export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean
   return accountNeedsEmbeddedCompletionStep(acct);
 }
 
+/** Para SL espanhola: marca diretores/executivos/proprietários como fornecidos. */
+async function markCompanyRolesProvided(stripe: Stripe, accountId: string): Promise<void> {
+  try {
+    await stripe.accounts.update(accountId, {
+      company: {
+        directors_provided: true,
+        executives_provided: true,
+        owners_provided: true,
+      },
+    });
+  } catch (err) {
+    console.warn("[connect] markCompanyRolesProvided failed", err);
+  }
+
 function buildAccountCoreFields(
   intake: CustomIntakeRow,
   requestIp: string,
