@@ -118,12 +118,19 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
         setCollapsed(true);
         onSaved?.(row, result);
       }
-      toast.success(
-        result.message ||
-          (result.bankSynced
-            ? "Dados guardados e enviados para a conta de recebimentos (incluindo IBAN)."
-            : "Dados guardados e enviados — confirme a verificação se for pedida."),
-      );
+      if (result.synced === false) {
+        toast.error(
+          result.message ||
+            "Dados guardados na base de dados mas NÃO enviados para a Stripe — clique Actualizar em Recebimentos.",
+        );
+      } else {
+        toast.success(
+          result.message ||
+            (result.bankSynced
+              ? "Dados guardados e enviados para a conta de recebimentos (incluindo IBAN)."
+              : "Dados guardados e enviados — confirme a verificação se for pedida."),
+        );
+      }
     } catch (e) {
       const msg = extractErrorMessage(e);
       toast.error(

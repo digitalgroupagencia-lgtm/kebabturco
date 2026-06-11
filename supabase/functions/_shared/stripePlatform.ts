@@ -130,6 +130,7 @@ export type StripeConnectContext = {
 export async function resolveStripeConnectContext(
   storeEnvironment: StripeKeyMode | null,
   existingAccountId: string | null,
+  options?: { requireLive?: boolean },
 ): Promise<StripeConnectContext> {
   const testKey = getStripeSecretKeyTest();
   const liveKey = getStripeSecretKey();
@@ -155,6 +156,10 @@ export async function resolveStripeConnectContext(
     const livePlatform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
     if (livePlatform.connectLiveAllowed) {
       return { stripe: liveStripe, environment: "live", platform: livePlatform };
+    }
+
+    if (options?.requireLive) {
+      throw new PlatformPendingError(livePlatform);
     }
 
     if (testKey) {

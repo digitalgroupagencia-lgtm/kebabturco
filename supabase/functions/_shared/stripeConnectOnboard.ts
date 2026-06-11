@@ -28,7 +28,7 @@ import {
 import { buildIntakeNotes, enrichIntakeRow, mergeIntakeNotes, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-10-custom-v11";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v15";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -102,9 +102,19 @@ export class ConnectError extends Error {
   }
 }
 
-async function loadConnectContext(store: ConnectStoreRow): Promise<StripeConnectContext> {
+async function loadConnectContext(
+  store: ConnectStoreRow,
+  options?: { requireLive?: boolean },
+): Promise<StripeConnectContext> {
   const env = (store.stripe_connect_environment as StripeKeyMode | null) ?? null;
-  return resolveStripeConnectContext(env, store.stripe_connect_account_id);
+  const requireLive = options?.requireLive ?? env === "live";
+  return resolveStripeConnectContext(env, store.stripe_connect_account_id, { requireLive });
+}
+
+function extractStripeErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object" && "message" in e) return String((e as { message: string }).message);
+  return "";
 }
 
 type PayoutIntakeRow = {
@@ -638,14 +648,29 @@ export async function handleStripeConnectRequest(
     });
     intake.business_address = businessAddress;
 
-    const linkCtx = await loadConnectContext(linkStore);
-    const ensured = await ensureConnectAccount(
-      linkCtx,
-      publicService,
-      linkStore,
-      intake,
-      requestIp,
-    );
+    const linkCtx = await loadConnectContext(linkStore, { requireLive: true });
+    let ensured: Awaited<ReturnType<typeof ensureConnectAccount>>;
+    try {
+      ensured = await ensureConnectAccount(
+        linkCtx,
+        publicService,
+        linkStore,
+        intake,
+        requestIp,
+      );
+    } catch (e) {
+      const stripeMsg = extractStripeErrorMessage(e);
+      console.error("[connect] public_submit_intake ensure account", e);
+      return json(
+        {
+          error: stripeMsg
+            ? `No se pudo registrar en Stripe: ${stripeMsg}`
+            : "No se pudo registrar en Stripe. Contacte administración.",
+          code: "stripe_account_create_failed",
+        },
+        502,
+      );
+    }
     const status = await syncConnectAccountById(linkCtx.stripe, publicService, ensured.accountId);
     const acct = await linkCtx.stripe.accounts.retrieve(ensured.accountId);
     const requirementsDue = [
@@ -1028,7 +1053,7 @@ export async function handleStripeConnectRequest(
         };
       }
 
-      const ctx = await loadConnectContext(workingStore);
+      const ctx = await loadConnectContext(workingStore, { requireLive: true });
       const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
       const status = await syncConnectAccountById(ctx.stripe, service, ensured.accountId);
 
@@ -1065,19 +1090,107 @@ export async function handleStripeConnectRequest(
       });
     } catch (e) {
       console.error("[connect] save_and_sync_intake stripe", e);
-      const stripeHint =
-        e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "";
-      const friendly =
-        stripeHint.includes("not authorized to edit")
-          ? "Dados guardados — a conta antiga foi substituída automaticamente na próxima tentativa."
-          : "Dados guardados com sucesso. O restaurante fica registado sem ecrã externo da Stripe.";
+      const stripeHint = extractStripeErrorMessage(e);
+      if (e instanceof PlatformPendingError) {
+        return json({
+          saved: true,
+          synced: false,
+          message:
+            "Dados guardados. A Stripe ainda não aprovou a plataforma para contas reais — complete o perfil Connect no painel Stripe.",
+          stripeError: stripeHint || e.message,
+          productionBlocked: true,
+          handlerVersion: CONNECT_HANDLER_VERSION,
+          platform: platformStatusPayload(e.platform, "live"),
+        });
+      }
+      const friendly = stripeHint.includes("not authorized to edit")
+        ? "Dados guardados — a conta antiga será substituída na próxima tentativa."
+        : stripeHint
+          ? `Dados guardados. Erro ao enviar para Stripe: ${stripeHint}`
+          : "Dados guardados mas não foi possível criar a conta na Stripe — tente «Actualizar» ou guarde de novo.";
       return json({
         saved: true,
         synced: false,
         message: friendly,
+        stripeError: stripeHint || undefined,
         handlerVersion: CONNECT_HANDLER_VERSION,
       });
     }
+  }
+
+  if (mode === "resync_intake_to_stripe") {
+    await assertAdminMaster(service, userId);
+
+    const intakeRow = await loadStorePayoutIntake(service, storeId);
+    if (!intakeRow) {
+      throw new ConnectError(
+        "Não há dados do restaurante guardados — preencha o formulário primeiro.",
+        400,
+        "intake_missing",
+      );
+    }
+
+    const intake = enrichIntakeRow(intakeRow, {
+      business_website: DEFAULT_BUSINESS_WEBSITE,
+      accept_terms: true,
+    });
+
+    const needsLiveReset =
+      store.stripe_connect_environment === "test" ||
+      Boolean((store as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
+      !store.stripe_connect_account_id ||
+      store.stripe_connect_account_id.startsWith("simulated-");
+
+    let workingStore = store;
+    if (needsLiveReset) {
+      const liveKey = getStripeSecretKey();
+      if (!liveKey || stripeKeyMode(liveKey) !== "live") {
+        throw new ConnectError(
+          "Falta a chave de produção no servidor.",
+          503,
+          "live_key_missing",
+        );
+      }
+      const { error: liveUpdErr } = await service
+        .from("stores")
+        .update({
+          stripe_connect_account_id: null,
+          stripe_connect_environment: "live",
+          stripe_connect_test_simulated: false,
+          stripe_charges_enabled: false,
+          stripe_payouts_enabled: false,
+          stripe_onboarding_completed: false,
+          stripe_payout_status: "pending",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", store.id);
+      if (liveUpdErr) {
+        throw new ConnectError("Não foi possível preparar modo produção.", 500, "store_update_failed");
+      }
+      workingStore = {
+        ...store,
+        stripe_connect_account_id: null,
+        stripe_connect_environment: "live",
+      };
+    }
+
+    const ctx = await loadConnectContext(workingStore, { requireLive: true });
+    const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
+    const status = await syncConnectAccountById(ctx.stripe, service, ensured.accountId);
+
+    return json({
+      synced: true,
+      accountId: ensured.accountId,
+      accountType: ensured.accountType,
+      connectEnvironment: ensured.environment,
+      message:
+        ensured.accountType === "custom"
+          ? "Restaurante enviado para a Stripe em produção."
+          : "Conta criada na Stripe — confirme verificação se for pedida.",
+      handlerVersion: CONNECT_HANDLER_VERSION,
+      ...statusPayload(status, ensured.environment),
+      ...connectMeta(ctx),
+    });
   }
 
   if (mode === "activate_live") {

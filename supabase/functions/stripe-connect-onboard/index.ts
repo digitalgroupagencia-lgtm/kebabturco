@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
         handlerVersion: CONNECT_HANDLER_VERSION,
         modes: [
           "save_and_sync_intake",
+          "resync_intake_to_stripe",
           "activate_live",
           "embedded_onboarding",
           "platform_status",

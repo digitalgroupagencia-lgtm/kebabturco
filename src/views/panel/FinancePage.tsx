@@ -11,6 +11,7 @@ import {
   fetchStoreFinancialProfile,
   fetchStripePlatformStatus,
   provisionTestStripeConnect,
+  resyncStorePayoutIntakeToStripe,
   syncStripeConnectStatus,
   type StoreFinancialProfile,
   type StripePlatformStatus,
@@ -162,15 +163,22 @@ const FinancePage = () => {
     if (!storeId) return;
     setSyncing(true);
     try {
-      await syncStripeConnectStatus(storeId);
+      const hasIntake = Boolean(intakeSaved?.owner_email?.trim());
+      const missingStripeAccount = !profile?.stripe_connect_account_id;
+      if (hasIntake && missingStripeAccount) {
+        const resync = await resyncStorePayoutIntakeToStripe(storeId);
+        toast.success(resync.message || "Restaurante enviado para a Stripe");
+      } else {
+        await syncStripeConnectStatus(storeId);
+        toast.success("Estado dos recebimentos actualizado");
+      }
       await load({ silent: true });
-      toast.success("Estado dos recebimentos actualizado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao actualizar");
     } finally {
       setSyncing(false);
     }
-  }, [storeId, load]);
+  }, [storeId, load, intakeSaved, profile?.stripe_connect_account_id]);
 
   const onEmbeddedComplete = useCallback(async () => {
     setEmbeddedMode("none");

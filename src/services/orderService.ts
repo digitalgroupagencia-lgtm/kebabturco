@@ -588,6 +588,28 @@ export async function fetchStripePlatformStatus(storeId?: string): Promise<Strip
   return data ? (data as StripePlatformStatus) : null;
 }
 
+/** Reenvia dados já guardados para criar/atualizar conta Stripe live. */
+export async function resyncStorePayoutIntakeToStripe(storeId: string): Promise<{
+  synced: boolean;
+  accountId?: string;
+  message?: string;
+  connectEnvironment?: "live" | "test";
+}> {
+  const data = await invokeConnectFunction({ storeId, mode: "resync_intake_to_stripe" });
+  if (!data) {
+    throw new Error("Não foi possível enviar para a Stripe — tente de novo.");
+  }
+  if (data && typeof data === "object" && "error" in data && (data as { error?: unknown }).error) {
+    throw new Error(String((data as { error: unknown }).error));
+  }
+  return data as {
+    synced: boolean;
+    accountId?: string;
+    message?: string;
+    connectEnvironment?: "live" | "test";
+  };
+}
+
 export async function syncStripeConnectStatus(storeId: string): Promise<StripeConnectStatus> {
   const data = await invokeConnectFunction({ storeId, mode: "sync_status" }, { allowPaymentIntentFallback: true });
   if (!data) {
