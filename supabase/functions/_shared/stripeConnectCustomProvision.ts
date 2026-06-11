@@ -120,7 +120,7 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
 
 /** Conta Stripe incompleta — precisa recriar ou reparar (ex.: Gandia restrita sem IBAN/e-mail). */
 export function isStripeAccountCriticallyIncomplete(acct: Stripe.Account): boolean {
-  if (acct.type !== "custom") return true;
+  if (acct.type === "express" || acct.type === "standard") return true;
   if (!acct.email) return true;
   if (!acct.business_type) return true;
   if (!acct.business_profile?.url) return true;
