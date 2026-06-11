@@ -21,7 +21,8 @@ import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConn
 import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbeddedPanel";
 import TestCheckoutReadiness from "@/components/finance/TestCheckoutReadiness";
 import ManualDatabaseSqlPanel from "@/components/finance/ManualDatabaseSqlPanel";
-import { probeSchemaFallback } from "@/services/operationalDiagnosticsService";
+import CheckoutActivationPanel from "@/components/finance/CheckoutActivationPanel";
+import { probeCheckoutStripeRpc, probeSchemaFallback } from "@/services/operationalDiagnosticsService";
 import {
   Loader2,
   Wallet,
@@ -31,6 +32,7 @@ import {
   Settings2,
   Share2,
   Copy,
+  RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
@@ -75,6 +77,7 @@ const FinancePage = () => {
   const [connectingRestaurant, setConnectingRestaurant] = useState(false);
   const [showTestTools, setShowTestTools] = useState(false);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
+  const [checkoutRpcReady, setCheckoutRpcReady] = useState(true);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!storeId) return;
@@ -83,14 +86,16 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, schema, mv, po, serverPlatform, ledgerOk] = await Promise.all([
+      const [prof, schema, mv, po, serverPlatform, ledgerOk, checkoutRpc] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         probeSchemaFallback().catch(() => null),
         fetchFinanceMovements(storeId),
         fetchFinancePayouts(storeId),
         fetchStripePlatformStatus(storeId).catch(() => null),
         probeLedgerTable(storeId),
+        probeCheckoutStripeRpc(),
       ]);
+      setCheckoutRpcReady(checkoutRpc);
       setProfile(prof);
       setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
       setSchemaProbe(schema);
@@ -111,30 +116,61 @@ const FinancePage = () => {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!storeId) return;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
+      await load({ silent: true });
+    })();
+  }, [storeId, load]);
+
   const refreshStatus = useCallback(async () => {
     if (!storeId) return;
     setSyncing(true);
     try {
-      await syncStripeConnectStatus(storeId);
-      const fresh = await fetchStoreFinancialProfile(storeId);
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
+      }
+
+      let fresh = await fetchStoreFinancialProfile(storeId);
       const stillNotReady = !isStripeConnectReady(fresh);
       const hasIntake = Boolean(intakeSaved?.owner_email?.trim());
-      if (stillNotReady && hasIntake) {
-        const resync = await resyncStorePayoutIntakeToStripe(storeId);
-        toast.success(resync.message || "Dados financeiros actualizados");
-        await syncStripeConnectStatus(storeId);
-      } else if (isStripeConnectReady(fresh)) {
-        toast.success("Pagamentos online activos — dados actualizados");
-      } else {
-        toast.success("Dados financeiros actualizados");
+
+      if (stillNotReady && session && hasIntake) {
+        try {
+          const resync = await resyncStorePayoutIntakeToStripe(storeId);
+          if (resync.message) toast.message(resync.message);
+          await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
+          fresh = await fetchStoreFinancialProfile(storeId);
+        } catch {
+          /* reenvio opcional */
+        }
       }
+
       await load({ silent: true });
+      const readyNow = isStripeConnectReady(fresh);
+
+      if (readyNow) {
+        toast.success("Pagamentos online activos — sincronizado com a Stripe");
+      } else if (!session) {
+        toast.error("Inicie sessão no painel para sincronizar com a Stripe.");
+      } else if (!checkoutRpcReady) {
+        toast.warning("Copie e execute o SQL de activação abaixo, depois Sync + Publish na Lovable.");
+      } else {
+        toast.warning(
+          "Ainda por activar no site — clique Copiar SQL, execute na base de dados e faça Sync + Publish.",
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao sincronizar");
     } finally {
       setSyncing(false);
     }
-  }, [storeId, load, intakeSaved]);
+  }, [storeId, load, intakeSaved, checkoutRpcReady]);
 
   const onEmbeddedComplete = useCallback(async () => {
     setEmbeddedMode("none");
@@ -223,7 +259,7 @@ const FinancePage = () => {
   const platformRegistered = Boolean(
     profile?.stripe_connect_account_id || registerResult?.accountId || registerResult?.accountType === "custom",
   );
-  const showConnectStep = !ready && !platformRegistered && embeddedMode === "none";
+  const showConnectStep = !ready && embeddedMode === "none";
   const payoutsActive = Boolean(profile?.stripe_payouts_enabled);
   const connectEnv =
     (profile?.stripe_connect_environment as "live" | "test" | undefined) ??
@@ -280,6 +316,14 @@ const FinancePage = () => {
         schemaTestSimulated={schemaTestSimulated}
         ledgerOk={ledgerTableOk}
       />
+
+      {!ready && (
+        <CheckoutActivationPanel
+          syncing={syncing}
+          checkoutRpcReady={checkoutRpcReady}
+          onSync={() => void refreshStatus()}
+        />
+      )}
 
       {(productionBlocked || pendingVerification || schemaIncomplete) && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
@@ -365,9 +409,13 @@ const FinancePage = () => {
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
             <div>
-              <p className="font-black text-base">Passo 2 — Confirmar ligação (só se o Passo 1 pedir)</p>
+              <p className="font-black text-base">
+                {platformRegistered ? "Confirmar ligação com a Stripe" : "Passo 2 — Confirmar ligação"}
+              </p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Só use este botão se o Passo 1 não tiver conseguido registar o restaurante automaticamente.
+                {platformRegistered
+                  ? "Os dados já foram guardados — use este botão se a sincronização acima não activar os pagamentos."
+                  : "Só use este botão se o Passo 1 não tiver conseguido registar o restaurante automaticamente."}
               </p>
             </div>
           </div>
@@ -574,16 +622,30 @@ const FinancePage = () => {
         </div>
       )}
 
-      <Button
-        variant="secondary"
-        size="sm"
-        className="w-full"
-        onClick={refreshStatus}
-        disabled={syncing}
-      >
-        {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-        Actualizar dados financeiros
-      </Button>
+      <div className="grid grid-cols-1 gap-2">
+        <Button
+          variant={ready ? "secondary" : "default"}
+          className="w-full h-11 font-bold gap-2"
+          onClick={refreshStatus}
+          disabled={syncing}
+        >
+          {syncing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Sincronizar com Stripe
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => void load({ silent: false })}
+          disabled={loading || syncing}
+        >
+          Actualizar extrato e movimentos
+        </Button>
+      </div>
     </div>
   );
 };

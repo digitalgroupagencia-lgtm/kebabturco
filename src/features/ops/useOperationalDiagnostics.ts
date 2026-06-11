@@ -7,6 +7,7 @@ import { nav } from "@/lib/navPaths.ts";
 import {
   fetchDbOperationalDiagnostics,
   fetchServerOperationalDiagnostics,
+  probeCheckoutStripeRpc,
   probeSchemaFallback,
 } from "@/services/operationalDiagnosticsService";
 import { fetchStoreFinancialProfile } from "@/services/orderService";
@@ -43,12 +44,13 @@ export function useOperationalDiagnostics() {
     setRunning(true);
     const results: DiagnosticItem[] = [];
 
-    const [dbDiag, serverDiag, schemaProbe, storeProfile, payoutIntake] = await Promise.all([
+    const [dbDiag, serverDiag, schemaProbe, storeProfile, payoutIntake, checkoutRpc] = await Promise.all([
       fetchDbOperationalDiagnostics(storeId),
       fetchServerOperationalDiagnostics(storeId),
       probeSchemaFallback(),
       storeId ? fetchStoreFinancialProfile(storeId) : Promise.resolve(null),
       storeId ? fetchStorePayoutIntake(storeId) : Promise.resolve(null),
+      probeCheckoutStripeRpc(),
     ]);
 
     const schemaQr = dbDiag?.schema_qr_token ?? schemaProbe.schema_qr_token;
@@ -310,6 +312,25 @@ export function useOperationalDiagnostics() {
       });
     }
 
+    if (!checkoutRpc) {
+      results.push({
+        id: "stripe-checkout-rpc",
+        label: "Pagamentos no totem (base de dados)",
+        status: "fail",
+        critical: true,
+        detail:
+          "Falta actualização que liga o totem à conta Stripe — o cliente vê «pagamentos não activos» mesmo com Stripe correcta.",
+        action: "Admin → Recebimentos → Copiar SQL de activação → executar no editor da base de dados → Sync + Publish.",
+      });
+    } else {
+      results.push({
+        id: "stripe-checkout-rpc",
+        label: "Pagamentos no totem (base de dados)",
+        status: "ok",
+        detail: "Base de dados preparada para o totem saber se cartão está activo.",
+      });
+    }
+
     // STRIPE Connect — conta restaurante
     const chargesOk = storeProfile?.stripe_charges_enabled ?? serverDiag?.store?.stripe_charges_enabled;
     const onboardingOk =
@@ -353,7 +374,9 @@ export function useOperationalDiagnostics() {
           action:
             productionBlocked && testKeysOnServer
               ? "Admin → Recebimentos → Activar recebimentos de teste."
-              : "Admin → Recebimentos → Conectar recebimentos do restaurante (formulário dentro do painel).",
+              : checkoutRpc
+                ? "Admin → Recebimentos → Sincronizar com Stripe. Se continuar: Copiar SQL de activação."
+                : "Admin → Recebimentos → Copiar SQL de activação → executar na base de dados.",
         });
       }
     } else if (!payoutsOk) {

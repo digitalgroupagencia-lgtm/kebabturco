@@ -84,6 +84,20 @@ export async function probeSchemaFallback(): Promise<{
   };
 }
 
+/** Verifica se o totem consegue ler o estado Stripe da loja (função pública na base de dados). */
+export async function probeCheckoutStripeRpc(): Promise<boolean> {
+  const { error } = await supabase.rpc("get_store_checkout_stripe_profile", {
+    _store_id: "22222222-2222-2222-2222-222222222222",
+  });
+  if (!error) return true;
+  const msg = error.message?.toLowerCase() ?? "";
+  return !(
+    msg.includes("could not find the function") ||
+    msg.includes("get_store_checkout_stripe_profile") ||
+    msg.includes("pgrst202")
+  );
+}
+
 export async function fetchServerOperationalDiagnostics(storeId: string | null): Promise<ServerDiagnostics | null> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
