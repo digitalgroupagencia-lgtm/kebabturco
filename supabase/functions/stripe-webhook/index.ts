@@ -59,6 +59,32 @@ async function upsertPayout(
   }
 }
 
+/** Recupera do restaurante a parte transferida quando há chargeback (Destination Charge). */
+async function reverseTransferForDispute(stripe: Stripe, dispute: Stripe.Dispute): Promise<void> {
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) return;
+
+  const charge = await stripe.charges.retrieve(chargeId);
+  const transferId = typeof charge.transfer === "string" ? charge.transfer : charge.transfer?.id;
+  if (!transferId) return;
+
+  const transfer = await stripe.transfers.retrieve(transferId);
+  const alreadyReversed = transfer.amount_reversed ?? 0;
+  const reversible = transfer.amount - alreadyReversed;
+  if (reversible <= 0) return;
+
+  const reverseAmount = Math.min(reversible, dispute.amount);
+  if (reverseAmount <= 0) return;
+
+  await stripe.transfers.createReversal(transferId, {
+    amount: reverseAmount,
+    metadata: {
+      dispute_id: dispute.id,
+      reason: "chargeback_restaurant_portion",
+    },
+  });
+}
+
 function resolveWebhookContext(body: string, signature: string): {
   stripe: Stripe;
   event: Stripe.Event;
@@ -156,6 +182,15 @@ Deno.serve(async (req) => {
   if (event.type === "account.updated") {
     const account = event.data.object as Stripe.Account;
     await syncConnectAccountById(stripe, supabase, account.id);
+  }
+
+  if (event.type === "charge.dispute.created") {
+    const dispute = event.data.object as Stripe.Dispute;
+    try {
+      await reverseTransferForDispute(stripe, dispute);
+    } catch (e) {
+      console.error("charge.dispute.created transfer reversal failed", e);
+    }
   }
 
   if (

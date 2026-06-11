@@ -23,4 +23,10 @@ describe("checkout fees", () => {
     expect(fee).toBeLessThan(PLATFORM_FEE_EUR + 0.8);
     expect(20 - fee).toBeGreaterThan(18);
   });
+
+  it("€50 order: €2.00 retained, restaurant net €48.00 (Stripe-confirmed formula)", () => {
+    expect(computePlatformDeductionEur(50)).toBe(2);
+    expect(computeCustomerTotalEur(50)).toBe(50);
+    expect(50 - computePlatformDeductionEur(50)).toBe(48);
+  });
 });

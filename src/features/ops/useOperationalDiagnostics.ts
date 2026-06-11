@@ -447,7 +447,7 @@ export function useOperationalDiagnostics() {
           status: "fail",
           critical: true,
           detail: "A Stripe ainda não avisa o servidor quando um pagamento é confirmado.",
-          action: `Na Stripe → Developers → Webhooks → Add endpoint → URL: ${webhookUrl} → eventos: payment_intent.succeeded, account.updated, payout.paid, payout.failed`,
+          action: `Na Stripe → Developers → Webhooks → Add endpoint → URL: ${webhookUrl} → eventos: payment_intent.succeeded, charge.dispute.created, account.updated, payout.paid, payout.failed`,
         });
       } else {
         results.push({

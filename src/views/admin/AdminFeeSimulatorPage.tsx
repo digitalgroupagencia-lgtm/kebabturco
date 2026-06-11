@@ -25,9 +25,8 @@ import { APP_NAME } from "@/lib/appMode";
 const STRIPE_PCT = 0.015; // 1,5% por pagamento (cartão UE)
 const STRIPE_FIXED = 0.25; // €0,25 por pagamento
 const PLATFORM_FEE = 1; // o seu €1 por pedido (lucro alvo)
-const CONNECT_MONTHLY = 2; // €2 por restaurante ativo / mês
-const CONNECT_PAYOUT_PCT = 0.0025; // 0,25% do valor transferido
-const CONNECT_PAYOUT_FIXED = 0.1; // €0,10 por transferência
+const CONNECT_MONTHLY = 2; // €2 por restaurante ativo / mês (conta Connect)
+const CONNECT_PAYOUT_FIXED = 0.1; // €0,10 por payout bancário (semanal/diário)
 
 function euro(n: number): string {
   return `€${(Number.isFinite(n) ? n : 0).toLocaleString("pt-PT", {
@@ -62,9 +61,8 @@ export default function AdminFeeSimulatorPage() {
     const stripeFee = rev * STRIPE_PCT + STRIPE_FIXED * orders;
     const commission = PLATFORM_FEE * orders;
     const restaurantBefore = rev - commission - stripeFee;
-    const connectPct = restaurantBefore * CONNECT_PAYOUT_PCT;
     const connectFixed = CONNECT_PAYOUT_FIXED * payoutsPerMonth;
-    const connectTotal = CONNECT_MONTHLY + connectPct + connectFixed;
+    const connectTotal = CONNECT_MONTHLY + connectFixed;
 
     const ourCost = commission + stripeFee + connectTotal;
     const ourEffPct = rev > 0 ? (ourCost / rev) * 100 : 0;
