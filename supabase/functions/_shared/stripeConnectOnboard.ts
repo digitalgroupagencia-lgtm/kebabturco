@@ -28,7 +28,7 @@ import {
 import { buildIntakeNotes, enrichIntakeRow, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v11";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v12";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -302,6 +302,35 @@ async function shouldReplaceStripeAccount(
   } catch {
     return false;
   }
+}
+
+function normalizeMatchText(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+async function listDuplicateStripeAccountsForStore(
+  stripe: Stripe,
+  store: ConnectStoreRow,
+  intake: PayoutIntakeRow | null,
+): Promise<Stripe.Account[]> {
+  const expectedEmail = normalizeMatchText(intake?.owner_email);
+  const expectedName = normalizeMatchText(intake?.business_name || store.name);
+  const accounts = await stripe.accounts.list({ limit: 100 });
+  return accounts.data.filter((account) => {
+    const metadataStoreId = normalizeMatchText(account.metadata?.store_id);
+    const email = normalizeMatchText(account.email);
+    const profileName = normalizeMatchText(account.business_profile?.name);
+    const companyName = normalizeMatchText(account.company?.name);
+    const displayName = normalizeMatchText(account.settings?.dashboard?.display_name);
+
+    return (
+      account.id === store.stripe_connect_account_id ||
+      metadataStoreId === store.id ||
+      (Boolean(expectedEmail) && email === expectedEmail) ||
+      (Boolean(expectedName) &&
+        (profileName === expectedName || companyName === expectedName || displayName === expectedName))
+    );
+  });
 }
 
 export async function ensureConnectAccount(
