@@ -360,6 +360,7 @@ export async function createLiveCustomAccountFromIntake(
 
   if (isCompany) {
     await ensureCompanyRepresentative(stripe, account.id, intake, address);
+    await markCompanyRolesProvided(stripe, account.id);
   }
 
   await attachIbanToAccount(stripe, account.id, intake, isCompany);
