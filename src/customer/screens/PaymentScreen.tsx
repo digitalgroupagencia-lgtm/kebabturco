@@ -157,6 +157,7 @@ const PaymentScreen = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   // Checkout em 2 etapas: dados → pagamento. Mesas saltam directamente para pagamento.
   const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">(
     orderType === "here" ? "payment" : "details",
@@ -322,8 +323,18 @@ const PaymentScreen = () => {
     if (checkoutMethods.length === 0) { setShowError("method"); return false; }
     if (!selected) { setShowError("method"); return false; }
     if (prepaymentRequired && selected !== "card") { setShowError("method"); return false; }
-    if (selected === "card" && !stripePublishableKey) { setShowError("method"); return false; }
+    if (selected === "card" && !stripePublishableKey) {
+      setPaymentError(stripeIssue || "Pagamento com cartão indisponível neste momento.");
+      setShowError("method");
+      return false;
+    }
+    if (selected === "card" && !stripeEnabled) {
+      setPaymentError("Recebimentos online ainda não estão activos para este restaurante.");
+      setShowError("method");
+      return false;
+    }
     setShowError(null);
+    setPaymentError(null);
     return true;
   };
 
@@ -631,15 +642,20 @@ const PaymentScreen = () => {
 
 
     if (selected === "card") {
-      if (!stripePublishableKey) {
+      if (!stripePublishableKey || !stripeEnabled) {
+        setPaymentError(
+          stripeIssue || "Recebimentos online ainda não estão activos para este restaurante.",
+        );
         setShowError("method");
         return;
       }
       setProcessing(true);
+      setPaymentError(null);
       try {
         await startCardPayment();
       } catch (e) {
         console.error(e);
+        setPaymentError(e instanceof Error ? e.message : "Não foi possível abrir o pagamento com cartão.");
         setShowError("method");
       } finally {
         setProcessing(false);
@@ -1070,6 +1086,7 @@ const PaymentScreen = () => {
                         onClick={() => {
                           setSelected(pm.id);
                           setShowError(null);
+                          setPaymentError(null);
                           if (pm.id === "cash" || pm.id === "counter") {
                             setStripeClientSecret(null);
                             setStripePaymentIntentId(null);
@@ -1099,7 +1116,9 @@ const PaymentScreen = () => {
                   {/* Aviso amber abaixo de Efectivo removido — confirmação acontece em tela dedicada após finalizar */}
                 </div>
                 {showError === "method" && (
-                  <p className="text-xs text-destructive font-bold mt-1.5 px-1">Seleccione uma forma de pagamento para continuar.</p>
+                  <p className="text-xs text-destructive font-bold mt-1.5 px-1">
+                    {paymentError || "Seleccione uma forma de pagamento para continuar."}
+                  </p>
                 )}
               </div>
             )}

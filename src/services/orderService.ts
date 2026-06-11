@@ -305,6 +305,25 @@ export async function invokePrintOrder(body: Record<string, unknown>) {
   }
 }
 
+async function readEdgeFunctionError(error: unknown): Promise<string> {
+  const fallback = error instanceof Error ? error.message : "Erro ao iniciar pagamento";
+  const ctx =
+    error && typeof error === "object" && "context" in error
+      ? (error as { context?: unknown }).context
+      : undefined;
+  if (ctx instanceof Response) {
+    try {
+      const parsed = await ctx.clone().json();
+      if (parsed && typeof parsed === "object" && "error" in parsed && (parsed as { error?: unknown }).error) {
+        return String((parsed as { error: unknown }).error);
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+  return fallback;
+}
+
 export async function createStripePaymentIntent(params: {
   storeId: string;
   subtotalCents: number;
@@ -316,7 +335,7 @@ export async function createStripePaymentIntent(params: {
   const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
     body: params,
   });
-  if (error) throw error;
+  if (error) throw new Error(await readEdgeFunctionError(error));
   if (data?.error) throw new Error(data.error);
   return data as {
     clientSecret: string;
