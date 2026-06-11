@@ -320,6 +320,7 @@ export async function syncLiveCustomAccountFromIntake(
 
   if (isCompany) {
     await ensureCompanyRepresentative(stripe, accountId, intake, address);
+    await markCompanyRolesProvided(stripe, accountId);
   }
 
   await attachIbanToAccount(stripe, accountId, intake, isCompany);
