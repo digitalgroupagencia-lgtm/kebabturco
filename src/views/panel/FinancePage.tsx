@@ -165,7 +165,7 @@ const FinancePage = () => {
     try {
       const hasIntake = Boolean(intakeSaved?.owner_email?.trim());
       const missingStripeAccount = !profile?.stripe_connect_account_id;
-      if (hasIntake && missingStripeAccount) {
+      if (hasIntake) {
         const resync = await resyncStorePayoutIntakeToStripe(storeId);
         toast.success(resync.message || "Restaurante enviado para a Stripe");
       } else {

@@ -25,10 +25,17 @@ import {
   syncLiveCustomAccountFromIntake,
   type CustomIntakeRow,
 } from "./stripeConnectCustomProvision.ts";
-import { buildIntakeNotes, enrichIntakeRow, mergeIntakeNotes, parseIntakeNotes } from "./stripeConnectIntakeMeta.ts";
+import {
+  buildIntakeNotes,
+  buildServerStripeIntake,
+  enrichIntakeRow,
+  intakeMissingFields,
+  mergeIntakeNotes,
+  parseIntakeNotes,
+} from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v15";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v16";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -308,10 +315,49 @@ async function shouldReplaceStripeAccount(
 ): Promise<boolean> {
   try {
     const acct = await stripe.accounts.retrieve(accountId);
+    if (acct.type !== "custom") return true;
     return isStripeAccountCriticallyIncomplete(acct);
   } catch {
     return false;
   }
+}
+
+async function clearStoreConnectAccount(
+  service: SupabaseClient,
+  storeId: string,
+): Promise<void> {
+  await service
+    .from("stores")
+    .update({
+      stripe_connect_account_id: null,
+      stripe_charges_enabled: false,
+      stripe_payouts_enabled: false,
+      stripe_onboarding_completed: false,
+      stripe_payout_status: "pending",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", storeId);
+}
+
+async function rebuildIncompleteConnectAccount(
+  stripe: Stripe,
+  service: SupabaseClient,
+  store: ConnectStoreRow,
+): Promise<ConnectStoreRow> {
+  const accountId = store.stripe_connect_account_id;
+  if (!accountId || accountId.startsWith("simulated-")) return store;
+
+  const replace = await shouldReplaceStripeAccount(stripe, accountId);
+  if (!replace) return store;
+
+  try {
+    await stripe.accounts.del(accountId);
+  } catch (e) {
+    console.warn("[connect] could not delete incomplete stripe account", accountId, e);
+  }
+
+  await clearStoreConnectAccount(service, store.id);
+  return { ...store, stripe_connect_account_id: null };
 }
 
 export async function ensureConnectAccount(
@@ -323,31 +369,37 @@ export async function ensureConnectAccount(
 ): Promise<{ accountId: string; environment: StripeKeyMode; accountType: "custom" | "express" }> {
   const payoutIntakeRaw = intake ?? (await loadStorePayoutIntake(service, store.id));
   const payoutIntake: CustomIntakeRow | null = payoutIntakeRaw
-    ? intake?.accept_terms
-      ? (intake as CustomIntakeRow)
-      : enrichIntakeRow(payoutIntakeRaw, {
-          business_website: payoutIntakeRaw.business_website ?? DEFAULT_BUSINESS_WEBSITE,
-        })
+    ? buildServerStripeIntake(
+        payoutIntakeRaw as CustomIntakeRow & { notes?: string | null },
+        intake && "accept_terms" in intake
+          ? {
+              owner_dob: (intake as CustomIntakeRow).owner_dob ?? undefined,
+              business_mcc: (intake as CustomIntakeRow).business_mcc ?? undefined,
+              business_type: (intake as CustomIntakeRow).business_type ?? undefined,
+              representative_id: (intake as CustomIntakeRow).representative_id ?? undefined,
+              business_website: (intake as CustomIntakeRow).business_website ?? undefined,
+            }
+          : undefined,
+      )
     : null;
-  const useCustom = ctx.environment === "live" && intakeComplete(payoutIntake);
-  let accountId = store.stripe_connect_account_id;
 
-  if (accountId && useCustom) {
-    const replaceAccount = await shouldReplaceStripeAccount(ctx.stripe, accountId);
-    if (replaceAccount) {
-      accountId = null;
-      await service
-        .from("stores")
-        .update({
-          stripe_connect_account_id: null,
-          stripe_charges_enabled: false,
-          stripe_payouts_enabled: false,
-          stripe_onboarding_completed: false,
-          stripe_payout_status: "pending",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", store.id);
-    }
+  let workingStore = store;
+  if (ctx.environment === "live" && store.stripe_connect_account_id) {
+    workingStore = await rebuildIncompleteConnectAccount(ctx.stripe, service, store);
+  }
+
+  const useCustom = ctx.environment === "live" && intakeComplete(payoutIntake);
+  let accountId = workingStore.stripe_connect_account_id;
+
+  if (ctx.environment === "live" && payoutIntake && !useCustom) {
+    const missing = intakeMissingFields(payoutIntake);
+    throw new ConnectError(
+      missing.length
+        ? `Dados incompletos para Stripe: ${missing.join(", ")}. Edite e guarde de novo no painel.`
+        : "Dados incompletos para criar conta Stripe em produção.",
+      400,
+      "intake_incomplete",
+    );
   }
 
   if (accountId) {
@@ -373,7 +425,7 @@ export async function ensureConnectAccount(
     const acct = await ctx.stripe.accounts.retrieve(accountId);
     return {
       accountId,
-      environment: (store.stripe_connect_environment as StripeKeyMode) ?? ctx.environment,
+      environment: (workingStore.stripe_connect_environment as StripeKeyMode) ?? ctx.environment,
       accountType: acct.type === "custom" ? "custom" : "express",
     };
   }
@@ -382,12 +434,20 @@ export async function ensureConnectAccount(
     if (useCustom && payoutIntake) {
       const customId = await createLiveCustomAccountFromIntake(
         ctx.stripe,
-        store,
+        workingStore,
         payoutIntake,
         requestIp ?? "127.0.0.1",
       );
-      await persistConnectAccountId(service, store.id, customId, ctx.environment);
+      await persistConnectAccountId(service, workingStore.id, customId, ctx.environment);
       return { accountId: customId, environment: ctx.environment, accountType: "custom" };
+    }
+
+    if (ctx.environment === "live") {
+      throw new ConnectError(
+        "Não foi possível criar conta Custom em produção — verifique os dados do restaurante.",
+        500,
+        "custom_create_required",
+      );
     }
 
     const account = await ctx.stripe.accounts.create({
@@ -415,7 +475,7 @@ export async function ensureConnectAccount(
       },
     });
 
-    await persistConnectAccountId(service, store.id, account.id, ctx.environment);
+    await persistConnectAccountId(service, workingStore.id, account.id, ctx.environment);
     return { accountId: account.id, environment: ctx.environment, accountType: "express" };
   } catch (e) {
     if (ctx.environment === "live" && isPlatformProfileBlockedError(e)) {
@@ -999,13 +1059,12 @@ export async function handleStripeConnectRequest(
         message: "Dados guardados. Recarregue a página e tente de novo.",
       });
     }
-    const intake = enrichIntakeRow(intakeRow2, {
+    const intake = buildServerStripeIntake(intakeRow2, {
       business_website: businessWebsite,
       owner_dob: ownerDob || parseIntakeNotes(intakeRow2.notes).ownerDob,
       business_mcc: businessMcc,
       business_type: businessType,
       representative_id: representativeId || null,
-      accept_terms: true,
     });
 
     // Stripe sync is best-effort — dados do restaurante ficam sempre guardados.
@@ -1130,10 +1189,16 @@ export async function handleStripeConnectRequest(
       );
     }
 
-    const intake = enrichIntakeRow(intakeRow, {
-      business_website: DEFAULT_BUSINESS_WEBSITE,
-      accept_terms: true,
-    });
+    const intake = buildServerStripeIntake(intakeRow);
+
+    const missing = intakeMissingFields(intake);
+    if (missing.length) {
+      throw new ConnectError(
+        `Dados incompletos na base de dados (${missing.join(", ")}). Abra Editar dados, preencha tudo e guarde.`,
+        400,
+        "intake_incomplete",
+      );
+    }
 
     const needsLiveReset =
       store.stripe_connect_environment === "test" ||
@@ -1175,17 +1240,26 @@ export async function handleStripeConnectRequest(
     }
 
     const ctx = await loadConnectContext(workingStore, { requireLive: true });
+    workingStore = await rebuildIncompleteConnectAccount(ctx.stripe, service, workingStore);
     const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
     const status = await syncConnectAccountById(ctx.stripe, service, ensured.accountId);
+    const acct = await ctx.stripe.accounts.retrieve(ensured.accountId);
+    const stillDue = [
+      ...(acct.requirements?.currently_due ?? []),
+      ...(acct.requirements?.past_due ?? []),
+    ];
 
     return json({
       synced: true,
       accountId: ensured.accountId,
       accountType: ensured.accountType,
       connectEnvironment: ensured.environment,
+      requirementsDue: stillDue,
       message:
         ensured.accountType === "custom"
-          ? "Restaurante enviado para a Stripe em produção."
+          ? stillDue.length
+            ? `Conta Custom criada na Stripe (${ensured.accountId}) — faltam: ${stillDue.slice(0, 3).join(", ")}`
+            : `Conta Custom completa na Stripe (${ensured.accountId}).`
           : "Conta criada na Stripe — confirme verificação se for pedida.",
       handlerVersion: CONNECT_HANDLER_VERSION,
       ...statusPayload(status, ensured.environment),

@@ -79,6 +79,46 @@ export function buildIntakeNotes(parts: {
   return segments.length > 0 ? segments.join("|") : undefined;
 }
 
+/** Dados completos para API Stripe — sempre aceita termos em operações do servidor. */
+export function buildServerStripeIntake(
+  row: CustomIntakeRow & { notes?: string | null },
+  extras?: {
+    business_website?: string | null;
+    owner_dob?: string | null;
+    business_mcc?: string | null;
+    business_type?: "company" | "individual" | null;
+    representative_id?: string | null;
+  },
+): CustomIntakeRow {
+  return enrichIntakeRow(row, {
+    business_website: extras?.business_website ?? "https://kebabturco.net",
+    owner_dob: extras?.owner_dob,
+    business_mcc: extras?.business_mcc,
+    business_type: extras?.business_type,
+    representative_id: extras?.representative_id,
+    accept_terms: true,
+  });
+}
+
+export function intakeMissingFields(intake: CustomIntakeRow | null | undefined): string[] {
+  const missing: string[] = [];
+  if (!intake?.business_name?.trim()) missing.push("business_name");
+  if (!intake?.owner_full_name?.trim()) missing.push("owner_full_name");
+  if (!intake?.owner_email?.includes("@")) missing.push("owner_email");
+  if (!intake?.owner_phone?.trim()) missing.push("owner_phone");
+  if (!intake?.tax_id?.trim()) missing.push("tax_id");
+  if (!intake?.business_address?.trim()) missing.push("business_address");
+  if (!intake?.owner_dob?.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(intake.owner_dob.trim())) {
+    missing.push("owner_dob");
+  }
+  if (!intake?.business_mcc?.trim()) missing.push("business_mcc");
+  if (!intake?.business_type) missing.push("business_type");
+  const iban = intake?.iban?.replace(/\s/g, "").toUpperCase() ?? "";
+  if (iban.length < 15) missing.push("iban");
+  if (intake?.accept_terms !== true) missing.push("accept_terms");
+  return missing;
+}
+
 export function enrichIntakeRow(
   row: CustomIntakeRow & { notes?: string | null },
   extras?: {
