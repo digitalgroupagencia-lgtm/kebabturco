@@ -104,6 +104,7 @@ const PaymentScreen = () => {
     tableNumber,
     setTableNumber,
     mesaLocked,
+    mesaManual,
     mesaTableId,
     customerName,
     setCustomerName,
@@ -168,7 +169,7 @@ const PaymentScreen = () => {
 
 
   const isTableOrder = orderType === "here";
-  const mesaValidated = isTableOrder && mesaLocked && Boolean(mesaTableId);
+  const mesaValidated = isTableOrder && Boolean(mesaTableId) && Boolean(tableNumber.trim());
   const stripePublishableKey = hasStripePublishableKey(stripeConnectEnvironment);
   const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
   const stripeIssue =
@@ -708,7 +709,7 @@ const PaymentScreen = () => {
                 {items.length} {items.length === 1 ? t("oneItem") : t("items")}
               </p>
             </div>
-            {mesaLocked && tableNumber ? (
+            {isTableOrder && tableNumber ? (
               <div className="shrink-0 text-center bg-primary/10 rounded-xl px-3 py-2">
                 <p className="text-[9px] uppercase font-bold text-muted-foreground">Mesa</p>
                 <p className="text-xl font-black text-primary">{tableNumber}</p>
@@ -832,7 +833,9 @@ const PaymentScreen = () => {
                     {t("tableNumber")} <span className="text-destructive">*</span>
                   </label>
                   <p className="text-center text-3xl font-black text-primary tabular-nums py-1">{tableNumber}</p>
-                  <p className="text-[10px] text-center text-muted-foreground">Mesa validada por QR code</p>
+                  <p className="text-[10px] text-center text-muted-foreground">
+                    {mesaLocked ? t("mesaQrValidated") : t("mesaManualHint")}
+                  </p>
                 </div>
                 <div className={`px-3 py-2.5 border-t border-border ${showError === "phone" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">

@@ -62,7 +62,9 @@ interface OrderContextType {
   tableNumber: string;
   setTableNumber: (n: string) => void;
   mesaLocked: boolean;
+  mesaManual: boolean;
   mesaTableId: string | null;
+  confirmManualMesa: (tableNumber: string, tableId: string) => void;
   clearMesaLock: () => void;
   customerName: string;
   setCustomerName: (n: string) => void;
@@ -233,6 +235,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     saveSavedTableNumber(value);
   };
   const [mesaLocked, setMesaLocked] = useState(() => Boolean(loadSavedMesaToken()));
+  const [mesaManual, setMesaManual] = useState(false);
   const [mesaTableId, setMesaTableId] = useState<string | null>(null);
   const [mesaQrToken, setMesaQrToken] = useState<string | null>(() => loadSavedMesaToken());
   const [customerName, setCustomerNameState] = useState(() =>
@@ -349,6 +352,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       saveSavedTableNumber(mesa.mesaNumber);
       setMesaTableId(mesa.tableId);
       setMesaLocked(true);
+      setMesaManual(false);
       setMesaQrToken(mesa.qrToken);
       saveSavedMesaToken(mesa.qrToken);
       setOrderType("here");
@@ -367,6 +371,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleMesaSessionClosed = useCallback(() => {
     setMesaLocked(false);
+    setMesaManual(false);
     setMesaTableId(null);
     setMesaQrToken(null);
     setTableNumber("");
@@ -380,8 +385,19 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleMesaSessionClosed,
   );
 
+  const confirmManualMesa = useCallback((tableNumber: string, tableId: string) => {
+    setTableNumber(tableNumber);
+    setMesaTableId(tableId);
+    setMesaManual(true);
+    setMesaLocked(false);
+    setMesaQrToken(null);
+    clearMesaBindingStorage();
+    setOrderType("here");
+  }, [setOrderType]);
+
   const clearMesaLock = useCallback(() => {
     setMesaLocked(false);
+    setMesaManual(false);
     setMesaTableId(null);
     setMesaQrToken(null);
     setTableNumber("");
@@ -417,7 +433,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         tableNumber,
         setTableNumber,
         mesaLocked,
+        mesaManual,
         mesaTableId,
+        confirmManualMesa,
         clearMesaLock,
         customerName,
         setCustomerName,

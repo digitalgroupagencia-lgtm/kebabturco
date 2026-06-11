@@ -11,6 +11,7 @@ import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
+import MesaSetupDialog from "@/customer/components/MesaSetupDialog";
 
 type OrderOption = {
   key: "here" | "takeaway" | "delivery";
@@ -77,7 +78,8 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
 );
 
 const OrderTypeScreen = () => {
-  const { setScreen, setTableNumber, mesaLocked, tableNumber, clearMesaLock } = useOrder();
+  const { setScreen, setTableNumber, mesaLocked, mesaManual, tableNumber, clearMesaLock, confirmManualMesa } = useOrder();
+  const [mesaDialogOpen, setMesaDialogOpen] = useState(false);
   const { setOrderType } = useCart();
   const { settings, loading: brandingLoading } = useBranding();
   const { t, lang } = useLanguage();
@@ -128,6 +130,10 @@ const OrderTypeScreen = () => {
   }, [storeId]);
 
   const handleSelect = (type: "here" | "takeaway" | "delivery") => {
+    if (type === "here" && !mesaLocked && !mesaManual) {
+      setMesaDialogOpen(true);
+      return;
+    }
     setOrderType(type);
     if (type !== "here") {
       setTableNumber("");
@@ -136,13 +142,18 @@ const OrderTypeScreen = () => {
     setScreen("home");
   };
 
+  const handleManualMesa = (number: string, tableId: string) => {
+    confirmManualMesa(number, tableId);
+    setMesaDialogOpen(false);
+    setScreen("home");
+  };
+
   const enabled: OrderOption[] = [];
-  // Mesa só aparece quando o cliente leu o QR da mesa
-  if (opts.dine_in && mesaLocked) {
+  if (opts.dine_in) {
     enabled.push({
       key: "here",
       label: t("eatHere"),
-      sub: t("eatHereSub"),
+      sub: mesaLocked || mesaManual ? t("eatHereSub") : t("mesaScanInstruction"),
       icon: iconDineIn,
       Fallback: UtensilsCrossed,
     });
@@ -156,8 +167,7 @@ const OrderTypeScreen = () => {
       Fallback: ShoppingBag,
     });
   }
-  // Com QR da mesa: sem entrega ao domicílio
-  if (opts.delivery && !mesaLocked) {
+  if (opts.delivery && !mesaLocked && !mesaManual) {
     enabled.push({
       key: "delivery",
       label: t("delivery"),
@@ -193,18 +203,13 @@ const OrderTypeScreen = () => {
         )}
 
         <div className="text-center flex flex-col gap-1 w-full mt-1">
-          {mesaLocked && tableNumber && (
+          {(mesaLocked || mesaManual) && tableNumber && (
             <div className="mb-3 inline-flex items-center gap-2.5 px-5 py-2 rounded-full mx-auto border border-border/30 bg-background/70 dark:bg-white/8 backdrop-blur-xl shadow-[0_4px_24px_-6px_rgba(0,0,0,0.12)] dark:border-white/12 dark:shadow-[0_4px_24px_-6px_rgba(0,0,0,0.35)]">
               <UtensilsCrossed className="w-4 h-4 text-foreground/55" strokeWidth={2} />
               <span className="text-sm font-semibold text-foreground/90 tracking-wide">
                 {t("tableLabel")} {tableNumber}
               </span>
             </div>
-          )}
-          {!mesaLocked && opts.dine_in && (
-            <p className="text-xs text-muted-foreground/70 mb-1 px-2 max-w-sm mx-auto leading-relaxed">
-              {t("scanQrHint")}
-            </p>
           )}
           <h1 className="text-[24px] leading-tight font-black text-foreground tracking-tight">{t("howOrder")}</h1>
           <p className="text-[16px] text-muted-foreground">{t("pickOption")}</p>
@@ -237,6 +242,13 @@ const OrderTypeScreen = () => {
           </div>
         )}
       </div>
+
+      <MesaSetupDialog
+        open={mesaDialogOpen}
+        storeId={storeId ?? ""}
+        onClose={() => setMesaDialogOpen(false)}
+        onConfirm={handleManualMesa}
+      />
 
       <div
         className="shrink-0 px-6 pt-6 mt-auto space-y-4"
