@@ -339,11 +339,6 @@ const PaymentScreen = () => {
       setShowError("method");
       return false;
     }
-    if ((selected === "card" || selected === "bizum") && !stripeEnabled) {
-      setPaymentError("Recebimentos online ainda não estão activos para este restaurante.");
-      setShowError("method");
-      return false;
-    }
     setShowError(null);
     setPaymentError(null);
     return true;
@@ -655,10 +650,8 @@ const PaymentScreen = () => {
 
 
     if (selected === "card" || selected === "bizum") {
-      if (!stripePublishableKey || !stripeEnabled) {
-        setPaymentError(
-          stripeIssue || "Recebimentos online ainda não estão activos para este restaurante.",
-        );
+      if (!stripePublishableKey) {
+        setPaymentError(stripeIssue || "Pagamento online indisponível neste momento.");
         setShowError("method");
         return;
       }

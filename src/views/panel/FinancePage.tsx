@@ -111,18 +111,6 @@ const FinancePage = () => {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (!storeId) return;
-    void (async () => {
-      try {
-        await syncStripeConnectStatus(storeId);
-        await load({ silent: true });
-      } catch {
-        /* primeira carga — sync opcional */
-      }
-    })();
-  }, [storeId, load]);
-
   const refreshStatus = useCallback(async () => {
     if (!storeId) return;
     setSyncing(true);

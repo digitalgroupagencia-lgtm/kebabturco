@@ -148,6 +148,41 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
   return data as ValidateCouponResult;
 }
 
+function parseCheckoutStripeProfile(data: unknown): StoreFinancialProfile | null {
+  if (!data || typeof data !== "object") return null;
+  const row = data as Record<string, unknown>;
+  if (row.ok === true || row.service || row.message) return null;
+  if (typeof row.error === "string" && row.error) return null;
+
+  const accountId =
+    typeof row.stripe_connect_account_id === "string" ? row.stripe_connect_account_id : null;
+  const testSimulated = row.stripe_connect_test_simulated === true;
+  const chargesEnabled = row.stripe_charges_enabled === true;
+  const onboardingCompleted = row.stripe_onboarding_completed === true;
+
+  if (!testSimulated && !accountId) return null;
+  if (testSimulated && !chargesEnabled && !onboardingCompleted) return null;
+
+  return {
+    stripe_connect_account_id: accountId,
+    stripe_connect_environment:
+      row.stripe_connect_environment === "test" || row.stripe_connect_environment === "live"
+        ? row.stripe_connect_environment
+        : null,
+    stripe_connect_test_simulated: testSimulated,
+    stripe_charges_enabled: chargesEnabled,
+    stripe_onboarding_completed: onboardingCompleted,
+    stripe_payouts_enabled: row.stripe_payouts_enabled === true,
+    stripe_iban_last4: typeof row.stripe_iban_last4 === "string" ? row.stripe_iban_last4 : null,
+    stripe_business_name:
+      typeof row.stripe_business_name === "string" ? row.stripe_business_name : null,
+    stripe_payout_status:
+      typeof row.stripe_payout_status === "string" ? row.stripe_payout_status : "",
+    stripe_last_payout_at:
+      typeof row.stripe_last_payout_at === "string" ? row.stripe_last_payout_at : null,
+  };
+}
+
 async function fetchCheckoutStripeProfileViaRpc(storeId: string): Promise<StoreFinancialProfile | null> {
   const { data, error } = await supabase.rpc("get_store_checkout_stripe_profile", {
     _store_id: storeId,
@@ -159,19 +194,21 @@ async function fetchCheckoutStripeProfileViaRpc(storeId: string): Promise<StoreF
     ) {
       return null;
     }
-    throw error;
+    return null;
   }
-  if (!data || typeof data !== "object") return null;
-  return data as StoreFinancialProfile;
+  return parseCheckoutStripeProfile(data);
 }
 
 async function fetchCheckoutStripeProfileViaEdge(storeId: string): Promise<StoreFinancialProfile | null> {
-  const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
-    body: { action: "checkout_profile", storeId },
-  });
-  if (error) return null;
-  if (!data || typeof data !== "object" || (data as { error?: string }).error) return null;
-  return data as StoreFinancialProfile;
+  try {
+    const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
+      body: { action: "checkout_profile", storeId },
+    });
+    if (error) return null;
+    return parseCheckoutStripeProfile(data);
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchStoreFinancialProfile(storeId: string): Promise<StoreFinancialProfile | null> {
@@ -657,9 +694,16 @@ export async function resyncStorePayoutIntakeToStripe(storeId: string): Promise<
   };
 }
 
-export async function syncStripeConnectStatus(storeId: string): Promise<StripeConnectStatus> {
-  const data = await invokeConnectFunction({ storeId, mode: "sync_status" }, { allowPaymentIntentFallback: true });
+export async function syncStripeConnectStatus(
+  storeId: string,
+  options?: { silent?: boolean },
+): Promise<StripeConnectStatus | null> {
+  const data = await invokeConnectFunction(
+    { storeId, mode: "sync_status" },
+    { allowPaymentIntentFallback: true, silent: options?.silent },
+  );
   if (!data) {
+    if (options?.silent) return null;
     throw new Error("Não foi possível actualizar — use modo teste ou tente mais tarde.");
   }
   return data as StripeConnectStatus;
