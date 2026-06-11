@@ -76,6 +76,7 @@ export function intakeMissingFields(intake: CustomIntakeRow | null | undefined):
   }
   if (!intake?.business_mcc?.trim()) missing.push("business_mcc");
   if (!intake?.business_type) missing.push("business_type");
+  if (!intake?.representative_id?.trim()) missing.push("representative_id");
   const iban = intake?.iban?.replace(/\s/g, "").toUpperCase() ?? "";
   if (iban.length < 15) missing.push("iban");
   if (intake?.accept_terms !== true) missing.push("accept_terms");

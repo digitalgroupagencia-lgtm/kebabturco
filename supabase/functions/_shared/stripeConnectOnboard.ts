@@ -20,6 +20,7 @@ import {
   accountNeedsOwnerVerificationStep,
   createLiveCustomAccountFromIntake,
   DEFAULT_BUSINESS_WEBSITE,
+  formatSpanishTaxId,
   intakeComplete,
   isStripeAccountCriticallyIncomplete,
   syncLiveCustomAccountFromIntake,
@@ -30,12 +31,11 @@ import {
   buildServerStripeIntake,
   enrichIntakeRow,
   intakeMissingFields,
-  mergeIntakeNotes,
   parseIntakeNotes,
 } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v17";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v18";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -185,7 +185,7 @@ async function upsertStorePayoutIntakeDirect(
       owner_full_name: fields.ownerFullName.trim(),
       owner_email: fields.ownerEmail.trim(),
       owner_phone: fields.ownerPhone?.trim() || null,
-      tax_id: fields.taxId?.trim() || null,
+      tax_id: fields.taxId?.trim() ? formatSpanishTaxId(fields.taxId) : null,
       iban: normalizeIban(fields.iban),
       business_address: fields.businessAddress?.trim() || null,
       notes: fields.notes?.trim() || null,
@@ -710,6 +710,7 @@ export async function handleStripeConnectRequest(
     if (taxId.length < 2) return json({ error: "El NIF / CIF es obligatorio." }, 400);
     if (businessAddress.length < 5) return json({ error: "La dirección del negocio es obligatoria." }, 400);
     if (normalizeIban(iban).length < 15) return json({ error: "IBAN no válido." }, 400);
+    if (representativeId.length < 5) return json({ error: "El DNI/NIE del representante es obligatorio." }, 400);
     if (!acceptTerms) {
       return json({ error: "Debes aceptar los términos del servicio de pagos." }, 400);
     }
@@ -1066,6 +1067,9 @@ export async function handleStripeConnectRequest(
     }
     if (!businessAddress.trim()) {
       throw new ConnectError("Morada do negócio é obrigatória.", 400, "validation");
+    }
+    if (representativeId.length < 5) {
+      throw new ConnectError("DNI/NIE do representante é obrigatório para activar recebimentos.", 400, "validation");
     }
 
     await upsertStorePayoutIntakeDirect(service, storeId, {
