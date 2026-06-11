@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
       ? await stripe.paymentIntents.create({
           amount: amountCents,
           currency: "eur",
-          payment_method_types: ["card"],
+          payment_method_types: ["card", "bizum"],
           metadata: {
             ...baseMeta,
             test_simulated: "true",
