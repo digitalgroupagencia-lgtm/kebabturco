@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
           "embedded_onboarding",
           "platform_status",
           "sync_status",
+          "finance_snapshot",
           "public_link_info",
           "public_submit_intake",
           "public_onboarding_session",

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { Button } from "@/components/ui/button";
-import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
 import {
   activateLiveStripeConnect,
@@ -18,7 +17,6 @@ import {
 } from "@/services/orderService";
 import type { SavePayoutIntakeResult, StorePayoutIntake } from "@/services/payoutIntakeService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
-import { computePlatformDeductionEur, PLATFORM_FEE_EUR } from "@/lib/processingFee";
 import { isStripeConnectReady, stripeConnectStatusLabel } from "@/lib/stripeConnectReady";
 import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbeddedPanel";
 import TestCheckoutReadiness from "@/components/finance/TestCheckoutReadiness";
@@ -27,8 +25,6 @@ import { probeSchemaFallback } from "@/services/operationalDiagnosticsService";
 import {
   Loader2,
   Wallet,
-  ArrowDownLeft,
-  Building2,
   ShieldCheck,
   AlertTriangle,
   Info,
@@ -40,76 +36,31 @@ import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 import AdminStoreSwitcher from "@/components/admin/AdminStoreSwitcher";
 import AdminPayoutIntakeForm from "@/components/finance/AdminPayoutIntakeForm";
+import RestaurantFinanceDashboard from "@/components/finance/RestaurantFinanceDashboard";
+import {
+  fetchFinanceMovements,
+  fetchFinancePayouts,
+  fetchRestaurantFinanceSnapshot,
+  type FinanceMovement,
+  type FinancePayout,
+  type RestaurantFinanceSnapshot,
+} from "@/services/restaurantFinanceService";
 
-type LedgerRow = {
-  id: string;
-  description: string | null;
-  entry_type?: string | null;
-  gross_cents: number;
-  platform_fee_cents: number;
-  processing_fee_cents: number;
-  net_cents: number;
-  created_at: string;
-};
-
-function ledgerRowTitle(row: LedgerRow): string {
-  if (row.entry_type === "dispute_fee") return "Taxa de contestação";
-  if (row.entry_type === "dispute_reversal") return "Contestação de pagamento";
-  return row.description || "Pagamento online";
-}
-
-function ledgerRowSummary(row: LedgerRow): string {
-  const value = centsToEur(row.net_cents);
-  if (row.entry_type === "dispute_fee") return `Desconto ${value.replace("-", "−")}€`;
-  if (row.entry_type === "dispute_reversal") return `Valor contestado ${value.replace("-", "−")}€`;
-  return `Valor do pedido ${value}€`;
-}
-
-type PayoutRow = {
-  id: string;
-  amount_cents: number;
-  status: string;
-  arrival_date: string | null;
-  created_at: string;
-};
-
-const centsToEur = (c: number) => (c / 100).toFixed(2);
-
-async function fetchLedgerSafe(storeId: string): Promise<{ rows: LedgerRow[]; ok: boolean }> {
+async function probeLedgerTable(storeId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from("store_payment_ledger")
-      .select("id,description,entry_type,gross_cents,platform_fee_cents,processing_fee_cents,net_cents,created_at")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false })
-      .limit(30);
-    if (error) return { rows: [], ok: false };
-    return { rows: (data as LedgerRow[]) || [], ok: true };
+    const { error } = await supabase.from("store_payment_ledger").select("id").eq("store_id", storeId).limit(1);
+    return !error;
   } catch {
-    return { rows: [], ok: false };
-  }
-}
-
-async function fetchPayoutsSafe(storeId: string): Promise<PayoutRow[]> {
-  try {
-    const { data, error } = await supabase
-      .from("store_payouts")
-      .select("id,amount_cents,status,arrival_date,created_at")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    if (error) return [];
-    return (data as PayoutRow[]) || [];
-  } catch {
-    return [];
+    return false;
   }
 }
 
 const FinancePage = () => {
   const { storeId } = useAdminStoreId();
   const [profile, setProfile] = useState<StoreFinancialProfile | null>(null);
-  const [ledger, setLedger] = useState<LedgerRow[]>([]);
-  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [movements, setMovements] = useState<FinanceMovement[]>([]);
+  const [payouts, setPayouts] = useState<FinancePayout[]>([]);
+  const [financeSnapshot, setFinanceSnapshot] = useState<RestaurantFinanceSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ledgerTableOk, setLedgerTableOk] = useState(true);
@@ -132,19 +83,23 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, schema, ledgerRes, po, serverPlatform] = await Promise.all([
+      const [prof, schema, mv, po, serverPlatform, ledgerOk] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         probeSchemaFallback().catch(() => null),
-        fetchLedgerSafe(storeId),
-        fetchPayoutsSafe(storeId),
+        fetchFinanceMovements(storeId),
+        fetchFinancePayouts(storeId),
         fetchStripePlatformStatus(storeId).catch(() => null),
+        probeLedgerTable(storeId),
       ]);
       setProfile(prof);
       setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
       setSchemaProbe(schema);
-      setLedger(ledgerRes.rows);
-      setLedgerTableOk(ledgerRes.ok);
+      setMovements(mv);
+      setLedgerTableOk(ledgerOk);
       setPayouts(po);
+      const ledgerNet = mv.reduce((s, m) => s + m.youReceiveCents, 0);
+      const snap = await fetchRestaurantFinanceSnapshot(storeId, ledgerNet);
+      setFinanceSnapshot(snap);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Erro ao carregar recebimentos");
     } finally {
@@ -178,12 +133,12 @@ const FinancePage = () => {
       const hasIntake = Boolean(intakeSaved?.owner_email?.trim());
       if (stillNotReady && hasIntake) {
         const resync = await resyncStorePayoutIntakeToStripe(storeId);
-        toast.success(resync.message || "Conta sincronizada com a Stripe");
+        toast.success(resync.message || "Dados financeiros actualizados");
         await syncStripeConnectStatus(storeId);
       } else if (isStripeConnectReady(fresh)) {
-        toast.success("Pagamentos online activos — estado sincronizado com a Stripe");
+        toast.success("Pagamentos online activos — dados actualizados");
       } else {
-        toast.success("Estado sincronizado com a Stripe");
+        toast.success("Dados financeiros actualizados");
       }
       await load({ silent: true });
     } catch (e) {
@@ -298,8 +253,7 @@ const FinancePage = () => {
   const showTestDiagnostics =
     testModeActive || testSimulated || showTestTools || (!ready && productionBlocked);
 
-  const balanceNet = ledger.reduce((s, r) => s + r.net_cents, 0);
-  const exampleDeduction = computePlatformDeductionEur(20);
+  const showFinanceDashboard = ready || movements.length > 0 || payouts.length > 0;
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-10">
@@ -344,10 +298,9 @@ const FinancePage = () => {
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed">
-              <p className="font-black text-amber-900 dark:text-amber-200">Plataforma real pendente de aprovação</p>
+              <p className="font-black text-amber-900 dark:text-amber-200">Pagamentos reais pendentes de aprovação</p>
               <p className="text-muted-foreground mt-1">
-                Pagamentos reais ficam bloqueados até a Stripe aprovar. Use o modo teste abaixo — não depende dessa
-                aprovação.
+                Pagamentos reais ficam bloqueados até a verificação terminar. Use o modo teste abaixo enquanto isso.
               </p>
             </div>
           </div>
@@ -464,26 +417,29 @@ const FinancePage = () => {
         </div>
       )}
 
-      <div className="rounded-xl border bg-muted/40 p-3 space-y-2 text-xs">
-        <div className="flex items-start gap-2">
-          <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-          <div className="space-y-1 text-muted-foreground leading-relaxed">
-            <p>
-              <strong className="text-foreground">Exemplo pedido 20,00€:</strong> o cliente paga{" "}
-              <strong className="text-foreground">20,00€</strong> (total simples, sem taxa extra).
-            </p>
-            <p>
-              A taxa da plataforma (cerca de {PLATFORM_FEE_EUR.toFixed(2)}€ + processamento, ~{exampleDeduction.toFixed(2)}€ neste exemplo) sai do repasse do restaurante — o restaurante recebe ~{(20 - exampleDeduction).toFixed(2)}€ líquidos.
+      {showFinanceDashboard && (
+        <RestaurantFinanceDashboard
+          snapshot={financeSnapshot}
+          movements={movements}
+          payouts={payouts}
+          ibanLast4={profile?.stripe_iban_last4}
+          businessName={profile?.stripe_business_name}
+          lastPayoutAt={profile?.stripe_last_payout_at}
+        />
+      )}
+
+      {!showFinanceDashboard && (
+        <div className="rounded-xl border bg-muted/40 p-3 space-y-2 text-xs">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-muted-foreground leading-relaxed">
+              Quando os pagamentos online estiverem activos, verá aqui o extrato completo, saldos e previsão de
+              depósito no banco. O cliente paga o total do pedido; a taxa de serviço da plataforma aparece só no
+              extrato, sem surpresas no checkout.
             </p>
           </div>
         </div>
-      </div>
-
-      <div className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-5 text-primary-foreground shadow-lg">
-        <p className="text-xs opacity-90 uppercase tracking-wide font-semibold">Total recebido (pedidos online)</p>
-        <p className="text-4xl font-black tabular-nums mt-1">{centsToEur(balanceNet)}€</p>
-        <p className="text-[11px] opacity-80 mt-2">Valor dos produtos + entrega</p>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border bg-card p-3">
@@ -499,7 +455,7 @@ const FinancePage = () => {
           </p>
         </div>
         <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Repasse bancário</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Depósito no banco</p>
           <p className="text-sm font-bold mt-0.5 capitalize">
             {payoutsActive ? "Activo" : profile?.stripe_payout_status || "Pendente"}
           </p>
@@ -638,62 +594,8 @@ const FinancePage = () => {
         disabled={syncing}
       >
         {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-        Sincronizar estado Stripe
+        Actualizar dados financeiros
       </Button>
-
-      {profile?.stripe_iban_last4 && (
-        <OpsCompactCard
-          title={profile.stripe_business_name || "Conta bancária"}
-          summary={`IBAN ···· ${profile.stripe_iban_last4}`}
-          meta={
-            profile.stripe_last_payout_at
-              ? `Último repasse: ${new Date(profile.stripe_last_payout_at).toLocaleDateString("pt-PT")}`
-              : undefined
-          }
-          badges={payoutsActive ? ["Repasse activo"] : []}
-          editable={false}
-          actions={<Building2 className="h-4 w-4 text-muted-foreground" />}
-        />
-      )}
-
-      <div>
-        <h2 className="text-sm font-bold mb-2 flex items-center gap-1.5">
-          <ArrowDownLeft className="h-4 w-4" /> Movimentos recentes
-        </h2>
-        <div className="space-y-2">
-          {ledger.map((row) => (
-            <OpsCompactCard
-              key={row.id}
-              title={ledgerRowTitle(row)}
-              summary={ledgerRowSummary(row)}
-              meta={`${new Date(row.created_at).toLocaleString("pt-PT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}`}
-              editable={false}
-            />
-          ))}
-          {ledger.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-8 border border-dashed rounded-2xl">
-              Ainda sem pagamentos online registados
-            </p>
-          )}
-        </div>
-      </div>
-
-      {payouts.length > 0 && (
-        <div>
-          <h2 className="text-sm font-bold mb-2">Repasses para o banco</h2>
-          <div className="space-y-2">
-            {payouts.map((p) => (
-              <OpsCompactCard
-                key={p.id}
-                title={`${centsToEur(p.amount_cents)}€`}
-                summary={p.arrival_date ? `Chegada ${p.arrival_date}` : "A processar"}
-                badges={[p.status === "failed" ? "Falhou" : p.status]}
-                editable={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -33,9 +33,10 @@ import {
   intakeMissingFields,
   parseIntakeNotes,
 } from "./stripeConnectIntakeMeta.ts";
+import { buildRestaurantFinanceSnapshot } from "./stripeFinanceSnapshot.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-12-custom-v25-simulated-sync";
+export const CONNECT_HANDLER_VERSION = "2026-06-12-custom-v26-finance-panel";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -1565,6 +1566,24 @@ export async function handleStripeConnectRequest(
 
   if (mode === "provision") {
     return json({ accountId, provisioned: true, ...meta });
+  }
+
+  if (mode === "finance_snapshot") {
+    const ledgerNetCents = Number(body.ledgerNetCents) || 0;
+    if (!accountId) {
+      return json({
+        availableCents: Math.max(0, ledgerNetCents),
+        pendingCents: 0,
+        payoutInterval: "weekly",
+        payoutWeekday: "segunda-feira",
+        nextPayoutDate: null,
+        nextPayoutAmountCents: null,
+        ibanLast4: store.stripe_iban_last4 ?? null,
+        simulated: true,
+      });
+    }
+    const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
+    return json(snapshot);
   }
 
   if (mode === "sync_status") {
