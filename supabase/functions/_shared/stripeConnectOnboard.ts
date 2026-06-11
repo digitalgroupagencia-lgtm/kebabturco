@@ -20,6 +20,7 @@ import {
   accountNeedsOwnerVerificationStep,
   createLiveCustomAccountFromIntake,
   DEFAULT_BUSINESS_WEBSITE,
+  formatSpanishTaxId,
   intakeComplete,
   isStripeAccountCriticallyIncomplete,
   syncLiveCustomAccountFromIntake,
@@ -30,7 +31,6 @@ import {
   buildServerStripeIntake,
   enrichIntakeRow,
   intakeMissingFields,
-  mergeIntakeNotes,
   parseIntakeNotes,
 } from "./stripeConnectIntakeMeta.ts";
 
@@ -185,7 +185,7 @@ async function upsertStorePayoutIntakeDirect(
       owner_full_name: fields.ownerFullName.trim(),
       owner_email: fields.ownerEmail.trim(),
       owner_phone: fields.ownerPhone?.trim() || null,
-      tax_id: fields.taxId?.trim() || null,
+      tax_id: fields.taxId?.trim() ? formatSpanishTaxId(fields.taxId) : null,
       iban: normalizeIban(fields.iban),
       business_address: fields.businessAddress?.trim() || null,
       notes: fields.notes?.trim() || null,
