@@ -241,7 +241,9 @@ const PaymentScreen = () => {
         const useTest =
           profile?.stripe_connect_environment === "test" ||
           Boolean(profile?.stripe_connect_test_simulated) ||
-          (Boolean(platform?.productionBlocked) && hasStripePublishableKey("test"));
+          (profile?.stripe_connect_environment !== "live" &&
+            Boolean(platform?.productionBlocked) &&
+            hasStripePublishableKey("test"));
         setStripeConnectEnvironment(useTest ? "test" : "live");
       })
       .catch(() => setStripeEnabled(false));

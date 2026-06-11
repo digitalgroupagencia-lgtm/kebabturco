@@ -23,7 +23,9 @@ import { buildLivePlatformStatus } from "../_shared/stripePlatform.ts";
 import {
   loadStoreConnectPaymentRow,
   resolveStoreConnectEnvironment,
+  type StoreConnectPaymentRow,
 } from "../_shared/stripeStoreConnect.ts";
+import { syncConnectAccountById } from "../_shared/stripeConnectSync.ts";
 import {
   handleStaffCreateMember,
   handleStaffUpdateMember,
@@ -35,6 +37,25 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+async function refreshLiveConnectStore(
+  supabase: ReturnType<typeof createClient>,
+  storeId: string,
+  store: StoreConnectPaymentRow,
+): Promise<StoreConnectPaymentRow> {
+  if (!store.stripe_connect_account_id || store.stripe_connect_test_simulated) return store;
+  const liveKey = pickStripeSecretForEnvironment("live");
+  if (!liveKey) return store;
+  try {
+    const stripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+    await syncConnectAccountById(stripe, supabase, store.stripe_connect_account_id, storeId);
+    const reloaded = await loadStoreConnectPaymentRow(supabase, storeId);
+    return reloaded.store ?? store;
+  } catch (e) {
+    console.warn("[checkout] live connect sync skipped", e);
+    return store;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -94,6 +115,27 @@ Deno.serve(async (req) => {
     }
 
     const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";
+
+    if (body?.action === "checkout_profile" && storeId) {
+      const supabaseProfile = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const loaded = await loadStoreConnectPaymentRow(supabaseProfile, storeId);
+      if (loaded.error || !loaded.store) {
+        return json({ error: "Loja não encontrada" }, 404);
+      }
+      const synced = await refreshLiveConnectStore(supabaseProfile, storeId, loaded.store);
+      const { data: fullStore } = await supabaseProfile
+        .from("stores")
+        .select(
+          "stripe_connect_account_id, stripe_connect_environment, stripe_connect_test_simulated, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at",
+        )
+        .eq("id", storeId)
+        .eq("is_active", true)
+        .maybeSingle();
+      return json(fullStore ?? synced);
+    }
     const subtotalCents = Number(body?.subtotalCents) || 0;
     const deliveryCents = Number(body?.deliveryCents) || 0;
     const discountCents = Number(body?.discountCents) || 0;
@@ -157,13 +199,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { store, error: storeLoadErr } = await loadStoreConnectPaymentRow(supabase, storeId);
-
-    const testSimulated = Boolean(store?.stripe_connect_test_simulated);
+    const loadedStore = await loadStoreConnectPaymentRow(supabase, storeId);
+    let store = loadedStore.store;
+    const storeLoadErr = loadedStore.error;
 
     if (storeLoadErr || !store) {
       return json({ error: "Recebimentos online ainda não activos para esta loja" }, 400);
     }
+
+    store = await refreshLiveConnectStore(supabase, storeId, store);
+
+    const testSimulated = Boolean(store?.stripe_connect_test_simulated);
 
     if (
       !testSimulated &&

@@ -7,8 +7,26 @@ export function inferStripePlatformStatus(
 ): StripePlatformStatus {
   const testMode =
     profile?.stripe_connect_environment === "test" || Boolean(profile?.stripe_connect_test_simulated);
+  const liveMode = profile?.stripe_connect_environment === "live";
   const hasTestPk = hasStripePublishableKey("test");
   const ready = Boolean(profile?.stripe_charges_enabled && profile?.stripe_onboarding_completed);
+
+  if (liveMode && ready) {
+    return {
+      keyMode: "live",
+      connectEnvironment: "live",
+      connectLiveAllowed: true,
+      platformProfileComplete: true,
+      pendingVerification: false,
+      productionBlocked: false,
+      testKeysConfigured: hasTestPk,
+      message: null,
+      adminMessage: null,
+      canUseEmbeddedTest: hasTestPk,
+      canUseEmbeddedLive: true,
+      hasConnectAccount: Boolean(profile?.stripe_connect_account_id),
+    };
+  }
 
   if (testMode && ready) {
     return {

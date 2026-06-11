@@ -148,7 +148,39 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
   return data as ValidateCouponResult;
 }
 
+async function fetchCheckoutStripeProfileViaRpc(storeId: string): Promise<StoreFinancialProfile | null> {
+  const { data, error } = await supabase.rpc("get_store_checkout_stripe_profile", {
+    _store_id: storeId,
+  });
+  if (error) {
+    if (
+      error.message?.includes("get_store_checkout_stripe_profile") ||
+      error.message?.includes("Could not find the function")
+    ) {
+      return null;
+    }
+    throw error;
+  }
+  if (!data || typeof data !== "object") return null;
+  return data as StoreFinancialProfile;
+}
+
+async function fetchCheckoutStripeProfileViaEdge(storeId: string): Promise<StoreFinancialProfile | null> {
+  const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
+    body: { action: "checkout_profile", storeId },
+  });
+  if (error) return null;
+  if (!data || typeof data !== "object" || (data as { error?: string }).error) return null;
+  return data as StoreFinancialProfile;
+}
+
 export async function fetchStoreFinancialProfile(storeId: string): Promise<StoreFinancialProfile | null> {
+  const rpcProfile = await fetchCheckoutStripeProfileViaRpc(storeId);
+  if (rpcProfile) return rpcProfile;
+
+  const edgeProfile = await fetchCheckoutStripeProfileViaEdge(storeId);
+  if (edgeProfile) return edgeProfile;
+
   const withEnv =
     "stripe_connect_account_id, stripe_connect_environment, stripe_connect_test_simulated, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
   const legacy =
@@ -160,6 +192,10 @@ export async function fetchStoreFinancialProfile(storeId: string): Promise<Store
     const retry = await supabase.from("stores").select(legacy).eq("id", storeId).maybeSingle();
     data = retry.data ? { ...retry.data, stripe_connect_environment: null, stripe_connect_test_simulated: false } : null;
     error = retry.error;
+  }
+
+  if (error?.message?.includes("permission denied")) {
+    return null;
   }
 
   if (error) throw error;
