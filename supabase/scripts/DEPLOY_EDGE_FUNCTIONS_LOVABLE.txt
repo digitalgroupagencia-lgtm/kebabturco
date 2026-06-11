@@ -1,6 +1,17 @@
-Cole isto no chat da Lovable (uma vez):
+OPÇÃO A — Sem créditos Lovable (recomendado, uma vez):
 
-Deploy all Supabase edge functions. Publish stripe-connect-onboard and stripe-create-payment-intent with verify_jwt false. Use the latest code from the repo.
+1. Abra https://supabase.com/dashboard/account/tokens e crie um token
+2. GitHub → repositório kebabturco → Settings → Secrets and variables → Actions → New secret
+   - SUPABASE_ACCESS_TOKEN = o token
+   - SUPABASE_PROJECT_ID = kvpssbhclafoymhecmuk
+3. Cada push para main publica as funções automaticamente (workflow já no repo)
+
+OPÇÃO B — No Mac, no terminal, na pasta do projecto:
+   npx supabase login
+   ./scripts/deploy-edge-functions.sh
+
+OPÇÃO C — Chat Lovable (gasta créditos):
+Deploy all Supabase edge functions...
 
 Depois: Sync + Publish no botão da Lovable.
 

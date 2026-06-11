@@ -1131,7 +1131,7 @@ const PaymentScreen = () => {
                   })}
                   {selected === "card" && stripePublishableKey && (
                     <p className="text-[10px] text-muted-foreground px-1 pt-1">
-                      Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
+                      No telemóvel podem aparecer Apple Pay ou Google Pay. No computador use o cartão normal.
                     </p>
                   )}
                   {selected === "bizum" && stripePublishableKey && (

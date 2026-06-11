@@ -300,7 +300,9 @@ Deno.serve(async (req) => {
           application_fee_amount: applicationFeeCents,
           transfer_data: { destination: store.stripe_connect_account_id! },
           on_behalf_of: store.stripe_connect_account_id!,
-          payment_method_types: [stripePaymentMethod],
+          ...(stripePaymentMethod === "card"
+            ? { automatic_payment_methods: { enabled: true, allow_redirects: "never" as const } }
+            : { payment_method_types: [stripePaymentMethod] }),
           metadata: {
             ...baseMeta,
             checkout_payment_method: stripePaymentMethod,

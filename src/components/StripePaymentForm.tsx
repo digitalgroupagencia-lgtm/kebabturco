@@ -69,6 +69,10 @@ function CheckoutForm({
     }
   };
 
+  const isLikelyMobile =
+    typeof navigator !== "undefined" &&
+    (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1);
+
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
       <PaymentElement
@@ -77,6 +81,12 @@ function CheckoutForm({
           wallets: { applePay: "auto", googlePay: "auto" },
         }}
       />
+      {!isLikelyMobile && (
+        <p className="text-[10px] text-muted-foreground leading-relaxed px-0.5">
+          No computador só aparece o cartão. No telemóvel (Safari ou Chrome) podem surgir Apple Pay ou Google Pay
+          no topo do formulário, se o telemóvel tiver essa opção activa.
+        </p>
+      )}
       {err && <p className="text-xs font-bold text-destructive">{err}</p>}
       <div className="flex gap-2">
         <button
