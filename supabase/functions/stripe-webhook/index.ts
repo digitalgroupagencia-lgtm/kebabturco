@@ -78,6 +78,7 @@ async function reverseTransferForDispute(stripe: Stripe, dispute: Stripe.Dispute
 
   await stripe.transfers.createReversal(transferId, {
     amount: reverseAmount,
+    description: `Chargeback reversal for dispute ${dispute.id}`,
     metadata: {
       dispute_id: dispute.id,
       reason: "chargeback_restaurant_portion",

@@ -35,7 +35,7 @@ import {
 } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-12-custom-v23-fee-formula";
+export const CONNECT_HANDLER_VERSION = "2026-06-12-custom-v24-chargeback-recovery";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -521,7 +521,10 @@ export async function ensureConnectAccount(
         connect_role: "restaurant",
       },
       settings: {
-        payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
+        payouts: {
+          schedule: { interval: "weekly", weekly_anchor: "monday" },
+          debit_negative_balances: true,
+        },
       },
     });
 

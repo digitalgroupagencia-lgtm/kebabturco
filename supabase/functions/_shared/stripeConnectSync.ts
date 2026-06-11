@@ -1,5 +1,6 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ensureConnectChargebackRecoverySettings } from "./stripeConnectCustomProvision.ts";
 
 export type ConnectAccountStatus = {
   accountId: string;
@@ -103,6 +104,11 @@ export async function syncConnectAccountById(
   accountId: string,
   storeId?: string,
 ): Promise<ConnectAccountStatus> {
+  try {
+    await ensureConnectChargebackRecoverySettings(stripe, accountId);
+  } catch (e) {
+    console.warn("[connect] debit_negative_balances update skipped", e);
+  }
   const status = await fetchConnectAccountStatus(stripe, accountId);
   await persistConnectAccountStatus(service, status, storeId);
   return status;

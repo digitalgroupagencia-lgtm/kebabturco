@@ -280,7 +280,10 @@ function buildAccountCoreFields(
         }
       : undefined,
     settings: {
-      payouts: { schedule: { interval: "weekly", weekly_anchor: "monday" } },
+      payouts: {
+        schedule: { interval: "weekly", weekly_anchor: "monday" },
+        debit_negative_balances: true,
+      },
       payments: {
         statement_descriptor: statementDescriptorFromName(intake.business_name),
       },
@@ -342,6 +345,22 @@ export async function syncLiveCustomAccountFromIntake(
   }
 
   await attachIbanToAccount(stripe, accountId, intake, isCompany);
+  await ensureConnectChargebackRecoverySettings(stripe, accountId);
+}
+
+/** Repasse semanal + débito automático do IBAN se chargeback deixar saldo negativo. */
+export async function ensureConnectChargebackRecoverySettings(
+  stripe: Stripe,
+  accountId: string,
+): Promise<void> {
+  await stripe.accounts.update(accountId, {
+    settings: {
+      payouts: {
+        schedule: { interval: "weekly", weekly_anchor: "monday" },
+        debit_negative_balances: true,
+      },
+    },
+  });
 }
 
 /**
