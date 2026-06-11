@@ -112,6 +112,7 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
       /^\d{4}-\d{2}-\d{2}$/.test(intake.owner_dob.trim()) &&
       intake?.business_mcc?.trim() &&
       intake?.business_type &&
+      intake?.representative_id?.trim() &&
       normalizeIban(intake.iban).length >= 15 &&
       intake?.accept_terms === true,
   );
@@ -180,7 +181,7 @@ async function ensureCompanyRepresentative(
   const dob = parseOwnerDob(intake.owner_dob);
   const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
   const existing = persons.data.find((p) => p.relationship?.representative);
-  const repId = intake.representative_id?.trim();
+  const repId = intake.representative_id?.trim().toUpperCase().replace(/\s/g, "");
   const personPayload = {
     first_name,
     last_name,
