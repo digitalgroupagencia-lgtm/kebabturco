@@ -315,7 +315,7 @@ async function shouldReplaceStripeAccount(
 ): Promise<boolean> {
   try {
     const acct = await stripe.accounts.retrieve(accountId);
-    if (acct.type !== "custom") return true;
+    if (acct.type === "express" || acct.type === "standard") return true;
     return isStripeAccountCriticallyIncomplete(acct);
   } catch {
     return false;
