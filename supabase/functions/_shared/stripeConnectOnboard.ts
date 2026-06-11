@@ -35,11 +35,7 @@ import {
 } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-<<<<<<< HEAD
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v18";
-=======
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v21-bizum";
->>>>>>> lovable/main
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v22-bizum-sync";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
