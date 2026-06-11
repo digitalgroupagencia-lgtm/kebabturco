@@ -193,9 +193,10 @@ async function ensureCompanyRepresentative(
     ...(repId ? { id_number: repId } : {}),
     relationship: {
       representative: true,
+      director: true,
       executive: true,
       owner: true,
-      title: "Representante legal",
+      title: "Director",
       percent_ownership: 100,
     },
   };
