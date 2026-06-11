@@ -333,6 +333,27 @@ async function listDuplicateStripeAccountsForStore(
   });
 }
 
+async function deleteDuplicateStripeAccountsForStore(
+  stripe: Stripe,
+  store: ConnectStoreRow,
+  intake: PayoutIntakeRow | null,
+  options?: { preserveAccountId?: string | null },
+): Promise<{ deleted: string[]; failed: { accountId: string; error: string }[] }> {
+  const duplicateAccounts = await listDuplicateStripeAccountsForStore(stripe, store, intake);
+  const deleted: string[] = [];
+  const failed: { accountId: string; error: string }[] = [];
+  for (const account of duplicateAccounts) {
+    if (options?.preserveAccountId && account.id === options.preserveAccountId) continue;
+    try {
+      await stripe.accounts.del(account.id);
+      deleted.push(account.id);
+    } catch (e) {
+      failed.push({ accountId: account.id, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return { deleted, failed };
+}
+
 export async function ensureConnectAccount(
   ctx: StripeConnectContext,
   service: SupabaseClient,
