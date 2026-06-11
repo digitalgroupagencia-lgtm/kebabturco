@@ -482,6 +482,11 @@ async function invokeConnectFunction(
             /* keep the generic message if the body is not JSON */
           }
         }
+        const isAuthError =
+          msg.toLowerCase().includes("unauthorized") ||
+          msg.includes("Sessão inválida") ||
+          msg.includes("Sessão expirada");
+        if (options?.silent || readOnly || (mode === "sync_status" && isAuthError)) return null;
         throw new Error(msg);
       }
       if (data && typeof data === "object" && "error" in data && data.error) {
@@ -491,9 +496,21 @@ async function invokeConnectFunction(
       return data;
     } catch (e) {
       if (options?.silent || readOnly) return null;
+      if (mode === "sync_status") return null;
       throw e;
     }
   };
+
+  if (mode === "sync_status" && options?.allowPaymentIntentFallback) {
+    const storeId = typeof payload.storeId === "string" ? payload.storeId : "";
+    if (storeId) {
+      const publicSync = await invoke("stripe-create-payment-intent", {
+        action: "sync_connect_status",
+        storeId,
+      });
+      if (publicSync) return publicSync;
+    }
+  }
 
   const direct = await invoke("stripe-connect-onboard", payload);
   if (direct) return direct;
@@ -694,17 +711,34 @@ export async function resyncStorePayoutIntakeToStripe(storeId: string): Promise<
   };
 }
 
+async function syncStripeConnectStatusPublic(storeId: string): Promise<StripeConnectStatus | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
+      body: { action: "sync_connect_status", storeId },
+    });
+    if (error || !data || typeof data !== "object" || (data as { error?: string }).error) return null;
+    return data as StripeConnectStatus;
+  } catch {
+    return null;
+  }
+}
+
 export async function syncStripeConnectStatus(
   storeId: string,
   options?: { silent?: boolean },
 ): Promise<StripeConnectStatus | null> {
+  const publicSync = await syncStripeConnectStatusPublic(storeId);
+  if (publicSync) return publicSync;
+
   const data = await invokeConnectFunction(
     { storeId, mode: "sync_status" },
-    { allowPaymentIntentFallback: true, silent: options?.silent },
+    { allowPaymentIntentFallback: true, silent: true },
   );
   if (!data) {
     if (options?.silent) return null;
-    throw new Error("Não foi possível actualizar — use modo teste ou tente mais tarde.");
+    throw new Error(
+      "Não foi possível sincronizar — faça Sync + Publish na Lovable para publicar as funções do servidor.",
+    );
   }
   return data as StripeConnectStatus;
 }

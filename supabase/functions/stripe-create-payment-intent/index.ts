@@ -116,11 +116,25 @@ Deno.serve(async (req) => {
 
     const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";
 
-    if (body?.action === "checkout_profile" && storeId) {
+    if (
+      (body?.action === "checkout_profile" || body?.action === "sync_connect_status") &&
+      storeId
+    ) {
       const supabaseProfile = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
+
+      if (body?.action === "sync_connect_status") {
+        try {
+          const { runStoreConnectStatusSync } = await import("../_shared/stripeConnectPublicSync.ts");
+          return json(await runStoreConnectStatusSync(supabaseProfile, storeId));
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Erro ao sincronizar recebimentos";
+          return json({ error: msg, code: "sync_failed" }, 400);
+        }
+      }
+
       const loaded = await loadStoreConnectPaymentRow(supabaseProfile, storeId);
       if (loaded.error || !loaded.store) {
         return json({ error: "Loja não encontrada" }, 404);

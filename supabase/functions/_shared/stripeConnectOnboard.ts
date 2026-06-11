@@ -870,6 +870,24 @@ export async function handleStripeConnectRequest(
     return json({ clientSecret, accountId: linkAccountId, connectEnvironment: linkEnv });
   }
 
+  if (mode === "sync_status") {
+    if (!storeId) {
+      return json({ error: "storeId é obrigatório", code: "store_id_required" }, 400);
+    }
+    const publicService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    try {
+      const { runStoreConnectStatusSync } = await import("./stripeConnectPublicSync.ts");
+      const synced = await runStoreConnectStatusSync(publicService, storeId);
+      return json(synced);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao sincronizar recebimentos";
+      return json({ error: msg, code: "sync_failed" }, 400);
+    }
+  }
+
   const userId = await resolveAuthUserId(req);
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,
