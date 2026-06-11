@@ -36,3 +36,10 @@ verify_jwt = false
 # Onboarding por link público usa um token próprio; a função valida tudo internamente.
 [functions.stripe-connect-onboard]
 verify_jwt = false
+
+# Checkout e sync públicos (totem + botão Lovable) — validação interna com service role.
+[functions.stripe-create-payment-intent]
+verify_jwt = false
+
+[functions.stripe-verify-payment-intent]
+verify_jwt = false

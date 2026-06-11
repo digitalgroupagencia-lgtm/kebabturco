@@ -501,7 +501,7 @@ async function invokeConnectFunction(
     }
   };
 
-  if (mode === "sync_status" && options?.allowPaymentIntentFallback) {
+  if (mode === "sync_status") {
     const storeId = typeof payload.storeId === "string" ? payload.storeId : "";
     if (storeId) {
       const publicSync = await invoke("stripe-create-payment-intent", {
@@ -510,6 +510,10 @@ async function invokeConnectFunction(
       });
       if (publicSync) return publicSync;
     }
+    const direct = await invoke("stripe-connect-onboard", payload);
+    if (direct) return direct;
+    if (options?.silent) return null;
+    return null;
   }
 
   const direct = await invoke("stripe-connect-onboard", payload);
@@ -728,7 +732,7 @@ export async function syncStripeConnectStatus(
   options?: { silent?: boolean },
 ): Promise<StripeConnectStatus | null> {
   const publicSync = await syncStripeConnectStatusPublic(storeId);
-  if (publicSync) return publicSync;
+  if (publicSync?.accountId) return publicSync;
 
   const data = await invokeConnectFunction(
     { storeId, mode: "sync_status" },
@@ -737,7 +741,7 @@ export async function syncStripeConnectStatus(
   if (!data) {
     if (options?.silent) return null;
     throw new Error(
-      "Não foi possível sincronizar — faça Sync + Publish na Lovable para publicar as funções do servidor.",
+      "As funções do servidor estão desactualizadas — na Lovable escreva: Deploy all Supabase edge functions. Depois Sync + Publish.",
     );
   }
   return data as StripeConnectStatus;

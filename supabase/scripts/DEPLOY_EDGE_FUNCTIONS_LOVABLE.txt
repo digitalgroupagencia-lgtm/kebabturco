@@ -1,0 +1,15 @@
+Cole isto no chat da Lovable (uma vez):
+
+Deploy all Supabase edge functions. Publish stripe-connect-onboard and stripe-create-payment-intent with verify_jwt false. Use the latest code from the repo.
+
+Depois: Sync + Publish no botão da Lovable.
+
+Para confirmar que funcionou, abra no browser:
+https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/stripe-connect-onboard
+
+Deve aparecer "publicSync": true e "handlerVersion": "2026-06-12-public-sync-v27"
+
+Teste sincronização (não deve dar erro de sessão):
+curl -X POST https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/stripe-connect-onboard \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"sync_status","storeId":"22222222-2222-2222-2222-222222222222"}'

@@ -3,6 +3,7 @@ import { AlertCircle, Check, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { CHECKOUT_ACTIVATION_SQL } from "@/lib/checkoutActivationSql";
+import { STRIPE_EDGE_DEPLOY_HINT } from "@/lib/stripeEdgeVersion";
 
 type Props = {
   syncing: boolean;
@@ -59,7 +60,7 @@ export default function CheckoutActivationPanel({ syncing, checkoutRpcReady, onS
       </Button>
 
       <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-        Depois do SQL: Sync + Publish na Lovable e volte a carregar esta página.
+        Se o SQL já foi executado: {STRIPE_EDGE_DEPLOY_HINT}
       </p>
     </div>
   );

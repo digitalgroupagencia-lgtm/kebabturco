@@ -22,6 +22,11 @@ import StripeConnectEmbeddedPanel from "@/components/finance/StripeConnectEmbedd
 import TestCheckoutReadiness from "@/components/finance/TestCheckoutReadiness";
 import ManualDatabaseSqlPanel from "@/components/finance/ManualDatabaseSqlPanel";
 import CheckoutActivationPanel from "@/components/finance/CheckoutActivationPanel";
+import {
+  fetchStripeConnectEdgeHealth,
+  isStripeConnectEdgeUpToDate,
+  STRIPE_EDGE_DEPLOY_HINT,
+} from "@/lib/stripeEdgeVersion";
 import { probeCheckoutStripeRpc, probeSchemaFallback } from "@/services/operationalDiagnosticsService";
 import {
   Loader2,
@@ -78,6 +83,7 @@ const FinancePage = () => {
   const [showTestTools, setShowTestTools] = useState(false);
   const [schemaProbe, setSchemaProbe] = useState<Awaited<ReturnType<typeof probeSchemaFallback>> | null>(null);
   const [checkoutRpcReady, setCheckoutRpcReady] = useState(true);
+  const [edgeNeedsDeploy, setEdgeNeedsDeploy] = useState(false);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!storeId) return;
@@ -86,7 +92,7 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, schema, mv, po, serverPlatform, ledgerOk, checkoutRpc] = await Promise.all([
+      const [prof, schema, mv, po, serverPlatform, ledgerOk, checkoutRpc, edgeHealth] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         probeSchemaFallback().catch(() => null),
         fetchFinanceMovements(storeId),
@@ -94,8 +100,10 @@ const FinancePage = () => {
         fetchStripePlatformStatus(storeId).catch(() => null),
         probeLedgerTable(storeId),
         probeCheckoutStripeRpc(),
+        fetchStripeConnectEdgeHealth(),
       ]);
       setCheckoutRpcReady(checkoutRpc);
+      setEdgeNeedsDeploy(!isStripeConnectEdgeUpToDate(edgeHealth));
       setProfile(prof);
       setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
       setSchemaProbe(schema);
@@ -115,16 +123,6 @@ const FinancePage = () => {
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    if (!storeId) return;
-    void (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
-      await load({ silent: true });
-    })();
-  }, [storeId, load]);
 
   const refreshStatus = useCallback(async () => {
     if (!storeId) return;
@@ -308,6 +306,18 @@ const FinancePage = () => {
       {loadError && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
           {loadError}
+        </div>
+      )}
+
+      {edgeNeedsDeploy && (
+        <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 space-y-2">
+          <p className="text-sm font-black text-destructive">Servidor de pagamentos desactualizado</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            O site no GitHub já está corrigido, mas o servidor na Lovable ainda usa uma versão antiga — por
+            isso o botão «Sincronizar Stripe» dá erro de sessão. O SQL que já executou está certo; falta
+            publicar as funções do servidor.
+          </p>
+          <p className="text-xs font-semibold text-foreground">{STRIPE_EDGE_DEPLOY_HINT}</p>
         </div>
       )}
 

@@ -135,23 +135,18 @@ export async function fetchFinancePayouts(storeId: string, limit = 20): Promise<
 }
 
 export async function fetchRestaurantFinanceSnapshot(
-  storeId: string,
+  _storeId: string,
   ledgerNetCents: number,
 ): Promise<RestaurantFinanceSnapshot | null> {
-  const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
-    body: { storeId, mode: "finance_snapshot", ledgerNetCents },
-  });
-  if (error || !data || typeof data !== "object" || "error" in (data as object)) return null;
-  const row = data as RestaurantFinanceSnapshot & { error?: string };
   return {
-    availableCents: row.availableCents ?? 0,
-    pendingCents: row.pendingCents ?? 0,
-    payoutInterval: row.payoutInterval ?? "weekly",
-    payoutWeekday: row.payoutWeekday ?? null,
-    nextPayoutDate: row.nextPayoutDate ?? null,
-    nextPayoutAmountCents: row.nextPayoutAmountCents ?? null,
-    ibanLast4: row.ibanLast4 ?? null,
-    simulated: Boolean(row.simulated),
+    availableCents: Math.max(0, ledgerNetCents),
+    pendingCents: 0,
+    payoutInterval: "weekly",
+    payoutWeekday: "segunda-feira",
+    nextPayoutDate: null,
+    nextPayoutAmountCents: null,
+    ibanLast4: null,
+    simulated: true,
   };
 }
 
