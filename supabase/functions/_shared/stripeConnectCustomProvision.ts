@@ -336,7 +336,6 @@ export async function createLiveCustomAccountFromIntake(
   const { isCompany, address, params } = buildAccountCoreFields(intake, requestIp);
 
   const account = await stripe.accounts.create({
-    type: "custom",
     country: "ES",
     controller: customConnectController(),
     capabilities: {
