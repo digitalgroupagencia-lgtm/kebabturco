@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
           application_fee_amount: applicationFeeCents,
           transfer_data: { destination: store.stripe_connect_account_id! },
           on_behalf_of: store.stripe_connect_account_id!,
-          payment_method_types: ["card"],
+          payment_method_types: ["card", "bizum"],
           metadata: baseMeta,
         });
 
