@@ -328,6 +328,7 @@ export async function syncLiveCustomAccountFromIntake(
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
+      bizum_payments: { requested: true },
     },
   });
 
