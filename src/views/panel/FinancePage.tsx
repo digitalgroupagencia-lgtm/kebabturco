@@ -142,26 +142,42 @@ const FinancePage = () => {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!storeId) return;
+    void (async () => {
+      try {
+        await syncStripeConnectStatus(storeId);
+        await load({ silent: true });
+      } catch {
+        /* primeira carga — sync opcional */
+      }
+    })();
+  }, [storeId, load]);
+
   const refreshStatus = useCallback(async () => {
     if (!storeId) return;
     setSyncing(true);
     try {
+      await syncStripeConnectStatus(storeId);
+      const fresh = await fetchStoreFinancialProfile(storeId);
+      const stillNotReady = !isStripeConnectReady(fresh);
       const hasIntake = Boolean(intakeSaved?.owner_email?.trim());
-      const missingStripeAccount = !profile?.stripe_connect_account_id;
-      if (hasIntake) {
+      if (stillNotReady && hasIntake) {
         const resync = await resyncStorePayoutIntakeToStripe(storeId);
-        toast.success(resync.message || "Restaurante enviado para a Stripe");
-      } else {
+        toast.success(resync.message || "Conta sincronizada com a Stripe");
         await syncStripeConnectStatus(storeId);
-        toast.success("Estado dos recebimentos actualizado");
+      } else if (isStripeConnectReady(fresh)) {
+        toast.success("Pagamentos online activos — estado sincronizado com a Stripe");
+      } else {
+        toast.success("Estado sincronizado com a Stripe");
       }
       await load({ silent: true });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao actualizar");
+      toast.error(e instanceof Error ? e.message : "Erro ao sincronizar");
     } finally {
       setSyncing(false);
     }
-  }, [storeId, load, intakeSaved, profile?.stripe_connect_account_id]);
+  }, [storeId, load, intakeSaved]);
 
   const onEmbeddedComplete = useCallback(async () => {
     setEmbeddedMode("none");
@@ -608,7 +624,7 @@ const FinancePage = () => {
         disabled={syncing}
       >
         {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-        Actualizar estado dos recebimentos
+        Sincronizar estado Stripe
       </Button>
 
       {profile?.stripe_iban_last4 && (

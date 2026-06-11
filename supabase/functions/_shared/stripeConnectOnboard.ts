@@ -35,7 +35,7 @@ import {
 } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v17";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v18";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -1561,7 +1561,7 @@ export async function handleStripeConnectRequest(
   }
 
   if (mode === "sync_status") {
-    const status = await syncConnectAccountById(stripe, service, accountId);
+    const status = await syncConnectAccountById(stripe, service, accountId, store.id);
     return json({ ...statusPayload(status, environment), ...meta });
   }
 

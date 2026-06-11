@@ -36,7 +36,8 @@ export async function mapAccountToStatus(
     /* optional */
   }
 
-  const onboardingCompleted = account.details_submitted === true;
+  const onboardingCompleted =
+    account.charges_enabled === true || account.details_submitted === true;
   const payoutStatus = account.payouts_enabled
     ? "active"
     : onboardingCompleted
@@ -63,7 +64,28 @@ export async function mapAccountToStatus(
 export async function persistConnectAccountStatus(
   service: SupabaseClient,
   status: ConnectAccountStatus,
+  storeId?: string,
 ): Promise<void> {
+  if (storeId) {
+    const { error } = await service
+      .from("stores")
+      .update({
+        stripe_connect_account_id: status.accountId,
+        stripe_connect_environment: "live",
+        stripe_connect_test_simulated: false,
+        stripe_charges_enabled: status.chargesEnabled,
+        stripe_payouts_enabled: status.payoutsEnabled,
+        stripe_onboarding_completed: status.onboardingCompleted,
+        stripe_business_name: status.businessName,
+        stripe_iban_last4: status.ibanLast4,
+        stripe_payout_status: status.payoutStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", storeId);
+    if (!error) return;
+    console.warn("[connect] persist by store_id failed, fallback rpc", error);
+  }
+
   await service.rpc("sync_store_stripe_profile", {
     _stripe_account_id: status.accountId,
     _charges_enabled: status.chargesEnabled,
@@ -79,8 +101,9 @@ export async function syncConnectAccountById(
   stripe: Stripe,
   service: SupabaseClient,
   accountId: string,
+  storeId?: string,
 ): Promise<ConnectAccountStatus> {
   const status = await fetchConnectAccountStatus(stripe, accountId);
-  await persistConnectAccountStatus(service, status);
+  await persistConnectAccountStatus(service, status, storeId);
   return status;
 }

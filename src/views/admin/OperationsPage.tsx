@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { fetchStoreFinancialProfile } from "@/services/orderService";
+import { fetchStoreFinancialProfile, syncStripeConnectStatus } from "@/services/orderService";
 import { loadOperationsSettingsForStore } from "@/lib/operationsSettingsAdmin";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import { stripeAdminConfigIssue } from "@/lib/paymentPolicy";
@@ -52,9 +52,15 @@ const OperationsPage = () => {
       setS(data);
       setLoadingOps(false);
     });
-    fetchStoreFinancialProfile(STORE_ID).then((data) => {
+    void (async () => {
+      try {
+        if (STORE_ID) await syncStripeConnectStatus(STORE_ID);
+      } catch {
+        /* mantém último estado conhecido */
+      }
+      const data = await fetchStoreFinancialProfile(STORE_ID);
       setOnlineReady(isStripeConnectReady(data));
-    });
+    })();
   }, [STORE_ID]);
 
   const update = (k: keyof Ops, v: Ops[keyof Ops]) => setS((p) => p ? { ...p, [k]: v } : p);
@@ -142,7 +148,7 @@ const OperationsPage = () => {
             </div>
           )}
           <Button asChild variant={onlineReady ? "outline" : "default"} className="gap-2">
-            <Link to="../finance">
+            <Link to={nav.admin("finance")}>
               Ir para Recebimentos
               <ArrowRight className="h-4 w-4" />
             </Link>

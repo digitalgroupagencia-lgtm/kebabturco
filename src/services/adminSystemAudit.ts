@@ -396,7 +396,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
       action: "Configure recebimentos para pagamentos com cartão.",
       link: "/admin/finance",
     });
-  } else if (!store.stripe_charges_enabled || !store.stripe_onboarding_completed) {
+  } else if (!store.stripe_charges_enabled) {
     const intake = await fetchStorePayoutIntake(storeId);
     const awaitingReview = Boolean(intake?.submitted_at);
     findings.push({

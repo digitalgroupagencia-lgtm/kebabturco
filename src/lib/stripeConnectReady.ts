@@ -13,9 +13,9 @@ export function isStripeConnectReady(
     return true;
   }
   if (!profile.stripe_connect_account_id) return false;
-  if (!profile.stripe_charges_enabled) return false;
-  if ("stripe_onboarding_completed" in full && !full.stripe_onboarding_completed) return false;
-  return true;
+  if (profile.stripe_charges_enabled) return true;
+  if ("stripe_onboarding_completed" in full && full.stripe_onboarding_completed) return true;
+  return false;
 }
 
 export function stripeConnectStatusLabel(
