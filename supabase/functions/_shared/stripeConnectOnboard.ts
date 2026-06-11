@@ -35,7 +35,7 @@ import {
 } from "./stripeConnectIntakeMeta.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v16";
+export const CONNECT_HANDLER_VERSION = "2026-06-11-custom-v17";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {

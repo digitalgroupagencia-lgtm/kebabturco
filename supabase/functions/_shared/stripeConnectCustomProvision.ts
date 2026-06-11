@@ -30,12 +30,22 @@ function normalizeIban(iban: string): string {
   return iban.replace(/\s/g, "").toUpperCase();
 }
 
-/** Formato aceite na Espanha: ES-B25979048 */
+/** CIF/NIF espanhol sem prefixo país — Stripe Connect ES espera só o identificador. */
 export function formatSpanishTaxId(taxId: string): string {
-  const t = taxId.trim().toUpperCase();
-  if (t.startsWith("ES-")) return t;
-  if (t.startsWith("ES") && t.length > 2) return t;
-  return `ES-${t}`;
+  const t = taxId.trim().toUpperCase().replace(/\s/g, "");
+  if (t.startsWith("ES-")) return t.slice(3);
+  if (t.startsWith("ES") && t.length > 2) return t.slice(2);
+  return t;
+}
+
+/** Controller obrigatório para contas Custom (evita Express com requirement_collection stripe). */
+export function customConnectController(): Stripe.AccountCreateParams.Controller {
+  return {
+    stripe_dashboard: { type: "none" },
+    losses: { payments: "application" },
+    fees: { payer: "application" },
+    requirement_collection: "application",
+  };
 }
 
 function statementDescriptorFromName(name: string): string {
@@ -176,6 +186,7 @@ async function ensureCompanyRepresentative(
     last_name,
     email: intake.owner_email!,
     phone: intake.owner_phone ?? undefined,
+    nationality: "ES",
     ...(dob ? { dob } : {}),
     ...(address ? { address } : {}),
     ...(repId ? { id_number: repId } : {}),
@@ -326,6 +337,7 @@ export async function createLiveCustomAccountFromIntake(
   const account = await stripe.accounts.create({
     type: "custom",
     country: "ES",
+    controller: customConnectController(),
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
@@ -335,6 +347,7 @@ export async function createLiveCustomAccountFromIntake(
       platform: "kebabturco",
       environment: "live",
       connect_role: "restaurant",
+      account_type: "custom",
     },
     ...params,
   });
