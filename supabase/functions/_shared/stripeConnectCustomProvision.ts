@@ -221,6 +221,23 @@ export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean
   return accountNeedsEmbeddedCompletionStep(acct);
 }
 
+/** Para SL espanhola: marca diretores/executivos/proprietários como fornecidos. */
+async function markCompanyRolesProvided(stripe: Stripe, accountId: string): Promise<void> {
+  try {
+    await stripe.accounts.update(accountId, {
+      company: {
+        directors_provided: true,
+        executives_provided: true,
+        owners_provided: true,
+      },
+    });
+  } catch (err) {
+    console.warn("[connect] markCompanyRolesProvided failed", err);
+  }
+}
+
+
+
 function buildAccountCoreFields(
   intake: CustomIntakeRow,
   requestIp: string,
@@ -320,6 +337,7 @@ export async function syncLiveCustomAccountFromIntake(
 
   if (isCompany) {
     await ensureCompanyRepresentative(stripe, accountId, intake, address);
+    await markCompanyRolesProvided(stripe, accountId);
   }
 
   await attachIbanToAccount(stripe, accountId, intake, isCompany);
@@ -359,6 +377,7 @@ export async function createLiveCustomAccountFromIntake(
 
   if (isCompany) {
     await ensureCompanyRepresentative(stripe, account.id, intake, address);
+    await markCompanyRolesProvided(stripe, account.id);
   }
 
   await attachIbanToAccount(stripe, account.id, intake, isCompany);
