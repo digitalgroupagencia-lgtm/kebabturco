@@ -1067,6 +1067,16 @@ export async function handleStripeConnectRequest(
         if (cleanup.deleted.length || cleanup.failed.length) {
           console.info("[connect] duplicate cleanup before final account", cleanup);
         }
+        if (
+          workingStore.stripe_connect_account_id &&
+          cleanup.deleted.includes(workingStore.stripe_connect_account_id)
+        ) {
+          await service
+            .from("stores")
+            .update({ stripe_connect_account_id: null, updated_at: new Date().toISOString() })
+            .eq("id", workingStore.id);
+          workingStore = { ...workingStore, stripe_connect_account_id: null };
+        }
       }
       const ensured = await ensureConnectAccount(ctx, service, workingStore, intake, requestIp);
       if (ctx.environment === "live") {
