@@ -161,8 +161,10 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
             Dados do restaurante guardados
           </p>
           <p className="text-xs text-muted-foreground">
-            {saved.business_name} · {saved.owner_email ?? "sem e-mail"} · IBAN ····{" "}
-            {saved.iban.slice(-4)}
+            {saved.business_name ?? "sem nome"} · {saved.owner_email ?? "sem e-mail"} ·{" "}
+            {saved.iban && saved.iban.length >= 4
+              ? `IBAN ···· ${saved.iban.slice(-4)}`
+              : "IBAN não preenchido"}
           </p>
           <Button type="button" variant="outline" size="sm" onClick={() => setCollapsed(false)}>
             Editar dados
