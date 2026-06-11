@@ -33,6 +33,12 @@ export function cardListedInCheckout(input: PaymentPolicyInput): boolean {
   return stripePublishableKey && opsFlag(settings, "pay_card_enabled", true);
 }
 
+/** Bizum e cartão como opções online separadas (não embutidas no mesmo fluxo). */
+function onlineCheckoutMethods(cardVisible: boolean): PaymentMethodId[] {
+  if (!cardVisible) return [];
+  return ["bizum", "card"];
+}
+
 /** Métodos disponíveis no checkout conforme tipo de pedido e configuração. */
 export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethodId[] {
   const { orderType, mesaValidated, settings } = input;
@@ -40,22 +46,16 @@ export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethod
 
   if (orderType === "here") {
     if (!mesaValidated) return [];
-    const methods: PaymentMethodId[] = [];
-    if (cardVisible) methods.push("card");
+    const methods = onlineCheckoutMethods(cardVisible);
     if (opsFlag(settings, "pay_cash_dine_in", true)) methods.push("cash");
     if (opsFlag(settings, "pay_counter_enabled", false)) methods.push("counter");
     return methods;
   }
 
-  const methods: PaymentMethodId[] = [];
-  if (cardVisible) methods.push("card");
+  const methods = onlineCheckoutMethods(cardVisible);
 
   if (cashAllowedForOrderType(orderType, settings)) {
     methods.push("cash");
-  }
-
-  if (orderType === "delivery") {
-    return methods;
   }
 
   return methods;
@@ -78,7 +78,7 @@ export function mustPayOnlineBeforeSubmit(
 ): boolean {
   if (!requiresPrepayment(orderType, settings)) return false;
   if (!stripeReady) return false;
-  return selected === "card" || selected === null;
+  return selected === "card" || selected === "bizum" || selected === null;
 }
 
 /** Impressão automática após checkout. */

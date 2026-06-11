@@ -23,7 +23,7 @@ describe("paymentPolicy", () => {
         stripeReady: false,
         stripePublishableKey: true,
       }),
-    ).toEqual(["card", "cash"]);
+    ).toEqual(["bizum", "card", "cash"]);
     expect(
       resolveCheckoutMethods({
         orderType: "takeaway",
@@ -32,7 +32,7 @@ describe("paymentPolicy", () => {
         stripeReady: true,
         stripePublishableKey: true,
       }),
-    ).toEqual(["card", "cash"]);
+    ).toEqual(["bizum", "card", "cash"]);
   });
 
   it("takeaway: dinheiro desactivado só se flag explícita; delivery sem dinheiro", () => {
@@ -44,7 +44,7 @@ describe("paymentPolicy", () => {
         stripeReady: true,
         stripePublishableKey: true,
       }),
-    ).toEqual(["card"]);
+    ).toEqual(["bizum", "card"]);
     expect(
       resolveCheckoutMethods({
         orderType: "takeaway",
@@ -53,7 +53,7 @@ describe("paymentPolicy", () => {
         stripeReady: true,
         stripePublishableKey: true,
       }),
-    ).toEqual(["card", "cash"]);
+    ).toEqual(["bizum", "card", "cash"]);
     expect(
       resolveCheckoutMethods({
         orderType: "delivery",
@@ -62,7 +62,7 @@ describe("paymentPolicy", () => {
         stripeReady: true,
         stripePublishableKey: true,
       }),
-    ).toEqual(["card"]);
+    ).toEqual(["bizum", "card"]);
     expect(
       resolveCheckoutMethods({
         orderType: "delivery",
@@ -71,7 +71,7 @@ describe("paymentPolicy", () => {
         stripeReady: true,
         stripePublishableKey: true,
       }),
-    ).toEqual(["card", "cash"]);
+    ).toEqual(["bizum", "card", "cash"]);
   });
 
   it("mesa sem QR validado: nenhum método", () => {
@@ -96,6 +96,7 @@ describe("paymentPolicy", () => {
     });
     expect(methods).toContain("cash");
     expect(methods).toContain("card");
+    expect(methods).toContain("bizum");
   });
 
   it("prepayment default: balcão não exige online; delivery exige", () => {

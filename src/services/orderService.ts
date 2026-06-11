@@ -330,6 +330,7 @@ export async function createStripePaymentIntent(params: {
   deliveryCents: number;
   discountCents: number;
   orderType: string;
+  paymentMethodType?: "card" | "bizum";
   metadata?: Record<string, string>;
 }) {
   const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {

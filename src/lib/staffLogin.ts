@@ -1,5 +1,7 @@
+import type { NavigateFunction } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 import type { StaffRole } from "@/lib/staffPermissions";
+import { saveSavedOrderType } from "@/lib/customerSession";
 
 export const STAFF_SESSION_FLAG = "kebabturco.staffSession";
 
@@ -38,6 +40,13 @@ export function shouldRedirectRootToStaffPanel(opts: {
 }): boolean {
   const root = opts.pathname.replace(/\/+$/, "") || "/";
   return root === "/" && opts.staffSessionFlag && opts.hasUser;
+}
+
+/** Volta ao totem do cliente (idioma → tipo de pedido → menu). */
+export function returnToCustomerTotemStart(navigate: NavigateFunction) {
+  clearStaffSessionFlag();
+  saveSavedOrderType(null);
+  navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
 }
 
 /** Destino após login da equipa — separado do fluxo do cliente. */

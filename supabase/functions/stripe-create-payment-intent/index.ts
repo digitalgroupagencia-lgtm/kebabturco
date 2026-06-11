@@ -120,7 +120,13 @@ Deno.serve(async (req) => {
     const {
       orderType,
       metadata = {},
+      paymentMethodType,
     } = body;
+
+    const stripePaymentMethod =
+      typeof paymentMethodType === "string" && paymentMethodType.trim().toLowerCase() === "bizum"
+        ? "bizum"
+        : "card";
 
     const restaurantPortionCents = computeRestaurantPortionCents(
       Number(subtotalCents) || 0,
@@ -220,11 +226,12 @@ Deno.serve(async (req) => {
       ? await stripe.paymentIntents.create({
           amount: amountCents,
           currency: "eur",
-          payment_method_types: ["card"],
+          payment_method_types: [stripePaymentMethod],
           metadata: {
             ...baseMeta,
             test_simulated: "true",
             connect_mode: "test_simulated",
+            checkout_payment_method: stripePaymentMethod,
           },
         })
       : await stripe.paymentIntents.create({
@@ -233,8 +240,11 @@ Deno.serve(async (req) => {
           application_fee_amount: applicationFeeCents,
           transfer_data: { destination: store.stripe_connect_account_id! },
           on_behalf_of: store.stripe_connect_account_id!,
-          payment_method_types: ["card"],
-          metadata: baseMeta,
+          payment_method_types: [stripePaymentMethod],
+          metadata: {
+            ...baseMeta,
+            checkout_payment_method: stripePaymentMethod,
+          },
         });
 
     const responseEnvironment = connectEnv === "test" || testSimulated ? "test" : "live";

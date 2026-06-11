@@ -10,7 +10,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { markStaffSession, resolveStaffLoginDestination } from "@/lib/staffLogin";
+import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
@@ -94,7 +94,7 @@ const StaffEmailLoginScreen = () => {
             size="icon"
             className="shrink-0"
             aria-label={copy.backAria}
-            onClick={() => navigate(-1)}
+            onClick={() => returnToCustomerTotemStart(navigate)}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

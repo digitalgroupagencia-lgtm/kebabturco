@@ -56,6 +56,7 @@ import { useSellerMode } from "@/contexts/SellerModeContext";
 
 
 const METHOD_DEFS: { id: PaymentMethodId; icon: typeof CreditCard }[] = [
+  { id: "bizum", icon: Smartphone },
   { id: "card", icon: CreditCard },
   { id: "cash", icon: Banknote },
   { id: "pix", icon: QrCode },
@@ -80,7 +81,12 @@ const METHOD_LABELS: Record<PaymentMethodId, Record<string, string>> = {
 const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
   card: { pt: "Pagamento seguro online", en: "Secure online payment", es: "Pago seguro online", fr: "Paiement sécurisé en ligne" },
   redsys: { pt: "", en: "", es: "", fr: "" },
-  bizum: { pt: "", en: "", es: "", fr: "" },
+  bizum: {
+    pt: "Pagamento móvel na app Bizum",
+    en: "Mobile payment in the Bizum app",
+    es: "Pago móvil en la app Bizum",
+    fr: "Paiement mobile via l'app Bizum",
+  },
   cash: { pt: "Pagamento no caixa", en: "Pay at register", es: "Pago en caja", fr: "Paiement à la caisse" },
   pix: { pt: "Pagamento instantâneo", en: "Instant payment", es: "Pago instantáneo", fr: "Paiement instantané" },
   apple: { pt: "Em breve", en: "Coming soon", es: "Próximamente", fr: "Bientôt" },
@@ -158,6 +164,7 @@ const PaymentScreen = () => {
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [stripeCheckoutMethod, setStripeCheckoutMethod] = useState<"card" | "bizum">("card");
   // Checkout em 2 etapas: dados → pagamento. Mesas saltam directamente para pagamento.
   const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">(
     orderType === "here" ? "payment" : "details",
@@ -252,10 +259,9 @@ const PaymentScreen = () => {
       stripeReady: stripeEnabled,
       stripePublishableKey,
     });
-    // Redsys e Bizum foram removidos da experiência do cliente.
-    // Apenas Stripe (card) e Efectivo (cash/counter) ficam visíveis.
-    // Em delivery (domicílio) só aceitamos cartão — nada de efectivo.
-    const filteredIds = orderType === "delivery" ? ids.filter((id) => id === "card") : ids;
+    // Em entrega ao domicílio: Bizum + cartão (sem efectivo).
+    const filteredIds =
+      orderType === "delivery" ? ids.filter((id) => id === "card" || id === "bizum") : ids;
     return METHOD_DEFS.filter((m) => filteredIds.includes(m.id));
   }, [orderType, mesaValidated, settings, stripeEnabled, stripePublishableKey]);
 
@@ -322,13 +328,16 @@ const PaymentScreen = () => {
     if (!validateDetailsStep()) return false;
     if (checkoutMethods.length === 0) { setShowError("method"); return false; }
     if (!selected) { setShowError("method"); return false; }
-    if (prepaymentRequired && selected !== "card") { setShowError("method"); return false; }
-    if (selected === "card" && !stripePublishableKey) {
-      setPaymentError(stripeIssue || "Pagamento com cartão indisponível neste momento.");
+    if (prepaymentRequired && selected !== "card" && selected !== "bizum") {
       setShowError("method");
       return false;
     }
-    if (selected === "card" && !stripeEnabled) {
+    if ((selected === "card" || selected === "bizum") && !stripePublishableKey) {
+      setPaymentError(stripeIssue || "Pagamento online indisponível neste momento.");
+      setShowError("method");
+      return false;
+    }
+    if ((selected === "card" || selected === "bizum") && !stripeEnabled) {
       setPaymentError("Recebimentos online ainda não estão activos para este restaurante.");
       setShowError("method");
       return false;
@@ -519,7 +528,7 @@ const PaymentScreen = () => {
     return result;
   };
 
-  const startCardPayment = async () => {
+  const startStripePayment = async (paymentMethodType: "card" | "bizum") => {
     if (!assertStoreReady()) return;
 
     const subtotalCents = Math.round(totalPrice * 100);
@@ -531,6 +540,7 @@ const PaymentScreen = () => {
       deliveryCents,
       discountCents,
       orderType: orderTypeDb,
+      paymentMethodType,
     });
     setStripePaymentIntentId(pi.paymentIntentId);
     setStripePaymentMeta({
@@ -546,6 +556,7 @@ const PaymentScreen = () => {
     if (pi.connectEnvironment) {
       setStripeConnectEnvironment(pi.connectEnvironment);
     }
+    setStripeCheckoutMethod(paymentMethodType);
     setStripeClientSecret(pi.clientSecret);
   };
 
@@ -570,7 +581,7 @@ const PaymentScreen = () => {
   };
 
   const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
-    setPaymentMethod("card");
+    setPaymentMethod(stripeCheckoutMethod);
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
@@ -605,7 +616,7 @@ const PaymentScreen = () => {
       customerName: customerName.trim() || null,
       customerPhone: fullCustomerPhone || null,
       notes,
-      paymentMethod: "card",
+      paymentMethod: stripeCheckoutMethod,
       paymentStatus: "pending",
       stripePaymentIntentId,
       deliveryStreet: orderType === "delivery" ? deliveryAddress.trim() : null,
@@ -641,7 +652,7 @@ const PaymentScreen = () => {
 
 
 
-    if (selected === "card") {
+    if (selected === "card" || selected === "bizum") {
       if (!stripePublishableKey || !stripeEnabled) {
         setPaymentError(
           stripeIssue || "Recebimentos online ainda não estão activos para este restaurante.",
@@ -652,10 +663,16 @@ const PaymentScreen = () => {
       setProcessing(true);
       setPaymentError(null);
       try {
-        await startCardPayment();
+        await startStripePayment(selected);
       } catch (e) {
         console.error(e);
-        setPaymentError(e instanceof Error ? e.message : "Não foi possível abrir o pagamento com cartão.");
+        setPaymentError(
+          e instanceof Error
+            ? e.message
+            : selected === "bizum"
+              ? "Não foi possível abrir o pagamento Bizum."
+              : "Não foi possível abrir o pagamento com cartão.",
+        );
         setShowError("method");
       } finally {
         setProcessing(false);
@@ -761,7 +778,9 @@ const PaymentScreen = () => {
 
         {stripeClientSecret ? (
           <div className={`mt-3 bg-card rounded-2xl border border-border shadow-card ${compact ? "p-3" : "p-4 mt-5 rounded-[24px]"}`}>
-            <p className="text-sm font-black text-foreground mb-2">Pagamento com cartão</p>
+            <p className="text-sm font-black text-foreground mb-2">
+              {stripeCheckoutMethod === "bizum" ? "Pagamento com Bizum" : "Pagamento com cartão"}
+            </p>
             <StripePaymentForm
               compact={compact}
               clientSecret={stripeClientSecret}
@@ -821,7 +840,7 @@ const PaymentScreen = () => {
                   }
                   try {
                     await enqueueCheckoutPrint(createdOrder!, {
-                      paymentMethod: "card",
+                      paymentMethod: stripeCheckoutMethod,
                       paymentStatus: "paid",
                       paidViaApp: true,
                     });
@@ -1091,6 +1110,13 @@ const PaymentScreen = () => {
                             setStripeClientSecret(null);
                             setStripePaymentIntentId(null);
                             setStripePaymentMeta(null);
+                            setStripePreparedOrder(null);
+                          }
+                          if (pm.id === "card" || pm.id === "bizum") {
+                            setStripeClientSecret(null);
+                            setStripePaymentIntentId(null);
+                            setStripePaymentMeta(null);
+                            setStripePreparedOrder(null);
                           }
                         }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${
@@ -1111,6 +1137,11 @@ const PaymentScreen = () => {
                   {selected === "card" && stripePublishableKey && (
                     <p className="text-[10px] text-muted-foreground px-1 pt-1">
                       Apple Pay e Google Pay aparecem automaticamente se o seu telemóvel suportar.
+                    </p>
+                  )}
+                  {selected === "bizum" && stripePublishableKey && (
+                    <p className="text-[10px] text-muted-foreground px-1 pt-1">
+                      Será redireccionado para confirmar o pagamento na app Bizum.
                     </p>
                   )}
                   {/* Aviso amber abaixo de Efectivo removido — confirmação acontece em tela dedicada após finalizar */}
