@@ -869,6 +869,63 @@ export async function handleStripeConnectRequest(
 
   const store = await assertStoreAccess(service, userId, storeId);
 
+  if (mode === "reset_live_connect_accounts") {
+    await assertAdminMaster(service, userId);
+
+    const liveKey = getStripeSecretKey();
+    if (!liveKey || stripeKeyMode(liveKey) !== "live") {
+      throw new ConnectError("Chave live da Stripe em falta no servidor.", 503, "live_key_missing");
+    }
+
+    const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+    const intake = await loadStorePayoutIntake(service, store.id);
+    const duplicateAccounts = await listDuplicateStripeAccountsForStore(liveStripe, store, intake);
+    const deleted: string[] = [];
+    const failed: { accountId: string; error: string }[] = [];
+
+    for (const account of duplicateAccounts) {
+      try {
+        await liveStripe.accounts.del(account.id);
+        deleted.push(account.id);
+      } catch (e) {
+        failed.push({
+          accountId: account.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
+    const { error: updErr } = await service
+      .from("stores")
+      .update({
+        stripe_connect_account_id: null,
+        stripe_connect_environment: "live",
+        stripe_connect_test_simulated: false,
+        stripe_charges_enabled: false,
+        stripe_payouts_enabled: false,
+        stripe_onboarding_completed: false,
+        stripe_payout_status: "pending",
+        stripe_business_name: null,
+        stripe_iban_last4: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", store.id);
+    if (updErr) {
+      throw new ConnectError("Contas apagadas, mas não foi possível limpar a loja.", 500, "store_update_failed");
+    }
+
+    return json({
+      reset: true,
+      deleted,
+      failed,
+      remainingAction:
+        failed.length > 0
+          ? "Algumas contas não puderam ser apagadas pela Stripe. A loja já foi desligada delas; rejeite/remova manualmente as restantes se necessário."
+          : "Contas duplicadas apagadas. Agora guarde os dados novamente para criar uma única conta correcta.",
+      handlerVersion: CONNECT_HANDLER_VERSION,
+    });
+  }
+
   if (mode === "save_and_sync_intake") {
     await assertAdminMaster(service, userId);
 
