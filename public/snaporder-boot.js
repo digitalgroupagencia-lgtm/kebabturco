@@ -82,6 +82,17 @@
     return Promise.all(tasks).catch(function () {});
   }
 
+  function scheduleBootTimeout(ms) {
+    if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+      window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+    }
+    window.__SNAPORDER_BOOT_TIMEOUT__ = window.setTimeout(function () {
+      if (!window.__SNAPORDER_APP_READY__) {
+        showBootError("A app está a demorar a abrir. Toque em Actualizar.");
+      }
+    }, ms);
+  }
+
   function loadApp() {
     if (!document.body) {
       document.addEventListener("DOMContentLoaded", loadApp, { once: true });
@@ -98,20 +109,29 @@
     script.type = "module";
     script.src = appSrc;
     script.onerror = function () {
+      if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+        window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+      }
       showBootError("Não foi possível abrir o menu. Toque em Actualizar.");
+    };
+    script.onload = function () {
+      if (window.__SNAPORDER_APP_READY__) {
+        if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+          window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+        }
+        return;
+      }
+      scheduleBootTimeout(20000);
     };
     document.body.appendChild(script);
 
-    window.setTimeout(function () {
-      if (!window.__SNAPORDER_APP_READY__) {
-        showBootError("A app está a demorar a abrir. Toque em Actualizar.");
-      }
-    }, 12000);
+    scheduleBootTimeout(30000);
   }
 
   if (isLovableEditorHost()) {
     loadApp();
   } else {
-    purgeCaches().finally(loadApp);
+    loadApp();
+    purgeCaches();
   }
 })();
