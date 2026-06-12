@@ -67,9 +67,14 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
         _reset_banners: opts.banners,
       });
       if (error) throw error;
-      const deleted = (data as any)?.deleted || {};
-      const total = Object.values(deleted).reduce((a: number, b: any) => a + Number(b || 0), 0);
-      toast.success(`${total} registros apagados com sucesso`);
+      const deleted = ((data as { deleted?: Record<string, number> })?.deleted) || {};
+      const parts = [
+        deleted.orders ? `${deleted.orders} pedidos` : null,
+        deleted.ledger ? `${deleted.ledger} mov. financeiros` : null,
+        deleted.print_jobs ? `${deleted.print_jobs} impressões` : null,
+        deleted.cash ? `${deleted.cash} caixa` : null,
+      ].filter(Boolean);
+      toast.success(parts.length ? parts.join(" · ") : "Dados apagados com sucesso");
       reset();
       onOpenChange(false);
       onSuccess?.();
@@ -103,8 +108,12 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
         </DialogHeader>
 
         <div className="space-y-2 max-h-[50vh] overflow-y-auto py-2">
-          <Row k="orders" label="Pedidos e itens de pedido" hint="Apaga todo histórico de vendas" />
-          <Row k="cash" label="Histórico de caixa" hint="Aberturas e fechamentos" />
+          <Row
+            k="orders"
+            label="Pedidos, vendas e pagamentos"
+            hint="Apaga pedidos, totais, movimentos financeiros, fila de impressão e registos de pagamento online"
+          />
+          <Row k="cash" label="Histórico de caixa" hint="Aberturas e fechamentos no balcão" />
           <Row k="stock" label="Itens de estoque" hint="Apaga insumos cadastrados" />
           {!restrictDestructive && (
             <>

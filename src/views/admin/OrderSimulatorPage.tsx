@@ -12,8 +12,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { playTestAlert } from "@/lib/panelAlerts";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
+import ResetDataDialog from "@/components/ResetDataDialog";
 
-type Store = { id: string; name: string };
+type Store = { id: string; name: string; tenant_id?: string };
 type Table = { id: string; number: string };
 
 export default function OrderSimulatorPage() {
@@ -23,6 +24,7 @@ export default function OrderSimulatorPage() {
 
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState<string>("");
+  const [resetOpen, setResetOpen] = useState(false);
   const [tables, setTables] = useState<Table[]>([]);
   const [tableId, setTableId] = useState<string>("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export default function OrderSimulatorPage() {
 
   useEffect(() => {
     if (!isAdmin) return;
-    supabase.from("stores").select("id, name").eq("is_active", true).order("name").then(({ data }) => {
+    supabase.from("stores").select("id, name, tenant_id").eq("is_active", true).order("name").then(({ data }) => {
       if (data) {
         setStores(data);
         if (data.length > 0 && !storeId) setStoreId(data[0].id);
@@ -441,12 +443,43 @@ export default function OrderSimulatorPage() {
 
       <Card className="border-destructive/40">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2 text-destructive"><Trash2 className="h-4 w-4" /> Limpeza</CardTitle>
-          <CardDescription>Remove permanentemente todos os pedidos com tag [TESTE] da loja selecionada.</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2 text-destructive">
+            <Trash2 className="h-4 w-4" /> Início de operação real
+          </CardTitle>
+          <CardDescription>
+            Apaga <strong>todas</strong> as vendas da loja (teste e reais), movimentos financeiros, fila de impressão e caixa.
+            O cardápio e as configurações de pagamento mantêm-se. Requer a sua senha.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleCleanup} disabled={!!busy} variant="destructive">
-            {busy === "cleanup" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Limpar Pedidos de Teste"}
+          <Button
+            onClick={() => setResetOpen(true)}
+            disabled={!storeId || !stores.find((s) => s.id === storeId)?.tenant_id}
+            variant="destructive"
+          >
+            Zerar vendas e começar do zero
+          </Button>
+        </CardContent>
+      </Card>
+
+      {stores.find((s) => s.id === storeId)?.tenant_id && (
+        <ResetDataDialog
+          open={resetOpen}
+          onOpenChange={setResetOpen}
+          tenantId={stores.find((s) => s.id === storeId)!.tenant_id!}
+          tenantName={stores.find((s) => s.id === storeId)?.name}
+          onSuccess={() => refreshDiag()}
+        />
+      )}
+
+      <Card className="border-muted">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Trash2 className="h-4 w-4" /> Só pedidos [TESTE]</CardTitle>
+          <CardDescription>Remove apenas pedidos marcados como teste, sem apagar vendas reais.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleCleanup} disabled={!!busy} variant="outline">
+            {busy === "cleanup" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Limpar pedidos de teste"}
           </Button>
         </CardContent>
       </Card>

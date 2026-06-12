@@ -294,7 +294,7 @@ const PanelSettingsPage = () => {
             <AlertTriangle className="w-5 h-5" /> Zona perigosa
           </CardTitle>
           <CardDescription>
-            Apague pedidos, caixa e outros dados deste projeto. Requer confirmação com sua senha.
+            Apague vendas, pagamentos online, fila de impressão e caixa para começar do zero. O cardápio mantém-se. Requer a sua senha.
           </CardDescription>
         </CardHeader>
         <CardContent>
