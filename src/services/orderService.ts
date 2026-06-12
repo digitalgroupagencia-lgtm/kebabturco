@@ -422,6 +422,8 @@ export async function createStripePaymentIntent(params: {
     stripeConnectAccountId: string | null;
     connectEnvironment?: "live" | "test";
     publishableKey?: string | null;
+    checkoutPaymentMethod?: "card" | "bizum";
+    paymentMethodTypes?: string[];
   };
 }
 

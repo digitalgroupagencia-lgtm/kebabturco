@@ -335,6 +335,8 @@ Deno.serve(async (req) => {
       connectEnvironment: responseEnvironment,
       publishableKey: getStripePublishableKey(responseEnvironment),
       testSimulated,
+      checkoutPaymentMethod: stripePaymentMethod,
+      paymentMethodTypes: intent.payment_method_types ?? [stripePaymentMethod],
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento";
