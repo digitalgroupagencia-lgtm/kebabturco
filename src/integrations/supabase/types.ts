@@ -3999,7 +3999,13 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "out_for_delivery"
-      payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
+      payment_method:
+        | "card"
+        | "cash"
+        | "apple_pay"
+        | "google_pay"
+        | "pix"
+        | "bizum"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       print_job_status: "pending" | "printing" | "printed" | "failed"
     }
@@ -4149,7 +4155,14 @@ export const Constants = {
         "cancelled",
         "out_for_delivery",
       ],
-      payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
+      payment_method: [
+        "card",
+        "cash",
+        "apple_pay",
+        "google_pay",
+        "pix",
+        "bizum",
+      ],
       payment_status: ["pending", "paid", "failed", "refunded"],
       print_job_status: ["pending", "printing", "printed", "failed"],
     },
