@@ -8,6 +8,10 @@ import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 
 startStripeDebugOverlayGuard();
 
+if (typeof window !== "undefined") {
+  window.__SNAPORDER_APP_READY__ = true;
+}
+
 if (isStaffAppPath()) {
   applyStaffAppChrome();
 } else {
@@ -48,7 +52,6 @@ if (!rootEl) {
 } else {
   try {
     createRoot(rootEl).render(<App />);
-    window.__SNAPORDER_APP_READY__ = true;
     if (isStaffAppPath()) {
       dismissBootShell();
     }
