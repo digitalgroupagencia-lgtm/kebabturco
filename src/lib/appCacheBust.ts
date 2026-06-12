@@ -11,6 +11,7 @@ declare global {
   interface Window {
     __SNAPORDER_MAIN__?: string;
     __SNAPORDER_APP_READY__?: boolean;
+    __SNAPORDER_BOOT_TIMEOUT__?: number;
   }
 }
 
