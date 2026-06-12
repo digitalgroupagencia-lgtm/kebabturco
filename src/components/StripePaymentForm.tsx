@@ -8,6 +8,8 @@ import {
   type StripePublishableEnvironment,
 } from "@/lib/stripePublishableKey";
 
+export type StripeCheckoutMethod = "card" | "bizum";
+
 const stripePromiseCache: Partial<Record<string, Promise<Stripe | null>>> = {};
 
 function getStripePromise(environment: StripePublishableEnvironment = "live", publishableKey?: string | null) {
@@ -25,11 +27,13 @@ function CheckoutForm({
   onSuccess,
   onCancel,
   compact,
+  checkoutMethod,
 }: {
   amountLabel: string;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
   compact?: boolean;
+  checkoutMethod: StripeCheckoutMethod;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -43,7 +47,10 @@ function CheckoutForm({
     try {
       const { error: submitError } = await elements.submit();
       if (submitError) {
-        setErr(submitError.message || "Confirme os dados do cartão");
+        setErr(
+          submitError.message ||
+            (checkoutMethod === "bizum" ? "Confirme o número Bizum" : "Confirme os dados do cartão"),
+        );
         setBusy(false);
         return;
       }
@@ -59,6 +66,8 @@ function CheckoutForm({
       }
       if (paymentIntent?.status === "succeeded") {
         await onSuccess();
+      } else if (paymentIntent?.status === "requires_action") {
+        setErr("Complete o pagamento na app do seu banco (Bizum) e volte a esta página.");
       } else {
         setErr("Pagamento ainda não confirmado. Tente novamente em alguns segundos.");
       }
@@ -73,19 +82,34 @@ function CheckoutForm({
     typeof navigator !== "undefined" &&
     (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1);
 
+  const paymentElementOptions =
+    checkoutMethod === "bizum"
+      ? {
+          layout: (compact ? "accordion" : "tabs") as "accordion" | "tabs",
+          paymentMethodOrder: ["bizum"],
+          wallets: { applePay: "never" as const, googlePay: "never" as const },
+        }
+      : {
+          layout: (compact ? "accordion" : "tabs") as "accordion" | "tabs",
+          wallets: { applePay: "auto" as const, googlePay: "auto" as const },
+        };
+
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
-      <PaymentElement
-        options={{
-          layout: compact ? "accordion" : "tabs",
-          wallets: { applePay: "auto", googlePay: "auto" },
-        }}
-      />
-      {!isLikelyMobile && (
+      <PaymentElement options={paymentElementOptions} />
+      {checkoutMethod === "bizum" ? (
         <p className="text-[10px] text-muted-foreground leading-relaxed px-0.5">
-          No computador só aparece o cartão. No telemóvel (Safari ou Chrome) podem surgir Apple Pay ou Google Pay
-          no topo do formulário, se o telemóvel tiver essa opção activa.
+          {isLikelyMobile
+            ? "Introduza o telemóvel associado ao Bizum e confirme na app do seu banco."
+            : "Bizum funciona melhor no telemóvel. Abra kebabturco.net no Safari ou Chrome do telemóvel para pagar com Bizum."}
         </p>
+      ) : (
+        !isLikelyMobile && (
+          <p className="text-[10px] text-muted-foreground leading-relaxed px-0.5">
+            No computador só aparece o cartão. No telemóvel podem surgir Apple Pay ou Google Pay no topo do
+            formulário.
+          </p>
+        )
       )}
       {err && <p className="text-xs font-bold text-destructive">{err}</p>}
       <div className="flex gap-2">
@@ -118,9 +142,39 @@ export default function StripePaymentForm(props: {
   compact?: boolean;
   connectEnvironment?: StripePublishableEnvironment;
   publishableKey?: string | null;
+  checkoutMethod?: StripeCheckoutMethod;
+  paymentMethodTypes?: string[];
 }) {
+  const checkoutMethod = props.checkoutMethod ?? "card";
   const environment = props.connectEnvironment ?? "live";
   const stripePromise = useMemo(() => getStripePromise(environment, props.publishableKey), [environment, props.publishableKey]);
+
+  const bizumMismatch =
+    checkoutMethod === "bizum" &&
+    props.paymentMethodTypes &&
+    props.paymentMethodTypes.length > 0 &&
+    !props.paymentMethodTypes.includes("bizum");
+
+  if (bizumMismatch) {
+    return (
+      <div className="space-y-3 p-4 bg-amber-500/10 border border-amber-500/40 rounded-2xl">
+        <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+          Bizum ainda não está activo no servidor de pagamentos.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          O sistema abriu o formulário de cartão por engano. Volte atrás, escolha <strong>Tarjeta</strong>, ou peça
+          ao restaurante para publicar a última actualização na Lovable e activar Bizum na Stripe.
+        </p>
+        <button
+          type="button"
+          onClick={props.onCancel}
+          className="w-full h-10 rounded-xl border border-border font-bold text-sm"
+        >
+          Voltar e escolher outro método
+        </button>
+      </div>
+    );
+  }
 
   if ((!props.publishableKey && !hasStripePublishableKey(environment)) || !stripePromise) {
     return (
@@ -132,6 +186,7 @@ export default function StripePaymentForm(props: {
 
   return (
     <Elements
+      key={`${props.clientSecret}:${checkoutMethod}`}
       stripe={stripePromise}
       options={{
         clientSecret: props.clientSecret,
@@ -143,6 +198,7 @@ export default function StripePaymentForm(props: {
         onSuccess={props.onSuccess}
         onCancel={props.onCancel}
         compact={props.compact}
+        checkoutMethod={checkoutMethod}
       />
     </Elements>
   );

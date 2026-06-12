@@ -156,6 +156,8 @@ const PaymentScreen = () => {
     stripeConnectAccountId: string | null;
     connectEnvironment?: StripePublishableEnvironment;
     publishableKey?: string | null;
+    checkoutPaymentMethod?: "card" | "bizum";
+    paymentMethodTypes?: string[];
   } | null>(null);
   const [stripePreparedOrder, setStripePreparedOrder] = useState<{ order_id: string; order_number: string } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
@@ -555,6 +557,8 @@ const PaymentScreen = () => {
       stripeConnectAccountId: pi.stripeConnectAccountId,
       connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
       publishableKey: pi.publishableKey ?? null,
+      checkoutPaymentMethod: pi.checkoutPaymentMethod ?? paymentMethodType,
+      paymentMethodTypes: pi.paymentMethodTypes,
     });
     if (pi.connectEnvironment) {
       setStripeConnectEnvironment(pi.connectEnvironment);
@@ -786,6 +790,8 @@ const PaymentScreen = () => {
               compact={compact}
               clientSecret={stripeClientSecret}
               amountLabel={`${grandTotal.toFixed(2)}€`}
+              checkoutMethod={stripeCheckoutMethod}
+              paymentMethodTypes={stripePaymentMeta?.paymentMethodTypes}
               connectEnvironment={stripePaymentMeta?.connectEnvironment ?? stripeConnectEnvironment}
               publishableKey={stripePaymentMeta?.publishableKey ?? null}
               onCancel={() => {
