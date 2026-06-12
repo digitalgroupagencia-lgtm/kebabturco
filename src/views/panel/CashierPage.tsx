@@ -34,7 +34,7 @@ const CashierPage = () => {
   const [closeDialogVisible, setCloseDialogVisible] = useState(false);
   const [openingBalance, setOpeningBalance] = useState("0");
   const [closingBalance, setClosingBalance] = useState("0");
-  const [todaySales, setTodaySales] = useState({ total: 0, card: 0, cash: 0, pix: 0, count: 0 });
+  const [todaySales, setTodaySales] = useState({ total: 0, card: 0, cash: 0, bizum: 0, count: 0 });
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
@@ -111,17 +111,22 @@ const CashierPage = () => {
 
     const { data } = await supabase
       .from("orders")
-      .select("total, payment_method")
+      .select("total, payment_method, notes")
       .eq("store_id", storeId)
       .neq("status", "cancelled")
       .gte("created_at", today.toISOString());
 
     if (data) {
+      const isBizum = (o: { payment_method: string | null; notes: string | null }) =>
+        o.payment_method === "bizum" ||
+        (typeof o.notes === "string" && /bizum/i.test(o.notes));
       const total = data.reduce((s, o) => s + Number(o.total), 0);
-      const card = data.filter((o) => o.payment_method === "card").reduce((s, o) => s + Number(o.total), 0);
+      const bizum = data.filter(isBizum).reduce((s, o) => s + Number(o.total), 0);
       const cash = data.filter((o) => o.payment_method === "cash").reduce((s, o) => s + Number(o.total), 0);
-      const pix = data.filter((o) => o.payment_method === "pix").reduce((s, o) => s + Number(o.total), 0);
-      setTodaySales({ total, card, cash, pix, count: data.length });
+      const card = data
+        .filter((o) => o.payment_method === "card" && !isBizum(o))
+        .reduce((s, o) => s + Number(o.total), 0);
+      setTodaySales({ total, card, cash, bizum, count: data.length });
     }
   };
 
@@ -246,8 +251,8 @@ const CashierPage = () => {
         />
         <PremiumMetricCard
           icon={Smartphone}
-          label={t("cashier.method.pix")}
-          value={`€ ${todaySales.pix.toFixed(2)}`}
+          label={t("cashier.method.bizum")}
+          value={`€ ${todaySales.bizum.toFixed(2)}`}
           tone="purple"
         />
       </div>
