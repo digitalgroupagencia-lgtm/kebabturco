@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2, Copy, AlertTriangle } from "lucide-react";
+import { BIZUM_COLUMN_ACTIVATION_SQL } from "@/lib/checkoutActivationSql";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { fetchStoreFinancialProfile } from "@/services/orderService";
@@ -42,6 +43,60 @@ const OperationsPage = () => {
   const [loadingOps, setLoadingOps] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlineReady, setOnlineReady] = useState(false);
+  const [bizumColumnReady, setBizumColumnReady] = useState(true);
+  const [copyingSql, setCopyingSql] = useState(false);
+
+  const isBizumSchemaError = (message: string) =>
+    /pay_bizum_enabled|schema cache/i.test(message);
+
+  const probeBizumColumn = async (storeId: string) => {
+    const { error } = await supabase
+      .from("operations_settings")
+      .select("pay_bizum_enabled")
+      .eq("store_id", storeId)
+      .limit(1);
+    if (!error) setBizumColumnReady(true);
+    else if (isBizumSchemaError(error.message)) setBizumColumnReady(false);
+  };
+
+  const copyBizumSql = async () => {
+    setCopyingSql(true);
+    try {
+      await navigator.clipboard.writeText(BIZUM_COLUMN_ACTIVATION_SQL);
+      toast.success("Comando copiado — cole na base de dados da Lovable e execute.");
+    } catch {
+      toast.error("Não foi possível copiar. Abra Cloud → Base de dados na Lovable.");
+    } finally {
+      setCopyingSql(false);
+    }
+  };
+
+  const buildSavePayload = (row: Ops, includeBizum: boolean) => {
+    const payload: Record<string, unknown> = {
+      payment_mode: row.payment_mode,
+      pay_card_enabled: row.pay_card_enabled,
+      pay_cash_enabled: row.pay_cash_enabled ?? true,
+      pay_cash_dine_in: row.pay_cash_dine_in ?? true,
+      pay_cash_takeaway: true,
+      pay_cash_delivery: true,
+      require_prepayment_takeaway: false,
+      require_prepayment_delivery: row.require_prepayment_delivery ?? false,
+      print_pending_dine_in: row.print_pending_dine_in ?? true,
+      pay_pix_enabled: row.pay_pix_enabled,
+      pay_apple_enabled: row.pay_apple_enabled,
+      pay_google_enabled: row.pay_google_enabled,
+      pay_counter_enabled: row.pay_counter_enabled,
+      pay_link_enabled: row.pay_link_enabled,
+      msg_paid: row.msg_paid,
+      msg_counter: row.msg_counter,
+      avg_prep_minutes: row.avg_prep_minutes ?? 12,
+      require_phone_takeaway: row.require_phone_takeaway ?? true,
+    };
+    if (includeBizum) {
+      payload.pay_bizum_enabled = row.pay_bizum_enabled ?? true;
+    }
+    return payload;
+  };
 
   useEffect(() => {
     if (!STORE_ID) {
@@ -53,6 +108,7 @@ const OperationsPage = () => {
       setS(data);
       setLoadingOps(false);
     });
+    void probeBizumColumn(STORE_ID);
     void fetchStoreFinancialProfile(STORE_ID)
       .then((data) => setOnlineReady(isStripeConnectReady(data)))
       .catch(() => setOnlineReady(false));
@@ -63,29 +119,39 @@ const OperationsPage = () => {
   const save = async () => {
     if (!s || !STORE_ID) return;
     setSaving(true);
-    const { error } = await supabase.from("operations_settings").update({
-      payment_mode: s.payment_mode,
-      pay_card_enabled: s.pay_card_enabled,
-      pay_bizum_enabled: s.pay_bizum_enabled ?? true,
-      pay_cash_enabled: s.pay_cash_enabled ?? true,
-      pay_cash_dine_in: s.pay_cash_dine_in ?? true,
-      pay_cash_takeaway: true,
-      pay_cash_delivery: true,
-      require_prepayment_takeaway: false,
-      require_prepayment_delivery: s.require_prepayment_delivery ?? false,
-      print_pending_dine_in: s.print_pending_dine_in ?? true,
-      pay_pix_enabled: s.pay_pix_enabled,
-      pay_apple_enabled: s.pay_apple_enabled,
-      pay_google_enabled: s.pay_google_enabled,
-      pay_counter_enabled: s.pay_counter_enabled,
-      pay_link_enabled: s.pay_link_enabled,
-      msg_paid: s.msg_paid,
-      msg_counter: s.msg_counter,
-      avg_prep_minutes: s.avg_prep_minutes ?? 12,
-      require_phone_takeaway: s.require_phone_takeaway ?? true,
-    }).eq("store_id", STORE_ID);
-    setSaving(false);
-    if (error) toast.error(error.message); else toast.success("Configuración guardada");
+    try {
+      let includeBizum = bizumColumnReady;
+      let { error } = await supabase
+        .from("operations_settings")
+        .update(buildSavePayload(s, includeBizum))
+        .eq("store_id", STORE_ID);
+
+      if (error && isBizumSchemaError(error.message) && includeBizum) {
+        setBizumColumnReady(false);
+        ({ error } = await supabase
+          .from("operations_settings")
+          .update(buildSavePayload(s, false))
+          .eq("store_id", STORE_ID));
+        if (!error) {
+          toast.warning(
+            "Tarjeta e efectivo guardados. Para activar Bizum, copie o comando abaixo, execute na base de dados da Lovable e volte a Guardar.",
+          );
+          return;
+        }
+      }
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (includeBizum) {
+        setBizumColumnReady(true);
+        toast.success("Configuración guardada");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loadingStore || loadingOps) return <div className="p-8 text-muted-foreground">Cargando...</div>;
@@ -189,6 +255,22 @@ const OperationsPage = () => {
           ))}
         </CardContent>
       </Card>
+
+      {!bizumColumnReady && (
+        <div className="rounded-xl border-2 border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
+          <p className="text-sm font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            Bizum: falta um passo na base de dados da Lovable
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Copie o comando, abra <strong>Cloud → Base de dados</strong> na Lovable, cole, execute, e depois carregue em Guardar outra vez.
+          </p>
+          <Button type="button" variant="default" size="sm" className="gap-2" onClick={() => void copyBizumSql()} disabled={copyingSql}>
+            <Copy className="h-4 w-4" />
+            {copyingSql ? "A copiar…" : "Copiar comando de activação Bizum"}
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader><CardTitle className="text-lg">Métodos habilitados (legado)</CardTitle></CardHeader>
