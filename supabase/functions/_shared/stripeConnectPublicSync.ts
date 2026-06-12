@@ -1,5 +1,9 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ensureBizumEnabledOnConnectAccount,
+  type BizumEnableResult,
+} from "./stripeConnectBizum.ts";
 import { syncConnectAccountById } from "./stripeConnectSync.ts";
 import { pickStripeSecretForEnvironment } from "./stripeEnv.ts";
 import {
@@ -20,6 +24,9 @@ export type PublicConnectSyncResult = {
   ready: boolean;
   connectEnvironment: "live" | "test";
   synced: boolean;
+  bizumEnabled?: boolean;
+  bizumConfigId?: string | null;
+  bizumMessage?: string;
 };
 
 async function refreshLiveConnectStore(
@@ -73,6 +80,18 @@ export async function runStoreConnectStatusSync(
     storeId,
   );
 
+  const connectEnvironment =
+    connectEnv === "test" || store.stripe_connect_test_simulated ? "test" : "live";
+
+  let bizum = {
+    enabled: false,
+    configId: null as string | null,
+    message: "Bizum só em modo produção.",
+  };
+  if (connectEnvironment === "live") {
+    bizum = await ensureBizumEnabledOnConnectAccount(stripe, store.stripe_connect_account_id);
+  }
+
   return {
     accountId: status.accountId,
     chargesEnabled: status.chargesEnabled,
@@ -83,7 +102,35 @@ export async function runStoreConnectStatusSync(
     ibanLast4: status.ibanLast4,
     requirementsDue: status.requirementsDue,
     ready: status.chargesEnabled && status.onboardingCompleted,
-    connectEnvironment: connectEnv === "test" || store.stripe_connect_test_simulated ? "test" : "live",
+    connectEnvironment,
     synced: true,
+    bizumEnabled: bizum.enabled,
+    bizumConfigId: bizum.configId,
+    bizumMessage: bizum.message,
   };
+}
+
+/** Activa Bizum na conta Connect da loja (sem sincronizar o resto). */
+export async function runStoreBizumEnable(
+  service: SupabaseClient,
+  storeId: string,
+): Promise<BizumEnableResult & { accountId: string }> {
+  const loaded = await loadStoreConnectPaymentRow(service, storeId);
+  if (loaded.error || !loaded.store?.stripe_connect_account_id) {
+    throw new Error("Conta de recebimentos não ligada a esta loja");
+  }
+  const connectEnv = await resolveStoreConnectEnvironment(loaded.store);
+  if (connectEnv === "test" || loaded.store.stripe_connect_test_simulated) {
+    throw new Error("Bizum só está disponível em modo produção (live).");
+  }
+  const stripeKey = pickStripeSecretForEnvironment("live");
+  if (!stripeKey) {
+    throw new Error("Chave Stripe live em falta no servidor");
+  }
+  const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+  const bizum = await ensureBizumEnabledOnConnectAccount(
+    stripe,
+    loaded.store.stripe_connect_account_id,
+  );
+  return { ...bizum, accountId: loaded.store.stripe_connect_account_id };
 }

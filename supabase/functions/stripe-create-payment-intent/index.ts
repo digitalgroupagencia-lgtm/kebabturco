@@ -117,7 +117,9 @@ Deno.serve(async (req) => {
     const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";
 
     if (
-      (body?.action === "checkout_profile" || body?.action === "sync_connect_status") &&
+      (body?.action === "checkout_profile" ||
+        body?.action === "sync_connect_status" ||
+        body?.action === "enable_bizum") &&
       storeId
     ) {
       const supabaseProfile = createClient(
@@ -132,6 +134,16 @@ Deno.serve(async (req) => {
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Erro ao sincronizar recebimentos";
           return json({ error: msg, code: "sync_failed" }, 400);
+        }
+      }
+
+      if (body?.action === "enable_bizum") {
+        try {
+          const { runStoreBizumEnable } = await import("../_shared/stripeConnectPublicSync.ts");
+          return json(await runStoreBizumEnable(supabaseProfile, storeId));
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Erro ao activar Bizum";
+          return json({ error: msg, code: "bizum_enable_failed" }, 400);
         }
       }
 

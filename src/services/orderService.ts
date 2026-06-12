@@ -436,6 +436,9 @@ export type StripeConnectStatus = {
   requirementsDue: string[];
   ready: boolean;
   connectEnvironment?: "live" | "test";
+  bizumEnabled?: boolean;
+  bizumConfigId?: string | null;
+  bizumMessage?: string;
 };
 
 function throwConnectError(data: Record<string, unknown>): never {
@@ -713,6 +716,37 @@ export async function resyncStorePayoutIntakeToStripe(storeId: string): Promise<
     message?: string;
     connectEnvironment?: "live" | "test";
   };
+}
+
+export type BizumEnableResult = {
+  enabled: boolean;
+  configId: string | null;
+  message: string;
+  accountId?: string;
+};
+
+export async function enableStoreBizumPayments(storeId: string): Promise<BizumEnableResult> {
+  try {
+    const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
+      body: { action: "enable_bizum", storeId },
+    });
+    if (error) {
+      throw new Error(await readEdgeFunctionError(error));
+    }
+    if (data && typeof data === "object" && (data as { error?: string }).error) {
+      throw new Error(String((data as { error: string }).error));
+    }
+    return data as BizumEnableResult;
+  } catch (e) {
+    const fallback = await supabase.functions.invoke("stripe-connect-onboard", {
+      body: { mode: "enable_bizum", storeId },
+    });
+    if (fallback.error) throw e;
+    if (fallback.data && typeof fallback.data === "object" && (fallback.data as { error?: string }).error) {
+      throw new Error(String((fallback.data as { error: string }).error));
+    }
+    return fallback.data as BizumEnableResult;
+  }
 }
 
 async function syncStripeConnectStatusPublic(storeId: string): Promise<StripeConnectStatus | null> {

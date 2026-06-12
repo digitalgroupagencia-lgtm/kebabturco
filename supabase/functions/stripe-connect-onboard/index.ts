@@ -83,6 +83,20 @@ Deno.serve(async (req) => {
       return await handlePublicSync(storeId);
     }
 
+    if (mode === "enable_bizum") {
+      const service = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      try {
+        const { runStoreBizumEnable } = await import("../_shared/stripeConnectPublicSync.ts");
+        return json(await runStoreBizumEnable(service, storeId));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Erro ao activar Bizum";
+        return json({ error: msg, code: "bizum_enable_failed" }, 400);
+      }
+    }
+
     return await handleStripeConnectRequest(req, body);
   } catch (e) {
     return connectErrorResponse(e);

@@ -11,6 +11,7 @@ import {
   fetchStripePlatformStatus,
   provisionTestStripeConnect,
   resyncStorePayoutIntakeToStripe,
+  enableStoreBizumPayments,
   syncStripeConnectStatus,
   type StoreFinancialProfile,
   type StripePlatformStatus,
@@ -38,6 +39,7 @@ import {
   Share2,
   Copy,
   RefreshCw,
+  Smartphone,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
@@ -74,6 +76,7 @@ const FinancePage = () => {
   const [platformStatus, setPlatformStatus] = useState<StripePlatformStatus | null>(null);
   const [embeddedMode, setEmbeddedMode] = useState<"none" | "onboarding" | "management">("none");
   const [syncing, setSyncing] = useState(false);
+  const [bizumBusy, setBizumBusy] = useState(false);
   const [testProvisionBusy, setTestProvisionBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [onboardingLink, setOnboardingLink] = useState<string | null>(null);
@@ -130,8 +133,10 @@ const FinancePage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      if (session) {
-        await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
+      const syncResult = await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
+      if (syncResult?.bizumMessage) {
+        if (syncResult.bizumEnabled) toast.success(syncResult.bizumMessage);
+        else toast.message(syncResult.bizumMessage);
       }
 
       let fresh = await fetchStoreFinancialProfile(storeId);
@@ -169,6 +174,20 @@ const FinancePage = () => {
       setSyncing(false);
     }
   }, [storeId, load, intakeSaved, checkoutRpcReady]);
+
+  const activateBizum = useCallback(async () => {
+    if (!storeId) return;
+    setBizumBusy(true);
+    try {
+      const result = await enableStoreBizumPayments(storeId);
+      if (result.enabled) toast.success(result.message || "Bizum activo na conta do restaurante.");
+      else toast.warning(result.message || "Bizum ainda não disponível nesta conta.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível activar Bizum");
+    } finally {
+      setBizumBusy(false);
+    }
+  }, [storeId]);
 
   const onEmbeddedComplete = useCallback(async () => {
     setEmbeddedMode("none");
@@ -633,6 +652,17 @@ const FinancePage = () => {
       )}
 
       <div className="grid grid-cols-1 gap-2">
+        {ready && !testModeActive && (
+          <Button
+            variant="outline"
+            className="w-full h-11 font-bold gap-2"
+            onClick={() => void activateBizum()}
+            disabled={bizumBusy || syncing}
+          >
+            {bizumBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
+            Activar Bizum na conta do restaurante
+          </Button>
+        )}
         <Button
           variant={ready ? "secondary" : "default"}
           className="w-full h-11 font-bold gap-2"
