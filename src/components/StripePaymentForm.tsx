@@ -255,16 +255,16 @@ function BizumCheckoutForm({
     const phone = formatFullPhone(dialCode, localPhone);
 
     try {
-      const { error, paymentIntent } = await stripe.confirmBizumPayment(
+      const { error, paymentIntent } = await stripe.confirmPayment({
         clientSecret,
-        {
-          payment_method: {
+        confirmParams: {
+          return_url: returnUrl,
+          payment_method_data: {
             billing_details: { phone },
           },
-          return_url: returnUrl,
         },
-        { handleActions: true },
-      );
+        redirect: "if_required",
+      });
 
       if (error) {
         setErr(error.message || copy.paymentDeclined);
