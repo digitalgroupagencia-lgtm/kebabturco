@@ -1,0 +1,66 @@
+PUBLICAR KEBAB TURCO — 100% (Junho 2026)
+=========================================
+
+O código já está sincronizado no GitHub (origin + lovable). Faça isto NA ORDEM:
+
+PASSO 1 — Lovable: Sync + Publish
+---------------------------------
+1. Abra o projecto Lovable kebabturco
+2. Clique Sync (puxa do GitHub lovable/main)
+3. Clique Publish
+
+PASSO 2 — SQL na base de dados (OBRIGATÓRIO)
+--------------------------------------------
+No chat Lovable, cole EXACTAMENTE:
+
+  Executa o ficheiro supabase/scripts/LOVABLE_SYNC_PUBLICAR_100.sql no SQL Editor do Supabase e confirma que as 3 verificações no final devolvem ok=true.
+
+OU abra Supabase → SQL Editor → cole o conteúdo de LOVABLE_SYNC_PUBLICAR_100.sql → Run.
+
+PASSO 3 — Publicar funções do servidor (OBRIGATÓRIO)
+----------------------------------------------------
+No chat Lovable, cole:
+
+  Deploy estas Supabase Edge Functions a partir do código actual do repositório:
+  - stripe-webhook
+  - stripe-create-payment-intent
+  - stripe-verify-payment-intent
+  - send-push-notification
+  - stripe-connect-onboard
+
+  Confirma que send-push-notification responde a {"ping":true} com ok:true (não erro orderId).
+
+PASSO 4 — Google login equipa (uma vez)
+---------------------------------------
+No Supabase Dashboard → Authentication → Providers → Google → Enable.
+Redirect URL: https://kvpssbhclafoymhecmuk.supabase.co/auth/v1/callback
+E também o URL do site (kebabturco.net e preview Lovable).
+
+PASSO 5 — Webhook Stripe (confirmar)
+------------------------------------
+Stripe Dashboard → Webhooks → endpoint:
+  https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/stripe-webhook
+Eventos: payment_intent.succeeded, payment_intent.payment_failed
+
+PASSO 6 — Testar
+----------------
+A) send-push-notification ping:
+   curl -X POST https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/send-push-notification \
+     -H "Content-Type: application/json" \
+     -d '{"ping":true}'
+   → deve responder {"ok":true,...}
+
+B) Equipa → deve aparecer bloco "Acessos com Google pendentes"
+C) Pagamento Bizum teste → pedido só no painel DEPOIS de pago
+
+GITHUB ACTIONS (opcional — automático no futuro)
+------------------------------------------------
+O ficheiro .github/workflows/deploy-supabase-functions.yml está no Mac mas NÃO entrou no GitHub
+(precisa de permissão "workflow" no token OAuth).
+
+Para activar depois:
+1. GitHub → kebabturco → Settings → Secrets → Actions
+   SUPABASE_ACCESS_TOKEN = token de supabase.com/dashboard/account/tokens
+   SUPABASE_PROJECT_ID = kvpssbhclafoymhecmuk
+2. Suba o ficheiro .github/workflows/deploy-supabase-functions.yml manualmente no GitHub web
+   OU use um Personal Access Token com scope "workflow" para git push.

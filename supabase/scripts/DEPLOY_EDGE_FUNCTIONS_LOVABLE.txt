@@ -10,8 +10,13 @@ OPÇÃO B — No Mac, no terminal, na pasta do projecto:
    npx supabase login
    ./scripts/deploy-edge-functions.sh
 
-OPÇÃO C — Chat Lovable (gasta créditos):
-Deploy all Supabase edge functions...
+OPÇÃO C — Chat Lovable (gasta créditos) — cole isto:
+Deploy estas Supabase Edge Functions do código actual:
+stripe-webhook, stripe-create-payment-intent, stripe-verify-payment-intent,
+send-push-notification, stripe-connect-onboard
+
+SQL obrigatório antes: executar supabase/scripts/LOVABLE_SYNC_PUBLICAR_100.sql
+Guia completo: supabase/scripts/LOVABLE_PUBLICAR_AGORA.txt
 
 Depois: Sync + Publish no botão da Lovable.
 
