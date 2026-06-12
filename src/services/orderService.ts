@@ -343,17 +343,37 @@ export async function regenerateTableQrToken(tableId: string) {
   return data as string;
 }
 
-export async function verifyStripePaymentIntent(params: {
+export async function attachStripeOrderToPaymentIntent(params: {
   storeId: string;
   paymentIntentId: string;
   orderId: string;
-  amountCents: number;
+  orderNumber: string;
+}) {
+  const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {
+    body: { action: "attach_order", ...params },
+  });
+  if (error) throw new Error(await readEdgeFunctionError(error));
+  if (data?.error) throw new Error(data.error);
+  return data as { success: boolean };
+}
+
+/** Consulta estado — não marca o pedido como pago (isso é só via webhook). */
+export async function pollStripePaymentConfirmation(params: {
+  storeId: string;
+  paymentIntentId: string;
+  orderId: string;
 }) {
   const tryInvoke = async (name: string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke(name, { body });
     if (error) throw error;
+    if (data?.success) return data as { success: boolean; alreadyPaid?: boolean; orderNumber?: string };
+    if (data?.pending) {
+      const err = new Error(data.error || "Pagamento ainda não confirmado");
+      (err as Error & { pending?: boolean }).pending = true;
+      throw err;
+    }
     if (data?.error) throw new Error(data.error);
-    return data as { success: boolean; orderId?: string; orderNumber?: string };
+    throw new Error("Pagamento ainda não confirmado");
   };
 
   try {
@@ -367,6 +387,75 @@ export async function verifyStripePaymentIntent(params: {
     if (!missing) throw first;
     return tryInvoke("stripe-create-payment-intent", { action: "verify", ...params });
   }
+}
+
+/** @deprecated use pollStripePaymentConfirmation — mantido para chamadas antigas */
+export async function verifyStripePaymentIntent(params: {
+  storeId: string;
+  paymentIntentId: string;
+  orderId: string;
+  amountCents: number;
+}) {
+  return pollStripePaymentConfirmation({
+    storeId: params.storeId,
+    paymentIntentId: params.paymentIntentId,
+    orderId: params.orderId,
+  });
+}
+
+export async function waitForOrderPaymentConfirmed(
+  orderId: string,
+  options?: {
+    maxAttempts?: number;
+    intervalMs?: number;
+    storeId?: string;
+    paymentIntentId?: string;
+  },
+) {
+  const maxAttempts = options?.maxAttempts ?? 45;
+  const intervalMs = options?.intervalMs ?? 2000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const { data, error } = await supabase.rpc("get_order_public", { _order_id: orderId });
+    if (error) throw new Error(error.message || "Não foi possível verificar o pedido");
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.payment_status === "paid") {
+      return {
+        orderId,
+        orderNumber: row.order_number as string,
+        paymentStatus: "paid" as const,
+      };
+    }
+    if (row?.payment_status === "failed") {
+      throw new Error("Pagamento falhou. Pode tentar novamente.");
+    }
+
+    if (
+      options?.storeId &&
+      options?.paymentIntentId &&
+      attempt > 0 &&
+      attempt % 3 === 0
+    ) {
+      try {
+        await pollStripePaymentConfirmation({
+          storeId: options.storeId,
+          paymentIntentId: options.paymentIntentId,
+          orderId,
+        });
+      } catch {
+        /* ainda pendente — webhook é a fonte de verdade em produção */
+      }
+    }
+
+    if (attempt < maxAttempts - 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+    }
+  }
+
+  throw new Error(
+    "O pagamento foi aceite mas a confirmação está a demorar. Não volte a pagar — o pedido será confirmado em breve.",
+  );
 }
 
 export async function invokePrintOrder(body: Record<string, unknown>) {

@@ -26,9 +26,10 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import { isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
 
 const fmt = (n: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+  new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 
 const Dashboard = () => {
   const { storeId: STORE_ID } = useAdminStoreId();
@@ -47,19 +48,21 @@ const Dashboard = () => {
 
       const { data: orders, error } = await supabase
         .from("orders")
-        .select("total, status, created_at")
+        .select("total, status, created_at, payment_status, is_test")
         .eq("store_id", STORE_ID!)
         .gte("created_at", startOfMonth.toISOString());
       if (error) throw error;
 
+      const isRevenueOrder = (o: { status: string; payment_status: string | null; is_test?: boolean | null }) =>
+        o.status !== "cancelled" && isConfirmedPaidOrder(o) && !o.is_test;
+
       const today = orders.filter((o) => new Date(o.created_at) >= startOfDay);
-      const activeToday = today.filter((o) => o.status !== "cancelled");
-      const totalToday = activeToday.reduce((s, o) => s + Number(o.total ?? 0), 0);
-      const totalMonth = orders
-        .filter((o) => o.status !== "cancelled")
-        .reduce((s, o) => s + Number(o.total ?? 0), 0);
-      const ordersToday = activeToday.length;
-      const ordersMonth = orders.filter((o) => o.status !== "cancelled").length;
+      const paidToday = today.filter(isRevenueOrder);
+      const paidMonth = orders.filter(isRevenueOrder);
+      const totalToday = paidToday.reduce((s, o) => s + Number(o.total ?? 0), 0);
+      const totalMonth = paidMonth.reduce((s, o) => s + Number(o.total ?? 0), 0);
+      const ordersToday = paidToday.length;
+      const ordersMonth = paidMonth.length;
       const avgTicket = ordersToday > 0 ? totalToday / ordersToday : 0;
       const cancelledToday = today.filter((o) => o.status === "cancelled").length;
 
@@ -125,7 +128,7 @@ const Dashboard = () => {
           tone="primary"
           label="Pedidos hoje"
           value={isLoading ? "—" : String(data?.ordersToday ?? 0)}
-          sub={`${data?.ordersMonth ?? 0} no mês`}
+          sub={`${data?.ordersMonth ?? 0} pagos no mês`}
         />
         <PremiumMetricCard
           icon={DollarSign}
@@ -146,7 +149,7 @@ const Dashboard = () => {
           tone="purple"
           label="Faturamento mês"
           value={isLoading ? "—" : fmt(data?.totalMonth ?? 0)}
-          sub={`${data?.ordersMonth ?? 0} pedidos`}
+          sub={`${data?.ordersMonth ?? 0} pedidos pagos`}
         />
       </div>
 

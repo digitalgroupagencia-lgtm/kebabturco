@@ -10,7 +10,11 @@ import {
   registerNewPendingOrderAlert,
   syncPendingOrderAlertLoop,
 } from "@/lib/panelAlerts";
-import { blocksOperationalProgressUntilPaid, orderReadyForKitchen } from "@/lib/orderKitchenRules";
+import {
+  blocksOperationalProgressUntilPaid,
+  orderReadyForKitchen,
+  shouldShowOrderInRestaurantPanel,
+} from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder, reprintPanelOrder } from "@/features/ops/panelPrintHelper";
@@ -97,7 +101,7 @@ export function usePanelOrders(storeId: string | undefined) {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const rows = data as PanelOrder[];
+      const rows = (data as PanelOrder[]).filter(shouldShowOrderInRestaurantPanel);
 
       if (initializedRef.current) {
         for (const o of rows) {
@@ -196,6 +200,7 @@ export function usePanelOrders(storeId: string | undefined) {
             const row = payload.new as PanelOrder;
             if (!isToday(row.created_at)) return;
             if (updatingRef.current.has(row.id)) return;
+            if (!shouldShowOrderInRestaurantPanel(row)) return;
 
             setOrders((prev) => {
               if (prev.some((o) => o.id === row.id)) return prev;
@@ -221,13 +226,37 @@ export function usePanelOrders(storeId: string | undefined) {
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "orders", filter: `store_id=eq.${storeId}` },
-          (payload) => {
+          async (payload) => {
             const row = payload.new as PanelOrder;
             const old = payload.old as PanelOrder;
-            setOrders((prev) => prev.map((o) => (o.id === row.id ? { ...o, ...row } : o)));
+            const visible = shouldShowOrderInRestaurantPanel(row);
+
+            setOrders((prev) => {
+              const exists = prev.some((o) => o.id === row.id);
+              if (!visible) {
+                return exists ? prev.filter((o) => o.id !== row.id) : prev;
+              }
+              if (exists) return prev.map((o) => (o.id === row.id ? { ...o, ...row } : o));
+              return [row, ...prev];
+            });
+
             if (old?.status === "pending" && row.status !== "pending") {
               acknowledgePendingOrderAlert(row.id);
             }
+
+            const becameVisible =
+              visible &&
+              old?.payment_status !== "paid" &&
+              row.payment_status === "paid" &&
+              !shouldShowOrderInRestaurantPanel(old);
+
+            if (becameVisible && row.status === "pending" && !knownPendingRef.current.has(row.id)) {
+              knownPendingRef.current.add(row.id);
+              const items = itemsByOrder[row.id] || (await fetchItemsForOrders([row.id]))[row.id] || [];
+              setItemsByOrder((prev) => ({ ...prev, [row.id]: items }));
+              void notifyNewPending(row, items, orderReadyForKitchen(row));
+            }
+
             if (
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&

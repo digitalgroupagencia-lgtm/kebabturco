@@ -24,6 +24,7 @@ import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { useStaffT } from "@/hooks/useStaffT";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
+import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
 import { listStoreDrivers } from "@/services/orderService";
 import {
   acknowledgePendingOrderAlert,
@@ -187,7 +188,10 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     [orders],
   );
   const visibleOrders = useMemo(
-    () => (hideTests ? orders.filter((o) => !(o as unknown as { is_test?: boolean }).is_test) : orders),
+    () =>
+      (hideTests ? orders.filter((o) => !(o as unknown as { is_test?: boolean }).is_test) : orders).filter(
+        shouldShowOrderInRestaurantPanel,
+      ),
     [orders, hideTests],
   );
   const filteredOrders = useMemo(() => filterOrdersByMode(visibleOrders, viewMode), [visibleOrders, viewMode]);

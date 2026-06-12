@@ -1,4 +1,4 @@
-import { corsHeaders, handleVerifyPaymentIntent } from "../_shared/stripePaymentActions.ts";
+import { corsHeaders, handlePollPaymentConfirmation } from "../_shared/stripePaymentActions.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    return handleVerifyPaymentIntent(body);
+    return handlePollPaymentConfirmation(body);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao confirmar pagamento";
     return new Response(JSON.stringify({ error: msg }), {

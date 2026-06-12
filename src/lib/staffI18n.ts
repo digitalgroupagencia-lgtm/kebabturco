@@ -311,6 +311,44 @@ export const STAFF_I18N = {
   "team.toast.email_existed": { es: "Este correo ya existía: se añadió al equipo, pero la contraseña anterior se mantiene.", pt: "Este e-mail já existia: foi adicionado à equipa, mas a senha anterior mantém-se.", en: "This email already existed: added to the team, but the previous password stays." },
   "team.toast.login_pending_create": { es: "Miembro creado, pero el login aún no responde. Edítelo, vuelva a escribir la contraseña y guarde. Si persiste, haga Sync + Publish.", pt: "Membro criado, mas o login ainda não responde. Edite-o, volte a escrever a senha e guarde. Se continuar, faça Sync + Publish.", en: "Member created, but login isn't ready yet. Edit, retype the password and save. If it persists, run Sync + Publish." },
   "team.toast.login_ready": { es: "Login listo: puede entrar con este correo y contraseña en Área del equipo.", pt: "Login pronto: pode entrar com este e-mail e senha na Área da equipe.", en: "Login ready: you can sign in with this email and password in the Team area." },
+  "team.google.pending.title": {
+    es: "Accesos con Google pendientes",
+    pt: "Acessos com Google pendentes",
+    en: "Pending Google sign-ins",
+  },
+  "team.google.pending.subtitle": {
+    es: "Personas que entraron con Google y esperan que usted asigne un perfil o las excluya.",
+    pt: "Pessoas que entraram com Google e aguardam que lhe atribua uma função ou as exclua.",
+    en: "People who signed in with Google and are waiting for you to assign a role or remove them.",
+  },
+  "team.google.pending.empty": {
+    es: "Ningún acceso con Google pendiente.",
+    pt: "Nenhum acesso com Google pendente.",
+    en: "No pending Google sign-ins.",
+  },
+  "team.google.pending.approve": { es: "Asignar perfil", pt: "Atribuir função", en: "Assign role" },
+  "team.google.pending.reject": { es: "Excluir", pt: "Excluir", en: "Remove" },
+  "team.google.pending.since": { es: "Solicitud", pt: "Pedido", en: "Requested" },
+  "team.google.dialog.title": {
+    es: "Aprobar acceso con Google",
+    pt: "Aprovar acesso com Google",
+    en: "Approve Google access",
+  },
+  "team.google.toast.approved": {
+    es: "Acceso aprobado — ya puede entrar con Google",
+    pt: "Acesso aprovado — já pode entrar com Google",
+    en: "Access approved — they can now sign in with Google",
+  },
+  "team.google.toast.rejected": {
+    es: "Acceso con Google excluido",
+    pt: "Acesso com Google excluído",
+    en: "Google access removed",
+  },
+  "team.google.toast.reject_confirm": {
+    es: "¿Excluir este acceso con Google? La persona no podrá entrar hasta que vuelva a solicitar.",
+    pt: "Excluir este acesso com Google? A pessoa não poderá entrar até voltar a pedir.",
+    en: "Remove this Google access? They won't be able to sign in until they request again.",
+  },
 
   // --- Sellers page ---
   "sellers.units": { es: "vendedores", pt: "vendedores", en: "sellers" },

@@ -5,7 +5,7 @@ import { ChevronRight, Clock, Bike, XCircle, Banknote } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
-import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
+import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { useStaffT } from "@/hooks/useStaffT";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
@@ -69,8 +69,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   const isDelivery = isDeliveryOrder(order);
   const awaitingDriver = isDelivery && order.status === "ready" && order.assigned_driver_id;
   const onTheWay = order.status === "out_for_delivery";
-  const paymentPending = order.payment_status !== "paid" && order.status !== "cancelled";
-  const canQuickPay = paymentPending && !!onMarkPaid;
+  const canQuickPay = isAwaitingCounterPaymentConfirmation(order) && !!onMarkPaid;
   const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
 
   const handlePrimary = async (e: MouseEvent) => {

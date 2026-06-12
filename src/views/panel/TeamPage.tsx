@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Shield, Pencil, ClipboardCopy } from "lucide-react";
+import { Users, Plus, Trash2, Shield, Pencil, ClipboardCopy, UserPlus } from "lucide-react";
 import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
@@ -35,6 +35,12 @@ import {
   teamMemberDraftHasContent,
 } from "@/lib/teamMemberDraft";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import {
+  approveStaffGooglePending,
+  listStaffGooglePending,
+  rejectStaffGooglePending,
+  type StaffGooglePendingMember,
+} from "@/services/staffGoogleLogin";
 
 type AppRole = StaffRole;
 
@@ -97,14 +103,39 @@ const TeamPage = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const draftToastStoreRef = useRef<string | null>(null);
+  const [googlePending, setGooglePending] = useState<StaffGooglePendingMember[]>([]);
+  const [googlePendingLoading, setGooglePendingLoading] = useState(false);
+  const [googleApproveOpen, setGoogleApproveOpen] = useState(false);
+  const [googleApproveTarget, setGoogleApproveTarget] = useState<StaffGooglePendingMember | null>(null);
+  const [googleApproveName, setGoogleApproveName] = useState("");
+  const [googleApproveRole, setGoogleApproveRole] = useState<AppRole>("operator");
+  const [googleApproveLang, setGoogleApproveLang] = useState("es");
+  const [googleApproveSaving, setGoogleApproveSaving] = useState(false);
+
+  const fetchGooglePending = async () => {
+    if (!storeId || !canManageTeam(roleData?.role)) {
+      setGooglePending([]);
+      return;
+    }
+    setGooglePendingLoading(true);
+    try {
+      const rows = await listStaffGooglePending(storeId);
+      setGooglePending(rows);
+    } catch {
+      setGooglePending([]);
+    } finally {
+      setGooglePendingLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (storeId) {
       void fetchMembers();
+      void fetchGooglePending();
     } else {
       setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, roleData?.role]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -402,6 +433,47 @@ const TeamPage = () => {
     fetchMembers();
   };
 
+  const openGoogleApprove = (row: StaffGooglePendingMember) => {
+    setGoogleApproveTarget(row);
+    setGoogleApproveName(row.full_name || "");
+    setGoogleApproveRole("delivery");
+    setGoogleApproveLang(primaryLang || "es");
+    setGoogleApproveOpen(true);
+  };
+
+  const confirmApproveGoogle = async () => {
+    if (!googleApproveTarget) return;
+    setGoogleApproveSaving(true);
+    try {
+      await approveStaffGooglePending({
+        pendingId: googleApproveTarget.id,
+        role: googleApproveRole,
+        fullName: googleApproveName,
+        preferredLanguage: googleApproveLang,
+      });
+      toast.success(t("team.google.toast.approved"));
+      setGoogleApproveOpen(false);
+      setGoogleApproveTarget(null);
+      await fetchGooglePending();
+      await fetchMembers();
+    } catch (e: unknown) {
+      toast.error(translateAppErrorFromException(e, uiLang));
+    } finally {
+      setGoogleApproveSaving(false);
+    }
+  };
+
+  const rejectGooglePending = async (row: StaffGooglePendingMember) => {
+    if (!window.confirm(t("team.google.toast.reject_confirm"))) return;
+    try {
+      await rejectStaffGooglePending(row.id);
+      toast.success(t("team.google.toast.rejected"));
+      await fetchGooglePending();
+    } catch (e: unknown) {
+      toast.error(translateAppErrorFromException(e, uiLang));
+    }
+  };
+
   const removeMember = async (member: TeamMember) => {
     if (member.user_id === user?.id) {
       toast.error(t("team.toast.cannot_remove_self"));
@@ -457,6 +529,48 @@ const TeamPage = () => {
           ) : null
         }
       />
+
+      {canManage && (
+        <Card className="border-primary/25 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-primary" />
+              {t("team.google.pending.title")}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">{t("team.google.pending.subtitle")}</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {googlePendingLoading ? (
+              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+            ) : googlePending.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("team.google.pending.empty")}</p>
+            ) : (
+              googlePending.map((row) => (
+                <div
+                  key={row.id}
+                  className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold text-foreground">{row.full_name || t("team.no_name")}</p>
+                    <p className="text-sm text-muted-foreground">{row.email}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("team.google.pending.since")}: {new Date(row.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={() => openGoogleApprove(row)}>
+                      {t("team.google.pending.approve")}
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-destructive" onClick={() => void rejectGooglePending(row)}>
+                      {t("team.google.pending.reject")}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Roles legend */}
       <div className="flex flex-wrap gap-2">
@@ -737,6 +851,56 @@ const TeamPage = () => {
             <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
             <Button onClick={() => void saveEditMember()} disabled={editSaving}>
               {editSaving ? t("team.action.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={googleApproveOpen} onOpenChange={setGoogleApproveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("team.google.dialog.title")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t("team.field.email")}</Label>
+              <Input value={googleApproveTarget?.email || ""} readOnly disabled className="bg-muted/40" />
+            </div>
+            <div>
+              <Label>{t("team.col.name")}</Label>
+              <Input
+                value={googleApproveName}
+                onChange={(e) => setGoogleApproveName(e.target.value)}
+                placeholder={t("team.field.name.ph")}
+              />
+            </div>
+            <div>
+              <Label>{t("team.col.role")}</Label>
+              <Select value={googleApproveRole} onValueChange={(v) => setGoogleApproveRole(v as AppRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RESTAURANT_STAFF_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {roleLabels[r]?.label ?? r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t("team.field.lang")}</Label>
+              <Select value={googleApproveLang} onValueChange={setGoogleApproveLang}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
+            <Button onClick={() => void confirmApproveGoogle()} disabled={googleApproveSaving}>
+              {googleApproveSaving ? t("team.action.saving") : t("team.google.pending.approve")}
             </Button>
           </DialogFooter>
         </DialogContent>

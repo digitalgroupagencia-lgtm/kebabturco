@@ -19,6 +19,18 @@ const staffLoginCopy = {
     emailLabel: "Correo",
     passwordLabel: "Contraseña",
     loginFailed: "Correo o contraseña incorrectos",
+    googleDivider: "o",
+    googleButton: "Entrar con Google",
+    googleSubmitting: "Abriendo Google…",
+    googlePendingTitle: "Esperando aprobación",
+    googlePendingBody:
+      "Entró con Google correctamente. El restaurante debe asignarle un perfil en Equipo antes de abrir el panel.",
+    googlePendingHint: "Compruebe de nuevo en unos segundos o actualice la página.",
+    googleRejectedTitle: "Acceso no autorizado",
+    googleRejectedBody:
+      "El restaurante rechazó este acceso con Google. Si cree que es un error, hable con el administrador.",
+    googleSignOut: "Salir y usar otra cuenta",
+    googleError: "No se pudo entrar con Google",
   },
   pt: {
     title: "Área da equipe",
@@ -31,6 +43,18 @@ const staffLoginCopy = {
     emailLabel: "E-mail",
     passwordLabel: "Senha",
     loginFailed: "E-mail ou senha incorrectos",
+    googleDivider: "ou",
+    googleButton: "Entrar com Google",
+    googleSubmitting: "A abrir Google…",
+    googlePendingTitle: "À espera de aprovação",
+    googlePendingBody:
+      "Entrou com Google com sucesso. O restaurante tem de lhe atribuir uma função em Equipa antes de abrir o painel.",
+    googlePendingHint: "Volte a verificar dentro de alguns segundos ou actualize a página.",
+    googleRejectedTitle: "Acesso não autorizado",
+    googleRejectedBody:
+      "O restaurante recusou este acesso com Google. Se acha que é um erro, fale com o administrador.",
+    googleSignOut: "Sair e usar outra conta",
+    googleError: "Não foi possível entrar com Google",
   },
   en: {
     title: "Team area",
@@ -43,6 +67,18 @@ const staffLoginCopy = {
     emailLabel: "Email",
     passwordLabel: "Password",
     loginFailed: "Incorrect email or password",
+    googleDivider: "or",
+    googleButton: "Sign in with Google",
+    googleSubmitting: "Opening Google…",
+    googlePendingTitle: "Waiting for approval",
+    googlePendingBody:
+      "You signed in with Google. The restaurant must assign your role in Team before you can open the panel.",
+    googlePendingHint: "Check again in a few seconds or refresh the page.",
+    googleRejectedTitle: "Access not authorized",
+    googleRejectedBody:
+      "The restaurant declined this Google access. Contact the administrator if you think this is a mistake.",
+    googleSignOut: "Sign out and use another account",
+    googleError: "Could not sign in with Google",
   },
 } as const;
 

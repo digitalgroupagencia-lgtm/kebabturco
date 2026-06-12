@@ -1,11 +1,10 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  PLATFORM_FEE_CENTS,
-  computeNetToStoreCents,
-  estimatedStripeFeeInServiceFee,
-} from "../_shared/stripeFees.ts";
 import { syncConnectAccountById } from "../_shared/stripeConnectSync.ts";
+import {
+  recordFailedPaymentIntent,
+  settleSucceededPaymentIntent,
+} from "../_shared/stripePaymentActions.ts";
 import {
   getStripeSecretKey,
   getStripeSecretKeyTest,
@@ -247,36 +246,19 @@ Deno.serve(async (req) => {
 
   if (event.type === "payment_intent.succeeded") {
     const pi = event.data.object as Stripe.PaymentIntent;
-    const restaurantPortionCents = Number(pi.metadata?.restaurant_portion_cents || 0);
-    const onlineServiceFeeCents = Number(
-      pi.metadata?.online_service_fee_cents || pi.application_fee_amount || 0,
-    );
-    const platformFeeCents = Number(pi.metadata?.platform_fee_cents || PLATFORM_FEE_CENTS);
-    let stripeFeeCents = Number(
-      pi.metadata?.estimated_stripe_fee_cents || estimatedStripeFeeInServiceFee(onlineServiceFeeCents),
-    );
-
-    try {
-      const expanded = await stripe.paymentIntents.retrieve(pi.id, { expand: ["latest_charge.balance_transaction"] });
-      const charge = expanded.latest_charge as Stripe.Charge | null;
-      const bt = charge?.balance_transaction as Stripe.BalanceTransaction | null;
-      if (bt?.fee != null) stripeFeeCents = bt.fee;
-    } catch {
-      /* keep estimate */
+    const result = await settleSucceededPaymentIntent(stripe, supabase, pi);
+    if (!result.success) {
+      console.error("[stripe-webhook] payment_intent.succeeded settlement failed", pi.id, result.error);
     }
+  }
 
-    const netToStoreCents = computeNetToStoreCents(
-      restaurantPortionCents || Math.max(0, (pi.amount_received || pi.amount) - onlineServiceFeeCents),
-    );
-
-    await supabase.rpc("record_payment_settlement", {
-      _stripe_payment_intent_id: pi.id,
-      _platform_fee_cents: platformFeeCents,
-      _stripe_fee_cents: stripeFeeCents,
-      _processing_fee_cents: onlineServiceFeeCents,
-      _net_to_store_cents: netToStoreCents,
-      _online_service_fee_cents: onlineServiceFeeCents,
-    });
+  if (event.type === "payment_intent.payment_failed") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    try {
+      await recordFailedPaymentIntent(supabase, pi);
+    } catch (e) {
+      console.error("[stripe-webhook] payment_intent.payment_failed", pi.id, e);
+    }
   }
 
   if (event.type === "account.updated") {

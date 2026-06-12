@@ -17,6 +17,7 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import { isAwaitingCounterPaymentConfirmation, isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -50,7 +51,9 @@ const CashierPage = () => {
       .neq("status", "cancelled")
       .gte("created_at", today.toISOString())
       .order("created_at", { ascending: false });
-    setPendingOrders((data ?? []) as PendingOrder[]);
+    setPendingOrders(
+      ((data ?? []) as PendingOrder[]).filter(isAwaitingCounterPaymentConfirmation),
+    );
   }, [storeId]);
 
   useEffect(() => {
@@ -111,22 +114,24 @@ const CashierPage = () => {
 
     const { data } = await supabase
       .from("orders")
-      .select("total, payment_method, notes")
+      .select("total, payment_method, payment_status, notes")
       .eq("store_id", storeId)
+      .eq("payment_status", "paid")
       .neq("status", "cancelled")
       .gte("created_at", today.toISOString());
 
     if (data) {
+      const paid = data.filter(isConfirmedPaidOrder);
       const isBizum = (o: { payment_method: string | null; notes: string | null }) =>
         o.payment_method === "bizum" ||
         (typeof o.notes === "string" && /bizum/i.test(o.notes));
-      const total = data.reduce((s, o) => s + Number(o.total), 0);
-      const bizum = data.filter(isBizum).reduce((s, o) => s + Number(o.total), 0);
-      const cash = data.filter((o) => o.payment_method === "cash").reduce((s, o) => s + Number(o.total), 0);
-      const card = data
+      const total = paid.reduce((s, o) => s + Number(o.total), 0);
+      const bizum = paid.filter(isBizum).reduce((s, o) => s + Number(o.total), 0);
+      const cash = paid.filter((o) => o.payment_method === "cash").reduce((s, o) => s + Number(o.total), 0);
+      const card = paid
         .filter((o) => o.payment_method === "card" && !isBizum(o))
         .reduce((s, o) => s + Number(o.total), 0);
-      setTodaySales({ total, card, cash, bizum, count: data.length });
+      setTodaySales({ total, card, cash, bizum, count: paid.length });
     }
   };
 

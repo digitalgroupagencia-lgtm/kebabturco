@@ -202,24 +202,29 @@ function authorizeStaffBroadcast(req: Request, body: { orderId?: string; storeId
   return false;
 }
 
-function vapidProbeResponse() {
+function buildHealthPayload() {
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
   const fcm = getFcmServiceAccount();
-  return new Response(
-    JSON.stringify({
-      configured: Boolean(vapidPublic && vapidPrivate),
-      hasPublicKey: Boolean(vapidPublic),
-      hasPrivateKey: Boolean(vapidPrivate),
-      publicKey: vapidPublic || null,
-      publicKeyPreview: vapidPublic
-        ? `${vapidPublic.slice(0, 12)}…${vapidPublic.slice(-6)}`
-        : null,
-      fcmConfigured: Boolean(fcm),
-      fcmProjectId: fcm?.project_id ?? null,
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return {
+    ok: true,
+    service: "send-push-notification",
+    configured: Boolean(vapidPublic && vapidPrivate),
+    hasPublicKey: Boolean(vapidPublic),
+    hasPrivateKey: Boolean(vapidPrivate),
+    publicKey: vapidPublic || null,
+    publicKeyPreview: vapidPublic
+      ? `${vapidPublic.slice(0, 12)}…${vapidPublic.slice(-6)}`
+      : null,
+    fcmConfigured: Boolean(fcm),
+    fcmProjectId: fcm?.project_id ?? null,
+  };
+}
+
+function healthProbeResponse() {
+  return new Response(JSON.stringify(buildHealthPayload()), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 function isStaffAudienceRow(row: PushSubRow): boolean {
@@ -247,11 +252,13 @@ function selectAudienceRows(
 // =============================================================
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method === "GET") return vapidProbeResponse();
+  if (req.method === "GET") return healthProbeResponse();
 
   try {
     const body = await req.json().catch(() => ({}));
-    if (body?.probe === true) return vapidProbeResponse();
+    if (body?.probe === true || body?.ping === true || body?.health === true) {
+      return healthProbeResponse();
+    }
 
     const {
       orderId,

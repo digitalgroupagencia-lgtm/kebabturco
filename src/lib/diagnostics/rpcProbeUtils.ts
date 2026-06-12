@@ -31,7 +31,7 @@ const EDGE_HEALTH_PING: Record<string, Record<string, unknown>> = {
   "print-order": { ping: true },
   "operational-diagnostics": { ping: true },
   "stripe-webhook": { ping: true },
-  "send-push-notification": { ping: true },
+  "send-push-notification": { probe: true },
 };
 
 function isEdgeReachableResponse(functionName: string, data: unknown, error: unknown): boolean {
@@ -39,6 +39,7 @@ function isEdgeReachableResponse(functionName: string, data: unknown, error: unk
     const row = data as { ok?: boolean; service?: string; error?: string };
     if (row.ok === true) return true;
     if (row.service === functionName) return true;
+    if ("configured" in row && row.service === "send-push-notification") return true;
     // Auth-required functions still prove deploy (e.g. operational-diagnostics).
     if (
       row.error === "Autenticação necessária" ||

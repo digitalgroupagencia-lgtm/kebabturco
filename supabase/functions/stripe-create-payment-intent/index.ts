@@ -4,6 +4,7 @@ import {
   corsHeaders,
   handleOperationalDiagnostics,
   handleVerifyPaymentIntent,
+  handleAttachOrderToPaymentIntent,
   computeApplicationFeeCents,
   computeCustomerTotalCents,
   computeOnlineServiceFeeCents,
@@ -92,6 +93,10 @@ Deno.serve(async (req) => {
 
     if (body?.action === "verify") {
       return handleVerifyPaymentIntent(body);
+    }
+
+    if (body?.action === "attach_order") {
+      return handleAttachOrderToPaymentIntent(body);
     }
 
     if (body?.action === "connect_onboard") {

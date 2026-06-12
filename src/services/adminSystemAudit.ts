@@ -456,18 +456,39 @@ async function auditPrinting(storeId: string | null): Promise<AuditFinding[]> {
   if (!storeId) return [];
   const findings: AuditFinding[] = [];
 
-  const { data: printers } = await supabase
-    .from("printers")
-    .select("id,is_active,name")
-    .eq("store_id", storeId);
+  const { data: settings } = await supabase
+    .from("printer_settings")
+    .select("enabled, ip_address, printer_name")
+    .eq("store_id", storeId)
+    .maybeSingle();
 
-  if (!printers || printers.length === 0) {
+  const ipConfigured = Boolean(settings?.ip_address?.trim());
+
+  if (!ipConfigured) {
+    const { data: legacyPrinters } = await supabase
+      .from("printers")
+      .select("id")
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .limit(1);
+
+    if (!legacyPrinters?.length) {
+      findings.push({
+        id: "print-no-printer",
+        category: "printing",
+        severity: "warning",
+        label: "Impressora não configurada nesta unidade",
+        action: "Configure o IP da impressora em Admin → Impressora (só precisa repetir para outras lojas quando forem abrir).",
+        link: "/admin/printer",
+      });
+    }
+  } else if (!settings?.enabled) {
     findings.push({
-      id: "print-no-printer",
+      id: "print-disabled",
       category: "printing",
-      severity: "warning",
-      label: "Nenhuma impressora cadastrada",
-      action: "Cadastre ao menos uma impressora.",
+      severity: "suggestion",
+      label: "Impressão desactivada nesta unidade",
+      action: "Active a impressão em Admin → Impressora.",
       link: "/admin/printer",
     });
   }

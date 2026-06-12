@@ -8,12 +8,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
 import StripePaymentForm, { type StripeFormCopy } from "@/components/StripePaymentForm";
 import {
+  attachStripeOrderToPaymentIntent,
   createCustomerOrder,
   createStripePaymentIntent,
   enableStoreBizumPayments,
   fetchStoreFinancialProfile,
   validateCoupon,
-  verifyStripePaymentIntent,
+  waitForOrderPaymentConfirmed,
   PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
 import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
@@ -28,6 +29,7 @@ import {
   formatDeliveryComplement,
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
+import { notifyStaffNewOrder } from "@/services/pushService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
@@ -537,6 +539,8 @@ const PaymentScreen = () => {
       itemCount: items.length,
     });
 
+    void notifyStaffNewOrder(storeId, result.order_id, result.order_number);
+
     await enableCustomerOrderAlerts();
     await subscribePush({
       storeId,
@@ -613,6 +617,17 @@ const PaymentScreen = () => {
       throw new Error("Não foi possível reservar o pedido antes do pagamento");
     }
 
+    try {
+      await attachStripeOrderToPaymentIntent({
+        storeId,
+        paymentIntentId: pi.paymentIntentId,
+        orderId: pendingOrder.order_id,
+        orderNumber: pendingOrder.order_number,
+      });
+    } catch (attachErr) {
+      console.warn("[checkout] attach order metadata falhou (webhook usa payment_intent_id):", attachErr);
+    }
+
     saveStripeCheckoutSession({
       storeId,
       paymentIntentId: pi.paymentIntentId,
@@ -626,26 +641,6 @@ const PaymentScreen = () => {
   } finally {
     setStripeCheckoutPreparing(false);
   }
-  };
-
-  const verifyCardPaymentWithRetry = async (params: {
-    storeId: string;
-    paymentIntentId: string;
-    orderId: string;
-    amountCents: number;
-  }) => {
-    let lastError: unknown = null;
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        return await verifyStripePaymentIntent(params);
-      } catch (e) {
-        lastError = e;
-        if (attempt < 4) {
-          await new Promise((resolve) => window.setTimeout(resolve, 900));
-        }
-      }
-    }
-    throw lastError;
   };
 
   const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
@@ -684,11 +679,20 @@ const PaymentScreen = () => {
   const completeStripeCheckout = async (
     createdOrder: { order_id: string; order_number: string },
     paymentIntentId: string,
-    amountCents: number,
     checkoutMethod: "card" | "bizum",
   ) => {
+    setRecoveringCheckout(true);
+    const confirmed = await waitForOrderPaymentConfirmed(createdOrder.order_id, {
+      storeId,
+      paymentIntentId,
+    });
+    const orderRef = {
+      order_id: confirmed.orderId,
+      order_number: confirmed.orderNumber || createdOrder.order_number,
+    };
+
     setOrderPaymentStatus("paid");
-    await showCardOrderConfirmation(createdOrder);
+    await showCardOrderConfirmation(orderRef);
     setStripeClientSecret(null);
     setStripePaymentIntentId(null);
     setStripePaymentMeta(null);
@@ -697,27 +701,15 @@ const PaymentScreen = () => {
     setStripePaymentLocked(false);
     setRecoveringCheckout(false);
 
-    void (async () => {
-      try {
-        await verifyCardPaymentWithRetry({
-          storeId,
-          paymentIntentId,
-          orderId: createdOrder.order_id,
-          amountCents,
-        });
-      } catch (verifyError) {
-        console.warn("[checkout] verify-payment-intent falhou (webhook irá liquidar):", verifyError);
-      }
-      try {
-        await enqueueCheckoutPrint(createdOrder, {
-          paymentMethod: checkoutMethod,
-          paymentStatus: "paid",
-          paidViaApp: true,
-        });
-      } catch (printErr) {
-        console.warn("[checkout] impressão falhou:", printErr);
-      }
-    })();
+    try {
+      await enqueueCheckoutPrint(orderRef, {
+        paymentMethod: checkoutMethod,
+        paymentStatus: "paid",
+        paidViaApp: true,
+      });
+    } catch (printErr) {
+      console.warn("[checkout] impressão falhou:", printErr);
+    }
   };
 
   useEffect(() => {
@@ -740,17 +732,10 @@ const PaymentScreen = () => {
 
     void (async () => {
       try {
-        await verifyCardPaymentWithRetry({
-          storeId,
-          paymentIntentId: session.paymentIntentId,
-          orderId: session.orderId,
-          amountCents: session.restaurantPortionCents,
-        });
         if (cancelled) return;
         await completeStripeCheckout(
           { order_id: session.orderId, order_number: session.orderNumber },
           session.paymentIntentId,
-          session.restaurantPortionCents,
           session.checkoutMethod,
         );
       } catch (e) {
@@ -1013,12 +998,7 @@ const PaymentScreen = () => {
                   if (!createdOrder) throw new Error("Pedido não retornou ID");
 
                   console.log("[checkout] Pedido confirmado:", createdOrder.order_number);
-                  await completeStripeCheckout(
-                    createdOrder,
-                    paymentIntentId,
-                    stripePaymentMeta?.restaurantPortionCents ?? Math.round(grandTotal * 100),
-                    stripeCheckoutMethod,
-                  );
+                  await completeStripeCheckout(createdOrder, paymentIntentId, stripeCheckoutMethod);
                 } catch (orderErr) {
                   console.error("[checkout] Falha ao confirmar pedido após pagamento aprovado:", orderErr);
                   setProcessing(false);

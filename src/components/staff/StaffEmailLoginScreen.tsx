@@ -5,36 +5,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
+import StaffPendingApprovalScreen from "@/components/staff/StaffPendingApprovalScreen";
 import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
+import { nav } from "@/lib/navPaths";
+import {
+  registerStaffGoogleLogin,
+  userSignedInWithGoogle,
+  type StaffGoogleLoginStatus,
+} from "@/services/staffGoogleLogin";
 
-/** Login da equipa — só correo/e-mail + contraseña/senha (sem código numérico). */
+/** Login da equipa — e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
+  const { storeId } = useResolvedStore();
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
   const { settings } = useBranding();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const brandLogo =
-    (isDark && (settings as any)?.logo_main_dark_url) ||
+    (isDark && (settings as { logo_main_dark_url?: string })?.logo_main_dark_url) ||
     settings?.logo_main_url ||
     null;
   const brandName = settings?.company_name || "Logo";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleStatus, setGoogleStatus] = useState<StaffGoogleLoginStatus | null>(null);
+  const [googleStatusLoading, setGoogleStatusLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading || roleLoading || !user || !roleData?.role) return;
@@ -47,6 +60,41 @@ const StaffEmailLoginScreen = () => {
       navigate(resolveStaffLoginDestination(role), { replace: true });
     }
   }, [authLoading, roleLoading, user, roleData?.role, navigate]);
+
+  useEffect(() => {
+    if (authLoading || roleLoading || !user || roleData?.role) {
+      setGoogleStatus(null);
+      return;
+    }
+
+    if (!userSignedInWithGoogle(user)) {
+      setGoogleStatus(null);
+      return;
+    }
+
+    if (!storeId) return;
+
+    let cancelled = false;
+    setGoogleStatusLoading(true);
+
+    void (async () => {
+      try {
+        const result = await registerStaffGoogleLogin(storeId);
+        if (!cancelled) setGoogleStatus(result.status);
+      } catch (e) {
+        if (!cancelled) {
+          setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
+          setGoogleStatus("pending");
+        }
+      } finally {
+        if (!cancelled) setGoogleStatusLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, roleLoading, user, roleData?.role, storeId, lang]);
 
   const handleLogin = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -73,7 +121,36 @@ const StaffEmailLoginScreen = () => {
     }
   };
 
-  if (authLoading) {
+  const handleGoogleLogin = async () => {
+    if (!storeId) {
+      setError(copy.googleError);
+      return;
+    }
+
+    setGoogleSubmitting(true);
+    setError(null);
+    markStaffSession();
+
+    try {
+      const redirectUri = `${window.location.origin}${nav.staff()}`;
+      try {
+        const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: redirectUri });
+        if (result.error) throw result.error;
+      } catch {
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: redirectUri },
+        });
+        if (oauthError) throw oauthError;
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : copy.googleError);
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  };
+
+  if (authLoading || (user && roleLoading) || (user && userSignedInWithGoogle(user) && googleStatusLoading)) {
     return (
       <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
@@ -82,6 +159,10 @@ const StaffEmailLoginScreen = () => {
         </div>
       </div>
     );
+  }
+
+  if (user && !roleData?.role && userSignedInWithGoogle(user) && googleStatus) {
+    return <StaffPendingApprovalScreen status={googleStatus} email={user.email} />;
   }
 
   return (
@@ -150,7 +231,7 @@ const StaffEmailLoginScreen = () => {
               </p>
             )}
 
-            <Button type="submit" className="h-12 w-full text-base font-bold" disabled={submitting}>
+            <Button type="submit" className="h-12 w-full text-base font-bold" disabled={submitting || googleSubmitting}>
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -161,6 +242,31 @@ const StaffEmailLoginScreen = () => {
               )}
             </Button>
           </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {copy.googleDivider}
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full text-base font-bold"
+            disabled={submitting || googleSubmitting || !storeId}
+            onClick={() => void handleGoogleLogin()}
+          >
+            {googleSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {copy.googleSubmitting}
+              </>
+            ) : (
+              copy.googleButton
+            )}
+          </Button>
         </div>
       </main>
     </div>
