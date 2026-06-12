@@ -3678,6 +3678,10 @@ export type Database = {
           seller_name: string
         }[]
       }
+      get_store_checkout_stripe_profile: {
+        Args: { _store_id: string }
+        Returns: Json
+      }
       get_store_payout_intake: {
         Args: { _store_id: string }
         Returns: {
