@@ -274,11 +274,16 @@ export async function handleVerifyPaymentIntent(body: Record<string, unknown>): 
   }
 
   if (settled && typeof settled === "object" && (settled as { success?: boolean }).success === false) {
+    const checkoutMethod =
+      typeof pi.metadata?.checkout_payment_method === "string" &&
+      pi.metadata.checkout_payment_method.toLowerCase() === "bizum"
+        ? "bizum"
+        : "card";
     await supabase
       .from("orders")
       .update({
         payment_status: "paid",
-        payment_method: "card",
+        payment_method: checkoutMethod,
         stripe_payment_intent_id: paymentIntentId,
         updated_at: new Date().toISOString(),
       })

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
@@ -7,6 +7,10 @@ import {
   hasStripePublishableKey,
   type StripePublishableEnvironment,
 } from "@/lib/stripePublishableKey";
+import {
+  clearStripeRedirectParams,
+  readStripeRedirectFromUrl,
+} from "@/lib/stripeCheckoutSession";
 
 export type StripeCheckoutMethod = "card" | "bizum";
 
@@ -22,27 +26,131 @@ function getStripePromise(environment: StripePublishableEnvironment = "live", pu
   return stripePromiseCache[cacheKey]!;
 }
 
+async function pollPaymentIntentUntilSettled(
+  stripe: Stripe,
+  clientSecret: string,
+  maxAttempts = 45,
+  intervalMs = 2000,
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const { paymentIntent, error } = await stripe.retrievePaymentIntent(clientSecret);
+    if (error) throw new Error(error.message || "Não foi possível verificar o pagamento");
+    if (paymentIntent?.status === "succeeded") return paymentIntent;
+    if (paymentIntent?.status === "canceled" || paymentIntent?.status === "requires_payment_method") {
+      throw new Error("Pagamento cancelado ou recusado pelo banco");
+    }
+    if (attempt < maxAttempts - 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+    }
+  }
+  throw new Error(
+    "O banco ainda não confirmou o pagamento. Não feche esta página — estamos a aguardar a confirmação.",
+  );
+}
+
 function CheckoutForm({
+  clientSecret,
   amountLabel,
   onSuccess,
   onCancel,
+  onBusyChange,
   compact,
   checkoutMethod,
 }: {
+  clientSecret: string;
   amountLabel: string;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
+  onBusyChange?: (busy: boolean) => void;
   compact?: boolean;
   checkoutMethod: StripeCheckoutMethod;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
+  const [waitingBank, setWaitingBank] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [recoveringRedirect, setRecoveringRedirect] = useState(false);
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
+
+  const setFormBusy = (value: boolean) => {
+    setBusy(value);
+    onBusyChange?.(value);
+  };
+
+  const finalizeSucceededPayment = async () => {
+    setFormBusy(true);
+    setWaitingBank(false);
+    try {
+      await onSuccessRef.current();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Não foi possível confirmar o pedido");
+      setFormBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!stripe) return;
+    const redirect = readStripeRedirectFromUrl();
+    if (!redirect.clientSecret || redirect.redirectStatus !== "succeeded") return;
+
+    let cancelled = false;
+    setRecoveringRedirect(true);
+    setFormBusy(true);
+    setErr(null);
+
+    void (async () => {
+      try {
+        const { paymentIntent, error } = await stripe.retrievePaymentIntent(redirect.clientSecret!);
+        if (cancelled) return;
+        if (error) throw new Error(error.message || "Pagamento não confirmado");
+        if (paymentIntent?.status === "succeeded") {
+          clearStripeRedirectParams();
+          await onSuccessRef.current();
+          return;
+        }
+        if (paymentIntent?.status === "processing" || paymentIntent?.status === "requires_action") {
+          setWaitingBank(true);
+          await pollPaymentIntentUntilSettled(stripe, redirect.clientSecret!);
+          if (cancelled) return;
+          clearStripeRedirectParams();
+          await onSuccessRef.current();
+          return;
+        }
+        setErr("Pagamento ainda não confirmado. Aguarde ou tente novamente.");
+      } catch (e) {
+        if (!cancelled) {
+          setErr(e instanceof Error ? e.message : "Não foi possível recuperar o pagamento");
+        }
+      } finally {
+        if (!cancelled) {
+          setRecoveringRedirect(false);
+          setFormBusy(false);
+          setWaitingBank(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stripe]);
+
+  useEffect(() => {
+    if (!busy && !waitingBank && !recoveringRedirect) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [busy, waitingBank, recoveringRedirect]);
 
   const pay = async () => {
-    if (!stripe || !elements || busy) return;
-    setBusy(true);
+    if (!stripe || !elements || busy || recoveringRedirect) return;
+    setFormBusy(true);
+    setWaitingBank(false);
     setErr(null);
     try {
       const { error: submitError } = await elements.submit();
@@ -51,30 +159,52 @@ function CheckoutForm({
           submitError.message ||
             (checkoutMethod === "bizum" ? "Confirme o número Bizum" : "Confirme os dados do cartão"),
         );
-        setBusy(false);
+        setFormBusy(false);
         return;
       }
+
+      const returnUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
 
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
+        confirmParams: { return_url: returnUrl },
       });
+
       if (error) {
         setErr(error.message || "Pagamento recusado");
-        setBusy(false);
+        setFormBusy(false);
         return;
       }
+
       if (paymentIntent?.status === "succeeded") {
-        await onSuccess();
-      } else if (paymentIntent?.status === "requires_action") {
-        setErr("Complete o pagamento na app do seu banco (Bizum) e volte a esta página.");
-      } else {
-        setErr("Pagamento ainda não confirmado. Tente novamente em alguns segundos.");
+        await finalizeSucceededPayment();
+        return;
       }
+
+      if (
+        paymentIntent?.status === "processing" ||
+        paymentIntent?.status === "requires_action" ||
+        checkoutMethod === "bizum"
+      ) {
+        setWaitingBank(true);
+        try {
+          await pollPaymentIntentUntilSettled(stripe, clientSecret);
+          await finalizeSucceededPayment();
+        } catch (pollErr) {
+          setErr(pollErr instanceof Error ? pollErr.message : "Pagamento ainda não confirmado");
+          setFormBusy(false);
+          setWaitingBank(false);
+        }
+        return;
+      }
+
+      setErr("Pagamento ainda não confirmado. Tente novamente em alguns segundos.");
+      setFormBusy(false);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Não foi possível finalizar o pagamento");
-    } finally {
-      setBusy(false);
+      setFormBusy(false);
+      setWaitingBank(false);
     }
   };
 
@@ -94,8 +224,21 @@ function CheckoutForm({
           wallets: { applePay: "auto" as const, googlePay: "auto" as const },
         };
 
+  const locked = busy || waitingBank || recoveringRedirect;
+
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
+      {waitingBank && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-foreground">A aguardar confirmação do banco…</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Não feche nem saia desta página até o pedido aparecer confirmado.
+            </p>
+          </div>
+        </div>
+      )}
       <PaymentElement options={paymentElementOptions} />
       {checkoutMethod === "bizum" ? (
         <p className="text-[10px] text-muted-foreground leading-relaxed px-0.5">
@@ -116,18 +259,18 @@ function CheckoutForm({
         <button
           type="button"
           onClick={onCancel}
-          disabled={busy}
-          className={`flex-1 rounded-xl border border-border font-bold text-muted-foreground ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
+          disabled={locked}
+          className={`flex-1 rounded-xl border border-border font-bold text-muted-foreground disabled:opacity-40 ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
         >
           Voltar
         </button>
         <button
           type="button"
           onClick={pay}
-          disabled={!stripe || busy}
-          className={`flex-[2] rounded-xl bg-primary text-primary-foreground font-black flex items-center justify-center gap-2 ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
+          disabled={!stripe || locked}
+          className={`flex-[2] rounded-xl bg-primary text-primary-foreground font-black flex items-center justify-center gap-2 disabled:opacity-70 ${compact ? "h-10 text-sm" : "h-12 rounded-2xl"}`}
         >
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pagar ${amountLabel}`}
+          {locked ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pagar ${amountLabel}`}
         </button>
       </div>
     </div>
@@ -139,6 +282,7 @@ export default function StripePaymentForm(props: {
   amountLabel: string;
   onSuccess: () => Promise<void>;
   onCancel: () => void;
+  onBusyChange?: (busy: boolean) => void;
   compact?: boolean;
   connectEnvironment?: StripePublishableEnvironment;
   publishableKey?: string | null;
@@ -194,9 +338,11 @@ export default function StripePaymentForm(props: {
       }}
     >
       <CheckoutForm
+        clientSecret={props.clientSecret}
         amountLabel={props.amountLabel}
         onSuccess={props.onSuccess}
         onCancel={props.onCancel}
+        onBusyChange={props.onBusyChange}
         compact={props.compact}
         checkoutMethod={checkoutMethod}
       />
