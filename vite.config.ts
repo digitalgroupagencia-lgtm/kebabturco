@@ -175,12 +175,8 @@ export default defineConfig(({ mode }) => {
             return "internal";
           }
 
-          // Área cliente
-          if (
-            id.includes("/src/customer/") ||
-            id.includes("/src/contexts/OrderContext") ||
-            id.includes("/src/contexts/LanguageContext")
-          ) {
+          // Área cliente (só módulos do totem — contextos partilhados ficam no chunk principal)
+          if (id.includes("/src/customer/")) {
             return "customer";
           }
 

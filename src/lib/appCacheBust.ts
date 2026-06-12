@@ -1,5 +1,6 @@
 import { isPushHandlerRegistration } from "@/lib/push/pushServiceWorker";
 import { deployDebugLog } from "@/lib/deployDebugLog";
+import { isLovableEditorPreview } from "@/lib/lovablePreview";
 
 export const APP_BUILD_ID: string = __APP_BUILD_ID__;
 export const GIT_SHA: string = __GIT_SHA__;
@@ -101,7 +102,7 @@ async function purgeClientCaches() {
 
 /** Recarrega a app se o deploy publicado tiver versão ou bundle diferente do local. */
 export async function checkForDeployedUpdate() {
-  if (import.meta.env.DEV) return;
+  if (import.meta.env.DEV || isLovableEditorPreview()) return;
   // Evita reload agressivo ao abrir pelo ícone do telemóvel (Safari).
   if (typeof performance !== "undefined" && performance.now() < 8000) return;
 

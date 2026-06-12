@@ -18,6 +18,19 @@
     if (btn) btn.addEventListener("click", function () { window.location.reload(); });
   }
 
+  function isLovableEditorHost() {
+    try {
+      var host = (location.hostname || "").replace(/^www\./i, "").toLowerCase();
+      return (
+        host.slice(-17) === ".lovableproject.com" ||
+        host.slice(-11) === ".lovable.app" ||
+        host.slice(-11) === ".lovable.dev"
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
   function isStandalone() {
     try {
       return (
@@ -96,5 +109,9 @@
     }, 12000);
   }
 
-  purgeCaches().finally(loadApp);
+  if (isLovableEditorHost()) {
+    loadApp();
+  } else {
+    purgeCaches().finally(loadApp);
+  }
 })();

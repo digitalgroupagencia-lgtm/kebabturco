@@ -43,6 +43,7 @@ import {
   stripeConfigIssue,
 } from "@/lib/paymentPolicy";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
@@ -247,7 +248,7 @@ const PaymentScreen = () => {
             Boolean(platform?.productionBlocked) &&
             hasStripePublishableKey("test"));
         setStripeConnectEnvironment(useTest ? "test" : "live");
-        if (ready && !useTest) {
+        if (ready && !useTest && !isLovableEditorPreview()) {
           void enableStoreBizumPayments(storeId).catch(() => null);
         }
       })
