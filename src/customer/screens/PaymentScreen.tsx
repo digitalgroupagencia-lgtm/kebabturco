@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { StripeElementLocale } from "@stripe/stripe-js";
 import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
 import { useCart } from "@/customer/contexts/CartContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
-import StripePaymentForm from "@/components/StripePaymentForm";
+import StripePaymentForm, { type StripeFormCopy } from "@/components/StripePaymentForm";
 import {
   createCustomerOrder,
   createStripePaymentIntent,
@@ -147,7 +148,32 @@ const PaymentScreen = () => {
   const { settings, loading: settingsLoading } = useOperationsSettings();
   const { loading: storeLoading } = useResolvedStore();
   const brandingCtx = useBranding();
-  const { t, tProduct } = useLanguage();
+  const { lang, t, tProduct } = useLanguage();
+  const stripeLocale = lang as StripeElementLocale;
+  const stripeFormCopy = useMemo<StripeFormCopy>(
+    () => ({
+      back: t("back"),
+      phoneLabel: t("phoneLabel"),
+      waitingBank: t("stripeWaitingBank"),
+      waitingBankSub: t("stripeWaitingBankSub"),
+      payLabel: t("stripePayLabel"),
+      bizumPhoneHint: t("stripeBizumPhoneHint"),
+      bizumDesktopHint: t("stripeBizumDesktopHint"),
+      cardDesktopHint: t("stripeCardDesktopHint"),
+      confirmBizumPhone: t("stripeConfirmBizumPhone"),
+      confirmCard: t("stripeConfirmCard"),
+      paymentDeclined: t("stripePaymentDeclined"),
+      paymentPending: t("stripePaymentPending"),
+      paymentCanceled: t("stripePaymentCanceled"),
+      orderConfirmFailed: t("stripeOrderConfirmFailed"),
+      recoverFailed: t("stripeRecoverFailed"),
+      bizumMismatchTitle: t("stripeBizumMismatchTitle"),
+      bizumMismatchBody: t("stripeBizumMismatchBody"),
+      bizumMismatchBack: t("stripeBizumMismatchBack"),
+      onlineUnavailable: t("stripeOnlineUnavailable"),
+    }),
+    [lang, t],
+  );
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -934,10 +960,8 @@ const PaymentScreen = () => {
           <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
             <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-foreground">A confirmar o seu pagamento…</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                O banco já recebeu o pagamento. Aguarde — não volte ao carrinho nem pague outra vez.
-              </p>
+              <p className="text-sm font-bold text-foreground">{t("stripeRecoveringPayment")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("stripeRecoveringPaymentSub")}</p>
             </div>
           </div>
         )}
@@ -945,7 +969,7 @@ const PaymentScreen = () => {
         {stripeClientSecret ? (
           <div className={`mt-3 bg-card rounded-2xl border border-border shadow-card ${compact ? "p-3" : "p-4 mt-5 rounded-[24px]"}`}>
             <p className="text-sm font-black text-foreground mb-2">
-              {stripeCheckoutMethod === "bizum" ? "Pagamento com Bizum" : "Pagamento com cartão"}
+              {stripeCheckoutMethod === "bizum" ? t("stripePayBizum") : t("stripePayCard")}
             </p>
             <StripePaymentForm
               compact={compact}
@@ -955,6 +979,10 @@ const PaymentScreen = () => {
               paymentMethodTypes={stripePaymentMeta?.paymentMethodTypes}
               connectEnvironment={stripePaymentMeta?.connectEnvironment ?? stripeConnectEnvironment}
               publishableKey={stripePaymentMeta?.publishableKey ?? null}
+              locale={stripeLocale}
+              copy={stripeFormCopy}
+              defaultDialCode={phoneDialCode}
+              defaultLocalPhone={customerPhone}
               onBusyChange={setStripePaymentLocked}
               onCancel={() => {
                 if (stripePaymentLocked || processing) return;
