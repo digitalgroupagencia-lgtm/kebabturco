@@ -72,7 +72,7 @@ const OperationsPage = () => {
   };
 
   const buildSavePayload = (row: Ops, includeBizum: boolean) => {
-    const payload: Record<string, unknown> = {
+    const payload: any = {
       payment_mode: row.payment_mode,
       pay_card_enabled: row.pay_card_enabled,
       pay_cash_enabled: row.pay_cash_enabled ?? true,
