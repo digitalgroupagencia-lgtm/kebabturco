@@ -1,4 +1,6 @@
 import { supabase as _client } from "@/integrations/supabase/client";
+import { isStripeConnectReady } from "@/lib/stripeConnectReady";
+import { fetchStoreFinancialProfile } from "@/services/orderService";
 import { fetchStorePayoutIntake } from "@/services/payoutIntakeService";
 
 const supabase = _client as unknown as any;
@@ -378,13 +380,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
   if (!storeId) return [];
   const findings: AuditFinding[] = [];
 
-  const { data: store } = await supabase
-    .from("stores")
-    .select(
-      "stripe_connect_account_id,stripe_charges_enabled,stripe_onboarding_completed",
-    )
-    .eq("id", storeId)
-    .maybeSingle();
+  const store = await fetchStoreFinancialProfile(storeId);
 
   if (!store?.stripe_connect_account_id) {
     findings.push({
@@ -396,7 +392,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
       action: "Configure recebimentos para pagamentos com cartão.",
       link: "/admin/finance",
     });
-  } else if (!store.stripe_charges_enabled) {
+  } else if (!isStripeConnectReady(store)) {
     const intake = await fetchStorePayoutIntake(storeId);
     const awaitingReview = Boolean(intake?.submitted_at);
     findings.push({
@@ -420,7 +416,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
       id: "payments-stripe-ok",
       category: "payments",
       severity: "ok",
-      label: "Stripe Connect activo para cobranças",
+      label: "Recebimentos online activos",
       panel: "admin",
     });
   }
