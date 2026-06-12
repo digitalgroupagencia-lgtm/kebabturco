@@ -21,6 +21,7 @@ type Ops = Tables<"operations_settings">;
 
 const PAY_FIELDS: { key: keyof Ops; label: string; desc: string }[] = [
   { key: "pay_card_enabled", label: "Tarjeta", desc: "Crédito / débito en TPV" },
+  { key: "pay_bizum_enabled", label: "Bizum", desc: "Pago móvil instantáneo (España)" },
   { key: "pay_cash_enabled", label: "Efectivo", desc: "Pago en efectivo" },
   { key: "pay_pix_enabled", label: "Pix", desc: "Pago instantáneo (BR)" },
   { key: "pay_apple_enabled", label: "Apple Pay", desc: "iPhone / Apple Watch" },
@@ -65,6 +66,7 @@ const OperationsPage = () => {
     const { error } = await supabase.from("operations_settings").update({
       payment_mode: s.payment_mode,
       pay_card_enabled: s.pay_card_enabled,
+      pay_bizum_enabled: s.pay_bizum_enabled ?? true,
       pay_cash_enabled: s.pay_cash_enabled ?? true,
       pay_cash_dine_in: s.pay_cash_dine_in ?? true,
       pay_cash_takeaway: true,

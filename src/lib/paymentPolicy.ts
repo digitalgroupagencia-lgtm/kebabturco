@@ -34,9 +34,15 @@ export function cardListedInCheckout(input: PaymentPolicyInput): boolean {
 }
 
 /** Bizum e cartão como opções online separadas (não embutidas no mesmo fluxo). */
-function onlineCheckoutMethods(cardVisible: boolean): PaymentMethodId[] {
+function onlineCheckoutMethods(
+  cardVisible: boolean,
+  settings: OperationsSettings | null,
+): PaymentMethodId[] {
   if (!cardVisible) return [];
-  return ["bizum", "card"];
+  const methods: PaymentMethodId[] = [];
+  if (opsFlag(settings, "pay_bizum_enabled", true)) methods.push("bizum");
+  methods.push("card");
+  return methods;
 }
 
 /** Métodos disponíveis no checkout conforme tipo de pedido e configuração. */
@@ -46,13 +52,13 @@ export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethod
 
   if (orderType === "here") {
     if (!mesaValidated) return [];
-    const methods = onlineCheckoutMethods(cardVisible);
+    const methods = onlineCheckoutMethods(cardVisible, settings);
     if (opsFlag(settings, "pay_cash_dine_in", true)) methods.push("cash");
     if (opsFlag(settings, "pay_counter_enabled", false)) methods.push("counter");
     return methods;
   }
 
-  const methods = onlineCheckoutMethods(cardVisible);
+  const methods = onlineCheckoutMethods(cardVisible, settings);
 
   if (cashAllowedForOrderType(orderType, settings)) {
     methods.push("cash");

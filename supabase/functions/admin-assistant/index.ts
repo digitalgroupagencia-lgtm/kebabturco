@@ -764,7 +764,7 @@ async function runTool(name: string, args: any) {
     const storeId = await resolveStoreId(admin, tenant_slug);
     if (!storeId) return { error: `Tenant '${tenant_slug}' não encontrado` };
     const update: any = {};
-    for (const k of ["payment_mode", "pay_card_enabled", "pay_cash_enabled", "pay_pix_enabled", "pay_apple_enabled", "pay_google_enabled", "pay_counter_enabled", "pay_link_enabled", "msg_paid", "banner_enabled", "banner_interval_ms"]) {
+    for (const k of ["payment_mode", "pay_card_enabled", "pay_bizum_enabled", "pay_cash_enabled", "pay_pix_enabled", "pay_apple_enabled", "pay_google_enabled", "pay_counter_enabled", "pay_link_enabled", "msg_paid", "banner_enabled", "banner_interval_ms"]) {
       if (fields[k] !== undefined) update[k] = fields[k];
     }
     if (Object.keys(update).length === 0) return { error: "Nenhum campo para atualizar" };

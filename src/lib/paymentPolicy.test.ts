@@ -3,6 +3,7 @@ import { requiresPrepayment, resolveCheckoutMethods, shouldPrintAfterCheckout } 
 
 const baseSettings = {
   pay_card_enabled: true,
+  pay_bizum_enabled: true,
   pay_cash_enabled: true,
   pay_cash_dine_in: true,
   pay_cash_takeaway: false,
@@ -84,6 +85,18 @@ describe("paymentPolicy", () => {
         stripePublishableKey: true,
       }),
     ).toEqual([]);
+  });
+
+  it("bizum desactivado: só cartão online", () => {
+    expect(
+      resolveCheckoutMethods({
+        orderType: "takeaway",
+        mesaValidated: false,
+        settings: { ...baseSettings, pay_bizum_enabled: false },
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["card"]);
   });
 
   it("mesa validada: dinheiro e cartão", () => {

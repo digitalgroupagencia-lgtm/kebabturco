@@ -682,6 +682,7 @@ export type Database = {
           msg_counter: string
           msg_paid: string
           pay_apple_enabled: boolean
+          pay_bizum_enabled: boolean
           pay_card_enabled: boolean
           pay_cash_delivery: boolean
           pay_cash_dine_in: boolean
@@ -712,6 +713,7 @@ export type Database = {
           msg_counter?: string
           msg_paid?: string
           pay_apple_enabled?: boolean
+          pay_bizum_enabled?: boolean
           pay_card_enabled?: boolean
           pay_cash_delivery?: boolean
           pay_cash_dine_in?: boolean
@@ -742,6 +744,7 @@ export type Database = {
           msg_counter?: string
           msg_paid?: string
           pay_apple_enabled?: boolean
+          pay_bizum_enabled?: boolean
           pay_card_enabled?: boolean
           pay_cash_delivery?: boolean
           pay_cash_dine_in?: boolean
