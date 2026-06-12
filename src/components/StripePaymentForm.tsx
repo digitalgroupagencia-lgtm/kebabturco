@@ -257,14 +257,13 @@ function BizumCheckoutForm({
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
         clientSecret,
-        redirect: "if_required",
         confirmParams: {
           return_url: returnUrl,
           payment_method_data: {
-            type: "bizum",
             billing_details: { phone },
           },
         },
+        redirect: "if_required",
       });
 
       if (error) {
