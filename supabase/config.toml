@@ -43,3 +43,7 @@ verify_jwt = false
 
 [functions.stripe-verify-payment-intent]
 verify_jwt = false
+
+# A Stripe envia eventos sem login Supabase — só com assinatura stripe-signature.
+[functions.stripe-webhook]
+verify_jwt = false

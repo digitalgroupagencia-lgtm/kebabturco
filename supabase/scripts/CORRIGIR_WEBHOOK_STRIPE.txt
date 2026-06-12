@@ -1,0 +1,27 @@
+Corrigir aviso de webhook da Stripe (modo teste)
+==============================================
+
+O que significa
+---------------
+A Stripe tentou avisar o servidor de eventos em modo TESTE e não recebeu resposta OK.
+Isto NÃO bloqueia pagamentos com cartão ou Bizum no totem — o cliente paga na mesma.
+
+Opção A — Só usa pagamentos reais (recomendado se já está em produção)
+-----------------------------------------------------------------------
+1. Entre em dashboard.stripe.com (conta Euro Business Food).
+2. Developers → Webhooks.
+3. Abra o endpoint de TESTE que aponta para:
+   https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/stripe-webhook
+4. Elimine esse endpoint de teste OU desactive eventos de teste nele.
+
+Opção B — Quer manter o webhook de teste
+----------------------------------------
+1. Stripe → Developers → Webhooks → endpoint de teste (mesmo URL acima).
+2. Reveal signing secret (começa por whsec_...).
+3. Lovable → Cloud → Segredos → criar ou actualizar:
+   STRIPE_WEBHOOK_SECRET_TEST = whsec_... (copiar exactamente)
+4. Publicar funções do servidor na Lovable (inclui stripe-webhook).
+5. Na Stripe, no webhook, usar "Send test webhook" — deve ficar verde (200).
+
+Segredo live (produção), se ainda não tiver:
+   STRIPE_WEBHOOK_SECRET = whsec_... do endpoint LIVE com a mesma URL.

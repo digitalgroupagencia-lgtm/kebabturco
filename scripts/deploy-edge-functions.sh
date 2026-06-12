@@ -32,7 +32,7 @@ run_deploy() {
   fi
 }
 
-for fn in stripe-connect-onboard stripe-create-payment-intent stripe-verify-payment-intent; do
+for fn in stripe-connect-onboard stripe-create-payment-intent stripe-verify-payment-intent stripe-webhook; do
   echo "— $fn"
   if ! run_deploy "$fn"; then
     echo ""
