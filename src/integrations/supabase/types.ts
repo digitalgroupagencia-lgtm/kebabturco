@@ -2246,6 +2246,63 @@ export type Database = {
           },
         ]
       }
+      staff_google_pending: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          store_id: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_google_pending_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_google_pending_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_items: {
         Row: {
           created_at: string
@@ -3431,33 +3488,6 @@ export type Database = {
         }
         Returns: string
       }
-      approve_staff_google_pending: {
-        Args: {
-          _full_name?: string
-          _pending_id: string
-          _preferred_language?: string
-          _role: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: Json
-      }
-      list_staff_google_pending: {
-        Args: { _store_id: string }
-        Returns: {
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          user_id: string
-        }[]
-      }
-      register_staff_google_login: {
-        Args: { _store_id: string }
-        Returns: Json
-      }
-      reject_staff_google_pending: {
-        Args: { _pending_id: string }
-        Returns: Json
-      }
       admin_clear_print_jobs: {
         Args: { _statuses?: string[]; _store_id?: string }
         Returns: Json
@@ -3473,6 +3503,15 @@ export type Database = {
       }
       apply_template_catchup: {
         Args: { _target_version: string }
+        Returns: Json
+      }
+      approve_staff_google_pending: {
+        Args: {
+          _full_name?: string
+          _pending_id: string
+          _preferred_language?: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
         Returns: Json
       }
       assign_delivery_driver: {
@@ -3833,6 +3872,16 @@ export type Database = {
       }
       is_seller: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_over_limit: { Args: { _tenant_id: string }; Returns: boolean }
+      list_staff_google_pending: {
+        Args: { _store_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          user_id: string
+        }[]
+      }
       list_store_drivers: {
         Args: { _store_id: string }
         Returns: {
@@ -3866,6 +3915,10 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
+      order_should_notify_staff_on_panel: {
+        Args: { p: Database["public"]["Tables"]["orders"]["Row"] }
+        Returns: boolean
+      }
       record_payment_failure: {
         Args: {
           _failure_code?: string
@@ -3874,18 +3927,30 @@ export type Database = {
         }
         Returns: Json
       }
-      record_payment_settlement: {
-        Args: {
-          _net_to_store_cents: number
-          _online_service_fee_cents?: number
-          _payment_method?: string
-          _platform_fee_cents: number
-          _processing_fee_cents: number
-          _stripe_fee_cents: number
-          _stripe_payment_intent_id: string
-        }
-        Returns: Json
-      }
+      record_payment_settlement:
+        | {
+            Args: {
+              _net_to_store_cents: number
+              _online_service_fee_cents?: number
+              _platform_fee_cents: number
+              _processing_fee_cents: number
+              _stripe_fee_cents: number
+              _stripe_payment_intent_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _net_to_store_cents: number
+              _online_service_fee_cents?: number
+              _payment_method?: string
+              _platform_fee_cents: number
+              _processing_fee_cents: number
+              _stripe_fee_cents: number
+              _stripe_payment_intent_id: string
+            }
+            Returns: Json
+          }
       regenerate_table_qr_token: {
         Args: { _table_id: string }
         Returns: string
@@ -3900,6 +3965,14 @@ export type Database = {
           _store_id: string
         }
         Returns: undefined
+      }
+      register_staff_google_login: {
+        Args: { _store_id: string }
+        Returns: Json
+      }
+      reject_staff_google_pending: {
+        Args: { _pending_id: string }
+        Returns: Json
       }
       release_tenant_edit_lock: {
         Args: { _tenant_id: string }
@@ -3999,6 +4072,7 @@ export type Database = {
         Args: { _store_id: string }
         Returns: boolean
       }
+      user_has_google_identity: { Args: { _user_id: string }; Returns: boolean }
       user_is_delivery_driver: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
@@ -4035,7 +4109,13 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "out_for_delivery"
-      payment_method: "card" | "cash" | "apple_pay" | "google_pay" | "pix"
+      payment_method:
+        | "card"
+        | "cash"
+        | "apple_pay"
+        | "google_pay"
+        | "pix"
+        | "bizum"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       print_job_status: "pending" | "printing" | "printed" | "failed"
     }
@@ -4185,7 +4265,14 @@ export const Constants = {
         "cancelled",
         "out_for_delivery",
       ],
-      payment_method: ["card", "cash", "apple_pay", "google_pay", "pix"],
+      payment_method: [
+        "card",
+        "cash",
+        "apple_pay",
+        "google_pay",
+        "pix",
+        "bizum",
+      ],
       payment_status: ["pending", "paid", "failed", "refunded"],
       print_job_status: ["pending", "printing", "printed", "failed"],
     },
