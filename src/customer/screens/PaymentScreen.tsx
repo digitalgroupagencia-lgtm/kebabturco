@@ -9,6 +9,7 @@ import StripePaymentForm from "@/components/StripePaymentForm";
 import {
   createCustomerOrder,
   createStripePaymentIntent,
+  enableStoreBizumPayments,
   fetchStoreFinancialProfile,
   validateCoupon,
   verifyStripePaymentIntent,
@@ -236,7 +237,8 @@ const PaymentScreen = () => {
     if (!storeId) return;
     fetchStoreFinancialProfile(storeId)
       .then((profile) => {
-        setStripeEnabled(isStripeConnectReady(profile));
+        const ready = isStripeConnectReady(profile);
+        setStripeEnabled(ready);
         const platform = inferStripePlatformStatus(profile);
         const useTest =
           profile?.stripe_connect_environment === "test" ||
@@ -245,6 +247,9 @@ const PaymentScreen = () => {
             Boolean(platform?.productionBlocked) &&
             hasStripePublishableKey("test"));
         setStripeConnectEnvironment(useTest ? "test" : "live");
+        if (ready && !useTest) {
+          void enableStoreBizumPayments(storeId).catch(() => null);
+        }
       })
       .catch(() => setStripeEnabled(false));
   }, [storeId]);

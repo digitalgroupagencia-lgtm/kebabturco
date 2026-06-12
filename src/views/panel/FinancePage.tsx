@@ -134,6 +134,9 @@ const FinancePage = () => {
       const { data: { session } } = await supabase.auth.getSession();
 
       const syncResult = await syncStripeConnectStatus(storeId, { silent: true }).catch(() => null);
+      if (syncResult?.ready) {
+        await enableStoreBizumPayments(storeId).catch(() => null);
+      }
       if (syncResult?.bizumMessage) {
         if (syncResult.bizumEnabled) toast.success(syncResult.bizumMessage);
         else toast.message(syncResult.bizumMessage);

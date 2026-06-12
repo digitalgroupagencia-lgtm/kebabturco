@@ -1,7 +1,6 @@
-/** SQL para activar pagamentos online no totem — copiar no editor da base de dados (Lovable). */
-export const CHECKOUT_ACTIVATION_SQL = `
--- Activar pagamentos online (cartão) no totem Kebab Turco Gandia
+-- Kebab Turco Gandia — activar cartão + Bizum + efectivo no totem (correr uma vez no SQL Editor Lovable)
 
+-- 1) Totem pode ler estado dos recebimentos online
 CREATE OR REPLACE FUNCTION public.get_store_checkout_stripe_profile(_store_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -37,6 +36,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_store_checkout_stripe_profile(uuid) TO anon, authenticated;
 
+-- 2) Conta Stripe live do restaurante
 UPDATE public.stores
 SET
   stripe_connect_account_id = 'acct_1ThGBRCmGR5UPOtp',
@@ -50,6 +50,7 @@ SET
   updated_at = now()
 WHERE id = '22222222-2222-2222-2222-222222222222'::uuid;
 
+-- 3) Bizum ligado nas definições da loja
 ALTER TABLE public.operations_settings
   ADD COLUMN IF NOT EXISTS pay_bizum_enabled boolean NOT NULL DEFAULT true;
 
@@ -61,6 +62,29 @@ SET
   pay_cash_enabled = true,
   pay_cash_dine_in = true,
   pay_cash_takeaway = true,
+  pay_cash_delivery = false,
+  pay_counter_enabled = false,
   updated_at = now()
 WHERE store_id = '22222222-2222-2222-2222-222222222222'::uuid;
-`.trim();
+
+INSERT INTO public.operations_settings (
+  store_id,
+  payment_mode,
+  pay_card_enabled,
+  pay_bizum_enabled,
+  pay_cash_enabled,
+  pay_cash_dine_in,
+  pay_cash_takeaway
+)
+SELECT
+  '22222222-2222-2222-2222-222222222222'::uuid,
+  'mixed',
+  true,
+  true,
+  true,
+  true,
+  true
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.operations_settings
+  WHERE store_id = '22222222-2222-2222-2222-222222222222'::uuid
+);
