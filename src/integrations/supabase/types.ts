@@ -3431,33 +3431,6 @@ export type Database = {
         }
         Returns: string
       }
-      approve_staff_google_pending: {
-        Args: {
-          _full_name?: string
-          _pending_id: string
-          _preferred_language?: string
-          _role: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: Json
-      }
-      list_staff_google_pending: {
-        Args: { _store_id: string }
-        Returns: {
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          user_id: string
-        }[]
-      }
-      register_staff_google_login: {
-        Args: { _store_id: string }
-        Returns: Json
-      }
-      reject_staff_google_pending: {
-        Args: { _pending_id: string }
-        Returns: Json
-      }
       admin_clear_print_jobs: {
         Args: { _statuses?: string[]; _store_id?: string }
         Returns: Json
@@ -3866,19 +3839,10 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
-      record_payment_failure: {
-        Args: {
-          _failure_code?: string
-          _failure_message?: string
-          _stripe_payment_intent_id: string
-        }
-        Returns: Json
-      }
       record_payment_settlement: {
         Args: {
           _net_to_store_cents: number
           _online_service_fee_cents?: number
-          _payment_method?: string
           _platform_fee_cents: number
           _processing_fee_cents: number
           _stripe_fee_cents: number
