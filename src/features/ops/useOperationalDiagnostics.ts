@@ -10,7 +10,9 @@ import {
   probeCheckoutStripeRpc,
   probeSchemaFallback,
 } from "@/services/operationalDiagnosticsService";
-import { fetchStoreFinancialProfile } from "@/services/orderService";
+import { fetchStoreFinancialProfile, type StoreFinancialProfile } from "@/services/orderService";
+import { isStripeConnectReady } from "@/lib/stripeConnectReady";
+import { KEBAB_FALLBACK_STORE_ID } from "@/lib/storeResolution";
 import { fetchStorePayoutIntake } from "@/services/payoutIntakeService";
 import { APP_BUILD_ID, GIT_SHA, isRunningLatestPublishedVersion } from "@/lib/appCacheBust";
 
@@ -44,14 +46,35 @@ export function useOperationalDiagnostics() {
     setRunning(true);
     const results: DiagnosticItem[] = [];
 
+    const auditStoreId = storeId ?? KEBAB_FALLBACK_STORE_ID;
+
     const [dbDiag, serverDiag, schemaProbe, storeProfile, payoutIntake, checkoutRpc] = await Promise.all([
-      fetchDbOperationalDiagnostics(storeId),
-      fetchServerOperationalDiagnostics(storeId),
+      fetchDbOperationalDiagnostics(auditStoreId),
+      fetchServerOperationalDiagnostics(auditStoreId),
       probeSchemaFallback(),
-      storeId ? fetchStoreFinancialProfile(storeId) : Promise.resolve(null),
-      storeId ? fetchStorePayoutIntake(storeId) : Promise.resolve(null),
+      fetchStoreFinancialProfile(auditStoreId),
+      fetchStorePayoutIntake(auditStoreId),
       probeCheckoutStripeRpc(),
     ]);
+
+    const buildServerStoreProfile = (): StoreFinancialProfile | null => {
+      if (!serverDiag?.store) return null;
+      return {
+        stripe_connect_account_id: serverDiag.store.stripe_connect_account_id,
+        stripe_connect_environment: serverDiag.store.stripe_connect_environment ?? null,
+        stripe_connect_test_simulated: Boolean(serverDiag.store.stripe_connect_test_simulated),
+        stripe_charges_enabled: Boolean(serverDiag.store.stripe_charges_enabled),
+        stripe_onboarding_completed: Boolean(serverDiag.store.stripe_onboarding_completed),
+        stripe_payouts_enabled: Boolean(serverDiag.store.stripe_payouts_enabled),
+        stripe_iban_last4: null,
+        stripe_business_name: null,
+        stripe_payout_status: "",
+        stripe_last_payout_at: null,
+      };
+    };
+
+    const mergedStripeProfile = storeProfile ?? buildServerStoreProfile();
+    const stripeConnectReady = isStripeConnectReady(mergedStripeProfile);
 
     const schemaQr = dbDiag?.schema_qr_token ?? schemaProbe.schema_qr_token;
     const schemaPrint = dbDiag?.schema_kitchen_print ?? schemaProbe.schema_kitchen_print;
@@ -209,10 +232,15 @@ export function useOperationalDiagnostics() {
         id: "stripe-server",
         label: "Pagamentos online (servidor)",
         status: "warn",
-        critical: true,
-        detail: "Não foi possível verificar o servidor — a função de diagnóstico pode não estar activa.",
+        critical: !(stripeConnectReady && checkoutRpc),
+        detail:
+          stripeConnectReady && checkoutRpc
+            ? "Auditoria do servidor indisponível — mas recebimentos online estão activos na base de dados."
+            : "Não foi possível verificar o servidor — a função de diagnóstico pode não estar activa.",
         action:
-          "Na Lovable: «Deploy all edge functions» (ou «Deploy stripe-create-payment-intent»). Depois Sync + Publish.",
+          stripeConnectReady && checkoutRpc
+            ? "Opcional: na Lovable, publicar funções do servidor para auditoria completa."
+            : "Na Lovable: «Deploy all edge functions» (ou «Deploy stripe-create-payment-intent»). Depois Sync + Publish.",
       });
     } else if (!serverDiag.stripeSecretKey) {
       results.push({
@@ -331,64 +359,18 @@ export function useOperationalDiagnostics() {
       });
     }
 
-    // STRIPE Connect — conta restaurante
-    const chargesOk = storeProfile?.stripe_charges_enabled ?? serverDiag?.store?.stripe_charges_enabled;
-    const onboardingOk =
-      storeProfile?.stripe_onboarding_completed ?? serverDiag?.store?.stripe_onboarding_completed;
-    const hasConnect =
-      Boolean(storeProfile?.stripe_connect_account_id ?? serverDiag?.store?.stripe_connect_account_id);
+    // STRIPE Connect — conta restaurante (mesma regra que Finanças / totem)
+    const mergedProfile = mergedStripeProfile;
+    const connectReady = stripeConnectReady;
+    const hasConnect = Boolean(mergedProfile?.stripe_connect_account_id);
+    const payoutsOk = Boolean(mergedProfile?.stripe_payouts_enabled);
 
-    const payoutsOk = storeProfile?.stripe_payouts_enabled ?? serverDiag?.store?.stripe_payouts_enabled;
-
-    const testSimulated =
-      Boolean(storeProfile?.stripe_connect_test_simulated) ||
-      Boolean(serverDiag?.store?.stripe_connect_test_simulated);
+    const testSimulated = Boolean(mergedProfile?.stripe_connect_test_simulated);
 
     const intakeSubmitted = Boolean(payoutIntake?.submitted_at);
-    const awaitingReview = hasConnect && intakeSubmitted && (!chargesOk || !onboardingOk);
+    const awaitingReview = hasConnect && intakeSubmitted && !connectReady;
 
-    if (!hasConnect || !chargesOk || !onboardingOk) {
-      if (awaitingReview) {
-        results.push({
-          id: "stripe-connect",
-          label: "Conta bancária (recebimentos)",
-          status: "warn",
-          critical: false,
-          detail:
-            "Dados já enviados — conta em análise. Pagamentos online ficam activos quando a aprovação terminar.",
-          action: "Admin → Recebimentos → acompanhar estado ou reenviar link por WhatsApp.",
-        });
-      } else {
-        results.push({
-          id: "stripe-connect",
-          label: "Conta bancária (recebimentos)",
-          status: productionBlocked && testKeysOnServer ? "warn" : "fail",
-          critical: !(productionBlocked && testKeysOnServer),
-          detail: !hasConnect
-            ? productionBlocked && testKeysOnServer
-              ? "Conta do restaurante ainda não criada — pode activar em modo teste."
-              : productionBlocked
-                ? "Conta do restaurante não criada — produção bloqueada até aprovação da plataforma."
-                : "Recebimentos online ainda não foram activados."
-            : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
-          action:
-            productionBlocked && testKeysOnServer
-              ? "Admin → Recebimentos → Activar recebimentos de teste."
-              : checkoutRpc
-                ? "Admin → Recebimentos → Sincronizar com Stripe. Se continuar: Copiar SQL de activação."
-                : "Admin → Recebimentos → Copiar SQL de activação → executar na base de dados.",
-        });
-      }
-    } else if (!payoutsOk) {
-      results.push({
-        id: "stripe-connect",
-        label: "Conta bancária (recebimentos)",
-        status: "warn",
-        critical: false,
-        detail: "Pagamentos online activos — repasse bancário ainda em validação.",
-        action: "Admin → Recebimentos → Gerir conta bancária e documentos.",
-      });
-    } else {
+    if (connectReady) {
       results.push({
         id: "stripe-connect",
         label: "Conta bancária (recebimentos)",
@@ -397,12 +379,45 @@ export function useOperationalDiagnostics() {
           ? "Conta Connect de teste simulada — checkout disponível, sem dinheiro real."
           : storeConnectEnv === "test"
             ? "Conta Connect de teste criada — recebimentos simulados activos."
-            : "Recebimentos online e repasse bancário activos.",
+            : payoutsOk
+              ? "Recebimentos online e repasse bancário activos."
+              : "Pagamentos online activos — repasse bancário em validação.",
+        action: payoutsOk ? undefined : "Admin → Recebimentos → Gerir conta bancária se necessário.",
+      });
+    } else if (awaitingReview) {
+      results.push({
+        id: "stripe-connect",
+        label: "Conta bancária (recebimentos)",
+        status: "warn",
+        critical: false,
+        detail:
+          "Dados já enviados — conta em análise. Pagamentos online ficam activos quando a aprovação terminar.",
+        action: "Admin → Recebimentos → acompanhar estado ou reenviar link por WhatsApp.",
+      });
+    } else {
+      results.push({
+        id: "stripe-connect",
+        label: "Conta bancária (recebimentos)",
+        status: productionBlocked && testKeysOnServer ? "warn" : "fail",
+        critical: !(productionBlocked && testKeysOnServer),
+        detail: !hasConnect
+          ? productionBlocked && testKeysOnServer
+            ? "Conta do restaurante ainda não criada — pode activar em modo teste."
+            : productionBlocked
+              ? "Conta do restaurante não criada — produção bloqueada até aprovação da plataforma."
+              : "Recebimentos online ainda não foram activados."
+          : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
+        action:
+          productionBlocked && testKeysOnServer
+            ? "Admin → Recebimentos → Activar recebimentos de teste."
+            : checkoutRpc
+              ? "Admin → Recebimentos → Sincronizar com Stripe. Se continuar: Copiar SQL de activação."
+              : "Admin → Recebimentos → Copiar SQL de activação → executar na base de dados.",
       });
     }
 
     if (productionBlocked && testKeysOnServer) {
-      const checkoutTestReady = hasConnect && chargesOk && onboardingOk && hasTestPk;
+      const checkoutTestReady = connectReady && hasTestPk;
       results.push({
         id: "stripe-test-checkout",
         label: "Checkout teste",
