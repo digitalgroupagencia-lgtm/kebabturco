@@ -42,7 +42,12 @@ import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 
 const fmtMoney = (v: number, cur = "EUR") =>
-  new Intl.NumberFormat("pt-PT", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(v || 0);
+  new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: cur,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v || 0);
 
 const centralIcons = [Bot, Megaphone, Heart, Bell, MessageSquare];
 
@@ -112,6 +117,7 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("id, order_number, total, created_at, store_id, stores(tenant_id, tenants(name, slug))")
+        .eq("is_test", false)
         .order("created_at", { ascending: false })
         .limit(8);
       if (error) throw error;
