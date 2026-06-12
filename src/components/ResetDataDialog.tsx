@@ -24,9 +24,10 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
   const { user } = useAuth();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [includeRealOrders, setIncludeRealOrders] = useState(false);
   const [opts, setOpts] = useState({
     orders: true,
-    cash: true,
+    cash: false,
     stock: false,
     products: false,
     categories: false,
@@ -35,7 +36,8 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
 
   const reset = () => {
     setPassword("");
-    setOpts({ orders: true, cash: true, stock: false, products: false, categories: false, banners: false });
+    setIncludeRealOrders(false);
+    setOpts({ orders: true, cash: false, stock: false, products: false, categories: false, banners: false });
   };
 
   const handleConfirm = async () => {
@@ -65,6 +67,7 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
         _reset_products: opts.products,
         _reset_categories: opts.categories,
         _reset_banners: opts.banners,
+        _include_real_orders: includeRealOrders,
       });
       if (error) throw error;
       const deleted = ((data as { deleted?: Record<string, number> })?.deleted) || {};
@@ -110,10 +113,30 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
         <div className="space-y-2 max-h-[50vh] overflow-y-auto py-2">
           <Row
             k="orders"
-            label="Pedidos, vendas e pagamentos"
-            hint="Apaga pedidos, totais, movimentos financeiros, fila de impressão e registos de pagamento online"
+            label="Pedidos de teste"
+            hint="Por defeito só apaga pedidos marcados [TESTE]. Vendas reais Bizum/cartão mantêm-se."
           />
-          <Row k="cash" label="Histórico de caixa" hint="Aberturas e fechamentos no balcão" />
+          <label className="flex items-start gap-3 p-3 rounded-lg border border-destructive/50 bg-destructive/5 cursor-pointer">
+            <Checkbox
+              checked={includeRealOrders}
+              onCheckedChange={(v) => {
+                const on = !!v;
+                setIncludeRealOrders(on);
+                if (on) setOpts((s) => ({ ...s, cash: true }));
+                else setOpts((s) => ({ ...s, cash: false }));
+              }}
+              className="mt-0.5"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-destructive">Apagar também vendas reais (perigoso)</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Inclui pagamentos Bizum e cartão já cobrados. O dinheiro no banco não volta — só some do painel.
+              </div>
+            </div>
+          </label>
+          {includeRealOrders && (
+            <Row k="cash" label="Histórico de caixa" hint="Aberturas e fechamentos no balcão" />
+          )}
           <Row k="stock" label="Itens de estoque" hint="Apaga insumos cadastrados" />
           {!restrictDestructive && (
             <>

@@ -444,11 +444,11 @@ export default function OrderSimulatorPage() {
       <Card className="border-destructive/40">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2 text-destructive">
-            <Trash2 className="h-4 w-4" /> Início de operação real
+            <Trash2 className="h-4 w-4" /> Zerar dados da loja
           </CardTitle>
           <CardDescription>
-            Apaga <strong>todas</strong> as vendas da loja (teste e reais), movimentos financeiros, fila de impressão e caixa.
-            O cardápio e as configurações de pagamento mantêm-se. Requer a sua senha.
+            Por defeito só remove pedidos <strong>[TESTE]</strong>. Vendas reais (Bizum/cartão) só são apagadas se marcar
+            explicitamente a opção perigosa. Requer a sua senha.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -457,7 +457,7 @@ export default function OrderSimulatorPage() {
             disabled={!storeId || !stores.find((s) => s.id === storeId)?.tenant_id}
             variant="destructive"
           >
-            Zerar vendas e começar do zero
+            Abrir limpeza de dados…
           </Button>
         </CardContent>
       </Card>
