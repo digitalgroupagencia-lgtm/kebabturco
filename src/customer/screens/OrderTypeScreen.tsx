@@ -31,9 +31,9 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
   <button
     type="button"
     onClick={onSelect}
-    className={`group flex flex-col items-center touch-action-manipulation active:scale-[0.97] transition-all duration-200 ${
+    className={`group flex flex-col items-center touch-action-manipulation active:scale-[0.97] transition-all duration-200 bg-transparent border-0 shadow-none ${
       compact ? "flex-1 min-w-[100px] max-w-[140px] shrink-0 gap-3 py-4 px-3" : "flex-1 min-w-0 max-w-[280px] gap-4 py-6 px-5"
-    } rounded-[32px] border border-border/25 bg-card/50 backdrop-blur-md shadow-[0_12px_40px_-16px_rgba(0,0,0,0.14)] hover:shadow-[0_16px_48px_-14px_rgba(0,0,0,0.18)] dark:bg-card/30 dark:border-white/10 dark:shadow-[0_12px_40px_-16px_rgba(0,0,0,0.45)]`}
+    }`}
   >
     <div
       className={`relative flex items-center justify-center w-full ${
