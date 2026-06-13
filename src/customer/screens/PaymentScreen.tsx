@@ -57,7 +57,7 @@ import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 import PhoneInput from "@/components/PhoneInput";
-import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Hash, Phone, MapPin, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Phone, MapPin, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
@@ -1044,17 +1044,7 @@ const PaymentScreen = () => {
 
             {isTableOrder && mesaValidated && (
               <div className={`mt-3 bg-card rounded-2xl border border-border overflow-hidden ${showError === "phone" ? "ring-2 ring-destructive/40" : ""}`}>
-                <div className={`px-3 py-2.5 ${showError === "table" ? "bg-destructive/5" : ""}`}>
-                  <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
-                    <Hash className="w-3 h-3 text-primary" />
-                    {t("tableNumber")} <span className="text-destructive">*</span>
-                  </label>
-                  <p className="text-center text-3xl font-black text-primary tabular-nums py-1">{tableNumber}</p>
-                  <p className="text-[10px] text-center text-muted-foreground">
-                    {mesaLocked ? t("mesaQrValidated") : t("mesaManualHint")}
-                  </p>
-                </div>
-                <div className={`px-3 py-2.5 border-t border-border ${showError === "phone" ? "bg-destructive/5" : ""}`}>
+                <div className={`px-3 py-2.5 ${showError === "phone" ? "bg-destructive/5" : ""}`}>
                   <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                     <Phone className="w-3 h-3 text-primary" />
                     {t("yourPhone")} <span className="text-destructive">*</span>
