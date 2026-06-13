@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { hasStaffGoogleLoginIntent } from "@/lib/staffGoogleLoginIntent";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 export type StaffGoogleLoginStatus = "active" | "pending" | "rejected";
@@ -13,11 +14,21 @@ export type StaffGooglePendingMember = {
 
 export function userSignedInWithGoogle(user: {
   identities?: { provider?: string }[];
-  app_metadata?: { provider?: string };
+  app_metadata?: { provider?: string; providers?: string[] };
+  user_metadata?: { provider?: string; iss?: string };
 } | null): boolean {
   if (!user) return false;
+  if (hasStaffGoogleLoginIntent()) return true;
   if (user.app_metadata?.provider === "google") return true;
-  return (user.identities ?? []).some((identity) => identity.provider === "google");
+  if ((user.app_metadata?.providers ?? []).includes("google")) return true;
+  if (user.user_metadata?.provider === "google") return true;
+  if (typeof user.user_metadata?.iss === "string" && user.user_metadata.iss.includes("google")) {
+    return true;
+  }
+  return (user.identities ?? []).some((identity) => {
+    const provider = identity.provider ?? "";
+    return provider === "google" || provider === "oauth" || provider === "oidc";
+  });
 }
 
 export async function registerStaffGoogleLogin(storeId: string): Promise<{

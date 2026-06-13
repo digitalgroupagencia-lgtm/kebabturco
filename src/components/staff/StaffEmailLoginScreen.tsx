@@ -26,6 +26,7 @@ import {
   userSignedInWithGoogle,
   type StaffGoogleLoginStatus,
 } from "@/services/staffGoogleLogin";
+import { consumeStaffGoogleLoginIntent, hasStaffGoogleLoginIntent } from "@/lib/staffGoogleLoginIntent";
 
 /** Login da equipa — e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
@@ -69,7 +70,7 @@ const StaffEmailLoginScreen = () => {
       return;
     }
 
-    if (!userSignedInWithGoogle(user)) {
+    if (!userSignedInWithGoogle(user) && !hasStaffGoogleLoginIntent()) {
       setGoogleStatus(null);
       return;
     }
@@ -82,12 +83,13 @@ const StaffEmailLoginScreen = () => {
     void (async () => {
       try {
         const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
+        consumeStaffGoogleLoginIntent();
         const result = await registerStaffGoogleLogin(resolvedStoreId);
         if (!cancelled) setGoogleStatus(result.status);
       } catch (e) {
         if (!cancelled) {
           setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
-          setGoogleStatus("pending");
+          setGoogleStatus(null);
         }
       } finally {
         if (!cancelled) setGoogleStatusLoading(false);

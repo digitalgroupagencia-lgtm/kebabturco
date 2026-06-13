@@ -121,6 +121,12 @@ export default function StaffGooglePendingSection({ storeId, defaultLang = "es",
     }
   };
 
+  useEffect(() => {
+    if (!storeId) return;
+    const timer = window.setInterval(() => void refresh(), 12000);
+    return () => window.clearInterval(timer);
+  }, [storeId, refresh]);
+
   if (!storeId) return null;
 
   return (

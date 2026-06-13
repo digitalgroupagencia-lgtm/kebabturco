@@ -1,6 +1,7 @@
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import type { StaffUiLang } from "@/components/StaffLanguageToggle";
+import { markStaffGoogleLoginIntent } from "@/lib/staffGoogleLoginIntent";
 
 /** Só activar quando Google OAuth estiver configurado no Supabase (Client ID + Secret). */
 function useSupabaseGoogleOAuth(): boolean {
@@ -17,6 +18,7 @@ export async function signInStaffWithGoogle(params: {
   lang: StaffUiLang;
 }): Promise<void> {
   const { redirectUri, lang } = params;
+  markStaffGoogleLoginIntent();
 
   if (useSupabaseGoogleOAuth()) {
     const { error } = await supabase.auth.signInWithOAuth({
