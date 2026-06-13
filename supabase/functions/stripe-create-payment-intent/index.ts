@@ -290,6 +290,21 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
+    if (
+      stripePaymentMethod === "bizum" &&
+      !testSimulated &&
+      store.stripe_connect_account_id
+    ) {
+      try {
+        const { ensureBizumEnabledOnConnectAccount } = await import(
+          "../_shared/stripeConnectBizum.ts"
+        );
+        await ensureBizumEnabledOnConnectAccount(stripe, store.stripe_connect_account_id);
+      } catch (e) {
+        console.warn("[bizum] enable before PI skipped", e);
+      }
+    }
+
     const baseMeta = {
       ...safeMeta,
       store_id: storeId,

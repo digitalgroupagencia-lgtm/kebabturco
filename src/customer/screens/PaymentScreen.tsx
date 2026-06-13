@@ -11,6 +11,7 @@ import {
   attachStripeOrderToPaymentIntent,
   createCustomerOrder,
   createStripePaymentIntent,
+  enableStoreBizumPayments,
   fetchStoreFinancialProfile,
   validateCoupon,
   waitForOrderPaymentConfirmed,
@@ -686,6 +687,10 @@ const PaymentScreen = () => {
           ? stripePrefetchRef.current.promise
           : null;
       stripePrefetchRef.current = null;
+
+      if (paymentMethodType === "bizum") {
+        await enableStoreBizumPayments(storeId).catch(() => null);
+      }
 
       const pi = cached
         ? await cached

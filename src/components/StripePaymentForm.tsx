@@ -226,6 +226,10 @@ function BizumCheckoutForm({
 
   const pay = async () => {
     if (!stripe || busy || recoveringRedirect) return;
+    if (dialCode !== "+34") {
+      setErr(copy.confirmBizumPhone);
+      return;
+    }
     if (!isValidCustomerPhone(dialCode, localPhone)) {
       setErr(copy.confirmBizumPhone);
       return;
@@ -244,6 +248,7 @@ function BizumCheckoutForm({
         confirmParams: {
           return_url: returnUrl,
           payment_method_data: {
+            type: "bizum",
             billing_details: { phone },
           },
         },
@@ -474,8 +479,13 @@ function CardCheckoutForm({
       <PaymentElement
         options={{
           layout: (compact ? "accordion" : "tabs") as "accordion" | "tabs",
-          wallets: { applePay: "auto" as const, googlePay: "auto" as const },
-          terms: { card: "never" as const },
+          paymentMethodOrder: ["apple_pay", "google_pay", "card"],
+          wallets: {
+            applePay: "auto" as const,
+            googlePay: "auto" as const,
+            link: "never" as const,
+          },
+          terms: { card: "never" as const, applePay: "never" as const, googlePay: "never" as const },
         }}
       />
       {!isLikelyMobile && (
