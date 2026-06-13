@@ -57,6 +57,21 @@ export async function registerStaffGoogleLogin(storeId: string): Promise<{
   };
 }
 
+const REGISTER_RETRY_DELAYS_MS = [0, 600, 1500];
+
+export async function registerStaffGoogleLoginWithRetry(storeId: string) {
+  let lastError: Error | null = null;
+  for (const delay of REGISTER_RETRY_DELAYS_MS) {
+    if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+    try {
+      return await registerStaffGoogleLogin(storeId);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw lastError ?? new Error("Não foi possível registar o pedido de acesso");
+}
+
 export async function listStaffGooglePending(storeId: string): Promise<StaffGooglePendingMember[]> {
   const { data, error } = await supabase.rpc("list_staff_google_pending", {
     _store_id: storeId,

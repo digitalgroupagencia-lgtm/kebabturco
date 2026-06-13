@@ -1,4 +1,5 @@
--- Activar pedidos de login Google da equipa (executar no Supabase kvpssbhclafoymhecmuk)
+-- Ativa pedidos de login Google da equipa + realtime no painel Equipa
+-- Executar no Supabase SQL Editor (produção Kebab Turco)
 
 CREATE TABLE IF NOT EXISTS public.staff_google_pending (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -138,6 +139,19 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.register_staff_google_login(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.list_staff_google_pending(uuid) TO authenticated;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'staff_google_pending'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.staff_google_pending;
+  END IF;
+END $$;
 
 SELECT 'tabela_ok' AS passo,
   EXISTS (

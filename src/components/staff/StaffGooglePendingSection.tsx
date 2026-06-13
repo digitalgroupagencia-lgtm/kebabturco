@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useStaffGooglePendingFeed } from "@/hooks/useStaffGooglePendingFeed";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import {
   RESTAURANT_STAFF_ROLES,
@@ -23,7 +24,6 @@ import {
 } from "@/lib/staffPermissions";
 import {
   approveStaffGooglePending,
-  listStaffGooglePending,
   rejectStaffGooglePending,
   type StaffGooglePendingMember,
 } from "@/services/staffGoogleLogin";
@@ -45,8 +45,7 @@ type Props = {
 export default function StaffGooglePendingSection({ storeId, defaultLang = "es", onChanged }: Props) {
   const { t, lang: staffLang } = useStaffT();
   const uiLang = staffLang === "en" ? "es" : staffLang;
-  const [rows, setRows] = useState<StaffGooglePendingMember[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { rows, loading, error, refresh } = useStaffGooglePendingFeed({ storeId, enabled: Boolean(storeId) });
   const [approveOpen, setApproveOpen] = useState(false);
   const [approveTarget, setApproveTarget] = useState<StaffGooglePendingMember | null>(null);
   const [approveName, setApproveName] = useState("");
@@ -54,26 +53,9 @@ export default function StaffGooglePendingSection({ storeId, defaultLang = "es",
   const [approveLang, setApproveLang] = useState(defaultLang);
   const [approveSaving, setApproveSaving] = useState(false);
 
-  const refresh = useCallback(async () => {
-    if (!storeId) {
-      setRows([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      const pending = await listStaffGooglePending(storeId);
-      setRows(pending);
-    } catch (e) {
-      setRows([]);
-      toast.error(translateAppErrorFromException(e, uiLang));
-    } finally {
-      setLoading(false);
-    }
-  }, [storeId, uiLang]);
-
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (error) toast.error(translateAppErrorFromException(new Error(error), uiLang));
+  }, [error, uiLang]);
 
   useEffect(() => {
     setApproveLang(defaultLang);
@@ -120,12 +102,6 @@ export default function StaffGooglePendingSection({ storeId, defaultLang = "es",
       toast.error(translateAppErrorFromException(e, uiLang));
     }
   };
-
-  useEffect(() => {
-    if (!storeId) return;
-    const timer = window.setInterval(() => void refresh(), 12000);
-    return () => window.clearInterval(timer);
-  }, [storeId, refresh]);
 
   if (!storeId) return null;
 

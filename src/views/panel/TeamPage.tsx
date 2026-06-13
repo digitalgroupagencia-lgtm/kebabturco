@@ -17,6 +17,7 @@ import { translateAppErrorFromException, translateAppError } from "@/lib/authErr
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useStaffGooglePendingFeed } from "@/hooks/useStaffGooglePendingFeed";
 import StaffMemberWelcomeDialog from "@/components/panel/StaffMemberWelcomeDialog";
 import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 import { createStaffMember, verifyStaffMemberLogin } from "@/services/createStaffMember";
@@ -37,7 +38,6 @@ import {
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import {
   approveStaffGooglePending,
-  listStaffGooglePending,
   rejectStaffGooglePending,
   type StaffGooglePendingMember,
 } from "@/services/staffGoogleLogin";
@@ -106,36 +106,25 @@ const TeamPage = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const draftToastStoreRef = useRef<string | null>(null);
-  const [googlePending, setGooglePending] = useState<StaffGooglePendingMember[]>([]);
-  const [googlePendingLoading, setGooglePendingLoading] = useState(false);
   const [googleApproveOpen, setGoogleApproveOpen] = useState(false);
   const [googleApproveTarget, setGoogleApproveTarget] = useState<StaffGooglePendingMember | null>(null);
   const [googleApproveName, setGoogleApproveName] = useState("");
   const [googleApproveRole, setGoogleApproveRole] = useState<AppRole>("operator");
   const [googleApproveLang, setGoogleApproveLang] = useState("es");
   const [googleApproveSaving, setGoogleApproveSaving] = useState(false);
-
-  const fetchGooglePending = async () => {
-    if (!storeId || !canManageTeam(roleData?.role)) {
-      setGooglePending([]);
-      return;
-    }
-    setGooglePendingLoading(true);
-    try {
-      const rows = await listStaffGooglePending(storeId);
-      setGooglePending(rows);
-    } catch (e) {
-      setGooglePending([]);
-      toast.error(translateAppErrorFromException(e, staffLang === "en" ? "es" : staffLang));
-    } finally {
-      setGooglePendingLoading(false);
-    }
-  };
+  const canManage = canManageTeam(roleData?.role);
+  const {
+    rows: googlePending,
+    loading: googlePendingLoading,
+    refresh: refreshGooglePending,
+  } = useStaffGooglePendingFeed({
+    storeId,
+    enabled: Boolean(storeId && canManage),
+  });
 
   useEffect(() => {
     if (storeId) {
       void fetchMembers();
-      void fetchGooglePending();
     } else {
       setLoading(false);
     }
@@ -462,7 +451,7 @@ const TeamPage = () => {
       toast.success(t("team.google.toast.approved"));
       setGoogleApproveOpen(false);
       setGoogleApproveTarget(null);
-      await fetchGooglePending();
+      await refreshGooglePending();
       await fetchMembers();
     } catch (e: unknown) {
       toast.error(translateAppErrorFromException(e, uiLang));
@@ -476,7 +465,7 @@ const TeamPage = () => {
     try {
       await rejectStaffGooglePending(row.id);
       toast.success(t("team.google.toast.rejected"));
-      await fetchGooglePending();
+      await refreshGooglePending();
     } catch (e: unknown) {
       toast.error(translateAppErrorFromException(e, uiLang));
     }
@@ -515,8 +504,6 @@ const TeamPage = () => {
       </div>
     );
   }
-
-  const canManage = canManageTeam(roleData?.role);
 
   return (
     <div className="space-y-6">

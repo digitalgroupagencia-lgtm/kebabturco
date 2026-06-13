@@ -22,7 +22,7 @@ import StaffAuthWaitingScreen from "@/components/staff/StaffAuthWaitingScreen";
 import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 import { nav } from "@/lib/navPaths";
 import {
-  registerStaffGoogleLogin,
+  registerStaffGoogleLoginWithRetry,
   userHasRoleAtStore,
   userSignedInWithGoogle,
   type StaffGoogleLoginStatus,
@@ -94,7 +94,7 @@ const StaffEmailLoginScreen = () => {
           return;
         }
 
-        const result = await registerStaffGoogleLogin(resolvedStoreId);
+        const result = await registerStaffGoogleLoginWithRetry(resolvedStoreId);
         consumeStaffGoogleLoginIntent();
         if (!cancelled) setGoogleStatus(result.status);
       } catch (e) {
