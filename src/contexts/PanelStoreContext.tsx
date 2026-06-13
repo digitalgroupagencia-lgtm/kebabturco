@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { DEFAULT_TENANT_ID } from "@/lib/appMode";
 import type { StaffRole } from "@/lib/staffPermissions";
 
 export type PanelStoreOption = {
@@ -67,6 +68,9 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
       setLoading(true);
 
       let tenantId = roleData.tenant_id;
+      if (!tenantId && roleData.role === "admin_master") {
+        tenantId = DEFAULT_TENANT_ID;
+      }
       if (!tenantId && roleData.store_id) {
         const { data: storeRow } = await supabase
           .from("stores")

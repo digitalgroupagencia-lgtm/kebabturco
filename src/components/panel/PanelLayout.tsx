@@ -15,6 +15,7 @@ import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
+import AdminMasterPanelBack from "@/components/admin/AdminMasterPanelBack";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
@@ -61,6 +62,7 @@ const PanelLayout = ({ page: Page }: Props) => {
               <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-2">
                 <SidebarTrigger className="mr-1 sm:mr-2 shrink-0" />
                 <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1 min-w-0">{headerTitle}</h1>
+                <AdminMasterPanelBack />
                 <PanelStoreSwitcher />
                 <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
                 <PanelUpdateButton />

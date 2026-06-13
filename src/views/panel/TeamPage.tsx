@@ -74,7 +74,7 @@ const roleLabels: Record<AppRole, { label: string; color: string }> = {
 
 const TeamPage = () => {
   const { user } = useAuth();
-  const { t } = useStaffT();
+  const { t, lang: staffLang } = useStaffT();
   const { roleData } = useUserRole(user?.id);
   const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
@@ -121,8 +121,9 @@ const TeamPage = () => {
     try {
       const rows = await listStaffGooglePending(storeId);
       setGooglePending(rows);
-    } catch {
+    } catch (e) {
       setGooglePending([]);
+      toast.error(translateAppErrorFromException(e, staffLang === "en" ? "es" : staffLang));
     } finally {
       setGooglePendingLoading(false);
     }

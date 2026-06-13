@@ -10,7 +10,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
 import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
 import { signInStaffWithGoogle } from "@/lib/staffGoogleOAuth";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
@@ -31,7 +31,7 @@ const StaffEmailLoginScreen = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
-  const { storeId } = useResolvedStore();
+  const { storeId, loading: storeLoading } = useStaffLoginStore();
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
   const { settings } = useBranding();
@@ -123,6 +123,11 @@ const StaffEmailLoginScreen = () => {
   };
 
   const handleGoogleLogin = async () => {
+    if (storeLoading) {
+      setError(copy.loading);
+      return;
+    }
+
     if (!storeId) {
       setError(copy.googleError);
       return;
@@ -244,7 +249,7 @@ const StaffEmailLoginScreen = () => {
             type="button"
             variant="outline"
             className="h-12 w-full text-base font-bold"
-            disabled={submitting || googleSubmitting || !storeId}
+            disabled={submitting || googleSubmitting || !storeId || storeLoading}
             onClick={() => void handleGoogleLogin()}
           >
             {googleSubmitting ? (
