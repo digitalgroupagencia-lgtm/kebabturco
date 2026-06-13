@@ -22,6 +22,8 @@ import type { Database } from "@/integrations/supabase/types";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumEmptyState from "@/components/admin/premium/PremiumEmptyState";
+import StaffGooglePendingSection from "@/components/staff/StaffGooglePendingSection";
+import { DEFAULT_STORE_ID } from "@/lib/appMode";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -165,6 +167,12 @@ const UsersPage = () => {
           </div>
         }
       />
+
+      <StaffGooglePendingSection
+        storeId={DEFAULT_STORE_ID}
+        onChanged={() => qc.invalidateQueries({ queryKey: ["admin-user-roles"] })}
+      />
+
       <div className="hidden">
         <CreateUserDialog />
         <Dialog open={open} onOpenChange={setOpen}>

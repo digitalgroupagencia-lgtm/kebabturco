@@ -13,6 +13,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
 import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
 import { signInStaffWithGoogle } from "@/lib/staffGoogleOAuth";
+import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
@@ -73,14 +74,15 @@ const StaffEmailLoginScreen = () => {
       return;
     }
 
-    if (!storeId) return;
+    if (storeLoading) return;
 
     let cancelled = false;
     setGoogleStatusLoading(true);
 
     void (async () => {
       try {
-        const result = await registerStaffGoogleLogin(storeId);
+        const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
+        const result = await registerStaffGoogleLogin(resolvedStoreId);
         if (!cancelled) setGoogleStatus(result.status);
       } catch (e) {
         if (!cancelled) {
