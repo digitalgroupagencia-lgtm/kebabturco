@@ -8,6 +8,7 @@ import { APP_NAME, SINGLE_TENANT_MODE } from "@/lib/appMode";
 import { isPlatformAdminContext } from "@/lib/platformAdminContext";
 import { isEmbeddedTenantPreview } from "@/lib/tenantPreview";
 import { isCustomerStorefrontPath } from "@/lib/appRouteKind";
+import { buildPublicCanonicalUrl } from "@/lib/seoSite";
 
 export type SiteBrandingScope = "platform" | "tenant" | "neutral";
 
@@ -164,6 +165,15 @@ export function applySiteBrandingToDocument(branding: SiteBranding): void {
   setMeta("apple-mobile-web-app-title", branding.shortName);
   setMeta("application-name", branding.shortName);
 
+  const canonical =
+    typeof window !== "undefined"
+      ? buildPublicCanonicalUrl(window.location.pathname)
+      : buildPublicCanonicalUrl("/");
+
+  setLink("canonical", canonical);
+  setMeta("og:url", canonical, "property");
+  setMeta("og:site_name", branding.displayName, "property");
+  setMeta("og:locale", "pt_PT", "property");
   setMeta("og:title", branding.displayName, "property");
   setMeta("og:description", branding.metaDescription, "property");
   setMeta("og:type", "website", "property");

@@ -767,6 +767,18 @@ const translations: Translations = {
     es: "El pago aún no está confirmado. Inténtalo de nuevo en unos segundos.",
     fr: "Paiement pas encore confirmé. Réessayez dans quelques secondes.",
   },
+  stripePreparingPayment: {
+    pt: "A abrir pagamento seguro…",
+    en: "Opening secure payment…",
+    es: "Abriendo pago seguro…",
+    fr: "Ouverture du paiement sécurisé…",
+  },
+  stripePreparingPaymentSub: {
+    pt: "Só um momento — estamos a ligar ao banco.",
+    en: "One moment — connecting to the bank.",
+    es: "Un momento — conectando con el banco.",
+    fr: "Un instant — connexion à la banque.",
+  },
   stripeRecoveringPayment: {
     pt: "A confirmar o seu pagamento…",
     en: "Confirming your payment…",

@@ -1,9 +1,12 @@
 User-agent: *
 Allow: /
+Allow: /menu
+Allow: /cardapio
 Allow: /privacy
 Allow: /terms
 Allow: /delete-account
 Allow: /support
+Allow: /install
 
 Disallow: /admin
 Disallow: /panel
@@ -11,5 +14,23 @@ Disallow: /auth
 Disallow: /staff
 Disallow: /seller
 Disallow: /delivery
+Disallow: /kds
+Disallow: /cashier
+Disallow: /painel
+Disallow: /equipe
+Disallow: /recibos/
+Disallow: /ligar-conta/
+Disallow: /checkout
+Disallow: /pagamento
+Disallow: /confirmacao
+Disallow: /pedido-concluido
+Disallow: /confirmation
+Disallow: /acompanhar
+Disallow: /acompanhar-pedido
+Disallow: /tracking
+Disallow: /meus-pedidos
+Disallow: /pedidos
+Disallow: /mesa
+Disallow: /qr
 
 Sitemap: https://kebabturco.net/sitemap.xml

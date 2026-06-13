@@ -22,10 +22,12 @@ export default function LegalPageLayout({ title, description, children, highligh
 
   useEffect(() => {
     document.title = `${title} · ${brandName}`;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (meta) meta.content = description;
     return () => {
       document.title = brandName;
     };
-  }, [title, brandName]);
+  }, [title, brandName, description]);
 
   return (
     <div className="min-h-[100dvh] bg-secondary/40">

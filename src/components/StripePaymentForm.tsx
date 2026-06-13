@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadStripe, type Stripe, type StripeElementLocale } from "@stripe/stripe-js";
+import { type Stripe, type StripeElementLocale } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
 import PhoneInput from "@/components/PhoneInput";
 import {
-  getStripePublishableKeyForEnvironment,
   hasStripePublishableKey,
   type StripePublishableEnvironment,
 } from "@/lib/stripePublishableKey";
+import { getStripePromise } from "@/lib/stripeLoader";
 import {
   clearStripeRedirectParams,
   readStripeRedirectFromUrl,
@@ -37,22 +37,6 @@ export type StripeFormCopy = {
   bizumMismatchBack: string;
   onlineUnavailable: string;
 };
-
-const stripePromiseCache: Partial<Record<string, Promise<Stripe | null>>> = {};
-
-function getStripePromise(
-  environment: StripePublishableEnvironment = "live",
-  publishableKey?: string | null,
-  locale: StripeElementLocale = "es",
-) {
-  const key = publishableKey?.startsWith("pk_") ? publishableKey : getStripePublishableKeyForEnvironment(environment);
-  if (!key) return null;
-  const cacheKey = `${environment}:${key}:${locale}`;
-  if (!stripePromiseCache[cacheKey]) {
-    stripePromiseCache[cacheKey] = loadStripe(key, { locale });
-  }
-  return stripePromiseCache[cacheKey]!;
-}
 
 async function pollPaymentIntentUntilSettled(
   stripe: Stripe,

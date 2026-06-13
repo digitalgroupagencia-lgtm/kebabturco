@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { StripeElementLocale } from "@stripe/stripe-js";
 import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
 import { useCart } from "@/customer/contexts/CartContext";
@@ -11,7 +11,6 @@ import {
   attachStripeOrderToPaymentIntent,
   createCustomerOrder,
   createStripePaymentIntent,
-  enableStoreBizumPayments,
   fetchStoreFinancialProfile,
   validateCoupon,
   waitForOrderPaymentConfirmed,
@@ -33,6 +32,7 @@ import { notifyStaffNewOrder } from "@/services/pushService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
+import { preloadStripeCheckout } from "@/lib/stripeLoader";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
   computeRestaurantPortionEur,
@@ -52,7 +52,6 @@ import {
   readStripeRedirectFromUrl,
   saveStripeCheckoutSession,
 } from "@/lib/stripeCheckoutSession";
-import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
@@ -205,6 +204,11 @@ const PaymentScreen = () => {
   const [stripeCheckoutMethod, setStripeCheckoutMethod] = useState<"card" | "bizum">("card");
   const [stripePaymentLocked, setStripePaymentLocked] = useState(false);
   const [stripeCheckoutPreparing, setStripeCheckoutPreparing] = useState(false);
+  const stripePrefetchRef = useRef<{
+    key: string;
+    method: "card" | "bizum";
+    promise: ReturnType<typeof createStripePaymentIntent>;
+  } | null>(null);
   const [recoveringCheckout, setRecoveringCheckout] = useState(false);
   // Checkout em 2 etapas: dados → pagamento. Mesas saltam directamente para pagamento.
   const [checkoutStep, setCheckoutStep] = useState<"details" | "payment">(
@@ -287,12 +291,58 @@ const PaymentScreen = () => {
             Boolean(platform?.productionBlocked) &&
             hasStripePublishableKey("test"));
         setStripeConnectEnvironment(useTest ? "test" : "live");
-        if (ready && !useTest && !isLovableEditorPreview()) {
-          void enableStoreBizumPayments(storeId).catch(() => null);
-        }
       })
       .catch(() => setStripeEnabled(false));
   }, [storeId]);
+
+  useEffect(() => {
+    if (!stripeEnabled || !stripePublishableKey) return;
+    preloadStripeCheckout(stripeConnectEnvironment, null, stripeLocale);
+  }, [stripeEnabled, stripePublishableKey, stripeConnectEnvironment, stripeLocale]);
+
+  const buildStripePrefetchKey = (method: "card" | "bizum") =>
+    `${method}:${storeId}:${Math.round(totalPrice * 100)}:${Math.round(deliveryFee * 100)}:${Math.round(couponDiscount * 100)}:${orderTypeDb}`;
+
+  useEffect(() => {
+    if (!storeId || !stripeEnabled || !stripePublishableKey) return;
+    if (!isTableOrder && checkoutStep !== "payment") return;
+    if (stripeClientSecret || stripeCheckoutPreparing || processing || recoveringCheckout) return;
+
+    const method: "card" | "bizum" | null =
+      selected === "bizum" ? "bizum" : selected === "card" ? "card" : null;
+    if (!method) return;
+
+    const key = buildStripePrefetchKey(method);
+    if (stripePrefetchRef.current?.key === key) return;
+
+    stripePrefetchRef.current = {
+      key,
+      method,
+      promise: createStripePaymentIntent({
+        storeId,
+        subtotalCents: Math.round(totalPrice * 100),
+        deliveryCents: Math.round(deliveryFee * 100),
+        discountCents: Math.round(couponDiscount * 100),
+        orderType: orderTypeDb,
+        paymentMethodType: method,
+      }),
+    };
+  }, [
+    storeId,
+    stripeEnabled,
+    stripePublishableKey,
+    isTableOrder,
+    checkoutStep,
+    selected,
+    totalPrice,
+    deliveryFee,
+    couponDiscount,
+    orderTypeDb,
+    stripeClientSecret,
+    stripeCheckoutPreparing,
+    processing,
+    recoveringCheckout,
+  ]);
 
 
 
@@ -575,75 +625,105 @@ const PaymentScreen = () => {
     return result;
   };
 
+  const reserveStripeOrderInBackground = (
+    pi: Awaited<ReturnType<typeof createStripePaymentIntent>>,
+    paymentMethodType: "card" | "bizum",
+  ) => {
+    void (async () => {
+      try {
+        const pendingOrder = await createPendingCardOrder(pi.paymentIntentId, {
+          onlineServiceFeeCents: pi.onlineServiceFeeCents,
+          platformFeeCents: pi.platformFeeCents,
+          stripeFeeCents: pi.estimatedStripeFeeCents,
+          netToStoreCents: pi.restaurantPortionCents,
+          stripeConnectAccountId: pi.stripeConnectAccountId,
+        }, paymentMethodType);
+        if (!pendingOrder) return;
+
+        try {
+          await attachStripeOrderToPaymentIntent({
+            storeId,
+            paymentIntentId: pi.paymentIntentId,
+            orderId: pendingOrder.order_id,
+            orderNumber: pendingOrder.order_number,
+          });
+        } catch (attachErr) {
+          console.warn("[checkout] attach order metadata falhou (webhook usa payment_intent_id):", attachErr);
+        }
+
+        saveStripeCheckoutSession({
+          storeId,
+          paymentIntentId: pi.paymentIntentId,
+          orderId: pendingOrder.order_id,
+          orderNumber: pendingOrder.order_number,
+          checkoutMethod: paymentMethodType,
+          amountCents: pi.amountCents,
+          restaurantPortionCents: pi.restaurantPortionCents,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error("[checkout] reserva do pedido antes do pagamento falhou:", err);
+        setPaymentError(
+          err instanceof Error
+            ? err.message
+            : "Não foi possível reservar o pedido antes do pagamento.",
+        );
+      }
+    })();
+  };
+
   const startStripePayment = async (paymentMethodType: "card" | "bizum") => {
     if (!assertStoreReady()) return;
     setStripeCheckoutPreparing(true);
     try {
-    const subtotalCents = Math.round(totalPrice * 100);
-    const deliveryCents = Math.round(deliveryFee * 100);
-    const discountCents = Math.round(couponDiscount * 100);
-    const pi = await createStripePaymentIntent({
-      storeId,
-      subtotalCents,
-      deliveryCents,
-      discountCents,
-      orderType: orderTypeDb,
-      paymentMethodType,
-    });
-    setStripePaymentIntentId(pi.paymentIntentId);
-    setStripePaymentMeta({
-      amountCents: pi.amountCents,
-      restaurantPortionCents: pi.restaurantPortionCents,
-      onlineServiceFeeCents: pi.onlineServiceFeeCents,
-      platformFeeCents: pi.platformFeeCents,
-      estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
-      stripeConnectAccountId: pi.stripeConnectAccountId,
-      connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
-      publishableKey: pi.publishableKey ?? null,
-      checkoutPaymentMethod: pi.checkoutPaymentMethod ?? paymentMethodType,
-      paymentMethodTypes: pi.paymentMethodTypes,
-    });
-    if (pi.connectEnvironment) {
-      setStripeConnectEnvironment(pi.connectEnvironment);
-    }
-    setStripeCheckoutMethod(paymentMethodType);
-    setStripeClientSecret(pi.clientSecret);
+      const subtotalCents = Math.round(totalPrice * 100);
+      const deliveryCents = Math.round(deliveryFee * 100);
+      const discountCents = Math.round(couponDiscount * 100);
+      const prefetchKey = buildStripePrefetchKey(paymentMethodType);
+      const cached =
+        stripePrefetchRef.current?.key === prefetchKey &&
+        stripePrefetchRef.current.method === paymentMethodType
+          ? stripePrefetchRef.current.promise
+          : null;
+      stripePrefetchRef.current = null;
 
-    const pendingOrder = await createPendingCardOrder(pi.paymentIntentId, {
-      onlineServiceFeeCents: pi.onlineServiceFeeCents,
-      platformFeeCents: pi.platformFeeCents,
-      stripeFeeCents: pi.estimatedStripeFeeCents,
-      netToStoreCents: pi.restaurantPortionCents,
-      stripeConnectAccountId: pi.stripeConnectAccountId,
-    }, paymentMethodType);
-    if (!pendingOrder) {
-      throw new Error("Não foi possível reservar o pedido antes do pagamento");
-    }
+      const pi = cached
+        ? await cached
+        : await createStripePaymentIntent({
+            storeId,
+            subtotalCents,
+            deliveryCents,
+            discountCents,
+            orderType: orderTypeDb,
+            paymentMethodType,
+          });
 
-    try {
-      await attachStripeOrderToPaymentIntent({
-        storeId,
-        paymentIntentId: pi.paymentIntentId,
-        orderId: pendingOrder.order_id,
-        orderNumber: pendingOrder.order_number,
+      setStripePaymentIntentId(pi.paymentIntentId);
+      setStripePaymentMeta({
+        amountCents: pi.amountCents,
+        restaurantPortionCents: pi.restaurantPortionCents,
+        onlineServiceFeeCents: pi.onlineServiceFeeCents,
+        platformFeeCents: pi.platformFeeCents,
+        estimatedStripeFeeCents: pi.estimatedStripeFeeCents,
+        stripeConnectAccountId: pi.stripeConnectAccountId,
+        connectEnvironment: pi.connectEnvironment ?? stripeConnectEnvironment,
+        publishableKey: pi.publishableKey ?? null,
+        checkoutPaymentMethod: pi.checkoutPaymentMethod ?? paymentMethodType,
+        paymentMethodTypes: pi.paymentMethodTypes,
       });
-    } catch (attachErr) {
-      console.warn("[checkout] attach order metadata falhou (webhook usa payment_intent_id):", attachErr);
-    }
+      if (pi.connectEnvironment) {
+        setStripeConnectEnvironment(pi.connectEnvironment);
+      }
+      setStripeCheckoutMethod(paymentMethodType);
+      setStripeClientSecret(pi.clientSecret);
+      if (pi.publishableKey) {
+        preloadStripeCheckout(pi.connectEnvironment ?? stripeConnectEnvironment, pi.publishableKey, stripeLocale);
+      }
 
-    saveStripeCheckoutSession({
-      storeId,
-      paymentIntentId: pi.paymentIntentId,
-      orderId: pendingOrder.order_id,
-      orderNumber: pendingOrder.order_number,
-      checkoutMethod: paymentMethodType,
-      amountCents: pi.amountCents,
-      restaurantPortionCents: pi.restaurantPortionCents,
-      createdAt: new Date().toISOString(),
-    });
-  } finally {
-    setStripeCheckoutPreparing(false);
-  }
+      reserveStripeOrderInBackground(pi, paymentMethodType);
+    } finally {
+      setStripeCheckoutPreparing(false);
+    }
   };
 
   const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
@@ -958,6 +1038,16 @@ const PaymentScreen = () => {
                 <span className="font-semibold tabular-nums">−{couponDiscount.toFixed(2)}€</span>
               </div>
             )}
+          </div>
+        )}
+
+        {(processing || stripeCheckoutPreparing) && !stripeClientSecret && (
+          <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-foreground">{t("stripePreparingPayment")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("stripePreparingPaymentSub")}</p>
+            </div>
           </div>
         )}
 

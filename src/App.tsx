@@ -19,6 +19,7 @@ import { OperationsSettingsProvider } from "./hooks/useOperationsSettings.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
+import { SeoDocumentEffect } from "./hooks/useSeoDocument.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
@@ -109,6 +110,7 @@ const App = () => {
                 <PreviewPathGuard />
                 <ResolvedStoreProvider>
                   <SiteBrandingEffect />
+                  <SeoDocumentEffect />
                   <BrandingProvider>
                     <OperationsSettingsProvider>
                       <LovablePreviewRoutes />
