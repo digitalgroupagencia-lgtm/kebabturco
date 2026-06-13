@@ -31,6 +31,7 @@ interface OpsOrderCardProps {
   order: PanelOrder;
   items: OrderItem[];
   needsAttention?: boolean;
+  urgentAttention?: boolean;
   viewerRole?: string | null;
   driverName?: string | null;
   onAdvance: (order: PanelOrder, status: OrderStatus, prepMinutes?: number) => void | Promise<void> | Promise<boolean>;
@@ -45,6 +46,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   order,
   items,
   needsAttention = false,
+  urgentAttention = false,
   viewerRole,
   driverName,
   onAdvance,
@@ -100,7 +102,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
   return (
     <article
       className={`rounded-md border bg-card overflow-hidden ${borderClass} ${
-        needsAttention ? "ring-2 ring-red-500/50 animate-pulse" : ""
+        urgentAttention
+          ? "ring-4 ring-red-600 animate-pulse bg-red-500/5"
+          : needsAttention
+            ? "ring-2 ring-red-500/50 animate-pulse"
+            : ""
       } ${isTest ? "border-dashed border-yellow-500 bg-yellow-500/5" : ""}`}
     >
       <button

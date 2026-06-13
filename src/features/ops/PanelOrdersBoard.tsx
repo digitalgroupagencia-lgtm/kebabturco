@@ -29,8 +29,11 @@ import { listStoreDrivers } from "@/services/orderService";
 import {
   acknowledgePendingOrderAlert,
   isPendingOrderAlerting,
+  isUrgentPendingOrder,
   PANEL_UNACK_CHANGED_EVENT,
+  tickPendingAlertUrgency,
 } from "@/lib/panelAlerts";
+import PanelUrgentAlertOverlay from "@/features/ops/PanelUrgentAlertOverlay";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
@@ -89,6 +92,12 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     window.addEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
     return () => window.removeEventListener(PANEL_UNACK_CHANGED_EVENT, sync);
   }, []);
+
+  useEffect(() => {
+    if (mode !== "live") return;
+    const id = window.setInterval(() => tickPendingAlertUrgency(), 15_000);
+    return () => window.clearInterval(id);
+  }, [mode]);
 
   useEffect(() => {
     if (mode !== "live") return;
@@ -229,6 +238,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
     order,
     items: itemsByOrder[order.id] || [],
     needsAttention: isPendingOrderAlerting(order.id),
+    urgentAttention: isUrgentPendingOrder(order.id),
     viewerRole: roleData?.role,
     driverName: order.assigned_driver_id ? driverNameById.get(order.assigned_driver_id) : null,
     onAdvance: handleAdvance,
@@ -278,6 +288,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
 
   return (
     <>
+      {mode === "live" && <PanelUrgentAlertOverlay />}
       {mode === "live" && (
         <PanelAlertsPermissionDialog
           open={permissionOpen}

@@ -10,6 +10,8 @@ import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
+import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
 import { updateLocalOrderHistoryStatus } from "@/lib/customerOrderHistory";
 
@@ -37,6 +39,7 @@ const ConfirmationScreen = () => {
   const { settings } = useOperationsSettings();
   const { settings: brand } = useBranding();
   const { t } = useLanguage();
+  const { storeId } = useResolvedStore();
 
   const isCounter = paymentMethod === "counter";
   const isCash = paymentMethod === "cash";
@@ -263,6 +266,17 @@ const ConfirmationScreen = () => {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {!isCancelled && liveOrder && (
+            <div className="mt-6">
+              <OrderDelaySupportBanner
+                storeId={storeId}
+                status={liveOrder.status}
+                createdAt={liveOrder.created_at}
+                orderNumber={liveOrder.order_number}
+              />
             </div>
           )}
 

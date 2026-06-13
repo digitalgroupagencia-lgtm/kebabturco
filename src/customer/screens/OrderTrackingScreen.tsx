@@ -10,6 +10,8 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
 import OrderReviewForm from "@/customer/components/OrderReviewForm";
+import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
+import { useResolvedStore } from "@/hooks/useResolvedStore";
 
 const OrderTrackingScreen = () => {
   const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
@@ -17,6 +19,8 @@ const OrderTrackingScreen = () => {
   const { settings } = useOperationsSettings();
   const [order, setOrder] = useState<PublicOrderTrack | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { storeId } = useResolvedStore();
 
   const orderId =
     trackingOrderId ||
@@ -97,6 +101,13 @@ const OrderTrackingScreen = () => {
               </>
             ) : (
               <>
+                <OrderDelaySupportBanner
+                  storeId={storeId}
+                  status={order.status}
+                  createdAt={order.created_at}
+                  orderNumber={order.order_number}
+                />
+
                 <div className="text-center space-y-2">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
                     {t("trackingCurrentStatus")}

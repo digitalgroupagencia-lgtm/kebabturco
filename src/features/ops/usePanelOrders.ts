@@ -16,6 +16,7 @@ import {
   shouldShowOrderInRestaurantPanel,
 } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
+import { cancelOrderWithRefund } from "@/services/orderRefund";
 import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder, reprintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
@@ -408,22 +409,38 @@ export function usePanelOrders(storeId: string | undefined) {
     if (!order || updatingRef.current.has(orderId)) return;
 
     updatingRef.current.add(orderId);
-    const prevStatus = order.status;
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" } : o)));
 
-    const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", orderId);
+    const result = await cancelOrderWithRefund(storeId!, orderId);
     updatingRef.current.delete(orderId);
 
-    if (error) {
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: prevStatus } : o)));
-      toast.error("Erro ao cancelar");
+    if (!result.success) {
+      toast.error(result.error || "Erro ao cancelar");
       return;
     }
 
-    toast.success("Pedido cancelado");
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: "cancelled",
+              payment_status: result.refunded ? "refunded" : o.payment_status,
+            }
+          : o,
+      ),
+    );
+
+    if (result.refunded) {
+      toast.success(`Pedido #${order.order_number} cancelado — reembolso automático enviado ao cliente`);
+    } else if (order.payment_status === "paid") {
+      toast.success(`Pedido #${order.order_number} cancelado — reembolso em dinheiro é responsabilidade do restaurante`);
+    } else {
+      toast.success("Pedido cancelado");
+    }
+
     acknowledgePendingOrderAlert(orderId);
     await notifyOrderStatusChange(orderId, "cancelled", order.order_number);
-  }, [orders]);
+  }, [orders, storeId]);
 
   const setPrepMinutes = useCallback(async (order: PanelOrder, minutes: number) => {
     const eta = new Date();

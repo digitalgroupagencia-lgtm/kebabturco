@@ -7,14 +7,20 @@ import { deployDebugLog } from "@/lib/deployDebugLog";
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
 export const PANEL_ALERT_FLASH_EVENT = "panel-alert-flash";
+export const PANEL_URGENT_CHANGED_EVENT = "panel-urgent-changed";
 const STATIC_BEEP_URL = "/alert-beep.wav";
 const ALERT_DIAG_KEY = "panel-alert-diag";
 const ALERT_VOLUME = 0.42;
+const ALERT_VOLUME_URGENT = 1;
 /** Intervalo entre bips enquanto houver pedidos em «Recebido» sem mudança de estado. */
 const PENDING_ALERT_REPEAT_MS = 4_000;
+/** Após 5 min sem aceitar — som mais rápido e alto + ecrã vermelho. */
+const PENDING_URGENT_REPEAT_MS = 2_000;
+export const PANEL_URGENT_PENDING_MS = 5 * 60 * 1000;
 
 /** Pedidos recebidos ainda não aceites — som repete até mudar o estado. */
 const unacknowledgedPending = new Set<string>();
+const pendingRegisteredAt = new Map<string, number>();
 
 export const PANEL_UNACK_CHANGED_EVENT = "panel-unack-changed";
 
@@ -62,6 +68,27 @@ export function getLastAlertDiagnostic(): AlertDiagnostic | null {
 function dispatchUnackChanged() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(PANEL_UNACK_CHANGED_EVENT));
+  window.dispatchEvent(new CustomEvent(PANEL_URGENT_CHANGED_EVENT));
+}
+
+export function countUrgentPendingOrders(): number {
+  const now = Date.now();
+  let count = 0;
+  for (const id of unacknowledgedPending) {
+    const started = pendingRegisteredAt.get(id) ?? now;
+    if (now - started >= PANEL_URGENT_PENDING_MS) count += 1;
+  }
+  return count;
+}
+
+export function isUrgentPendingOrder(orderId: string): boolean {
+  if (!unacknowledgedPending.has(orderId)) return false;
+  const started = pendingRegisteredAt.get(orderId) ?? Date.now();
+  return Date.now() - started >= PANEL_URGENT_PENDING_MS;
+}
+
+function hasUrgentPendingOrders(): boolean {
+  return countUrgentPendingOrders() > 0;
 }
 
 export function countUnacknowledgedPendingOrders(): number {
@@ -74,8 +101,30 @@ export function isPendingOrderAlerting(orderId: string): boolean {
 
 export function acknowledgePendingOrderAlert(orderId: string) {
   if (!unacknowledgedPending.delete(orderId)) return;
+  pendingRegisteredAt.delete(orderId);
   dispatchUnackChanged();
   if (unacknowledgedPending.size === 0) stopPendingOrderAlertLoop();
+}
+
+function currentAlertRepeatMs(): number {
+  return hasUrgentPendingOrders() ? PENDING_URGENT_REPEAT_MS : PENDING_ALERT_REPEAT_MS;
+}
+
+function restartPendingAlertLoop() {
+  stopPendingOrderAlertLoop();
+  if (!isPanelAlertsEnabled() || unacknowledgedPending.size === 0) return;
+  void playAlertSoundOnce();
+  repeatTimer = window.setInterval(() => {
+    if (unacknowledgedPending.size === 0) {
+      stopPendingOrderAlertLoop();
+      return;
+    }
+    if (isPanelAlertsEnabled()) {
+      void playAlertSoundOnce();
+      if (hasUrgentPendingOrders()) flashVisualAlert();
+      window.dispatchEvent(new CustomEvent(PANEL_URGENT_CHANGED_EVENT));
+    }
+  }, currentAlertRepeatMs());
 }
 
 function ensurePendingAlertLoop() {
@@ -84,22 +133,19 @@ function ensurePendingAlertLoop() {
     return;
   }
   if (repeatTimer !== null) return;
-  void playAlertSoundOnce();
-  repeatTimer = window.setInterval(() => {
-    if (unacknowledgedPending.size === 0) {
-      stopPendingOrderAlertLoop();
-      return;
-    }
-    if (isPanelAlertsEnabled()) void playAlertSoundOnce();
-  }, PENDING_ALERT_REPEAT_MS);
+  restartPendingAlertLoop();
 }
 
 /** Regista pedido em «Recebido» — som repete até mudar o estado. */
 export function registerNewPendingOrderAlert(orderId: string): boolean {
   const isNew = !unacknowledgedPending.has(orderId);
   unacknowledgedPending.add(orderId);
+  if (isNew) pendingRegisteredAt.set(orderId, Date.now());
   if (isNew) dispatchUnackChanged();
-  if (isPanelAlertsEnabled()) ensurePendingAlertLoop();
+  if (isPanelAlertsEnabled()) {
+    if (repeatTimer !== null && hasUrgentPendingOrders()) restartPendingAlertLoop();
+    else ensurePendingAlertLoop();
+  }
   return isPanelAlertsEnabled();
 }
 
@@ -107,6 +153,7 @@ export function registerNewPendingOrderAlert(orderId: string): boolean {
 export function silenceAllPendingAlerts() {
   if (unacknowledgedPending.size === 0) return;
   unacknowledgedPending.clear();
+  pendingRegisteredAt.clear();
   stopPendingOrderAlertLoop();
   dispatchUnackChanged();
 }
@@ -306,7 +353,7 @@ function waitForPlaying(audio: HTMLAudioElement, ms = 800): Promise<boolean> {
 }
 
 /** iPhone/Safari — ficheiro estático no servidor (mais fiável que blob). */
-async function playHtmlBeep(isUnlock = false): Promise<boolean> {
+async function playHtmlBeep(isUnlock = false, urgent = false): Promise<boolean> {
   const sources = beepSources();
   let lastError = "sem fonte";
 
@@ -316,7 +363,7 @@ async function playHtmlBeep(isUnlock = false): Promise<boolean> {
       audio.pause();
       audio.currentTime = 0;
       audio.src = src;
-      audio.volume = ALERT_VOLUME;
+      audio.volume = urgent ? ALERT_VOLUME_URGENT : ALERT_VOLUME;
       audio.muted = false;
       audio.load();
 
@@ -364,7 +411,7 @@ async function playHtmlBeep(isUnlock = false): Promise<boolean> {
   return false;
 }
 
-function playWebBeep(): boolean {
+function playWebBeep(urgent = false): boolean {
   if (!audioCtx) audioCtx = new AudioContext();
   const ctx = audioCtx;
   if (ctx.state !== "running") return false;
@@ -374,11 +421,12 @@ function playWebBeep(): boolean {
   osc.type = "sine";
   osc.connect(gain);
   gain.connect(ctx.destination);
-  osc.frequency.value = 660;
-  gain.gain.setValueAtTime(0.22, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.28);
+  osc.frequency.value = urgent ? 880 : 660;
+  const peak = urgent ? 0.55 : 0.22;
+  gain.gain.setValueAtTime(peak, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (urgent ? 0.45 : 0.28));
   osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.28);
+  osc.stop(ctx.currentTime + (urgent ? 0.45 : 0.28));
   return true;
 }
 
@@ -386,28 +434,31 @@ function playWebBeep(): boolean {
 async function playAlertSoundOnce(): Promise<boolean> {
   if (!isPanelAlertsEnabled()) return false;
 
+  const urgent = hasUrgentPendingOrders();
   flashVisualAlert();
+  if (urgent) flashVisualAlert();
   await ensureAudioReady();
 
   let soundOk = false;
   let path = "none";
 
   if (isIOSLike()) {
-    soundOk = await playHtmlBeep(false);
+    soundOk = await playHtmlBeep(false, urgent);
     path = "ios-static-wav";
   } else {
-    soundOk = await playHtmlBeep(false);
+    soundOk = await playHtmlBeep(false, urgent);
     path = "static-wav";
     if (!soundOk) {
       const ready = await ensureAudioReady();
-      soundOk = ready && playWebBeep();
+      soundOk = ready && playWebBeep(urgent);
       path = "web-audio";
     }
   }
 
   if (typeof navigator !== "undefined" && navigator.vibrate) {
-    // padrão tipo iFood: vibra forte e repete enquanto o pedido não for aceite
-    navigator.vibrate([300, 120, 300, 120, 500]);
+    navigator.vibrate(
+      urgent ? [500, 150, 500, 150, 700, 150, 700] : [300, 120, 300, 120, 500],
+    );
   }
 
   deployDebugLog({
@@ -445,6 +496,17 @@ export function syncPendingOrderAlertLoop(hasPendingOrders: boolean) {
     ensurePendingAlertLoop();
   } else if (!hasPendingOrders) {
     stopPendingOrderAlertLoop();
+  }
+}
+
+export function tickPendingAlertUrgency() {
+  if (!isPanelAlertsEnabled() || unacknowledgedPending.size === 0) return;
+  const wasUrgent = hasUrgentPendingOrders();
+  window.dispatchEvent(new CustomEvent(PANEL_URGENT_CHANGED_EVENT));
+  if (hasUrgentPendingOrders() && repeatTimer !== null) {
+    restartPendingAlertLoop();
+  } else if (!wasUrgent && hasUrgentPendingOrders()) {
+    restartPendingAlertLoop();
   }
 }
 

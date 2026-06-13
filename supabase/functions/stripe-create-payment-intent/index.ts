@@ -107,6 +107,11 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (body?.action === "refund_order") {
+      const { handleRefundOrder } = await import("../_shared/stripeRefundActions.ts");
+      return handleRefundOrder(req, body);
+    }
+
     if (body?.action === "staff_update_member") {
       return handleStaffUpdateMember(req, body);
     }
