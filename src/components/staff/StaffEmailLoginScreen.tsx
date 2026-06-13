@@ -12,6 +12,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
+import { signInStaffWithGoogle } from "@/lib/staffGoogleOAuth";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
@@ -133,15 +134,7 @@ const StaffEmailLoginScreen = () => {
 
     try {
       const redirectUri = `${window.location.origin}${nav.staff()}`;
-      const googleLang = lang === "pt" ? "pt" : lang === "en" ? "en" : "es";
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUri,
-          queryParams: { hl: googleLang },
-        },
-      });
-      if (oauthError) throw oauthError;
+      await signInStaffWithGoogle({ redirectUri, lang });
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);
       setGoogleSubmitting(false);
