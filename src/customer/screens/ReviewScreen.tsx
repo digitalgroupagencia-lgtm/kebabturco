@@ -39,9 +39,9 @@ const ReviewScreen = () => {
     setEditingCartItemId,
     setSelectedCategory,
     tableNumber,
+    clearMesaLock,
   } = useOrder();
   const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType, clearOrderType } = useCart();
-  const { clearMesaLock, mesaLocked, mesaManual } = useOrder();
 
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
