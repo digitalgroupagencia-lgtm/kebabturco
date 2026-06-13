@@ -1,32 +1,36 @@
--- Corrigir pedidos de login Google da equipa (Lovable OAuth + Supabase)
--- Executar no Supabase SQL Editor do projecto kvpssbhclafoymhecmuk
+-- Activar pedidos de login Google da equipa (executar no Supabase kvpssbhclafoymhecmuk)
 
-CREATE OR REPLACE FUNCTION public.user_has_google_identity(_user_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, auth
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM auth.identities i
-    WHERE i.user_id = _user_id
-      AND i.provider IN ('google', 'oauth', 'oidc')
-  )
-  OR EXISTS (
-    SELECT 1
-    FROM auth.users u
-    WHERE u.id = _user_id
-      AND (
-        COALESCE(u.raw_app_meta_data ->> 'provider', '') IN ('google', 'oauth')
-        OR COALESCE(u.raw_user_meta_data ->> 'provider', '') = 'google'
-        OR COALESCE(u.raw_user_meta_data ->> 'iss', '') ILIKE '%google%'
-      )
+CREATE TABLE IF NOT EXISTS public.staff_google_pending (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  tenant_id uuid NOT NULL,
+  email text NOT NULL,
+  full_name text,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'rejected')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  reviewed_by uuid,
+  reviewed_at timestamptz,
+  CONSTRAINT staff_google_pending_user_store_unique UNIQUE (user_id, store_id)
+);
+
+CREATE INDEX IF NOT EXISTS staff_google_pending_store_status_idx
+  ON public.staff_google_pending (store_id, status)
+  WHERE status = 'pending';
+
+ALTER TABLE public.staff_google_pending ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Managers view store google pending" ON public.staff_google_pending;
+CREATE POLICY "Managers view store google pending"
+  ON public.staff_google_pending
+  FOR SELECT
+  TO authenticated
+  USING (
+    public.has_role(auth.uid(), 'admin_master'::public.app_role)
+    OR public.user_can_view_team_at_store(store_id)
   );
-$$;
 
--- Recriar register (igual, mas usa a função acima já corrigida)
 CREATE OR REPLACE FUNCTION public.register_staff_google_login(_store_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -47,10 +51,6 @@ BEGIN
 
   IF _store_id IS NULL THEN
     RAISE EXCEPTION 'Loja inválida';
-  END IF;
-
-  IF NOT public.user_has_google_identity(v_uid) THEN
-    RAISE EXCEPTION 'Este acesso é só para quem entrou com Google';
   END IF;
 
   SELECT s.tenant_id INTO v_tenant_id
@@ -104,17 +104,48 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.user_has_google_identity(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.register_staff_google_login(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public.list_staff_google_pending(_store_id uuid)
+RETURNS TABLE(
+  id uuid,
+  user_id uuid,
+  email text,
+  full_name text,
+  created_at timestamptz
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+  IF _store_id IS NULL THEN
+    RETURN;
+  END IF;
 
--- Verificação
-SELECT 'staff_google_pending' AS check_name,
+  IF NOT public.user_manages_store_team(_store_id)
+     AND NOT public.has_role(auth.uid(), 'admin_master'::public.app_role) THEN
+    RAISE EXCEPTION 'Sem permissão para ver pedidos Google da equipa';
+  END IF;
+
+  RETURN QUERY
+  SELECT p.id, p.user_id, p.email, p.full_name, p.created_at
+  FROM public.staff_google_pending p
+  WHERE p.store_id = _store_id
+    AND p.status = 'pending'
+  ORDER BY p.created_at DESC;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.register_staff_google_login(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.list_staff_google_pending(uuid) TO authenticated;
+
+SELECT 'tabela_ok' AS passo,
   EXISTS (
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = 'staff_google_pending'
-  ) AS ok;
+  ) AS existe;
 
-SELECT id, email, full_name, status, created_at
+SELECT email, full_name, status, created_at
 FROM public.staff_google_pending
 WHERE store_id = '22222222-2222-2222-2222-222222222222'::uuid
 ORDER BY created_at DESC

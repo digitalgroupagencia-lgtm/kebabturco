@@ -31,6 +31,17 @@ export function userSignedInWithGoogle(user: {
   });
 }
 
+export async function userHasRoleAtStore(userId: string, storeId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (error) return false;
+  return Boolean(data);
+}
+
 export async function registerStaffGoogleLogin(storeId: string): Promise<{
   status: StaffGoogleLoginStatus;
   role?: string;

@@ -23,10 +23,15 @@ import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/st
 import { nav } from "@/lib/navPaths";
 import {
   registerStaffGoogleLogin,
+  userHasRoleAtStore,
   userSignedInWithGoogle,
   type StaffGoogleLoginStatus,
 } from "@/services/staffGoogleLogin";
-import { consumeStaffGoogleLoginIntent, hasStaffGoogleLoginIntent } from "@/lib/staffGoogleLoginIntent";
+import {
+  clearStaffGoogleLoginIntent,
+  consumeStaffGoogleLoginIntent,
+  hasStaffGoogleLoginIntent,
+} from "@/lib/staffGoogleLoginIntent";
 
 /** Login da equipa — e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
@@ -52,9 +57,16 @@ const StaffEmailLoginScreen = () => {
   const [googleStatus, setGoogleStatus] = useState<StaffGoogleLoginStatus | null>(null);
   const [googleStatusLoading, setGoogleStatusLoading] = useState(false);
 
+  const googleFlowActive =
+    hasStaffGoogleLoginIntent() || googleStatusLoading || googleStatus === "pending" || googleStatus === "rejected";
+
   useEffect(() => {
-    if (authLoading || roleLoading || !user || !roleData?.role) return;
-    const role = roleData.role as StaffRole;
+    if (authLoading || roleLoading || !user) return;
+    if (googleFlowActive) return;
+
+    const role = roleData?.role as StaffRole | undefined;
+    if (!role) return;
+
     if (canAccessDeliveryPanel(role) && role === "delivery") {
       navigate(resolveStaffLoginDestination(role), { replace: true });
       return;
@@ -62,19 +74,11 @@ const StaffEmailLoginScreen = () => {
     if (canAccessPanel(role) || role === "admin_master" || role === "seller") {
       navigate(resolveStaffLoginDestination(role), { replace: true });
     }
-  }, [authLoading, roleLoading, user, roleData?.role, navigate]);
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, googleFlowActive]);
 
   useEffect(() => {
-    if (authLoading || roleLoading || !user || roleData?.role) {
-      setGoogleStatus(null);
-      return;
-    }
-
-    if (!userSignedInWithGoogle(user) && !hasStaffGoogleLoginIntent()) {
-      setGoogleStatus(null);
-      return;
-    }
-
+    if (authLoading || roleLoading || !user) return;
+    if (!userSignedInWithGoogle(user) && !hasStaffGoogleLoginIntent()) return;
     if (storeLoading) return;
 
     let cancelled = false;
@@ -83,13 +87,21 @@ const StaffEmailLoginScreen = () => {
     void (async () => {
       try {
         const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
-        consumeStaffGoogleLoginIntent();
+        const alreadyAtStore = await userHasRoleAtStore(user.id, resolvedStoreId);
+        if (alreadyAtStore) {
+          consumeStaffGoogleLoginIntent();
+          if (!cancelled) setGoogleStatus("active");
+          return;
+        }
+
         const result = await registerStaffGoogleLogin(resolvedStoreId);
+        consumeStaffGoogleLoginIntent();
         if (!cancelled) setGoogleStatus(result.status);
       } catch (e) {
         if (!cancelled) {
           setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
           setGoogleStatus(null);
+          clearStaffGoogleLoginIntent();
         }
       } finally {
         if (!cancelled) setGoogleStatusLoading(false);
@@ -99,7 +111,14 @@ const StaffEmailLoginScreen = () => {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, roleLoading, user, roleData?.role, storeId, lang]);
+  }, [authLoading, roleLoading, user, storeId, storeLoading, lang]);
+
+  useEffect(() => {
+    if (!user || googleStatusLoading || googleStatus !== "active") return;
+    const role = roleData?.role as StaffRole | undefined;
+    if (!role) return;
+    navigate(resolveStaffLoginDestination(role), { replace: true });
+  }, [user, googleStatusLoading, googleStatus, roleData?.role, navigate]);
 
   const handleLogin = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -147,20 +166,25 @@ const StaffEmailLoginScreen = () => {
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);
       setGoogleSubmitting(false);
+      clearStaffGoogleLoginIntent();
     }
   };
 
-  if (authLoading || (user && roleLoading) || (user && userSignedInWithGoogle(user) && googleStatusLoading)) {
+  if (authLoading || (user && roleLoading) || (user && googleFlowActive && googleStatusLoading)) {
     return (
       <StaffAuthWaitingScreen
-        title={user && userSignedInWithGoogle(user) ? copy.googleReturning : copy.loading}
-        message={user && userSignedInWithGoogle(user) ? copy.googlePendingHint : undefined}
+        title={copy.googleReturning}
+        message={copy.googlePendingHint}
       />
     );
   }
 
-  if (user && !roleData?.role && userSignedInWithGoogle(user) && googleStatus) {
-    return <StaffPendingApprovalScreen status={googleStatus} email={user.email} />;
+  if (user && googleStatus === "pending") {
+    return <StaffPendingApprovalScreen status="pending" email={user.email} />;
+  }
+
+  if (user && googleStatus === "rejected") {
+    return <StaffPendingApprovalScreen status="rejected" email={user.email} />;
   }
 
   return (
