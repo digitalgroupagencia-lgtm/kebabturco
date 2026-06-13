@@ -67,6 +67,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   const [advancing, setAdvancing] = useState(false);
   const [payingNow, setPayingNow] = useState(false);
   const isPending = order.status === "pending";
+  const canCancel = order.status === "pending" || order.status === "preparing";
   const borderClass = compactCardBorderClass(order.status);
   const isDelivery = isDeliveryOrder(order);
   const awaitingDriver = isDelivery && order.status === "ready" && order.assigned_driver_id;
@@ -181,7 +182,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
               >
                 {advancing ? "…" : actionLabel}
               </Button>
-              {isPending && (
+              {canCancel && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -198,24 +199,42 @@ const OpsOrderCard = memo(function OpsOrderCard({
             </div>
           )}
           {canQuickPay && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full h-8 font-bold text-[11px] touch-action-manipulation border-green-600/60 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400"
-              disabled={payingNow}
-              onClick={async (e) => {
-                e.stopPropagation();
-                setPayingNow(true);
-                try {
-                  await onMarkPaid!(order, "cash");
-                } finally {
-                  setPayingNow(false);
-                }
-              }}
-            >
-              <Banknote className="h-3 w-3 mr-1" />
-              {payingNow ? t("ops.card.registering") : `${t("ops.card.confirm_payment")} €${Number(order.total).toFixed(2)}`}
-            </Button>
+            <div className={action ? "space-y-1" : "flex gap-1"}>
+              <Button
+                size="sm"
+                variant="outline"
+                className={`h-8 font-bold text-[11px] touch-action-manipulation border-green-600/60 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400 ${
+                  action ? "w-full" : "flex-1"
+                }`}
+                disabled={payingNow}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setPayingNow(true);
+                  try {
+                    await onMarkPaid!(order, "cash");
+                  } finally {
+                    setPayingNow(false);
+                  }
+                }}
+              >
+                <Banknote className="h-3 w-3 mr-1" />
+                {payingNow ? t("ops.card.registering") : `${t("ops.card.confirm_payment")} €${Number(order.total).toFixed(2)}`}
+              </Button>
+              {!action && canCancel && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCancel(order.id);
+                  }}
+                  aria-label={t("ops.card.cancel")}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}

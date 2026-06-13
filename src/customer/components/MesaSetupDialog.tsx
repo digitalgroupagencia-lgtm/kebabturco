@@ -1,9 +1,8 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, lazy, Suspense } from "react";
 import { Hash, QrCode, UtensilsCrossed } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { parseMesaQrToken } from "@/lib/mesaQrScan";
-import { openTableSessionOnScan } from "@/services/tableSessionService";
+import { openTableSessionOnScan, resolveTableByQrToken, resolveTableByNumber } from "@/services/tableSessionService";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import MesaQrScanner from "@/customer/components/MesaQrScanner";
+
+const MesaQrScanner = lazy(() => import("@/customer/components/MesaQrScanner"));
 
 type MesaSetupDialogProps = {
   open: boolean;
@@ -47,14 +47,9 @@ const MesaSetupDialog = ({
 
   const resolveTableByToken = async (token: string) => {
     if (!storeId) return null;
-    const { data } = await supabase
-      .from("tables")
-      .select("id, number")
-      .eq("store_id", storeId)
-      .eq("qr_token", token)
-      .eq("is_active", true)
-      .maybeSingle();
-    return data;
+    const resolved = await resolveTableByQrToken(storeId, token);
+    if (!resolved) return null;
+    return { id: resolved.table_id, number: resolved.table_number };
   };
 
   const handleQrDetected = useCallback(
@@ -104,21 +99,15 @@ const MesaSetupDialog = ({
 
     setLoading(true);
     setError(null);
-    const { data } = await supabase
-      .from("tables")
-      .select("id, number")
-      .eq("store_id", storeId)
-      .eq("number", trimmed)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    setLoading(false);
-    if (!data) {
+    const resolved = await resolveTableByNumber(storeId, trimmed);
+    if (!resolved) {
+      setLoading(false);
       setError(t("mesaManualNotFound"));
       return;
     }
 
-    onManualConfirm(data.number, data.id);
+    setLoading(false);
+    onManualConfirm(resolved.table_number, resolved.table_id);
     setManualNumber("");
     setError(null);
   };
@@ -147,7 +136,15 @@ const MesaSetupDialog = ({
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.22em] text-primary/80">
               {t("mesaQrScanLabel")}
             </p>
-            <MesaQrScanner active={open} onDetected={(raw) => void handleQrDetected(raw)} />
+            <Suspense
+              fallback={
+                <div className="flex min-h-[220px] items-center justify-center rounded-[24px] border-2 border-primary/25 bg-black/90 text-xs font-semibold text-white">
+                  {t("mesaQrStarting")}
+                </div>
+              }
+            >
+              <MesaQrScanner active={open} onDetected={(raw) => void handleQrDetected(raw)} />
+            </Suspense>
             {qrLoading ? (
               <p className="text-center text-xs font-medium text-muted-foreground">{t("mesaQrValidating")}</p>
             ) : null}

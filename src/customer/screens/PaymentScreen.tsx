@@ -330,8 +330,7 @@ const PaymentScreen = () => {
     };
   };
 
-  const tablePayReady = checkoutMethods.length > 0;
-  const canFinalize = checkoutMethods.length > 0 && Boolean(selected) && !processing && !stripeClientSecret;
+  const payButtonReady = checkoutMethods.length > 0 && !processing && !stripeClientSecret;
 
   useEffect(() => {
     if (checkoutMethods.length === 0) {
@@ -344,14 +343,17 @@ const PaymentScreen = () => {
       }
       const cardMethod = checkoutMethods.find((m) => m.id === "card");
       if (cardMethod) return "card";
-      if (checkoutMethods.length === 1) return checkoutMethods[0].id;
-      return null;
+      return checkoutMethods[0]?.id ?? null;
     });
   }, [checkoutMethods]);
 
   const validateDetailsStep = () => {
     if (!orderType) { setShowError("method"); return false; }
-    if (isTableOrder) return true;
+    if (isTableOrder) {
+      if (!mesaValidated) { setShowError("table"); return false; }
+      if (!isValidCustomerPhone(phoneDialCode, customerPhone)) { setShowError("phone"); return false; }
+      return true;
+    }
     if (!customerName.trim() || customerName.trim().length < 2) { setShowError("name"); return false; }
     if (!isValidCustomerPhone(phoneDialCode, customerPhone)) { setShowError("phone"); return false; }
     if (orderType === "delivery") {
@@ -371,15 +373,16 @@ const PaymentScreen = () => {
     setCheckoutStep("payment");
   };
 
-  const validate = () => {
+  const validate = (methodOverride?: PaymentMethodId) => {
     if (!validateDetailsStep()) return false;
     if (checkoutMethods.length === 0) { setShowError("method"); return false; }
-    if (!selected) { setShowError("method"); return false; }
-    if (prepaymentRequired && selected !== "card" && selected !== "bizum") {
+    const method = methodOverride ?? selected;
+    if (!method) { setShowError("method"); return false; }
+    if (prepaymentRequired && method !== "card" && method !== "bizum") {
       setShowError("method");
       return false;
     }
-    if ((selected === "card" || selected === "bizum") && !stripePublishableKey) {
+    if ((method === "card" || method === "bizum") && !stripePublishableKey) {
       setPaymentError(stripeIssue || "Pagamento online indisponível neste momento.");
       setShowError("method");
       return false;
@@ -806,8 +809,25 @@ const PaymentScreen = () => {
     return result;
   };
 
-  const confirm = async () => {
-    if (processing || !validate() || !selected) return;
+  const handlePayClick = () => {
+    if (processing || stripeClientSecret) return;
+    if (!checkoutMethods.length) {
+      setShowError("method");
+      return;
+    }
+    const method = selected ?? checkoutMethods[0]?.id ?? null;
+    if (!method) {
+      setShowError("method");
+      setPaymentError(t("checkoutPickPayment"));
+      return;
+    }
+    if (!selected) setSelected(method);
+    void confirm(method);
+  };
+
+  const confirm = async (methodOverride?: PaymentMethodId) => {
+    const method = methodOverride ?? selected;
+    if (processing || !validate(method) || !method) return;
 
     if (!openStatus.open) {
       setClosedDialog(true);
@@ -817,7 +837,7 @@ const PaymentScreen = () => {
 
 
 
-    if (selected === "card" || selected === "bizum") {
+    if (method === "card" || method === "bizum") {
       if (!stripePublishableKey) {
         setPaymentError(stripeIssue || "Pagamento online indisponível neste momento.");
         setShowError("method");
@@ -826,13 +846,13 @@ const PaymentScreen = () => {
       setProcessing(true);
       setPaymentError(null);
       try {
-        await startStripePayment(selected);
+        await startStripePayment(method);
       } catch (e) {
         console.error(e);
         setPaymentError(
           e instanceof Error
             ? e.message
-            : selected === "bizum"
+            : method === "bizum"
               ? "Não foi possível abrir o pagamento Bizum."
               : "Não foi possível abrir o pagamento com cartão.",
         );
@@ -851,7 +871,7 @@ const PaymentScreen = () => {
     setProcessing(true);
     try {
       await finishOrder({
-        paymentMethod: selected,
+        paymentMethod: method,
         paymentStatus: "pending",
       });
     } finally {
@@ -1351,8 +1371,8 @@ const PaymentScreen = () => {
           ) : (
             <button
               type="button"
-              onClick={confirm}
-              disabled={!canFinalize}
+              onClick={handlePayClick}
+              disabled={!payButtonReady}
               className="w-full flex items-center justify-between gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base disabled:opacity-40 touch-action-manipulation"
             >
               <span className="flex items-center gap-2">

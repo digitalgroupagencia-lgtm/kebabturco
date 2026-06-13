@@ -339,7 +339,7 @@ const OpsOrderDetailSheet = ({
             </Button>
           )}
 
-          {order.status === "pending" && (
+          {(order.status === "pending" || order.status === "preparing") && (
             <Button
               variant="destructive"
               className="w-full h-10 touch-action-manipulation"

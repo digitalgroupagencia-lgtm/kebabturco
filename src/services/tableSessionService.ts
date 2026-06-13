@@ -2,6 +2,20 @@ import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 
 const supabase = _supabaseRaw as unknown as {
   rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  from: (table: string) => {
+    select: (cols: string) => {
+      eq: (col: string, val: string | boolean) => {
+        eq: (col: string, val: string | boolean) => {
+          eq: (col: string, val: string | boolean) => {
+            maybeSingle: () => Promise<{
+              data: { id: string; number: string } | null;
+              error: { message: string } | null;
+            }>;
+          };
+        };
+      };
+    };
+  };
 };
 
 export type PublicTableBinding = {
@@ -15,6 +29,61 @@ export type PublicTableBinding = {
   pending_payment_count?: number;
   active_order_count?: number;
 };
+
+export type ResolvedTableByQr = {
+  table_id: string;
+  table_number: string;
+};
+
+export async function resolveTableByNumber(
+  storeId: string,
+  tableNumber: string,
+): Promise<ResolvedTableByQr | null> {
+  const number = tableNumber.trim();
+  if (!number) return null;
+
+  const { data, error } = await supabase
+    .from("tables")
+    .select("id, number")
+    .eq("store_id", storeId)
+    .eq("number", number)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return { table_id: data.id, table_number: data.number };
+}
+
+export async function resolveTableByQrToken(
+  storeId: string,
+  qrToken: string,
+): Promise<ResolvedTableByQr | null> {
+  const token = qrToken.trim();
+  if (!token) return null;
+
+  try {
+    const binding = await fetchPublicTableBinding(storeId, token, null);
+    if (binding.table_id && binding.table_number) {
+      return { table_id: binding.table_id, table_number: binding.table_number };
+    }
+    if (binding.reason === "invalid_token" || binding.reason === "missing_params") {
+      return null;
+    }
+  } catch {
+    /* RPC em falta ou rede — tenta leitura directa */
+  }
+
+  const { data, error } = await supabase
+    .from("tables")
+    .select("id, number")
+    .eq("store_id", storeId)
+    .eq("qr_token", token)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return { table_id: data.id, table_number: data.number };
+}
 
 export async function fetchPublicTableBinding(
   storeId: string,
@@ -35,8 +104,25 @@ export async function openTableSessionOnScan(storeId: string, qrToken: string) {
     _store_id: storeId,
     _qr_token: qrToken,
   });
-  if (error) throw new Error(error.message);
-  return data as { session_id: string; table_number: string; table_id: string };
+  if (!error && data) {
+    return data as { session_id: string; table_number: string; table_id: string };
+  }
+
+  const table = await resolveTableByQrToken(storeId, qrToken);
+  if (!table) throw new Error(error?.message || "QR da mesa inválido ou inactivo");
+
+  const legacy = await supabase.rpc("open_or_get_table_session_public", {
+    _store_id: storeId,
+    _table_number: table.table_number,
+    _table_id: table.table_id,
+  });
+  if (legacy.error) throw new Error(legacy.error.message);
+
+  return {
+    session_id: String(legacy.data),
+    table_number: table.table_number,
+    table_id: table.table_id,
+  };
 }
 
 export async function markTableSessionPaid(sessionId: string, paymentMethod = "cash") {

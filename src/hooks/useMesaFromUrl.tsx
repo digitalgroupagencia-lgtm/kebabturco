@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
-const supabase = _supabaseRaw as unknown as any;
 import {
   loadSavedMesaToken,
   saveSavedMesaToken,
@@ -10,7 +8,11 @@ import {
   loadSavedMesaSessionId,
   clearMesaBindingStorage,
 } from "@/lib/customerSession";
-import { openTableSessionOnScan, fetchPublicTableBinding } from "@/services/tableSessionService";
+import {
+  openTableSessionOnScan,
+  fetchPublicTableBinding,
+  resolveTableByQrToken,
+} from "@/services/tableSessionService";
 
 export interface MesaFromUrl {
   mesaNumber: string;
@@ -90,17 +92,17 @@ export function useMesaFromUrl(storeId: string | null) {
 
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("tables")
-        .select("id, number, is_active, qr_token")
-        .eq("store_id", storeId)
-        .eq("qr_token", token)
-        .eq("is_active", true)
-        .maybeSingle();
+      const resolved = await resolveTableByQrToken(storeId, token);
 
       if (!active) return;
 
-      if (data) {
+      if (resolved) {
+        const data = {
+          id: resolved.table_id,
+          number: resolved.table_number,
+          qr_token: token,
+        };
+
         if (tableHint && tableHint !== data.number) {
           clearMesaBindingStorage();
           setMesa(null);
@@ -123,7 +125,7 @@ export function useMesaFromUrl(storeId: string | null) {
         setMesa({
           mesaNumber: data.number,
           tableId: data.id,
-          qrToken: data.qr_token,
+          qrToken: token,
           locked: true,
           scanLang,
         });

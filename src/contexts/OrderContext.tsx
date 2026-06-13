@@ -361,6 +361,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (qrLang && ["pt", "en", "es", "fr"].includes(qrLang)) {
         saveSavedLang(qrLang as "pt" | "en" | "es" | "fr");
       }
+      const scannedFromUrl = Boolean(new URLSearchParams(window.location.search).get("t")?.trim());
+      if (scannedFromUrl) {
+        setScreen("home");
+      }
       return;
     }
     if (!loadSavedMesaToken()) {
@@ -368,7 +372,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setMesaTableId(null);
       setMesaQrToken(null);
     }
-  }, [mesa, mesaLoading, setOrderType]);
+  }, [mesa, mesaLoading, setOrderType, setScreen]);
 
   const handleMesaSessionClosed = useCallback(() => {
     setMesaLocked(false);

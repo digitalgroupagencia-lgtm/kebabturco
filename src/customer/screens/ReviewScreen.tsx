@@ -39,6 +39,7 @@ const ReviewScreen = () => {
     setEditingCartItemId,
     setSelectedCategory,
     tableNumber,
+    mesaTableId,
     clearMesaLock,
   } = useOrder();
   const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType, clearOrderType } = useCart();
@@ -89,13 +90,29 @@ const ReviewScreen = () => {
     if (removeItemId) removeItem(removeItemId);
     setRemoveItemId(null);
   };
-  const canCheckout = items.length > 0 && !!orderType;
+  const needsMesa =
+    orderType === "here" && !mesaTableId && !tableNumber.trim();
+  const canCheckout =
+    items.length > 0 && !!orderType && !needsMesa;
+  const checkoutHint = !orderType
+    ? t("checkoutNeedOrderType")
+    : needsMesa
+      ? t("checkoutNeedMesa")
+      : null;
 
   useEffect(() => {
     if (orderType) return;
     const saved = loadSavedOrderType();
     if (saved) setOrderType(saved);
   }, [orderType, setOrderType]);
+
+  const handleGoToPayment = () => {
+    if (!orderType || needsMesa) {
+      setScreen("orderType");
+      return;
+    }
+    setScreen("payment");
+  };
 
   const pickLang = (m?: LangMap) => (m && (m[lang] || m.es || m.pt || m.en || m.fr)) || "";
 
@@ -407,12 +424,19 @@ const ReviewScreen = () => {
             </span>
           </div>
 
+          {checkoutHint ? (
+            <p className="mb-2 rounded-xl bg-amber-500/10 px-3 py-2 text-center text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+              {checkoutHint}
+            </p>
+          ) : null}
           <button
-            onClick={() => canCheckout && setScreen("payment")}
-            disabled={!canCheckout}
-            className="flex w-full touch-action-manipulation items-center justify-between gap-2 rounded-2xl bg-gradient-cta px-4 py-2.5 text-[14px] font-black uppercase tracking-wide text-success-foreground shadow-cta transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+            type="button"
+            onClick={handleGoToPayment}
+            className={`flex w-full touch-action-manipulation items-center justify-between gap-2 rounded-2xl bg-gradient-cta px-4 py-2.5 text-[14px] font-black uppercase tracking-wide text-success-foreground shadow-cta transition-transform active:scale-[0.98] ${
+              canCheckout ? "" : "opacity-95"
+            }`}
           >
-            <span>{t("goToPayment")}</span>
+            <span>{canCheckout ? t("goToPayment") : orderType ? t("checkoutNeedMesa") : t("startOrder")}</span>
             <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={3} />
           </button>
         </div>
