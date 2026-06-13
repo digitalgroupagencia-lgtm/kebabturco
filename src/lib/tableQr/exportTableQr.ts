@@ -106,12 +106,14 @@ export async function renderTableQrCardCanvas(input: TableQrExportInput, scale =
   ctx.fillStyle = COLORS.red;
   ctx.font = "900 13px system-ui, -apple-system, sans-serif";
   ctx.fillText(labels.tableWord, CARD_W / 2, y);
-  y += 36;
+  y += 18;
 
   ctx.fillStyle = COLORS.text;
   ctx.font = "900 52px system-ui, -apple-system, sans-serif";
+  ctx.textBaseline = "top";
   ctx.fillText(input.tableNumber, CARD_W / 2, y);
-  y += 24;
+  ctx.textBaseline = "alphabetic";
+  y += 68;
 
   ctx.strokeStyle = COLORS.gold;
   ctx.lineWidth = 1.5;

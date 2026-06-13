@@ -39,8 +39,9 @@ const ReviewScreen = () => {
     setEditingCartItemId,
     setSelectedCategory,
     tableNumber,
+    clearMesaLock,
   } = useOrder();
-  const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType } = useCart();
+  const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType, clearOrderType } = useCart();
 
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
@@ -210,8 +211,23 @@ const ReviewScreen = () => {
                 <p className="text-xs font-semibold text-muted-foreground mt-1">{t("deliverySub")}</p>
               ) : null}
             </div>
+            {orderType && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (orderType === "here") clearMesaLock();
+                  else clearOrderType();
+                  setScreen("orderType");
+                }}
+                aria-label={t("changeModality") || "Cambiar modalidad"}
+                className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </section>
+
 
         {/* Items */}
         <div className="flex flex-col gap-2.5">
