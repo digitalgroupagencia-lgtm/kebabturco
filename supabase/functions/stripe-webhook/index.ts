@@ -184,11 +184,11 @@ async function recordDisputeLedgerForStore(
   }
 }
 
-function resolveWebhookContext(body: string, signature: string): {
+async function resolveWebhookContext(body: string, signature: string): Promise<{
   stripe: Stripe;
   event: Stripe.Event;
   mode: "live" | "test";
-} | null {
+} | null> {
   const candidates: Array<{ key: string; secret: string }> = [];
   const liveKey = getStripeSecretKey();
   const testKey = getStripeSecretKeyTest();
@@ -205,9 +205,18 @@ function resolveWebhookContext(body: string, signature: string): {
   }
 
   for (const { key, secret } of candidates) {
-    const stripe = new Stripe(key, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(key, {
+      apiVersion: "2023-10-16",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
     try {
-      const event = stripe.webhooks.constructEvent(body, signature, secret);
+      const event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        secret,
+        undefined,
+        Stripe.createSubtleCryptoProvider(),
+      );
       return { stripe, event, mode: stripeKeyMode(key) };
     } catch {
       /* try next secret */
