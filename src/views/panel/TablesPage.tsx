@@ -28,7 +28,7 @@ import {
 import { getTableQrUrl, type TenantUrlConfig } from "@/lib/tenantUrls";
 import { regenerateTableQrToken } from "@/services/orderService";
 import PremiumTableQrPreview from "@/components/tableQr/PremiumTableQrPreview";
-import { downloadTableQrPng, printTableQrCards, type TableQrExportInput } from "@/lib/tableQr/exportTableQr";
+import { downloadTableQrPng, downloadTableQrPdf, downloadTableQrZip, type TableQrExportInput } from "@/lib/tableQr/exportTableQr";
 import { normalizeTableQrLang, type TableQrBranding } from "@/lib/tableQr/labels";
 
 type TableRow = {
@@ -240,20 +240,49 @@ const TablesPage = () => {
   };
 
   const printPremiumQr = async (table: TableRow) => {
-    await printTableQrCards([exportInput(table)], `${t("tables.table_n")} ${table.number}`);
+    try {
+      await downloadTableQrPdf(
+        [exportInput(table)],
+        `${branding.restaurantName}-mesa-${table.number}.pdf`,
+      );
+      toast.success(t("tables.toast.pdf_ok").replace("{n}", table.number));
+    } catch {
+      toast.error(t("tables.toast.pdf_error"));
+    }
   };
 
-  const downloadAllPremium = async () => {
+  const downloadAllPremiumPdf = async () => {
     const active = tables.filter((t) => t.is_active);
     if (!active.length) {
       toast.error(t("tables.toast.no_active"));
       return;
     }
-    await printTableQrCards(
-      active.map(exportInput),
-      `QR Codes — ${branding.restaurantName}`,
-    );
-    toast.success(t("tables.toast.batch_ready").replace("{n}", String(active.length)));
+    try {
+      await downloadTableQrPdf(
+        active.map(exportInput),
+        `QR Codes — ${branding.restaurantName}.pdf`,
+      );
+      toast.success(t("tables.toast.batch_pdf_ready").replace("{n}", String(active.length)));
+    } catch {
+      toast.error(t("tables.toast.pdf_error"));
+    }
+  };
+
+  const downloadAllPremiumZip = async () => {
+    const active = tables.filter((t) => t.is_active);
+    if (!active.length) {
+      toast.error(t("tables.toast.no_active"));
+      return;
+    }
+    try {
+      await downloadTableQrZip(
+        active.map(exportInput),
+        `QR Codes — ${branding.restaurantName}.zip`,
+      );
+      toast.success(t("tables.toast.batch_zip_ready").replace("{n}", String(active.length)));
+    } catch {
+      toast.error(t("tables.toast.zip_error"));
+    }
   };
 
   if (storeLoading || loading) {
@@ -276,9 +305,14 @@ const TablesPage = () => {
         subtitle={t("tables.subtitle").replace("{lang}", primaryLang.toUpperCase())}
         actions={
           tables.some((t) => t.is_active) ? (
-            <Button variant="outline" size="sm" className="h-9 gap-2" onClick={downloadAllPremium}>
-              <Printer className="h-4 w-4" /> {t("tables.print_all")}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="h-9 gap-2" onClick={downloadAllPremiumPdf}>
+                <Printer className="h-4 w-4" /> {t("tables.print_all")}
+              </Button>
+              <Button variant="outline" size="sm" className="h-9 gap-2" onClick={downloadAllPremiumZip}>
+                <Download className="h-4 w-4" /> {t("tables.zip_all")}
+              </Button>
+            </div>
           ) : null
         }
       />

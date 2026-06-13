@@ -22,6 +22,7 @@ const staffLoginCopy = {
     googleDivider: "o",
     googleButton: "Entrar con Google",
     googleSubmitting: "Abriendo Google…",
+    googleReturning: "Validando el acceso…",
     googlePendingTitle: "Esperando aprobación",
     googlePendingBody:
       "Entró con Google correctamente. El restaurante debe asignarle un perfil en Equipo antes de abrir el panel.",
@@ -46,6 +47,7 @@ const staffLoginCopy = {
     googleDivider: "ou",
     googleButton: "Entrar com Google",
     googleSubmitting: "A abrir Google…",
+    googleReturning: "A validar o acesso…",
     googlePendingTitle: "À espera de aprovação",
     googlePendingBody:
       "Entrou com Google com sucesso. O restaurante tem de lhe atribuir uma função em Equipa antes de abrir o painel.",
@@ -70,6 +72,7 @@ const staffLoginCopy = {
     googleDivider: "or",
     googleButton: "Sign in with Google",
     googleSubmitting: "Opening Google…",
+    googleReturning: "Verifying access…",
     googlePendingTitle: "Waiting for approval",
     googlePendingBody:
       "You signed in with Google. The restaurant must assign your role in Team before you can open the panel.",

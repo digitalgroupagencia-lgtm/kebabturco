@@ -1,7 +1,7 @@
-import { QRCodeCanvas } from "qrcode.react";
-import { createElement } from "react";
-import { createRoot } from "react-dom/client";
-import { TABLE_QR_LABELS, type TableQrBranding, type TableQrLang, normalizeTableQrLang } from "./labels";
+import QRCode from "qrcode";
+import { jsPDF } from "jspdf";
+import JSZip from "jszip";
+import { TABLE_QR_LABELS, type TableQrBranding, normalizeTableQrLang } from "./labels";
 
 export type TableQrExportInput = {
   tableNumber: string;
@@ -53,28 +53,14 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
+/** Gera QR de forma fiável (sem depender do React no DOM). */
 async function renderQrDataUrl(url: string): Promise<string> {
-  const host = document.createElement("div");
-  host.style.position = "fixed";
-  host.style.left = "-9999px";
-  document.body.appendChild(host);
-  const root = createRoot(host);
-  root.render(
-    createElement(QRCodeCanvas, {
-      value: url,
-      size: QR_SIZE,
-      level: "H",
-      includeMargin: true,
-      bgColor: "#ffffff",
-      fgColor: "#111111",
-    }),
-  );
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  const canvas = host.querySelector("canvas");
-  const dataUrl = canvas?.toDataURL("image/png") || "";
-  root.unmount();
-  host.remove();
-  return dataUrl;
+  return QRCode.toDataURL(url, {
+    width: QR_SIZE,
+    margin: 2,
+    errorCorrectionLevel: "H",
+    color: { dark: "#111111", light: "#ffffff" },
+  });
 }
 
 export async function renderTableQrCardCanvas(input: TableQrExportInput, scale = 2): Promise<HTMLCanvasElement> {
@@ -88,7 +74,6 @@ export async function renderTableQrCardCanvas(input: TableQrExportInput, scale =
 
   ctx.scale(scale, scale);
 
-  // Outer premium frame
   drawRoundedRect(ctx, 8, 8, CARD_W - 16, CARD_H - 16, 28);
   ctx.fillStyle = COLORS.bg;
   ctx.fill();
@@ -96,14 +81,12 @@ export async function renderTableQrCardCanvas(input: TableQrExportInput, scale =
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Inner card
   drawRoundedRect(ctx, 20, 20, CARD_W - 40, CARD_H - 40, 24);
   ctx.fillStyle = COLORS.card;
   ctx.fill();
 
   ctx.textAlign = "center";
 
-  // Logo
   let y = 52;
   if (input.branding.logoUrl) {
     const logo = await loadImage(input.branding.logoUrl);
@@ -130,7 +113,6 @@ export async function renderTableQrCardCanvas(input: TableQrExportInput, scale =
   ctx.fillText(input.tableNumber, CARD_W / 2, y);
   y += 24;
 
-  // Gold divider
   ctx.strokeStyle = COLORS.gold;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -141,33 +123,34 @@ export async function renderTableQrCardCanvas(input: TableQrExportInput, scale =
 
   const qrDataUrl = await renderQrDataUrl(input.url);
   const qrImg = await loadImage(qrDataUrl);
-  if (qrImg) {
-    const qrX = CARD_W / 2 - QR_SIZE / 2;
-    const qrY = y;
-    drawRoundedRect(ctx, qrX - 8, qrY - 8, QR_SIZE + 16, QR_SIZE + 16, 16);
-    ctx.fillStyle = "#fafafa";
-    ctx.fill();
-    ctx.strokeStyle = "#e8e8e8";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.drawImage(qrImg, qrX, qrY, QR_SIZE, QR_SIZE);
-
-    // Center badge on QR
-    const badgeW = 52;
-    const badgeH = 36;
-    const bx = CARD_W / 2 - badgeW / 2;
-    const by = qrY + QR_SIZE / 2 - badgeH / 2;
-    drawRoundedRect(ctx, bx, by, badgeW, badgeH, 10);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-    ctx.strokeStyle = COLORS.gold;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = COLORS.red;
-    ctx.font = "900 18px system-ui, -apple-system, sans-serif";
-    ctx.fillText(input.tableNumber, CARD_W / 2, by + 24);
-    y = qrY + QR_SIZE + 28;
+  if (!qrImg) {
+    throw new Error("Não foi possível gerar o código QR");
   }
+
+  const qrX = CARD_W / 2 - QR_SIZE / 2;
+  const qrY = y;
+  drawRoundedRect(ctx, qrX - 8, qrY - 8, QR_SIZE + 16, QR_SIZE + 16, 16);
+  ctx.fillStyle = "#fafafa";
+  ctx.fill();
+  ctx.strokeStyle = "#e8e8e8";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.drawImage(qrImg, qrX, qrY, QR_SIZE, QR_SIZE);
+
+  const badgeW = 52;
+  const badgeH = 36;
+  const bx = CARD_W / 2 - badgeW / 2;
+  const by = qrY + QR_SIZE / 2 - badgeH / 2;
+  drawRoundedRect(ctx, bx, by, badgeW, badgeH, 10);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.strokeStyle = COLORS.gold;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = COLORS.red;
+  ctx.font = "900 18px system-ui, -apple-system, sans-serif";
+  ctx.fillText(input.tableNumber, CARD_W / 2, by + 24);
+  y = qrY + QR_SIZE + 28;
 
   ctx.fillStyle = COLORS.text;
   ctx.font = "700 16px system-ui, -apple-system, sans-serif";
@@ -176,32 +159,116 @@ export async function renderTableQrCardCanvas(input: TableQrExportInput, scale =
   return canvas;
 }
 
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Falha ao exportar imagem"));
+    }, "image/png");
+  });
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function sanitizeFilenamePart(value: string): string {
+  return value.replace(/[^\w\-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "mesa";
+}
+
+async function renderAllCards(inputs: TableQrExportInput[], scale = 3): Promise<HTMLCanvasElement[]> {
+  const out: HTMLCanvasElement[] = [];
+  for (const input of inputs) {
+    out.push(await renderTableQrCardCanvas(input, scale));
+  }
+  return out;
+}
+
 export async function downloadTableQrPng(input: TableQrExportInput, filename: string) {
   const canvas = await renderTableQrCardCanvas(input, 3);
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }, "image/png");
+  const blob = await canvasToBlob(canvas);
+  triggerDownload(blob, filename);
+}
+
+/** PDF multi-página — uma mesa por folha A4, pronto para gráfica. */
+export async function downloadTableQrPdf(inputs: TableQrExportInput[], filename: string) {
+  if (!inputs.length) return;
+
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = 210;
+  const pageH = 297;
+  const margin = 10;
+  const maxW = pageW - margin * 2;
+  const maxH = pageH - margin * 2;
+  const cardAspect = CARD_W / CARD_H;
+
+  const canvases = await renderAllCards(inputs, 3);
+
+  canvases.forEach((canvas, index) => {
+    if (index > 0) pdf.addPage();
+
+    let w = maxW;
+    let h = w / cardAspect;
+    if (h > maxH) {
+      h = maxH;
+      w = h * cardAspect;
+    }
+    const x = (pageW - w) / 2;
+    const y = (pageH - h) / 2;
+    const imgData = canvas.toDataURL("image/png");
+    pdf.addImage(imgData, "PNG", x, y, w, h, undefined, "FAST");
+  });
+
+  pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+}
+
+/** ZIP com um PNG por mesa — mesmo visual do download individual. */
+export async function downloadTableQrZip(inputs: TableQrExportInput[], filename: string) {
+  if (!inputs.length) return;
+
+  const zip = new JSZip();
+  const base = sanitizeFilenamePart(inputs[0]?.branding.restaurantName ?? "restaurante");
+  const canvases = await renderAllCards(inputs, 3);
+
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    const blob = await canvasToBlob(canvases[i]);
+    zip.file(`${base}-mesa-${input.tableNumber}.png`, blob);
+  }
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  triggerDownload(zipBlob, filename.endsWith(".zip") ? filename : `${filename}.zip`);
 }
 
 export async function printTableQrCards(inputs: TableQrExportInput[], title: string) {
-  const canvases = await Promise.all(inputs.map((input) => renderTableQrCardCanvas(input, 2)));
+  const canvases = await renderAllCards(inputs, 3);
   const images = canvases.map((c) => c.toDataURL("image/png"));
   const w = window.open("", "_blank");
-  if (!w) return;
+  if (!w) {
+    await downloadTableQrPdf(inputs, `${title}.pdf`);
+    return;
+  }
+
   const pages = images
     .map(
       (src) =>
-        `<section style="page-break-after:always;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px"><img src="${src}" alt="QR" style="width:min(92vw,480px);height:auto"/></section>`,
+        `<section style="page-break-after:always;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:0;margin:0"><img src="${src}" alt="QR mesa" width="${CARD_W}" height="${CARD_H}" style="width:${CARD_W}px;height:${CARD_H}px;max-width:100%;object-fit:contain"/></section>`,
     )
     .join("");
+
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
-<style>@page{margin:12mm}body{margin:0;font-family:system-ui,sans-serif;background:#fff}</style></head>
-<body>${pages}<script>setTimeout(()=>window.print(),600)</script></body></html>`);
+<style>
+  @page { size: A4 portrait; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; font-family: system-ui, sans-serif; background: #fff; }
+  section:last-child { page-break-after: auto; }
+  img { display: block; }
+</style></head>
+<body>${pages}<script>window.onload = () => setTimeout(() => window.print(), 400);</script></body></html>`);
   w.document.close();
 }
 

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
@@ -17,6 +16,7 @@ import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import StaffPendingApprovalScreen from "@/components/staff/StaffPendingApprovalScreen";
+import StaffAuthWaitingScreen from "@/components/staff/StaffAuthWaitingScreen";
 import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 import { nav } from "@/lib/navPaths";
 import {
@@ -133,31 +133,27 @@ const StaffEmailLoginScreen = () => {
 
     try {
       const redirectUri = `${window.location.origin}${nav.staff()}`;
-      try {
-        const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: redirectUri });
-        if (result.error) throw result.error;
-      } catch {
-        const { error: oauthError } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: redirectUri },
-        });
-        if (oauthError) throw oauthError;
-      }
+      const googleLang = lang === "pt" ? "pt" : lang === "en" ? "en" : "es";
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUri,
+          queryParams: { hl: googleLang },
+        },
+      });
+      if (oauthError) throw oauthError;
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);
-    } finally {
       setGoogleSubmitting(false);
     }
   };
 
   if (authLoading || (user && roleLoading) || (user && userSignedInWithGoogle(user) && googleStatusLoading)) {
     return (
-      <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">{copy.loading}</p>
-        </div>
-      </div>
+      <StaffAuthWaitingScreen
+        title={user && userSignedInWithGoogle(user) ? copy.googleReturning : copy.loading}
+        message={user && userSignedInWithGoogle(user) ? copy.googlePendingHint : undefined}
+      />
     );
   }
 

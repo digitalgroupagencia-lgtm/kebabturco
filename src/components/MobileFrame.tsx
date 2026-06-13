@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import AdminMasterStorefrontBack from "@/components/customer/AdminMasterStorefrontBack";
 
 /**
  * Moldura mobile no desktop + ecrã completo no telemóvel real.
@@ -15,6 +16,7 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
           aria-hidden
         />
         <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden md:rounded-[2.3rem] md:bg-background">
+          <AdminMasterStorefrontBack />
           <div
             aria-hidden
             className="pointer-events-none fixed top-0 left-0 right-0 z-[60] md:hidden"
