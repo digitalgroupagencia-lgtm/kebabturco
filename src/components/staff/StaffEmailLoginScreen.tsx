@@ -58,7 +58,16 @@ const StaffEmailLoginScreen = () => {
   const [googleStatusLoading, setGoogleStatusLoading] = useState(false);
 
   const googleFlowActive =
-    hasStaffGoogleLoginIntent() || googleStatusLoading || googleStatus === "pending" || googleStatus === "rejected";
+    hasStaffGoogleLoginIntent() ||
+    googleStatusLoading ||
+    googleStatus === "pending" ||
+    googleStatus === "rejected" ||
+    Boolean(user && userSignedInWithGoogle(user) && !roleData?.role);
+
+  const showGooglePending =
+    user &&
+    (googleStatus === "pending" ||
+      (userSignedInWithGoogle(user) && !roleData?.role && googleStatus !== "rejected" && !googleStatusLoading));
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
@@ -98,10 +107,11 @@ const StaffEmailLoginScreen = () => {
         consumeStaffGoogleLoginIntent();
         if (!cancelled) setGoogleStatus(result.status);
       } catch (e) {
+        console.error("[staff-google] register on login screen failed", e);
         if (!cancelled) {
-          setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
-          setGoogleStatus(null);
-          clearStaffGoogleLoginIntent();
+          // Google já autenticou — mostrar espera amigável, não erro na página de login.
+          setGoogleStatus("pending");
+          setError(null);
         }
       } finally {
         if (!cancelled) setGoogleStatusLoading(false);
@@ -174,17 +184,26 @@ const StaffEmailLoginScreen = () => {
     return (
       <StaffAuthWaitingScreen
         title={copy.googleReturning}
-        message={copy.googlePendingHint}
+        message={copy.googleReturningBody}
       />
     );
   }
 
-  if (user && googleStatus === "pending") {
-    return <StaffPendingApprovalScreen status="pending" email={user.email} />;
+  if (showGooglePending) {
+    return <StaffPendingApprovalScreen status="pending" email={user?.email} />;
   }
 
   if (user && googleStatus === "rejected") {
     return <StaffPendingApprovalScreen status="rejected" email={user.email} />;
+  }
+
+  if (user && userSignedInWithGoogle(user)) {
+    return (
+      <StaffAuthWaitingScreen
+        title={copy.googleReturning}
+        message={copy.googleReturningBody}
+      />
+    );
   }
 
   return (

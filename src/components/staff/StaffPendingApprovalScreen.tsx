@@ -10,6 +10,9 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { markStaffSession, resolveStaffLoginDestination } from "@/lib/staffLogin";
+import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
+import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
+import { registerStaffGoogleLoginWithRetry } from "@/services/staffGoogleLogin";
 import type { StaffGoogleLoginStatus } from "@/services/staffGoogleLogin";
 import type { StaffRole } from "@/lib/staffPermissions";
 import { canAccessDeliveryPanel, canAccessPanel } from "@/lib/staffPermissions";
@@ -33,11 +36,25 @@ export default function StaffPendingApprovalScreen({ status, email }: Props) {
     settings?.logo_main_url ||
     null;
   const brandName = settings?.company_name || "Kebab Turco";
+  const { storeId } = useStaffLoginStore();
   const [checking, setChecking] = useState(status === "pending");
 
   useEffect(() => {
     markStaffSession();
   }, []);
+
+  useEffect(() => {
+    if (status !== "pending" || !user?.id) return;
+
+    void (async () => {
+      try {
+        const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
+        await registerStaffGoogleLoginWithRetry(resolvedStoreId);
+      } catch {
+        /* mantém ecrã de espera — não mostrar erro ao utilizador */
+      }
+    })();
+  }, [status, user?.id, storeId]);
 
   useEffect(() => {
     if (roleLoading || !user || !roleData?.role) return;
@@ -100,9 +117,14 @@ export default function StaffPendingApprovalScreen({ status, email }: Props) {
           <h1 className="text-2xl font-bold text-foreground">
             {isRejected ? copy.googleRejectedTitle : copy.googlePendingTitle}
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            {isRejected ? copy.googleRejectedBody : copy.googlePendingBody}
-          </p>
+          {isRejected ? (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{copy.googleRejectedBody}</p>
+          ) : (
+            <>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{copy.googleReturnSuccess}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{copy.googlePendingBody}</p>
+            </>
+          )}
 
           {email && (
             <p className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground">

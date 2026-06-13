@@ -23,6 +23,10 @@ const staffLoginCopy = {
     googleButton: "Entrar con Google",
     googleSubmitting: "Abriendo Google…",
     googleReturning: "Validando el acceso…",
+    googleReturningBody:
+      "Volvió de Google correctamente. Un momento mientras abrimos el área del equipo.",
+    googleReturnSuccess:
+      "Cuenta de Google confirmada. Ya está en el área del equipo — espere la aprobación del restaurante.",
     googlePendingTitle: "Esperando aprobación",
     googlePendingBody:
       "Entró con Google correctamente. El restaurante debe asignarle un perfil en Equipo antes de abrir el panel.",
@@ -48,6 +52,10 @@ const staffLoginCopy = {
     googleButton: "Entrar com Google",
     googleSubmitting: "A abrir Google…",
     googleReturning: "A validar o acesso…",
+    googleReturningBody:
+      "Voltou do Google com sucesso. Só um momento enquanto abrimos a área da equipa.",
+    googleReturnSuccess:
+      "Conta Google confirmada. Já está na área da equipa — aguarde a aprovação do restaurante.",
     googlePendingTitle: "À espera de aprovação",
     googlePendingBody:
       "Entrou com Google com sucesso. O restaurante tem de lhe atribuir uma função em Equipa antes de abrir o painel.",
@@ -73,6 +81,10 @@ const staffLoginCopy = {
     googleButton: "Sign in with Google",
     googleSubmitting: "Opening Google…",
     googleReturning: "Verifying access…",
+    googleReturningBody:
+      "You returned from Google successfully. One moment while we open the team area.",
+    googleReturnSuccess:
+      "Google account confirmed. You are in the team area — wait for the restaurant to approve you.",
     googlePendingTitle: "Waiting for approval",
     googlePendingBody:
       "You signed in with Google. The restaurant must assign your role in Team before you can open the panel.",
