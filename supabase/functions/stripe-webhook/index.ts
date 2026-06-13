@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.text();
-  const resolved = resolveWebhookContext(body, signature);
+  const resolved = await resolveWebhookContext(body, signature);
   if (!resolved) {
     return new Response("Webhook Error: Invalid signature", { status: 400 });
   }
