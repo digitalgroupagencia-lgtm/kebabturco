@@ -63,7 +63,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_store_checkout_stripe_profile(uuid) TO anon, authenticated;
 
--- Verificação (deve devolver true):
+-- Verificação (deve devolver false):
 SELECT EXISTS (
   SELECT 1
   FROM information_schema.role_table_grants
