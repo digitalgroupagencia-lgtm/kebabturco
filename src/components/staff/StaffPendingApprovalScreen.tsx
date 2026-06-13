@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
+import { useBranding } from "@/contexts/BrandingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
 import { markStaffSession, resolveStaffLoginDestination } from "@/lib/staffLogin";
 import type { StaffGoogleLoginStatus } from "@/services/staffGoogleLogin";
@@ -23,6 +25,14 @@ export default function StaffPendingApprovalScreen({ status, email }: Props) {
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const lang = useStaffUiLang("es");
   const copy = getStaffLoginCopy(lang);
+  const { settings } = useBranding();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const brandLogo =
+    (isDark && (settings as { logo_main_dark_url?: string })?.logo_main_dark_url) ||
+    settings?.logo_main_url ||
+    null;
+  const brandName = settings?.company_name || "Kebab Turco";
   const [checking, setChecking] = useState(status === "pending");
 
   useEffect(() => {
@@ -71,6 +81,14 @@ export default function StaffPendingApprovalScreen({ status, email }: Props) {
     <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
       <main className="flex flex-1 items-center justify-center overflow-y-auto px-6 py-8">
         <div className="w-full max-w-md text-center">
+          {brandLogo ? (
+            <img
+              src={brandLogo}
+              alt={brandName}
+              className="mx-auto mb-5 h-20 w-20 object-contain drop-shadow-lg"
+            />
+          ) : null}
+
           <div
             className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${
               isRejected ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
