@@ -15,6 +15,8 @@ export type UpdateStaffMemberInput = {
   full_name: string | null;
   role: StaffRole;
   preferred_language: string;
+  birth_date?: string | null;
+  avatar_url?: string | null;
   password?: string;
 };
 
@@ -23,6 +25,8 @@ async function updateStaffMemberLocally(input: UpdateStaffMemberInput) {
     _user_id: input.user_id,
     _full_name: input.full_name?.trim() || null,
     _preferred_language: input.preferred_language || "es",
+    _birth_date: input.birth_date || null,
+    _avatar_url: input.avatar_url?.trim() || null,
   });
   if (profileError) throw profileError;
 

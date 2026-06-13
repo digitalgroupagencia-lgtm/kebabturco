@@ -16,6 +16,7 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "tables",
   "finance",
   "settings",
+  "my-profile",
   "team",
   "sellers",
   "guide",

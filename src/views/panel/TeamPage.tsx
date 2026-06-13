@@ -51,6 +51,8 @@ interface TeamMember {
   email?: string;
   full_name?: string;
   preferred_language?: string;
+  avatar_url?: string | null;
+  birth_date?: string | null;
 }
 
 const LANGUAGES = [
@@ -99,6 +101,7 @@ const TeamPage = () => {
   const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState<AppRole>("operator");
   const [editLanguage, setEditLanguage] = useState("es");
+  const [editBirthDate, setEditBirthDate] = useState("");
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
@@ -213,7 +216,7 @@ const TeamPage = () => {
     const userIds = roles.map((r) => r.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, full_name, preferred_language")
+      .select("user_id, full_name, preferred_language, avatar_url, birth_date")
       .in("user_id", userIds);
 
     const emailByUser = new Map<string, string>();
@@ -236,7 +239,9 @@ const TeamPage = () => {
         role: r.role,
         email: emailByUser.get(r.user_id),
         full_name: profile?.full_name || undefined,
-        preferred_language: (profile as any)?.preferred_language || "pt",
+        preferred_language: (profile as { preferred_language?: string })?.preferred_language || "pt",
+        avatar_url: (profile as { avatar_url?: string | null })?.avatar_url ?? null,
+        birth_date: (profile as { birth_date?: string | null })?.birth_date ?? null,
       };
     });
 
@@ -277,6 +282,7 @@ const TeamPage = () => {
     setEditPassword("");
     setEditRole(member.role);
     setEditLanguage(member.preferred_language || primaryLang || "es");
+    setEditBirthDate(member.birth_date || "");
     setShowEditPassword(false);
   };
 
@@ -301,6 +307,7 @@ const TeamPage = () => {
         full_name: editName.trim() || null,
         role: editRole,
         preferred_language: editLanguage,
+        birth_date: editBirthDate || null,
         password: editPassword.trim() || undefined,
       });
 
@@ -598,9 +605,20 @@ const TeamPage = () => {
               {members.map((m) => (
                 <TableRow key={m.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{m.full_name || t("team.no_name")}</p>
-                      <p className="text-xs text-muted-foreground">{m.email || m.user_id.slice(0, 8) + "..."}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                        {m.avatar_url ? (
+                          <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-muted-foreground">
+                            {(m.full_name || m.email || "?").slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{m.full_name || t("team.no_name")}</p>
+                        <p className="text-xs text-muted-foreground">{m.email || m.user_id.slice(0, 8) + "..."}</p>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -794,12 +812,21 @@ const TeamPage = () => {
               />
             </div>
             <div>
+              <Label>{t("profile.field.birth")}</Label>
+              <Input type="date" value={editBirthDate} onChange={(e) => setEditBirthDate(e.target.value)} />
+            </div>
+            <div>
               <Label>Email</Label>
               <Input value={editMember?.email || "—"} readOnly disabled className="bg-muted/40" />
               <p className="text-xs text-muted-foreground mt-1">
                 {t("team.field.email.readonly")}
               </p>
             </div>
+            {!editPassword.trim() && (
+              <p className="text-xs text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2">
+                {t("team.field.password.google_hint")}
+              </p>
+            )}
             <div>
               <Label>{t("team.field.password.new")}</Label>
               <div className="flex gap-2">

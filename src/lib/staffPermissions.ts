@@ -15,6 +15,7 @@ const ALL_PANEL_SEGMENTS = new Set([
   "tables",
   "finance",
   "settings",
+  "my-profile",
   "team",
   "sellers",
   "guide",
@@ -32,6 +33,7 @@ const MANAGER_PANEL_SEGMENTS = new Set([
   "tables",
   "finance",
   "settings",
+  "my-profile",
   "team",
   "sellers",
   "guide",
@@ -141,6 +143,7 @@ const PANEL_NAV_CATALOG: PanelNavGroup[] = [
     label: "Configuração",
     items: [
       { key: "settings", segment: "settings", label: "Configurações" },
+      { key: "my-profile", segment: "my-profile", label: "O meu perfil" },
       { key: "guide", segment: "guide", label: "Guia" },
     ],
   },

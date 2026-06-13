@@ -2011,6 +2011,7 @@ export type Database = {
           full_name: string | null
           id: string
           preferred_language: string
+          birth_date: string | null
           updated_at: string
           user_id: string
         }

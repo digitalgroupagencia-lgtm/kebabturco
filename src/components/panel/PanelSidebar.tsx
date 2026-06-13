@@ -14,6 +14,7 @@ import {
   Wallet,
   Radio,
   Star,
+  UserRound,
 } from "lucide-react";
 
 import { NavLink as RouterNavLink } from "react-router-dom";
@@ -50,6 +51,7 @@ const ICONS: Record<string, typeof ShoppingBag> = {
   "table-map": Map,
   tables: QrCode,
   settings: Settings,
+  "my-profile": UserRound,
   team: Users,
   sellers: UserCog,
   reviews: Star,

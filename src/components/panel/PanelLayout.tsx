@@ -16,6 +16,7 @@ import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import AdminMasterPanelBack from "@/components/admin/AdminMasterPanelBack";
+import StaffProfileBanner from "@/components/panel/StaffProfileBanner";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
@@ -69,6 +70,7 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <AdminThemeToggle />
               </header>
               <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+                <StaffProfileBanner />
                 <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
               </main>
             </div>
