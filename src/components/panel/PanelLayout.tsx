@@ -19,6 +19,7 @@ import AdminMasterPanelBack from "@/components/admin/AdminMasterPanelBack";
 import StaffProfileBanner from "@/components/panel/StaffProfileBanner";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
+import useScreenOrientationLock from "@/hooks/useScreenOrientationLock";
 
 type Props = {
   page?: ComponentType<object>;
@@ -28,6 +29,7 @@ const PanelLayout = ({ page: Page }: Props) => {
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { primaryLang } = useStoreLanguages(roleData?.store_id);
+  useScreenOrientationLock("landscape");
   const navigate = useNavigate();
   const location = useLocation();
   usePageTelemetry();
