@@ -41,7 +41,7 @@ function upsertJsonLd(payload: Record<string, unknown> | null) {
     existing?.remove();
     return;
   }
-  const script = existing ?? document.createElement("script");
+  const script = (existing ?? document.createElement("script")) as HTMLScriptElement;
   script.id = JSON_LD_ID;
   script.type = "application/ld+json";
   script.textContent = JSON.stringify(payload);
