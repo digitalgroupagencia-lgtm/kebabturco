@@ -166,15 +166,19 @@ const CustomerShell = () => (
 );
 
 // Kiosk Self-Service App
-const Index = () => (
-  <LanguageProvider>
-    <CartProvider>
-      <OrderProvider>
-        <PreviewBootstrap />
-        <CustomerShell />
-      </OrderProvider>
-    </CartProvider>
-  </LanguageProvider>
-);
+const Index = () => {
+  useScreenOrientationLock("portrait");
+  return (
+    <LanguageProvider>
+      <CartProvider>
+        <OrderProvider>
+          <PreviewBootstrap />
+          <CustomerShell />
+        </OrderProvider>
+      </CartProvider>
+    </LanguageProvider>
+  );
+};
 
 export default Index;
+
