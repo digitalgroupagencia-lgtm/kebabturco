@@ -23,6 +23,7 @@ import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
+import useScreenOrientationLock from "@/hooks/useScreenOrientationLock";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
