@@ -228,20 +228,23 @@ export function useOperationalDiagnostics() {
 
     // STRIPE — chave secreta (servidor)
     if (serverDiag == null) {
-      results.push({
-        id: "stripe-server",
-        label: "Pagamentos online (servidor)",
-        status: "warn",
-        critical: !(stripeConnectReady && checkoutRpc),
-        detail:
-          stripeConnectReady && checkoutRpc
-            ? "Auditoria do servidor indisponível — mas recebimentos online estão activos na base de dados."
-            : "Não foi possível verificar o servidor — a função de diagnóstico pode não estar activa.",
-        action:
-          stripeConnectReady && checkoutRpc
-            ? "Opcional: na Lovable, publicar funções do servidor para auditoria completa."
-            : "Na Lovable: «Deploy all edge functions» (ou «Deploy stripe-create-payment-intent»). Depois Sync + Publish.",
-      });
+      if (stripeConnectReady && checkoutRpc) {
+        results.push({
+          id: "stripe-server",
+          label: "Pagamentos online (servidor)",
+          status: "ok",
+          detail: "Recebimentos online activos (auditoria do servidor não disponível neste momento).",
+        });
+      } else {
+        results.push({
+          id: "stripe-server",
+          label: "Pagamentos online (servidor)",
+          status: "warn",
+          critical: false,
+          detail: "Não foi possível verificar o servidor — a função de diagnóstico pode não estar activa.",
+          action: "Na Lovable: «Deploy all edge functions» (ou «Deploy stripe-create-payment-intent»). Depois Sync + Publish.",
+        });
+      }
     } else if (!serverDiag.stripeSecretKey) {
       results.push({
         id: "stripe-server",
