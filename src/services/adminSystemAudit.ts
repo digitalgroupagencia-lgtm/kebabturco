@@ -472,12 +472,12 @@ async function auditPrinting(storeId: string | null): Promise<AuditFinding[]> {
   const ipConfigured = Boolean(settings?.ip_address?.trim());
 
   if (!ipConfigured) {
+    // Aceita qualquer impressora cadastrada (activa OU inactiva) — só alerta se realmente não houver nada.
     const { data: legacyPrinters } = await supabase
       .from("printers")
-      .select("id")
+      .select("id,is_active")
       .eq("store_id", storeId)
-      .eq("is_active", true)
-      .limit(1);
+      .limit(5);
 
     if (!legacyPrinters?.length) {
       findings.push({
