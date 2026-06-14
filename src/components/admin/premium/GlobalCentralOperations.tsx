@@ -45,7 +45,7 @@ export default function GlobalCentralOperations({ centralTitle, centralSegment, 
         <span className="text-xs text-muted-foreground">Nenhum restaurante seleccionado</span>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-3">
         <MetricTile label={metrics.kpi1.label} value={metrics.kpi1.value} estimated={"estimated" in metrics.kpi1 && metrics.kpi1.estimated} />
         <MetricTile label={metrics.kpi2.label} value={metrics.kpi2.value} estimated={"estimated" in metrics.kpi2 && metrics.kpi2.estimated} />
         <MetricTile label={metrics.kpi3.label} value={metrics.kpi3.value} estimated={"estimated" in metrics.kpi3 && metrics.kpi3.estimated} />

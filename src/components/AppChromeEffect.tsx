@@ -17,13 +17,12 @@ export default function AppChromeEffect() {
     if (isStaffAppPath(pathname)) {
       applyStaffAppChrome();
       dismissBootShell();
-      // Painel / Admin / KDS rodam em tablet → forçar landscape.
-      // Entregador (/delivery) e Vendedor (/seller) rodam em celular → portrait.
-      const isTabletStaff =
+      // Painel / Admin / KDS → horizontal; login equipa, entregador e vendedor → vertical.
+      const isWideStaff =
         pathname.startsWith("/panel") ||
         pathname.startsWith("/admin") ||
         pathname.startsWith("/kds");
-      void setAndroidOrientation(isTabletStaff ? "landscape" : "portrait");
+      void setAndroidOrientation(isWideStaff ? "landscape" : "portrait");
     } else {
       applyBrowserChromeColor();
       void setAndroidOrientation("portrait");

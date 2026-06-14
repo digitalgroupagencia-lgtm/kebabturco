@@ -5,8 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
 import AppChromeEffect from "@/components/AppChromeEffect.tsx";
-import ForcePortraitGate from "@/components/ForcePortraitGate.tsx";
-import ForceLandscapeGate from "@/components/ForceLandscapeGate.tsx";
+import ScreenOrientationEffect from "@/components/ScreenOrientationEffect.tsx";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -104,8 +103,7 @@ const App = () => {
           <ThemeProvider>
             <BrowserRouter>
               <AppChromeEffect />
-              <ForcePortraitGate />
-              <ForceLandscapeGate />
+              <ScreenOrientationEffect />
               <AppCacheBustRouter>
                 <LovablePreviewGate />
                 <PreviewPathGuard />

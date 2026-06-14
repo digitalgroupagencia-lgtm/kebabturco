@@ -224,7 +224,7 @@ const StaffEmailLoginScreen = () => {
         </div>
       </header>
 
-      <main className="flex flex-1 items-center justify-center overflow-y-auto px-6 py-8">
+      <main className="flex flex-1 items-start justify-center overflow-y-auto overscroll-y-contain px-6 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center">
             {brandLogo && (

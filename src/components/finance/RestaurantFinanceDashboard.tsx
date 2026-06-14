@@ -138,7 +138,7 @@ export default function RestaurantFinanceDashboard({
         />
       </EqualCardGrid>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
         <PremiumChartCard
           title="Pagamentos por método"
           subtitle="Volume em euros — cartão, Bizum, Apple Pay, Google Pay"

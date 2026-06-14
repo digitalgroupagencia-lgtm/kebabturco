@@ -7,9 +7,9 @@ type Props = {
 };
 
 const widthCls = {
-  default: "max-w-5xl",
-  wide: "max-w-7xl",
-  full: "max-w-[1400px]",
+  default: "max-w-5xl staff-wide:max-w-[1600px]",
+  wide: "max-w-7xl staff-wide:max-w-[1600px]",
+  full: "max-w-[1400px] staff-wide:max-w-[1600px]",
 };
 
 export default function PlatformPageShell({ children, className, width = "wide" }: Props) {

@@ -62,7 +62,7 @@ export default function AdminCentralsHubPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-3">
         <MetricTile label="Pedidos 7d" value={snapshot.totalOrders7d} />
         <MetricTile label="Receita 7d" value={`€${Math.round(snapshot.totalRevenue7d)}`} />
         <MetricTile label="Centrais" value={String(ADMIN_CENTRALS.length)} />

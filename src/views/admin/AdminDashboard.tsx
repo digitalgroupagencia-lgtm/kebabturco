@@ -221,7 +221,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* KPI strip — premium */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-4">
         <PremiumMetricCard
           icon={Building2}
           tone="primary"
@@ -262,7 +262,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main grid: chart + ranking + alerts */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
         <PremiumChartCard
           title="Faturamento da rede"
           subtitle="Últimos 12 meses"
