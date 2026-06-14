@@ -26,6 +26,9 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import PanelTodayOrdersList, {
+  type PanelTodayOrderRow,
+} from "@/components/panel/PanelTodayOrdersList";
 import { isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
 
 const fmt = (n: number) =>
@@ -48,16 +51,35 @@ const Dashboard = () => {
 
       const { data: orders, error } = await supabase
         .from("orders")
-        .select("total, status, created_at, payment_status, is_test")
+        .select(
+          "id, order_number, total, status, order_type, created_at, payment_status, payment_method, customer_name, is_test",
+        )
         .eq("store_id", STORE_ID!)
-        .gte("created_at", startOfMonth.toISOString());
+        .gte("created_at", startOfMonth.toISOString())
+        .order("created_at", { ascending: false });
       if (error) throw error;
 
-      const isRevenueOrder = (o: { status: string; payment_status: string | null; is_test?: boolean | null }) =>
-        o.status !== "cancelled" && isConfirmedPaidOrder(o) && !o.is_test;
+      const isRevenueOrder = (o: {
+        status: string;
+        payment_status: string | null;
+        is_test?: boolean | null;
+      }) => o.status !== "cancelled" && isConfirmedPaidOrder(o) && !o.is_test;
 
       const today = orders.filter((o) => new Date(o.created_at) >= startOfDay);
       const paidToday = today.filter(isRevenueOrder);
+      const todayVisible: PanelTodayOrderRow[] = today
+        .filter((o) => o.status !== "cancelled" && !o.is_test)
+        .map((o) => ({
+          id: o.id,
+          order_number: o.order_number,
+          total: Number(o.total ?? 0),
+          payment_method: o.payment_method,
+          payment_status: o.payment_status,
+          status: o.status,
+          order_type: o.order_type,
+          created_at: o.created_at,
+          customer_name: o.customer_name,
+        }));
       const paidMonth = orders.filter(isRevenueOrder);
       const totalToday = paidToday.reduce((s, o) => s + Number(o.total ?? 0), 0);
       const totalMonth = paidMonth.reduce((s, o) => s + Number(o.total ?? 0), 0);
@@ -80,6 +102,7 @@ const Dashboard = () => {
         preparing: countStatus("preparing"),
         ready: countStatus("ready"),
         delivered: countStatus("delivered"),
+        todayOrders: todayVisible,
       };
     },
     refetchInterval: 60000,
@@ -102,8 +125,8 @@ const Dashboard = () => {
         whenToUse="Abra de manhã para conferir o dia anterior e várias vezes ao longo do serviço para ver como vai."
         steps={[
           "Veja os 4 cartões do topo: faturamento, pedidos, ticket médio e cancelados.",
-          "Use o botão Pedidos em Vivo para ir direto à operação.",
-          "A barra de impressão mostra se a impressora está conectada.",
+          "Na lista abaixo confira cada pedido do dia com valor e forma de pagamento (Bizum, cartão, etc.).",
+          "Use o botão Pedidos em Vivo para gerir a operação.",
         ]}
         howToConfirm="Se os números do dia bater com o caixa, está tudo certo."
         assistantQuestion="Como o dashboard calcula faturamento e ticket médio do dia?"
@@ -152,6 +175,8 @@ const Dashboard = () => {
           sub={`${data?.ordersMonth ?? 0} pedidos pagos`}
         />
       </div>
+
+      <PanelTodayOrdersList orders={data?.todayOrders ?? []} loading={isLoading} />
 
       <PremiumChartCard title="Estado operacional hoje" subtitle="Pedidos por etapa do fluxo">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
