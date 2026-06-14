@@ -88,14 +88,35 @@ const DeliveryHomePage = () => {
             </div>
 
             <div className="px-4 py-3 space-y-2 text-sm">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-orange-600" />
-                <span className="font-medium">
-                  {order.delivery_street}
-                  {order.delivery_number ? ` ${order.delivery_number}` : ""}
-                  {order.delivery_city ? `, ${order.delivery_city}` : ""}
-                </span>
-              </div>
+              {mapsUrl && (
+                <a
+                  href={`geo:0,0?q=${encodeURIComponent(mapsUrl)}`}
+                  onClick={(e) => {
+                    // iOS não suporta geo: — fallback p/ Apple/Google Maps
+                    const ua = navigator.userAgent || "";
+                    if (/iPhone|iPad|iPod/i.test(ua)) {
+                      e.preventDefault();
+                      window.location.href = `maps://?q=${encodeURIComponent(mapsUrl)}`;
+                      setTimeout(() => {
+                        window.open(
+                          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsUrl)}`,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }, 400);
+                    }
+                  }}
+                  className="flex items-start gap-2 active:opacity-60 -mx-1 px-1 py-1 rounded-lg hover:bg-muted/40 transition-colors"
+                  aria-label="Abrir endereço no mapa"
+                >
+                  <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-orange-600" />
+                  <span className="font-medium underline decoration-orange-600/40 underline-offset-2">
+                    {order.delivery_street}
+                    {order.delivery_number ? ` ${order.delivery_number}` : ""}
+                    {order.delivery_city ? `, ${order.delivery_city}` : ""}
+                  </span>
+                </a>
+              )}
               {order.customer_phone && (
                 <a
                   href={`tel:${order.customer_phone}`}
