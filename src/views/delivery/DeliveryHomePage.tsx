@@ -7,9 +7,11 @@ import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useDriverOrders } from "@/features/delivery/useDriverOrders";
 import { validateDeliveryCode } from "@/features/ops/opsOrderUi";
 import { useStaffT } from "@/hooks/useStaffT";
+import useScreenOrientationLock from "@/hooks/useScreenOrientationLock";
 
 const DeliveryHomePage = () => {
   const { t } = useStaffT();
+  useScreenOrientationLock("portrait");
 
   const { storeId } = useAdminStoreId();
   const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId);
