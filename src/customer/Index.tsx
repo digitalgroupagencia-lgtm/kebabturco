@@ -23,6 +23,7 @@ import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
+import useScreenOrientationLock from "@/hooks/useScreenOrientationLock";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
@@ -152,7 +153,7 @@ const ScreenRouter = () => {
 };
 
 const CustomerShell = () => (
-    <div className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background md:shadow-lg">
+    <div className="customer-shell relative mx-auto grid h-full min-h-[100dvh] w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background">
       <CustomerBootDismiss />
       <div className="min-h-0 overflow-hidden">
         <ScreenRouter />
@@ -166,15 +167,19 @@ const CustomerShell = () => (
 );
 
 // Kiosk Self-Service App
-const Index = () => (
-  <LanguageProvider>
-    <CartProvider>
-      <OrderProvider>
-        <PreviewBootstrap />
-        <CustomerShell />
-      </OrderProvider>
-    </CartProvider>
-  </LanguageProvider>
-);
+const Index = () => {
+  useScreenOrientationLock("portrait");
+  return (
+    <LanguageProvider>
+      <CartProvider>
+        <OrderProvider>
+          <PreviewBootstrap />
+          <CustomerShell />
+        </OrderProvider>
+      </CartProvider>
+    </LanguageProvider>
+  );
+};
 
 export default Index;
+

@@ -124,6 +124,18 @@ export async function runFullAppAudit(params: {
 
   if (runOps) await runOps();
 
+  // Sincroniza estado real da Stripe antes de auditar (evita falsos "em análise").
+  if (storeId) {
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      await supabase.functions.invoke("stripe-connect-onboard", {
+        body: { mode: "sync_status", storeId },
+      });
+    } catch {
+      /* ignora */
+    }
+  }
+
   const [
     backend,
     staffAuth,
