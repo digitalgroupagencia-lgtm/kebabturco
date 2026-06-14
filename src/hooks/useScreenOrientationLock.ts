@@ -8,7 +8,7 @@ import {
   isCoarseTouchDevice,
 } from "@/lib/orientationPolicy";
 
-type RotateMode = "none" | "fp" | "fl";
+type RotateMode = "none" | "fp";
 
 function clearRotateClasses() {
   document.body.classList.remove("fp-rotate", "fl-rotate");
@@ -18,7 +18,7 @@ function clearRotateClasses() {
   document.body.style.removeProperty("--fl-h");
 }
 
-
+/** Só o totem cliente usa rotate CSS — painel admin NUNCA (viewport ficava estreito). */
 function resolveRotateMode(
   portraitLock: boolean,
   landscapeLock: boolean,
@@ -26,29 +26,22 @@ function resolveRotateMode(
   w: number,
   h: number,
 ): RotateMode {
+  if (landscapeLock) return "none";
   if (portraitLock && touch && w > h && w >= 600) return "fp";
-  if (landscapeLock && touch && h > w && h >= 600) return "fl";
   return "none";
 }
 
 function applyRotateMode(mode: RotateMode, w: number, h: number) {
   clearRotateClasses();
-  if (mode === "fp") {
-    document.body.style.setProperty("--fp-w", `${w}px`);
-    document.body.style.setProperty("--fp-h", `${h}px`);
-    document.body.classList.add("fp-rotate");
-    return;
-  }
-  if (mode === "fl") {
-    document.body.style.setProperty("--fl-w", `${w}px`);
-    document.body.style.setProperty("--fl-h", `${h}px`);
-    document.body.classList.add("fl-rotate");
-  }
+  if (mode !== "fp") return;
+  document.body.style.setProperty("--fp-w", `${w}px`);
+  document.body.style.setProperty("--fp-h", `${h}px`);
+  document.body.classList.add("fp-rotate");
 }
 
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
- * No browser normal o lock da API falha em silêncio; o fallback CSS só corre em touch grosso.
+ * Admin/painel: lock landscape nativo — sem rotate CSS (layout igual ao desktop).
  */
 export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();
@@ -86,7 +79,6 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       };
     }
 
-    // Preview Lovable: sem rotate CSS (resize ↔ rotate causava piscar infinito).
     if (inEditor) {
       cleanupRotate();
       return () => {
@@ -102,7 +94,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       if (typeof lock === "function") {
         // @ts-expect-error Screen Orientation API
         lock.call(screen.orientation, lockMode).catch(() => {
-          /* fallback CSS */
+          /* utilizador deve rodar o aparelho */
         });
       }
     } catch {

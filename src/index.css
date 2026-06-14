@@ -215,6 +215,16 @@
   .shadow-cta { box-shadow: var(--shadow-cta); }
   .shadow-header { box-shadow: var(--shadow-header); }
 
+  /* Admin/painel em telemóvel deitado — grelha larga como no computador */
+  @media (orientation: landscape) {
+    html.staff-landscape-layout .staff-kpi-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    html.staff-landscape-layout .staff-main-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+  }
+
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }

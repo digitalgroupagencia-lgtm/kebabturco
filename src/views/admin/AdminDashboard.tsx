@@ -190,7 +190,7 @@ const AdminDashboard = () => {
         assistantQuestion="O que cada cartão e cada atalho deste dashboard significa, e quando devo usar cada um?"
       />
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div className="flex flex-col staff-wide:flex-row staff-wide:items-end staff-wide:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <StatusPill label={APP_NAME} tone="neutral" />
@@ -221,7 +221,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* KPI strip — premium */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-4">
+      <div className="staff-kpi-grid grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-4">
         <PremiumMetricCard
           icon={Building2}
           tone="primary"
@@ -262,7 +262,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main grid: chart + ranking + alerts */}
-      <div className="grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
+      <div className="staff-main-grid grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
         <PremiumChartCard
           title="Faturamento da rede"
           subtitle="Últimos 12 meses"
