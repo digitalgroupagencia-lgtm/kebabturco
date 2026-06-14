@@ -308,7 +308,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         connectionStatus={connectionStatus}
         headerExtra={
           <div className="space-y-2">
-            <PanelAlertsBar storeId={storeId} />
+            {!hideInlineAlertsBar && <PanelAlertsBar storeId={storeId} />}
             {printSummary?.printerEnabled && (
               <PanelPrintStatusBar
                 summary={printSummary}
