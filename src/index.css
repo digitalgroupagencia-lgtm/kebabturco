@@ -215,14 +215,18 @@
   .shadow-cta { box-shadow: var(--shadow-cta); }
   .shadow-header { box-shadow: var(--shadow-header); }
 
-  /* Admin/painel em telemóvel deitado — grelha larga como no computador */
-  @media (orientation: landscape) {
-    html.staff-landscape-layout .staff-kpi-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    html.staff-landscape-layout .staff-main-grid {
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
+  /* Admin/painel — grelhas largas em tablet/telemóvel horizontal */
+  html.staff-landscape-layout .staff-kpi-grid:not(.staff-kpi-grid--3) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  html.staff-landscape-layout .staff-kpi-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  html.staff-landscape-layout .staff-main-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  html.staff-landscape-layout .staff-main-grid > * {
+    min-width: 0;
   }
 
   @keyframes shimmer {

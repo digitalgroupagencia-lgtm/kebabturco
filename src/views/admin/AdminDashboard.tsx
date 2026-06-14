@@ -255,7 +255,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Sub-strip: indicadores rápidos */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="staff-kpi-grid staff-kpi-grid--3 grid grid-cols-1 sm:grid-cols-3 staff-wide:grid-cols-3 gap-4">
         <PremiumMetricCard icon={CheckCircle2} tone="success" label="Pagos" value={stats?.paid_count ?? 0} />
         <PremiumMetricCard icon={Clock} tone="warning" label="Pendentes" value={stats?.pending_count ?? 0} />
         <PremiumMetricCard icon={TrendingUp} tone="primary" label="Receita hoje" value={fmtMoney(Number(stats?.revenue_today || 0))} />
@@ -267,7 +267,7 @@ const AdminDashboard = () => {
           title="Faturamento da rede"
           subtitle="Últimos 12 meses"
           action={<StatusPill label="Dados reais" tone="active" dot />}
-          className="xl:col-span-7"
+          className="col-span-12 md:col-span-7 staff-wide:col-span-7 min-w-0"
         >
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -315,7 +315,7 @@ const AdminDashboard = () => {
         </PremiumChartCard>
 
         <RankingCard
-          className="xl:col-span-3"
+          className="col-span-12 md:col-span-3 staff-wide:col-span-3 min-w-0"
           title="Top restaurantes"
           subtitle="Por faturamento no mês"
           items={(topTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
@@ -336,7 +336,7 @@ const AdminDashboard = () => {
         />
 
         <AlertCard
-          className="xl:col-span-2"
+          className="col-span-12 md:col-span-2 staff-wide:col-span-2 min-w-0"
           title="Alertas inteligentes"
           items={((): AlertItem[] => {
             const out: AlertItem[] = [];
@@ -374,7 +374,7 @@ const AdminDashboard = () => {
 
 
       {/* Tenants + centrals */}
-      <div className={`grid grid-cols-1 ${SINGLE_TENANT_MODE ? "" : "xl:grid-cols-2"} gap-4`}>
+      <div className={`grid grid-cols-1 ${SINGLE_TENANT_MODE ? "" : "md:grid-cols-2 staff-wide:grid-cols-2"} gap-4`}>
         {!SINGLE_TENANT_MODE && (
         <div className="rounded-xl border border-border/70 bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">

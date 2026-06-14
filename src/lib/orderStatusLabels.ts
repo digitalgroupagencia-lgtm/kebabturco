@@ -1,4 +1,5 @@
 import type { Database } from "@/integrations/supabase/types";
+import { PAYMENT_METHOD_LABELS, normalizeFinancePaymentMethod } from "@/lib/financeChartColors";
 import { getPanelOrderAction, isDeliveryOrder, resolveOrderType } from "@/lib/orderOperationalFlow";
 
 export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
@@ -62,21 +63,33 @@ export function getOrderModalityBanner(order: {
   return { label: "PEDIDO", detail: order.order_type || "—", tone: "unknown" as const };
 }
 
+export function getPaymentMethodLabel(method: string | null | undefined): string | null {
+  if (!method) return null;
+  const key = normalizeFinancePaymentMethod(method);
+  const label = PAYMENT_METHOD_LABELS[key];
+  return label === "Outro" ? method.replace(/_/g, " ") : label;
+}
+
 export function getPanelPaymentBadge(order: {
   payment_status?: string | null;
   payment_method?: string | null;
   source?: string | null;
-}) {
+}): { label: string; tone: "paid" | "pending"; methodLabel: string | null } {
+  const methodLabel = getPaymentMethodLabel(order.payment_method);
+
   if (order.payment_status === "paid") {
-    return { label: "PAGO", tone: "paid" as const };
+    return { label: "PAGO", tone: "paid", methodLabel };
   }
   if (order.payment_method === "cash") {
-    return { label: "DINHEIRO", tone: "pending" as const };
+    return { label: "DINHEIRO", tone: "pending", methodLabel: "Dinheiro" };
   }
   if (order.payment_method === "card") {
-    return { label: "CARTÃO PEND.", tone: "pending" as const };
+    return { label: "CARTÃO PEND.", tone: "pending", methodLabel: "Cartão" };
   }
-  return { label: "PAG. PENDENTE", tone: "pending" as const };
+  if (order.payment_method === "bizum") {
+    return { label: "BIZUM PEND.", tone: "pending", methodLabel: "Bizum" };
+  }
+  return { label: "PAG. PENDENTE", tone: "pending", methodLabel };
 }
 
 const CUSTOMER_STATUS_KEYS: Record<string, string> = {

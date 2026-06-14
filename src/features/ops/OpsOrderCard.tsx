@@ -134,6 +134,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
 
         <div className="mt-0.5 flex flex-wrap items-center gap-1">
           <Badge className={`h-4 px-1 ${paymentBadgeClass[payment.tone]}`}>{payment.label}</Badge>
+          {payment.methodLabel && payment.tone === "paid" && (
+            <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold">
+              {payment.methodLabel}
+            </Badge>
+          )}
           {prepRemaining && (
             <Badge variant="secondary" className="h-4 px-1 text-[9px] bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">
               <Clock className="h-2 w-2 mr-0.5" /> {prepRemaining}

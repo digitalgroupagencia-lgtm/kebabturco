@@ -138,11 +138,11 @@ export default function RestaurantFinanceDashboard({
         />
       </EqualCardGrid>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
+      <div className="staff-main-grid grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
         <PremiumChartCard
           title="Pagamentos por método"
           subtitle="Volume em euros — cartão, Bizum, Apple Pay, Google Pay"
-          className="xl:col-span-5"
+          className="col-span-12 md:col-span-5 staff-wide:col-span-5 min-w-0"
         >
           <PremiumDonutChart data={analytics.byMethod} />
         </PremiumChartCard>
@@ -150,7 +150,7 @@ export default function RestaurantFinanceDashboard({
         <PremiumChartCard
           title="Evolução diária"
           subtitle="Últimos 30 dias — verde = líquido, vermelho = taxas"
-          className="xl:col-span-7"
+          className="col-span-12 md:col-span-7 staff-wide:col-span-7 min-w-0"
         >
           <PremiumDualLineChart data={analytics.dailySeries} />
         </PremiumChartCard>

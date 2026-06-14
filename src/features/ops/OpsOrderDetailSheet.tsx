@@ -118,7 +118,7 @@ const OpsOrderDetailSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+      <SheetContent side="right" className="w-full sm:max-w-md staff-wide:max-w-xl overflow-y-auto p-0">
         <div className={`px-4 py-3 text-center ${modalityBannerClass[modality.tone]}`}>
           <p className="text-base font-black tracking-wide">{modality.label}</p>
           <p className="text-[11px] font-semibold opacity-90">{modality.detail}</p>
@@ -139,6 +139,11 @@ const OpsOrderDetailSheet = ({
             <Badge variant="outline">{getSourceLabel(order.source || "totem")}</Badge>
             <Badge variant="outline">{getModalityShortLabel(order)}</Badge>
             <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
+            {payment.methodLabel && (
+              <Badge variant="secondary" className="font-semibold">
+                {payment.methodLabel}
+              </Badge>
+            )}
             {prepRemaining && (
               <Badge variant="secondary" className="gap-1 bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">
                 <Clock className="h-3 w-3" /> {prepRemaining}

@@ -8,9 +8,9 @@ type Props = {
 
 const COLS: Record<NonNullable<Props["cols"]>, string> = {
   1: "grid-cols-1",
-  2: "grid-cols-1 sm:grid-cols-2",
-  3: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
-  4: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4",
+  2: "grid-cols-1 sm:grid-cols-2 staff-wide:grid-cols-2",
+  3: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 staff-wide:grid-cols-3",
+  4: "grid-cols-1 sm:grid-cols-2 md:grid-cols-4 staff-wide:grid-cols-4",
 };
 
 /** Grid com cartões da mesma altura (padrão visual admin). */
