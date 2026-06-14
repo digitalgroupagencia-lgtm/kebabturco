@@ -33,13 +33,14 @@ const paymentBadgeClass = {
 type Props = {
   orders: PanelTodayOrderRow[];
   loading?: boolean;
+  onOrderClick?: (orderId: string) => void;
 };
 
-export default function PanelTodayOrdersList({ orders, loading }: Props) {
+export default function PanelTodayOrdersList({ orders, loading, onOrderClick }: Props) {
   return (
     <PremiumChartCard
       title="Pedidos de hoje — detalhe e pagamento"
-      subtitle="Cada venda com número, valor e forma de pagamento (Bizum, cartão, Apple Pay, etc.)"
+      subtitle="Toque num pedido para ver itens, pagamento e detalhes completos"
       action={
         <Button asChild variant="outline" size="sm" className="gap-1 h-8 text-xs font-bold">
           <Link to={nav.panel("live")}>
@@ -65,35 +66,41 @@ export default function PanelTodayOrdersList({ orders, loading }: Props) {
             });
 
             return (
-              <li
-                key={order.id}
-                className="flex flex-col gap-2 bg-card px-3 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4 staff-wide:flex-row staff-wide:items-center"
-              >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                    <Receipt className="h-5 w-5 text-primary" />
+              <li key={order.id}>
+                <button
+                  type="button"
+                  onClick={() => onOrderClick?.(order.id)}
+                  className="flex w-full flex-col gap-2 bg-card px-3 py-3 text-left transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:gap-4 sm:px-4 staff-wide:flex-row staff-wide:items-center touch-action-manipulation"
+                >
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <Receipt className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black text-base tabular-nums">
+                        Pedido #{String(order.order_number).padStart(4, "0")}
+                      </p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {order.customer_name || "Cliente"} · {time}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-black text-base tabular-nums">
-                      Pedido #{String(order.order_number).padStart(4, "0")}
-                    </p>
-                    <p className="truncate text-sm text-muted-foreground">
-                      {order.customer_name || "Cliente"} · {time}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <span className="text-lg font-black tabular-nums text-primary">{fmt(Number(order.total))}</span>
-                  <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
-                  <Badge variant="secondary" className="gap-1 font-semibold">
-                    <CreditCard className="h-3 w-3" />
-                    {methodLabel}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {getStatusLabel(order.status, order.order_type)}
-                  </Badge>
-                </div>
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <span className="text-lg font-black tabular-nums text-primary">
+                      {fmt(Number(order.total))}
+                    </span>
+                    <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
+                    <Badge variant="secondary" className="gap-1 font-semibold">
+                      <CreditCard className="h-3 w-3" />
+                      {methodLabel}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {getStatusLabel(order.status, order.order_type)}
+                    </Badge>
+                    <ChevronRight className="hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden />
+                  </div>
+                </button>
               </li>
             );
           })}

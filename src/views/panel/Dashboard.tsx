@@ -12,8 +12,10 @@ import {
   Radio,
   ChevronRight,
 } from "lucide-react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { nav } from "@/lib/navPaths";
@@ -29,6 +31,11 @@ import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
 import PanelTodayOrdersList, {
   type PanelTodayOrderRow,
 } from "@/components/panel/PanelTodayOrdersList";
+import OpsOrderDetailSheet from "@/features/ops/OpsOrderDetailSheet";
+import { reprintPanelOrder } from "@/features/ops/panelPrintHelper";
+import type { PanelOrder } from "@/features/ops/usePanelOrders";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
 
 const fmt = (n: number) =>
@@ -38,6 +45,34 @@ const Dashboard = () => {
   const { storeId: STORE_ID } = useAdminStoreId();
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID);
   const { t } = useStaffT();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
+  const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
+
+  const { data: orderDetail } = useQuery({
+    queryKey: ["panel-dashboard-order-detail", STORE_ID, detailOrderId],
+    enabled: !!STORE_ID && !!detailOrderId,
+    queryFn: async () => {
+      const { data: order, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", detailOrderId!)
+        .single();
+      if (error) throw error;
+      const { data: items } = await supabase
+        .from("order_items")
+        .select("*")
+        .eq("order_id", detailOrderId!);
+      return { order: order as PanelOrder, items: items ?? [] };
+    },
+  });
+
+  const goToLiveOps = () => {
+    setDetailOrderId(null);
+    navigate(nav.panel("live"));
+    toast.message("Abra Pedidos em vivo para alterar o estado do pedido.");
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["panel-dashboard-financial", STORE_ID],
@@ -176,7 +211,36 @@ const Dashboard = () => {
         />
       </div>
 
-      <PanelTodayOrdersList orders={data?.todayOrders ?? []} loading={isLoading} />
+      <PanelTodayOrdersList
+        orders={data?.todayOrders ?? []}
+        loading={isLoading}
+        onOrderClick={setDetailOrderId}
+      />
+
+      <OpsOrderDetailSheet
+        order={orderDetail?.order ?? null}
+        items={orderDetail?.items ?? []}
+        open={!!detailOrderId && !!orderDetail?.order}
+        onOpenChange={(open) => {
+          if (!open) setDetailOrderId(null);
+        }}
+        viewerRole={roleData?.role}
+        onAdvance={goToLiveOps}
+        onRequestAccept={goToLiveOps}
+        onRequestAssignDriver={goToLiveOps}
+        onCancel={goToLiveOps}
+        onSetPrepMinutes={goToLiveOps}
+        onMarkPaid={goToLiveOps}
+        onReprint={async (order) => {
+          if (!STORE_ID) return;
+          try {
+            await reprintPanelOrder(STORE_ID, order, orderDetail?.items ?? []);
+            toast.success("Pedido enviado para impressão");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Não foi possível imprimir");
+          }
+        }}
+      />
 
       <PremiumChartCard title="Estado operacional hoje" subtitle="Pedidos por etapa do fluxo">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
