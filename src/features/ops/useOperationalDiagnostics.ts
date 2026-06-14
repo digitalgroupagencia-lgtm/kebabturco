@@ -48,6 +48,15 @@ export function useOperationalDiagnostics() {
 
     const auditStoreId = storeId ?? KEBAB_FALLBACK_STORE_ID;
 
+    // Sincroniza o estado real da Stripe ANTES de auditar (evita falsos "em análise").
+    try {
+      await supabase.functions.invoke("stripe-connect-onboard", {
+        body: { mode: "sync_status", storeId: auditStoreId },
+      });
+    } catch {
+      /* ignora — não bloqueia a auditoria */
+    }
+
     const [dbDiag, serverDiag, schemaProbe, storeProfile, payoutIntake, checkoutRpc] = await Promise.all([
       fetchDbOperationalDiagnostics(auditStoreId),
       fetchServerOperationalDiagnostics(auditStoreId),
