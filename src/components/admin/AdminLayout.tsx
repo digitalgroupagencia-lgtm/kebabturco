@@ -16,6 +16,7 @@ import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
+import useScreenOrientationLock from "@/hooks/useScreenOrientationLock";
 
 type Props = {
   page?: ComponentType<object>;
@@ -25,6 +26,7 @@ const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
   usePageTelemetry();
+  useScreenOrientationLock("landscape");
 
   if (authLoading || roleLoading) {
     return (
