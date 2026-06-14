@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, MapPin, Clock, XCircle, Printer } from "lucide-react";
+import { User, Phone, MapPin, Clock, XCircle, Printer, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
@@ -79,7 +79,18 @@ const OpsOrderDetailSheet = ({
   const [markingPaid, setMarkingPaid] = useState(false);
   const [reprinting, setReprinting] = useState(false);
 
-  if (!order) return null;
+  if (!order) {
+    if (!open) return null;
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-full sm:max-w-md staff-wide:max-w-xl overflow-y-auto p-0">
+          <div className="flex min-h-[240px] items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   const modality = getOrderModalityBanner(order);
   const payment = getPanelPaymentBadge(order);

@@ -25,7 +25,8 @@ const AppCacheBustRouter = ({ children }: Props) => {
     () =>
       subscribeAppCacheBust(() => {
         setCacheEpoch((value) => value + 1);
-        queryClient.clear();
+        // Invalida queries sem apagar estado a meio de um render (evita crashes no painel).
+        void queryClient.invalidateQueries();
       }),
     [queryClient],
   );

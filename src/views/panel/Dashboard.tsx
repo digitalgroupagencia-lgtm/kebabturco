@@ -11,6 +11,7 @@ import {
   XCircle,
   Radio,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -31,9 +32,7 @@ import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
 import PanelTodayOrdersList, {
   type PanelTodayOrderRow,
 } from "@/components/panel/PanelTodayOrdersList";
-import OpsOrderDetailSheet from "@/features/ops/OpsOrderDetailSheet";
-import { reprintPanelOrder } from "@/features/ops/panelPrintHelper";
-import type { PanelOrder } from "@/features/ops/usePanelOrders";
+import PanelDashboardOrderSheet from "@/components/panel/PanelDashboardOrderSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
@@ -42,31 +41,13 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 
 const Dashboard = () => {
-  const { storeId: STORE_ID } = useAdminStoreId();
-  const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID);
+  const { storeId: STORE_ID, loading: storeLoading } = useAdminStoreId();
+  const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID ?? undefined);
   const { t } = useStaffT();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
-
-  const { data: orderDetail } = useQuery({
-    queryKey: ["panel-dashboard-order-detail", STORE_ID, detailOrderId],
-    enabled: !!STORE_ID && !!detailOrderId,
-    queryFn: async () => {
-      const { data: order, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", detailOrderId!)
-        .single();
-      if (error) throw error;
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("*")
-        .eq("order_id", detailOrderId!);
-      return { order: order as PanelOrder, items: items ?? [] };
-    },
-  });
 
   const goToLiveOps = () => {
     setDetailOrderId(null);
@@ -74,9 +55,10 @@ const Dashboard = () => {
     toast.message("Abra Pedidos em vivo para alterar o estado do pedido.");
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["panel-dashboard-financial", STORE_ID],
-    enabled: !!STORE_ID,
+    enabled: !!STORE_ID && !storeLoading,
+    retry: 2,
     queryFn: async () => {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -94,19 +76,21 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
+      const rows = orders ?? [];
+
       const isRevenueOrder = (o: {
         status: string;
         payment_status: string | null;
         is_test?: boolean | null;
       }) => o.status !== "cancelled" && isConfirmedPaidOrder(o) && !o.is_test;
 
-      const today = orders.filter((o) => new Date(o.created_at) >= startOfDay);
+      const today = rows.filter((o) => new Date(o.created_at) >= startOfDay);
       const paidToday = today.filter(isRevenueOrder);
       const todayVisible: PanelTodayOrderRow[] = today
         .filter((o) => o.status !== "cancelled" && !o.is_test)
         .map((o) => ({
           id: o.id,
-          order_number: o.order_number,
+          order_number: o.order_number ?? 0,
           total: Number(o.total ?? 0),
           payment_method: o.payment_method,
           payment_status: o.payment_status,
@@ -115,7 +99,7 @@ const Dashboard = () => {
           created_at: o.created_at,
           customer_name: o.customer_name,
         }));
-      const paidMonth = orders.filter(isRevenueOrder);
+      const paidMonth = rows.filter(isRevenueOrder);
       const totalToday = paidToday.reduce((s, o) => s + Number(o.total ?? 0), 0);
       const totalMonth = paidMonth.reduce((s, o) => s + Number(o.total ?? 0), 0);
       const ordersToday = paidToday.length;
@@ -143,8 +127,8 @@ const Dashboard = () => {
     refetchInterval: 60000,
   });
 
-
-
+  const loadingDashboard = storeLoading || isLoading || (!data && isFetching);
+  const showLoadError = isError && !data;
 
   const opsStats = [
     { key: "pending", label: getStatusLabel("pending"), value: data?.pending ?? 0, icon: Clock },
@@ -180,66 +164,62 @@ const Dashboard = () => {
         }
       />
 
+      {showLoadError && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+          <p className="font-bold">Não foi possível carregar os dados do dia</p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Verifique a ligação à internet e tente novamente. O resto do painel continua disponível.
+          </p>
+          <Button type="button" onClick={() => void refetch()} disabled={isFetching}>
+            {isFetching ? "A carregar…" : "Tentar novamente"}
+          </Button>
+        </div>
+      )}
+
       <div className="staff-kpi-grid grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-3 md:gap-4">
         <PremiumMetricCard
           icon={ShoppingBag}
           tone="primary"
           label="Pedidos hoje"
-          value={isLoading ? "—" : String(data?.ordersToday ?? 0)}
+          value={loadingDashboard ? "—" : String(data?.ordersToday ?? 0)}
           sub={`${data?.ordersMonth ?? 0} pagos no mês`}
         />
         <PremiumMetricCard
           icon={DollarSign}
           tone="success"
           label="Faturamento hoje"
-          value={isLoading ? "—" : fmt(data?.totalToday ?? 0)}
+          value={loadingDashboard ? "—" : fmt(data?.totalToday ?? 0)}
           sub="Vendas confirmadas"
         />
         <PremiumMetricCard
           icon={TrendingUp}
           tone="info"
           label="Ticket médio"
-          value={isLoading ? "—" : fmt(data?.avgTicket ?? 0)}
+          value={loadingDashboard ? "—" : fmt(data?.avgTicket ?? 0)}
           sub="Hoje"
         />
         <PremiumMetricCard
           icon={Calendar}
           tone="purple"
           label="Faturamento mês"
-          value={isLoading ? "—" : fmt(data?.totalMonth ?? 0)}
+          value={loadingDashboard ? "—" : fmt(data?.totalMonth ?? 0)}
           sub={`${data?.ordersMonth ?? 0} pedidos pagos`}
         />
       </div>
 
       <PanelTodayOrdersList
         orders={data?.todayOrders ?? []}
-        loading={isLoading}
+        loading={loadingDashboard}
         onOrderClick={setDetailOrderId}
       />
 
-      <OpsOrderDetailSheet
-        order={orderDetail?.order ?? null}
-        items={orderDetail?.items ?? []}
-        open={!!detailOrderId && !!orderDetail?.order}
-        onOpenChange={(open) => {
-          if (!open) setDetailOrderId(null);
-        }}
+      <PanelDashboardOrderSheet
+        orderId={detailOrderId}
+        storeId={STORE_ID}
         viewerRole={roleData?.role}
-        onAdvance={goToLiveOps}
-        onRequestAccept={goToLiveOps}
-        onRequestAssignDriver={goToLiveOps}
-        onCancel={goToLiveOps}
-        onSetPrepMinutes={goToLiveOps}
-        onMarkPaid={goToLiveOps}
-        onReprint={async (order) => {
-          if (!STORE_ID) return;
-          try {
-            await reprintPanelOrder(STORE_ID, order, orderDetail?.items ?? []);
-            toast.success("Pedido enviado para impressão");
-          } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Não foi possível imprimir");
-          }
-        }}
+        onClose={() => setDetailOrderId(null)}
+        onGoToLive={goToLiveOps}
       />
 
       <PremiumChartCard title="Estado operacional hoje" subtitle="Pedidos por etapa do fluxo">
@@ -259,13 +239,12 @@ const Dashboard = () => {
                 icon={item.icon}
                 tone={tone as "warning" | "orange" | "success" | "danger"}
                 label={item.label}
-                value={isLoading ? "—" : item.value}
+                value={loadingDashboard ? "—" : item.value}
               />
             );
           })}
         </div>
       </PremiumChartCard>
-
 
       <PanelPrintStatusBar summary={printSummary} loading={printLoading} />
 

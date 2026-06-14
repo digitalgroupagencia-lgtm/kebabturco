@@ -19,6 +19,7 @@ import AdminMasterPanelBack from "@/components/admin/AdminMasterPanelBack";
 import StaffProfileBanner from "@/components/panel/StaffProfileBanner";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
+import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
 
 type Props = {
   page?: ComponentType<object>;
@@ -71,7 +72,9 @@ const PanelLayout = ({ page: Page }: Props) => {
               </header>
               <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
                 <StaffProfileBanner />
-                <PanelAccessGuard>{Page ? <Page /> : <Outlet />}</PanelAccessGuard>
+                <PanelAccessGuard>
+                  <PanelPageErrorBoundary>{Page ? <Page /> : <Outlet />}</PanelPageErrorBoundary>
+                </PanelAccessGuard>
               </main>
             </div>
             {(roleData?.role === "admin_master" ||

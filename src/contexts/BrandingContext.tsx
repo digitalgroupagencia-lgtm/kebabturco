@@ -128,17 +128,22 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
     }
     setLoading(true);
     load();
+    let bumpTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel(`company_settings:${storeId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "company_settings", filter: `store_id=eq.${storeId}` },
         () => {
-          void load().then(() => bumpAppCache());
+          void load().then(() => {
+            if (bumpTimer) clearTimeout(bumpTimer);
+            bumpTimer = setTimeout(() => bumpAppCache(), 2000);
+          });
         }
       )
       .subscribe();
     return () => {
+      if (bumpTimer) clearTimeout(bumpTimer);
       supabase.removeChannel(channel);
     };
   }, [storeId, load]);

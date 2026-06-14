@@ -82,7 +82,7 @@ export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
   const Page = lazyPage(def.loader);
 
   return withSuspense(
-    <AdminErrorBoundary area={def.area}>
+    <AdminErrorBoundary area={def.area} resetKey={routePathname}>
       <Layout page={Page} />
     </AdminErrorBoundary>,
   );
