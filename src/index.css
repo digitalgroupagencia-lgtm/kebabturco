@@ -222,12 +222,6 @@
   html.staff-landscape-layout .staff-kpi-grid--3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  html.staff-landscape-layout .staff-main-grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-  html.staff-landscape-layout .staff-main-grid > * {
-    min-width: 0;
-  }
 
   @keyframes shimmer {
     0% { background-position: -200% 0; }
@@ -262,5 +256,31 @@ iframe[name*="stripe-elements-inspector"] {
   opacity: 0 !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+/* Dashboard admin — cartões em proporção fixa (7:3:2), sem depender de col-span */
+.staff-dashboard-trio {
+  display: grid;
+  width: 100%;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+.staff-finance-duo {
+  display: grid;
+  width: 100%;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .staff-dashboard-trio {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .staff-finance-duo {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+.staff-dashboard-trio > *,
+.staff-finance-duo > * {
+  min-width: 0;
 }
 

@@ -262,12 +262,12 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main grid: chart + ranking + alerts */}
-      <div className="staff-main-grid grid grid-cols-1 md:grid-cols-12 staff-wide:grid-cols-12 gap-4">
+      <div className="staff-dashboard-trio gap-4">
         <PremiumChartCard
           title="Faturamento da rede"
           subtitle="Últimos 12 meses"
           action={<StatusPill label="Dados reais" tone="active" dot />}
-          className="col-span-12 md:col-span-7 staff-wide:col-span-7 min-w-0"
+          className="min-w-0"
         >
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -315,7 +315,7 @@ const AdminDashboard = () => {
         </PremiumChartCard>
 
         <RankingCard
-          className="col-span-12 md:col-span-3 staff-wide:col-span-3 min-w-0"
+          className="min-w-0"
           title="Top restaurantes"
           subtitle="Por faturamento no mês"
           items={(topTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
@@ -336,7 +336,7 @@ const AdminDashboard = () => {
         />
 
         <AlertCard
-          className="col-span-12 md:col-span-2 staff-wide:col-span-2 min-w-0"
+          className="min-w-0"
           title="Alertas inteligentes"
           items={((): AlertItem[] => {
             const out: AlertItem[] = [];
