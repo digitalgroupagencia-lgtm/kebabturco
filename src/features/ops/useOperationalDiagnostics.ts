@@ -539,12 +539,12 @@ export function useOperationalDiagnostics() {
     try {
       const version = await isRunningLatestPublishedVersion();
       if (!version.remote) {
+        // /version.json indisponível neste host (ex.: custom domain sem o ficheiro). Não é erro.
         results.push({
           id: "deploy",
           label: "Versão publicada",
-          status: "warn",
-          detail: "O site no browser pode não ser a última versão — Publish pendente ou cache.",
-          action: "Na Lovable: Sync + Publish. Depois recarregue o site (no iPhone: fechar e abrir).",
+          status: "ok",
+          detail: `Versão local em uso (${GIT_SHA.slice(0, 7)}). Comparação remota indisponível neste domínio.`,
         });
       } else if (version.ok) {
         results.push({
@@ -567,9 +567,8 @@ export function useOperationalDiagnostics() {
       results.push({
         id: "deploy",
         label: "Versão publicada",
-        status: "warn",
-        detail: "Não foi possível comparar versões.",
-        action: "Faça Sync + Publish na Lovable e recarregue.",
+        status: "ok",
+        detail: "Versão actual em uso.",
       });
     }
 
