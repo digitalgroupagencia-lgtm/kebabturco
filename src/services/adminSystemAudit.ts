@@ -395,22 +395,29 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
   } else if (!isStripeConnectReady(store)) {
     const intake = await fetchStorePayoutIntake(storeId);
     const awaitingReview = Boolean(intake?.submitted_at);
-    findings.push({
-      id: "payments-stripe-incomplete",
-      category: "payments",
-      severity: awaitingReview ? "warning" : "critical",
-      label: awaitingReview
-        ? "Recebimentos em análise"
-        : "Recebimentos incompletos — cobranças desactivadas",
-      detail: awaitingReview
-        ? "Dados já enviados — pagamentos online ficam activos após aprovação."
-        : "Falta completar os dados bancários do restaurante.",
-      panel: "admin",
-      action: awaitingReview
-        ? "Admin → Recebimentos → acompanhar estado."
-        : "Admin → Recebimentos → preencher dados ou enviar link WhatsApp.",
-      link: "/admin/finance",
-    });
+    // Se já enviou os dados, isto é só informativo (a Stripe pode já ter aprovado e a DB ainda não sincronizou).
+    if (awaitingReview) {
+      findings.push({
+        id: "payments-stripe-incomplete",
+        category: "payments",
+        severity: "ok",
+        label: "Recebimentos — dados enviados",
+        detail: "Conta ligada à Stripe. Se a aprovação já saiu, o estado actualiza automaticamente.",
+        panel: "admin",
+        link: "/admin/finance",
+      });
+    } else {
+      findings.push({
+        id: "payments-stripe-incomplete",
+        category: "payments",
+        severity: "critical",
+        label: "Recebimentos incompletos — cobranças desactivadas",
+        detail: "Falta completar os dados bancários do restaurante.",
+        panel: "admin",
+        action: "Admin → Recebimentos → preencher dados ou enviar link WhatsApp.",
+        link: "/admin/finance",
+      });
+    }
   } else {
     findings.push({
       id: "payments-stripe-ok",
