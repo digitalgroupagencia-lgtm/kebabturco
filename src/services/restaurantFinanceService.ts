@@ -11,6 +11,7 @@ export type FinanceMovement = {
   customerPaidCents: number;
   serviceFeeCents: number;
   youReceiveCents: number;
+  paymentMethod: string | null;
 };
 
 export type FinancePayout = {
@@ -46,6 +47,7 @@ type LedgerDbRow = {
     subtotal: number;
     delivery_fee: number | null;
     discount_amount: number | null;
+    payment_method: string | null;
   } | null;
 };
 
@@ -93,6 +95,7 @@ export function mapLedgerRowToMovement(row: LedgerDbRow): FinanceMovement {
     customerPaidCents,
     serviceFeeCents,
     youReceiveCents,
+    paymentMethod: row.orders?.payment_method ?? null,
   };
 }
 
@@ -100,7 +103,7 @@ export async function fetchFinanceMovements(storeId: string, limit = 60): Promis
   const { data, error } = await supabase
     .from("store_payment_ledger")
     .select(
-      "id,created_at,entry_type,description,gross_cents,processing_fee_cents,net_cents,order_id,orders(order_number,subtotal,delivery_fee,discount_amount)",
+      "id,created_at,entry_type,description,gross_cents,processing_fee_cents,net_cents,order_id,orders(order_number,subtotal,delivery_fee,discount_amount,payment_method)",
     )
     .eq("store_id", storeId)
     .order("created_at", { ascending: false })

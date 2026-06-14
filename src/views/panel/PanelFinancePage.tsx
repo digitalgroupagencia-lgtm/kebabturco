@@ -65,7 +65,7 @@ const PanelFinancePage = () => {
   const hasData = paymentsActive || movements.length > 0 || payouts.length > 0;
 
   return (
-    <div className="mx-auto max-w-lg space-y-5 pb-10">
+    <div className="w-full max-w-[1600px] px-4 sm:px-6 space-y-5 pb-10">
       <PanelStoreSwitcher />
 
       <div className="flex items-start justify-between gap-3">

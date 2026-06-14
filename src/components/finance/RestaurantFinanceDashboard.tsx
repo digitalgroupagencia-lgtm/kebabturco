@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   type FinanceMovement,
   type FinancePayout,
@@ -7,7 +8,14 @@ import {
   formatShortDate,
   payoutStatusLabel,
 } from "@/services/restaurantFinanceService";
-import { CalendarClock, Landmark, PiggyBank, Receipt, Timer } from "lucide-react";
+import { buildFinanceAnalytics } from "@/services/financeAnalyticsService";
+import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
+import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import PremiumDonutChart from "@/components/admin/premium/PremiumDonutChart";
+import PremiumDualLineChart from "@/components/admin/premium/PremiumDualLineChart";
+import PremiumFunnelChart from "@/components/admin/premium/PremiumFunnelChart";
+import EqualCardGrid from "@/components/admin/premium/EqualCardGrid";
+import { CalendarClock, Landmark, PiggyBank, Receipt, Timer, TrendingUp, Wallet } from "lucide-react";
 
 type Props = {
   snapshot: RestaurantFinanceSnapshot | null;
@@ -27,6 +35,10 @@ function payoutScheduleText(snapshot: RestaurantFinanceSnapshot | null): string 
   return "Repasses automáticos para a sua conta bancária";
 }
 
+function fmtPeriod(cents: number): string {
+  return `${formatEur(cents)}€`;
+}
+
 export default function RestaurantFinanceDashboard({
   snapshot,
   movements,
@@ -35,6 +47,8 @@ export default function RestaurantFinanceDashboard({
   businessName,
   lastPayoutAt,
 }: Props) {
+  const analytics = useMemo(() => buildFinanceAnalytics(movements), [movements]);
+
   const totalCustomerPaid = movements
     .filter((m) => m.kind === "payment")
     .reduce((s, m) => s + m.customerPaidCents, 0);
@@ -48,7 +62,7 @@ export default function RestaurantFinanceDashboard({
   const bankLast4 = snapshot?.ibanLast4 ?? ibanLast4 ?? null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
         <p>
           O cliente paga o total do pedido. A <strong className="text-foreground">taxa de serviço da plataforma</strong>{" "}
@@ -60,36 +74,29 @@ export default function RestaurantFinanceDashboard({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <div className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-            <PiggyBank className="h-3.5 w-3.5" />
-            Disponível para repasse
-          </div>
-          <p className="text-2xl font-black tabular-nums mt-2">{formatEur(available)}€</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Na sua conta de recebimentos</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-            <Timer className="h-3.5 w-3.5" />
-            Em processamento
-          </div>
-          <p className="text-2xl font-black tabular-nums mt-2">{formatEur(pending)}€</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Pagamentos ainda a liquidar</p>
-        </div>
-        <div className="rounded-2xl border bg-gradient-to-br from-primary/90 to-primary p-4 text-primary-foreground shadow-md">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide opacity-90">
-            <Landmark className="h-3.5 w-3.5" />
-            Próximo depósito no banco
-          </div>
-          <p className="text-2xl font-black tabular-nums mt-2">
-            {nextPayout != null && nextPayout > 0 ? `${formatEur(nextPayout)}€` : "—"}
-          </p>
-          <p className="text-[11px] opacity-85 mt-1">
-            {nextDate ? `Previsão: ${formatShortDate(nextDate)}` : "Assim que houver saldo"}
-          </p>
-        </div>
-      </div>
+      <EqualCardGrid cols={3}>
+        <PremiumMetricCard
+          icon={PiggyBank}
+          tone="success"
+          label="Disponível para repasse"
+          value={`${formatEur(available)}€`}
+          sub="Na sua conta de recebimentos"
+        />
+        <PremiumMetricCard
+          icon={Timer}
+          tone="warning"
+          label="Em processamento"
+          value={`${formatEur(pending)}€`}
+          sub="Pagamentos ainda a liquidar"
+        />
+        <PremiumMetricCard
+          icon={Landmark}
+          tone="primary"
+          label="Próximo depósito no banco"
+          value={nextPayout != null && nextPayout > 0 ? `${formatEur(nextPayout)}€` : "—"}
+          sub={nextDate ? `Previsão: ${formatShortDate(nextDate)}` : "Assim que houver saldo"}
+        />
+      </EqualCardGrid>
 
       {bankLast4 && (
         <div className="rounded-xl border bg-card px-4 py-3 flex items-center justify-between gap-3">
@@ -107,20 +114,68 @@ export default function RestaurantFinanceDashboard({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Faturação</p>
-          <p className="text-sm font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Taxas de serviço</p>
-          <p className="text-sm font-black tabular-nums mt-1">{formatEur(totalServiceFees)}€</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Líquido para si</p>
-          <p className="text-sm font-black tabular-nums mt-1">{formatEur(totalYouReceive)}€</p>
-        </div>
+      <EqualCardGrid cols={3}>
+        <PremiumMetricCard
+          icon={Wallet}
+          tone="info"
+          label="Hoje"
+          value={fmtPeriod(analytics.today.grossCents)}
+          sub={`${analytics.today.count} pedido(s) · líquido ${fmtPeriod(analytics.today.netCents)}`}
+        />
+        <PremiumMetricCard
+          icon={TrendingUp}
+          tone="purple"
+          label="Últimos 7 dias"
+          value={fmtPeriod(analytics.week.grossCents)}
+          sub={`${analytics.week.count} pedido(s) · líquido ${fmtPeriod(analytics.week.netCents)}`}
+        />
+        <PremiumMetricCard
+          icon={Receipt}
+          tone="orange"
+          label="Este mês"
+          value={fmtPeriod(analytics.month.grossCents)}
+          sub={`${analytics.month.count} pedido(s) · líquido ${fmtPeriod(analytics.month.netCents)}`}
+        />
+      </EqualCardGrid>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <PremiumChartCard
+          title="Pagamentos por método"
+          subtitle="Volume em euros — cartão, Bizum, Apple Pay, Google Pay"
+          className="xl:col-span-5"
+        >
+          <PremiumDonutChart data={analytics.byMethod} />
+        </PremiumChartCard>
+
+        <PremiumChartCard
+          title="Evolução diária"
+          subtitle="Últimos 30 dias — verde = líquido, vermelho = taxas"
+          className="xl:col-span-7"
+        >
+          <PremiumDualLineChart data={analytics.dailySeries} />
+        </PremiumChartCard>
       </div>
+
+      <PremiumChartCard title="Volume por método" subtitle="Comparativo rápido (funil)">
+        <PremiumFunnelChart data={analytics.byMethod} />
+      </PremiumChartCard>
+
+      <EqualCardGrid cols={3}>
+        <div className="rounded-xl border bg-card p-3 text-center h-full flex flex-col justify-center">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Faturação total</p>
+          <p className="text-lg font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3 text-center h-full flex flex-col justify-center">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Taxas de serviço</p>
+          <p className="text-lg font-black tabular-nums mt-1 text-destructive">−{formatEur(totalServiceFees)}€</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3 text-center h-full flex flex-col justify-center">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Líquido para si</p>
+          <p className="text-lg font-black tabular-nums mt-1 text-emerald-600 dark:text-emerald-400">
+            {formatEur(totalYouReceive)}€
+          </p>
+        </div>
+      </EqualCardGrid>
 
       <div>
         <h2 className="text-sm font-bold mb-2 flex items-center gap-1.5">

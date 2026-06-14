@@ -6,6 +6,14 @@ import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumSection from "@/components/admin/premium/PremiumSection";
+import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
+import PremiumDonutChart from "@/components/admin/premium/PremiumDonutChart";
+import {
+  PAYMENT_METHOD_CHART_COLORS,
+  PAYMENT_METHOD_LABELS,
+  normalizeFinancePaymentMethod,
+} from "@/lib/financeChartColors";
+import type { MethodSlice } from "@/services/financeAnalyticsService";
 
 const MonitoringPage = () => {
   const { data: tenants, isLoading } = useQuery({
@@ -55,10 +63,40 @@ const MonitoringPage = () => {
 
       const { data, error } = await supabase
         .from("orders")
-        .select("store_id, total, status, created_at")
+        .select("store_id, total, status, created_at, payment_method, payment_status")
         .gte("created_at", startOfMonth.toISOString())
         .neq("status", "cancelled");
       if (error) throw error;
+
+      const paidOnline = data.filter(
+        (o) =>
+          o.payment_status === "paid" &&
+          o.payment_method &&
+          ["card", "bizum", "apple_pay", "google_pay"].includes(o.payment_method),
+      );
+
+      const methodVolumeCents: Record<string, number> = {};
+      const methodCount: Record<string, number> = {};
+      for (const o of paidOnline) {
+        const key = o.payment_method!;
+        const cents = Math.round(Number(o.total ?? 0) * 100);
+        methodVolumeCents[key] = (methodVolumeCents[key] ?? 0) + cents;
+        methodCount[key] = (methodCount[key] ?? 0) + 1;
+      }
+      const totalMethodCents = Object.values(methodVolumeCents).reduce((s, v) => s + v, 0);
+      const byPaymentMethod: MethodSlice[] = Object.entries(methodVolumeCents)
+        .map(([raw, volumeCents]) => {
+          const key = normalizeFinancePaymentMethod(raw);
+          return {
+            key,
+            label: PAYMENT_METHOD_LABELS[key],
+            count: methodCount[raw] ?? 0,
+            volumeCents,
+            color: PAYMENT_METHOD_CHART_COLORS[key],
+            percent: totalMethodCents > 0 ? Math.round((volumeCents / totalMethodCents) * 100) : 0,
+          };
+        })
+        .sort((a, b) => b.volumeCents - a.volumeCents);
 
       const today = data.filter((o) => new Date(o.created_at) >= startOfDay);
 
@@ -74,7 +112,7 @@ const MonitoringPage = () => {
         byStore[o.store_id].orders += 1;
       });
 
-      return { totalToday, totalMonth, ordersToday, ordersMonth, byStore };
+      return { totalToday, totalMonth, ordersToday, ordersMonth, byStore, byPaymentMethod };
     },
     refetchInterval: 60000,
   });
@@ -93,7 +131,7 @@ const MonitoringPage = () => {
   });
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+    new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
 
   return (
     <div className="space-y-6">
@@ -124,6 +162,13 @@ const MonitoringPage = () => {
           <PremiumMetricCard icon={ShoppingBag} label="Pedidos mês" value={financial?.ordersMonth ?? 0} tone="purple" />
         </div>
       </div>
+
+      <PremiumChartCard
+        title="Pagamentos online do mês"
+        subtitle="Divisão por método — dados reais em euros"
+      >
+        <PremiumDonutChart data={financial?.byPaymentMethod ?? []} />
+      </PremiumChartCard>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <PremiumMetricCard icon={Building2} label="Tenants ativos" value={tenants?.filter((t) => t.is_active).length ?? 0} tone="primary" />

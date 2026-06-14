@@ -300,7 +300,7 @@ const FinancePage = () => {
   const showFinanceDashboard = ready || movements.length > 0 || payouts.length > 0;
 
   return (
-    <div className="mx-auto max-w-lg space-y-4 pb-10">
+    <div className="w-full max-w-[1600px] px-4 sm:px-6 space-y-4 pb-10">
       <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — só administradores." />
       <AdminPayoutIntakeForm
         storeId={storeId}
