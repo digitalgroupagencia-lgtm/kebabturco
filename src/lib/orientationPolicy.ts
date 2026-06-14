@@ -28,3 +28,9 @@ export function isTouchDevice(): boolean {
     (typeof navigator !== "undefined" && (navigator.maxTouchPoints ?? 0) > 0)
   );
 }
+
+export function isCoarseTouchDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) return false;
+  return isTouchDevice();
+}

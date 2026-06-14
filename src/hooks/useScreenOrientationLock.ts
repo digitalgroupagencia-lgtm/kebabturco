@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import {
   isLandscapeLockedPath,
   isPortraitLockedPath,
   isStaffWideLayoutPath,
-  isTouchDevice,
+  isCoarseTouchDevice,
 } from "@/lib/orientationPolicy";
+
+type RotateMode = "none" | "fp" | "fl";
 
 function clearRotateClasses() {
   document.body.classList.remove("fp-rotate", "fl-rotate");
@@ -15,27 +18,59 @@ function clearRotateClasses() {
   document.body.style.removeProperty("--fl-h");
 }
 
+
+function resolveRotateMode(
+  portraitLock: boolean,
+  landscapeLock: boolean,
+  touch: boolean,
+  w: number,
+  h: number,
+): RotateMode {
+  if (portraitLock && touch && w > h && w >= 600) return "fp";
+  if (landscapeLock && touch && h > w && h >= 600) return "fl";
+  return "none";
+}
+
+function applyRotateMode(mode: RotateMode, w: number, h: number) {
+  clearRotateClasses();
+  if (mode === "fp") {
+    document.body.style.setProperty("--fp-w", `${w}px`);
+    document.body.style.setProperty("--fp-h", `${h}px`);
+    document.body.classList.add("fp-rotate");
+    return;
+  }
+  if (mode === "fl") {
+    document.body.style.setProperty("--fl-w", `${w}px`);
+    document.body.style.setProperty("--fl-h", `${h}px`);
+    document.body.classList.add("fl-rotate");
+  }
+}
+
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
- * No browser normal o lock da API falha em silêncio; o fallback CSS roda só em touch.
- *
- * Chamadas com modo explícito (legado Lovable) são ignoradas — a política vem do pathname
- * via ScreenOrientationEffect na raiz da app.
+ * No browser normal o lock da API falha em silêncio; o fallback CSS só corre em touch grosso.
  */
 export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();
   const portraitLock = isPortraitLockedPath(pathname);
   const landscapeLock = isLandscapeLockedPath(pathname);
+  const activeModeRef = useRef<RotateMode>("none");
 
   useEffect(() => {
-    const touch = isTouchDevice();
     const html = document.documentElement;
+    const inEditor = isLovableEditorPreview();
+    const touch = isCoarseTouchDevice();
 
-    if (isStaffWideLayoutPath(pathname) && touch) {
+    if (isStaffWideLayoutPath(pathname)) {
       html.classList.add("staff-landscape-layout");
     } else {
       html.classList.remove("staff-landscape-layout");
     }
+
+    const cleanupRotate = () => {
+      activeModeRef.current = "none";
+      clearRotateClasses();
+    };
 
     if (!portraitLock && !landscapeLock) {
       try {
@@ -44,10 +79,19 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       } catch {
         /* noop */
       }
-      clearRotateClasses();
+      cleanupRotate();
       return () => {
         html.classList.remove("staff-landscape-layout");
-        clearRotateClasses();
+        cleanupRotate();
+      };
+    }
+
+    // Preview Lovable: sem rotate CSS (resize ↔ rotate causava piscar infinito).
+    if (inEditor) {
+      cleanupRotate();
+      return () => {
+        html.classList.remove("staff-landscape-layout");
+        cleanupRotate();
       };
     }
 
@@ -68,39 +112,31 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     const apply = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      clearRotateClasses();
+      const nextMode = resolveRotateMode(portraitLock, landscapeLock, touch, w, h);
 
-      if (portraitLock && touch) {
-        const isLandscape = w > h;
-        const meaningful = w >= 600;
-        if (isLandscape && meaningful) {
-          document.body.style.setProperty("--fp-w", `${w}px`);
-          document.body.style.setProperty("--fp-h", `${h}px`);
-          document.body.classList.add("fp-rotate");
-        }
-        return;
-      }
+      if (nextMode === activeModeRef.current) return;
 
-      if (landscapeLock && touch) {
-        const isPortrait = h > w;
-        const meaningful = h >= 600;
-        if (isPortrait && meaningful) {
-          document.body.style.setProperty("--fl-w", `${w}px`);
-          document.body.style.setProperty("--fl-h", `${h}px`);
-          document.body.classList.add("fl-rotate");
-        }
-      }
+      activeModeRef.current = nextMode;
+      applyRotateMode(nextMode, w, h);
     };
 
     apply();
-    window.addEventListener("resize", apply);
-    window.addEventListener("orientationchange", apply);
+
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(apply);
+    };
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
 
     return () => {
-      window.removeEventListener("resize", apply);
-      window.removeEventListener("orientationchange", apply);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
       html.classList.remove("staff-landscape-layout");
-      clearRotateClasses();
+      cleanupRotate();
       try {
         // @ts-expect-error Screen Orientation API
         screen.orientation?.unlock?.();
