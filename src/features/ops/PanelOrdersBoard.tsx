@@ -50,9 +50,11 @@ export type PanelOrdersBoardMode = "live" | "full";
 type Props = {
   storeId: string;
   mode?: PanelOrdersBoardMode;
+  /** Quando true, não renderiza a PanelAlertsBar inline (a página pai trata via diálogo). */
+  hideInlineAlertsBar?: boolean;
 };
 
-const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
+const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false }: Props) => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { t } = useStaffT();
@@ -306,7 +308,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live" }: Props) => {
         connectionStatus={connectionStatus}
         headerExtra={
           <div className="space-y-2">
-            <PanelAlertsBar storeId={storeId} />
+            {!hideInlineAlertsBar && <PanelAlertsBar storeId={storeId} />}
             {printSummary?.printerEnabled && (
               <PanelPrintStatusBar
                 summary={printSummary}

@@ -18,8 +18,11 @@ function clearRotateClasses() {
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
  * No browser normal o lock da API falha em silêncio; o fallback CSS roda só em touch.
+ *
+ * Chamadas com modo explícito (legado Lovable) são ignoradas — a política vem do pathname
+ * via ScreenOrientationEffect na raiz da app.
  */
-export function useScreenOrientationLock() {
+export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();
   const portraitLock = isPortraitLockedPath(pathname);
   const landscapeLock = isLandscapeLockedPath(pathname);
@@ -107,3 +110,5 @@ export function useScreenOrientationLock() {
     };
   }, [pathname, portraitLock, landscapeLock]);
 }
+
+export default useScreenOrientationLock;

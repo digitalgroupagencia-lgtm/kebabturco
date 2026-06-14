@@ -251,8 +251,8 @@ function BizumCheckoutForm({
             type: "bizum",
             billing_details: { phone },
           },
-        },
-        redirect: "if_required",
+        } as never,
+        redirect: "if_required" as never,
       });
 
       if (error) {
