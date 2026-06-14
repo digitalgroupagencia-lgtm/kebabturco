@@ -2007,16 +2007,17 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           created_at: string
           full_name: string | null
           id: string
           preferred_language: string
-          birth_date: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -2026,6 +2027,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -2672,6 +2674,7 @@ export type Database = {
           longitude: number | null
           name: string
           phone: string | null
+          phone_secondary: string | null
           short_description: string | null
           sort_order: number
           stripe_business_name: string | null
@@ -2687,6 +2690,7 @@ export type Database = {
           stripe_payouts_enabled: boolean
           tenant_id: string
           updated_at: string
+          whatsapp_phone: string | null
         }
         Insert: {
           address?: string | null
@@ -2699,6 +2703,7 @@ export type Database = {
           longitude?: number | null
           name: string
           phone?: string | null
+          phone_secondary?: string | null
           short_description?: string | null
           sort_order?: number
           stripe_business_name?: string | null
@@ -2714,6 +2719,7 @@ export type Database = {
           stripe_payouts_enabled?: boolean
           tenant_id: string
           updated_at?: string
+          whatsapp_phone?: string | null
         }
         Update: {
           address?: string | null
@@ -2726,6 +2732,7 @@ export type Database = {
           longitude?: number | null
           name?: string
           phone?: string | null
+          phone_secondary?: string | null
           short_description?: string | null
           sort_order?: number
           stripe_business_name?: string | null
@@ -2741,6 +2748,7 @@ export type Database = {
           stripe_payouts_enabled?: boolean
           tenant_id?: string
           updated_at?: string
+          whatsapp_phone?: string | null
         }
         Relationships: [
           {
@@ -3425,9 +3433,12 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string | null
+          geocoded_address: string | null
           id: string | null
           image_url: string | null
           is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
           name: string | null
           short_description: string | null
           sort_order: number | null
@@ -3436,9 +3447,12 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string | null
+          geocoded_address?: string | null
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string | null
           short_description?: string | null
           sort_order?: number | null
@@ -3447,9 +3461,12 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string | null
+          geocoded_address?: string | null
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string | null
           short_description?: string | null
           sort_order?: number | null
@@ -3725,6 +3742,14 @@ export type Database = {
           order_count: number
         }[]
       }
+      get_public_table_binding: {
+        Args: {
+          _known_session_id?: string
+          _qr_token: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       get_sales_summary: {
         Args: { _since: string; _store_id: string }
         Returns: {
@@ -3749,6 +3774,7 @@ export type Database = {
         Args: { _store_id: string }
         Returns: Json
       }
+      get_store_customer_contact: { Args: { _store_id: string }; Returns: Json }
       get_store_payout_intake: {
         Args: { _store_id: string }
         Returns: {
@@ -3916,9 +3942,17 @@ export type Database = {
         Args: { _store_id: string; _table_id?: string; _table_number: string }
         Returns: string
       }
+      open_table_session_on_scan_public: {
+        Args: { _qr_token: string; _store_id: string }
+        Returns: Json
+      }
       order_should_notify_staff_on_panel: {
         Args: { p: Database["public"]["Tables"]["orders"]["Row"] }
         Returns: boolean
+      }
+      record_order_refund: {
+        Args: { _order_id: string; _reason?: string }
+        Returns: Json
       }
       record_payment_failure: {
         Args: {
@@ -4039,18 +4073,37 @@ export type Database = {
         }
         Returns: undefined
       }
+      upsert_my_staff_profile: {
+        Args: {
+          _avatar_url?: string
+          _birth_date?: string
+          _full_name?: string
+        }
+        Returns: undefined
+      }
       upsert_staff_access_pin: {
         Args: { _pin: string; _user_role_id: string }
         Returns: undefined
       }
-      upsert_staff_profile_by_manager: {
-        Args: {
-          _full_name?: string
-          _preferred_language?: string
-          _user_id: string
-        }
-        Returns: undefined
-      }
+      upsert_staff_profile_by_manager:
+        | {
+            Args: {
+              _full_name?: string
+              _preferred_language?: string
+              _user_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _avatar_url?: string
+              _birth_date?: string
+              _full_name?: string
+              _preferred_language?: string
+              _user_id: string
+            }
+            Returns: undefined
+          }
       upsert_store_payout_intake: {
         Args: {
           _business_address?: string
