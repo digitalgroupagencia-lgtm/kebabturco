@@ -67,7 +67,6 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
 
     if (!portraitLock && !landscapeLock) {
       try {
-        // @ts-expect-error Screen Orientation API
         screen.orientation?.unlock?.();
       } catch {
         /* noop */
@@ -89,10 +88,8 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
 
     const lockMode = landscapeLock ? "landscape" : "portrait";
     try {
-      // @ts-expect-error Screen Orientation API
       const lock = screen.orientation?.lock;
       if (typeof lock === "function") {
-        // @ts-expect-error Screen Orientation API
         lock.call(screen.orientation, lockMode).catch(() => {
           /* utilizador deve rodar o aparelho */
         });
@@ -130,7 +127,6 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       html.classList.remove("staff-landscape-layout");
       cleanupRotate();
       try {
-        // @ts-expect-error Screen Orientation API
         screen.orientation?.unlock?.();
       } catch {
         /* noop */

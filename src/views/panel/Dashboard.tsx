@@ -90,7 +90,7 @@ const Dashboard = () => {
         .filter((o) => o.status !== "cancelled" && !o.is_test)
         .map((o) => ({
           id: o.id,
-          order_number: o.order_number ?? 0,
+          order_number: Number(o.order_number ?? 0),
           total: Number(o.total ?? 0),
           payment_method: o.payment_method,
           payment_status: o.payment_status,
