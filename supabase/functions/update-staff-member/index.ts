@@ -109,6 +109,8 @@ Deno.serve(async (req) => {
       full_name,
       role,
       preferred_language,
+      birth_date,
+      avatar_url,
       password,
     } = body ?? {};
 
@@ -220,6 +222,8 @@ Deno.serve(async (req) => {
       _user_id: user_id,
       _full_name: full_name?.trim() || null,
       _preferred_language: preferred_language || "es",
+      _birth_date: birth_date || null,
+      _avatar_url: avatar_url?.trim() || null,
     });
 
     return new Response(JSON.stringify({ success: true, login_ready: true }), {

@@ -3826,6 +3826,19 @@ export type Database = {
           user_role_id: string
         }[]
       }
+      save_team_member_by_manager: {
+        Args: {
+          _access_pin?: string
+          _birth_date?: string
+          _full_name: string
+          _preferred_language?: string
+          _role?: Database["public"]["Enums"]["app_role"]
+          _store_id: string
+          _user_id: string
+          _user_role_id: string
+        }
+        Returns: Json
+      }
       get_table_session_detail: {
         Args: { _session_id: string }
         Returns: {

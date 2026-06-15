@@ -374,6 +374,11 @@ export const STAFF_I18N = {
   "team.toast.lang_error": { es: "Error al actualizar idioma", pt: "Erro ao atualizar idioma", en: "Failed to update language" },
   "team.toast.lang_updated": { es: "Idioma actualizado", pt: "Idioma atualizado!", en: "Language updated" },
   "team.toast.member_updated": { es: "Miembro actualizado", pt: "Membro actualizado", en: "Member updated" },
+  "team.toast.name_required": {
+    es: "Escriba el nombre del miembro antes de guardar.",
+    pt: "Escreva o nome do membro antes de guardar.",
+    en: "Enter the member name before saving.",
+  },
   "team.toast.draft_restored": { es: "Borrador restaurado — puede continuar donde lo dejó", pt: "Rascunho restaurado — pode continuar de onde parou", en: "Draft restored — you can pick up where you left off" },
   "team.toast.login_pending_edit": { es: "Perfil guardado, pero el login aún no responde. Vuelva a guardar la contraseña después de Sync + Publish.", pt: "Perfil guardado, mas o login ainda não responde. Volte a guardar a senha depois de Sync + Publish.", en: "Profile saved, but login isn't ready yet. Save the password again after Sync + Publish." },
   "team.toast.member_added": { es: "Miembro añadido como {role}", pt: "Membro adicionado como {role}!", en: "Member added as {role}" },

@@ -43,6 +43,7 @@ import {
   teamMemberDraftHasContent,
 } from "@/lib/teamMemberDraft";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import { fetchStoreTeamMembers, saveTeamMemberByManager } from "@/services/teamMemberService";
 import {
   approveStaffGooglePending,
   rejectStaffGooglePending,
@@ -204,82 +205,24 @@ const TeamPage = () => {
   const fetchMembers = async () => {
     if (!storeId) return;
 
-    const mapRows = (rows: {
-      user_role_id: string;
-      user_id: string;
-      role: AppRole;
-      email: string | null;
-      full_name: string | null;
-      preferred_language: string | null;
-      avatar_url: string | null;
-      birth_date: string | null;
-    }[]): TeamMember[] =>
-      rows.map((row) => ({
-        id: row.user_role_id,
-        user_id: row.user_id,
-        role: row.role,
-        email: row.email || undefined,
-        full_name: row.full_name || undefined,
-        preferred_language: row.preferred_language || "pt",
-        avatar_url: row.avatar_url ?? null,
-        birth_date: row.birth_date ?? null,
-      }));
-
     try {
-      const { data: rows, error } = await supabase.rpc("get_store_team_members", {
-        _store_id: storeId,
-      });
-      if (error) throw error;
-      setMembers(mapRows((rows ?? []) as Parameters<typeof mapRows>[0]));
-      setLoading(false);
-      return;
-    } catch {
-      /* tenta leitura directa com política de perfis da equipa */
+      const rows = await fetchStoreTeamMembers(storeId);
+      setMembers(
+        rows.map((row) => ({
+          id: row.user_role_id,
+          user_id: row.user_id,
+          role: row.role,
+          email: row.email || undefined,
+          full_name: row.full_name || undefined,
+          preferred_language: row.preferred_language || "pt",
+          avatar_url: row.avatar_url ?? null,
+          birth_date: row.birth_date ?? null,
+        })),
+      );
+    } catch (e: unknown) {
+      toast.error(translateAppErrorFromException(e, panelLang));
     }
 
-    const { data: roles, error: rolesError } = await supabase
-      .from("user_roles")
-      .select("id, user_id, role")
-      .eq("store_id", storeId);
-
-    if (rolesError || !roles) {
-      setLoading(false);
-      return;
-    }
-
-    const userIds = roles.map((r) => r.user_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, full_name, preferred_language, avatar_url, birth_date")
-      .in("user_id", userIds);
-
-    const emailByUser = new Map<string, string>();
-    try {
-      const { data: emailRows } = await (supabase.rpc as any)("get_store_team_member_emails", {
-        _store_id: storeId,
-      });
-      ((emailRows ?? []) as { user_id: string; email: string }[]).forEach((row) => {
-        if (row.user_id && row.email) emailByUser.set(row.user_id, row.email);
-      });
-    } catch {
-      /* emails opcionais */
-    }
-
-    setMembers(
-      roles.map((r) => {
-        const profile = profiles?.find((p) => p.user_id === r.user_id);
-        return {
-          id: r.id,
-          user_id: r.user_id,
-          role: r.role,
-          email: emailByUser.get(r.user_id),
-          full_name: profile?.full_name || undefined,
-          preferred_language: (profile as { preferred_language?: string })?.preferred_language || "pt",
-          avatar_url: (profile as { avatar_url?: string | null })?.avatar_url ?? null,
-          birth_date: (profile as { birth_date?: string | null })?.birth_date ?? null,
-        };
-      }),
-    );
     setLoading(false);
   };
 
@@ -335,6 +278,10 @@ const TeamPage = () => {
   const saveEditMember = async () => {
     if (!editMember || !storeId) return;
     const lang = (editLanguage === "es" ? "es" : "pt") as "pt" | "es";
+    if (!editName.trim()) {
+      toast.error(t("team.toast.name_required"));
+      return;
+    }
     if (editPassword.trim()) {
       const passwordError = validateStaffPassword(editPassword, lang);
       if (passwordError) {
@@ -352,24 +299,29 @@ const TeamPage = () => {
 
     setEditSaving(true);
     try {
-      await updateStaffMember({
-        user_id: editMember.user_id,
-        user_role_id: editMember.id,
-        store_id: storeId,
-        email: editMember.email,
-        full_name: editName.trim() || null,
+      const saved = await saveTeamMemberByManager({
+        storeId,
+        userRoleId: editMember.id,
+        userId: editMember.user_id,
+        fullName: editName.trim(),
+        preferredLanguage: editLanguage,
+        birthDate: editBirthDate || null,
         role: editRole,
-        preferred_language: editLanguage,
-        birth_date: editBirthDate || null,
-        password: editPassword.trim() || undefined,
+        accessPin: editAccessPin.trim() || null,
       });
 
-      if (editAccessPin.trim()) {
-        const { error: pinError } = await supabase.rpc("upsert_staff_access_pin", {
-          _user_role_id: editMember.id,
-          _pin: editAccessPin.trim(),
+      if (editPassword.trim()) {
+        await updateStaffMember({
+          user_id: editMember.user_id,
+          user_role_id: editMember.id,
+          store_id: storeId,
+          email: editMember.email,
+          full_name: saved.full_name ?? editName.trim(),
+          role: editRole,
+          preferred_language: editLanguage,
+          birth_date: editBirthDate || null,
+          password: editPassword.trim(),
         });
-        if (pinError) throw pinError;
       }
 
       let loginReady = true;
@@ -393,10 +345,11 @@ const TeamPage = () => {
 
       const savedMember: TeamMember = {
         ...editMember,
-        full_name: editName.trim() || undefined,
+        full_name: saved.full_name?.trim() || editName.trim(),
         role: editRole,
-        preferred_language: editLanguage,
-        birth_date: editBirthDate || null,
+        preferred_language: saved.preferred_language || editLanguage,
+        birth_date: saved.birth_date ?? (editBirthDate || null),
+        avatar_url: saved.avatar_url ?? editMember.avatar_url ?? null,
       };
       setMembers((prev) => prev.map((m) => (m.id === editMember.id ? savedMember : m)));
       if (editAccessPin.trim()) {
