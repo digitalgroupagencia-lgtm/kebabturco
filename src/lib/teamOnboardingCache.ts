@@ -1,4 +1,4 @@
-import type { StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
+import type { StaffLoginMethod, StaffOnboardingInput } from "@/lib/staffOnboardingGuide";
 
 const PREFIX = "kebabturco.teamOnboarding.";
 
@@ -8,7 +8,7 @@ function cacheKey(storeId: string, memberRoleId: string) {
 
 export type TeamOnboardingCache = Pick<
   StaffOnboardingInput,
-  "name" | "email" | "password" | "role" | "lang"
+  "name" | "email" | "password" | "role" | "lang" | "paymentCode" | "loginMethod"
 >;
 
 export function saveTeamOnboardingCache(
@@ -30,8 +30,11 @@ export function loadTeamOnboardingCache(
   try {
     const raw = localStorage.getItem(cacheKey(storeId, memberRoleId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as TeamOnboardingCache;
+    const parsed = JSON.parse(raw) as TeamOnboardingCache & { accessPin?: string | null };
     if (!parsed?.email) return null;
+    if (!parsed.paymentCode && parsed.accessPin) {
+      parsed.paymentCode = parsed.accessPin;
+    }
     return parsed;
   } catch {
     return null;
@@ -53,16 +56,24 @@ export function mergeOnboardingInput(
     (member.preferred_language === "es" ? "es" : member.preferred_language === "pt" ? "pt" : "es");
   const isEs = lang === "es";
 
+  const loginMethod: StaffLoginMethod | undefined = cache?.loginMethod;
+
   return {
     name: member.full_name || cache?.name || "",
     email: member.email || cache?.email || "",
     password:
-      cache?.password ||
-      (isEs
-        ? "(igual que al crear — pida al gerente una nueva si la olvidó)"
-        : "(igual à de quando criou — peça ao gerente uma nova se esqueceu)"),
+      loginMethod === "google"
+        ? isEs
+          ? "(no necesaria — use Google con el correo de arriba)"
+          : "(não é necessária — use Google com o e-mail acima)"
+        : cache?.password ||
+          (isEs
+            ? "(la define el gerente — pida una nueva si la olvidó)"
+            : "(definida pelo gerente — peça uma nova se esqueceu)"),
     role: member.role,
     lang,
     siteUrl,
+    paymentCode: cache?.paymentCode ?? null,
+    loginMethod,
   };
 }

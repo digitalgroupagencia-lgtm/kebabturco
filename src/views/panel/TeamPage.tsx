@@ -237,6 +237,8 @@ const TeamPage = () => {
       password: string;
       role: AppRole;
       lang: "pt" | "es";
+      paymentCode?: string | null;
+      loginMethod?: "email" | "google";
     },
   ) => {
     if (!storeId) return;
@@ -336,6 +338,8 @@ const TeamPage = () => {
         password: editPassword.trim() || cache?.password || "",
         role: editRole,
         lang,
+        paymentCode: editAccessPin.trim() || cache?.paymentCode || null,
+        loginMethod: cache?.loginMethod ?? "email",
       });
 
       toast.success(t("team.toast.member_updated"));
@@ -365,7 +369,7 @@ const TeamPage = () => {
         role: editRole,
         preferred_language: editLanguage,
       };
-      if (editPassword.trim()) {
+      if (editPassword.trim() || editAccessPin.trim()) {
         showMemberInstructions(updated, "review");
       }
     } catch (e: unknown) {
@@ -414,6 +418,7 @@ const TeamPage = () => {
         role: newRole,
         lang: uiLang,
         siteUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+        loginMethod: "email",
       });
       setWelcomeMode("create");
       setWelcomeOpen(true);
@@ -427,6 +432,7 @@ const TeamPage = () => {
         password: newPassword,
         role: newRole,
         lang: uiLang,
+        loginMethod: "email" as const,
       };
 
       setNewEmail("");
@@ -488,13 +494,50 @@ const TeamPage = () => {
       });
       toast.success(t("team.google.toast.approved"));
       setGoogleApproveOpen(false);
-      setGoogleApproveTarget(null);
-      await refreshGooglePending();
+
+      const approvedEmail = googleApproveTarget.email;
+      const approvedLang = (googleApproveLang === "es" ? "es" : "pt") as "pt" | "es";
+      const approvedName = googleApproveName.trim() || googleApproveTarget.full_name || approvedEmail;
+
       await fetchMembers();
+
+      if (storeId) {
+        const { data: roleRow } = await supabase
+          .from("user_roles")
+          .select("id, user_id")
+          .eq("store_id", storeId)
+          .eq("user_id", googleApproveTarget.user_id)
+          .maybeSingle();
+
+        if (roleRow?.id) {
+          persistOnboardingCache(roleRow.id, {
+            name: approvedName,
+            email: approvedEmail,
+            password: "",
+            role: googleApproveRole,
+            lang: approvedLang,
+            loginMethod: "google",
+          });
+        }
+      }
+
+      setWelcomeData({
+        name: approvedName,
+        email: approvedEmail,
+        password: "",
+        role: googleApproveRole,
+        lang: approvedLang,
+        siteUrl: typeof window !== "undefined" ? window.location.origin : undefined,
+        loginMethod: "google",
+      });
+      setWelcomeMode("create");
+      setWelcomeOpen(true);
+      setGoogleApproveTarget(null);
     } catch (e: unknown) {
       toast.error(translateAppErrorFromException(e, uiLang));
     } finally {
       setGoogleApproveSaving(false);
+      await refreshGooglePending();
     }
   };
 

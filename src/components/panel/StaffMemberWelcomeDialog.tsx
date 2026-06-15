@@ -56,8 +56,8 @@ const StaffMemberWelcomeDialog = ({ open, data, onOpenChange, mode = "create" }:
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {isEs
-              ? "Copie o envíe por WhatsApp. Incluye correo, contraseña y guía según el perfil."
-              : "Copie ou envie por WhatsApp. Inclui e-mail, senha e guia conforme o perfil."}
+              ? "Copie o envíe por WhatsApp. Incluye acceso (Google o contraseña), código de pago en efectivo si existe, y guía del perfil."
+              : "Copie ou envie por WhatsApp. Inclui acesso (Google ou senha), código de pagamento em dinheiro se existir, e guia do perfil."}
           </DialogDescription>
         </DialogHeader>
 

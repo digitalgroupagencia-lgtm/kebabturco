@@ -1,6 +1,8 @@
 import type { StaffRole } from "@/lib/staffPermissions";
 import { STAFF_ROLE_LABELS } from "@/lib/staffPermissions";
 
+export type StaffLoginMethod = "email" | "google";
+
 export type StaffOnboardingInput = {
   name: string;
   email: string;
@@ -8,37 +10,96 @@ export type StaffOnboardingInput = {
   role: StaffRole;
   lang: "pt" | "es";
   siteUrl?: string;
+  /** Código para confirmar pagamento em dinheiro no balcão (definido pelo gerente). */
+  paymentCode?: string | null;
+  loginMethod?: StaffLoginMethod;
 };
 
-function loginBlock(input: StaffOnboardingInput): string[] {
-  const site = input.siteUrl?.replace(/\/$/, "") || "https://kebabturco.net";
-  if (input.lang === "es") {
+function staffAreaSteps(site: string, lang: "pt" | "es"): string[] {
+  if (lang === "es") {
     return [
-      "══ ACCESO ══",
-      `Correo: ${input.email}`,
-      `Contraseña: ${input.password}`,
-      "",
       "Cómo entrar en el móvil:",
       `1. Abra el menú del cliente (${site})`,
       "2. Toque el logotipo 5 veces seguidas",
       "3. Se abre «Área del equipo»",
-      "4. Introduzca el correo y la contraseña de arriba",
-      "",
-      "Idioma: español por defecto. Use el icono 🌐 arriba a la derecha para cambiar.",
     ];
   }
   return [
-    "══ ACESSO ══",
-    `Email: ${input.email}`,
-    `Senha: ${input.password}`,
-    "",
     "Como entrar no telemóvel:",
     `1. Abra o menu do cliente (${site})`,
     "2. Toque no logótipo 5 vezes seguidas",
     "3. Abre «Área da equipe»",
-    "4. Introduza o e-mail e a senha indicados acima",
+  ];
+}
+
+function loginBlock(input: StaffOnboardingInput): string[] {
+  const site = input.siteUrl?.replace(/\/$/, "") || "https://kebabturco.net";
+  const usesGoogle = input.loginMethod === "google";
+
+  if (input.lang === "es") {
+    const lines = ["══ ACCESO AL PANEL ══", `Correo: ${input.email}`, ""];
+    if (usesGoogle) {
+      lines.push(
+        "Entre SIEMPRE con Google (no necesita contraseña):",
+        "4. Pulse «Continuar con Google» y elija la misma cuenta de arriba",
+      );
+    } else {
+      lines.push(
+        `Contraseña: ${input.password}`,
+        "4. Introduzca el correo y la contraseña de arriba",
+        "",
+        "También puede entrar con Google usando el mismo correo.",
+      );
+    }
+    lines.push("", ...staffAreaSteps(site, "es"), "", "Idioma: español por defecto. Use el icono 🌐 arriba a la derecha para cambiar.");
+    return lines;
+  }
+
+  const lines = ["══ ACESSO AO PAINEL ══", `Email: ${input.email}`, ""];
+  if (usesGoogle) {
+    lines.push(
+      "Entre SEMPRE com Google (não precisa de senha):",
+      "4. Toque «Continuar com Google» e escolha a mesma conta indicada acima",
+    );
+  } else {
+    lines.push(
+      `Senha: ${input.password}`,
+      "4. Introduza o e-mail e a senha indicados acima",
+      "",
+      "Também pode entrar com Google usando o mesmo e-mail.",
+    );
+  }
+  lines.push("", ...staffAreaSteps(site, "pt"), "", "Idioma: espanhol por defeito. Use o ícone 🌐 no topo para mudar.");
+  return lines;
+}
+
+function cashPaymentCodeBlock(input: StaffOnboardingInput): string[] {
+  const code = input.paymentCode?.trim();
+  if (!code) return [];
+
+  if (input.lang === "es") {
+    return [
+      "",
+      "══ CÓDIGO PARA PAGO EN EFECTIVO ══",
+      `Su código: ${code}`,
+      "",
+      "Cuando un cliente paga en efectivo en la tablet, el sistema le pedirá ESTE código.",
+      "Así queda registrado quién confirmó el cobro (no vale la sesión de quien esté logueado).",
+      "",
+      "Es solo suyo — no lo comparta. Si lo olvida, el gerente define uno nuevo en Equipo.",
+      "Solo el gerente puede cambiarlo; usted no puede cambiarlo solo.",
+    ];
+  }
+  return [
     "",
-    "Idioma: espanhol por defeito. Use o ícone 🌐 no topo para mudar.",
+    "══ CÓDIGO PARA PAGAMENTO EM DINHEIRO ══",
+    `O seu código: ${code}`,
+    "",
+    "Quando um cliente paga em dinheiro no tablet, o sistema pede ESTE código.",
+    "Assim fica registado quem confirmou o pagamento (não vale a sessão de quem estiver ligado).",
+    "",
+    "É só seu — não partilhe. Se esquecer, o gerente define um novo em Equipa.",
+    "Só o gerente pode alterá-lo; não pode mudá-lo sozinho/a.",
   ];
 }
 
@@ -163,7 +224,7 @@ export function buildStaffOnboardingSummary(input: StaffOnboardingInput): string
     ? `Bienvenido/a, ${input.name || input.email}!\nPerfil: ${roleLabel}\n`
     : `Bem-vindo/a, ${input.name || input.email}!\nPerfil: ${roleLabel}\n`;
 
-  return [header, ...loginBlock(input), "", ...roleSteps(input.role, input.lang)].join("\n");
+  return [header, ...loginBlock(input), ...cashPaymentCodeBlock(input), "", ...roleSteps(input.role, input.lang)].join("\n");
 }
 
 export function buildStaffOnboardingWhatsAppUrl(text: string): string {
