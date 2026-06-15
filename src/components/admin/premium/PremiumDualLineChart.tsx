@@ -6,7 +6,6 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Legend,
 } from "recharts";
 import { formatEur } from "@/services/restaurantFinanceService";
 import type { DailyFinancePoint } from "@/services/financeAnalyticsService";
@@ -19,7 +18,7 @@ type Props = {
 };
 
 export default function PremiumDualLineChart({ data, height = 256 }: Props) {
-  const hasActivity = data.some((d) => d.netCents > 0 || d.feesCents > 0);
+  const hasActivity = data.some((d) => d.grossCents > 0);
 
   if (!hasActivity) {
     return (
@@ -33,8 +32,7 @@ export default function PremiumDualLineChart({ data, height = 256 }: Props) {
 
   const series = data.map((d) => ({
     ...d,
-    netEur: d.netCents / 100,
-    feesEur: d.feesCents / 100,
+    grossEur: d.grossCents / 100,
   }));
 
   return (
@@ -63,29 +61,14 @@ export default function PremiumDualLineChart({ data, height = 256 }: Props) {
               borderRadius: 12,
               fontSize: 12,
             }}
-            formatter={(v: number, name: string) => [
-              `${formatEur(Math.round(v * 100))}€`,
-              name === "netEur" ? "Líquido para si" : "Taxas",
-            ]}
+            formatter={(v: number) => [`${formatEur(Math.round(v * 100))}€`, "Valor pago"]}
             labelFormatter={(l) => l}
           />
-          <Legend
-            wrapperStyle={{ fontSize: 11 }}
-            formatter={(value) => (value === "netEur" ? "Líquido" : "Taxas")}
-          />
           <Line
             type="monotone"
-            dataKey="netEur"
+            dataKey="grossEur"
             stroke="hsl(var(--success))"
             strokeWidth={2.5}
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="feesEur"
-            stroke="hsl(var(--destructive))"
-            strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}
           />

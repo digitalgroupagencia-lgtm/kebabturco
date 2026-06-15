@@ -52,8 +52,6 @@ export default function RestaurantFinanceDashboard({
   const totalCustomerPaid = movements
     .filter((m) => m.kind === "payment")
     .reduce((s, m) => s + m.customerPaidCents, 0);
-  const totalServiceFees = movements.reduce((s, m) => s + m.serviceFeeCents, 0);
-  const totalYouReceive = movements.reduce((s, m) => s + m.youReceiveCents, 0);
 
   const available = snapshot?.availableCents ?? 0;
   const pending = snapshot?.pendingCents ?? 0;
@@ -65,8 +63,8 @@ export default function RestaurantFinanceDashboard({
     <div className="space-y-5">
       <div className="rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
         <p>
-          O cliente paga o total do pedido. A <strong className="text-foreground">taxa de serviço da plataforma</strong>{" "}
-          é descontada automaticamente — vê o valor líquido em cada linha abaixo.
+          Cada linha mostra o <strong className="text-foreground">valor pago pelo cliente</strong>, como num terminal
+          de cartão. Os repasses para o seu banco são automáticos.
         </p>
         <p className="mt-1 flex items-center gap-1.5">
           <CalendarClock className="h-3.5 w-3.5 shrink-0" />
@@ -120,21 +118,21 @@ export default function RestaurantFinanceDashboard({
           tone="info"
           label="Hoje"
           value={fmtPeriod(analytics.today.grossCents)}
-          sub={`${analytics.today.count} pedido(s) · líquido ${fmtPeriod(analytics.today.netCents)}`}
+          sub={`${analytics.today.count} pedido(s)`}
         />
         <PremiumMetricCard
           icon={TrendingUp}
           tone="purple"
           label="Últimos 7 dias"
           value={fmtPeriod(analytics.week.grossCents)}
-          sub={`${analytics.week.count} pedido(s) · líquido ${fmtPeriod(analytics.week.netCents)}`}
+          sub={`${analytics.week.count} pedido(s)`}
         />
         <PremiumMetricCard
           icon={Receipt}
           tone="orange"
           label="Este mês"
           value={fmtPeriod(analytics.month.grossCents)}
-          sub={`${analytics.month.count} pedido(s) · líquido ${fmtPeriod(analytics.month.netCents)}`}
+          sub={`${analytics.month.count} pedido(s)`}
         />
       </EqualCardGrid>
 
@@ -149,7 +147,7 @@ export default function RestaurantFinanceDashboard({
 
         <PremiumChartCard
           title="Evolução diária"
-          subtitle="Últimos 30 dias — verde = líquido, vermelho = taxas"
+          subtitle="Últimos 30 dias — valor pago pelos clientes"
           className="min-w-0"
         >
           <PremiumDualLineChart data={analytics.dailySeries} />
@@ -160,22 +158,10 @@ export default function RestaurantFinanceDashboard({
         <PremiumFunnelChart data={analytics.byMethod} />
       </PremiumChartCard>
 
-      <EqualCardGrid cols={3}>
-        <div className="rounded-xl border bg-card p-3 text-center h-full flex flex-col justify-center">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Faturação total</p>
-          <p className="text-lg font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3 text-center h-full flex flex-col justify-center">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Taxas de serviço</p>
-          <p className="text-lg font-black tabular-nums mt-1 text-destructive">−{formatEur(totalServiceFees)}€</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3 text-center h-full flex flex-col justify-center">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Líquido para si</p>
-          <p className="text-lg font-black tabular-nums mt-1 text-emerald-600 dark:text-emerald-400">
-            {formatEur(totalYouReceive)}€
-          </p>
-        </div>
-      </EqualCardGrid>
+      <div className="rounded-xl border bg-card p-4 text-center">
+        <p className="text-[10px] text-muted-foreground uppercase font-bold">Total pago pelos clientes</p>
+        <p className="text-2xl font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
+      </div>
 
       <div>
         <h2 className="text-sm font-bold mb-2 flex items-center gap-1.5">
@@ -188,44 +174,25 @@ export default function RestaurantFinanceDashboard({
           </p>
         ) : (
           <div className="rounded-2xl border overflow-hidden">
-            <div className="hidden sm:grid grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr_0.9fr] gap-2 px-3 py-2 bg-muted/50 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            <div className="hidden sm:grid grid-cols-[1.4fr_1fr_0.8fr] gap-2 px-3 py-2 bg-muted/50 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               <span>Data / descrição</span>
-              <span className="text-right">Cliente pagou</span>
-              <span className="text-right">Taxa serviço</span>
-              <span className="text-right">Recebe</span>
+              <span className="text-right">Valor pago</span>
               <span className="text-right">Estado</span>
             </div>
             <div className="divide-y">
               {movements.map((m) => (
                 <div
                   key={m.id}
-                  className="px-3 py-3 sm:grid sm:grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr_0.9fr] sm:gap-2 sm:items-center hover:bg-muted/20"
+                  className="px-3 py-3 sm:grid sm:grid-cols-[1.4fr_1fr_0.8fr] sm:gap-2 sm:items-center hover:bg-muted/20"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{m.title}</p>
                     <p className="text-[11px] text-muted-foreground">{formatDateTime(m.createdAt)}</p>
                   </div>
                   <div className="mt-2 sm:mt-0 flex sm:block justify-between text-xs sm:text-sm">
-                    <span className="sm:hidden text-muted-foreground">Cliente pagou</span>
-                    <span className="font-semibold tabular-nums sm:text-right">
+                    <span className="sm:hidden text-muted-foreground">Valor pago</span>
+                    <span className="font-black tabular-nums sm:text-right text-base">
                       {m.customerPaidCents > 0 ? `${formatEur(m.customerPaidCents)}€` : "—"}
-                    </span>
-                  </div>
-                  <div className="flex sm:block justify-between text-xs sm:text-sm">
-                    <span className="sm:hidden text-muted-foreground">Taxa serviço</span>
-                    <span className="font-semibold tabular-nums text-muted-foreground sm:text-right">
-                      {m.serviceFeeCents > 0 ? `−${formatEur(m.serviceFeeCents)}€` : "—"}
-                    </span>
-                  </div>
-                  <div className="flex sm:block justify-between text-xs sm:text-sm">
-                    <span className="sm:hidden text-muted-foreground">Recebe</span>
-                    <span
-                      className={`font-black tabular-nums sm:text-right ${
-                        m.youReceiveCents < 0 ? "text-destructive" : "text-foreground"
-                      }`}
-                    >
-                      {m.youReceiveCents < 0 ? "−" : ""}
-                      {formatEur(Math.abs(m.youReceiveCents))}€
                     </span>
                   </div>
                   <div className="flex sm:block justify-between text-xs sm:mt-0 mt-1">
