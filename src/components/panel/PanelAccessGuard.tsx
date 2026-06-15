@@ -6,6 +6,7 @@ import { nav } from "@/lib/navPaths.ts";
 import { canUseRestaurantPanel, redirectTargetForPanelPath } from "@/lib/panelAccess";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
   children: ReactNode;
@@ -22,6 +23,7 @@ export default function PanelAccessGuard({ children }: Props) {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
   const returnPath = `${pathname}${search}`;
+  const { t } = useStaffT();
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
@@ -63,12 +65,12 @@ export default function PanelAccessGuard({ children }: Props) {
   if (!role || !canUseRestaurantPanel(role)) {
     return (
       <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-lg font-bold">Sem acesso ao painel</p>
+        <p className="text-lg font-bold">{t("access.denied.title")}</p>
         <p className="max-w-md text-sm text-muted-foreground">
-          {roleError ?? "A sua conta não tem perfil de equipa. Peça ao administrador para o adicionar em Equipe."}
+          {roleError ?? t("access.no_profile")}
         </p>
         <Button asChild variant="outline">
-          <Link to={nav.auth()}>Entrar com outra conta</Link>
+          <Link to={nav.auth()}>{t("access.signin_other")}</Link>
         </Button>
       </div>
     );

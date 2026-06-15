@@ -8,6 +8,8 @@ import {
   resolveOrderType,
 } from "./orderOperationalFlow";
 
+const PT = "pt" as const;
+
 describe("orderOperationalFlow", () => {
   it("resolves order type from fields", () => {
     expect(resolveOrderType({ order_type: "delivery" })).toBe("delivery");
@@ -27,19 +29,19 @@ describe("orderOperationalFlow", () => {
   });
 
   it("requires assign driver for ready delivery without driver", () => {
-    const action = getPanelOrderAction({ status: "ready", order_type: "delivery" });
+    const action = getPanelOrderAction({ status: "ready", order_type: "delivery" }, { lang: PT });
     expect(action).toEqual({ kind: "assign_driver", label: "Atribuir entregador" });
   });
 
   it("allows direct delivery for counter orders at ready", () => {
-    const action = getPanelOrderAction({ status: "ready", order_type: "takeaway" });
+    const action = getPanelOrderAction({ status: "ready", order_type: "takeaway" }, { lang: PT });
     expect(action).toEqual({ kind: "advance", next: "delivered", label: "Pedido entregue" });
   });
 
   it("driver starts delivery when assigned", () => {
     const action = getPanelOrderAction(
       { status: "ready", order_type: "delivery", assigned_driver_id: "driver-1" },
-      { viewerUserId: "driver-1" },
+      { viewerUserId: "driver-1", lang: PT },
     );
     expect(action).toEqual({ kind: "start_delivery", label: "Iniciar entrega" });
   });
@@ -47,7 +49,7 @@ describe("orderOperationalFlow", () => {
   it("driver confirms when out for delivery", () => {
     const action = getPanelOrderAction(
       { status: "out_for_delivery", order_type: "delivery", assigned_driver_id: "driver-1" },
-      { viewerUserId: "driver-1" },
+      { viewerUserId: "driver-1", lang: PT },
     );
     expect(action).toEqual({ kind: "delivery_code", label: "Finalizar entrega" });
   });

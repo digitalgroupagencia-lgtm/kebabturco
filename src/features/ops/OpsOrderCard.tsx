@@ -8,6 +8,7 @@ import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow
 import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   compactCardBorderClass,
@@ -56,14 +57,14 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onRequestAssignDriver,
   onMarkPaid,
 }: OpsOrderCardProps) {
-  const { t } = useStaffT();
-  const payment = getPanelPaymentBadge(order);
-  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
-  const actionLabel = getCompactActionLabel(order, viewerRole);
+  const { t, lang } = useStaffT();
+  const payment = getPanelPaymentBadge(order, lang);
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any), lang });
+  const actionLabel = getCompactActionLabel(order, viewerRole, lang);
   const itemCount = orderItemCount(items);
   const itemSummary = summarizeOrderItems(items, 1);
-  const prepRemaining = formatPrepRemaining(order);
-  const timeLabel = formatOrderClock(order.created_at);
+  const prepRemaining = formatPrepRemaining(order, lang);
+  const timeLabel = formatOrderClock(order.created_at, lang);
   const [advancing, setAdvancing] = useState(false);
   const [payingNow, setPayingNow] = useState(false);
   const isPending = order.status === "pending";
@@ -123,7 +124,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
           )}
           <span className="font-black text-sm tabular-nums shrink-0">#{order.order_number}</span>
           <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold shrink-0">
-            {getModalityShortLabel(order)}
+            {getModalityShortLabel(order, lang)}
           </Badge>
           <span className="truncate font-medium flex-1 min-w-0">{order.customer_name || t("common.customer")}</span>
           <span className="text-[10px] text-muted-foreground shrink-0">{itemCount}it</span>
@@ -162,12 +163,14 @@ const OpsOrderCard = memo(function OpsOrderCard({
         )}
         {(order as unknown as { accepted_by_name?: string | null }).accepted_by_name && order.status !== "pending" && (
           <p className="mt-0.5 text-[9px] text-muted-foreground truncate">
-            Aceito por: {(order as unknown as { accepted_by_name?: string | null }).accepted_by_name}
+            {panelT(lang, "ops.card.accepted_by", {
+              name: (order as unknown as { accepted_by_name?: string | null }).accepted_by_name!,
+            })}
           </p>
         )}
         {order.payment_status === "paid" && order.payment_confirmed_by_name && (
           <p className="mt-0.5 text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 truncate">
-            Pago por: {order.payment_confirmed_by_name}
+            {panelT(lang, "ops.card.paid_by", { name: order.payment_confirmed_by_name })}
           </p>
         )}
         {blockedUntilPaid && (

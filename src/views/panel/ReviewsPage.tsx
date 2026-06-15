@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Star, Loader2 } from "lucide-react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { supabase as _sb } from "@/integrations/supabase/client";
 
 const supabase = _sb as unknown as any;
@@ -25,6 +27,7 @@ type Review = {
 };
 
 export default function ReviewsPage() {
+  const { t, lang } = useStaffT();
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const [stats, setStats] = useState<DriverStat[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -61,12 +64,12 @@ export default function ReviewsPage() {
   if (storeLoading || loading) {
     return (
       <div className="p-8 flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin" /> A carregar avaliações...
+        <Loader2 className="w-4 h-4 animate-spin" /> {t("reviews.loading")}
       </div>
     );
   }
 
-  if (!storeId) return <div className="p-8 text-muted-foreground">Nenhuma loja vinculada.</div>;
+  if (!storeId) return <div className="p-8 text-muted-foreground">{t("common.no_store")}</div>;
 
   const renderStars = (n: number) => (
     <div className="flex gap-0.5">
@@ -82,27 +85,27 @@ export default function ReviewsPage() {
   return (
     <div className="p-6 space-y-8 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-2xl font-black">Avaliações de entregadores</h1>
-        <p className="text-sm text-muted-foreground">
-          Notas e comentários deixados pelos clientes após receberem o pedido.
-        </p>
+        <h1 className="text-2xl font-black">{t("reviews.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("reviews.subtitle")}</p>
       </header>
 
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-          Resumo por entregador
+          {t("reviews.summary.title")}
         </h2>
         {stats.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground">
-            Ainda não há avaliações de entregadores.
+            {t("reviews.summary.empty")}
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {stats.map((s) => (
               <div key={s.driver_user_id} className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold">{s.driver_name || "Entregador"}</p>
-                  <span className="text-xs text-muted-foreground">{s.reviews_count} aval.</span>
+                  <p className="font-bold">{s.driver_name || t("reviews.driver_fallback")}</p>
+                  <span className="text-xs text-muted-foreground">
+                    {panelT(lang, "reviews.count", { n: s.reviews_count })}
+                  </span>
                 </div>
                 <div className="mt-2 flex items-center gap-2">
                   {renderStars(s.avg_rating)}
@@ -116,11 +119,11 @@ export default function ReviewsPage() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-          Últimas avaliações
+          {t("reviews.latest.title")}
         </h2>
         {reviews.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground">
-            Sem avaliações ainda.
+            {t("reviews.latest.empty")}
           </div>
         ) : (
           <ul className="space-y-2">
@@ -134,9 +137,21 @@ export default function ReviewsPage() {
                 </div>
                 {r.comment && <p className="text-sm">{r.comment}</p>}
                 <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                  {r.driver_name && <span>Entregador: <strong>{r.driver_name}</strong></span>}
-                  {r.customer_name && <span>Cliente: {r.customer_name}</span>}
-                  {r.order_type && <span>Tipo: {r.order_type}</span>}
+                  {r.driver_name && (
+                    <span>
+                      {t("reviews.label.driver")}: <strong>{r.driver_name}</strong>
+                    </span>
+                  )}
+                  {r.customer_name && (
+                    <span>
+                      {t("reviews.label.customer")}: {r.customer_name}
+                    </span>
+                  )}
+                  {r.order_type && (
+                    <span>
+                      {t("reviews.label.type")}: {r.order_type}
+                    </span>
+                  )}
                 </div>
               </li>
             ))}

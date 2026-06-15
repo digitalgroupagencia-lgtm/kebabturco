@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Layers, GripVertical, AlertTriangle, Download } from "lucide-react";
 import type { ModifierGroupKind, SelectionMode, ModifierGroup } from "@/lib/modifiers/types";
-import { GROUP_KIND_META, groupKindLabel, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
+import { GROUP_KIND_META, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
 import { getModifierConfigWarnings } from "@/lib/modifiers/sanitizeGroups";
 import { importStoreModifiersFromCatalog } from "@/lib/modifiers/importStoreModifiersFromCatalog";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
@@ -43,6 +45,20 @@ type OptionRow = {
   sort_order: number;
 };
 
+const MODIFIER_KIND_LABEL_KEY: Record<ModifierGroupKind, string> = {
+  choice: "modifiers.type.choice",
+  substitution: "modifiers.type.substitution",
+  removal: "modifiers.type.removal",
+  extra: "modifiers.type.extra",
+};
+
+const MODIFIER_KIND_HINT_KEY: Record<ModifierGroupKind, string> = {
+  choice: "modifiers.kind.choice.hint",
+  substitution: "modifiers.kind.substitution.hint",
+  removal: "modifiers.kind.removal.hint",
+  extra: "modifiers.kind.extra.hint",
+};
+
 const emptyGroup = (): Partial<GroupRow> => ({
   name: {},
   description: {},
@@ -55,6 +71,7 @@ const emptyGroup = (): Partial<GroupRow> => ({
 });
 
 export default function ModifierGroupsPage() {
+  const { t, lang } = useStaffT();
   const { storeId, loading: loadingStore } = useAdminStoreId();
   const { primaryLang, loading: loadingLangs } = useStoreLanguages(storeId);
   const [groups, setGroups] = useState<GroupRow[]>([]);
@@ -85,7 +102,7 @@ export default function ModifierGroupsPage() {
       .order("sort_order");
     if (gErr) {
       console.error("[ModifierGroupsPage] load groups failed", gErr);
-      toast.error("Não foi possível carregar personalizações. Verifique permissões ou unidade.");
+      toast.error(t("modifiers.toast.load_groups_error"));
       setLoading(false);
       return;
     }
@@ -102,7 +119,7 @@ export default function ModifierGroupsPage() {
         .order("sort_order");
       if (oErr) {
         console.error("[ModifierGroupsPage] load options failed", oErr);
-        toast.error("Não foi possível carregar opções de personalização.");
+        toast.error(t("modifiers.toast.load_options_error"));
       }
       setOptions((oData || []) as OptionRow[]);
     } else {
@@ -125,12 +142,13 @@ export default function ModifierGroupsPage() {
       setImporting(true);
       try {
         const result = await importStoreModifiersFromCatalog(storeId, { replaceExisting });
-        toast.success(
-          `Personalizações importadas: ${result.groupsCreated} grupos, ${result.optionsCreated} opções`,
-        );
+        toast.success(panelT(lang, "modifiers.toast.imported", {
+          groups: result.groupsCreated,
+          options: result.optionsCreated,
+        }));
         await fetchAll();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Erro ao importar personalizações");
+        toast.error(err instanceof Error ? err.message : t("modifiers.toast.import_error"));
       } finally {
         setImporting(false);
       }
@@ -214,16 +232,16 @@ export default function ModifierGroupsPage() {
       const { error } = await supabase.from("modifier_groups").insert(payload);
       if (error) { toast.error(error.message); return; }
     }
-    toast.success("Grupo guardado");
+    toast.success(t("modifiers.toast.group_saved"));
     setGroupDialog(false);
     fetchAll();
   };
 
   const deleteGroup = async (id: string) => {
-    if (!confirm("Apagar este grupo? Produtos ligados perdem a associação.")) return;
+    if (!confirm(t("modifiers.confirm.delete_group"))) return;
     const { error } = await supabase.from("modifier_groups").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Grupo apagado");
+    toast.success(t("modifiers.toast.group_deleted"));
     if (selectedGroupId === id) setSelectedGroupId(null);
     fetchAll();
   };
@@ -271,7 +289,7 @@ export default function ModifierGroupsPage() {
       const { error } = await supabase.from("modifier_options").insert(payload);
       if (error) { toast.error(error.message); return; }
     }
-    toast.success("Opção guardada");
+    toast.success(t("modifiers.toast.option_saved"));
     setOptionDialog(false);
     fetchAll();
   };
@@ -295,32 +313,25 @@ export default function ModifierGroupsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black flex items-center gap-2">
-            <Layers className="w-7 h-7 text-primary" /> Personalização
+            <Layers className="w-7 h-7 text-primary" /> {t("page.modifiers.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Quatro tipos de personalização — reutilizáveis em todos os produtos.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{t("modifiers.subtitle")}</p>
         </div>
         <Button onClick={() => openGroup()} className="font-bold">
-          <Plus className="w-4 h-4 mr-1" /> Novo grupo
+          <Plus className="w-4 h-4 mr-1" /> {t("modifiers.new_group")}
         </Button>
       </div>
 
-      <AdminStoreSwitcher hint="Grupos de personalização são por unidade — escolha Gandia para ver as que já existem no site." />
+      <AdminStoreSwitcher hint={t("modifiers.store_hint_admin")} />
 
       {!loading && groups.length === 0 && (
         <Card className="border-dashed border-primary/40 bg-primary/5">
           <CardContent className="p-4 space-y-3">
-            <p className="text-sm font-semibold">
-              As personalizações já funcionam no site — importe-as aqui para editar.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Escolhas de carne, extras, remoções de ingredientes e acompanhamentos passam a aparecer como
-              grupos editáveis. Confirme que está em <strong>Gandia</strong> se o cardápio completo está lá.
-            </p>
+            <p className="text-sm font-semibold">{t("modifiers.import.banner")}</p>
+            <p className="text-xs text-muted-foreground">{t("modifiers.import.hint2")}</p>
             <Button type="button" disabled={importing || !storeId} onClick={() => void runImport(false)}>
               {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-              Importar personalizações do cardápio
+              {t("modifiers.import.btn")}
             </Button>
           </CardContent>
         </Card>
@@ -330,7 +341,7 @@ export default function ModifierGroupsPage() {
         <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
           <p className="text-sm font-black flex items-center gap-2 text-amber-900 dark:text-amber-100">
             <AlertTriangle className="w-5 h-5 shrink-0" />
-            Configuração que pode bloquear clientes
+            {t("modifiers.warnings.title")}
           </p>
           <ul className="text-sm text-amber-900/90 dark:text-amber-100/90 space-y-1 list-disc pl-5">
             {configWarnings.map((w) => (
@@ -345,8 +356,8 @@ export default function ModifierGroupsPage() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {(Object.keys(GROUP_KIND_META) as ModifierGroupKind[]).map((kind) => (
           <div key={kind} className="rounded-xl border bg-card p-3 space-y-1">
-            <p className="text-sm font-black">{groupKindLabel(kind)}</p>
-            <p className="text-xs text-muted-foreground leading-snug">{GROUP_KIND_META[kind].adminHintPt}</p>
+            <p className="text-sm font-black">{t(MODIFIER_KIND_LABEL_KEY[kind])}</p>
+            <p className="text-xs text-muted-foreground leading-snug">{t(MODIFIER_KIND_HINT_KEY[kind])}</p>
           </div>
         ))}
       </div>
@@ -354,13 +365,11 @@ export default function ModifierGroupsPage() {
       <div className="grid lg:grid-cols-[280px_1fr] gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Grupos</CardTitle>
+            <CardTitle className="text-base">{t("modifiers.groups")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 p-2">
             {groups.length === 0 && (
-              <p className="text-sm text-muted-foreground p-3">
-                A importar ou ainda sem grupos — use o botão acima se necessário.
-              </p>
+              <p className="text-sm text-muted-foreground p-3">{t("modifiers.groups.empty")}</p>
             )}
             {groups.map((g) => (
               <button
@@ -372,10 +381,10 @@ export default function ModifierGroupsPage() {
                 }`}
               >
                 <GripVertical className="w-4 h-4 opacity-40 shrink-0" />
-                <span className="truncate flex-1">{pickSourceText(g.name, primaryLang) || "Grupo"}</span>
+                <span className="truncate flex-1">{pickSourceText(g.name, primaryLang) || t("modifiers.group_fallback")}</span>
                 {g.is_required && (
                   <span className="text-[9px] uppercase font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
-                    Obrig.
+                    {t("modifiers.required_short")}
                   </span>
                 )}
               </button>
@@ -386,7 +395,7 @@ export default function ModifierGroupsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">
-              {selectedGroup ? pickSourceText(selectedGroup.name, primaryLang) : "Seleciona um grupo"}
+              {selectedGroup ? pickSourceText(selectedGroup.name, primaryLang) : t("modifiers.select_group")}
             </CardTitle>
             {selectedGroup && (
               <div className="flex gap-1">
@@ -403,18 +412,18 @@ export default function ModifierGroupsPage() {
             {selectedGroup && (
               <div className="flex flex-wrap gap-2 text-xs">
                 <span className="px-2 py-1 rounded-full bg-muted font-semibold">
-                  {groupKindLabel(selectedGroup.group_kind)}
+                  {t(MODIFIER_KIND_LABEL_KEY[selectedGroup.group_kind])}
                 </span>
                 {selectedGroup.group_kind !== "substitution" && selectedGroup.group_kind !== "extra" && (
                   <span className="px-2 py-1 rounded-full bg-muted font-semibold">{selectedGroup.selection_mode}</span>
                 )}
                 {selectedGroup.is_required && (
-                  <span className="px-2 py-1 rounded-full bg-destructive/10 text-destructive font-semibold">Obrigatório</span>
+                  <span className="px-2 py-1 rounded-full bg-destructive/10 text-destructive font-semibold">{t("modifiers.required")}</span>
                 )}
               </div>
             )}
             <Button size="sm" disabled={!selectedGroupId} onClick={() => openOption()} className="font-bold">
-              <Plus className="w-4 h-4 mr-1" /> Nova opção
+              <Plus className="w-4 h-4 mr-1" /> {t("modifiers.new_option")}
             </Button>
             <div className="space-y-2">
               {groupOptions.map((o) => (
@@ -422,8 +431,8 @@ export default function ModifierGroupsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">{pickSourceText(o.name, primaryLang)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {o.price_delta > 0 ? `+${Number(o.price_delta).toFixed(2)} €` : "Sem custo extra"}
-                      {o.max_qty > 1 ? ` · máx. ${o.max_qty}` : ""}
+                      {o.price_delta > 0 ? `+${Number(o.price_delta).toFixed(2)} €` : t("modifiers.no_extra_cost")}
+                      {o.max_qty > 1 ? ` · ${panelT(lang, "modifiers.max_qty", { n: o.max_qty })}` : ""}
                     </p>
                   </div>
                   <Button size="icon" variant="ghost" onClick={() => openOption(o)}>
@@ -442,12 +451,12 @@ export default function ModifierGroupsPage() {
       <Dialog open={groupDialog} onOpenChange={setGroupDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingGroup?.id ? "Editar grupo" : "Novo grupo"}</DialogTitle>
+            <DialogTitle>{editingGroup?.id ? t("modifiers.dialog.edit_group") : t("modifiers.dialog.new_group")}</DialogTitle>
           </DialogHeader>
           {editingGroup && (
             <div className="space-y-3">
               <div>
-                <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
+                <Label>{panelT(lang, "modifiers.field.name", { lang: LANG_LABELS[primaryLang] })}</Label>
                 <Input
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
@@ -455,7 +464,7 @@ export default function ModifierGroupsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Tipo</Label>
+                <Label>{t("modifiers.field.type")}</Label>
                 <Select
                   value={editingGroup.group_kind || "choice"}
                   onValueChange={(v) => {
@@ -470,21 +479,21 @@ export default function ModifierGroupsPage() {
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="choice">Escolha obrigatória</SelectItem>
-                    <SelectItem value="substitution">Substituição (acompanhamento)</SelectItem>
-                    <SelectItem value="removal">Remover ingrediente</SelectItem>
-                    <SelectItem value="extra">Extra adicionável</SelectItem>
+                    <SelectItem value="choice">{t("modifiers.type.choice")}</SelectItem>
+                    <SelectItem value="substitution">{t("modifiers.type.substitution")}</SelectItem>
+                    <SelectItem value="removal">{t("modifiers.type.removal")}</SelectItem>
+                    <SelectItem value="extra">{t("modifiers.type.extra")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {editingGroup.group_kind && (
                   <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
-                    {GROUP_KIND_META[editingGroup.group_kind as ModifierGroupKind]?.adminHintPt}
+                    {t(MODIFIER_KIND_HINT_KEY[editingGroup.group_kind as ModifierGroupKind])}
                   </p>
                 )}
               </div>
               {editingGroup.group_kind !== "substitution" && editingGroup.group_kind !== "extra" && (
                 <div>
-                  <Label>Modo</Label>
+                  <Label>{t("modifiers.field.mode")}</Label>
                   <Select
                     value={editingGroup.selection_mode || "single"}
                     onValueChange={(v) => setEditingGroup({ ...editingGroup, selection_mode: v as SelectionMode })}
@@ -492,8 +501,8 @@ export default function ModifierGroupsPage() {
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single">Única</SelectItem>
-                      <SelectItem value="multiple">Múltipla</SelectItem>
+                      <SelectItem value="single">{t("modifiers.mode.single")}</SelectItem>
+                      <SelectItem value="multiple">{t("modifiers.mode.multiple")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -503,7 +512,7 @@ export default function ModifierGroupsPage() {
                 {editingGroup.group_kind !== "substitution" && editingGroup.group_kind !== "extra" && (
                   <>
                     <div>
-                      <Label>Mínimo</Label>
+                      <Label>{t("modifiers.field.min")}</Label>
                       <Input
                         type="number"
                         min={0}
@@ -512,7 +521,7 @@ export default function ModifierGroupsPage() {
                       />
                     </div>
                     <div>
-                      <Label>Máximo</Label>
+                      <Label>{t("modifiers.field.max")}</Label>
                       <Input
                         type="number"
                         min={1}
@@ -536,12 +545,12 @@ export default function ModifierGroupsPage() {
                     });
                   }}
                 />
-                <Label>Obrigatório</Label>
+                <Label>{t("modifiers.required")}</Label>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={saveGroup} className="font-bold">Guardar</Button>
+            <Button onClick={saveGroup} className="font-bold">{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -549,19 +558,19 @@ export default function ModifierGroupsPage() {
       <Dialog open={optionDialog} onOpenChange={setOptionDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingOption?.id ? "Editar opção" : "Nova opção"}</DialogTitle>
+            <DialogTitle>{editingOption?.id ? t("modifiers.dialog.edit_option") : t("modifiers.dialog.new_option")}</DialogTitle>
           </DialogHeader>
           {editingOption && (
             <div className="space-y-3">
               <div>
-                <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
+                <Label>{panelT(lang, "modifiers.field.name", { lang: LANG_LABELS[primaryLang] })}</Label>
                 <Input
                   value={optionName}
                   onChange={(e) => setOptionName(e.target.value)}
                 />
               </div>
               <div>
-                <Label>Preço extra (€)</Label>
+                <Label>{t("modifiers.field.extra_price")}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -571,7 +580,7 @@ export default function ModifierGroupsPage() {
                 />
               </div>
               <div>
-                <Label>Quantidade máxima</Label>
+                <Label>{t("modifiers.field.max_qty")}</Label>
                 <Input
                   type="number"
                   min={1}
@@ -586,13 +595,13 @@ export default function ModifierGroupsPage() {
                     checked={editingOption.is_default ?? false}
                     onCheckedChange={(c) => setEditingOption({ ...editingOption, is_default: c })}
                   />
-                  <Label>Opção incluída por defeito</Label>
+                  <Label>{t("modifiers.default_option")}</Label>
                 </div>
               )}
             </div>
           )}
           <DialogFooter>
-            <Button onClick={saveOption} className="font-bold">Guardar</Button>
+            <Button onClick={saveOption} className="font-bold">{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

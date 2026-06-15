@@ -4,8 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BookOpen, Search } from "lucide-react";
 import { RESTAURANT_GUIDE_SECTIONS } from "@/lib/restaurantGuideContent";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 
 export default function GuidePage() {
+  const { t, lang } = useStaffT();
   const [q, setQ] = useState("");
   const filter = q.trim().toLowerCase();
   const filtered = RESTAURANT_GUIDE_SECTIONS.map((s) => ({
@@ -17,18 +20,22 @@ export default function GuidePage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6" /> Central de Ajuda
+          <BookOpen className="h-6 w-6" /> {t("guide.title")}
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Guia da operação diária do restaurante (sem administração geral).</p>
+        <p className="text-sm text-muted-foreground mt-1">{t("guide.subtitle")}</p>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar no guia…" className="pl-9" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("guide.search.ph")} className="pl-9" />
       </div>
 
       {filtered.length === 0 && (
-        <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum resultado para "{q}"</CardContent></Card>
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground text-center">
+            {panelT(lang, "guide.no_results", { q })}
+          </CardContent>
+        </Card>
       )}
 
       {filtered.map((s) => (

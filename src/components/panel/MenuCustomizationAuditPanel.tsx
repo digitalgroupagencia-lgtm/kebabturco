@@ -9,9 +9,10 @@ import {
   type CustomizationAuditIssue,
 } from "@/lib/modifiers/menuCustomizationAudit";
 import { toast } from "sonner";
+import { useStaffT } from "@/hooks/useStaffT";
 
-function toReportText(issues: CustomizationAuditIssue[]): string {
-  if (!issues.length) return "Nenhuma inconsistência detectada.";
+function toReportText(issues: CustomizationAuditIssue[], emptyLabel: string): string {
+  if (!issues.length) return emptyLabel;
   return issues
     .map(
       (i) =>
@@ -23,15 +24,16 @@ function toReportText(issues: CustomizationAuditIssue[]): string {
 export default function MenuCustomizationAuditPanel() {
   const { products, loading } = useMenuData();
   const [open, setOpen] = useState(false);
+  const { t } = useStaffT();
   const issues = useMemo(() => auditMenuProducts(products), [products]);
   const summary = useMemo(() => auditSummary(issues), [issues]);
 
   const copyReport = async () => {
     try {
-      await navigator.clipboard.writeText(toReportText(issues));
-      toast.success("Relatório copiado");
+      await navigator.clipboard.writeText(toReportText(issues, t("audit.custom.no_issues")));
+      toast.success(t("audit.custom.toast.copied"));
     } catch {
-      toast.error("Não foi possível copiar");
+      toast.error(t("welcome.copy_error"));
     }
   };
 
@@ -44,21 +46,19 @@ export default function MenuCustomizationAuditPanel() {
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" />
-              Auditoria de personalização
+              {t("audit.custom.title")}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Revê automaticamente todos os produtos e detecta escolhas incoerentes (ex.: pedir carne num produto que já é pollo).
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{t("audit.custom.subtitle")}</p>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
               <RefreshCw className="h-4 w-4 mr-1" />
-              {open ? "Ocultar" : "Ver relatório"}
+              {open ? t("common.hide") : t("audit.custom.show_report")}
             </Button>
             {issues.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => void copyReport()}>
                 <ClipboardCopy className="h-4 w-4 mr-1" />
-                Copiar
+                {t("common.copy")}
               </Button>
             )}
           </div>
@@ -66,13 +66,19 @@ export default function MenuCustomizationAuditPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-3 text-sm">
-          <span className="font-semibold text-destructive">{summary.errors} erros</span>
-          <span className="font-semibold text-amber-600">{summary.warnings} avisos</span>
-          <span className="text-muted-foreground">{products.length} produtos analisados</span>
+          <span className="font-semibold text-destructive">
+            {summary.errors} {t("audit.custom.count.errors")}
+          </span>
+          <span className="font-semibold text-amber-600">
+            {summary.warnings} {t("audit.custom.count.warnings")}
+          </span>
+          <span className="text-muted-foreground">
+            {products.length} {t("audit.custom.count.analyzed")}
+          </span>
         </div>
 
         {summary.errors === 0 && summary.warnings === 0 && (
-          <p className="text-sm text-success font-medium">Cardápio coerente — nenhum problema detectado.</p>
+          <p className="text-sm text-success font-medium">{t("audit.custom.all_ok")}</p>
         )}
 
         {open && issues.length > 0 && (
@@ -93,10 +99,11 @@ export default function MenuCustomizationAuditPanel() {
                   <div className="space-y-1">
                     <p className="font-bold">{issue.productName}</p>
                     <p>
-                      <span className="font-semibold">Problema:</span> {issue.problem}
+                      <span className="font-semibold">{t("audit.catalog.problem")}</span> {issue.problem}
                     </p>
                     <p className="text-muted-foreground">
-                      <span className="font-semibold text-foreground">Sugestão:</span> {issue.suggestion}
+                      <span className="font-semibold text-foreground">{t("audit.custom.suggestion")}</span>{" "}
+                      {issue.suggestion}
                     </p>
                   </div>
                 </div>

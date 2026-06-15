@@ -2,10 +2,12 @@ import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useStaffT } from "@/hooks/useStaffT";
 
 /** Botão "Atualizar agora" — limpa caches/SW e recarrega para puxar a última versão publicada. */
 const PanelUpdateButton = () => {
   const [busy, setBusy] = useState(false);
+  const { t } = useStaffT();
 
   const handleUpdate = async () => {
     setBusy(true);
@@ -32,7 +34,7 @@ const PanelUpdateButton = () => {
       }
     } catch (err) {
       console.warn("[PanelUpdateButton] cleanup failed", err);
-      toast({ title: "Falha ao limpar cache", description: String(err), variant: "destructive" });
+      toast({ title: t("update.cache_error"), description: String(err), variant: "destructive" });
     } finally {
       const url = new URL(window.location.href);
       url.searchParams.set("_upd", String(Date.now()));
@@ -47,11 +49,11 @@ const PanelUpdateButton = () => {
       size="sm"
       onClick={handleUpdate}
       disabled={busy}
-      title="Recarrega o app com a última versão publicada"
+      title={t("update.title")}
       className="h-8 gap-1 px-2"
     >
       <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
-      <span className="hidden sm:inline">Atualizar agora</span>
+      <span className="hidden sm:inline">{t("update.now")}</span>
     </Button>
   );
 };

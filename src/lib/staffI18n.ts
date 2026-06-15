@@ -1,4 +1,5 @@
 import type { StaffUiLang } from "@/components/StaffLanguageToggle";
+import { STAFF_I18N_CATALOG } from "@/lib/staffI18nCatalog";
 
 /**
  * Dicionário de tradução do painel interno (staff).
@@ -589,6 +590,8 @@ export const STAFF_I18N = {
   "finance.toast.saved": { es: "Datos guardados — nuestro equipo activará los pagos", pt: "Dados guardados — a nossa equipa vai activar os recebimentos", en: "Saved — our team will enable payouts" },
   "finance.toast.load_error": { es: "Error al cargar los datos", pt: "Erro ao carregar dados", en: "Failed to load data" },
   "finance.toast.save_error": { es: "Error al guardar", pt: "Erro ao guardar", en: "Save failed" },
+
+  ...STAFF_I18N_CATALOG,
 } as const satisfies Record<string, Record<StaffUiLang, string>>;
 
 

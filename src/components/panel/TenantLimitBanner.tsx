@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, AlertCircle } from "lucide-react";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 
 interface Props {
   tenantId: string;
@@ -11,6 +13,7 @@ interface Props {
  * mensal de pedidos do plano. Não bloqueia a operação.
  */
 const TenantLimitBanner = ({ tenantId }: Props) => {
+  const { t, lang } = useStaffT();
   const { data } = useQuery({
     queryKey: ["tenant-monthly-usage", tenantId],
     queryFn: async () => {
@@ -52,14 +55,15 @@ const TenantLimitBanner = ({ tenantId }: Props) => {
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-sm sm:text-base">
           {over
-            ? "Você atingiu o limite mensal do seu plano"
-            : `Atenção: ${Math.round(pct)}% do limite mensal usado`}
+            ? t("limit.over.title")
+            : panelT(lang, "limit.near.title", { pct: Math.round(pct) })}
         </p>
         <p className="text-xs sm:text-sm opacity-90 mt-0.5">
-          {used.toLocaleString()} de {limit.toLocaleString()} pedidos este mês.{" "}
-          {over
-            ? "Os pedidos continuam sendo aceitos, mas considere fazer upgrade para evitar interrupções."
-            : "Considere revisar seu plano para evitar interrupções."}
+          {panelT(lang, "limit.usage", {
+            used: used.toLocaleString(),
+            limit: limit.toLocaleString(),
+          })}{" "}
+          {over ? t("limit.over.body") : t("limit.near.body")}
         </p>
       </div>
     </div>

@@ -1,23 +1,36 @@
 import type { Database } from "@/integrations/supabase/types";
-import { PAYMENT_METHOD_LABELS, normalizeFinancePaymentMethod } from "@/lib/financeChartColors";
+import type { StaffUiLang } from "@/components/StaffLanguageToggle";
+import { normalizeFinancePaymentMethod } from "@/lib/financeChartColors";
 import { getPanelOrderAction, isDeliveryOrder, resolveOrderType } from "@/lib/orderOperationalFlow";
+import { panelT } from "@/lib/staffPanelLocale";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 
 export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
+
+const STATUS_KEYS: Record<string, StaffI18nKey> = {
+  pending: "order.status.pending",
+  preparing: "order.status.preparing",
+  ready: "order.status.ready",
+  out_for_delivery: "order.status.out_for_delivery",
+  delivered: "order.status.delivered",
+  cancelled: "order.status.cancelled",
+};
+
+const PAYMENT_METHOD_KEYS: Record<string, StaffI18nKey> = {
+  cash: "order.payment.cash_label",
+  card: "order.payment.card_label",
+  bizum: "order.payment.bizum_label",
+  stripe: "order.payment.card_label",
+  online: "order.payment.card_label",
+};
 
 export function getStatusFlow(_orderType?: string | null): OrderStatus[] {
   return ["pending", "preparing", "ready", "out_for_delivery", "delivered"];
 }
 
-export function getStatusLabel(status: string, orderType?: string | null): string {
-  const map: Record<string, string> = {
-    pending: "Pedido recebido",
-    preparing: "Em preparação",
-    ready: "Pronto para entrega",
-    out_for_delivery: "Saiu para entrega",
-    delivered: "Pedido entregue",
-    cancelled: "Cancelado",
-  };
-  return map[status] || status;
+export function getStatusLabel(status: string, orderType?: string | null, lang?: StaffUiLang): string {
+  const key = STATUS_KEYS[status];
+  return key ? panelT(lang, key) : status;
 }
 
 export function getNextAction(
@@ -28,68 +41,112 @@ export function getNextAction(
     delivery_street?: string | null;
     assigned_driver_id?: string | null;
   },
+  lang?: StaffUiLang,
 ): { next: OrderStatus; label: string } | null {
-  const action = getPanelOrderAction({
-    status,
-    order_type: orderType,
-    table_number: order?.table_number,
-    delivery_street: order?.delivery_street,
-    assigned_driver_id: order?.assigned_driver_id,
-  });
+  const action = getPanelOrderAction(
+    {
+      status,
+      order_type: orderType,
+      table_number: order?.table_number,
+      delivery_street: order?.delivery_street,
+      assigned_driver_id: order?.assigned_driver_id,
+    },
+    { lang },
+  );
   if (!action || action.kind !== "advance") return null;
   return { next: action.next, label: action.label };
 }
 
-export function getOrderModalityBanner(order: {
-  order_type?: string | null;
-  table_number?: string | null;
-  delivery_street?: string | null;
-  source?: string | null;
-}) {
+export function getOrderModalityBanner(
+  order: {
+    order_type?: string | null;
+    table_number?: string | null;
+    delivery_street?: string | null;
+    source?: string | null;
+  },
+  lang?: StaffUiLang,
+) {
   const resolvedType = resolveOrderType(order);
 
   if (resolvedType === "delivery") {
-    return { label: "ENTREGA", detail: "Delivery a domicílio", tone: "delivery" as const };
+    return {
+      label: panelT(lang, "order.modality.delivery_banner"),
+      detail: panelT(lang, "order.modality.delivery_detail"),
+      tone: "delivery" as const,
+    };
   }
   if (resolvedType === "takeaway") {
-    return { label: "BALCÃO", detail: "Para levar — recolha no balcão", tone: "takeaway" as const };
+    return {
+      label: panelT(lang, "order.modality.takeaway_banner"),
+      detail: panelT(lang, "order.modality.takeaway_detail"),
+      tone: "takeaway" as const,
+    };
   }
   if (resolvedType === "dine_in") {
     if (order.table_number) {
-      return { label: `MESA ${order.table_number}`, detail: "Comer no local", tone: "dine_in" as const };
+      return {
+        label: panelT(lang, "order.modality.dine_in_table", { table: order.table_number }),
+        detail: panelT(lang, "order.modality.dine_in_detail"),
+        tone: "dine_in" as const,
+      };
     }
-    return { label: "MESA", detail: "Comer no restaurante", tone: "dine_in" as const };
+    return {
+      label: panelT(lang, "order.modality.dine_in_banner"),
+      detail: panelT(lang, "order.modality.dine_in_restaurant"),
+      tone: "dine_in" as const,
+    };
   }
-  return { label: "PEDIDO", detail: order.order_type || "—", tone: "unknown" as const };
+  return {
+    label: panelT(lang, "order.modality.unknown"),
+    detail: order.order_type || "—",
+    tone: "unknown" as const,
+  };
 }
 
-export function getPaymentMethodLabel(method: string | null | undefined): string | null {
+export function getPaymentMethodLabel(method: string | null | undefined, lang?: StaffUiLang): string | null {
   if (!method) return null;
   const key = normalizeFinancePaymentMethod(method);
-  const label = PAYMENT_METHOD_LABELS[key];
-  return label === "Outro" ? method.replace(/_/g, " ") : label;
+  const mapped = PAYMENT_METHOD_KEYS[key];
+  if (mapped) return panelT(lang, mapped);
+  const other = panelT(lang, "order.payment.other");
+  return other === "order.payment.other" ? method.replace(/_/g, " ") : other;
 }
 
-export function getPanelPaymentBadge(order: {
-  payment_status?: string | null;
-  payment_method?: string | null;
-  source?: string | null;
-}): { label: string; tone: "paid" | "pending"; methodLabel: string | null } {
-  const methodLabel = getPaymentMethodLabel(order.payment_method);
+export function getPanelPaymentBadge(
+  order: {
+    payment_status?: string | null;
+    payment_method?: string | null;
+    source?: string | null;
+  },
+  lang?: StaffUiLang,
+): { label: string; tone: "paid" | "pending"; methodLabel: string | null } {
+  const methodLabel = getPaymentMethodLabel(order.payment_method, lang);
 
   if (order.payment_status === "paid") {
-    return { label: "PAGO", tone: "paid", methodLabel };
+    return { label: panelT(lang, "order.payment.paid"), tone: "paid", methodLabel };
   }
   if (order.payment_method === "cash") {
-    return { label: "DINHEIRO", tone: "pending", methodLabel: "Dinheiro" };
+    return {
+      label: panelT(lang, "order.payment.cash"),
+      tone: "pending",
+      methodLabel: panelT(lang, "order.payment.cash_label"),
+    };
   }
   if (order.payment_method === "card") {
-    return { label: "CARTÃO PEND.", tone: "pending", methodLabel: "Cartão" };
+    return {
+      label: panelT(lang, "order.payment.card_pending"),
+      tone: "pending",
+      methodLabel: panelT(lang, "order.payment.card_label"),
+    };
   }
   if (order.payment_method === "bizum") {
-    return { label: "BIZUM PEND.", tone: "pending", methodLabel: "Bizum" };
+    return {
+      label: panelT(lang, "order.payment.bizum_pending"),
+      tone: "pending",
+      methodLabel: panelT(lang, "order.payment.bizum_label"),
+    };
   }
-  return { label: "PAG. PENDENTE", tone: "pending", methodLabel };
+  return { label: panelT(lang, "order.payment.pending"), tone: "pending", methodLabel };
 }
 
 const CUSTOMER_STATUS_KEYS: Record<string, string> = {
@@ -138,6 +195,6 @@ export function canCustomerConfirmReceipt(status: string, orderType?: string | n
   return false;
 }
 
-export function getLiveStatusHeadline(status: string, orderType?: string | null): string {
-  return getStatusLabel(status, orderType);
+export function getLiveStatusHeadline(status: string, orderType?: string | null, lang?: StaffUiLang): string {
+  return getStatusLabel(status, orderType, lang);
 }

@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +20,7 @@ import type { Tables } from "@/integrations/supabase/types";
 type StockItem = Tables<"stock_items">;
 
 const StockPage = () => {
+  const { t, lang } = useStaffT();
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
@@ -27,13 +30,11 @@ const StockPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockItem | null>(null);
 
-  // Form
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("un");
   const [currentQty, setCurrentQty] = useState("");
   const [minQty, setMinQty] = useState("");
 
-  // Adjust dialog
   const [adjustItem, setAdjustItem] = useState<StockItem | null>(null);
   const [adjustQty, setAdjustQty] = useState("");
 
@@ -71,7 +72,7 @@ const StockPage = () => {
 
   const save = async () => {
     if (!storeId || !name.trim()) {
-      toast.error("Nome é obrigatório");
+      toast.error(t("stock.toast.name_required"));
       return;
     }
     const payload = {
@@ -84,12 +85,12 @@ const StockPage = () => {
 
     if (editing) {
       const { error } = await supabase.from("stock_items").update(payload).eq("id", editing.id);
-      if (error) { toast.error("Erro ao atualizar"); return; }
-      toast.success("Item atualizado!");
+      if (error) { toast.error(t("stock.toast.update_error")); return; }
+      toast.success(t("stock.toast.updated"));
     } else {
       const { error } = await supabase.from("stock_items").insert(payload);
-      if (error) { toast.error("Erro ao criar"); return; }
-      toast.success("Item criado!");
+      if (error) { toast.error(t("stock.toast.create_error")); return; }
+      toast.success(t("stock.toast.created"));
     }
     setDialogOpen(false);
     fetchItems();
@@ -97,8 +98,8 @@ const StockPage = () => {
 
   const deleteItem = async (id: string) => {
     const { error } = await supabase.from("stock_items").delete().eq("id", id);
-    if (error) { toast.error("Erro ao excluir"); return; }
-    toast.success("Item excluído!");
+    if (error) { toast.error(t("stock.toast.delete_error")); return; }
+    toast.success(t("stock.toast.deleted"));
     fetchItems();
   };
 
@@ -109,8 +110,8 @@ const StockPage = () => {
       .from("stock_items")
       .update({ current_qty: newQty })
       .eq("id", adjustItem.id);
-    if (error) { toast.error("Erro ao ajustar"); return; }
-    toast.success("Estoque ajustado!");
+    if (error) { toast.error(t("stock.toast.adjust_error")); return; }
+    toast.success(t("stock.toast.adjusted"));
     setAdjustItem(null);
     setAdjustQty("");
     fetchItems();
@@ -123,8 +124,8 @@ const StockPage = () => {
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Estoque</h2>
-        <Card><CardContent className="p-8 text-center text-muted-foreground">Nenhuma loja vinculada.</CardContent></Card>
+        <h2 className="text-2xl font-bold">{t("page.stock.title")}</h2>
+        <Card><CardContent className="p-8 text-center text-muted-foreground">{t("common.no_store")}</CardContent></Card>
       </div>
     );
   }
@@ -132,34 +133,31 @@ const StockPage = () => {
   return (
     <div className="space-y-6">
       <HowToUsePanel
-        purpose="Controle dos insumos da cozinha. Cada pedido pago desconta automaticamente os itens vendidos."
-        whenToUse="Use se quiser alerta de falta de ingrediente e relatório de consumo."
-        steps={[
-          "Cadastre o insumo (nome + unidade: kg, un, l).",
-          "Defina quantidade atual e alerta mínimo.",
-          "Atualize entrada de mercadoria sempre que repuser estoque.",
-        ]}
-        howToConfirm="Vendendo um produto ligado ao insumo, a quantidade cai. Falta = badge vermelho."
-        assistantQuestion="Como ligo um produto do cardápio a um insumo do estoque?"
+        purpose={t("howto.stock.purpose")}
+        whenToUse={t("howto.stock.when")}
+        steps={[t("howto.stock.step1"), t("howto.stock.step2"), t("howto.stock.step3")]}
+        howToConfirm={t("howto.stock.confirm")}
+        assistantQuestion={t("howto.stock.assistant")}
       />
       <PremiumPageHeader
         icon={Package}
-        title="Estoque"
-        subtitle="Controle de insumos e ingredientes"
+        title={t("page.stock.title")}
+        subtitle={t("stock.subtitle")}
         actions={
           <Button size="sm" onClick={() => openDialog()} className="h-9">
-            <Plus className="h-4 w-4 mr-1" /> Novo Item
+            <Plus className="h-4 w-4 mr-1" /> {t("stock.new")}
           </Button>
         }
       />
 
-      {/* Low stock alert */}
       {lowStockItems.length > 0 && (
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              <span className="font-semibold text-destructive">Estoque Baixo ({lowStockItems.length})</span>
+              <span className="font-semibold text-destructive">
+                {panelT(lang, "stock.low_alert", { count: lowStockItems.length })}
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {lowStockItems.map((i) => (
@@ -170,18 +168,17 @@ const StockPage = () => {
         </Card>
       )}
 
-      {/* Table */}
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Qtd Atual</TableHead>
-                <TableHead>Mínimo</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead>{t("stock.col.item")}</TableHead>
+                <TableHead>{t("stock.col.qty")}</TableHead>
+                <TableHead>{t("stock.col.min")}</TableHead>
+                <TableHead>{t("stock.col.unit")}</TableHead>
+                <TableHead>{t("stock.col.status")}</TableHead>
+                <TableHead className="text-right">{t("stock.col.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -195,7 +192,7 @@ const StockPage = () => {
                     <TableCell>{item.unit}</TableCell>
                     <TableCell>
                       {isLow ? (
-                        <Badge variant="destructive">Baixo</Badge>
+                        <Badge variant="destructive">{t("stock.badge.low")}</Badge>
                       ) : (
                         <Badge variant="secondary">OK</Badge>
                       )}
@@ -219,7 +216,7 @@ const StockPage = () => {
               {items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Nenhum item de estoque cadastrado.
+                    {t("stock.empty")}
                   </TableCell>
                 </TableRow>
               )}
@@ -228,57 +225,58 @@ const StockPage = () => {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar Item" : "Novo Item de Estoque"}</DialogTitle>
+            <DialogTitle>{editing ? t("stock.dialog.edit") : t("stock.dialog.new")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Nome *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Pão de hambúrguer" />
+              <Label>{t("stock.field.name")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("stock.field.name.ph")} />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label>Unidade</Label>
-                <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="un, kg, L" />
+                <Label>{t("stock.field.unit")}</Label>
+                <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder={t("stock.field.unit.ph")} />
               </div>
               <div>
-                <Label>Qtd Atual</Label>
+                <Label>{t("stock.col.qty")}</Label>
                 <Input type="number" value={currentQty} onChange={(e) => setCurrentQty(e.target.value)} />
               </div>
               <div>
-                <Label>Qtd Mínima</Label>
+                <Label>{t("stock.col.min")}</Label>
                 <Input type="number" value={minQty} onChange={(e) => setMinQty(e.target.value)} />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button onClick={save}>Salvar</Button>
+            <DialogClose asChild><Button variant="outline">{t("common.cancel")}</Button></DialogClose>
+            <Button onClick={save}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Adjust stock Dialog */}
       <Dialog open={!!adjustItem} onOpenChange={(open) => !open && setAdjustItem(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajustar Estoque: {adjustItem?.name}</DialogTitle>
+            <DialogTitle>{panelT(lang, "stock.adjust.title", { name: adjustItem?.name ?? "" })}</DialogTitle>
           </DialogHeader>
           <div>
-            <Label>Quantidade (positivo = entrada, negativo = saída)</Label>
-            <Input type="number" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} placeholder="Ex: +50 ou -10" />
+            <Label>{t("stock.adjust.label")}</Label>
+            <Input type="number" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} placeholder={t("stock.adjust.ph")} />
             {adjustItem && (
               <p className="text-sm text-muted-foreground mt-2">
-                Atual: {Number(adjustItem.current_qty)} → Novo: {Number(adjustItem.current_qty) + (parseFloat(adjustQty) || 0)}
+                {panelT(lang, "stock.adjust.preview", {
+                  current: Number(adjustItem.current_qty),
+                  next: Number(adjustItem.current_qty) + (parseFloat(adjustQty) || 0),
+                })}
               </p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustItem(null)}>Cancelar</Button>
-            <Button onClick={adjustStock}>Confirmar</Button>
+            <Button variant="outline" onClick={() => setAdjustItem(null)}>{t("common.cancel")}</Button>
+            <Button onClick={adjustStock}>{t("common.confirm")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

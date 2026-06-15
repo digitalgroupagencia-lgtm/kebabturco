@@ -27,6 +27,9 @@ import { APP_BUILD_ID } from "@/lib/appCacheBust";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
 import { useFullAppAudit } from "@/hooks/useFullAppAudit";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 import type { AuditFinding, AuditPanel, AuditSeverity } from "@/services/adminSystemAudit";
 
 function formatBuildStamp(id: string) {
@@ -51,31 +54,31 @@ const PANEL_ICONS: Record<AuditPanel, ElementType> = {
 
 const SEVERITY_META: Record<
   AuditSeverity,
-  { label: string; ring: string; badge: string; icon: ElementType; order: number }
+  { labelKey: StaffI18nKey; ring: string; badge: string; icon: ElementType; order: number }
 > = {
   critical: {
-    label: "CRÍTICO",
+    labelKey: "diagnostics.severity.critical",
     ring: "border-destructive/50 bg-destructive/5",
     badge: "bg-destructive text-destructive-foreground",
     icon: XCircle,
     order: 0,
   },
   warning: {
-    label: "ATENÇÃO",
+    labelKey: "diagnostics.severity.warning",
     ring: "border-amber-500/50 bg-amber-500/5",
     badge: "bg-amber-500 text-white",
     icon: AlertTriangle,
     order: 1,
   },
   suggestion: {
-    label: "SUGESTÃO",
+    labelKey: "diagnostics.severity.suggestion",
     ring: "border-sky-500/40 bg-sky-500/5",
     badge: "bg-sky-500 text-white",
     icon: Activity,
     order: 2,
   },
   ok: {
-    label: "OK",
+    labelKey: "diagnostics.severity.ok",
     ring: "border-success/40 bg-success/5",
     badge: "bg-success text-success-foreground",
     icon: CheckCircle2,
@@ -86,6 +89,7 @@ const SEVERITY_META: Record<
 type FilterMode = "all" | "issues" | "critical";
 
 const DiagnosticsPage = () => {
+  const { t, lang } = useStaffT();
   const { storeId } = useAdminStoreId();
   const { tenant } = useSelectedTenant();
   const { report, running, run } = useFullAppAudit(storeId, tenant?.id ?? null);
@@ -117,22 +121,23 @@ const DiagnosticsPage = () => {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
-            Estado do sistema
+            {t("diagnostics.heading")}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Auditoria completa: cliente, painel, entregador, vendedor, admin e servidor — um clique
-            para saber o que funciona e o que falta.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{t("diagnostics.subtitle")}</p>
           <p className="text-sm mt-2">
             <Link to={nav.admin("diagnostics-hub")} className="text-primary font-semibold underline">
-              Testes interactivos por módulo → Centro de testes
+              {t("diagnostics.test_center")}
             </Link>
-            <span className="text-muted-foreground"> (push, impressora, cupões, fidelidade)</span>
+            <span className="text-muted-foreground"> {t("diagnostics.test_center_hint")}</span>
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             {report
-              ? `Última auditoria: ${new Date(report.ranAt).toLocaleString("pt-PT")} · ${(report.durationMs / 1000).toFixed(1)}s · Versão ${formatBuildStamp(APP_BUILD_ID)}`
-              : `Nunca auditado. Versão ${formatBuildStamp(APP_BUILD_ID)}`}
+              ? panelT(lang, "diagnostics.last_audit", {
+                  date: new Date(report.ranAt).toLocaleString(),
+                  duration: (report.durationMs / 1000).toFixed(1),
+                  version: formatBuildStamp(APP_BUILD_ID),
+                })
+              : panelT(lang, "diagnostics.never", { version: formatBuildStamp(APP_BUILD_ID) })}
           </p>
         </div>
         <Button type="button" onClick={() => void run()} disabled={running} className="shrink-0">
@@ -141,16 +146,16 @@ const DiagnosticsPage = () => {
           ) : (
             <RefreshCw className="h-4 w-4 mr-1.5" />
           )}
-          {running ? "A auditar…" : "Auditar tudo"}
+          {running ? t("diagnostics.auditing") : t("diagnostics.audit_all")}
         </Button>
       </div>
 
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryTile sev="ok" count={summary.ok} label="OK" sub="funciona" />
-          <SummaryTile sev="critical" count={summary.critical} label="Críticos" sub="impedem operação" />
-          <SummaryTile sev="warning" count={summary.warning} label="Avisos" sub="podem causar erro" />
-          <SummaryTile sev="suggestion" count={summary.suggestion} label="Sugestões" sub="melhorias" />
+          <SummaryTile sev="ok" count={summary.ok} label={t("diagnostics.severity.ok")} sub={t("diagnostics.summary.ok")} />
+          <SummaryTile sev="critical" count={summary.critical} label={t("diagnostics.severity.critical")} sub={t("diagnostics.summary.critical")} />
+          <SummaryTile sev="warning" count={summary.warning} label={t("diagnostics.severity.warning")} sub={t("diagnostics.summary.warning")} />
+          <SummaryTile sev="suggestion" count={summary.suggestion} label={t("diagnostics.severity.suggestion")} sub={t("diagnostics.summary.suggestion")} />
         </div>
       )}
 
@@ -158,13 +163,13 @@ const DiagnosticsPage = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <FilterButton active={filter === "issues"} onClick={() => setFilter("issues")}>
-            Só problemas
+            {t("diagnostics.filter.issues")}
           </FilterButton>
           <FilterButton active={filter === "critical"} onClick={() => setFilter("critical")}>
-            Só crítico
+            {t("diagnostics.filter.critical")}
           </FilterButton>
           <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>
-            Tudo
+            {t("diagnostics.filter.all")}
           </FilterButton>
           {filter === "all" && (
             <label className="flex items-center gap-1.5 text-xs text-muted-foreground ml-2 cursor-pointer">
@@ -174,7 +179,7 @@ const DiagnosticsPage = () => {
                 onChange={(e) => setShowOk(e.target.checked)}
                 className="rounded"
               />
-              Mostrar itens OK
+              {t("diagnostics.show_ok")}
             </label>
           )}
         </div>
@@ -183,8 +188,7 @@ const DiagnosticsPage = () => {
       {!report && !running && (
         <Card className="border-dashed">
           <CardContent className="p-6 text-center text-sm text-muted-foreground">
-            Clique em <strong>Auditar tudo</strong> para verificar cliente, equipa, delivery, pagamentos,
-            servidor e todos os painéis.
+            {t("diagnostics.empty_prompt")}
           </CardContent>
         </Card>
       )}
@@ -194,9 +198,9 @@ const DiagnosticsPage = () => {
           <CardContent className="p-6 flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 text-success" />
             <div>
-              <p className="font-black text-lg">Tudo OK</p>
+              <p className="font-black text-lg">{t("diagnostics.all_ok.title")}</p>
               <p className="text-sm text-muted-foreground">
-                {summary!.ok} verificações passaram. Sistema pronto para operar.
+                {panelT(lang, "diagnostics.all_ok.body", { count: summary!.ok })}
               </p>
             </div>
           </CardContent>
@@ -212,7 +216,9 @@ const DiagnosticsPage = () => {
               <Icon className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-bold">{section.label}</h3>
               <span className="text-xs text-muted-foreground">
-                ({issueCount > 0 ? `${issueCount} alerta(s)` : "sem alertas"})
+                ({issueCount > 0
+                  ? panelT(lang, "diagnostics.alerts", { count: issueCount })
+                  : t("diagnostics.no_alerts")})
               </span>
             </div>
             <div className="space-y-2">
@@ -227,9 +233,9 @@ const DiagnosticsPage = () => {
       {report && filteredSections.length === 0 && filter !== "all" && (
         <Card className="border-success/30 bg-success/5">
           <CardContent className="p-4 text-sm text-muted-foreground">
-            Nenhum problema neste filtro.{" "}
+            {t("diagnostics.no_issues_filter")}{" "}
             <button type="button" className="text-primary underline" onClick={() => setFilter("all")}>
-              Ver tudo
+              {t("diagnostics.view_all")}
             </button>
           </CardContent>
         </Card>
@@ -299,6 +305,7 @@ function buildFindingClipboard(f: AuditFinding): string {
 }
 
 function FindingCard({ f }: { f: AuditFinding }) {
+  const { t, lang } = useStaffT();
   const meta = SEVERITY_META[f.severity];
   const Icon = meta.icon;
   const location = useLocation();
@@ -312,14 +319,14 @@ function FindingCard({ f }: { f: AuditFinding }) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(findingText);
-      toast.success("Detalhes copiados");
+      toast.success(t("diagnostics.toast.copied"));
     } catch {
-      toast.error("Não foi possível copiar");
+      toast.error(t("diagnostics.toast.copy_error"));
     }
   };
 
   const handleAskAssistant = () => {
-    const text = `Olha este problema da auditoria e me explica passo-a-passo o que é, por que aconteceu, e exactamente o que eu tenho de fazer para resolver (incluindo onde clicar no painel, onde obter credenciais externas e o que digitar no terminal se aplicável):\n\n${findingText}`;
+    const text = panelT(lang, "diagnostics.assistant.prompt", { text: findingText });
     window.dispatchEvent(new CustomEvent("assistant:ask", { detail: { text } }));
   };
 
@@ -331,7 +338,7 @@ function FindingCard({ f }: { f: AuditFinding }) {
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-sm">{f.label}</p>
             <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${meta.badge}`}>
-              {meta.label}
+              {t(meta.labelKey)}
             </span>
           </div>
           {f.detail && (
@@ -344,7 +351,7 @@ function FindingCard({ f }: { f: AuditFinding }) {
                 to={f.link!}
                 className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
               >
-                {f.linkLabel ?? "Resolver"}
+                {f.linkLabel ?? t("diagnostics.resolve")}
                 <ChevronRight className="h-3 w-3" />
               </Link>
             )}
@@ -354,19 +361,17 @@ function FindingCard({ f }: { f: AuditFinding }) {
                   type="button"
                   onClick={handleAskAssistant}
                   className="inline-flex items-center gap-1 text-xs font-bold text-primary px-2 py-1 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors"
-                  title="Envia este problema ao Assistente IA com pedido de instruções detalhadas"
                 >
                   <Sparkles className="h-3 w-3" />
-                  Perguntar ao Assistente IA
+                  {t("diagnostics.ask_ai")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCopy}
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md border border-border hover:border-foreground/30 transition-colors"
-                  title="Copia título, detalhe, acção e tela deste problema"
                 >
                   <Copy className="h-3 w-3" />
-                  Copiar
+                  {t("diagnostics.copy")}
                 </button>
               </>
             )}

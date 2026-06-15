@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Clock } from "lucide-react";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import type { PanelOrder } from "./usePanelOrders";
 import { ETA_QUICK_OPTIONS, validateAcceptPrepMinutes } from "./opsOrderUi";
 
@@ -23,6 +25,7 @@ type Props = {
 };
 
 const OpsAcceptEtaDialog = ({ order, open, onOpenChange, onConfirm, confirming }: Props) => {
+  const { t, lang } = useStaffT();
   const [selected, setSelected] = useState<number | null>(15);
   const [custom, setCustom] = useState("");
 
@@ -43,19 +46,19 @@ const OpsAcceptEtaDialog = ({ order, open, onOpenChange, onConfirm, confirming }
     await onConfirm(order, resolvedMinutes);
   };
 
+  const description = order
+    ? panelT(lang, "dialog.eta.desc_order", { code: order.order_number })
+    : t("dialog.eta.desc_default");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            Tempo estimado
+            {t("dialog.eta.title")}
           </DialogTitle>
-          <DialogDescription>
-            {order
-              ? `Pedido #${order.order_number} — escolha quando fica pronto. O cliente vê este tempo no acompanhamento.`
-              : "Escolha o tempo estimado de preparação."}
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-3 gap-2">
@@ -74,14 +77,14 @@ const OpsAcceptEtaDialog = ({ order, open, onOpenChange, onConfirm, confirming }
                   : "bg-muted/50 border-transparent hover:border-border"
               }`}
             >
-              {m} min
+              {panelT(lang, "order.detail.minutes", { mins: m })}
             </button>
           ))}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="eta-custom" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Personalizado (minutos)
+            {t("dialog.eta.custom_label")}
           </Label>
           <Input
             id="eta-custom"
@@ -89,7 +92,7 @@ const OpsAcceptEtaDialog = ({ order, open, onOpenChange, onConfirm, confirming }
             min={5}
             max={180}
             inputMode="numeric"
-            placeholder="Ex.: 18"
+            placeholder={t("dialog.eta.placeholder")}
             value={custom}
             disabled={confirming}
             onChange={(e) => setCustom(e.target.value)}
@@ -99,10 +102,10 @@ const OpsAcceptEtaDialog = ({ order, open, onOpenChange, onConfirm, confirming }
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" disabled={confirming} onClick={() => onOpenChange(false)}>
-            Voltar
+            {t("common.back")}
           </Button>
           <Button type="button" disabled={!valid || confirming} className="font-bold" onClick={() => void handleConfirm()}>
-            {confirming ? "A aceitar…" : "Aceitar pedido"}
+            {confirming ? t("order.detail.accepting") : t("order.detail.accept")}
           </Button>
         </DialogFooter>
       </DialogContent>

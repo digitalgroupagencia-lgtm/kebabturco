@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useStaffT } from "@/hooks/useStaffT";
 import { enablePanelAlerts, isPanelAlertsEnabled } from "@/lib/panelAlerts";
 import { isStaffPushSupported, subscribeStaffPush } from "@/lib/staffPush";
 
@@ -21,6 +22,7 @@ type Props = {
 };
 
 const PanelAlertsPermissionDialog = ({ open, storeId, onOpenChange, onEnabled }: Props) => {
+  const { t } = useStaffT();
   const [busy, setBusy] = useState(false);
 
   const handleActivate = async () => {
@@ -37,18 +39,14 @@ const PanelAlertsPermissionDialog = ({ open, storeId, onOpenChange, onEnabled }:
       }
 
       if (isPanelAlertsEnabled()) {
-        toast.success(
-          pushOk
-            ? "Som e notificações activos — o alerta repete até mudar o estado do pedido."
-            : "Som activo — o alerta repete até mudar o estado do pedido.",
-        );
+        toast.success(pushOk ? t("alerts.enabled_sound_push") : t("alerts.enabled_sound"));
         onEnabled?.();
         onOpenChange(false);
       } else if (soundOk) {
         onEnabled?.();
         onOpenChange(false);
       } else {
-        toast.warning("Não foi possível activar o som. Tente outra vez.");
+        toast.warning(t("alerts.enable_sound_failed"));
       }
     } finally {
       setBusy(false);
@@ -61,26 +59,20 @@ const PanelAlertsPermissionDialog = ({ open, storeId, onOpenChange, onEnabled }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-primary" />
-            Activar alertas de pedidos
+            {t("dialog.alerts.title")}
           </DialogTitle>
           <DialogDescription className="text-left space-y-2 pt-1">
-            <span className="block">
-              Para não perder pedidos novos, active o <strong>som</strong> e as{" "}
-              <strong>notificações</strong> neste dispositivo.
-            </span>
-            <span className="block text-muted-foreground">
-              O som repete automaticamente enquanto houver pedidos em «Recebido», até a equipa mudar o
-              estado (aceitar, preparar, etc.).
-            </span>
+            <span className="block">{t("dialog.alerts.desc1")}</span>
+            <span className="block text-muted-foreground">{t("dialog.alerts.desc2")}</span>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col sm:flex-col gap-2">
           <Button type="button" className="w-full font-bold h-11" disabled={busy} onClick={handleActivate}>
             <Volume2 className="w-4 h-4 mr-2" />
-            Activar som e notificações
+            {t("dialog.alerts.enable_btn")}
           </Button>
           <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={() => onOpenChange(false)}>
-            Agora não
+            {t("dialog.alerts.not_now")}
           </Button>
         </DialogFooter>
       </DialogContent>

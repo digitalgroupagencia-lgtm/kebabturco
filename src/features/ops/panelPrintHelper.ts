@@ -3,6 +3,7 @@ import type { TicketOrder } from "@/services/escPosTicketBuilder";
 import { fetchPrinterConfig, hasActivePrintJob, printOrder } from "@/services/printerService";
 import type { Tables } from "@/integrations/supabase/types";
 import { orderItemToTicketItem } from "@/lib/ticketExpansion";
+import { panelT } from "@/lib/staffPanelLocale";
 
 type OrderItem = Tables<"order_items">;
 type PanelOrder = Tables<"orders"> & { kitchen_printed_at?: string | null };
@@ -64,7 +65,7 @@ export async function reprintPanelOrder(
 ) {
   const cfg = await fetchPrinterConfig(storeId);
   if (!cfg.enabled) {
-    throw new Error("Impressora desactivada para esta unidade");
+    throw new Error(panelT(undefined, "print.error.disabled"));
   }
   const result = await printOrder(
     storeId,
@@ -73,7 +74,7 @@ export async function reprintPanelOrder(
     { forceReprint: true },
   );
   if (!result.success) {
-    throw new Error(result.error || "Falha ao enfileirar impressão");
+    throw new Error(result.error || panelT(undefined, "print.error.queue"));
   }
   return result;
 }

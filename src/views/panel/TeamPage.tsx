@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Users, Plus, Trash2, Shield, Pencil, ClipboardCopy, UserPlus, KeyRound } from "lucide-react";
-import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
+import { RESTAURANT_STAFF_ROLES, canManageTeam, getStaffRoleLabel, type StaffRole } from "@/lib/staffPermissions";
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
 import {
@@ -63,28 +63,28 @@ interface TeamMember {
   birth_date?: string | null;
 }
 
-const LANGUAGES = [
-  { value: "pt", label: "🇧🇷 Português" },
-  { value: "es", label: "🇪🇸 Español" },
-  { value: "en", label: "🇬🇧 English" },
-  { value: "fr", label: "🇫🇷 Français" },
-];
-
-const roleLabels: Record<AppRole, { label: string; color: string }> = {
-  admin_master: { label: STAFF_ROLE_LABELS.admin_master, color: "bg-destructive" },
-  restaurant_admin: { label: STAFF_ROLE_LABELS.restaurant_admin, color: "bg-primary" },
-  manager: { label: STAFF_ROLE_LABELS.manager, color: "bg-primary" },
-  operator: { label: STAFF_ROLE_LABELS.operator, color: "bg-accent text-accent-foreground" },
-  kitchen: { label: STAFF_ROLE_LABELS.kitchen, color: "bg-success" },
-  cashier: { label: STAFF_ROLE_LABELS.cashier, color: "bg-yellow-600 text-white" },
-  attendant: { label: STAFF_ROLE_LABELS.attendant, color: "bg-blue-600 text-white" },
-  delivery: { label: STAFF_ROLE_LABELS.delivery, color: "bg-orange-600 text-white" },
-  seller: { label: STAFF_ROLE_LABELS.seller, color: "bg-cta text-cta-foreground" },
+const ROLE_COLORS: Record<AppRole, string> = {
+  admin_master: "bg-destructive",
+  restaurant_admin: "bg-primary",
+  manager: "bg-primary",
+  operator: "bg-accent text-accent-foreground",
+  kitchen: "bg-success",
+  cashier: "bg-yellow-600 text-white",
+  attendant: "bg-blue-600 text-white",
+  delivery: "bg-orange-600 text-white",
+  seller: "bg-cta text-cta-foreground",
 };
+
+const LANG_CODES = ["pt", "es", "en", "fr"] as const;
 
 const TeamPage = () => {
   const { user } = useAuth();
   const { t, lang: staffLang } = useStaffT();
+
+  const langLabel = (code: string) => {
+    const key = `lang.${code}` as "lang.pt" | "lang.es" | "lang.en" | "lang.fr";
+    return t(key);
+  };
   const { roleData } = useUserRole(user?.id);
   const { storeId, stores, canSwitchStore } = usePanelStore();
   const tenantId = roleData?.tenant_id;
@@ -402,7 +402,7 @@ const TeamPage = () => {
         preferred_language: newLanguage,
       });
 
-      toast.success(t("team.toast.member_added").replace("{role}", roleLabels[newRole].label));
+      toast.success(t("team.toast.member_added").replace("{role}", getStaffRoleLabel(newRole, staffLang)));
       if (result.password_unchanged) {
         toast.info(t("team.toast.email_existed"));
       }
@@ -591,7 +591,7 @@ const TeamPage = () => {
       <PremiumPageHeader
         icon={Users}
         title={t("page.team.title")}
-        subtitle="Funcionários, papéis e acessos"
+        subtitle={t("team.subtitle")}
         actions={
           canManage ? (
             <Button size="sm" onClick={openAddDialog} className="h-9">
@@ -650,11 +650,11 @@ const TeamPage = () => {
 
       {/* Roles legend */}
       <div className="flex flex-wrap gap-2">
-        {(Object.entries(roleLabels) as [AppRole, { label: string; color: string }][])
-          .filter(([key]) => key !== "admin_master")
-          .filter(([key]) => key !== "seller" || sellerEnabled)
-          .map(([key, val]) => (
-            <Badge key={key} className={val.color}>{val.label}</Badge>
+        {(RESTAURANT_STAFF_ROLES as AppRole[])
+          .filter((key) => key !== "admin_master")
+          .filter((key) => key !== "seller" || sellerEnabled)
+          .map((key) => (
+            <Badge key={key} className={ROLE_COLORS[key]}>{getStaffRoleLabel(key, staffLang)}</Badge>
           ))}
       </div>
 
@@ -696,13 +696,13 @@ const TeamPage = () => {
                         <SelectContent>
                           {RESTAURANT_STAFF_ROLES.map((r) => (
                             <SelectItem key={r} value={r}>
-                              {roleLabels[r]?.label ?? r}
+                              {getStaffRoleLabel(r, staffLang)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge className={roleLabels[m.role].color}>{roleLabels[m.role].label}</Badge>
+                      <Badge className={ROLE_COLORS[m.role]}>{getStaffRoleLabel(m.role, staffLang)}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -713,11 +713,11 @@ const TeamPage = () => {
                       >
                         <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                          {LANG_CODES.map((code) => <SelectItem key={code} value={code}>{langLabel(code)}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <span className="text-sm">{LANGUAGES.find((l) => l.value === m.preferred_language)?.label || "🇧🇷 Português"}</span>
+                      <span className="text-sm">{langLabel(m.preferred_language || "pt")}</span>
                     )}
                   </TableCell>
                   {canManage && (
@@ -828,7 +828,7 @@ const TeamPage = () => {
                 <SelectContent>
                   {RESTAURANT_STAFF_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {roleLabels[r]?.label ?? r}
+                      {getStaffRoleLabel(r, staffLang)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -839,7 +839,7 @@ const TeamPage = () => {
               <Select value={newLanguage} onValueChange={setNewLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  {LANG_CODES.map((code) => <SelectItem key={code} value={code}>{langLabel(code)}</SelectItem>)}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
@@ -965,7 +965,7 @@ const TeamPage = () => {
                 <SelectContent>
                   {RESTAURANT_STAFF_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {roleLabels[r]?.label ?? r}
+                      {getStaffRoleLabel(r, staffLang)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -976,7 +976,7 @@ const TeamPage = () => {
               <Select value={editLanguage} onValueChange={setEditLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  {LANG_CODES.map((code) => <SelectItem key={code} value={code}>{langLabel(code)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -1015,7 +1015,7 @@ const TeamPage = () => {
                 <SelectContent>
                   {RESTAURANT_STAFF_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {roleLabels[r]?.label ?? r}
+                      {getStaffRoleLabel(r, staffLang)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1026,7 +1026,7 @@ const TeamPage = () => {
               <Select value={googleApproveLang} onValueChange={setGoogleApproveLang}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  {LANG_CODES.map((code) => <SelectItem key={code} value={code}>{langLabel(code)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

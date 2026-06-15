@@ -14,6 +14,7 @@ import {
   buildStaffOnboardingWhatsAppUrl,
   type StaffOnboardingInput,
 } from "@/lib/staffOnboardingGuide";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
   open: boolean;
@@ -23,25 +24,20 @@ type Props = {
 };
 
 const StaffMemberWelcomeDialog = ({ open, data, onOpenChange, mode = "create" }: Props) => {
+  const { t } = useStaffT();
+
   if (!data) return null;
 
   const summary = buildStaffOnboardingSummary(data);
-  const isEs = data.lang === "es";
   const title =
-    mode === "review"
-      ? isEs
-        ? "Instrucciones para el miembro"
-        : "Instruções para o membro"
-      : isEs
-        ? "Resumen para el nuevo miembro"
-        : "Resumo para o novo membro";
+    mode === "review" ? t("welcome.review.title") : t("welcome.create.title");
 
   const copyAll = async () => {
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success(isEs ? "¡Copiado!" : "Copiado!");
+      toast.success(t("welcome.copied"));
     } catch {
-      toast.error(isEs ? "No se pudo copiar" : "Não foi possível copiar");
+      toast.error(t("welcome.copy_error"));
     }
   };
 
@@ -54,11 +50,7 @@ const StaffMemberWelcomeDialog = ({ open, data, onOpenChange, mode = "create" }:
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>
-            {isEs
-              ? "Copie o envíe por WhatsApp. Incluye acceso (Google o contraseña), código de pago en efectivo si existe, y guía del perfil."
-              : "Copie ou envie por WhatsApp. Inclui acesso (Google ou senha), código de pagamento em dinheiro se existir, e guia do perfil."}
-          </DialogDescription>
+          <DialogDescription>{t("welcome.description")}</DialogDescription>
         </DialogHeader>
 
         <pre className="flex-1 overflow-y-auto rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap font-sans">
@@ -68,14 +60,14 @@ const StaffMemberWelcomeDialog = ({ open, data, onOpenChange, mode = "create" }:
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => void copyAll()}>
             <Copy className="w-4 h-4 mr-2" />
-            {isEs ? "Copiar todo" : "Copiar tudo"}
+            {t("welcome.copy")}
           </Button>
           <Button type="button" className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white" onClick={shareWhatsApp}>
             <MessageCircle className="w-4 h-4 mr-2" />
-            WhatsApp
+            {t("welcome.whatsapp")}
           </Button>
           <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
-            {isEs ? "Cerrar" : "Fechar"}
+            {t("common.close")}
           </Button>
         </DialogFooter>
       </DialogContent>

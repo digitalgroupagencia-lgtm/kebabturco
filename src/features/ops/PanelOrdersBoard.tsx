@@ -58,7 +58,7 @@ type Props = {
 const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false }: Props) => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const { t } = useStaffT();
+  const { t, lang } = useStaffT();
   const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
   const {
     orders,
@@ -229,10 +229,10 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
       const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
       if (error) throw error;
       const removed = (data as { deleted?: number } | null)?.deleted ?? 0;
-      toast.success(`${removed} ${t("ops.card.test_badge").toLowerCase() === "test" ? "test order(s) removed" : "pedido(s) de prueba eliminado(s)"}`);
+      toast.success(t("panel.delete_test.success").replace("{count}", String(removed)));
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error al limpiar pedidos de prueba");
+      toast.error(e instanceof Error ? e.message : t("panel.delete_test.error"));
     } finally {
       setCleaningTests(false);
     }
@@ -267,7 +267,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
   if (loading) {
     return (
       <div className="p-8 flex items-center gap-2">
-        <Loader2 className="animate-spin h-4 w-4" /> A carregar pedidos...
+        <Loader2 className="animate-spin h-4 w-4" /> {t("ops.loading.orders")}
       </div>
     );
   }
@@ -282,7 +282,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     return (
       <div key={status} className="flex flex-col min-w-0 min-h-0 max-h-[calc(100vh-16rem)] xl:max-h-[calc(100vh-14rem)]">
         <h3 className={`font-bold text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2 shrink-0 ${accent}`}>
-          <Icon className="h-3.5 w-3.5" /> {getStatusLabel(status)}
+          <Icon className="h-3.5 w-3.5" /> {getStatusLabel(status, undefined, lang)}
           <Badge variant="secondary" className="ml-auto h-5 min-w-[20px] px-1.5 text-[10px]">
             {columnOrders.length}
           </Badge>
@@ -293,7 +293,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
           ))}
           {columnOrders.length === 0 && (
             <div className="text-center py-6 text-muted-foreground text-xs border border-dashed rounded-lg">
-              Nenhum pedido
+              {t("ops.empty.orders")}
             </div>
           )}
         </div>
@@ -346,7 +346,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
                         : "bg-card border-border text-foreground"
                     }`}
                   >
-                    {hideTests ? "👁 Mostrar testes" : "🚫 Ocultar testes"} ({testOrdersCount})
+                    {hideTests ? t("ops.tests.show") : t("ops.tests.hide")} ({testOrdersCount})
                   </button>
                   <button
                     type="button"
@@ -354,7 +354,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
                     onClick={() => void handleCleanupTests()}
                     className="shrink-0 px-3 py-2 rounded-xl border-2 border-destructive text-destructive font-bold text-xs disabled:opacity-50"
                   >
-                    {cleaningTests ? "A limpar..." : "🗑 Limpar testes"}
+                    {cleaningTests ? t("ops.clearing") : t("ops.clear_tests")}
                   </button>
                 </>
               )}
@@ -370,8 +370,8 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
           ))}
           {mobileOrders.length === 0 && (
             <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-xl">
-              Nenhum pedido em {getStatusLabel(mobileTab)}
-              {viewMode !== "all" ? " neste modo" : ""}
+              {t("ops.empty.orders_in_status").replace("{status}", getStatusLabel(mobileTab, undefined, lang))}
+              {viewMode !== "all" ? t("ops.empty.in_mode_suffix") : ""}
             </div>
           )}
         </div>

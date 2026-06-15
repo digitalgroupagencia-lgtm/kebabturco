@@ -107,7 +107,7 @@ const DeliveryHomePage = () => {
                     }
                   }}
                   className="flex items-start gap-2 active:opacity-60 -mx-1 px-1 py-1 rounded-lg hover:bg-muted/40 transition-colors"
-                  aria-label="Abrir endereço no mapa"
+                  aria-label={t("delivery.open_map")}
                 >
                   <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-orange-600" />
                   <span className="font-medium underline decoration-orange-600/40 underline-offset-2">
@@ -135,7 +135,7 @@ const DeliveryHomePage = () => {
             {isOut && (
               <div className="mx-4 mb-3 rounded-xl border border-orange-500/40 bg-orange-500/10 p-3 text-center">
                 <p className="text-xs font-bold text-orange-700">
-                  Pide el código al cliente para finalizar la entrega
+                  {t("delivery.code.ask")}
                 </p>
               </div>
             )}

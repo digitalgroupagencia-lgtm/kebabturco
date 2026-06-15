@@ -63,15 +63,15 @@ const PanelSettingsPage = () => {
       setPushNotifications(false);
       setStaffPushEnabled(false);
       await unsubscribeStaffPush();
-      toast.info("Push desactivado neste dispositivo");
+      toast.info(t("settings.push.disabled"));
       return;
     }
     if (!effectiveStoreId) {
-      toast.error("Loja não identificada");
+      toast.error(t("settings.push.no_store"));
       return;
     }
     if (!isStaffPushSupported()) {
-      toast.error("Push não disponível — configure VAPID e use HTTPS");
+      toast.error(t("settings.push.unavailable"));
       return;
     }
     setPushBusy(true);
@@ -79,10 +79,10 @@ const PanelSettingsPage = () => {
       const res = await subscribeStaffPush(effectiveStoreId);
       if (res.ok) {
         setPushNotifications(true);
-        toast.success("Push activo — receberá avisos mesmo com o painel fechado");
+        toast.success(t("settings.push.enabled"));
       } else {
         setPushNotifications(false);
-        toast.error(res.error || "Não foi possível activar push");
+        toast.error(res.error || t("settings.push.enable_error"));
       }
     } finally {
       setPushBusy(false);
@@ -178,7 +178,7 @@ const PanelSettingsPage = () => {
                   <Label>{t("settings.ops.prefix")}</Label>
                   <Input value={orderNumberPrefix}
                     onChange={(e) => setOrderNumberPrefix(e.target.value)}
-                    placeholder="Ex: A, B, MESA" maxLength={5} />
+                    placeholder={t("settings.ops.prefix.ph")} maxLength={5} />
                 </div>
               </div>
               <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
@@ -291,10 +291,10 @@ const PanelSettingsPage = () => {
       <Card className="border-destructive/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="w-5 h-5" /> Zona perigosa
+            <AlertTriangle className="w-5 h-5" /> {t("settings.danger.title")}
           </CardTitle>
           <CardDescription>
-            Por defeito só apaga pedidos de teste. Vendas reais só são removidas se marcar a opção perigosa. Requer a sua senha.
+            {t("settings.danger.desc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -303,7 +303,7 @@ const PanelSettingsPage = () => {
             onClick={() => setResetOpen(true)}
             disabled={!roleData?.tenant_id}
           >
-            <Trash2 className="w-4 h-4 mr-2" /> Zerar dados do projeto
+            <Trash2 className="w-4 h-4 mr-2" /> {t("settings.danger.reset")}
           </Button>
         </CardContent>
       </Card>

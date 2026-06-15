@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,11 +19,25 @@ import { uploadBrandingImage } from "@/lib/uploadImage";
 type TotemConfig = Tables<"totem_config">;
 
 const ALL_LANGS = [
-  { code: "pt", label: "Português" },
-  { code: "en", label: "English" },
-  { code: "es", label: "Español" },
-  { code: "fr", label: "Français" },
+  { code: "pt", labelKey: "totem.lang.label_pt" },
+  { code: "en", labelKey: "totem.lang.label_en" },
+  { code: "es", labelKey: "totem.lang.label_es" },
+  { code: "fr", labelKey: "totem.lang.label_fr" },
 ] as const;
+
+const SUGG_TITLE_PH_KEY: Record<(typeof ALL_LANGS)[number]["code"], string> = {
+  pt: "totem.suggestion.ph_title_pt",
+  en: "totem.suggestion.ph_title_en",
+  es: "totem.suggestion.ph_title_es",
+  fr: "totem.suggestion.ph_title_fr",
+};
+
+const SUGG_BTN_PH_KEY: Record<(typeof ALL_LANGS)[number]["code"], string> = {
+  pt: "totem.suggestion.ph_btn_pt",
+  en: "totem.suggestion.ph_btn_en",
+  es: "totem.suggestion.ph_btn_es",
+  fr: "totem.suggestion.ph_btn_fr",
+};
 
 type LangMap = { pt: string; en: string; es: string; fr: string };
 
@@ -33,6 +49,7 @@ const asLangMap = (value: unknown): LangMap => {
 };
 
 const TotemConfigPage = () => {
+  const { t, lang } = useStaffT();
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
@@ -137,12 +154,12 @@ const TotemConfigPage = () => {
     const path = `${storeId}/lang-${code}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
     if (error) {
-      toast.error("Error al subir ícono");
+      toast.error(t("totem.toast.icon_error"));
       return;
     }
     const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
     setLangIcons((prev) => ({ ...prev, [code]: pub.publicUrl }));
-    toast.success("Ícono cargado — recuerda guardar");
+    toast.success(t("totem.toast.icon_ok"));
   };
 
   const uploadTotemLogo = async (file: File) => {
@@ -151,9 +168,9 @@ const TotemConfigPage = () => {
     try {
       const url = await uploadBrandingImage(storeId, "totem-logo", file);
       setLogoUrl(url);
-      toast.success("Logo enviado — lembre de salvar");
+      toast.success(t("totem.toast.logo_ok"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao enviar logo");
+      toast.error(e instanceof Error ? e.message : t("menu.toast.image_error"));
     } finally {
       setLogoUploading(false);
     }
@@ -165,9 +182,9 @@ const TotemConfigPage = () => {
     try {
       const url = await uploadBrandingImage(storeId, "totem-bg", file);
       setBgImageUrl(url);
-      toast.success("Imagem de fundo enviada — lembre de salvar");
+      toast.success(t("totem.toast.bg_ok"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+      toast.error(e instanceof Error ? e.message : t("menu.toast.image_error"));
     } finally {
       setBgUploading(false);
     }
@@ -180,7 +197,7 @@ const TotemConfigPage = () => {
         return prev.filter((l) => l !== code);
       }
       if (prev.length >= 4) {
-        toast.error("Máximo 4 idiomas");
+        toast.error(t("totem.toast.max_langs"));
         return prev;
       }
       return [...prev, code];
@@ -235,9 +252,9 @@ const TotemConfigPage = () => {
     }
 
     if (error) {
-      toast.error("Erro ao salvar configuração");
+      toast.error(t("totem.toast.save_error"));
     } else {
-      toast.success("Configuração salva!");
+      toast.success(t("totem.toast.saved"));
       fetchConfig();
     }
     setSaving(false);
@@ -246,10 +263,10 @@ const TotemConfigPage = () => {
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Configuração do Totem</h2>
+        <h2 className="text-2xl font-bold">{t("page.totem.title")}</h2>
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
-            Você não está associado a nenhuma loja.
+            {t("totem.no_store")}
           </CardContent>
         </Card>
       </div>
@@ -263,46 +280,40 @@ const TotemConfigPage = () => {
   return (
     <div className="space-y-6 max-w-3xl">
       <HowToUsePanel
-        purpose="Personaliza a tela do totem (cores, idiomas, splash, mensagens de boas-vindas)."
-        whenToUse="Antes de abrir um novo totem para o cliente e quando trocar a campanha."
-        steps={[
-          "Escolha os idiomas oferecidos ao cliente (mínimo 1).",
-          "Suba a imagem ou vídeo de splash.",
-          "Defina as cores principais (devem combinar com a marca).",
-          "Salve. O totem actualiza no próximo reinício.",
-        ]}
-        howToConfirm="Abra o totem no tablet: a splash, idiomas e cores aparecem como configurado."
-        assistantQuestion="Que configuração de totem aumenta conversão em zona turística com 4 idiomas?"
+        purpose={t("howto.totem.purpose")}
+        whenToUse={t("howto.totem.when")}
+        steps={[t("howto.totem.step1"), t("howto.totem.step2"), t("howto.totem.step3"), t("howto.totem.step4")]}
+        howToConfirm={t("howto.totem.confirm")}
+        assistantQuestion={t("howto.totem.assistant")}
       />
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Monitor className="h-6 w-6" /> Configuração do Totem
+          <Monitor className="h-6 w-6" /> {t("page.totem.title")}
         </h2>
         <Button onClick={saveConfig} disabled={saving}>
           <Save className="h-4 w-4 mr-1" />
-          {saving ? "Salvando..." : "Salvar"}
+          {saving ? t("totem.saving") : t("totem.save")}
         </Button>
       </div>
 
-      {/* Branding */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Palette className="h-5 w-5" /> Branding
+            <Palette className="h-5 w-5" /> {t("totem.branding")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <ImageUploadField
-            label="Logo do totem"
-            dimensions="512×512 px, fundo transparente"
+            label={t("totem.logo")}
+            dimensions={t("totem.logo.dimensions")}
             value={logoUrl}
             uploading={logoUploading}
             disabled={!storeId}
             onPickFile={uploadTotemLogo}
           />
           <ImageUploadField
-            label="Imagem de fundo"
-            dimensions="1080×1920 px, vertical (ecrã totem)"
+            label={t("totem.bg")}
+            dimensions={t("totem.bg.dimensions")}
             value={bgImageUrl}
             uploading={bgUploading}
             disabled={!storeId}
@@ -311,28 +322,28 @@ const TotemConfigPage = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label>Cor Principal</Label>
+              <Label>{t("totem.color.primary")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer border-0" />
                 <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="font-mono text-sm" />
               </div>
             </div>
             <div>
-              <Label>Cor Secundária</Label>
+              <Label>{t("totem.color.secondary")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer border-0" />
                 <Input value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="font-mono text-sm" />
               </div>
             </div>
             <div>
-              <Label>Cor Destaque</Label>
+              <Label>{t("totem.color.accent")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer border-0" />
                 <Input value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="font-mono text-sm" />
               </div>
             </div>
             <div>
-              <Label>Cor do CTA</Label>
+              <Label>{t("totem.color.cta")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <input type="color" value={ctaColor} onChange={(e) => setCtaColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer border-0" />
                 <Input value={ctaColor} onChange={(e) => setCtaColor(e.target.value)} className="font-mono text-sm" />
@@ -346,15 +357,13 @@ const TotemConfigPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Globe className="h-5 w-5" /> Idiomas do projeto
+            <Globe className="h-5 w-5" /> {t("totem.langs.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Idioma principal</Label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Define a língua padrão do totem e dos textos da impressora.
-            </p>
+            <Label>{t("totem.lang.primary")}</Label>
+            <p className="text-xs text-muted-foreground mb-2">{t("totem.lang.primary_hint")}</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {ALL_LANGS.map((l) => {
                 const isPrim = primaryLang === l.code;
@@ -370,7 +379,7 @@ const TotemConfigPage = () => {
                       isPrim ? "border-primary bg-primary/10 text-primary" : "border-border"
                     }`}
                   >
-                    {l.label}
+                    {t(l.labelKey)}
                   </button>
                 );
               })}
@@ -378,10 +387,8 @@ const TotemConfigPage = () => {
           </div>
 
           <div>
-            <Label>Idiomas disponíveis no totem (até 4)</Label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Aparecem como ícones na primeira tela. Faça upload da bandeira/ícone (recomendado 256×256 px).
-            </p>
+            <Label>{t("totem.lang.available")}</Label>
+            <p className="text-xs text-muted-foreground mb-2">{t("totem.lang.icon_upload_hint")}</p>
             <div className="space-y-2">
               {ALL_LANGS.map((l) => {
                 const active = activeLangs.includes(l.code);
@@ -400,15 +407,15 @@ const TotemConfigPage = () => {
                     />
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       {icon ? (
-                        <img src={icon} alt={l.label} className="w-full h-full object-cover" />
+                        <img src={icon} alt={t(l.labelKey)} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-xs text-muted-foreground">{l.code.toUpperCase()}</span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold">{l.label}</p>
+                      <p className="text-sm font-bold">{t(l.labelKey)}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {l.code === primaryLang ? "Idioma principal" : active ? "Disponível" : "Desativado"}
+                        {l.code === primaryLang ? t("totem.lang.primary_badge") : active ? t("totem.lang.available_badge") : t("totem.lang.disabled_badge")}
                       </p>
                     </div>
                     <label className="cursor-pointer">
@@ -419,7 +426,7 @@ const TotemConfigPage = () => {
                         onChange={(e) => e.target.files?.[0] && uploadLangIcon(l.code, e.target.files[0])}
                       />
                       <Button type="button" variant="outline" size="sm" asChild>
-                        <span><Upload className="w-3.5 h-3.5 mr-1" /> Ícone</span>
+                        <span><Upload className="w-3.5 h-3.5 mr-1" /> {t("totem.lang.icon")}</span>
                       </Button>
                     </label>
                   </div>
@@ -433,15 +440,15 @@ const TotemConfigPage = () => {
       {/* Options */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Opções do Fluxo</CardTitle>
+          <CardTitle className="text-lg">{t("totem.flow.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Comer Aqui</Label>
+            <Label>{t("totem.dine_in")}</Label>
             <Switch checked={enableDineIn} onCheckedChange={setEnableDineIn} />
           </div>
           <div className="flex items-center justify-between">
-            <Label>Para Levar</Label>
+            <Label>{t("totem.takeaway")}</Label>
             <Switch checked={enableTakeaway} onCheckedChange={setEnableTakeaway} />
           </div>
         </CardContent>
@@ -451,17 +458,17 @@ const TotemConfigPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Globe className="h-5 w-5" /> Mensagem de Boas-vindas
+            <Globe className="h-5 w-5" /> {t("totem.welcome.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Português</Label>
-            <Input value={welcomePt} onChange={(e) => setWelcomePt(e.target.value)} placeholder="Bem-vindo! Faça seu pedido" />
+            <Label>{t("totem.welcome.pt")}</Label>
+            <Input value={welcomePt} onChange={(e) => setWelcomePt(e.target.value)} placeholder={t("totem.welcome.ph_pt")} />
           </div>
           <div>
-            <Label>English</Label>
-            <Input value={welcomeEn} onChange={(e) => setWelcomeEn(e.target.value)} placeholder="Welcome! Place your order" />
+            <Label>{t("totem.welcome.en")}</Label>
+            <Input value={welcomeEn} onChange={(e) => setWelcomeEn(e.target.value)} placeholder={t("totem.welcome.ph_en")} />
           </div>
         </CardContent>
       </Card>
@@ -470,46 +477,42 @@ const TotemConfigPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5" /> Sugestão no Carrinho
+            <Sparkles className="h-5 w-5" /> {t("totem.suggestion.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Define quais produtos aparecem como sugestão na tela de revisão do pedido (ex.: bebidas, sobremesas, combos). Você pode escolher os produtos, o título da seção e um botão opcional que leva a uma categoria do cardápio.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("totem.suggestion.hint_full")}</p>
 
           <div className="flex items-center justify-between">
-            <Label>Mostrar seção de sugestão</Label>
+            <Label>{t("totem.suggestion.show")}</Label>
             <Switch checked={suggEnabled} onCheckedChange={setSuggEnabled} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {ALL_LANGS.map((l) => (
               <div key={l.code}>
-                <Label className="text-xs">Título — {l.label}</Label>
+                <Label className="text-xs">{panelT(lang, "totem.suggestion.title_label", { lang: t(l.labelKey) })}</Label>
                 <Input
                   value={(suggTitle as any)[l.code] || ""}
                   onChange={(e) => setSuggTitle((prev) => ({ ...prev, [l.code]: e.target.value }))}
-                  placeholder={l.code === "es" ? "¿Y una bebida?" : l.code === "pt" ? "Que tal uma bebida?" : l.code === "en" ? "How about a drink?" : "Une boisson ?"}
+                  placeholder={t(SUGG_TITLE_PH_KEY[l.code])}
                 />
               </div>
             ))}
           </div>
 
           <div>
-            <Label>Produtos sugeridos</Label>
-            <p className="text-[11px] text-muted-foreground mb-2">
-              Selecione um ou mais produtos. Eles aparecerão como cards na tela de revisão.
-            </p>
+            <Label>{t("totem.suggestion.products")}</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">{t("totem.suggestion.products_hint")}</p>
             <Input
-              placeholder="Buscar produto..."
+              placeholder={t("totem.suggestion.search")}
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
               className="mb-2"
             />
             <div className="border border-border rounded-xl max-h-64 overflow-y-auto divide-y divide-border">
               {filteredProducts.length === 0 && (
-                <p className="p-3 text-xs text-muted-foreground">Nenhum produto encontrado.</p>
+                <p className="p-3 text-xs text-muted-foreground">{t("totem.suggestion.none")}</p>
               )}
               {filteredProducts.map((p) => {
                 const checked = suggProductIds.includes(p.id);
@@ -534,13 +537,13 @@ const TotemConfigPage = () => {
               })}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {suggProductIds.length} produto(s) selecionado(s)
+              {panelT(lang, "totem.suggestion.selected", { count: suggProductIds.length })}
             </p>
           </div>
 
           <div className="border-t border-border pt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Botão "ver mais" do lado dos produtos</Label>
+              <Label>{t("totem.suggestion.more_btn")}</Label>
               <Switch checked={suggBtnEnabled} onCheckedChange={setSuggBtnEnabled} />
             </div>
             {suggBtnEnabled && (
@@ -548,26 +551,24 @@ const TotemConfigPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {ALL_LANGS.map((l) => (
                     <div key={l.code}>
-                      <Label className="text-xs">Texto do botão — {l.label}</Label>
+                      <Label className="text-xs">{panelT(lang, "totem.suggestion.btn_label", { lang: t(l.labelKey) })}</Label>
                       <Input
                         value={(suggBtnLabel as any)[l.code] || ""}
                         onChange={(e) => setSuggBtnLabel((prev) => ({ ...prev, [l.code]: e.target.value }))}
-                        placeholder={l.code === "es" ? "Ver bebidas" : l.code === "pt" ? "Ver bebidas" : l.code === "en" ? "See drinks" : "Voir boissons"}
+                        placeholder={t(SUGG_BTN_PH_KEY[l.code])}
                       />
                     </div>
                   ))}
                 </div>
                 <div>
-                  <Label>Categoria de destino</Label>
-                  <p className="text-[11px] text-muted-foreground mb-2">
-                    Ao clicar no botão, o cliente é levado para esta categoria do cardápio.
-                  </p>
+                  <Label>{t("totem.suggestion.dest_category")}</Label>
+                  <p className="text-[11px] text-muted-foreground mb-2">{t("totem.suggestion.dest_hint")}</p>
                   <select
                     value={suggBtnCategoryId}
                     onChange={(e) => setSuggBtnCategoryId(e.target.value)}
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                   >
-                    <option value="">— Selecione uma categoria —</option>
+                    <option value="">{t("totem.suggestion.select_category")}</option>
                     {menuCategories.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}

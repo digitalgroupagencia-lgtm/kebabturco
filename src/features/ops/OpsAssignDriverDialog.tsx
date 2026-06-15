@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Bike, Loader2 } from "lucide-react";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import type { PanelOrder } from "./usePanelOrders";
 
 export type StoreDriver = { user_id: string; full_name: string };
@@ -32,11 +34,16 @@ const OpsAssignDriverDialog = ({
   onConfirm,
   assigning,
 }: Props) => {
+  const { t, lang } = useStaffT();
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) setSelected(drivers[0]?.user_id ?? null);
   }, [open, order?.id, drivers]);
+
+  const description = order
+    ? panelT(lang, "dialog.assign.desc_order", { code: order.order_number })
+    : t("dialog.assign.desc");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,13 +51,9 @@ const OpsAssignDriverDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bike className="h-5 w-5 text-orange-500" />
-            Atribuir entregador
+            {t("dialog.assign.title")}
           </DialogTitle>
-          <DialogDescription>
-            {order
-              ? `Pedido #${order.order_number} — escolha quem vai entregar.`
-              : "Selecione o entregador."}
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         {loadingDrivers ? (
@@ -58,9 +61,7 @@ const OpsAssignDriverDialog = ({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : drivers.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            Nenhum entregador cadastrado. Adicione na área Equipe.
-          </p>
+          <p className="text-sm text-muted-foreground py-4 text-center">{t("dialog.assign.no_drivers")}</p>
         ) : (
           <div className="grid gap-2">
             {drivers.map((d) => (
@@ -83,7 +84,7 @@ const OpsAssignDriverDialog = ({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" disabled={assigning} onClick={() => onOpenChange(false)}>
-            Voltar
+            {t("common.back")}
           </Button>
           <Button
             type="button"
@@ -91,7 +92,7 @@ const OpsAssignDriverDialog = ({
             className="font-bold bg-orange-600 hover:bg-orange-700"
             onClick={() => order && selected && void onConfirm(order, selected)}
           >
-            {assigning ? "A atribuir…" : "Atribuir"}
+            {assigning ? t("dialog.assign.assigning") : t("dialog.assign.btn")}
           </Button>
         </DialogFooter>
       </DialogContent>

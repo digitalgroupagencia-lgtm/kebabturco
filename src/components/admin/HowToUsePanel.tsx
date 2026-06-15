@@ -2,11 +2,12 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import AskAssistantButton from "./AskAssistantButton";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type Step = string | { title: string; detail?: string };
 
 type Props = {
-  /** Título curto, ex.: "Como usar esta tela" */
+  /** Título curto — omitir para usar tradução padrão */
   title?: string;
   /** Para quem serve esta tela em linguagem de utilizador */
   purpose: string;
@@ -24,7 +25,7 @@ type Props = {
 };
 
 export default function HowToUsePanel({
-  title = "Como usar esta tela",
+  title,
   purpose,
   whenToUse,
   steps,
@@ -34,6 +35,7 @@ export default function HowToUsePanel({
   defaultOpen = false,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
+  const { t } = useStaffT();
 
   return (
     <Card className="border-primary/20 bg-primary/5">
@@ -44,7 +46,7 @@ export default function HowToUsePanel({
         aria-expanded={open}
       >
         <HelpCircle className="h-5 w-5 text-primary shrink-0" />
-        <span className="font-bold text-sm flex-1">{title}</span>
+        <span className="font-bold text-sm flex-1">{title ?? t("howto.title")}</span>
         {open ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
@@ -56,7 +58,7 @@ export default function HowToUsePanel({
         <CardContent className="pt-0 space-y-3 text-sm">
           <div>
             <p className="font-bold text-xs uppercase tracking-wide text-muted-foreground mb-1">
-              Para que serve
+              {t("howto.purpose")}
             </p>
             <p>{purpose}</p>
           </div>
@@ -64,7 +66,7 @@ export default function HowToUsePanel({
           {whenToUse && (
             <div>
               <p className="font-bold text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                Quando usar
+                {t("howto.when")}
               </p>
               <p>{whenToUse}</p>
             </div>
@@ -73,7 +75,7 @@ export default function HowToUsePanel({
           {steps && steps.length > 0 && (
             <div>
               <p className="font-bold text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                Passo a passo
+                {t("howto.steps")}
               </p>
               <ol className="list-decimal pl-5 space-y-1">
                 {steps.map((s, i) => {
@@ -100,7 +102,7 @@ export default function HowToUsePanel({
           {howToConfirm && (
             <div>
               <p className="font-bold text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                Como confirmar que deu certo
+                {t("howto.confirm")}
               </p>
               <p>{howToConfirm}</p>
             </div>
@@ -110,7 +112,7 @@ export default function HowToUsePanel({
 
           {assistantQuestion && (
             <div className="pt-2 border-t border-primary/20">
-              <AskAssistantButton question={assistantQuestion} label="Pedir explicação à IA" />
+              <AskAssistantButton question={assistantQuestion} label={t("howto.ask_ai")} />
             </div>
           )}
         </CardContent>

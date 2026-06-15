@@ -20,6 +20,7 @@ import StaffProfileBanner from "@/components/panel/StaffProfileBanner";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
   page?: ComponentType<object>;
@@ -31,6 +32,7 @@ const PanelLayout = ({ page: Page }: Props) => {
   const { primaryLang } = useStoreLanguages(roleData?.store_id);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useStaffT();
   usePageTelemetry();
 
   useEffect(() => {
@@ -52,7 +54,7 @@ const PanelLayout = ({ page: Page }: Props) => {
 
   const panelSegment = panelSegmentFromPathname(location.pathname);
   const isLiveOps = panelSegment === "" || panelSegment === "live" || panelSegment === "kitchen";
-  const headerTitle = isLiveOps ? "Operação ao vivo" : "Painel do Restaurante";
+  const headerTitle = isLiveOps ? t("layout.header.live") : t("layout.header.panel");
 
   return (
     <SelectedTenantProvider>

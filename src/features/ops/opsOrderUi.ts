@@ -1,7 +1,9 @@
 import type { Tables } from "@/integrations/supabase/types";
+import type { StaffUiLang } from "@/components/StaffLanguageToggle";
 import { getOrderModalityBanner, type OrderStatus } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
+import { formatStaffPanelTime, panelT } from "@/lib/staffPanelLocale";
 import type { PanelOrder } from "./usePanelOrders";
 
 export const ETA_QUICK_OPTIONS = [10, 15, 20, 25, 30] as const;
@@ -12,13 +14,13 @@ export function orderItemCount(items: OrderItem[]): number {
   return items.reduce((sum, item) => sum + item.quantity, 0);
 }
 
-export function formatOrderClock(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+export function formatOrderClock(iso: string, lang?: StaffUiLang): string {
+  return formatStaffPanelTime(iso, lang);
 }
 
-export function formatOrderEta(order: { estimated_ready_at?: string | null }): string | null {
+export function formatOrderEta(order: { estimated_ready_at?: string | null }, lang?: StaffUiLang): string | null {
   if (!order.estimated_ready_at) return null;
-  return formatOrderClock(order.estimated_ready_at);
+  return formatOrderClock(order.estimated_ready_at, lang);
 }
 
 export function prepMinutesFromNow(iso: string): number {
@@ -26,14 +28,17 @@ export function prepMinutesFromNow(iso: string): number {
   return Math.max(0, Math.ceil(diff / 60_000));
 }
 
-export function formatPrepRemaining(order: {
-  status: string;
-  estimated_ready_at?: string | null;
-}): string | null {
+export function formatPrepRemaining(
+  order: {
+    status: string;
+    estimated_ready_at?: string | null;
+  },
+  lang?: StaffUiLang,
+): string | null {
   if (order.status !== "preparing" || !order.estimated_ready_at) return null;
   const mins = prepMinutesFromNow(order.estimated_ready_at);
-  if (mins <= 0) return "Atrasado";
-  return `~${mins} min restantes`;
+  if (mins <= 0) return panelT(lang, "ops.prep.late");
+  return panelT(lang, "ops.prep.remaining", { mins });
 }
 
 export function summarizeOrderItems(items: OrderItem[], max = 2): string {
@@ -50,16 +55,18 @@ export function requiresEtaBeforeAccept(status: string, nextStatus: OrderStatus)
   return status === "pending" && nextStatus === "preparing";
 }
 
-export function getModalityShortLabel(order: PanelOrder): string {
-  const banner = getOrderModalityBanner(order);
-  if (banner.tone === "dine_in" && order.table_number) return `M${order.table_number}`;
-  if (banner.tone === "takeaway") return "Balcão";
-  if (banner.tone === "delivery") return "Entrega";
+export function getModalityShortLabel(order: PanelOrder, lang?: StaffUiLang): string {
+  const banner = getOrderModalityBanner(order, lang);
+  if (banner.tone === "dine_in" && order.table_number) {
+    return panelT(lang, "order.modality.short.table", { table: order.table_number });
+  }
+  if (banner.tone === "takeaway") return panelT(lang, "order.modality.short.counter");
+  if (banner.tone === "delivery") return panelT(lang, "order.modality.short.delivery");
   return banner.label.slice(0, 8);
 }
 
-export function getCompactActionLabel(order: PanelOrder, viewerRole?: string | null): string | null {
-  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
+export function getCompactActionLabel(order: PanelOrder, viewerRole?: string | null, lang?: StaffUiLang): string | null {
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any), lang });
   if (!action) return null;
   return action.label;
 }

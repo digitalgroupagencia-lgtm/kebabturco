@@ -1,4 +1,5 @@
 import { Clock, ChefHat, Package, CheckCircle2, XCircle } from "lucide-react";
+import { useStaffT } from "@/hooks/useStaffT";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import type { PanelOrder } from "./usePanelOrders";
@@ -19,6 +20,7 @@ interface OpsStatusTabsProps {
 }
 
 const OpsStatusTabs = ({ columns, orders, selected, onSelect }: OpsStatusTabsProps) => {
+  const { lang } = useStaffT();
   const countByStatus = (status: OrderStatus) =>
     orders.filter((o) => panelColumnStatus(o.status) === status).length;
 
@@ -40,7 +42,7 @@ const OpsStatusTabs = ({ columns, orders, selected, onSelect }: OpsStatusTabsPro
             }`}
           >
             <Icon className="w-4 h-4" />
-            <span className="whitespace-nowrap">{getStatusLabel(status)}</span>
+            <span className="whitespace-nowrap">{getStatusLabel(status, undefined, lang)}</span>
             {count > 0 && (
               <span
                 className={`min-w-[22px] h-[22px] px-1.5 rounded-full text-xs font-black flex items-center justify-center ${

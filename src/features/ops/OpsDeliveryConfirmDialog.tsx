@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShieldCheck } from "lucide-react";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import type { PanelOrder } from "./usePanelOrders";
 import { validateDeliveryCode } from "./opsOrderUi";
 
@@ -23,6 +25,7 @@ type Props = {
 };
 
 const OpsDeliveryConfirmDialog = ({ order, open, onOpenChange, onConfirm, confirming }: Props) => {
+  const { t, lang } = useStaffT();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -37,16 +40,20 @@ const OpsDeliveryConfirmDialog = ({ order, open, onOpenChange, onConfirm, confir
 
   const handleConfirm = async () => {
     if (!order || !valid) {
-      setError("Introduza o código de 4 dígitos.");
+      setError(t("dialog.delivery.error_digits"));
       return;
     }
     setError(null);
     try {
       await onConfirm(order, code.trim());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Código incorrecto");
+      setError(e instanceof Error ? e.message : t("dialog.delivery.error_invalid"));
     }
   };
+
+  const description = order
+    ? panelT(lang, "dialog.delivery.desc_order", { code: order.order_number })
+    : t("dialog.delivery.desc_default");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,18 +61,14 @@ const OpsDeliveryConfirmDialog = ({ order, open, onOpenChange, onConfirm, confir
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-orange-500" />
-            Confirmar entrega
+            {t("dialog.delivery.title")}
           </DialogTitle>
-          <DialogDescription>
-            {order
-              ? `Pedido #${order.order_number} — peça o código ao cliente e digite-o para concluir a entrega.`
-              : "Valide a entrega com o código do cliente."}
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
           <Label htmlFor="delivery-code" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Código de confirmação
+            {t("dialog.delivery_code.title")}
           </Label>
           <Input
             id="delivery-code"
@@ -87,7 +90,7 @@ const OpsDeliveryConfirmDialog = ({ order, open, onOpenChange, onConfirm, confir
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" disabled={confirming} onClick={() => onOpenChange(false)}>
-            Voltar
+            {t("common.back")}
           </Button>
           <Button
             type="button"
@@ -95,7 +98,7 @@ const OpsDeliveryConfirmDialog = ({ order, open, onOpenChange, onConfirm, confir
             className="font-bold bg-orange-600 hover:bg-orange-700"
             onClick={() => void handleConfirm()}
           >
-            {confirming ? "A validar…" : "Concluir entrega"}
+            {confirming ? t("dialog.delivery.validating") : t("dialog.delivery.complete")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -3,6 +3,9 @@ import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
+import { formatStaffPanelTime, panelT } from "@/lib/staffPanelLocale";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,13 +54,13 @@ const stateStyles: Record<TableVisualState, string> = {
   waiting_order: "bg-violet-500/15 border-violet-500 text-violet-800 dark:text-violet-300",
 };
 
-const stateLabels: Record<TableVisualState, string> = {
-  free: "Livre",
-  pending: "Novo pedido",
-  preparing: "Em preparação",
-  open_account: "Conta aberta",
-  payment_pending: "Falta pagamento",
-  waiting_order: "Cliente no QR",
+const STATE_LABEL_KEYS: Record<TableVisualState, StaffI18nKey> = {
+  free: "tablemap.state.free",
+  pending: "tablemap.state.pending",
+  preparing: "tablemap.state.preparing",
+  open_account: "tablemap.state.open_account",
+  payment_pending: "tablemap.state.payment_pending",
+  waiting_order: "tablemap.state.waiting_order",
 };
 
 function resolveTableState(
@@ -84,7 +87,9 @@ function resolveTableState(
 }
 
 const TableMapPage = () => {
+  const { t, lang } = useStaffT();
   const { storeId, loading: storeLoading } = useAdminStoreId();
+  const stateLabel = (state: TableVisualState) => t(STATE_LABEL_KEYS[state]);
   const [tables, setTables] = useState<TableRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -231,9 +236,9 @@ const TableMapPage = () => {
   };
 
   const actionLabel = (s: OrderStatus) => {
-    if (s === "pending") return "OK / Em preparação";
-    if (s === "preparing") return "Pronto para servir";
-    if (s === "ready") return "Entregue na mesa";
+    if (s === "pending") return t("tablemap.action.accept");
+    if (s === "preparing") return t("tablemap.action.ready");
+    if (s === "ready") return t("tablemap.action.delivered");
     return "";
   };
 
@@ -242,10 +247,10 @@ const TableMapPage = () => {
     setActionLoading(true);
     try {
       await markTableSessionPaid(selectedSession.id, "cash");
-      toast.success("Pagamento registado");
+      toast.success(t("tablemap.toast.paid"));
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao marcar pagamento");
+      toast.error(e instanceof Error ? e.message : t("tablemap.toast.pay_error"));
     } finally {
       setActionLoading(false);
     }
@@ -256,11 +261,11 @@ const TableMapPage = () => {
     setActionLoading(true);
     try {
       await closeTableSessionUnified(sessionId, "cash");
-      toast.success(`Mesa ${tableNumber} fechada — cliente desvinculado`);
+      toast.success(panelT(lang, "tablemap.toast.closed", { n: tableNumber }));
       if (selected === tableNumber) setSelected(null);
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao fechar conta");
+      toast.error(e instanceof Error ? e.message : t("tablemap.toast.close_error"));
     } finally {
       setActionLoading(false);
     }
@@ -275,11 +280,11 @@ const TableMapPage = () => {
       } else {
         await closeTableByNumber(storeId, selected, "cash");
       }
-      toast.success("Conta fechada — mesa libertada");
+      toast.success(t("tablemap.toast.released"));
       setSelected(null);
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao fechar conta");
+      toast.error(e instanceof Error ? e.message : t("tablemap.toast.close_error"));
     } finally {
       setActionLoading(false);
     }
@@ -288,7 +293,7 @@ const TableMapPage = () => {
   if (storeLoading || loading) {
     return (
       <div className="p-8 flex items-center gap-2">
-        <Loader2 className="animate-spin h-4 w-4" /> A carregar mapa...
+        <Loader2 className="animate-spin h-4 w-4" /> {t("tablemap.loading")}
       </div>
     );
   }
@@ -297,14 +302,14 @@ const TableMapPage = () => {
     <div className="space-y-6 p-4 sm:p-6">
       <PremiumPageHeader
         icon={LayoutGrid}
-        title="Mapa de mesas"
-        subtitle="Conta aberta até confirmar pagamento. Entregar pedido não fecha a mesa."
+        title={t("tablemap.title")}
+        subtitle={t("tablemap.subtitle")}
       />
 
       <div className="flex flex-wrap gap-3 text-xs">
         {(["free", "waiting_order", "pending", "preparing", "open_account", "payment_pending"] as TableVisualState[]).map((k) => (
           <span key={k} className={`px-2 py-1 rounded-full border ${stateStyles[k]}`}>
-            {stateLabels[k]}
+            {stateLabel(k)}
           </span>
         ))}
       </div>
@@ -312,36 +317,41 @@ const TableMapPage = () => {
       {openAccounts.length > 0 && (
         <Card className="p-4 border-primary/40 bg-primary/5 space-y-3">
           <div>
-            <h2 className="text-lg font-black text-primary">Contas abertas agora ({openAccounts.length})</h2>
-            <p className="text-sm text-muted-foreground">
-              Mesas com cliente ligado ou conta em aberto. Feche aqui para libertar o telemóvel do cliente.
-            </p>
+            <h2 className="text-lg font-black text-primary">
+              {panelT(lang, "tablemap.open_accounts.title", { count: openAccounts.length })}
+            </h2>
+            <p className="text-sm text-muted-foreground">{t("tablemap.open_accounts.hint")}</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {openAccounts.map((row) => (
               <div key={row.session_id} className="rounded-xl border bg-card p-3 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-xl font-black">Mesa {row.table_number}</p>
+                    <p className="text-xl font-black">{panelT(lang, "tablemap.table", { n: row.table_number })}</p>
                     <p className="text-xs text-muted-foreground">
-                      Aberta às {new Date(row.opened_at).toLocaleTimeString()}
+                      {panelT(lang, "tablemap.opened_at", { time: formatStaffPanelTime(row.opened_at, lang) })}
                     </p>
                   </div>
                   <Badge variant="outline">
                     {row.order_count === 0
-                      ? "Cliente no QR"
+                      ? t("tablemap.client_qr")
                       : row.pending_payment_count > 0
-                        ? "Falta pagamento"
-                        : "Conta aberta"}
+                        ? t("tablemap.state.payment_pending")
+                        : t("tablemap.state.open_account")}
                   </Badge>
                 </div>
                 <p className="text-sm">
                   {row.order_count === 0
-                    ? "Cliente ligado — ainda sem pedido"
-                    : `${row.order_count} pedido(s) · €${Number(row.total_amount || 0).toFixed(2)}`}
+                    ? t("tablemap.client_linked")
+                    : panelT(lang, "tablemap.orders_summary", {
+                        count: row.order_count,
+                        total: Number(row.total_amount || 0).toFixed(2),
+                      })}
                   {row.pending_payment_total > 0 && (
                     <span className="text-orange-600 dark:text-orange-400 font-semibold block">
-                      Falta pagar €{Number(row.pending_payment_total).toFixed(2)}
+                      {panelT(lang, "tablemap.unpaid_amount", {
+                        amount: Number(row.pending_payment_total).toFixed(2),
+                      })}
                     </span>
                   )}
                 </p>
@@ -352,7 +362,7 @@ const TableMapPage = () => {
                     className="flex-1 font-bold"
                     onClick={() => setSelected(row.table_number)}
                   >
-                    Ver conta
+                    {t("tablemap.view_account")}
                   </Button>
                   <Button
                     size="sm"
@@ -360,7 +370,7 @@ const TableMapPage = () => {
                     disabled={actionLoading}
                     onClick={() => handleCloseSession(row.session_id, row.table_number)}
                   >
-                    Fechar conta
+                    {t("tablemap.close_account")}
                   </Button>
                 </div>
               </div>
@@ -370,20 +380,20 @@ const TableMapPage = () => {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {tables.map((t) => {
-          const session = sessionByTable.get(t.number);
-          const openMeta = openMetaByTable.get(t.number);
-          const state = resolveTableState(t.number, orders, session, openMeta);
+        {tables.map((tableRow) => {
+          const session = sessionByTable.get(tableRow.number);
+          const openMeta = openMetaByTable.get(tableRow.number);
+          const state = resolveTableState(tableRow.number, orders, session, openMeta);
           return (
             <button
-              key={t.id}
+              key={tableRow.id}
               type="button"
-              onClick={() => setSelected(t.number)}
-              className={`rounded-2xl border-2 p-4 text-left transition-transform active:scale-[0.98] min-h-[100px] ${stateStyles[state]} ${selected === t.number ? "ring-2 ring-primary" : ""}`}
+              onClick={() => setSelected(tableRow.number)}
+              className={`rounded-2xl border-2 p-4 text-left transition-transform active:scale-[0.98] min-h-[100px] ${stateStyles[state]} ${selected === tableRow.number ? "ring-2 ring-primary" : ""}`}
             >
-              <p className="text-2xl font-black">Mesa {t.number}</p>
-              <p className="text-xs font-bold mt-1">{stateLabels[state]}</p>
-              <p className="text-[10px] opacity-70 mt-1">{t.capacity} lugares</p>
+              <p className="text-2xl font-black">{panelT(lang, "tablemap.table", { n: tableRow.number })}</p>
+              <p className="text-xs font-bold mt-1">{stateLabel(state)}</p>
+              <p className="text-[10px] opacity-70 mt-1">{panelT(lang, "tablemap.seats", { n: tableRow.capacity })}</p>
               {session && (
                 <p className="text-[10px] font-semibold mt-1 opacity-80">
                   €{Number(session.total_amount || 0).toFixed(2)}
@@ -395,30 +405,30 @@ const TableMapPage = () => {
       </div>
 
       {tables.length === 0 && (
-        <Card className="p-8 text-center text-muted-foreground">Registe mesas em Gestão de mesas primeiro.</Card>
+        <Card className="p-8 text-center text-muted-foreground">{t("tablemap.empty")}</Card>
       )}
 
       {selected && (
         <Card className="p-4 space-y-4 border-primary/30">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-xl font-black text-primary">Mesa {selected}</h2>
+              <h2 className="text-xl font-black text-primary">{panelT(lang, "tablemap.table", { n: selected })}</h2>
               {selectedSession ? (
                 <p className="text-sm text-muted-foreground">
-                  Conta aberta · €{accountTotal.toFixed(2)}
+                  {panelT(lang, "tablemap.account_open", { total: accountTotal.toFixed(2) })}
                   {selectedOrders.length === 0 && accountOrders.length === 0 && (
                     <span className="text-violet-600 dark:text-violet-400 font-semibold ml-2">
-                      · Cliente ligado ao QR (sem pedido ainda)
+                      {t("tablemap.qr_waiting")}
                     </span>
                   )}
                   {pendingPaymentTotal > 0 && (
                     <span className="text-orange-600 dark:text-orange-400 font-semibold ml-2">
-                      · Falta pagar €{pendingPaymentTotal.toFixed(2)}
+                      {panelT(lang, "tablemap.unpaid_amount", { amount: pendingPaymentTotal.toFixed(2) })}
                     </span>
                   )}
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Sem conta aberta</p>
+                <p className="text-sm text-muted-foreground">{t("tablemap.no_account")}</p>
               )}
             </div>
             <Button variant="ghost" size="icon" onClick={() => setSelected(null)}>
@@ -429,7 +439,7 @@ const TableMapPage = () => {
           {selectedSession && accountOrders.length > 0 && (
             <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                <Receipt className="h-3.5 w-3.5" /> Conta da mesa
+                <Receipt className="h-3.5 w-3.5" /> {t("tablemap.tab_title")}
               </p>
               {accountOrders.map((o) => (
                 <div key={o.id} className="flex justify-between text-sm">
@@ -437,7 +447,7 @@ const TableMapPage = () => {
                     #{o.order_number} · {o.status}
                     {o.payment_status === "pending" && (
                       <Badge variant="outline" className="ml-2 text-orange-600 border-orange-400">
-                        Falta pagamento
+                        {t("tablemap.state.payment_pending")}
                       </Badge>
                     )}
                   </span>
@@ -445,7 +455,7 @@ const TableMapPage = () => {
                 </div>
               ))}
               <div className="flex justify-between font-black pt-1 border-t">
-                <span>Total</span>
+                <span>{t("tablemap.total")}</span>
                 <span>€{accountTotal.toFixed(2)}</span>
               </div>
             </div>
@@ -460,7 +470,7 @@ const TableMapPage = () => {
                 onClick={handleMarkPaid}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
-                Pagamento recebido
+                {t("tablemap.payment_received")}
               </Button>
               <Button
                 variant="default"
@@ -469,7 +479,7 @@ const TableMapPage = () => {
                 onClick={handleCloseAccount}
               >
                 <Unlock className="h-4 w-4 mr-2" />
-                Fechar conta / Libertar mesa
+                {t("tablemap.close_release")}
               </Button>
             </div>
           )}
@@ -486,7 +496,7 @@ const TableMapPage = () => {
                 }}
               >
                 <Unlock className="h-4 w-4 mr-2" />
-                Fechar conta / Libertar mesa
+                {t("tablemap.close_release")}
               </Button>
             </div>
           )}
@@ -499,14 +509,14 @@ const TableMapPage = () => {
               onClick={handleCloseAccount}
             >
               <Unlock className="h-4 w-4 mr-2" />
-              Libertar mesa (sem conta)
+              {t("tablemap.release_no_account")}
             </Button>
           )}
 
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Pedidos activos</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("tablemap.active_orders")}</p>
             {selectedOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sem pedidos activos nesta mesa.</p>
+              <p className="text-sm text-muted-foreground">{t("tablemap.no_active_orders")}</p>
             ) : (
               selectedOrders.map((o) => {
                 const next = nextStatus(o.status);

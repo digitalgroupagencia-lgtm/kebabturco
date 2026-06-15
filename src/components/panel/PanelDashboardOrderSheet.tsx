@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { reprintPanelOrder } from "@/features/ops/panelPrintHelper";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const OpsOrderDetailSheet = lazy(() => import("@/features/ops/OpsOrderDetailSheet"));
 
@@ -23,6 +24,7 @@ export default function PanelDashboardOrderSheet({
   onClose,
   onGoToLive,
 }: Props) {
+  const { t } = useStaffT();
   const { data } = useQuery({
     queryKey: ["panel-dashboard-order-detail", storeId, orderId],
     enabled: !!storeId && !!orderId,
@@ -74,9 +76,9 @@ export default function PanelDashboardOrderSheet({
           if (!storeId) return;
           try {
             await reprintPanelOrder(storeId, order, data?.items ?? []);
-            toast.success("Pedido enviado para impressão");
+            toast.success(t("print.toast.sent"));
           } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Não foi possível imprimir");
+            toast.error(e instanceof Error ? e.message : t("print.toast.error"));
           }
         }}
       />

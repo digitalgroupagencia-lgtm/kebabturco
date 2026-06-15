@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import { usePanelStore } from "@/contexts/PanelStoreContext";
+import { useStaffT } from "@/hooks/useStaffT";
 import {
   Select,
   SelectContent,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/select";
 
 export default function PanelStoreSwitcher() {
+  const { t } = useStaffT();
   const { stores, storeId, canSwitchStore, setStoreId, loading } = usePanelStore();
 
   if (loading || stores.length === 0) return null;
@@ -25,8 +27,8 @@ export default function PanelStoreSwitcher() {
         disabled={!canSwitchStore}
       >
         <SelectTrigger className="h-8 text-xs border-none bg-muted/50 shadow-none">
-          <SelectValue placeholder="Unidade">
-            {current?.name ?? "Unidade"}
+          <SelectValue placeholder={t("panel.store.unit")}>
+            {current?.name ?? t("panel.store.unit")}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>

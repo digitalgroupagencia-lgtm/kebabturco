@@ -1,4 +1,7 @@
 import type { Database } from "@/integrations/supabase/types";
+import type { StaffUiLang } from "@/components/StaffLanguageToggle";
+import { panelT } from "@/lib/staffPanelLocale";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 
 type DbAppRole = Database["public"]["Enums"]["app_role"];
 export type StaffRole = DbAppRole | "manager" | "cashier" | "attendant" | "delivery";
@@ -172,6 +175,22 @@ export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
   delivery: "Entregador",
   seller: "Vendedor",
 };
+
+const ROLE_I18N_KEYS: Record<StaffRole, StaffI18nKey> = {
+  admin_master: "role.admin_master",
+  restaurant_admin: "role.restaurant_admin",
+  manager: "role.manager",
+  operator: "role.operator",
+  kitchen: "role.kitchen",
+  cashier: "role.cashier",
+  attendant: "role.attendant",
+  delivery: "role.delivery",
+  seller: "role.seller",
+};
+
+export function getStaffRoleLabel(role: StaffRole, lang?: StaffUiLang): string {
+  return panelT(lang, ROLE_I18N_KEYS[role]);
+}
 
 export const RESTAURANT_STAFF_ROLES: StaffRole[] = [
   "restaurant_admin",

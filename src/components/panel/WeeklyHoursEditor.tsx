@@ -12,15 +12,17 @@ import {
   DELIVERY_STORE_DEFAULTS,
   type WeeklySchedule,
 } from "@/lib/storeHours";
+import { useStaffT } from "@/hooks/useStaffT";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 
-const DAY_LABELS: Array<{ k: keyof WeeklySchedule; label: string }> = [
-  { k: "mon", label: "Segunda" },
-  { k: "tue", label: "Terça" },
-  { k: "wed", label: "Quarta" },
-  { k: "thu", label: "Quinta" },
-  { k: "fri", label: "Sexta" },
-  { k: "sat", label: "Sábado" },
-  { k: "sun", label: "Domingo" },
+const DAY_KEYS: Array<{ k: keyof WeeklySchedule; labelKey: StaffI18nKey }> = [
+  { k: "mon", labelKey: "hours.day.mon" },
+  { k: "tue", labelKey: "hours.day.tue" },
+  { k: "wed", labelKey: "hours.day.wed" },
+  { k: "thu", labelKey: "hours.day.thu" },
+  { k: "fri", labelKey: "hours.day.fri" },
+  { k: "sat", labelKey: "hours.day.sat" },
+  { k: "sun", labelKey: "hours.day.sun" },
 ];
 
 interface Props {
@@ -38,6 +40,8 @@ const ChannelEditor = ({
   value: WeeklySchedule;
   onChange: (v: WeeklySchedule) => void;
 }) => {
+  const { t } = useStaffT();
+
   const setDay = (k: keyof WeeklySchedule, patch: Partial<WeeklySchedule[keyof WeeklySchedule]>) => {
     onChange({ ...value, [k]: { ...value[k], ...patch } });
   };
@@ -49,14 +53,16 @@ const ChannelEditor = ({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {DAY_LABELS.map(({ k, label }) => {
+        {DAY_KEYS.map(({ k, labelKey }) => {
           const day = value[k];
           return (
             <div key={k} className="rounded-xl border border-border p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm">{label}</span>
+                <span className="font-bold text-sm">{t(labelKey)}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{day.open ? "Aberto" : "Fechado"}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {day.open ? t("hours.open") : t("hours.closed")}
+                  </span>
                   <Switch
                     checked={day.open}
                     onCheckedChange={(open) => setDay(k, { open })}
@@ -110,7 +116,7 @@ const ChannelEditor = ({
                     onClick={() => setDay(k, { ranges: [...day.ranges, ["19:00", "24:00"]] })}
                     className="gap-1 h-8 text-xs"
                   >
-                    <Plus className="h-3 w-3" /> Adicionar intervalo
+                    <Plus className="h-3 w-3" /> {t("hours.add_interval")}
                   </Button>
                 </div>
               )}
@@ -123,6 +129,7 @@ const ChannelEditor = ({
 };
 
 const WeeklyHoursEditor = ({ storeId }: Props) => {
+  const { t } = useStaffT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [storeSched, setStoreSched] = useState<WeeklySchedule>(STORE_DEFAULTS);
@@ -161,7 +168,7 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
       .eq("store_id", storeId);
     setSaving(false);
     if (error) toast.error(error.message);
-    else toast.success("Horários guardados");
+    else toast.success(t("hours.toast.saved"));
   };
 
   const toggleApply = async (next: boolean) => {
@@ -175,20 +182,20 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
       setApplyEnabled(!next);
       toast.error(error.message);
     } else {
-      toast.success(next ? "Validação de horário ativa" : "Validação de horário desativada — pedidos aceitos fora do horário");
+      toast.success(next ? t("hours.toast.validation_on") : t("hours.toast.validation_off"));
     }
   };
 
   const applyKebabDefaults = () => {
     setStoreSched(STORE_DEFAULTS);
     setDelivSched(DELIVERY_STORE_DEFAULTS);
-    toast.success("Horários oficiais Kebab Turco aplicados — clique em Guardar");
+    toast.success(t("hours.toast.defaults"));
   };
 
   if (loading) {
     return (
       <div className="p-6 flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin" /> A carregar…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("common.loading")}
       </div>
     );
   }
@@ -197,16 +204,10 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
     <div className="space-y-4">
       <div className={`rounded-xl border p-4 flex items-start justify-between gap-4 ${applyEnabled ? "border-border bg-muted/20" : "border-amber-500/40 bg-amber-500/10"}`}>
         <div className="space-y-1">
-          <div className="font-bold text-sm">Aplicar horário de funcionamento</div>
-          <p className="text-xs text-muted-foreground max-w-xl">
-            Quando ativo, a loja só aceita pedidos dentro dos horários configurados.
-            Quando desativado, permite testar e aceitar pedidos mesmo fora do horário.
-            Os horários abaixo permanecem guardados.
-          </p>
+          <div className="font-bold text-sm">{t("hours.apply.title")}</div>
+          <p className="text-xs text-muted-foreground max-w-xl">{t("hours.apply.desc")}</p>
           {!applyEnabled && (
-            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
-              ⚠ Modo teste: pedidos serão aceitos em qualquer horário.
-            </p>
+            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">{t("hours.test_mode")}</p>
           )}
         </div>
         <Switch checked={applyEnabled} onCheckedChange={toggleApply} />
@@ -214,29 +215,29 @@ const WeeklyHoursEditor = ({ storeId }: Props) => {
 
       <div className="flex flex-wrap gap-2 justify-between items-center">
         <p className="text-xs text-muted-foreground">
-          Timezone: <span className="font-bold">Europe/Madrid</span> · DST automático
+          {t("hours.timezone")} <span className="font-bold">Europe/Madrid</span> · {t("hours.dst")}
         </p>
         <Button variant="outline" size="sm" onClick={applyKebabDefaults} className="gap-1">
-          <Sparkles className="h-3 w-3" /> Horários oficiais Kebab Turco
+          <Sparkles className="h-3 w-3" /> {t("hours.official_btn")}
         </Button>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <ChannelEditor
-          title="Loja / Balcão / QR / Totem"
-          description="Horário para pedidos no local."
+          title={t("hours.channel.store.title")}
+          description={t("hours.channel.store.desc")}
           value={storeSched}
           onChange={setStoreSched}
         />
         <ChannelEditor
-          title="Delivery"
-          description="Horário separado para entregas (pode ter múltiplos intervalos por dia)."
+          title={t("hours.channel.delivery.title")}
+          description={t("hours.channel.delivery.desc")}
           value={delivSched}
           onChange={setDelivSched}
         />
       </div>
       <Button onClick={save} disabled={saving} size="lg" className="gap-2">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Guardar horários
+        {t("hours.save")}
       </Button>
     </div>
   );

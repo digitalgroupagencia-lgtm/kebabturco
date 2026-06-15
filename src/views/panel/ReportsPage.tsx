@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, TrendingUp, ShoppingBag, DollarSign, XCircle, Clock, Trophy, UserCircle2 } from "lucide-react";
+import { BarChart3, TrendingUp, ShoppingBag, DollarSign, XCircle, UserCircle2 } from "lucide-react";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
@@ -12,15 +14,18 @@ import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
 import PremiumSection from "@/components/admin/premium/PremiumSection";
 import PremiumTable from "@/components/admin/premium/PremiumTable";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 
-const periods = [
-  { label: "Hoje", days: 0 },
-  { label: "7 dias", days: 7 },
-  { label: "30 dias", days: 30 },
-  { label: "90 dias", days: 90 },
+const PERIOD_KEYS: StaffI18nKey[] = [
+  "reports.period.today",
+  "reports.period.7d",
+  "reports.period.30d",
+  "reports.period.90d",
 ];
+const PERIOD_DAYS = [0, 7, 30, 90];
 
 const ReportsPage = () => {
+  const { t, lang } = useStaffT();
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
@@ -46,7 +51,7 @@ const ReportsPage = () => {
   const fetchAll = async () => {
     if (!storeId) return;
     setLoading(true);
-    const since = getSince(periods[period].days);
+    const since = getSince(PERIOD_DAYS[period]);
 
     const [summaryRes, productsRes, hourlyRes, sellerRes] = await Promise.all([
       supabase.rpc("get_sales_summary", { _store_id: storeId, _since: since }),
@@ -100,7 +105,6 @@ const ReportsPage = () => {
     setLoading(false);
   };
 
-  // Fill missing hours for chart
   const fullHourlyData = Array.from({ length: 24 }, (_, i) => {
     const found = hourlyData.find((h) => h.hour === i);
     return { hour: `${String(i).padStart(2, "0")}h`, pedidos: found?.order_count || 0, receita: found?.revenue || 0 };
@@ -109,23 +113,24 @@ const ReportsPage = () => {
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Relatórios</h2>
-        <Card><CardContent className="p-8 text-center text-muted-foreground">Nenhuma loja vinculada.</CardContent></Card>
+        <h2 className="text-2xl font-bold">{t("reports.title")}</h2>
+        <Card><CardContent className="p-8 text-center text-muted-foreground">{t("common.no_store")}</CardContent></Card>
       </div>
     );
   }
 
+  const periodLabel = t(PERIOD_KEYS[period]);
   const periodActions = (
     <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
-      {periods.map((p, i) => (
+      {PERIOD_KEYS.map((key, i) => (
         <Button
-          key={p.label}
+          key={key}
           size="sm"
           variant={period === i ? "default" : "ghost"}
           onClick={() => setPeriod(i)}
           className="h-8 px-3"
         >
-          {p.label}
+          {t(key)}
         </Button>
       ))}
     </div>
@@ -134,56 +139,33 @@ const ReportsPage = () => {
   return (
     <div className="space-y-5">
       <HowToUsePanel
-        purpose="Visão de vendas, top produtos, horários de pico e desempenho por vendedor."
-        whenToUse="Diariamente para acompanhar caixa. Semanalmente para decidir cardápio e turnos."
+        purpose={t("howto.reports.purpose")}
+        whenToUse={t("howto.reports.when")}
         steps={[
-          "Escolha o período no topo (Hoje, 7, 30 ou 90 dias).",
-          "Veja o ticket médio (faturação ÷ pedidos).",
-          "No gráfico horário, identifique o pico para reforçar a equipa.",
-          "Em 'Top produtos', priorize os 3 primeiros nas promoções.",
+          t("howto.reports.step1"),
+          t("howto.reports.step2"),
+          t("howto.reports.step3"),
+          t("howto.reports.step4"),
         ]}
-        howToConfirm="Os totais batem com o caixa fechado em /panel/cashier."
-        assistantQuestion="Como interpreto o ticket médio e que ações concretas tomo se ele cair?"
+        howToConfirm={t("howto.reports.confirm")}
+        assistantQuestion={t("howto.reports.assistant")}
       />
 
       <PremiumPageHeader
         icon={BarChart3}
-        title="Relatórios"
-        subtitle={`Período: ${periods[period].label.toLowerCase()}`}
+        title={t("reports.title")}
+        subtitle={panelT(lang, "reports.period.subtitle", { period: periodLabel.toLowerCase() })}
         actions={periodActions}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <PremiumMetricCard
-          icon={ShoppingBag}
-          label="Pedidos"
-          value={summary.total_orders}
-          tone="primary"
-        />
-        <PremiumMetricCard
-          icon={DollarSign}
-          label="Faturação"
-          value={`€ ${summary.total_revenue.toFixed(2)}`}
-          tone="success"
-        />
-        <PremiumMetricCard
-          icon={TrendingUp}
-          label="Ticket médio"
-          value={`€ ${summary.avg_ticket.toFixed(2)}`}
-          tone="neutral"
-        />
-        <PremiumMetricCard
-          icon={XCircle}
-          label="Cancelados"
-          value={summary.total_cancelled}
-          tone="danger"
-        />
+        <PremiumMetricCard icon={ShoppingBag} label={t("reports.metric.orders")} value={summary.total_orders} tone="primary" />
+        <PremiumMetricCard icon={DollarSign} label={t("reports.metric.revenue")} value={`€ ${summary.total_revenue.toFixed(2)}`} tone="success" />
+        <PremiumMetricCard icon={TrendingUp} label={t("reports.metric.avg_ticket")} value={`€ ${summary.avg_ticket.toFixed(2)}`} tone="neutral" />
+        <PremiumMetricCard icon={XCircle} label={t("reports.metric.cancelled")} value={summary.total_cancelled} tone="danger" />
       </div>
 
-      <PremiumChartCard
-        title="Pedidos por hora"
-        subtitle="Identifique horários de pico para escalar a equipa"
-      >
+      <PremiumChartCard title={t("reports.chart.hourly")} subtitle={t("reports.chart.hourly_sub")}>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={fullHourlyData}>
@@ -203,15 +185,11 @@ const ReportsPage = () => {
         </div>
       </PremiumChartCard>
 
-      <PremiumSection
-        icon={Trophy}
-        title="Produtos mais vendidos"
-        description="Top 10 produtos por receita"
-      >
+      <PremiumSection icon={UserCircle2} title={t("reports.top.title")} description={t("reports.top.desc")}>
         <PremiumTable
           rows={topProducts}
           rowKey={(p) => p.product_id}
-          emptyMessage="Nenhum dado para o período selecionado."
+          emptyMessage={t("reports.top.empty")}
           columns={[
             {
               key: "rank",
@@ -225,18 +203,18 @@ const ReportsPage = () => {
             },
             {
               key: "name",
-              header: "Produto",
+              header: t("reports.col.product"),
               render: (p) => <span className="font-medium">{p.product_name}</span>,
             },
             {
               key: "qty",
-              header: "Qtd",
+              header: t("reports.col.qty"),
               align: "right",
               render: (p) => p.total_qty,
             },
             {
               key: "rev",
-              header: "Receita",
+              header: t("reports.col.revenue"),
               align: "right",
               render: (p) => (
                 <span className="font-semibold text-success">
@@ -248,37 +226,33 @@ const ReportsPage = () => {
         />
       </PremiumSection>
 
-      <PremiumSection
-        icon={UserCircle2}
-        title="Desempenho por vendedor"
-        description="Faturação, ticket médio e cancelamentos"
-      >
+      <PremiumSection icon={UserCircle2} title={t("reports.sellers.title")} description={t("reports.sellers.desc")}>
         <PremiumTable
           rows={sellerData}
           rowKey={(s) => s.seller_id}
-          emptyMessage="Nenhuma venda por vendedor no período."
+          emptyMessage={t("reports.sellers.empty")}
           columns={[
             {
               key: "name",
-              header: "Vendedor",
+              header: t("reports.col.seller"),
               render: (s) => <span className="font-medium">{s.seller_name}</span>,
             },
-            { key: "orders", header: "Pedidos", align: "right", render: (s) => s.order_count },
+            { key: "orders", header: t("reports.metric.orders"), align: "right", render: (s) => s.order_count },
             {
               key: "rev",
-              header: "Faturação",
+              header: t("reports.metric.revenue"),
               align: "right",
               render: (s) => <span className="font-semibold">€ {s.revenue.toFixed(2)}</span>,
             },
             {
               key: "avg",
-              header: "Ticket médio",
+              header: t("reports.metric.avg_ticket"),
               align: "right",
               render: (s) => `€ ${s.avg_ticket.toFixed(2)}`,
             },
             {
               key: "canc",
-              header: "Cancelados",
+              header: t("reports.metric.cancelled"),
               align: "right",
               render: (s) => (
                 <span className={s.cancelled > 0 ? "text-destructive font-semibold" : "text-muted-foreground"}>

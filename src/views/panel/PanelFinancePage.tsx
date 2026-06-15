@@ -52,7 +52,7 @@ const PanelFinancePage = () => {
       const snap = await fetchRestaurantFinanceSnapshot(storeId, ledgerNet);
       setFinanceSnapshot(snap);
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Erro ao carregar");
+      setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -26,7 +28,6 @@ import CheckoutActivationPanel from "@/components/finance/CheckoutActivationPane
 import {
   fetchStripeConnectEdgeHealth,
   isStripeConnectEdgeUpToDate,
-  STRIPE_EDGE_DEPLOY_HINT,
 } from "@/lib/stripeEdgeVersion";
 import { probeCheckoutStripeRpc, probeSchemaFallback } from "@/services/operationalDiagnosticsService";
 import {
@@ -65,6 +66,7 @@ async function probeLedgerTable(storeId: string): Promise<boolean> {
 }
 
 const FinancePage = () => {
+  const { t, lang } = useStaffT();
   const { storeId } = useAdminStoreId();
   const [profile, setProfile] = useState<StoreFinancialProfile | null>(null);
   const [movements, setMovements] = useState<FinanceMovement[]>([]);
@@ -117,7 +119,7 @@ const FinancePage = () => {
       const snap = await fetchRestaurantFinanceSnapshot(storeId, ledgerNet);
       setFinanceSnapshot(snap);
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Erro ao carregar recebimentos");
+      setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));
     } finally {
       if (!options?.silent) setLoading(false);
     }
@@ -161,32 +163,30 @@ const FinancePage = () => {
       const readyNow = isStripeConnectReady(fresh);
 
       if (readyNow) {
-        toast.success("Pagamentos online activos — sincronizado com a Stripe");
+        toast.success(t("finance.admin.toast.sync_ok"));
       } else if (!session) {
-        toast.error("Inicie sessão no painel para sincronizar com a Stripe.");
+        toast.error(t("finance.admin.toast.sync_login"));
       } else if (!checkoutRpcReady) {
-        toast.warning("Copie e execute o SQL de activação abaixo, depois Sync + Publish na Lovable.");
+        toast.warning(t("finance.admin.toast.sync_sql"));
       } else {
-        toast.warning(
-          "Ainda por activar no site — clique Copiar SQL, execute na base de dados e faça Sync + Publish.",
-        );
+        toast.warning(t("finance.admin.toast.sync_pending"));
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao sincronizar");
+      toast.error(e instanceof Error ? e.message : t("finance.admin.toast.sync_error"));
     } finally {
       setSyncing(false);
     }
-  }, [storeId, load, intakeSaved, checkoutRpcReady]);
+  }, [storeId, load, intakeSaved, checkoutRpcReady, t]);
 
   const activateBizum = useCallback(async () => {
     if (!storeId) return;
     setBizumBusy(true);
     try {
       const result = await enableStoreBizumPayments(storeId);
-      if (result.enabled) toast.success(result.message || "Bizum activo na conta do restaurante.");
-      else toast.warning(result.message || "Bizum ainda não disponível nesta conta.");
+      if (result.enabled) toast.success(result.message || t("finance.admin.toast.bizum_ok"));
+      else toast.warning(result.message || t("finance.admin.toast.bizum_unavailable"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível activar Bizum");
+      toast.error(e instanceof Error ? e.message : t("finance.admin.toast.bizum_error"));
     } finally {
       setBizumBusy(false);
     }
@@ -200,7 +200,7 @@ const FinancePage = () => {
   const connectRestaurantAccount = useCallback(async () => {
     if (!storeId) return;
     if (!intakeSaved?.owner_email?.trim()) {
-      toast.error("Guarde primeiro os dados do restaurante, incluindo o e-mail do dono.");
+      toast.error(t("finance.admin.toast.save_first"));
       return;
     }
     setConnectingRestaurant(true);
@@ -216,7 +216,7 @@ const FinancePage = () => {
       if (session.skipEmbedded || session.accountType === "custom") {
         await load({ silent: true });
         toast.success(
-          session.message || "Restaurante já registado na plataforma — não precisa de formulário extra.",
+          session.message || t("finance.admin.toast.connect_registered"),
         );
         return;
       }
@@ -225,7 +225,7 @@ const FinancePage = () => {
         `Formulário aberto — use o e-mail ${intakeSaved.owner_email} (já fica pré-preenchido).`,
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao ligar a conta do restaurante");
+      toast.error(e instanceof Error ? e.message : t("finance.admin.toast.connect_error"));
     } finally {
       setConnectingRestaurant(false);
     }
@@ -239,9 +239,9 @@ const FinancePage = () => {
       const url = `${window.location.origin}${path}`;
       setOnboardingLink(url);
       await load({ silent: true });
-      toast.success("Link gerado — copie ou envie por WhatsApp.");
+      toast.success(t("finance.admin.toast.link_generated"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao gerar o link");
+      toast.error(e instanceof Error ? e.message : t("finance.admin.toast.link_error"));
     } finally {
       setLinkBusy(false);
     }
@@ -253,23 +253,23 @@ const FinancePage = () => {
     try {
       const result = await provisionTestStripeConnect(storeId);
       await load({ silent: true });
-      toast.success(result.message || "Modo teste activo — recebimentos de teste activos");
+      toast.success(result.message || t("finance.admin.toast.test_activated"));
       setEmbeddedMode("none");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao activar recebimentos de teste");
+      toast.error(e instanceof Error ? e.message : t("finance.admin.toast.test_error"));
     } finally {
       setTestProvisionBusy(false);
     }
   }, [storeId, load]);
 
   if (!storeId) {
-    return <div className="p-6 text-sm text-muted-foreground">Sem restaurante vinculado</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{t("finance.admin.no_store")}</div>;
   }
 
   if (loading) {
     return (
       <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> A carregar…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("common.loading")}
       </div>
     );
   }
@@ -301,7 +301,7 @@ const FinancePage = () => {
 
   return (
     <div className="w-full max-w-[1600px] px-4 sm:px-6 space-y-4 pb-10">
-      <AdminStoreSwitcher hint="Recebimentos são configurados por unidade — só administradores." />
+      <AdminStoreSwitcher hint={t("finance.admin.store_hint")} />
       <AdminPayoutIntakeForm
         storeId={storeId}
         onSaved={(row, result) => {
@@ -314,14 +314,11 @@ const FinancePage = () => {
       <div>
         <h1 className="text-xl font-black flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
-          Recebimentos
+          {t("finance.admin.title")}
         </h1>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          Sistema financeiro do restaurante — ligue a conta bancária, acompanhe pedidos pagos online e repasses.
-          O cliente paga o total do pedido; a taxa da plataforma sai do repasse ao restaurante.
-        </p>
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t("finance.admin.subtitle_full")}</p>
         <Link to={nav.admin("diagnostics")} className="text-xs text-primary font-semibold underline mt-2 inline-block">
-          Ver Estado do sistema
+          {t("finance.admin.diagnostics_link")}
         </Link>
       </div>
 
@@ -333,13 +330,9 @@ const FinancePage = () => {
 
       {edgeNeedsDeploy && (
         <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 space-y-2">
-          <p className="text-sm font-black text-destructive">Servidor de pagamentos desactualizado</p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            O site no GitHub já está corrigido, mas o servidor na Lovable ainda usa uma versão antiga — por
-            isso o botão «Sincronizar Stripe» dá erro de sessão. O SQL que já executou está certo; falta
-            publicar as funções do servidor.
-          </p>
-          <p className="text-xs font-semibold text-foreground">{STRIPE_EDGE_DEPLOY_HINT}</p>
+          <p className="text-sm font-black text-destructive">{t("finance.admin.edge_outdated")}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{t("finance.admin.edge_hint_full")}</p>
+          <p className="text-xs font-semibold text-foreground">{t("finance.admin.edge_deploy_hint")}</p>
         </div>
       )}
 
@@ -362,10 +355,8 @@ const FinancePage = () => {
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed">
-              <p className="font-black text-amber-900 dark:text-amber-200">Pagamentos reais pendentes de aprovação</p>
-              <p className="text-muted-foreground mt-1">
-                Pagamentos reais ficam bloqueados até a verificação terminar. Use o modo teste abaixo enquanto isso.
-              </p>
+              <p className="font-black text-amber-900 dark:text-amber-200">{t("finance.admin.pending_real")}</p>
+              <p className="text-muted-foreground mt-1">{t("finance.admin.pending_real_hint")}</p>
             </div>
           </div>
         </div>
@@ -376,10 +367,8 @@ const FinancePage = () => {
           <div className="flex items-start gap-3">
             <Share2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
-              <p className="font-black text-base">Enviar link ao dono (WhatsApp)</p>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Gere um link para o dono preencher os dados de recebimentos no telemóvel.
-              </p>
+              <p className="font-black text-base">{t("finance.admin.whatsapp.title")}</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t("finance.admin.whatsapp.hint")}</p>
             </div>
           </div>
           <Button
@@ -389,7 +378,7 @@ const FinancePage = () => {
             onClick={() => void generateOnboardingLink()}
           >
             {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-            Gerar link para WhatsApp
+            {t("finance.admin.whatsapp.btn")}
           </Button>
           {onboardingLink && (
             <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
@@ -402,10 +391,10 @@ const FinancePage = () => {
                   className="gap-1"
                   onClick={() => {
                     void navigator.clipboard?.writeText(onboardingLink);
-                    toast.success("Link copiado");
+                    toast.success(t("finance.admin.link_copied"));
                   }}
                 >
-                  <Copy className="h-3.5 w-3.5" /> Copiar
+                  <Copy className="h-3.5 w-3.5" /> {t("finance.admin.copy")}
                 </Button>
                 <Button
                   type="button"
@@ -414,11 +403,11 @@ const FinancePage = () => {
                   asChild
                 >
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Hola! Rellena los datos para recibir los cobros del restaurante: ${onboardingLink}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(panelT(lang, "finance.admin.whatsapp.message", { link: onboardingLink }))}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Enviar WhatsApp
+                    {t("finance.admin.send_whatsapp")}
                   </a>
                 </Button>
               </div>
@@ -429,10 +418,8 @@ const FinancePage = () => {
 
       {platformRegistered && !ready && (
         <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm leading-relaxed text-green-900 dark:text-green-200">
-          <p className="font-bold">Dados guardados na plataforma</p>
-          <p className="text-xs mt-1 opacity-90">
-            Pode completar aqui ou enviar o link acima ao dono. Pagamentos activos quando a análise terminar.
-          </p>
+          <p className="font-bold">{t("finance.admin.platform_saved")}</p>
+          <p className="text-xs mt-1 opacity-90">{t("finance.admin.platform_saved_hint")}</p>
         </div>
       )}
 
@@ -442,12 +429,10 @@ const FinancePage = () => {
             <ShieldCheck className="h-6 w-6 text-green-700 shrink-0" />
             <div>
               <p className="font-black text-base">
-                {platformRegistered ? "Confirmar ligação com a Stripe" : "Passo 2 — Confirmar ligação"}
+                {platformRegistered ? t("finance.admin.connect.title") : t("finance.admin.connect.step2")}
               </p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                {platformRegistered
-                  ? "Os dados já foram guardados — use este botão se a sincronização acima não activar os pagamentos."
-                  : "Só use este botão se o Passo 1 não tiver conseguido registar o restaurante automaticamente."}
+                {platformRegistered ? t("finance.admin.connect.hint_registered") : t("finance.admin.connect.hint_fallback")}
               </p>
             </div>
           </div>
@@ -457,7 +442,7 @@ const FinancePage = () => {
             onClick={() => void connectRestaurantAccount()}
           >
             {connectingRestaurant ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Ligar conta do restaurante (produção)
+            {t("finance.admin.connect.btn")}
           </Button>
         </div>
       )}
@@ -475,13 +460,13 @@ const FinancePage = () => {
 
       {(testModeActive || testSimulated) && (
         <div className="rounded-lg border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300 bg-amber-500/10">
-          {testModeActive ? "Modo teste activo" : "Modo teste disponível"}
+          {testModeActive ? t("finance.admin.test_mode") : t("finance.admin.test_available")}
         </div>
       )}
 
       {!testModeActive && !productionBlocked && ready && (
         <div className="rounded-lg border border-green-500/30 px-3 py-2 text-xs font-bold uppercase tracking-wide text-green-800 dark:text-green-300 bg-green-500/10">
-          Modo produção — pagamentos reais
+          {t("finance.admin.prod_mode")}
         </div>
       )}
 
@@ -501,9 +486,7 @@ const FinancePage = () => {
           <div className="flex items-start gap-2">
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <p className="text-muted-foreground leading-relaxed">
-              Quando os pagamentos online estiverem activos, verá aqui o extrato completo, saldos e previsão de
-              depósito no banco. O cliente paga o total do pedido; a taxa de serviço da plataforma aparece só no
-              extrato, sem surpresas no checkout.
+              {t("finance.admin.dashboard_hint_full")}
             </p>
           </div>
         </div>
@@ -511,21 +494,21 @@ const FinancePage = () => {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Pagamentos online</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">{t("finance.admin.online_payments")}</p>
           <p className="text-sm font-bold mt-0.5 capitalize">
             {connectStatus === "ready"
               ? testModeActive
-                ? "Modo teste activo"
-                : "Activos"
+                ? t("finance.admin.test_mode")
+                : t("finance.admin.status.active")
               : connectStatus === "pending"
-                ? "Pendentes"
-                : "Por activar"}
+                ? t("finance.admin.status.pending")
+                : t("finance.admin.status.inactive")}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase font-bold">Depósito no banco</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">{t("finance.admin.bank_deposit")}</p>
           <p className="text-sm font-bold mt-0.5 capitalize">
-            {payoutsActive ? "Activo" : profile?.stripe_payout_status || "Pendente"}
+            {payoutsActive ? t("finance.admin.deposit.active") : profile?.stripe_payout_status || t("finance.admin.deposit.pending")}
           </p>
         </div>
       </div>
@@ -537,28 +520,26 @@ const FinancePage = () => {
           className="w-full text-xs text-muted-foreground"
           onClick={() => setShowTestTools(true)}
         >
-          Ferramentas de teste (cartão 4242) — opcional
+          {t("finance.admin.test_tools")}
         </Button>
       )}
 
       {showTestTools && (
         <div className="rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-bold text-sm">Modo teste (opcional)</p>
+            <p className="font-bold text-sm">{t("finance.admin.test_section")}</p>
             <Button variant="ghost" size="sm" onClick={() => setShowTestTools(false)}>
-              Fechar
+              {t("common.close")}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Só para testar pedidos com cartão 4242 — não precisa disto para vender a sério hoje.
-          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{t("finance.admin.test_hint_full")}</p>
           <Button
             className="w-full h-11 font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
             disabled={testProvisionBusy || schemaIncomplete}
             onClick={() => void activateTestReceivables()}
           >
             {testProvisionBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Activar recebimentos de teste
+            {t("finance.admin.activate_test")}
           </Button>
           <Button
             variant="outline"
@@ -567,7 +548,7 @@ const FinancePage = () => {
             onClick={() => void generateOnboardingLink()}
           >
             {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-            Gerar link para o restaurante (alternativa)
+            {t("finance.admin.test_link_alt")}
           </Button>
           {onboardingLink && (
             <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
@@ -579,10 +560,10 @@ const FinancePage = () => {
                 className="gap-1"
                 onClick={() => {
                   void navigator.clipboard?.writeText(onboardingLink);
-                  toast.success("Link copiado");
+                  toast.success(t("finance.admin.link_copied"));
                 }}
               >
-                <Copy className="h-3.5 w-3.5" /> Copiar link
+                <Copy className="h-3.5 w-3.5" /> {t("finance.admin.copy_link")}
               </Button>
             </div>
           )}
@@ -592,15 +573,14 @@ const FinancePage = () => {
       {embeddedMode === "onboarding" && (
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-black text-sm">Verificação da conta</p>
+            <p className="font-black text-sm">{t("finance.admin.verify.title")}</p>
             <Button variant="ghost" size="sm" onClick={() => setEmbeddedMode("none")}>
-              Fechar
+              {t("common.close")}
             </Button>
           </div>
           {intakeSaved?.owner_email && (
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Use o e-mail <strong className="text-foreground">{intakeSaved.owner_email}</strong> — é o do dono do
-              restaurante. Se pedir login, é só para confirmar a identidade (obrigatório por lei).
+              {panelT(lang, "finance.admin.verify.email_hint", { email: intakeSaved.owner_email })}
             </p>
           )}
           <StripeConnectEmbeddedPanel
@@ -619,9 +599,9 @@ const FinancePage = () => {
           <ShieldCheck className="h-5 w-5 shrink-0" />
           {testModeActive
             ? testSimulated
-              ? "Recebimentos de teste simulados — checkout disponível, sem dinheiro real."
-              : "Recebimentos em modo teste — cartão simulado, sem dinheiro real."
-            : "Recebimentos online activos — cartão, Apple Pay e Google Pay."}
+              ? t("finance.admin.ready_test_simulated")
+              : t("finance.admin.ready_test_card")
+            : t("finance.admin.ready_live")}
         </div>
       )}
 
@@ -632,16 +612,16 @@ const FinancePage = () => {
           onClick={() => setEmbeddedMode("management")}
         >
           <Settings2 className="h-4 w-4" />
-          Gerir conta bancária e documentos
+          {t("finance.admin.manage_bank")}
         </Button>
       )}
 
       {embeddedMode === "management" && (
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-black text-sm">Conta bancária e repasses</p>
+            <p className="font-black text-sm">{t("finance.admin.bank_section")}</p>
             <Button variant="ghost" size="sm" onClick={() => setEmbeddedMode("none")}>
-              Fechar
+              {t("common.close")}
             </Button>
           </div>
           <StripeConnectEmbeddedPanel
@@ -663,7 +643,7 @@ const FinancePage = () => {
             disabled={bizumBusy || syncing}
           >
             {bizumBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
-            Activar Bizum na conta do restaurante
+            {t("finance.admin.activate_bizum")}
           </Button>
         )}
         <Button
@@ -677,7 +657,7 @@ const FinancePage = () => {
           ) : (
             <RefreshCw className="h-4 w-4" />
           )}
-          Sincronizar com Stripe
+          {t("finance.admin.sync_stripe")}
         </Button>
         <Button
           variant="outline"
@@ -686,7 +666,7 @@ const FinancePage = () => {
           onClick={() => void load({ silent: false })}
           disabled={loading || syncing}
         >
-          Actualizar extrato e movimentos
+          {t("finance.admin.refresh")}
         </Button>
       </div>
     </div>

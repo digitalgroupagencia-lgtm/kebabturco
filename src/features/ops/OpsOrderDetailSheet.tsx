@@ -9,9 +9,13 @@ import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow
 import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { groupOrderItemDetails } from "@/lib/modifiers/formatOrderItem";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
+import type { StaffI18nKey } from "@/lib/staffI18n";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
   ETA_QUICK_OPTIONS,
+  formatOrderClock,
   formatOrderEta,
   formatPrepRemaining,
   getModalityShortLabel,
@@ -33,15 +37,16 @@ const paymentBadgeClass = {
   pending: "bg-yellow-500 text-black",
 } as const;
 
-function getSourceLabel(source: string) {
-  const map: Record<string, string> = {
-    totem: "App",
-    ifood: "iFood",
-    counter: "Balcão",
-    delivery: "Delivery",
-    waiter: "Garçon",
+function getSourceLabel(source: string, t: (key: StaffI18nKey) => string) {
+  const map: Record<string, StaffI18nKey> = {
+    totem: "order.source.totem",
+    ifood: "order.source.ifood",
+    counter: "order.source.counter",
+    delivery: "order.source.delivery",
+    waiter: "order.source.waiter",
   };
-  return map[source] || source;
+  const key = map[source];
+  return key ? t(key) : source;
 }
 
 type Props = {
@@ -75,6 +80,7 @@ const OpsOrderDetailSheet = ({
   viewerRole,
   driverName,
 }: Props) => {
+  const { t, lang } = useStaffT();
   const [advancing, setAdvancing] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [reprinting, setReprinting] = useState(false);
@@ -92,11 +98,11 @@ const OpsOrderDetailSheet = ({
     );
   }
 
-  const modality = getOrderModalityBanner(order);
-  const payment = getPanelPaymentBadge(order);
-  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any) });
-  const etaLabel = formatOrderEta(order);
-  const prepRemaining = formatPrepRemaining(order);
+  const modality = getOrderModalityBanner(order, lang);
+  const payment = getPanelPaymentBadge(order, lang);
+  const action = getPanelOrderAction(order, { canAssignDriver: canAssignDeliveryDriver(viewerRole as any), lang });
+  const etaLabel = formatOrderEta(order, lang);
+  const prepRemaining = formatPrepRemaining(order, lang);
   const itemCount = orderItemCount(items);
   const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
   const showDeliveryCode =
@@ -138,17 +144,17 @@ const OpsOrderDetailSheet = ({
         <div className="p-4 space-y-4">
           <SheetHeader className="space-y-1 text-left p-0">
             <SheetTitle className="flex items-center justify-between gap-2">
-              <span>Pedido #{order.order_number}</span>
+              <span>{panelT(lang, "order.detail.title", { code: order.order_number })}</span>
               <span className="text-sm font-normal text-muted-foreground">
-                {new Date(order.created_at).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                {formatOrderClock(order.created_at, lang)}
               </span>
             </SheetTitle>
-            <p className="text-sm text-muted-foreground">{getStatusLabel(order.status, order.order_type)}</p>
+            <p className="text-sm text-muted-foreground">{getStatusLabel(order.status, order.order_type, lang)}</p>
           </SheetHeader>
 
           <div className="flex flex-wrap gap-2 text-xs">
-            <Badge variant="outline">{getSourceLabel(order.source || "totem")}</Badge>
-            <Badge variant="outline">{getModalityShortLabel(order)}</Badge>
+            <Badge variant="outline">{getSourceLabel(order.source || "totem", t)}</Badge>
+            <Badge variant="outline">{getModalityShortLabel(order, lang)}</Badge>
             <Badge className={paymentBadgeClass[payment.tone]}>{payment.label}</Badge>
             {payment.methodLabel && (
               <Badge variant="secondary" className="font-semibold">
@@ -157,7 +163,7 @@ const OpsOrderDetailSheet = ({
             )}
             {order.payment_status === "paid" && order.payment_confirmed_by_name && (
               <Badge variant="outline" className="font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-400">
-                Pago por: {order.payment_confirmed_by_name}
+                {panelT(lang, "order.detail.paid_by", { name: order.payment_confirmed_by_name })}
               </Badge>
             )}
             {prepRemaining && (
@@ -175,13 +181,15 @@ const OpsOrderDetailSheet = ({
           {showDeliveryCode && (
             <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3 text-center">
               <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
-                Código de entrega
+                {t("order.detail.delivery_code")}
               </p>
               <p className="text-3xl font-black tracking-[0.25em] tabular-nums text-orange-600">
                 {order.delivery_confirmation_code}
               </p>
               {driverName && (
-                <p className="text-xs text-muted-foreground mt-1">Entregador: {driverName}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {panelT(lang, "order.detail.driver_label", { name: driverName })}
+                </p>
               )}
             </div>
           )}
@@ -214,14 +222,16 @@ const OpsOrderDetailSheet = ({
 
           {order.notes && (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Observações</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+                {t("order.detail.notes")}
+              </p>
               <p>{order.notes}</p>
             </div>
           )}
 
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">
-              Itens ({itemCount})
+              {panelT(lang, "order.detail.items_with_count", { count: itemCount })}
             </p>
             <ul className="space-y-2 text-sm">
               {items.map((it) => {
@@ -258,13 +268,15 @@ const OpsOrderDetailSheet = ({
           </div>
 
           <div className="flex items-center justify-between text-lg font-black text-primary border-t pt-3">
-            <span>Total</span>
+            <span>{t("order.detail.total")}</span>
             <span>€ {Number(order.total).toFixed(2)}</span>
           </div>
 
           {order.status === "preparing" && onSetPrepMinutes && (
             <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Ajustar tempo</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                {t("order.detail.adjust_prep")}
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {ETA_QUICK_OPTIONS.map((m) => (
                   <button
@@ -282,11 +294,9 @@ const OpsOrderDetailSheet = ({
 
           {order.payment_status === "pending" && onMarkPaid && (
             <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-wide">Pagamento pendente</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide">{t("order.detail.payment_pending")}</p>
               {blockedUntilPaid && (
-                <p className="text-xs font-semibold text-foreground">
-                  Pedido de balcão só é impresso e preparado depois do pagamento confirmado.
-                </p>
+                <p className="text-xs font-semibold text-foreground">{t("order.detail.counter_payment_required")}</p>
               )}
               <div className="flex gap-2">
                 <Button
@@ -303,7 +313,7 @@ const OpsOrderDetailSheet = ({
                     }
                   }}
                 >
-                  Dinheiro
+                  {t("order.detail.mark_cash")}
                 </Button>
                 <Button
                   size="sm"
@@ -319,7 +329,7 @@ const OpsOrderDetailSheet = ({
                     }
                   }}
                 >
-                  Cartão
+                  {t("order.detail.mark_card")}
                 </Button>
               </div>
             </div>
@@ -334,9 +344,9 @@ const OpsOrderDetailSheet = ({
               onClick={() => void handlePrimary()}
             >
               {advancing
-                ? "A actualizar…"
+                ? t("order.detail.updating")
                 : action.kind === "accept_eta"
-                  ? "Aceitar pedido"
+                  ? t("order.detail.accept")
                   : action.label}
             </Button>
           )}
@@ -356,7 +366,7 @@ const OpsOrderDetailSheet = ({
               }}
             >
               <Printer className="h-4 w-4 mr-1" />
-              {reprinting ? "A enviar…" : "Reimprimir pedido"}
+              {reprinting ? t("order.detail.sending") : t("order.detail.reprint")}
             </Button>
           )}
 
@@ -369,7 +379,7 @@ const OpsOrderDetailSheet = ({
                 onOpenChange(false);
               }}
             >
-              <XCircle className="h-4 w-4 mr-1" /> Cancelar pedido
+              <XCircle className="h-4 w-4 mr-1" /> {t("order.detail.cancel")}
             </Button>
           )}
         </div>

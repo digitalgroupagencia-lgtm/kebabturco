@@ -11,6 +11,8 @@ import {
   type CatalogAuditIssue,
 } from "@/lib/modifiers/menuCatalogAudit";
 import { toast } from "sonner";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 
 async function findDrinksCategoryId(storeId: string): Promise<string | null> {
   const { data } = await supabase
@@ -33,6 +35,7 @@ export default function MenuCatalogAuditPanel() {
   const { loading, createIssues, summary, groups, products, loadAuditData } = useMenuCatalogAudit(storeId);
   const [open, setOpen] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
+  const { t, lang } = useStaffT();
 
   useEffect(() => {
     const refresh = () => void loadAuditData();
@@ -56,7 +59,7 @@ export default function MenuCatalogAuditPanel() {
     try {
       const categoryId = await findDrinksCategoryId(storeId);
       if (!categoryId) {
-        toast.error("Crie primeiro uma categoria Bebidas");
+        toast.error(t("audit.catalog.toast.no_category"));
         return;
       }
 
@@ -75,13 +78,13 @@ export default function MenuCatalogAuditPanel() {
       const { error } = await supabase.from("products").insert(payload as never);
       if (error) throw error;
 
-      toast.success(`"${issue.optionName}" adicionado ao cardápio`);
+      toast.success(panelT(lang, "audit.catalog.toast.added", { name: issue.optionName }));
       await loadAuditData();
       window.dispatchEvent(
         new CustomEvent("menu-catalog-audit-product-created", { detail: { categoryId } }),
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao criar produto");
+      toast.error(e instanceof Error ? e.message : t("audit.catalog.toast.error"));
     } finally {
       setCreatingId(null);
     }
@@ -92,7 +95,7 @@ export default function MenuCatalogAuditPanel() {
       <Card className="border-primary/20 mb-6">
         <CardContent className="py-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          A auditar opções do cardápio…
+          {t("audit.catalog.loading")}
         </CardContent>
       </Card>
     );
@@ -105,20 +108,18 @@ export default function MenuCatalogAuditPanel() {
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" />
-              Auditoria de opções do cardápio
+              {t("audit.catalog.title")}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Resumo do cardápio. Os produtos a rever aparecem na lista abaixo.
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{t("audit.catalog.subtitle")}</p>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => void loadAuditData()}>
               <RefreshCw className="h-4 w-4 mr-1" />
-              Actualizar
+              {t("common.refresh")}
             </Button>
             {createIssues.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
-                {open ? "Ocultar" : "Ver a criar"}
+                {open ? t("audit.catalog.hide") : t("audit.catalog.show_create")}
               </Button>
             )}
           </div>
@@ -126,15 +127,19 @@ export default function MenuCatalogAuditPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-3 text-sm">
-          <span className="font-semibold text-destructive">{summary.errors} a criar</span>
-          <span className="font-semibold text-amber-600">{summary.warnings} a rever</span>
-          <span className="text-muted-foreground">{products.length} produtos no cardápio</span>
+          <span className="font-semibold text-destructive">
+            {summary.errors} {t("audit.catalog.count.create")}
+          </span>
+          <span className="font-semibold text-amber-600">
+            {summary.warnings} {t("audit.catalog.count.review")}
+          </span>
+          <span className="text-muted-foreground">
+            {products.length} {t("audit.catalog.count.products")}
+          </span>
         </div>
 
         {summary.total === 0 && (
-          <p className="text-sm text-success font-medium">
-            Cardápio em dia — nada a criar nem a rever.
-          </p>
+          <p className="text-sm text-success font-medium">{t("audit.catalog.all_ok")}</p>
         )}
 
         {open && createIssues.length > 0 && (
@@ -150,7 +155,7 @@ export default function MenuCatalogAuditPanel() {
                     <p className="font-bold">{issue.optionName}</p>
                     <p className="text-xs text-muted-foreground">{issue.groupName}</p>
                     <p>
-                      <span className="font-semibold">Problema:</span> {issue.problem}
+                      <span className="font-semibold">{t("audit.catalog.problem")}</span> {issue.problem}
                     </p>
                     <Button
                       type="button"
@@ -165,7 +170,7 @@ export default function MenuCatalogAuditPanel() {
                       ) : (
                         <Plus className="h-3.5 w-3.5 mr-1" />
                       )}
-                      Criar no cardápio
+                      {t("audit.catalog.create_btn")}
                     </Button>
                   </div>
                 </div>

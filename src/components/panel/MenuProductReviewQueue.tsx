@@ -1,6 +1,8 @@
 import { CheckCircle2, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import type { CatalogAuditIssue } from "@/lib/modifiers/menuCatalogAudit";
 
 type Props = {
@@ -18,12 +20,14 @@ export default function MenuProductReviewQueue({
   onApprove,
   approvingId,
 }: Props) {
+  const { t, lang } = useStaffT();
+
   if (loading) {
     return (
       <Card className="border-amber-500/30 mb-6">
         <CardContent className="py-5 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          A preparar produtos para revisão…
+          {t("menu.review.loading")}
         </CardContent>
       </Card>
     );
@@ -36,11 +40,9 @@ export default function MenuProductReviewQueue({
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Pencil className="h-5 w-5 text-amber-700" />
-          Produtos a rever ({items.length})
+          {panelT(lang, "menu.review.title", { count: items.length })}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Abra cada produto, mude o que precisar (foto, nome, preço) e carregue em Aprovar quando estiver pronto.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("menu.review.subtitle")}</p>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -67,7 +69,7 @@ export default function MenuProductReviewQueue({
                     onClick={() => onOpen(issue)}
                   >
                     <Pencil className="h-3.5 w-3.5 mr-1" />
-                    Rever
+                    {t("menu.review.open")}
                   </Button>
                   <Button
                     type="button"
@@ -81,7 +83,7 @@ export default function MenuProductReviewQueue({
                     ) : (
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                     )}
-                    Aprovar
+                    {t("menu.review.approve")}
                   </Button>
                 </div>
               </div>

@@ -26,6 +26,7 @@ import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import PremiumChartCard from "@/components/admin/premium/PremiumChartCard";
@@ -43,7 +44,7 @@ const fmt = (n: number) =>
 const Dashboard = () => {
   const { storeId: STORE_ID, loading: storeLoading } = useAdminStoreId();
   const { summary: printSummary, loading: printLoading } = usePanelPrintStatus(STORE_ID ?? undefined);
-  const { t } = useStaffT();
+  const { t, lang } = useStaffT();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
@@ -52,7 +53,7 @@ const Dashboard = () => {
   const goToLiveOps = () => {
     setDetailOrderId(null);
     navigate(nav.panel("live"));
-    toast.message("Abra Pedidos em vivo para alterar o estado do pedido.");
+    toast.message(t("dashboard.toast_use_live"));
   };
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
@@ -131,24 +132,24 @@ const Dashboard = () => {
   const showLoadError = isError && !data;
 
   const opsStats = [
-    { key: "pending", label: getStatusLabel("pending"), value: data?.pending ?? 0, icon: Clock },
-    { key: "preparing", label: getStatusLabel("preparing"), value: data?.preparing ?? 0, icon: ChefHat },
-    { key: "ready", label: getStatusLabel("ready"), value: data?.ready ?? 0, icon: Package },
-    { key: "cancelled", label: "Cancelados hoje", value: data?.cancelledToday ?? 0, icon: XCircle },
+    { key: "pending", label: getStatusLabel("pending", undefined, lang), value: data?.pending ?? 0, icon: Clock },
+    { key: "preparing", label: getStatusLabel("preparing", undefined, lang), value: data?.preparing ?? 0, icon: ChefHat },
+    { key: "ready", label: getStatusLabel("ready", undefined, lang), value: data?.ready ?? 0, icon: Package },
+    { key: "cancelled", label: t("dashboard.cancelled_today"), value: data?.cancelledToday ?? 0, icon: XCircle },
   ];
 
   return (
     <div className="space-y-6">
       <HowToUsePanel
-        purpose="Resumo do dia: faturamento, número de pedidos, ticket médio e estado da impressão."
-        whenToUse="Abra de manhã para conferir o dia anterior e várias vezes ao longo do serviço para ver como vai."
+        purpose={t("howto.dashboard.purpose")}
+        whenToUse={t("howto.dashboard.when")}
         steps={[
-          "Veja os 4 cartões do topo: faturamento, pedidos, ticket médio e cancelados.",
-          "Na lista abaixo confira cada pedido do dia com valor e forma de pagamento (Bizum, cartão, etc.).",
-          "Use o botão Pedidos em Vivo para gerir a operação.",
+          t("howto.dashboard.step1"),
+          t("howto.dashboard.step2"),
+          t("howto.dashboard.step3"),
         ]}
-        howToConfirm="Se os números do dia bater com o caixa, está tudo certo."
-        assistantQuestion="Como o dashboard calcula faturamento e ticket médio do dia?"
+        howToConfirm={t("howto.dashboard.confirm")}
+        assistantQuestion={t("howto.dashboard.assistant")}
       />
       <PanelPageHeader
         title={t("page.dashboard.title")}
@@ -167,12 +168,12 @@ const Dashboard = () => {
       {showLoadError && (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
           <AlertTriangle className="h-8 w-8 text-destructive" />
-          <p className="font-bold">Não foi possível carregar os dados do dia</p>
+          <p className="font-bold">{t("dashboard.error")}</p>
           <p className="max-w-md text-sm text-muted-foreground">
-            Verifique a ligação à internet e tente novamente. O resto do painel continua disponível.
+            {t("dashboard.error.hint")}
           </p>
           <Button type="button" onClick={() => void refetch()} disabled={isFetching}>
-            {isFetching ? "A carregar…" : "Tentar novamente"}
+            {isFetching ? t("common.loading") : t("dashboard.retry")}
           </Button>
         </div>
       )}
@@ -181,30 +182,30 @@ const Dashboard = () => {
         <PremiumMetricCard
           icon={ShoppingBag}
           tone="primary"
-          label="Pedidos hoje"
+          label={t("dashboard.orders_today")}
           value={loadingDashboard ? "—" : String(data?.ordersToday ?? 0)}
-          sub={`${data?.ordersMonth ?? 0} pagos no mês`}
+          sub={panelT(lang, "dashboard.metric.orders_sub", { count: String(data?.ordersMonth ?? 0) })}
         />
         <PremiumMetricCard
           icon={DollarSign}
           tone="success"
-          label="Faturamento hoje"
+          label={t("dashboard.revenue_today")}
           value={loadingDashboard ? "—" : fmt(data?.totalToday ?? 0)}
-          sub="Vendas confirmadas"
+          sub={t("dashboard.metric.revenue_sub")}
         />
         <PremiumMetricCard
           icon={TrendingUp}
           tone="info"
-          label="Ticket médio"
+          label={t("dashboard.avg_ticket")}
           value={loadingDashboard ? "—" : fmt(data?.avgTicket ?? 0)}
-          sub="Hoje"
+          sub={t("dashboard.metric.avg_sub")}
         />
         <PremiumMetricCard
           icon={Calendar}
           tone="purple"
-          label="Faturamento mês"
+          label={t("dashboard.revenue_month")}
           value={loadingDashboard ? "—" : fmt(data?.totalMonth ?? 0)}
-          sub={`${data?.ordersMonth ?? 0} pedidos pagos`}
+          sub={panelT(lang, "dashboard.metric.month_sub", { count: String(data?.ordersMonth ?? 0) })}
         />
       </div>
 
@@ -222,7 +223,7 @@ const Dashboard = () => {
         onGoToLive={goToLiveOps}
       />
 
-      <PremiumChartCard title="Estado operacional hoje" subtitle="Pedidos por etapa do fluxo">
+      <PremiumChartCard title={t("dashboard.ops_today")} subtitle={t("dashboard.ops.subtitle")}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {opsStats.map((item) => {
             const tone =
@@ -250,14 +251,14 @@ const Dashboard = () => {
 
       <Card className="border-border/60 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">Bem-vindo ao seu painel</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.welcome")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            Acompanhe aqui o faturamento e o estado da loja. Configure cardápio, totem e equipe pelo menu lateral.
+            {t("dashboard.welcome.body1")}
           </p>
           <p className="text-sm text-muted-foreground">
-            Os avisos do sistema e o diagnóstico aparecem nesta página — não na tela de operação ao vivo.
+            {t("dashboard.welcome.body2")}
           </p>
         </CardContent>
       </Card>

@@ -9,6 +9,8 @@ import {
   getStatusLabel,
 } from "@/lib/orderStatusLabels";
 import { nav } from "@/lib/navPaths";
+import { useStaffT } from "@/hooks/useStaffT";
+import { formatStaffPanelTime, panelT } from "@/lib/staffPanelLocale";
 
 export type PanelTodayOrderRow = {
   id: string;
@@ -37,33 +39,33 @@ type Props = {
 };
 
 export default function PanelTodayOrdersList({ orders, loading, onOrderClick }: Props) {
+  const { t, lang } = useStaffT();
+
   return (
     <PremiumChartCard
-      title="Pedidos de hoje — detalhe e pagamento"
-      subtitle="Toque num pedido para ver itens, pagamento e detalhes completos"
+      title={t("dashboard.today_orders")}
+      subtitle={t("dashboard.today_orders.subtitle")}
       action={
         <Button asChild variant="outline" size="sm" className="gap-1 h-8 text-xs font-bold">
           <Link to={nav.panel("live")}>
-            Pedidos em vivo
+            {t("nav.live")}
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </Button>
       }
     >
       {loading ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">A carregar pedidos…</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t("ops.loading.orders")}</p>
       ) : orders.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Nenhum pedido hoje ainda.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t("dashboard.today_orders.empty")}</p>
       ) : (
         <ul className="divide-y divide-border/60 rounded-xl border border-border/50 overflow-hidden">
           {orders.map((order) => {
-            const payment = getPanelPaymentBadge(order);
+            const payment = getPanelPaymentBadge(order, lang);
             const methodLabel =
-              payment.methodLabel ?? getPaymentMethodLabel(order.payment_method) ?? "—";
-            const time = new Date(order.created_at).toLocaleTimeString("pt-PT", {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+              payment.methodLabel ?? getPaymentMethodLabel(order.payment_method, lang) ?? "—";
+            const time = formatStaffPanelTime(order.created_at, lang);
+            const orderCode = String(order.order_number).padStart(4, "0");
 
             return (
               <li key={order.id}>
@@ -78,10 +80,10 @@ export default function PanelTodayOrdersList({ orders, loading, onOrderClick }: 
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-black text-base tabular-nums">
-                        Pedido #{String(order.order_number).padStart(4, "0")}
+                        {panelT(lang, "order.number", { code: orderCode })}
                       </p>
                       <p className="truncate text-sm text-muted-foreground">
-                        {order.customer_name || "Cliente"} · {time}
+                        {order.customer_name || t("common.customer")} · {time}
                       </p>
                     </div>
                   </div>
@@ -96,7 +98,7 @@ export default function PanelTodayOrdersList({ orders, loading, onOrderClick }: 
                       {methodLabel}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
-                      {getStatusLabel(order.status, order.order_type)}
+                      {getStatusLabel(order.status, order.order_type, lang)}
                     </Badge>
                     <ChevronRight className="hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden />
                   </div>

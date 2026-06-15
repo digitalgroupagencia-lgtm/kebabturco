@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { ImageIcon, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 
 type Props = {
   label: string;
@@ -23,6 +25,11 @@ const ImageUploadField = ({
   onPickFile,
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t, lang } = useStaffT();
+
+  const defaultHint = dimensions
+    ? panelT(lang, "image.hint_dims", { dims: dimensions })
+    : t("image.hint");
 
   return (
     <div className="space-y-2">
@@ -68,14 +75,9 @@ const ImageUploadField = ({
             ) : (
               <Upload className="w-4 h-4 mr-2" />
             )}
-            {uploading ? "A enviar…" : value ? "Trocar imagem" : "Enviar imagem"}
+            {uploading ? t("image.uploading") : value ? t("image.replace") : t("image.upload")}
           </Button>
-          <p className="text-[11px] text-muted-foreground">
-            {hint ||
-              (dimensions
-                ? `Tamanho recomendado: ${dimensions} · PNG / JPG / WEBP · máx. 5 MB`
-                : "PNG / JPG / WEBP · máx. 5 MB")}
-          </p>
+          <p className="text-[11px] text-muted-foreground">{hint || defaultHint}</p>
         </div>
       </div>
     </div>

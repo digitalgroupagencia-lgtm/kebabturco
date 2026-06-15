@@ -4,6 +4,8 @@ import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
 const supabase = _supabaseRaw as unknown as any;
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,7 @@ type Category = Tables<"categories">;
 type Product = Tables<"products">;
 
 const MenuPage = () => {
+  const { t, lang } = useStaffT();
   const { pathname } = useLocation();
   const isAdminMenu = pathname.startsWith("/admin");
   const { storeId, loading: loadingStore } = useAdminStoreId();
@@ -108,7 +111,7 @@ const MenuPage = () => {
       }
     } else if (error) {
       console.error("[MenuPage] categories load failed", error);
-      toast.error("Não foi possível carregar categorias. Verifique permissões ou unidade seleccionada.");
+      toast.error(t("menu.toast.cat_load_error"));
     }
     setLoading(false);
   };
@@ -154,7 +157,7 @@ const MenuPage = () => {
         .maybeSingle();
 
       if (error || !data) {
-        toast.error("Não foi possível abrir o produto para revisão");
+        toast.error(t("menu.toast.review_error"));
         return;
       }
 
@@ -197,7 +200,7 @@ const MenuPage = () => {
   const saveCategory = async () => {
     if (!storeId) return;
     if (!catName.trim()) {
-      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
+      toast.error(panelT(lang, "menu.toast.name_required", { lang: LANG_LABELS[primaryLang] }));
       return;
     }
     const namePayload = buildPrimaryLanguagePayload(editingCategory?.name, primaryLang, catName);
@@ -213,12 +216,12 @@ const MenuPage = () => {
         .from("categories")
         .update(payload)
         .eq("id", editingCategory.id);
-      if (error) { toast.error("Erro ao atualizar categoria"); return; }
-      toast.success("Categoria atualizada!");
+      if (error) { toast.error(t("menu.toast.cat_update_error")); return; }
+      toast.success(t("menu.toast.cat_updated"));
     } else {
       const { error } = await supabase.from("categories").insert(payload);
-      if (error) { toast.error("Erro ao criar categoria"); return; }
-      toast.success("Categoria criada!");
+      if (error) { toast.error(t("menu.toast.cat_create_error")); return; }
+      toast.success(t("menu.toast.cat_created"));
     }
 
     setCatDialogOpen(false);
@@ -227,8 +230,8 @@ const MenuPage = () => {
 
   const deleteCategory = async (id: string) => {
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) { toast.error("Erro ao excluir categoria"); return; }
-    toast.success("Categoria excluída!");
+    if (error) { toast.error(t("menu.toast.cat_delete_error")); return; }
+    toast.success(t("menu.toast.cat_deleted"));
     if (selectedCategoryId === id) setSelectedCategoryId(null);
     fetchCategories();
   };
@@ -278,16 +281,16 @@ const MenuPage = () => {
 
   const handleCategoryImageUpload = async (file: File) => {
     if (!storeId) {
-      toast.error("Loja não carregada");
+      toast.error(t("menu.toast.store_not_loaded"));
       return;
     }
     setCatImageUploading(true);
     try {
       const url = await uploadCategoryImage(storeId, file, editingCategory?.id);
       setCatImageUrl(url);
-      toast.success("Imagem enviada");
+      toast.success(t("menu.toast.image_uploaded"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+      toast.error(e instanceof Error ? e.message : t("menu.toast.image_error"));
     } finally {
       setCatImageUploading(false);
     }
@@ -295,16 +298,16 @@ const MenuPage = () => {
 
   const handleProductImageUpload = async (file: File) => {
     if (!storeId) {
-      toast.error("Loja não carregada");
+      toast.error(t("menu.toast.store_not_loaded"));
       return;
     }
     setProdImageUploading(true);
     try {
       const url = await uploadProductImage(storeId, file, editingProduct?.id);
       setProdImageUrl(url);
-      toast.success("Imagem enviada");
+      toast.success(t("menu.toast.image_uploaded"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao enviar imagem");
+      toast.error(e instanceof Error ? e.message : t("menu.toast.image_error"));
     } finally {
       setProdImageUploading(false);
     }
@@ -314,7 +317,7 @@ const MenuPage = () => {
     if (!storeId || !selectedCategoryId) return;
 
     if (!prodName.trim()) {
-      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
+      toast.error(panelT(lang, "menu.toast.name_required", { lang: LANG_LABELS[primaryLang] }));
       return;
     }
 
@@ -358,20 +361,20 @@ const MenuPage = () => {
         .from("products")
         .update(payload)
         .eq("id", editingProduct.id);
-      if (error) { toast.error(`Erro ao atualizar produto: ${error.message}`); return; }
+      if (error) { toast.error(panelT(lang, "menu.toast.prod_update_error", { msg: error.message })); return; }
       try {
         await saveProductModifierLinks(editingProduct.id, modifierLinks);
       } catch {
-        toast.error("Produto guardado, mas falhou ao ligar grupos");
+        toast.error(t("menu.toast.links_error"));
       }
     } else {
       const { data: inserted, error } = await supabase.from("products").insert(payload).select("id").single();
-      if (error) { toast.error(`Erro ao criar produto: ${error.message}`); return; }
+      if (error) { toast.error(panelT(lang, "menu.toast.prod_create_error", { msg: error.message })); return; }
       if (inserted?.id && modifierLinks.length) {
         try {
           await saveProductModifierLinks(inserted.id, modifierLinks);
         } catch {
-          toast.error("Produto criado, mas falhou ao ligar grupos");
+          toast.error(t("menu.toast.links_error"));
         }
       }
     }
@@ -380,10 +383,10 @@ const MenuPage = () => {
     setProdReviewMode(false);
     if (approveAfterSave && reviewProductId) {
       menuAudit.approveReview(reviewProductId);
-      toast.success("Produto guardado e aprovado!");
+      toast.success(t("menu.toast.approved"));
       void menuAudit.loadAuditData();
     } else {
-      toast.success(editingProduct ? "Produto atualizado!" : "Produto criado!");
+      toast.success(editingProduct ? t("menu.toast.prod_updated") : t("menu.toast.prod_created"));
     }
     setReviewProductId(null);
     fetchProducts(selectedCategoryId);
@@ -406,7 +409,7 @@ const MenuPage = () => {
     if (!issue.matchedProductId) return;
     setApprovingReviewId(issue.matchedProductId);
     menuAudit.approveReview(issue.matchedProductId);
-    toast.success(`"${issue.matchedProductName || issue.optionName}" aprovado`);
+    toast.success(panelT(lang, "menu.toast.issue_approved", { name: issue.matchedProductName || issue.optionName }));
     await menuAudit.loadAuditData();
     setApprovingReviewId(null);
   };
@@ -418,8 +421,8 @@ const MenuPage = () => {
 
   const deleteProduct = async (id: string) => {
     const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) { toast.error("Erro ao excluir produto"); return; }
-    toast.success("Produto excluído!");
+    if (error) { toast.error(t("menu.toast.prod_delete_error")); return; }
+    toast.success(t("menu.toast.prod_deleted"));
     if (selectedCategoryId) fetchProducts(selectedCategoryId);
   };
 
@@ -436,7 +439,7 @@ const MenuPage = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success("Imagem gerada!");
+      toast.success(t("menu.toast.image_generated"));
       if (selectedCategoryId) fetchProducts(selectedCategoryId);
     } catch (e) {
       toast.error((e as Error).message);
@@ -446,16 +449,16 @@ const MenuPage = () => {
   };
 
   if (loadingStore || loadingLangs) {
-    return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Carregando cardápio...</div>;
+    return <div className="p-8 text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t("menu.loading")}</div>;
   }
 
   if (!storeId) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Cardápio</h2>
+        <h2 className="text-2xl font-bold">{t("menu.title")}</h2>
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
-            Nenhuma unidade activa encontrada para editar o cardápio. Verifique em Administração → Unidades se Gandia e Playa Gandia estão activas.
+            {t("menu.no_store_detail")}
           </CardContent>
         </Card>
       </div>
@@ -466,19 +469,18 @@ const MenuPage = () => {
     <div className="space-y-6">
       <PremiumPageHeader
         icon={ImageIcon}
-        title="Cardápio"
-        subtitle="Edite categorias, produtos, preços e imagens. Todas as opções usadas em combos devem existir aqui."
+        title={t("menu.title")}
+        subtitle={t("menu.subtitle_full")}
       />
 
       {isAdminMenu && (
-        <AdminStoreSwitcher hint="O cardápio é por unidade — escolha Gandia para ver os 93 produtos ou Playa Gandia para editar a cópia." />
+        <AdminStoreSwitcher hint={t("menu.store_hint_admin")} />
       )}
 
       {!loading && categories.length === 0 && storeId && (
         <Card className="border-amber-500/40 bg-amber-500/10">
           <CardContent className="p-4 text-sm text-amber-950 dark:text-amber-50">
-            Esta unidade ainda não tem cardápio. Mude para <strong>Gandia</strong> no selector acima
-            ou adicione categorias e produtos manualmente.
+            {t("menu.empty_banner_admin")}
           </CardContent>
         </Card>
       )}
@@ -501,7 +503,7 @@ const MenuPage = () => {
         {/* Categories sidebar */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Categorias</h3>
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">{t("menu.categories")}</h3>
             <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" onClick={() => openCatDialog()}>
@@ -510,23 +512,21 @@ const MenuPage = () => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editingCategory ? "Editar Categoria" : "Nova Categoria"}</DialogTitle>
+                  <DialogTitle>{editingCategory ? t("menu.cat.edit") : t("menu.cat.new")}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
+                    <Label>{panelT(lang, "menu.field.name", { lang: LANG_LABELS[primaryLang] })}</Label>
                     <Input
                       value={catName}
                       onChange={(e) => setCatName(e.target.value)}
-                      placeholder="Ex.: Pizzas"
+                      placeholder={t("menu.field.name.ph")}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Idioma principal do restaurante. Traduções para o cliente são automáticas.
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("menu.field.lang_hint")}</p>
                   </div>
                   <ImageUploadField
-                    label="Imagem da categoria"
-                    dimensions="512×512 px, quadrada"
+                    label={t("menu.cat.image")}
+                    dimensions={t("menu.cat.image_dimensions")}
                     value={catImageUrl}
                     uploading={catImageUploading}
                     disabled={!storeId}
@@ -535,9 +535,9 @@ const MenuPage = () => {
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button variant="outline">Cancelar</Button>
+                    <Button variant="outline">{t("common.cancel")}</Button>
                   </DialogClose>
-                  <Button onClick={saveCategory}>Salvar</Button>
+                  <Button onClick={saveCategory}>{t("common.save")}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -564,7 +564,7 @@ const MenuPage = () => {
                     )}
                   </div>
                   <span className="font-medium text-sm flex-1 min-w-0 truncate">
-                    {pickLocalizedText(name, primaryLang) || "Sem nome"}
+                    {pickLocalizedText(name, primaryLang) || t("menu.no_name")}
                   </span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={(e) => { e.stopPropagation(); openCatDialog(cat); }} className="p-1 hover:bg-muted rounded">
@@ -581,7 +581,7 @@ const MenuPage = () => {
 
           {categories.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhuma categoria. Crie a primeira!
+              {t("menu.cat.empty")}
             </p>
           )}
         </div>
@@ -589,64 +589,62 @@ const MenuPage = () => {
         {/* Products */}
         <div className="lg:col-span-3 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Produtos</h3>
+            <h3 className="font-semibold">{t("menu.products")}</h3>
             {selectedCategoryId && (
               <Dialog open={prodDialogOpen} onOpenChange={setProdDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" onClick={() => openProdDialog()}>
-                    <Plus className="h-4 w-4 mr-1" /> Novo Produto
+                    <Plus className="h-4 w-4 mr-1" /> {t("menu.prod.new_btn")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
-                      {prodReviewMode ? "Rever produto" : editingProduct ? "Editar Produto" : "Novo Produto"}
+                      {prodReviewMode ? t("menu.prod.review") : editingProduct ? t("menu.prod.edit") : t("menu.prod.new")}
                     </DialogTitle>
                   </DialogHeader>
                   {prodReviewMode && (
                     <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-                      Confira foto, nome e preço. Quando estiver correcto, carregue em <strong>Aprovar</strong>.
+                      {t("menu.review.banner_short")}
                     </div>
                   )}
                   <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     <div>
-                      <Label>Nome ({LANG_LABELS[primaryLang]})</Label>
+                      <Label>{panelT(lang, "menu.field.name", { lang: LANG_LABELS[primaryLang] })}</Label>
                       <Input
                         value={prodName}
                         onChange={(e) => setProdName(e.target.value)}
-                        placeholder="Ex.: Kebab mixto"
+                        placeholder={t("menu.field.name.ph")}
                       />
                     </div>
                     <div>
-                      <Label>Descrição ({LANG_LABELS[primaryLang]})</Label>
+                      <Label>{panelT(lang, "menu.field.desc", { lang: LANG_LABELS[primaryLang] })}</Label>
                       <Textarea
                         value={prodDesc}
                         onChange={(e) => setProdDesc(e.target.value)}
-                        placeholder="Ingredientes principais…"
+                        placeholder={t("menu.field.desc.ph")}
                         rows={3}
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Escreva só no idioma principal. O sistema traduz para os idiomas activos no totem.
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("menu.field.desc_hint")}</p>
                     </div>
                     <div>
-                      <Label>Preço (€)</Label>
+                      <Label>{t("menu.field.price")}</Label>
                       <Input type="number" step="0.01" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} placeholder="0.00" />
                     </div>
                     <ImageUploadField
-                      label="Imagem do produto"
-                      dimensions="800×800 px, fundo neutro"
+                      label={t("menu.prod.image")}
+                      dimensions={t("menu.prod.image_dimensions")}
                       value={prodImageUrl}
                       uploading={prodImageUploading}
                       disabled={!storeId}
                       onPickFile={handleProductImageUpload}
                     />
                     <div className="flex items-center justify-between">
-                      <Label>⭐ Mais vendido</Label>
+                      <Label>{t("menu.bestseller")}</Label>
                       <Switch checked={prodBestseller} onCheckedChange={setProdBestseller} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label>🏷️ Em promoção</Label>
+                      <Label>{t("menu.promo")}</Label>
                       <Switch checked={prodPromo} onCheckedChange={setProdPromo} />
                     </div>
                     <ProductModifierEditor
@@ -659,43 +657,41 @@ const MenuPage = () => {
                       onLinksChange={setModifierLinks}
                     />
                     <div>
-                      <Label>Sugestões após adicionar (IDs de produto, separados por vírgula)</Label>
+                      <Label>{t("menu.suggestions")}</Label>
                       <Input
                         value={afterAddSuggestionIds}
                         onChange={(e) => setAfterAddSuggestionIds(e.target.value)}
-                        placeholder="uuid-bebida, uuid-sobremesa"
+                        placeholder={t("menu.suggestions.ph")}
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Opcional. Ex.: kebab → bebidas; combo → sobremesa. Deixe vazio para regra automática.
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("menu.suggestions.hint")}</p>
                     </div>
                     <div>
-                      <Label>Extras legado (1 por linha: Nome|preço)</Label>
+                      <Label>{t("menu.legacy_extras")}</Label>
                       <textarea
                         value={modifierLines}
                         onChange={(e) => setModifierLines(e.target.value)}
-                        placeholder={"Sin cebolla|0\nExtra queso|1\nCarne extra|2"}
+                        placeholder={t("menu.legacy_ph")}
                         rows={4}
                         className="w-full rounded-md border px-3 py-2 text-sm font-mono"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">Use grupos acima para personalização profissional. Isto é fallback antigo.</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("menu.legacy_hint2")}</p>
                     </div>
                   </div>
                   <DialogFooter className="gap-2 sm:gap-0">
                     <DialogClose asChild>
                       <Button variant="outline" onClick={() => setProdReviewMode(false)}>
-                        Cancelar
+                        {t("common.cancel")}
                       </Button>
                     </DialogClose>
                     {prodReviewMode ? (
                       <>
                         <Button variant="secondary" onClick={() => void saveProduct(false)}>
-                          Guardar
+                          {t("menu.btn.save_draft")}
                         </Button>
-                        <Button onClick={() => void approveReviewFromDialog()}>Aprovar</Button>
+                        <Button onClick={() => void approveReviewFromDialog()}>{t("menu.approve")}</Button>
                       </>
                     ) : (
-                      <Button onClick={() => void saveProduct(false)}>Salvar</Button>
+                      <Button onClick={() => void saveProduct(false)}>{t("common.save")}</Button>
                     )}
                   </DialogFooter>
                 </DialogContent>
@@ -706,13 +702,13 @@ const MenuPage = () => {
           {!selectedCategoryId ? (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
-                Selecione uma categoria para ver os produtos
+                {t("menu.select_category")}
               </CardContent>
             </Card>
           ) : products.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
-                Nenhum produto nesta categoria. Adicione o primeiro!
+                {t("menu.prod.empty_add")}
               </CardContent>
             </Card>
           ) : (
@@ -729,19 +725,19 @@ const MenuPage = () => {
                       )}
                       {prod.is_bestseller && (
                         <span className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs font-bold px-2 py-0.5 rounded">
-                          ⭐ Best
+                          ⭐ {t("menu.badge.best")}
                         </span>
                       )}
                       {prod.is_promo && (
                         <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded">
-                          Oferta
+                          {t("menu.badge.offer")}
                         </span>
                       )}
                     </div>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="font-semibold">{pickLocalizedText(name, primaryLang) || "Sem nome"}</h4>
+                          <h4 className="font-semibold">{pickLocalizedText(name, primaryLang) || t("menu.no_name")}</h4>
                           <p className="text-lg font-bold text-primary">€ {Number(prod.price).toFixed(2)}</p>
                         </div>
                         <div className="flex gap-1">
@@ -752,7 +748,7 @@ const MenuPage = () => {
                             onClick={() => regenerateImage(prod)}
                             disabled={genImageId === prod.id}
                             className="p-1.5 hover:bg-primary/10 rounded text-primary disabled:opacity-50"
-                            title="Gerar imagem com IA"
+                            title={t("menu.ai_image")}
                           >
                             {genImageId === prod.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                           </button>

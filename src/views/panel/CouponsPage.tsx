@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
+import type { StaffUiLang } from "@/components/StaffLanguageToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,15 +32,23 @@ type Coupon = {
   expires_at: string | null;
 };
 
-function formatCouponSummary(c: Coupon): string {
+function formatCouponSummary(c: Coupon, lang: StaffUiLang): string {
   const discount =
-    c.discount_type === "percent" ? `${c.discount_value}% desconto` : `${c.discount_value}€ desconto`;
-  const min = c.min_order > 0 ? `mín. ${c.min_order}€` : "sem mínimo";
-  const uses = c.max_uses ? `${c.uses_count}/${c.max_uses} usos` : `${c.uses_count} usos`;
+    c.discount_type === "percent"
+      ? panelT(lang, "coupons.summary.percent", { value: c.discount_value })
+      : panelT(lang, "coupons.summary.fixed", { value: c.discount_value });
+  const min =
+    c.min_order > 0
+      ? panelT(lang, "coupons.summary.min", { value: c.min_order })
+      : panelT(lang, "coupons.summary.no_min");
+  const uses = c.max_uses
+    ? panelT(lang, "coupons.summary.uses", { used: c.uses_count, max: c.max_uses })
+    : panelT(lang, "coupons.summary.uses_open", { used: c.uses_count });
   return `${discount} · ${min} · ${uses}`;
 }
 
 const CouponsPage = () => {
+  const { t, lang } = useStaffT();
   const { storeId } = useAdminStoreId();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
@@ -72,7 +83,7 @@ const CouponsPage = () => {
       toast.error(error.message);
       return;
     }
-    toast.success("Cupón criado");
+    toast.success(t("coupons.toast.created"));
     setCode("");
     setCreateOpen(false);
     load();
@@ -84,36 +95,38 @@ const CouponsPage = () => {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Remover cupón?")) return;
+    if (!confirm(t("coupons.confirm.remove"))) return;
     await supabase.from("coupons").delete().eq("id", id);
-    toast.success("Removido");
+    toast.success(t("coupons.toast.removed"));
     load();
   };
 
-  if (!storeId) return <div className="p-6 text-sm text-muted-foreground">Sem loja vinculada</div>;
+  if (!storeId) return <div className="p-6 text-sm text-muted-foreground">{t("common.no_store")}</div>;
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-8">
       <HowToUsePanel
-        purpose="Crie códigos de desconto para campanhas pontuais (datas, redes sociais, recuperação de cliente)."
-        whenToUse="Promoções com duração definida. Para retenção contínua use Fidelidade."
+        purpose={t("howto.coupons.purpose")}
+        whenToUse={t("howto.coupons.when")}
         steps={[
-          "Toque em 'Novo cupom' e dê um código curto (ex: WELCOME10).",
-          "Escolha tipo (% ou valor fixo) e o valor do desconto.",
-          "Defina pedido mínimo e limite de usos (evita prejuízo).",
-          "Defina data de expiração.",
-          "Ative o cupom e teste no checkout.",
+          t("howto.coupons.step1"),
+          t("howto.coupons.step2"),
+          t("howto.coupons.step3"),
+          t("howto.coupons.step4"),
+          t("howto.coupons.step5"),
         ]}
-        howToConfirm="O cupom aparece na lista com badge 'Ativo' e o cliente vê desconto no carrinho ao digitar o código."
-        assistantQuestion="Como crio um cupom eficiente de fim de semana e quais limites evitam prejuízo?"
+        howToConfirm={t("howto.coupons.confirm")}
+        assistantQuestion={t("howto.coupons.assistant")}
       />
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-black flex items-center gap-2">
             <Tag className="w-5 h-5 text-primary" />
-            Cupões
+            {t("page.coupons.title")}
           </h2>
-          <p className="text-xs text-muted-foreground mt-1">{coupons.length} cupões · activos no checkout</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {panelT(lang, "coupons.subtitle", { count: coupons.length })}
+          </p>
         </div>
         <Button
           variant={createOpen ? "secondary" : "default"}
@@ -122,14 +135,14 @@ const CouponsPage = () => {
           onClick={() => setCreateOpen((v) => !v)}
         >
           <Plus className="w-4 h-4 mr-1" />
-          {createOpen ? "Fechar" : "Novo"}
+          {createOpen ? t("coupons.close") : t("coupons.new")}
         </Button>
       </div>
 
       {createOpen && (
         <div className="rounded-2xl border bg-card p-3.5 space-y-2.5 shadow-sm ring-1 ring-primary/10">
           <div>
-            <Label className="text-xs">Código</Label>
+            <Label className="text-xs">{t("coupons.field.code")}</Label>
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -139,27 +152,27 @@ const CouponsPage = () => {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Tipo</Label>
+              <Label className="text-xs">{t("coupons.field.type")}</Label>
               <select
                 className="w-full h-10 mt-1 rounded-md border px-2 text-sm bg-background"
                 value={discountType}
                 onChange={(e) => setDiscountType(e.target.value as "percent" | "fixed")}
               >
-                <option value="percent">Percentagem</option>
-                <option value="fixed">Valor fixo €</option>
+                <option value="percent">{t("coupons.type.percent")}</option>
+                <option value="fixed">{t("coupons.type.fixed")}</option>
               </select>
             </div>
             <div>
-              <Label className="text-xs">Valor</Label>
+              <Label className="text-xs">{t("coupons.field.value")}</Label>
               <Input type="number" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="h-10 mt-1" />
             </div>
           </div>
           <div>
-            <Label className="text-xs">Pedido mínimo (€)</Label>
+            <Label className="text-xs">{t("coupons.field.min")}</Label>
             <Input type="number" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} className="h-10 mt-1" />
           </div>
           <Button className="w-full h-11 font-bold" onClick={create} disabled={saving}>
-            {saving ? "A guardar…" : "Criar cupón"}
+            {saving ? t("coupons.saving") : t("coupons.create")}
           </Button>
         </div>
       )}
@@ -169,9 +182,9 @@ const CouponsPage = () => {
           <OpsCompactCard
             key={c.id}
             title={c.code}
-            summary={formatCouponSummary(c)}
+            summary={formatCouponSummary(c, lang)}
             inactive={!c.is_active}
-            badges={c.is_active ? ["Activo"] : ["Pausado"]}
+            badges={c.is_active ? [t("coupons.badge.active")] : [t("coupons.badge.paused")]}
             editable={false}
             actions={
               <>
@@ -184,7 +197,7 @@ const CouponsPage = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem className="text-destructive" onClick={() => remove(c.id)}>
-                      <Trash2 className="h-4 w-4 mr-2" /> Remover
+                      <Trash2 className="h-4 w-4 mr-2" /> {t("coupons.remove")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -194,14 +207,14 @@ const CouponsPage = () => {
         ))}
         {coupons.length === 0 && !createOpen && (
           <p className="text-center text-sm text-muted-foreground py-10 border border-dashed rounded-2xl">
-            Nenhum cupón. Toque em Novo para criar.
+            {t("coupons.empty")}
           </p>
         )}
       </div>
 
       <p className="text-xs text-center text-muted-foreground pt-2">
         <a href="/admin/diagnostics-hub?tab=coupons" className="text-primary underline">
-          Testar validação de cupões no Centro de testes
+          {t("coupons.test_link")}
         </a>
       </p>
     </div>
