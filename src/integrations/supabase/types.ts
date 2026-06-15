@@ -941,10 +941,10 @@ export type Database = {
           online_service_fee_cents: number
           order_number: string
           order_type: string | null
-          payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_confirmed_at: string | null
           payment_confirmed_by_name: string | null
           payment_confirmed_by_user_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           platform_fee_cents: number
           processing_fee_cents: number
@@ -995,10 +995,10 @@ export type Database = {
           online_service_fee_cents?: number
           order_number: string
           order_type?: string | null
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_confirmed_at?: string | null
           payment_confirmed_by_name?: string | null
           payment_confirmed_by_user_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           platform_fee_cents?: number
           processing_fee_cents?: number
@@ -1049,10 +1049,10 @@ export type Database = {
           online_service_fee_cents?: number
           order_number?: string
           order_type?: string | null
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_confirmed_at?: string | null
           payment_confirmed_by_name?: string | null
           payment_confirmed_by_user_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           platform_fee_cents?: number
           processing_fee_cents?: number
@@ -3939,7 +3939,11 @@ export type Database = {
         Returns: undefined
       }
       mark_order_paid_at_counter: {
-        Args: { _order_id: string; _payment_method?: string; _staff_pin?: string }
+        Args: {
+          _order_id: string
+          _payment_method?: string
+          _staff_pin?: string
+        }
         Returns: Json
       }
       next_order_number: { Args: { _store_id: string }; Returns: string }
@@ -4094,25 +4098,16 @@ export type Database = {
         Args: { _pin: string; _user_role_id: string }
         Returns: undefined
       }
-      upsert_staff_profile_by_manager:
-        | {
-            Args: {
-              _full_name?: string
-              _preferred_language?: string
-              _user_id: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _avatar_url?: string
-              _birth_date?: string
-              _full_name?: string
-              _preferred_language?: string
-              _user_id: string
-            }
-            Returns: undefined
-          }
+      upsert_staff_profile_by_manager: {
+        Args: {
+          _avatar_url?: string
+          _birth_date?: string
+          _full_name?: string
+          _preferred_language?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       upsert_store_payout_intake: {
         Args: {
           _business_address?: string
