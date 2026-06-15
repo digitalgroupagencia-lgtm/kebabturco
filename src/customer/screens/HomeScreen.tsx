@@ -6,8 +6,9 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuData } from "@/hooks/useMenuData";
 import PromoBannerCarousel from "@/components/PromoBannerCarousel";
-import { Plus, Loader2, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import CustomerHomeSkeleton from "@/customer/components/CustomerHomeSkeleton";
 import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
@@ -94,13 +95,8 @@ const HomeScreen = () => {
     setScreen("product");
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-label={t("loadingMenu")} />
-        <p className="text-sm text-muted-foreground font-semibold">{t("loadingMenu")}</p>
-      </div>
-    );
+  if (loading && products.length === 0 && categories.length === 0) {
+    return <CustomerHomeSkeleton />;
   }
 
   if (error) {

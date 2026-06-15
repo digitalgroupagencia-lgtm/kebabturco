@@ -6,7 +6,7 @@ import { useEffectiveModifierConfig } from "@/hooks/useEffectiveModifierConfig";
 import ProductCustomizationFlow from "@/customer/customization/ProductCustomizationFlow";
 import LegacyProductCustomizer from "@/customer/screens/LegacyProductCustomizer";
 import ProductErrorBoundary from "@/components/ProductErrorBoundary";
-import InlineScreenSpinner from "@/components/InlineScreenSpinner";
+import CustomerProductSkeleton from "@/customer/components/CustomerProductSkeleton";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -53,8 +53,8 @@ const ProductScreen = () => {
 
   const productLabel = product ? tProduct(product.name) : undefined;
 
-  if (menuLoading) {
-    return <InlineScreenSpinner />;
+  if (menuLoading && !product) {
+    return <CustomerProductSkeleton />;
   }
 
   if (selectedProductId && !product) {
@@ -76,11 +76,11 @@ const ProductScreen = () => {
   }
 
   if (!product) {
-    return null;
+    return <CustomerProductSkeleton />;
   }
 
   if (modifierLoading) {
-    return <InlineScreenSpinner />;
+    return <CustomerProductSkeleton />;
   }
 
   const productContent =

@@ -5,6 +5,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import InstallAppButton from "@/components/InstallAppButton";
+import CustomerSplashSkeleton from "@/customer/components/CustomerSplashSkeleton";
 import { hasMesaQrInUrl } from "@/lib/customerSession";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { nav } from "@/lib/navPaths";
@@ -74,6 +75,10 @@ const SplashScreen = () => {
     setTapCount((c) => c + 1);
   };
 
+  if (brandingLoading) {
+    return <CustomerSplashSkeleton />;
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col items-center justify-center animate-fade-in bg-background px-6 relative overflow-hidden">
       <div className="absolute inset-0 -z-10 opacity-[0.04]" style={{
@@ -90,19 +95,17 @@ const SplashScreen = () => {
         onMouseLeave={handleLogoPressEnd}
         role="presentation"
       >
-        {!brandingLoading && logo && (
+        {logo && (
           <img
             src={logo}
             alt={brandName}
             className="w-40 h-40 object-contain drop-shadow-xl mb-6"
           />
         )}
-        {!brandingLoading && brandName && (
+        {brandName && (
           <h1 className="text-3xl font-black text-foreground tracking-[0.15em]">{brandName}</h1>
         )}
-        {!brandingLoading && (
-          <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">{t("splashTagline")}</p>
-        )}
+        <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">{t("splashTagline")}</p>
       </div>
 
 

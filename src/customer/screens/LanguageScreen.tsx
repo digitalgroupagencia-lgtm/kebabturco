@@ -12,6 +12,7 @@ import flagBr from "@/assets/flag-br.png";
 import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
 import flagFr from "@/assets/flag-fr.png";
+import CustomerLanguageSkeleton from "@/customer/components/CustomerLanguageSkeleton";
 
 const FALLBACK_FLAG: Record<string, string> = {
   pt: flagBr,
@@ -57,7 +58,9 @@ const LanguageScreen = () => {
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 
-  if (!screenReady) return null;
+  if (!screenReady) {
+    return <CustomerLanguageSkeleton languageCount={Math.max(langs.length, 2)} />;
+  }
 
   return (
     <div
