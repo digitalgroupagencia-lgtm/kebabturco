@@ -942,6 +942,9 @@ export type Database = {
           order_number: string
           order_type: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_confirmed_at: string | null
+          payment_confirmed_by_name: string | null
+          payment_confirmed_by_user_id: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           platform_fee_cents: number
           processing_fee_cents: number
@@ -993,6 +996,9 @@ export type Database = {
           order_number: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by_name?: string | null
+          payment_confirmed_by_user_id?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           platform_fee_cents?: number
           processing_fee_cents?: number
@@ -1044,6 +1050,9 @@ export type Database = {
           order_number?: string
           order_type?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by_name?: string | null
+          payment_confirmed_by_user_id?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           platform_fee_cents?: number
           processing_fee_cents?: number

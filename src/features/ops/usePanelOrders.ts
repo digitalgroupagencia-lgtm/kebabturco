@@ -456,9 +456,28 @@ export function usePanelOrders(storeId: string | undefined) {
       updatingRef.current.add(order.id);
       try {
         await markOrderPaidAtCounter(order.id, method);
+        const { data: u } = await supabase.auth.getUser();
+        let staffName: string | null = null;
+        if (u?.user) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", u.user.id)
+            .maybeSingle();
+          staffName = (prof?.full_name as string | null) || u.user.email || "Operador";
+        }
         setOrders((prev) =>
           prev.map((o) =>
-            o.id === order.id ? { ...o, payment_status: "paid" as const, payment_method: method } : o,
+            o.id === order.id
+              ? {
+                  ...o,
+                  payment_status: "paid" as const,
+                  payment_method: method,
+                  payment_confirmed_by_user_id: u?.user?.id ?? null,
+                  payment_confirmed_by_name: staffName,
+                  payment_confirmed_at: new Date().toISOString(),
+                }
+              : o,
           ),
         );
         const items = itemsByOrder[order.id] || [];

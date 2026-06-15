@@ -155,6 +155,11 @@ const OpsOrderDetailSheet = ({
                 {payment.methodLabel}
               </Badge>
             )}
+            {order.payment_status === "paid" && order.payment_confirmed_by_name && (
+              <Badge variant="outline" className="font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-400">
+                Pago por: {order.payment_confirmed_by_name}
+              </Badge>
+            )}
             {prepRemaining && (
               <Badge variant="secondary" className="gap-1 bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">
                 <Clock className="h-3 w-3" /> {prepRemaining}

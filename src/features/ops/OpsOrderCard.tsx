@@ -165,6 +165,11 @@ const OpsOrderCard = memo(function OpsOrderCard({
             Aceito por: {(order as unknown as { accepted_by_name?: string | null }).accepted_by_name}
           </p>
         )}
+        {order.payment_status === "paid" && order.payment_confirmed_by_name && (
+          <p className="mt-0.5 text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 truncate">
+            Pago por: {order.payment_confirmed_by_name}
+          </p>
+        )}
         {blockedUntilPaid && (
           <p className="mt-0.5 text-[9px] font-semibold text-foreground">
             {t("ops.card.blocked_until_paid")}
