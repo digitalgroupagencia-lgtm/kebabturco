@@ -204,22 +204,17 @@ const TeamPage = () => {
   const fetchMembers = async () => {
     if (!storeId) return;
 
-    try {
-      const { data: rows, error } = await supabase.rpc("get_store_team_members", {
-        _store_id: storeId,
-      });
-      if (error) throw error;
-
-      const membersData: TeamMember[] = ((rows ?? []) as {
-        user_role_id: string;
-        user_id: string;
-        role: AppRole;
-        email: string | null;
-        full_name: string | null;
-        preferred_language: string | null;
-        avatar_url: string | null;
-        birth_date: string | null;
-      }[]).map((row) => ({
+    const mapRows = (rows: {
+      user_role_id: string;
+      user_id: string;
+      role: AppRole;
+      email: string | null;
+      full_name: string | null;
+      preferred_language: string | null;
+      avatar_url: string | null;
+      birth_date: string | null;
+    }[]): TeamMember[] =>
+      rows.map((row) => ({
         id: row.user_role_id,
         user_id: row.user_id,
         role: row.role,
@@ -230,40 +225,61 @@ const TeamPage = () => {
         birth_date: row.birth_date ?? null,
       }));
 
-      setMembers(membersData);
+    try {
+      const { data: rows, error } = await supabase.rpc("get_store_team_members", {
+        _store_id: storeId,
+      });
+      if (error) throw error;
+      setMembers(mapRows((rows ?? []) as Parameters<typeof mapRows>[0]));
+      setLoading(false);
+      return;
     } catch {
-      const { data: roles, error } = await supabase
-        .from("user_roles")
-        .select("id, user_id, role")
-        .eq("store_id", storeId);
+      /* tenta leitura directa com política de perfis da equipa */
+    }
 
-      if (error || !roles) {
-        setLoading(false);
-        return;
-      }
+    const { data: roles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("id, user_id, role")
+      .eq("store_id", storeId);
 
-      const emailByUser = new Map<string, string>();
-      try {
-        const { data: emailRows } = await (supabase.rpc as any)("get_store_team_member_emails", {
-          _store_id: storeId,
-        });
-        ((emailRows ?? []) as { user_id: string; email: string }[]).forEach((row) => {
-          if (row.user_id && row.email) emailByUser.set(row.user_id, row.email);
-        });
-      } catch {
-        /* emails opcionais */
-      }
+    if (rolesError || !roles) {
+      setLoading(false);
+      return;
+    }
 
-      setMembers(
-        roles.map((r) => ({
+    const userIds = roles.map((r) => r.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, preferred_language, avatar_url, birth_date")
+      .in("user_id", userIds);
+
+    const emailByUser = new Map<string, string>();
+    try {
+      const { data: emailRows } = await (supabase.rpc as any)("get_store_team_member_emails", {
+        _store_id: storeId,
+      });
+      ((emailRows ?? []) as { user_id: string; email: string }[]).forEach((row) => {
+        if (row.user_id && row.email) emailByUser.set(row.user_id, row.email);
+      });
+    } catch {
+      /* emails opcionais */
+    }
+
+    setMembers(
+      roles.map((r) => {
+        const profile = profiles?.find((p) => p.user_id === r.user_id);
+        return {
           id: r.id,
           user_id: r.user_id,
           role: r.role,
           email: emailByUser.get(r.user_id),
-        })),
-      );
-    }
-
+          full_name: profile?.full_name || undefined,
+          preferred_language: (profile as { preferred_language?: string })?.preferred_language || "pt",
+          avatar_url: (profile as { avatar_url?: string | null })?.avatar_url ?? null,
+          birth_date: (profile as { birth_date?: string | null })?.birth_date ?? null,
+        };
+      }),
+    );
     setLoading(false);
   };
 
@@ -374,6 +390,19 @@ const TeamPage = () => {
       if (editPassword.trim() && !loginReady) {
         toast.warning(t("team.toast.login_pending_edit"), { duration: 8000 });
       }
+
+      const savedMember: TeamMember = {
+        ...editMember,
+        full_name: editName.trim() || undefined,
+        role: editRole,
+        preferred_language: editLanguage,
+        birth_date: editBirthDate || null,
+      };
+      setMembers((prev) => prev.map((m) => (m.id === editMember.id ? savedMember : m)));
+      if (editAccessPin.trim()) {
+        setEditHasAccessPin(true);
+      }
+
       setEditMember(null);
       await fetchMembers();
 

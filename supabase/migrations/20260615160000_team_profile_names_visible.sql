@@ -1,7 +1,4 @@
--- ============================================================
--- COPIAR TUDO e colar no SQL Editor da Lovable → Run
--- Corrige nomes que não aparecem na lista da equipa
--- ============================================================
+-- Nomes da equipa: gerentes podem ver e guardar perfis de todos na loja.
 
 DROP POLICY IF EXISTS "Store team managers view member profiles" ON public.profiles;
 CREATE POLICY "Store team managers view member profiles" ON public.profiles
@@ -126,5 +123,3 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_store_team_members(uuid) TO authenticated;
-
-SELECT 'Nomes da equipa corrigidos — actualize a página' AS resultado;
