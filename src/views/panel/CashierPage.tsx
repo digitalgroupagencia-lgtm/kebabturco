@@ -14,6 +14,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
@@ -27,6 +28,7 @@ const CashierPage = () => {
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
   const { t } = useStaffT();
+  const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
 
 
   const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null);
@@ -77,9 +79,14 @@ const CashierPage = () => {
   }, [storeId, fetchPendingOrders]);
 
   const confirmCashPayment = async (order: PendingOrder, method: "cash" | "card" = "cash") => {
+    const pin = await requestStaffPin({
+      amountLabel: `#${order.order_number} · €${Number(order.total).toFixed(2)}`,
+    });
+    if (!pin) return;
+
     setConfirmingId(order.id);
     try {
-      await markOrderPaidAtCounter(order.id, method);
+      await markOrderPaidAtCounter(order.id, method, pin);
       const { data: items } = await supabase.from("order_items").select("*").eq("order_id", order.id);
       await tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid", payment_method: method } as any, (items ?? []) as any);
       toast.success(`${t("toast.payment_registered")} — #${order.order_number}`);
@@ -383,6 +390,7 @@ const CashierPage = () => {
         </DialogContent>
 
       </Dialog>
+      <StaffPinDialog />
     </div>
   );
 };

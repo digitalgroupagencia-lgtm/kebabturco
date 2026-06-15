@@ -291,16 +291,27 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
   return result;
 }
 
-export async function markOrderPaidAtCounter(orderId: string, paymentMethod: "cash" | "card" = "cash") {
+export async function markOrderPaidAtCounter(
+  orderId: string,
+  paymentMethod: "cash" | "card" = "cash",
+  staffPin: string,
+) {
   const { data, error } = await supabase.rpc("mark_order_paid_at_counter", {
     _order_id: orderId,
     _payment_method: paymentMethod,
+    _staff_pin: staffPin,
   });
   if (error) throw error;
   if (data && typeof data === "object" && (data as { error?: string }).error) {
     throw new Error((data as { error: string }).error);
   }
-  return data as { success: boolean; order_id?: string; order_number?: string };
+  return data as {
+    success: boolean;
+    order_id?: string;
+    order_number?: string;
+    payment_confirmed_by_name?: string;
+    already_paid?: boolean;
+  };
 }
 
 export async function confirmDeliveryWithCode(orderId: string, code: string) {

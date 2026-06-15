@@ -451,21 +451,15 @@ export function usePanelOrders(storeId: string | undefined) {
   }, []);
 
   const markOrderPaid = useCallback(
-    async (order: PanelOrder, method: "cash" | "card" = "cash") => {
+    async (order: PanelOrder, method: "cash" | "card" = "cash", staffPin: string) => {
       if (updatingRef.current.has(order.id)) return false;
       updatingRef.current.add(order.id);
       try {
-        await markOrderPaidAtCounter(order.id, method);
-        const { data: u } = await supabase.auth.getUser();
-        let staffName: string | null = null;
-        if (u?.user) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", u.user.id)
-            .maybeSingle();
-          staffName = (prof?.full_name as string | null) || u.user.email || "Operador";
-        }
+        const result = await markOrderPaidAtCounter(order.id, method, staffPin);
+        const staffName =
+          (result && typeof result === "object" && "payment_confirmed_by_name" in result
+            ? (result as { payment_confirmed_by_name?: string }).payment_confirmed_by_name
+            : null) ?? null;
         setOrders((prev) =>
           prev.map((o) =>
             o.id === order.id
@@ -473,7 +467,7 @@ export function usePanelOrders(storeId: string | undefined) {
                   ...o,
                   payment_status: "paid" as const,
                   payment_method: method,
-                  payment_confirmed_by_user_id: u?.user?.id ?? null,
+                  payment_confirmed_by_user_id: null,
                   payment_confirmed_by_name: staffName,
                   payment_confirmed_at: new Date().toISOString(),
                 }

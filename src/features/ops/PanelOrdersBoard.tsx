@@ -22,6 +22,7 @@ import { isPanelAlertsEnabled, preparePanelAlertsIfEnabled } from "@/lib/panelAl
 import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } from "@/services/nativePush";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import type { PanelOrder } from "@/features/ops/usePanelOrders";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
@@ -58,6 +59,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { t } = useStaffT();
+  const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
   const {
     orders,
     itemsByOrder,
@@ -236,6 +238,17 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     }
   };
 
+  const confirmMarkPaid = useCallback(
+    async (order: PanelOrder, method: "cash" | "card" = "cash") => {
+      const pin = await requestStaffPin({
+        amountLabel: `#${order.order_number} · €${Number(order.total).toFixed(2)}`,
+      });
+      if (!pin) return false;
+      return markOrderPaid(order, method, pin);
+    },
+    [markOrderPaid, requestStaffPin],
+  );
+
   const cardProps = (order: PanelOrder) => ({
     order,
     items: itemsByOrder[order.id] || [],
@@ -248,7 +261,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     onOpenDetail: openOrderDetail,
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
-    onMarkPaid: markOrderPaid,
+    onMarkPaid: confirmMarkPaid,
   });
 
   if (loading) {
@@ -390,7 +403,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         onCancel={cancelOrder}
         onSetPrepMinutes={setPrepMinutes}
         onMarkPaid={(o, m) => {
-          void markOrderPaid(o, m);
+          void confirmMarkPaid(o, m);
         }}
         onReprint={(o) => reprintOrder(o)}
       />
@@ -416,6 +429,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         onConfirm={handleAssignDriver}
         assigning={assigning}
       />
+      <StaffPinDialog />
     </>
   );
 };

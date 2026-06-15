@@ -11,10 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Shield, Pencil, ClipboardCopy, UserPlus } from "lucide-react";
+import { Users, Plus, Trash2, Shield, Pencil, ClipboardCopy, UserPlus, KeyRound } from "lucide-react";
 import { RESTAURANT_STAFF_ROLES, STAFF_ROLE_LABELS, canManageTeam, type StaffRole } from "@/lib/staffPermissions";
 import { translateAppErrorFromException, translateAppError } from "@/lib/authErrorMessages";
 import { staffPasswordHint, suggestStaffPassword, validateStaffPassword } from "@/lib/staffPassword";
+import {
+  staffAccessPinHint,
+  suggestStaffAccessPin,
+  sanitizeStaffAccessPinInput,
+  validateStaffAccessPin,
+} from "@/lib/staffAccessPin";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useStaffGooglePendingFeed } from "@/hooks/useStaffGooglePendingFeed";
@@ -104,6 +110,8 @@ const TeamPage = () => {
   const [editBirthDate, setEditBirthDate] = useState("");
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
+  const [editAccessPin, setEditAccessPin] = useState("");
+  const [editHasAccessPin, setEditHasAccessPin] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const draftToastStoreRef = useRef<string | null>(null);
   const [googleApproveOpen, setGoogleApproveOpen] = useState(false);
@@ -264,15 +272,26 @@ const TeamPage = () => {
     setWelcomeOpen(true);
   };
 
-  const openEditMember = (member: TeamMember) => {
+  const openEditMember = async (member: TeamMember) => {
     const cache = storeId ? loadTeamOnboardingCache(storeId, member.id) : null;
     setEditMember(member);
     setEditName(member.full_name || cache?.name || "");
     setEditPassword("");
+    setEditAccessPin("");
     setEditRole(member.role);
     setEditLanguage(member.preferred_language || primaryLang || "es");
     setEditBirthDate(member.birth_date || "");
     setShowEditPassword(false);
+    if (storeId) {
+      const { data: pinRow } = await supabase
+        .from("staff_access_pins")
+        .select("id, is_active")
+        .eq("user_role_id", member.id)
+        .maybeSingle();
+      setEditHasAccessPin(Boolean(pinRow?.is_active));
+    } else {
+      setEditHasAccessPin(false);
+    }
   };
 
   const saveEditMember = async () => {
@@ -282,6 +301,13 @@ const TeamPage = () => {
       const passwordError = validateStaffPassword(editPassword, lang);
       if (passwordError) {
         toast.error(passwordError);
+        return;
+      }
+    }
+    if (editAccessPin.trim()) {
+      const pinError = validateStaffAccessPin(editAccessPin, lang);
+      if (pinError) {
+        toast.error(pinError);
         return;
       }
     }
@@ -299,6 +325,14 @@ const TeamPage = () => {
         birth_date: editBirthDate || null,
         password: editPassword.trim() || undefined,
       });
+
+      if (editAccessPin.trim()) {
+        const { error: pinError } = await supabase.rpc("upsert_staff_access_pin", {
+          _user_role_id: editMember.id,
+          _pin: editAccessPin.trim(),
+        });
+        if (pinError) throw pinError;
+      }
 
       let loginReady = true;
       if (editPassword.trim() && editMember.email) {
@@ -838,6 +872,38 @@ const TeamPage = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{staffPasswordHint(panelLang)}</p>
+            </div>
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5" />
+                {t("team.field.accessPin")}
+                {editHasAccessPin ? (
+                  <Badge variant="secondary" className="h-5 text-[10px] font-normal">
+                    {t("team.field.accessPin.active")}
+                  </Badge>
+                ) : null}
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  value={editAccessPin}
+                  onChange={(e) => setEditAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
+                  placeholder={t("team.field.accessPin.ph")}
+                  className="flex-1 font-mono tracking-widest"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setEditAccessPin(suggestStaffAccessPin(true))}
+                >
+                  {t("team.field.accessPin.suggest")}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{t("team.field.accessPin.hint")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{staffAccessPinHint(panelLang)}</p>
             </div>
             <div>
               <Label>{t("team.col.role")}</Label>

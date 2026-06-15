@@ -3939,7 +3939,7 @@ export type Database = {
         Returns: undefined
       }
       mark_order_paid_at_counter: {
-        Args: { _order_id: string; _payment_method?: string }
+        Args: { _order_id: string; _payment_method?: string; _staff_pin?: string }
         Returns: Json
       }
       next_order_number: { Args: { _store_id: string }; Returns: string }
