@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -265,7 +266,7 @@ const SellersPage = () => {
             </div>
             <div>
               <Label>{t("sellers.field.password")}</Label>
-              <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={t("sellers.field.password.ph")} />
+              <SecretInput value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={t("sellers.field.password.ph")} />
               <p className="text-xs text-muted-foreground mt-1">{t("sellers.field.password.note")}</p>
             </div>
             <div>

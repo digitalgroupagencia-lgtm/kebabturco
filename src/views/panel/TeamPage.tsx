@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -109,6 +110,7 @@ const TeamPage = () => {
   const [editLanguage, setEditLanguage] = useState("es");
   const [editBirthDate, setEditBirthDate] = useState("");
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [showEditAccessPin, setShowEditAccessPin] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editAccessPin, setEditAccessPin] = useState("");
   const [editHasAccessPin, setEditHasAccessPin] = useState(false);
@@ -282,6 +284,7 @@ const TeamPage = () => {
     setEditLanguage(member.preferred_language || primaryLang || "es");
     setEditBirthDate(member.birth_date || "");
     setShowEditPassword(false);
+    setShowEditAccessPin(false);
     if (storeId) {
       const { data: pinRow } = await supabase
         .from("staff_access_pins")
@@ -748,8 +751,9 @@ const TeamPage = () => {
             <div>
               <Label>{t("team.field.password")}</Label>
               <div className="flex gap-2">
-                <Input
-                  type={showPassword ? "text" : "password"}
+                <SecretInput
+                  visible={showPassword}
+                  onVisibleChange={setShowPassword}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder={t("team.field.password.ph")}
@@ -851,8 +855,9 @@ const TeamPage = () => {
             <div>
               <Label>{t("team.field.password.new")}</Label>
               <div className="flex gap-2">
-                <Input
-                  type={showEditPassword ? "text" : "password"}
+                <SecretInput
+                  visible={showEditPassword}
+                  onVisibleChange={setShowEditPassword}
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   placeholder={t("team.field.password.new.ph")}
@@ -884,8 +889,9 @@ const TeamPage = () => {
                 ) : null}
               </Label>
               <div className="flex gap-2">
-                <Input
-                  type="password"
+                <SecretInput
+                  visible={showEditAccessPin}
+                  onVisibleChange={setShowEditAccessPin}
                   inputMode="numeric"
                   value={editAccessPin}
                   onChange={(e) => setEditAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
@@ -897,7 +903,10 @@ const TeamPage = () => {
                   variant="outline"
                   size="sm"
                   className="shrink-0"
-                  onClick={() => setEditAccessPin(suggestStaffAccessPin(true))}
+                  onClick={() => {
+                    setEditAccessPin(suggestStaffAccessPin(true));
+                    setShowEditAccessPin(true);
+                  }}
                 >
                   {t("team.field.accessPin.suggest")}
                 </Button>

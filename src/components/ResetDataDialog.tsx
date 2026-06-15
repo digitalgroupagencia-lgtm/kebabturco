@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -156,9 +157,8 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
 
         <div className="space-y-2">
           <Label htmlFor="reset-pwd">Senha de confirmação</Label>
-          <Input
+          <SecretInput
             id="reset-pwd"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"

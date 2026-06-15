@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -206,7 +207,7 @@ function GatewayEditor({ storeId, gatewayCode, note, onSaved }: { storeId: strin
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Merchant Code (FUC)"><Input value={cfg.merchant_code ?? ""} onChange={(e) => setCfg({ ...cfg, merchant_code: e.target.value })} placeholder="123456789" /></Field>
             <Field label="Terminal"><Input value={cfg.terminal ?? ""} onChange={(e) => setCfg({ ...cfg, terminal: e.target.value })} placeholder="001" /></Field>
-            <Field label="Secret Key (Clave SHA-256)"><Input value={cfg.secret_key ?? ""} onChange={(e) => setCfg({ ...cfg, secret_key: e.target.value })} placeholder="Base64..." type="password" /></Field>
+            <Field label="Secret Key (Clave SHA-256)"><SecretInput value={cfg.secret_key ?? ""} onChange={(e) => setCfg({ ...cfg, secret_key: e.target.value })} placeholder="Base64..." /></Field>
             <Field label="Moeda (ISO numérica)"><Input value={cfg.currency ?? ""} onChange={(e) => setCfg({ ...cfg, currency: e.target.value })} placeholder="978" /></Field>
             <Field label="Tipo de transação"><Input value={cfg.transaction_type ?? ""} onChange={(e) => setCfg({ ...cfg, transaction_type: e.target.value })} placeholder="0" /></Field>
             <Field label="Nome do comerciante"><Input value={cfg.merchant_name ?? ""} onChange={(e) => setCfg({ ...cfg, merchant_name: e.target.value })} placeholder="Kebab Turco" /></Field>

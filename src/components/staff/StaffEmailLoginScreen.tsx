@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -253,9 +254,8 @@ const StaffEmailLoginScreen = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="staff-password">{copy.passwordLabel}</Label>
-              <Input
+              <SecretInput
                 id="staff-password"
-                type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => {

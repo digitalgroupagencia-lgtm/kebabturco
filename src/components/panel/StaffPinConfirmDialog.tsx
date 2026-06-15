@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { KeyRound } from "lucide-react";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -69,9 +69,8 @@ const StaffPinConfirmDialog = ({ open, options, onOpenChange, onConfirm }: Props
           ) : null}
           <div>
             <Label htmlFor="staff-payment-pin">{t("staffPin.confirm.label")}</Label>
-            <Input
+            <SecretInput
               id="staff-payment-pin"
-              type="password"
               inputMode="numeric"
               autoComplete="off"
               autoFocus
