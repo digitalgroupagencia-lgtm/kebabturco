@@ -3813,6 +3813,19 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_store_team_members: {
+        Args: { _store_id: string }
+        Returns: {
+          avatar_url: string | null
+          birth_date: string | null
+          email: string | null
+          full_name: string | null
+          preferred_language: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          user_role_id: string
+        }[]
+      }
       get_table_session_detail: {
         Args: { _session_id: string }
         Returns: {
