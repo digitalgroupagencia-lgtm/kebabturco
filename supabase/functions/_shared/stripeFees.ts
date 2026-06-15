@@ -1,5 +1,21 @@
-/** Taxa fixa da plataforma por pedido online pago com cartão (€1,00). */
-export const PLATFORM_FEE_CENTS = 100;
+/** Pedidos abaixo de €10 — taxa reduzida da plataforma. */
+export const PLATFORM_FEE_THRESHOLD_CENTS = 1000;
+export const PLATFORM_FEE_SMALL_CENTS = 50;
+export const PLATFORM_FEE_STANDARD_CENTS = 100;
+
+/** Compat — taxa máxima da plataforma por pedido (≥ €10). */
+export const PLATFORM_FEE_CENTS = PLATFORM_FEE_STANDARD_CENTS;
+
+/**
+ * Taxa fixa da plataforma por pedido online (só Euro Business Food — não inclui Stripe).
+ * < €10 → €0,50 · ≥ €10 → €1,00
+ */
+export function computePlatformFeeCents(restaurantPortionCents: number): number {
+  if (restaurantPortionCents <= 0) return 0;
+  return restaurantPortionCents < PLATFORM_FEE_THRESHOLD_CENTS
+    ? PLATFORM_FEE_SMALL_CENTS
+    : PLATFORM_FEE_STANDARD_CENTS;
+}
 
 /**
  * Estimativa conservadora cartão UE (1,5% + €0,25).
@@ -20,12 +36,13 @@ export function computeRestaurantPortionCents(
 }
 
 /**
- * Taxa retida do repasse do restaurante (€1 plataforma + estimativa Stripe).
+ * Taxa retida do repasse do restaurante (taxa plataforma + estimativa Stripe).
  * O cliente paga apenas o valor dos produtos + entrega − desconto.
  */
 export function computeApplicationFeeCents(restaurantPortionCents: number): number {
   if (restaurantPortionCents <= 0) return 0;
-  const raw = PLATFORM_FEE_CENTS + estimateStripeFeeCents(restaurantPortionCents);
+  const platformFee = computePlatformFeeCents(restaurantPortionCents);
+  const raw = platformFee + estimateStripeFeeCents(restaurantPortionCents);
   const maxFee = Math.max(0, restaurantPortionCents - 1);
   return Math.min(raw, maxFee);
 }
@@ -40,8 +57,15 @@ export function computeCustomerTotalCents(restaurantPortionCents: number): numbe
   return restaurantPortionCents;
 }
 
-export function estimatedStripeFeeInServiceFee(onlineServiceFeeCents: number): number {
-  return Math.max(0, onlineServiceFeeCents - PLATFORM_FEE_CENTS);
+export function estimatedStripeFeeInServiceFee(
+  onlineServiceFeeCents: number,
+  restaurantPortionCents?: number,
+): number {
+  const platformFee =
+    restaurantPortionCents != null && restaurantPortionCents > 0
+      ? computePlatformFeeCents(restaurantPortionCents)
+      : PLATFORM_FEE_STANDARD_CENTS;
+  return Math.max(0, onlineServiceFeeCents - platformFee);
 }
 
 /** @deprecated Use online_service_fee_cents as customer-facing fee label storage. */

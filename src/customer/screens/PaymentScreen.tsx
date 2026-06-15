@@ -15,7 +15,6 @@ import {
   fetchStoreFinancialProfile,
   validateCoupon,
   waitForOrderPaymentConfirmed,
-  PLATFORM_FEE_CENTS,
 } from "@/services/orderService";
 import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
@@ -38,7 +37,8 @@ import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import {
   computeRestaurantPortionEur,
   computePlatformDeductionEur,
-  PLATFORM_FEE_EUR,
+  computePlatformFeeEur,
+  computePlatformFeeCents,
 } from "@/lib/processingFee";
 import {
   resolveCheckoutMethods,
@@ -368,14 +368,16 @@ const PaymentScreen = () => {
 
   const cardOrderFinancials = () => {
     const restaurantCents = Math.round(restaurantPortionEur * 100);
+    const platformCents =
+      stripePaymentMeta?.platformFeeCents ?? computePlatformFeeCents(restaurantCents);
     const serviceCents =
       stripePaymentMeta?.onlineServiceFeeCents ??
       Math.round(computePlatformDeductionEur(restaurantPortionEur) * 100);
     return {
       onlineServiceFeeCents: serviceCents,
-      platformFeeCents: stripePaymentMeta?.platformFeeCents ?? PLATFORM_FEE_CENTS,
+      platformFeeCents: platformCents,
       stripeFeeCents:
-        stripePaymentMeta?.estimatedStripeFeeCents ?? Math.max(0, serviceCents - PLATFORM_FEE_CENTS),
+        stripePaymentMeta?.estimatedStripeFeeCents ?? Math.max(0, serviceCents - platformCents),
       netToStoreCents: stripePaymentMeta?.restaurantPortionCents ?? restaurantCents,
       stripeConnectAccountId: stripePaymentMeta?.stripeConnectAccountId ?? null,
     };

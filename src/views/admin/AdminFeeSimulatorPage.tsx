@@ -59,7 +59,8 @@ export default function AdminFeeSimulatorPage() {
     const orders = Math.round(rev / avg);
 
     const stripeFee = rev * STRIPE_PCT + STRIPE_FIXED * orders;
-    const commission = PLATFORM_FEE * orders;
+    const platformFeePerOrder = avg < 10 ? 0.5 : 1;
+    const commission = platformFeePerOrder * orders;
     const restaurantBefore = rev - commission - stripeFee;
     const connectFixed = CONNECT_PAYOUT_FIXED * payoutsPerMonth;
     const connectTotal = CONNECT_MONTHLY + connectFixed;
@@ -77,7 +78,9 @@ export default function AdminFeeSimulatorPage() {
 
     return {
       rev,
+      avg,
       orders,
+      platformFeePerOrder,
       stripeFee,
       commission,
       connectTotal,
@@ -167,7 +170,9 @@ export default function AdminFeeSimulatorPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-2xl font-black text-foreground">{euro(calc.commission)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Seu lucro / mês (€1 × {calc.orders} pedidos)</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Seu lucro / mês (€{calc.platformFeePerOrder.toFixed(2).replace(".", ",")} × {calc.orders} pedidos)
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -228,7 +233,9 @@ export default function AdminFeeSimulatorPage() {
             </div>
             <div>
               <p className="text-lg font-bold">{euro(calc.commission)}</p>
-              <p className="text-xs text-muted-foreground">Sua comissão (€1/pedido)</p>
+              <p className="text-xs text-muted-foreground">
+                Sua comissão (€{calc.platformFeePerOrder.toFixed(2).replace(".", ",")}/pedido)
+              </p>
             </div>
             <div>
               <p className="text-lg font-bold">{euro(calc.stripeFee)}</p>
@@ -241,7 +248,7 @@ export default function AdminFeeSimulatorPage() {
           </div>
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
             A Glovo e a Uber cobram uma percentagem do faturamento (cerca de 30%). O seu modelo
-            cobra um valor fixo de €1 por pedido, por isso em pedidos maiores a sua percentagem real
+            cobra €0,50 em pedidos abaixo de €10 e €1 a partir de €10 — por isso em pedidos maiores a sua percentagem real
             cai, enquanto a das outras se mantém alta. Nota: a Glovo e a Uber incluem estafetas e
             publicidade próprios; a comparação acima é sobre a comissão que retêm das vendas.
           </p>

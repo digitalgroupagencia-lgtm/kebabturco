@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   PLATFORM_FEE_CENTS,
   computeNetToStoreCents,
+  computePlatformFeeCents,
   estimatedStripeFeeInServiceFee,
 } from "./stripeFees.ts";
 import {
@@ -186,9 +187,12 @@ export async function settleSucceededPaymentIntent(
   const onlineServiceFeeCents = Number(
     pi.metadata?.online_service_fee_cents || pi.application_fee_amount || 0,
   );
-  const platformFeeCents = Number(pi.metadata?.platform_fee_cents || PLATFORM_FEE_CENTS);
+  const platformFeeCents =
+    Number(pi.metadata?.platform_fee_cents) ||
+    (restaurantPortionCents > 0 ? computePlatformFeeCents(restaurantPortionCents) : PLATFORM_FEE_CENTS);
   let stripeFeeCents = Number(
-    pi.metadata?.estimated_stripe_fee_cents || estimatedStripeFeeInServiceFee(onlineServiceFeeCents),
+    pi.metadata?.estimated_stripe_fee_cents ||
+      estimatedStripeFeeInServiceFee(onlineServiceFeeCents, restaurantPortionCents || undefined),
   );
 
   try {
@@ -408,5 +412,6 @@ export {
   computeApplicationFeeCents,
   computeCustomerTotalCents,
   computeOnlineServiceFeeCents,
+  computePlatformFeeCents,
   computeRestaurantPortionCents,
 } from "./stripeFees.ts";

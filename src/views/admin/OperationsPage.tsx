@@ -197,7 +197,7 @@ const OperationsPage = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Saldo, repasses e dados bancários são geridos na área <strong>Recebimentos</strong>. Taxa por pedido online: <strong>1€ + custo de processamento</strong>.
+            Saldo, repasses e dados bancários são geridos na área <strong>Recebimentos</strong>. Taxa da plataforma: <strong>€0,50 em pedidos abaixo de €10 · €1 a partir de €10</strong> (+ custo do cartão/Bizum).
           </p>
           {onlineReady ? (
             <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-sm font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">

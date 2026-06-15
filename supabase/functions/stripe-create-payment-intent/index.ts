@@ -8,6 +8,7 @@ import {
   computeApplicationFeeCents,
   computeCustomerTotalCents,
   computeOnlineServiceFeeCents,
+  computePlatformFeeCents,
   computeRestaurantPortionCents,
   PLATFORM_FEE_CENTS,
 } from "../_shared/stripePaymentActions.ts";
@@ -214,7 +215,11 @@ Deno.serve(async (req) => {
     const onlineServiceFeeCents = computeOnlineServiceFeeCents(restaurantPortionCents);
     const amountCents = computeCustomerTotalCents(restaurantPortionCents);
     const applicationFeeCents = computeApplicationFeeCents(restaurantPortionCents);
-    const estimatedStripeFeeCents = estimatedStripeFeeInServiceFee(onlineServiceFeeCents);
+    const platformFeeCents = computePlatformFeeCents(restaurantPortionCents);
+    const estimatedStripeFeeCents = estimatedStripeFeeInServiceFee(
+      onlineServiceFeeCents,
+      restaurantPortionCents,
+    );
 
     if (!storeId || restaurantPortionCents < 50 || amountCents < 50 || amountCents > 1_000_00 * 10) {
       return json({ error: "Parâmetros inválidos" }, 400);
@@ -312,7 +317,7 @@ Deno.serve(async (req) => {
       stripe_connect_account_id: store.stripe_connect_account_id ?? "",
       restaurant_portion_cents: String(restaurantPortionCents),
       online_service_fee_cents: String(onlineServiceFeeCents),
-      platform_fee_cents: String(PLATFORM_FEE_CENTS),
+      platform_fee_cents: String(platformFeeCents),
       estimated_stripe_fee_cents: String(estimatedStripeFeeCents),
       subtotal_cents: String(subtotalCents),
       delivery_cents: String(deliveryCents),
@@ -354,7 +359,7 @@ Deno.serve(async (req) => {
       amountCents,
       restaurantPortionCents,
       onlineServiceFeeCents,
-      platformFeeCents: PLATFORM_FEE_CENTS,
+      platformFeeCents,
       estimatedStripeFeeCents,
       stripeConnectAccountId: store.stripe_connect_account_id,
       connectEnvironment: responseEnvironment,

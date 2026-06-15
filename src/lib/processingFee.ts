@@ -5,7 +5,19 @@
  * Regra: o cliente paga só produtos + entrega − desconto.
  * A taxa da plataforma sai do repasse do restaurante.
  */
+export const PLATFORM_FEE_THRESHOLD_EUR = 10;
+export const PLATFORM_FEE_SMALL_EUR = 0.5;
 export const PLATFORM_FEE_EUR = 1;
+
+/** Taxa da plataforma conforme valor do pedido (< €10 → €0,50 · ≥ €10 → €1,00). */
+export function computePlatformFeeEur(restaurantPortionEur: number): number {
+  if (restaurantPortionEur <= 0) return 0;
+  return restaurantPortionEur < PLATFORM_FEE_THRESHOLD_EUR ? PLATFORM_FEE_SMALL_EUR : PLATFORM_FEE_EUR;
+}
+
+export function computePlatformFeeCents(restaurantPortionCents: number): number {
+  return Math.round(computePlatformFeeEur(restaurantPortionCents / 100) * 100);
+}
 
 export function estimateStripeFeeEur(chargeTotalEur: number): number {
   if (chargeTotalEur <= 0) return 0;
@@ -16,11 +28,12 @@ export function computeRestaurantPortionEur(subtotal: number, delivery: number, 
   return Math.max(0, Math.round((subtotal + delivery - discount) * 100) / 100);
 }
 
-/** Taxa retida do restaurante (não aparece no total do cliente). */
+/** Taxa retida do restaurante (plataforma + Stripe — não aparece no total do cliente). */
 export function computePlatformDeductionEur(restaurantPortionEur: number): number {
   if (restaurantPortionEur <= 0) return 0;
   const portionCents = Math.round(restaurantPortionEur * 100);
-  const rawCents = 100 + Math.ceil(portionCents * 0.015 + 25);
+  const platformCents = Math.round(computePlatformFeeEur(restaurantPortionEur) * 100);
+  const rawCents = platformCents + Math.ceil(portionCents * 0.015 + 25);
   const maxCents = Math.max(0, portionCents - 1);
   return Math.min(rawCents, maxCents) / 100;
 }
