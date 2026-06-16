@@ -10,6 +10,10 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store, must-revalidate" }]
     },
     {
+      "source": "/sounds/new-order-notification.mp3",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+    },
+    {
       "source": "/sounds/kaching.wav",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
     },
