@@ -1,12 +1,11 @@
-import { Link, useSearchParams } from "react-router-dom";
-import { ExternalLink, Map, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ExternalLink, Map } from "lucide-react";
 import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
 import StatusPill from "@/components/admin/premium/StatusPill";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ROUTE_MAP_SECTIONS,
-  LOVABLE_WILDCARD_HINT,
   LOVABLE_PREVIEW_PATHS,
   buildRouteOpenUrl,
   type RouteKind,
@@ -64,15 +63,6 @@ function RouteRow({ entry }: { entry: RouteMapEntry }) {
 }
 
 export default function AdminRoutesMapPage() {
-  const [params, setParams] = useSearchParams();
-  const showWildcardHint = params.get("routeHint") === LOVABLE_WILDCARD_HINT;
-
-  const dismissHint = () => {
-    const next = new URLSearchParams(params);
-    next.delete("routeHint");
-    setParams(next, { replace: true });
-  };
-
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-10">
       <AdminPageHeader
@@ -83,21 +73,6 @@ export default function AdminRoutesMapPage() {
           { label: "Mapa de rotas" },
         ]}
       />
-
-      {showWildcardHint && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 flex gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="flex-1 space-y-2">
-            <p className="text-sm font-semibold">Endereço inválido no selector do preview</p>
-            <p className="text-xs text-muted-foreground">
-              Use os atalhos abaixo ou a lista curada do preview Lovable.
-            </p>
-            <Button size="sm" variant="outline" onClick={dismissHint}>
-              Entendi
-            </Button>
-          </div>
-        </div>
-      )}
 
       <div className="rounded-xl border bg-muted/30 p-4 text-sm space-y-2">
         <p className="font-semibold flex items-center gap-2">

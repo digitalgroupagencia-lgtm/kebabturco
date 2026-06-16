@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
+import { LOVABLE_WILDCARD_HINT } from "@/lib/routeMap";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
@@ -26,6 +27,14 @@ export default function PreviewPathGuard() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get("routeHint") === LOVABLE_WILDCARD_HINT) {
+      params.delete("routeHint");
+      const next = params.toString();
+      navigate({ pathname, search: next ? `?${next}` : "" }, { replace: true });
+      return;
+    }
+
     if (isLovableEditorPreview() && shouldOpenStorefrontInLovablePreview(pathname)) {
       const target = lovableStorefrontLocation();
       navigate(target, { replace: true });

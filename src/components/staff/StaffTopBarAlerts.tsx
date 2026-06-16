@@ -1,17 +1,14 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
-  AlertCircle,
   AlertTriangle,
   ChevronRight,
   HelpCircle,
   Loader2,
-  X,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useStaffDiagnosticsAlert } from "@/hooks/useStaffDiagnosticsAlert";
-import { LOVABLE_WILDCARD_HINT } from "@/lib/routeMap";
 import { nav } from "@/lib/navPaths";
 import { useStaffScreenHelp } from "@/contexts/StaffScreenHelpContext";
 import HowToUseContent from "@/components/admin/HowToUseContent";
@@ -107,49 +104,6 @@ function DiagnosticsAlertButton({ area }: { area: "admin" | "panel" }) {
   );
 }
 
-function LovableRouteHintButton() {
-  const [params, setParams] = useSearchParams();
-  if (params.get("routeHint") !== LOVABLE_WILDCARD_HINT) return null;
-
-  const dismiss = () => {
-    const next = new URLSearchParams(params);
-    next.delete("routeHint");
-    setParams(next, { replace: true });
-  };
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={toolbarBtnClass("warning")}
-          aria-label="Aviso de endereço de teste"
-        >
-          <AlertCircle className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold">/admin/* não é uma página real</p>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={dismiss}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          O preview Lovable mostrou um endereço genérico. Foi corrigido para <strong>/admin</strong>.
-          Consulte o{" "}
-          <Link to={nav.admin("routes")} className="text-primary font-semibold underline">
-            mapa de rotas
-          </Link>{" "}
-          para testar endereços reais.
-        </p>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 function ScreenHelpButton() {
   const { help } = useStaffScreenHelp();
   if (!help) return null;
@@ -181,7 +135,6 @@ export default function StaffTopBarAlerts({ area }: Props) {
   return (
     <div className="flex items-center gap-1 shrink-0 mr-1">
       {area === "admin" && <DiagnosticsAlertButton area={area} />}
-      {area === "admin" && <LovableRouteHintButton />}
       <ScreenHelpButton />
     </div>
   );

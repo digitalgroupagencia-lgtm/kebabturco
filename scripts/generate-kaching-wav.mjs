@@ -1,5 +1,5 @@
 /**
- * Gera public/sounds/kaching.wav — som tipo caixa registadora (ka-ching).
+ * Gera public/sounds/kaching.wav — moedas a cair (alerta de nova venda).
  * Correr: node scripts/generate-kaching-wav.mjs
  */
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -11,38 +11,60 @@ const outDir = join(__dirname, "..", "public", "sounds");
 const outPath = join(outDir, "kaching.wav");
 
 const sampleRate = 44100;
-const duration = 0.58;
+const duration = 0.72;
 const samples = Math.floor(sampleRate * duration);
 const data = new Float32Array(samples);
+
+/** Ping metálico de moeda (freq Hz, início s, volume, decay). */
+function coinPing(t, start, freq, amp, decay) {
+  const local = t - start;
+  if (local < 0 || local > 0.22) return 0;
+  const env = Math.exp(-local * decay);
+  const ping =
+    Math.sin(2 * Math.PI * freq * local) * 0.72 +
+    Math.sin(2 * Math.PI * freq * 2.03 * local) * 0.22 +
+    Math.sin(2 * Math.PI * freq * 3.07 * local) * 0.06;
+  const clink = (Math.random() * 2 - 1) * Math.exp(-local * (decay * 1.4)) * 0.12;
+  return (ping * env + clink) * amp;
+}
+
+const coinDrops = [
+  [0.0, 3520, 0.62, 22],
+  [0.035, 2980, 0.52, 19],
+  [0.065, 4100, 0.48, 24],
+  [0.095, 2740, 0.42, 17],
+  [0.125, 3360, 0.38, 21],
+  [0.155, 3880, 0.34, 23],
+  [0.185, 3120, 0.3, 18],
+  [0.21, 4450, 0.26, 26],
+];
 
 for (let i = 0; i < samples; i++) {
   const t = i / sampleRate;
   let s = 0;
 
-  // «Ka» — clique curto da gaveta
-  if (t < 0.045) {
-    s += (Math.random() * 2 - 1) * Math.exp(-t * 140) * 0.32;
-    s += Math.sin(2 * Math.PI * 160 * t) * Math.exp(-t * 90) * 0.22;
+  for (const [start, freq, amp, decay] of coinDrops) {
+    s += coinPing(t, start, freq, amp, decay);
   }
 
-  // «Ching» — sino metálico principal
-  if (t >= 0.028 && t < 0.38) {
-    const local = t - 0.028;
-    const env = Math.exp(-local * 7.5);
-    s += Math.sin(2 * Math.PI * 2150 * local) * env * 0.48;
-    s += Math.sin(2 * Math.PI * 4300 * local) * env * 0.24;
-    s += Math.sin(2 * Math.PI * 6450 * local) * env * 0.09;
+  // «Ching» final de caixa (confirmação de venda)
+  if (t >= 0.24 && t < 0.58) {
+    const local = t - 0.24;
+    const env = Math.exp(-local * 6.2);
+    s += Math.sin(2 * Math.PI * 1580 * local) * env * 0.38;
+    s += Math.sin(2 * Math.PI * 3160 * local) * env * 0.2;
+    s += Math.sin(2 * Math.PI * 4740 * local) * env * 0.08;
   }
 
-  // Segundo «ching» mais suave (moedas / confirmação)
-  if (t >= 0.36 && t < 0.56) {
-    const local = t - 0.36;
-    const env = Math.exp(-local * 11);
-    s += Math.sin(2 * Math.PI * 2750 * local) * env * 0.3;
-    s += Math.sin(2 * Math.PI * 5500 * local) * env * 0.12;
+  // Moeda final mais grave (cai no tabuleiro)
+  if (t >= 0.42 && t < 0.68) {
+    const local = t - 0.42;
+    const env = Math.exp(-local * 9);
+    s += Math.sin(2 * Math.PI * 2200 * local) * env * 0.22;
+    s += (Math.random() * 2 - 1) * env * 0.06;
   }
 
-  data[i] = Math.max(-1, Math.min(1, s * 0.92));
+  data[i] = Math.max(-1, Math.min(1, s * 0.88));
 }
 
 function encodeWav(floatSamples) {

@@ -40,11 +40,7 @@ export function fixBrokenEditorPath(pathname: string): string {
   return "/";
 }
 
-/** Destino completo com aviso quando wildcard veio do preview Lovable. */
+/** Converte caminho quebrado do editor para pathname real (sem parâmetros de aviso). */
 export function fixBrokenEditorLocation(pathname: string): { pathname: string; search: string } {
-  const fixed = fixBrokenEditorPath(pathname);
-  if (!pathname.includes("*")) return { pathname, search: "" };
-  const hint = "routeHint=lovable-wildcard";
-  if (fixed === "/admin") return { pathname: fixed, search: `?${hint}` };
-  return { pathname: fixed, search: "" };
+  return { pathname: fixBrokenEditorPath(pathname), search: "" };
 }
