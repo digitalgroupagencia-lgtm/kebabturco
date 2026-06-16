@@ -3,15 +3,20 @@ import {
   restoreStaffPushIfEnabled,
 } from "@/lib/staffPush";
 import { deployDebugLog } from "@/lib/deployDebugLog";
+import {
+  KACHING_ALERT_VOLUME,
+  KACHING_ALERT_VOLUME_URGENT,
+  KACHING_SOUND_URL,
+} from "@/lib/kachingSound";
 
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
 export const PANEL_ALERT_FLASH_EVENT = "panel-alert-flash";
 export const PANEL_URGENT_CHANGED_EVENT = "panel-urgent-changed";
-const STATIC_BEEP_URL = "/alert-beep.wav";
+const STATIC_BEEP_URL = KACHING_SOUND_URL;
 const ALERT_DIAG_KEY = "panel-alert-diag";
-const ALERT_VOLUME = 0.42;
-const ALERT_VOLUME_URGENT = 1;
+const ALERT_VOLUME = KACHING_ALERT_VOLUME;
+const ALERT_VOLUME_URGENT = KACHING_ALERT_VOLUME_URGENT;
 /** Intervalo entre bips enquanto houver pedidos em «Recebido» sem mudança de estado. */
 const PENDING_ALERT_REPEAT_MS = 4_000;
 /** Após 5 min sem aceitar — som mais rápido e alto + ecrã vermelho. */
@@ -174,7 +179,7 @@ function installVisibilityHook() {
 function getDomAudio(): HTMLAudioElement {
   if (domAudio && document.body.contains(domAudio)) return domAudio;
   domAudio = document.createElement("audio");
-  domAudio.id = "panel-alert-beep";
+  domAudio.id = "panel-alert-kaching";
   domAudio.preload = "auto";
   domAudio.setAttribute("playsinline", "true");
   domAudio.setAttribute("webkit-playsinline", "true");
