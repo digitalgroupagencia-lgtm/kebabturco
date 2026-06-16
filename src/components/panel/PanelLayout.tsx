@@ -13,6 +13,8 @@ import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { Loader2 } from "lucide-react";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { PanelStoreProvider } from "@/contexts/PanelStoreContext";
+import { StaffScreenHelpProvider } from "@/contexts/StaffScreenHelpContext";
+import StaffTopBarAlerts from "@/components/staff/StaffTopBarAlerts";
 import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import AdminMasterPanelBack from "@/components/admin/AdminMasterPanelBack";
@@ -59,6 +61,7 @@ const PanelLayout = ({ page: Page }: Props) => {
   return (
     <SelectedTenantProvider>
       <PanelStoreProvider>
+        <StaffScreenHelpProvider>
         <SidebarProvider defaultOpen={false}>
           <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
             <PanelSidebar />
@@ -66,6 +69,7 @@ const PanelLayout = ({ page: Page }: Props) => {
               <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-2">
                 <SidebarTrigger className="mr-1 sm:mr-2 shrink-0" />
                 <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1 min-w-0">{headerTitle}</h1>
+                <StaffTopBarAlerts area="panel" />
                 <AdminMasterPanelBack />
                 <PanelStoreSwitcher />
                 <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
@@ -84,6 +88,7 @@ const PanelLayout = ({ page: Page }: Props) => {
               roleData?.role === "manager") && <AdminAssistant />}
           </div>
         </SidebarProvider>
+        </StaffScreenHelpProvider>
       </PanelStoreProvider>
     </SelectedTenantProvider>
   );

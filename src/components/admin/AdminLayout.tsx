@@ -10,11 +10,11 @@ import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import { Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { canAccessGeneralAdmin } from "@/lib/projectAccess";
-import LovableRouteHintBanner from "./LovableRouteHintBanner";
-import OperationalDiagnosticsBanner from "@/components/ops/OperationalDiagnosticsBanner";
 import { nav } from "@/lib/navPaths.ts";
 import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
+import { StaffScreenHelpProvider } from "@/contexts/StaffScreenHelpContext";
+import StaffTopBarAlerts from "@/components/staff/StaffTopBarAlerts";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
 type Props = {
@@ -59,6 +59,7 @@ const AdminLayout = ({ page: Page }: Props) => {
   return (
     <SelectedTenantProvider>
       <AdminStoreProvider>
+        <StaffScreenHelpProvider>
         <SidebarProvider defaultOpen={false}>
           <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
             <AdminSidebar />
@@ -68,13 +69,12 @@ const AdminLayout = ({ page: Page }: Props) => {
                 <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">
                   {APP_NAME} · Administração
                 </h1>
+                <StaffTopBarAlerts area="admin" />
                 <StaffLanguageToggle defaultLang="pt" compact />
                 <AdminThemeToggle />
               </header>
               <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
                 <div className="max-w-full mx-auto">
-                  <OperationalDiagnosticsBanner area="admin" />
-                  <LovableRouteHintBanner />
                   {Page ? <Page /> : <Outlet />}
                 </div>
               </main>
@@ -82,6 +82,7 @@ const AdminLayout = ({ page: Page }: Props) => {
             <AdminAssistant />
           </div>
         </SidebarProvider>
+        </StaffScreenHelpProvider>
       </AdminStoreProvider>
     </SelectedTenantProvider>
   );
