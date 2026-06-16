@@ -1,0 +1,72 @@
+══════════════════════════════════════════════════════════════
+ COPIAR PARA O CHAT DE OUTRO PROJECTO (publicação lojas)
+══════════════════════════════════════════════════════════════
+
+Instruções:
+1. Duplica o bloco abaixo num ficheiro local (ex: credenciais-NOVO-APP.txt)
+2. Preenche os [CAMPOS] — NUNCA commits .p8 ou passwords no GitHub
+3. Cola no chat novo e diz: «Usa a skill publicar-apps-lojas»
+
+──────────────────────────────────────────────────────────────
+
+Olá. Preciso publicar esta app na App Store e Google Play.
+Lê a skill **publicar-apps-lojas** (Cursor) e ajuda-me passo a passo.
+
+PROJECTO
+  Nome: [____________]
+  Site: [____________]
+  GitHub: [____________]
+
+APPLE
+  Bundle ID iOS: [____________]
+  Team ID: [____________]
+  Issuer ID: [____________]
+  Key ID Codemagic: [____________]  → ficheiro local AuthKey_XXX.p8
+  Key ID APNs push: [____________]  → outro ficheiro .p8
+  App Store Connect criada: [sim/não]
+
+FIREBASE
+  Project: [____________]
+  iOS bundle: [igual Apple]
+  Android package: [____________]
+
+CODEMAGIC
+  Integration name: [____________]
+  Cert ref: [____________]_dist
+  Profile ref: [____________]_appstore
+
+GOOGLE PLAY
+  Package: [____________]
+  Testadores: [Prime Test / lista emails]
+  Data safety: [feito / falta]
+
+JÁ FEITO
+  [ ] ios/ android/ codemagic.yaml
+  [ ] Firebase
+  [ ] Apple keys
+  [ ] Play teste fechado
+
+PRECISO AGORA
+  [descrever]
+
+Regras: português simples nas respostas finais.
+
+──────────────────────────────────────────────────────────────
+ EXEMPLO PREENCHIDO — Kebab Turco (referência, jun/2026)
+──────────────────────────────────────────────────────────────
+
+  Site: kebabturco.net
+  iOS: net.kebabturco.app
+  Android: app.lovable.d04adf9611f44dc9b79cf756a89ef084
+  Team: 4QW32SBR7H
+  Issuer: 1c7161d8-4bfa-43b3-9ac0-05624727898a
+  Codemagic key: F7T5LX2NLW (AuthKey_F7T5LX2NLW.p8 local)
+  APNs key: AT74CS6WKW (AuthKey_AT74CS6WKW.p8 local)
+  Firebase: kebab-turco-gandia
+  Codemagic: kebabturco / kebabturco_dist / kebabturco_appstore
+  iPhone: enviado revisão build 1.0 (4)
+  Android: teste fechado Prime Test em análise Google
+
+Copiar ficheiros modelo do repo kebabturco:
+  codemagic.yaml, scripts/sync-ios-for-release.sh,
+  scripts/apple-developer-diagnose.mjs
