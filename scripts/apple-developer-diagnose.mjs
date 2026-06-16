@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 
-const BUNDLE_ID = "app.lovable.d04adf9611f44dc9b79cf756a89ef084";
+const BUNDLE_ID = "net.kebabturco.app";
 const APP_NAME = "Kebab Turco";
 
 function ok(msg) {

@@ -1,0 +1,79 @@
+KEBAB TURCO — PUBLICAR IPHONE NA NUVEM (sem Xcode no Mac)
+============================================================
+
+O Codemagic compila num Mac na nuvem e envia o pacote para a App Store Connect.
+Você só configura uma vez no browser.
+
+────────────────────────────────────────────────────────────
+PARTE 1 — Criar conta Codemagic (5 min)
+────────────────────────────────────────────────────────────
+
+1. Abra https://codemagic.io/signup
+2. Entre com a conta GitHub (digitalgroupagencia-lgtm / kebabturco)
+3. Autorize o acesso ao repositório kebabturco
+
+────────────────────────────────────────────────────────────
+PARTE 2 — Chave Apple no Codemagic (5 min)
+────────────────────────────────────────────────────────────
+
+1. Codemagic → ícone equipa → Team settings → Team integrations
+2. Developer Portal → Connect (ou Manage keys)
+3. Preencha EXACTAMENTE:
+   Nome da chave: kebabturco
+   Issuer ID: 1c7161d8-4bfa-43b3-9ac0-05624727898a
+   Key ID: F7T5LX2NLW
+   Ficheiro .p8: AuthKey_F7T5LX2NLW.p8 (Downloads)
+4. Save
+
+(O nome "kebabturco" tem de ser igual ao codemagic.yaml)
+
+────────────────────────────────────────────────────────────
+PARTE 3 — Certificado de distribuição (5 min)
+────────────────────────────────────────────────────────────
+
+1. Team settings → codemagic.yaml settings → Code signing identities
+2. Separador iOS certificates → Generate certificate
+3. Reference name: kebabturco_dist
+4. Tipo: Apple Distribution
+5. Chave API: kebabturco
+6. Create certificate
+
+────────────────────────────────────────────────────────────
+PARTE 4 — Perfil App Store (3 min)
+────────────────────────────────────────────────────────────
+
+1. Mesma página → separador iOS provisioning profiles
+2. Fetch profiles
+3. Escolha o perfil App Store de net.kebabturco.app
+4. Reference name: kebabturco_appstore
+5. Download selected
+
+Se net.kebabturco.app não aparecer:
+→ developer.apple.com → Identifiers → net.kebabturco.app
+→ activar Push Notifications → guardar → voltar a Fetch profiles
+
+────────────────────────────────────────────────────────────
+PARTE 5 — Ligar o repositório (3 min)
+────────────────────────────────────────────────────────────
+
+1. Codemagic → Add application → kebabturco (GitHub)
+2. Escolha: codemagic.yaml (não Flutter workflow editor)
+3. Start your first build → workflow "Kebab Turco — iPhone App Store"
+
+────────────────────────────────────────────────────────────
+PARTE 6 — Depois do build OK (App Store Connect)
+────────────────────────────────────────────────────────────
+
+1. appstoreconnect.apple.com → Kebab Turco → Distribuição → 1.0
+2. Secção Build → escolher o build que acabou de chegar
+3. Completar campos em falta
+4. Adicionar para revisão
+
+────────────────────────────────────────────────────────────
+NOTAS
+────────────────────────────────────────────────────────────
+
+• Plano gratuito Codemagic: ~500 min/mês (1 build iOS ≈ 10–20 min)
+• Não precisa de Xcode no seu Mac
+• Cada push em main dispara build automático (pode desligar depois)
+• Erro de certificado: ver Partes 3 e 4 outra vez

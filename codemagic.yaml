@@ -1,0 +1,53 @@
+# Publicar Kebab Turco na App Store sem Xcode local.
+# Guia: scripts/CODEMAGIC-PASSO-A-PASSO.txt
+
+workflows:
+  kebabturco-ios-appstore:
+    name: Kebab Turco — iPhone App Store
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: kebabturco
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: net.kebabturco.app
+      vars:
+        XCODE_SCHEME: App
+        BUNDLE_ID: net.kebabturco.app
+      node: 22
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Instalar dependências
+        script: npm ci
+
+      - name: Compilar site + sincronizar iPhone
+        script: bash scripts/sync-ios-for-release.sh
+
+      - name: Assinatura Apple (certificados na nuvem)
+        script: xcode-project use-profiles
+
+      - name: Criar pacote para a App Store
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false

@@ -37,6 +37,11 @@ echo "→ A sincronizar com o projecto iPhone (Capacitor)..."
 npx cap sync ios
 echo ""
 
+echo "→ A alinhar identificador iPhone com a App Store (net.kebabturco.app)..."
+PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
+sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"
+echo ""
+
 IOS_PROJ="$ROOT/ios/App/App.xcodeproj"
 if [[ ! -d "$IOS_PROJ" ]]; then
   echo "✗ Projecto iOS não encontrado em ios/App"
@@ -58,9 +63,8 @@ echo ""
 echo "3) developer.apple.com → Keys → criar chave Push (APNs)"
 echo "   → Carregar essa chave no Firebase (Definições → Cloud Messaging → Apple)"
 echo ""
-echo "4) appstoreconnect.apple.com → Apps → + → criar app Kebab Turco"
-echo "   • Bundle ID: app.lovable.d04adf9611f44dc9b79cf756a89ef084"
-echo "     (ou crie um ID novo tipo net.kebabturco.staff e mude no Xcode)"
+echo "4) appstoreconnect.apple.com → Apps → Kebab Turco (já existe)"
+echo "   • Bundle ID: net.kebabturco.app (igual ao Xcode)"
 echo ""
 echo "5) No Xcode: Product → Archive → Distribute App → App Store Connect"
 echo ""
