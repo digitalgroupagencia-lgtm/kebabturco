@@ -39,18 +39,31 @@ PARTE 3 — Certificado de distribuição (5 min)
 6. Create certificate
 
 ────────────────────────────────────────────────────────────
-PARTE 4 — Perfil App Store (3 min)
+PARTE 4 — Perfil App Store (OBRIGATÓRIO se build falhar perfis)
 ────────────────────────────────────────────────────────────
 
-1. Mesma página → separador iOS provisioning profiles
-2. Fetch profiles
-3. Escolha o perfil App Store de net.kebabturco.app
-4. Reference name: kebabturco_appstore
-5. Download selected
+Se o build disser "No matching profiles found":
 
-Se net.kebabturco.app não aparecer:
-→ developer.apple.com → Identifiers → net.kebabturco.app
-→ activar Push Notifications → guardar → voltar a Fetch profiles
+A) Criar perfil na Apple (browser):
+   1. developer.apple.com → Certificates, Identifiers & Profiles → Profiles
+   2. Botão + → Distribution → App Store Connect → Continue
+   3. App ID: net.kebabturco.app → Continue
+   4. Certificado: Apple Distribution (GROUP EURO BUSINESS) → Continue
+   5. Nome: Kebab Turco App Store → Generate
+
+B) Certificado no Codemagic (se ainda não fez upload do .p12):
+   1. Code signing → iOS certificates → Upload
+   2. Ficheiro .p12 descarregado do Codemagic
+   3. Password: (a que guardou ao gerar)
+   4. Reference name: kebabturco_dist
+
+C) Perfil no Codemagic:
+   1. iOS provisioning profiles → Fetch profiles
+   2. Escolher perfil App Store de net.kebabturco.app
+   3. Reference name: kebabturco_appstore
+   4. Download selected
+
+D) Start new build outra vez
 
 ────────────────────────────────────────────────────────────
 PARTE 5 — Ligar o repositório (3 min)
