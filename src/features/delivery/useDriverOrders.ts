@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { notifyOrderStatusChange } from "@/services/pushService";
 
 export type DriverOrder = {
   id: string;
@@ -55,7 +54,6 @@ export function useDriverOrders(storeId?: string) {
         const result = data as { success?: boolean; delivery_confirmation_code?: string };
         if (!result?.success) throw new Error("Não foi possível iniciar a entrega");
         toast.success("Entrega iniciada — cliente notificado");
-        void notifyOrderStatusChange(order.id, "out_for_delivery", order.order_number);
         await fetchOrders();
         return true;
       } catch (e) {
@@ -81,7 +79,6 @@ export function useDriverOrders(storeId?: string) {
         const result = data as { success?: boolean; error?: string };
         if (!result?.success) throw new Error(result?.error || "Código incorrecto");
         toast.success(`Entrega concluída — #${order.order_number}`);
-        void notifyOrderStatusChange(order.id, "delivered", order.order_number);
         await fetchOrders();
         return true;
       } catch (e) {

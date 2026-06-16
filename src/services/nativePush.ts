@@ -1,10 +1,6 @@
 /**
  * Registo de push nativo (FCM Android / APNs iOS) via Capacitor.
- * Só corre dentro do APK; no browser web é no-op (lá usa-se Web Push VAPID).
- *
- * Guarda o token na tabela push_subscriptions com platform='android'|'ios'
- * e customer_phone='__staff__'. A edge function send-push-notification
- * envia via FCM HTTP v1 quando platform != 'web'.
+ * Só corre dentro do APK; no browser web usa-se Web Push VAPID.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,25 +27,17 @@ export async function isNativePushAvailable(): Promise<boolean> {
 }
 
 async function persistTokenToBackend(token: string, storeId: string, platform: "android" | "ios") {
+  const { error } = await supabase.rpc("register_native_push_subscription", {
+    _store_id: storeId,
+    _fcm_token: token,
+    _platform: platform,
+    _customer_phone: "__staff__",
+  });
+  if (error) throw error;
   try {
-    const endpoint = `fcm://${token}`;
-    await supabase
-      .from("push_subscriptions")
-      .upsert(
-        {
-          endpoint,
-          fcm_token: token,
-          platform,
-          store_id: storeId,
-          customer_phone: "__staff__",
-          p256dh: null,
-          auth: null,
-        },
-        { onConflict: "endpoint" },
-      );
-    try { localStorage.setItem(STORAGE_KEY, token); } catch { /* ignore */ }
-  } catch (e) {
-    console.warn("[nativePush] persistTokenToBackend falhou", e);
+    localStorage.setItem(STORAGE_KEY, token);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -75,10 +63,19 @@ export async function registerNativeStaffPush(storeId: string): Promise<{
 
     return await new Promise(async (resolve) => {
       const onReg = await PushNotifications.addListener("registration", async (t) => {
-        await persistTokenToBackend(t.value, storeId, platform as "android" | "ios");
-        onReg.remove();
-        onErr.remove();
-        resolve({ ok: true, token: t.value });
+        try {
+          await persistTokenToBackend(t.value, storeId, platform as "android" | "ios");
+          onReg.remove();
+          onErr.remove();
+          resolve({ ok: true, token: t.value });
+        } catch (e) {
+          onReg.remove();
+          onErr.remove();
+          resolve({
+            ok: false,
+            reason: e instanceof Error ? e.message : String(e),
+          });
+        }
       });
       const onErr = await PushNotifications.addListener("registrationError", (err) => {
         onReg.remove();
@@ -86,9 +83,8 @@ export async function registerNativeStaffPush(storeId: string): Promise<{
         resolve({ ok: false, reason: String(err?.error ?? "register-error") });
       });
 
-      // Notificações em foreground — apenas log; o KDS já tem som/vibração próprios.
-      await PushNotifications.addListener("pushNotificationReceived", (n) => {
-        console.log("[nativePush] foreground push", n);
+      await PushNotifications.addListener("pushNotificationReceived", () => {
+        /* som local do painel cobre foreground */
       });
       await PushNotifications.addListener("pushNotificationActionPerformed", (a) => {
         const url = (a?.notification?.data as { url?: string })?.url;
@@ -120,16 +116,19 @@ export async function enableKeepAwake(): Promise<void> {
       await KeepAwake.keepAwake();
       return;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
-  // Fallback browser: Screen Wake Lock API
   try {
     if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
       await (navigator as unknown as { wakeLock: { request: (t: string) => Promise<unknown> } })
         .wakeLock.request("screen")
         .catch(() => null);
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function disableKeepAwake(): Promise<void> {
@@ -139,5 +138,7 @@ export async function disableKeepAwake(): Promise<void> {
       const { KeepAwake } = await import("@capacitor-community/keep-awake");
       await KeepAwake.allowSleep();
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }

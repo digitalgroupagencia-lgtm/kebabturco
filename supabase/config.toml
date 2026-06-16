@@ -47,3 +47,6 @@ verify_jwt = false
 # A Stripe envia eventos sem login Supabase — só com assinatura stripe-signature.
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.run-marketing-campaigns]
+verify_jwt = false

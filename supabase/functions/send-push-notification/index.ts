@@ -234,7 +234,7 @@ function isStaffAudienceRow(row: PushSubRow): boolean {
 }
 
 function isMarketingAudienceRow(row: PushSubRow): boolean {
-  return row.customer_phone === MARKETING_PHONE_TAG || row.order_id != null;
+  return row.customer_phone === MARKETING_PHONE_TAG;
 }
 
 function selectAudienceRows(

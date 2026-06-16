@@ -28,7 +28,6 @@ import {
   formatDeliveryComplement,
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
-import { notifyStaffNewOrder } from "@/services/pushService";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
@@ -594,8 +593,6 @@ const PaymentScreen = () => {
       createdAt: new Date().toISOString(),
       itemCount: items.length,
     });
-
-    void notifyStaffNewOrder(storeId, result.order_id, result.order_number);
 
     await enableCustomerOrderAlerts();
     await subscribePush({

@@ -17,7 +17,6 @@ import {
 } from "@/lib/orderKitchenRules";
 import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderService";
 import { cancelOrderWithRefund } from "@/services/orderRefund";
-import { notifyOrderStatusChange } from "@/services/pushService";
 import { tryPrintPanelOrder, reprintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
 import {
@@ -269,9 +268,6 @@ export function usePanelOrders(storeId: string | undefined) {
                 void tryPrintPanelOrder(storeId!, row, items);
               })();
             }
-            if (old?.payment_status !== "paid" && row.payment_status === "paid") {
-              void notifyOrderStatusChange(row.id, "payment_paid", row.order_number);
-            }
           },
         )
         .on(
@@ -394,7 +390,6 @@ export function usePanelOrders(storeId: string | undefined) {
 
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...(updated as PanelOrder) } : o)));
       toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
-      void notifyOrderStatusChange(order.id, newStatus, order.order_number);
       if (prevStatus === "pending") {
         acknowledgePendingOrderAlert(order.id);
       }
@@ -439,7 +434,6 @@ export function usePanelOrders(storeId: string | undefined) {
     }
 
     acknowledgePendingOrderAlert(orderId);
-    await notifyOrderStatusChange(orderId, "cancelled", order.order_number);
   }, [orders, storeId]);
 
   const setPrepMinutes = useCallback(async (order: PanelOrder, minutes: number) => {
@@ -477,7 +471,6 @@ export function usePanelOrders(storeId: string | undefined) {
         const items = itemsByOrder[order.id] || [];
         void tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid" }, items);
         toast.success(`Pagamento registado — #${order.order_number}`);
-        void notifyOrderStatusChange(order.id, "payment_paid", order.order_number);
         return true;
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");

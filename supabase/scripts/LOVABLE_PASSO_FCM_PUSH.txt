@@ -1,0 +1,20 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- LOVABLE → Database → SQL editor → colar e executar
+-- Push nativo Android (app instalada) — passo FCM
+-- ═══════════════════════════════════════════════════════════════════════════
+--
+-- 1) Firebase Console → projecto kebab-turco-gandia
+--    → Definições do projecto → Contas de serviço → Gerar nova chave privada (JSON)
+--
+-- 2) Lovable Cloud → Segredos → criar:
+--    Nome: FCM_SERVICE_ACCOUNT_JSON
+--    Valor: colar o JSON completo numa única linha
+--
+-- 3) Verificar (browser ou terminal):
+--    POST .../send-push-notification  body {"ping":true}
+--    → fcmConfigured: true
+--
+-- 4) Na app instalada: Painel → Definições → activar notificações
+--    (regista token via register_native_push_subscription)
+--
+-- iPhone: requer Apple Developer + APNs ligado ao Firebase (passo separado).

@@ -1,5 +1,5 @@
 /**
- * Gera public/sounds/kaching.wav — «Ding!» alegre + moedas / caixa registadora.
+ * Gera public/sounds/kaching.wav — efeito clássico de caixa registadora (ca-ching).
  * Correr: node scripts/generate-kaching-wav.mjs
  */
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -11,75 +11,79 @@ const outDir = join(__dirname, "..", "public", "sounds");
 const outPath = join(outDir, "kaching.wav");
 
 const sampleRate = 44100;
-const duration = 0.58;
+const duration = 0.85;
 const samples = Math.floor(sampleRate * duration);
 const data = new Float32Array(samples);
 
-/** «Ding» metálico alegre (sino de notificação). */
-function cheerfulDing(t, start, freq, amp) {
+function envAttackDecay(t, start, attack, decay, sustain = 0.55, length = 0.35) {
   const local = t - start;
-  if (local < 0 || local > 0.16) return 0;
-  const attack = Math.min(1, local * 80);
-  const env = attack * Math.exp(-local * 11);
+  if (local < 0 || local > length) return 0;
+  const a = Math.min(1, local / attack);
+  const d = Math.exp(-Math.max(0, local - attack) * decay);
+  return a * (sustain + (1 - sustain) * d);
+}
+
+/** «Ca» — golpe metálico grave da gaveta. */
+function registerCa(t, start) {
+  const local = t - start;
+  if (local < 0 || local > 0.12) return 0;
+  const e = envAttackDecay(t, start, 0.004, 28, 0.4, 0.12);
+  const thud =
+    Math.sin(2 * Math.PI * 180 * local) * 0.35 +
+    Math.sin(2 * Math.PI * 360 * local) * 0.2;
+  const metal = Math.sin(2 * Math.PI * 920 * local) * Math.exp(-local * 35) * 0.45;
+  return (thud + metal) * e * 0.75;
+}
+
+/** «Ching» — sino metálico brilhante da caixa (o som icónico). */
+function registerChing(t, start, freq, amp) {
+  const local = t - start;
+  if (local < 0 || local > 0.55) return 0;
+  const e = envAttackDecay(t, start, 0.003, 5.5, 0.35, 0.55);
   const bell =
-    Math.sin(2 * Math.PI * freq * local) * 0.58 +
-    Math.sin(2 * Math.PI * freq * 2.76 * local) * 0.28 +
-    Math.sin(2 * Math.PI * freq * 5.4 * local) * 0.12 +
-    Math.sin(2 * Math.PI * freq * 8.2 * local) * 0.04;
-  return bell * env * amp;
+    Math.sin(2 * Math.PI * freq * local) * 0.55 +
+    Math.sin(2 * Math.PI * freq * 2.01 * local) * 0.28 +
+    Math.sin(2 * Math.PI * freq * 3.04 * local) * 0.12 +
+    Math.sin(2 * Math.PI * freq * 4.8 * local) * 0.05;
+  return bell * e * amp;
 }
 
-/** Ping de moeda (freq Hz, início s, volume, decay). */
-function coinPing(t, start, freq, amp, decay) {
+/** Moeda a cair no tabuleiro. */
+function coinDrop(t, start, freq, amp) {
   const local = t - start;
-  if (local < 0 || local > 0.18) return 0;
-  const env = Math.exp(-local * decay);
+  if (local < 0 || local > 0.14) return 0;
+  const e = Math.exp(-local * 22);
   const ping =
-    Math.sin(2 * Math.PI * freq * local) * 0.7 +
-    Math.sin(2 * Math.PI * freq * 2.05 * local) * 0.2 +
-    Math.sin(2 * Math.PI * freq * 3.1 * local) * 0.06;
-  const clink = (Math.random() * 2 - 1) * Math.exp(-local * (decay * 1.5)) * 0.1;
-  return (ping * env + clink) * amp;
+    Math.sin(2 * Math.PI * freq * local) * 0.65 +
+    Math.sin(2 * Math.PI * freq * 2.1 * local) * 0.2;
+  return ping * e * amp;
 }
-
-const coinDrops = [
-  [0.1, 3680, 0.55, 21],
-  [0.13, 3120, 0.48, 18],
-  [0.155, 4280, 0.42, 23],
-  [0.18, 2860, 0.36, 17],
-  [0.205, 3960, 0.3, 22],
-];
 
 for (let i = 0; i < samples; i++) {
   const t = i / sampleRate;
   let s = 0;
 
-  // «Ding!» inicial — curto e alegre
-  s += cheerfulDing(t, 0.0, 1174, 0.92);
-  s += cheerfulDing(t, 0.002, 1760, 0.18);
+  // Ca-ching clássico: «ca» + «ching» duplo (como caixa registadora vintage)
+  s += registerCa(t, 0.02);
+  s += registerChing(t, 0.08, 2480, 0.95);
+  s += registerChing(t, 0.11, 3720, 0.55);
+  s += registerChing(t, 0.22, 2100, 0.72);
+  s += registerChing(t, 0.25, 3150, 0.38);
 
-  for (const [start, freq, amp, decay] of coinDrops) {
-    s += coinPing(t, start, freq, amp, decay);
+  // Moedas a confirmar a venda
+  s += coinDrop(t, 0.38, 3400, 0.42);
+  s += coinDrop(t, 0.42, 2850, 0.32);
+  s += coinDrop(t, 0.455, 4100, 0.28);
+
+  // Eco final de caixa
+  if (t >= 0.5 && t < 0.78) {
+    const local = t - 0.5;
+    const e = Math.exp(-local * 8);
+    s += Math.sin(2 * Math.PI * 1680 * local) * e * 0.18;
+    s += Math.sin(2 * Math.PI * 2520 * local) * e * 0.1;
   }
 
-  // «Ching» de caixa registadora (confirmação de venda)
-  if (t >= 0.28 && t < 0.52) {
-    const local = t - 0.28;
-    const env = Math.exp(-local * 7.5);
-    s += Math.sin(2 * Math.PI * 1620 * local) * env * 0.42;
-    s += Math.sin(2 * Math.PI * 3240 * local) * env * 0.22;
-    s += Math.sin(2 * Math.PI * 4860 * local) * env * 0.08;
-  }
-
-  // Moeda final no tabuleiro
-  if (t >= 0.38 && t < 0.56) {
-    const local = t - 0.38;
-    const env = Math.exp(-local * 10);
-    s += Math.sin(2 * Math.PI * 2380 * local) * env * 0.2;
-    s += (Math.random() * 2 - 1) * env * 0.05;
-  }
-
-  data[i] = Math.max(-1, Math.min(1, s * 0.85));
+  data[i] = Math.max(-1, Math.min(1, s * 0.82));
 }
 
 function encodeWav(floatSamples) {

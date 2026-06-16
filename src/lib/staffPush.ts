@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { subscribePushWithLogging } from "@/lib/push/pushSubscriptionCore";
 import { pushLog } from "@/lib/push/pushLogger";
+import { isNativePushAvailable, registerNativeStaffPush } from "@/services/nativePush";
 
 export const STAFF_PUSH_TAG = "__staff__";
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
@@ -29,7 +30,7 @@ export function setStaffPushEnabled(enabled: boolean) {
   }
 }
 
-export function isStaffPushSupported(): boolean {
+function isStaffWebPushSupported(): boolean {
   return Boolean(
     getVapidPublicKey() &&
       typeof window !== "undefined" &&
@@ -39,8 +40,25 @@ export function isStaffPushSupported(): boolean {
   );
 }
 
-/** Subscrição push da equipa do restaurante (store_id, sem order_id). */
+export function isStaffPushSupported(): boolean {
+  if (typeof window !== "undefined") {
+    const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (cap?.isNativePlatform?.()) return true;
+  }
+  return isStaffWebPushSupported();
+}
+
+/** Subscrição push da equipa — app nativa (FCM) ou browser (VAPID). */
 export async function subscribeStaffPush(storeId: string): Promise<{ ok: boolean; error?: string }> {
+  if (await isNativePushAvailable()) {
+    const native = await registerNativeStaffPush(storeId);
+    if (native.ok) {
+      setStaffPushEnabled(true);
+      return { ok: true };
+    }
+    return { ok: false, error: native.reason ?? "Push nativo indisponível" };
+  }
+
   const result = await subscribePushWithLogging({
     context: "staff",
     storeId,
@@ -78,7 +96,11 @@ export async function unsubscribeStaffPush(): Promise<void> {
 
 /** Re-regista push se o utilizador já tinha activado (ex.: após reload). */
 export async function restoreStaffPushIfEnabled(storeId: string): Promise<void> {
-  if (!storeId || !isStaffPushEnabled() || !isStaffPushSupported()) return;
-  if (Notification.permission !== "granted") return;
+  if (!storeId || !isStaffPushEnabled()) return;
+  if (await isNativePushAvailable()) {
+    await registerNativeStaffPush(storeId);
+    return;
+  }
+  if (!isStaffWebPushSupported() || Notification.permission !== "granted") return;
   await subscribeStaffPush(storeId);
 }
