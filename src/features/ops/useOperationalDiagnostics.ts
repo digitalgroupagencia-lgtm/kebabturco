@@ -15,6 +15,7 @@ import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 import { KEBAB_FALLBACK_STORE_ID } from "@/lib/storeResolution";
 import { fetchStorePayoutIntake } from "@/services/payoutIntakeService";
 import { APP_BUILD_ID, GIT_SHA, isRunningLatestPublishedVersion } from "@/lib/appCacheBust";
+import { purgeStalePaymentAuditFromStorage } from "@/services/fullAppAuditService";
 
 export type DiagnosticStatus = "ok" | "warn" | "fail" | "pending";
 
@@ -786,6 +787,11 @@ export function useOperationalDiagnostics() {
     }
 
     await wait(200);
+
+    if (results.find((i) => i.id === "stripe-connect")?.status === "ok") {
+      purgeStalePaymentAuditFromStorage();
+    }
+
     setItems(results);
     setLastRun(new Date());
     setRunning(false);

@@ -1,55 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOperationalDiagnostics } from "@/features/ops/useOperationalDiagnostics";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import {
-  issuesOnly,
-  loadStoredFullAuditReport,
-  type FullAuditReport,
-} from "@/services/fullAppAuditService";
 import { probeStaffAuthAudit } from "@/lib/diagnostics/staffAuthAuditProbe";
 import type { AuditFinding } from "@/services/adminSystemAudit";
 
 type Area = "panel" | "admin";
 
-function severityRank(s: AuditFinding["severity"]): number {
-  return { critical: 0, warning: 1, suggestion: 2, ok: 3 }[s];
-}
+type TopIssue = Pick<AuditFinding, "label" | "detail" | "action">;
 
 export function useStaffDiagnosticsAlert(area: Area = "panel") {
-  const { failCount, warnCount, running, run, lastRun } = useOperationalDiagnostics();
+  const { warnCount, running, run, lastRun, criticalIssues } = useOperationalDiagnostics();
   const { storeId } = useAdminStoreId();
-  const [storedReport, setStoredReport] = useState<FullAuditReport | null>(() =>
-    loadStoredFullAuditReport(),
-  );
   const [staffFindings, setStaffFindings] = useState<AuditFinding[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
 
   useEffect(() => {
-    const refresh = () => setStoredReport(loadStoredFullAuditReport());
-    refresh();
-    window.addEventListener("kebabturco:full-audit-updated", refresh);
-    return () => window.removeEventListener("kebabturco:full-audit-updated", refresh);
-  }, [lastRun]);
+    void run();
+  }, [run, storeId]);
 
   useEffect(() => {
-    if (!lastRun && !storedReport) void run();
-  }, [lastRun, run, storedReport]);
-
-  useEffect(() => {
-    const stored = loadStoredFullAuditReport();
-    const storedCritical =
-      stored?.allFindings.filter(
-        (f) =>
-          f.severity === "critical" &&
-          (f.panel === "backend" || f.category === "team" || f.id.startsWith("rpc-missing-manager_")),
-      ) ?? [];
-
-    if (storedCritical.length > 0) {
-      setStaffFindings(storedCritical);
+    if (!storeId) {
+      setStaffFindings([]);
       return;
     }
-
-    if (!storeId) return;
     let active = true;
     setStaffLoading(true);
     void probeStaffAuthAudit(storeId)
@@ -62,25 +35,24 @@ export function useStaffDiagnosticsAlert(area: Area = "panel") {
     return () => {
       active = false;
     };
-  }, [storeId, lastRun, storedReport?.ranAt]);
-
-  const useAuditReport = Boolean(storedReport);
-  const auditIssues = useAuditReport ? issuesOnly(storedReport!) : [];
-  const auditCritical = storedReport?.summary.critical ?? 0;
-  const auditWarn = storedReport?.summary.warning ?? 0;
+  }, [storeId, lastRun]);
 
   const staffCriticalCount = staffFindings.length;
-  const totalFail = useAuditReport ? auditCritical : failCount + staffCriticalCount;
-  const totalWarn = useAuditReport ? auditWarn : warnCount;
+  const opsCriticalCount = criticalIssues.length;
+  const totalFail = opsCriticalCount + staffCriticalCount;
+  const totalWarn = warnCount;
 
-  const topIssue = useMemo(() => {
-    if (useAuditReport && auditIssues.length > 0) {
-      return [...auditIssues].sort((a, b) => severityRank(a.severity) - severityRank(b.severity))[0];
+  const topIssue = useMemo((): TopIssue | null => {
+    const topOps = criticalIssues[0];
+    if (topOps) {
+      return { label: topOps.label, detail: topOps.detail, action: topOps.action };
     }
     const topStaff = staffFindings[0];
-    if (topStaff) return topStaff;
+    if (topStaff) {
+      return { label: topStaff.label, detail: topStaff.detail, action: topStaff.action };
+    }
     return null;
-  }, [useAuditReport, auditIssues, staffFindings]);
+  }, [criticalIssues, staffFindings]);
 
   const message = useMemo(() => {
     if (totalFail > 0) {
@@ -90,8 +62,7 @@ export function useStaffDiagnosticsAlert(area: Area = "panel") {
     return null;
   }, [totalFail, totalWarn]);
 
-  const loading =
-    (running || staffLoading) && !lastRun && !storedReport && staffFindings.length === 0;
+  const loading = (running || staffLoading) && !lastRun;
 
   return {
     area,
@@ -102,6 +73,5 @@ export function useStaffDiagnosticsAlert(area: Area = "panel") {
     message,
     topIssue,
     staffCriticalCount,
-    useAuditReport,
   };
 }

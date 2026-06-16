@@ -44,7 +44,6 @@ function DiagnosticsAlertButton({ area }: { area: "admin" | "panel" }) {
     message,
     topIssue,
     staffCriticalCount,
-    useAuditReport,
   } = useStaffDiagnosticsAlert(area);
 
   if (!visible) return null;
@@ -86,7 +85,7 @@ function DiagnosticsAlertButton({ area }: { area: "admin" | "panel" }) {
                 )}
               </div>
             )}
-            {area === "admin" && staffCriticalCount > 0 && !useAuditReport && (
+            {area === "admin" && staffCriticalCount > 0 && (
               <p className="text-xs text-muted-foreground">
                 Inclui verificação de login da equipa e servidores críticos.
               </p>

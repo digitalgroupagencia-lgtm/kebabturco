@@ -380,6 +380,14 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
   if (!storeId) return [];
   const findings: AuditFinding[] = [];
 
+  try {
+    await supabase.functions.invoke("stripe-connect-onboard", {
+      body: { mode: "sync_status", storeId },
+    });
+  } catch {
+    /* ignora — usa perfil já guardado */
+  }
+
   const store = await fetchStoreFinancialProfile(storeId);
 
   if (!store?.stripe_connect_account_id) {

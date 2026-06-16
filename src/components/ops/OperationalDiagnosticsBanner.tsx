@@ -5,11 +5,6 @@ import { useOperationalDiagnostics } from "@/features/ops/useOperationalDiagnost
 import { nav } from "@/lib/navPaths";
 import { Button } from "@/components/ui/button";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import {
-  issuesOnly,
-  loadStoredFullAuditReport,
-  type FullAuditReport,
-} from "@/services/fullAppAuditService";
 import { probeStaffAuthAudit } from "@/lib/diagnostics/staffAuthAuditProbe";
 import type { AuditFinding } from "@/services/adminSystemAudit";
 
@@ -18,46 +13,22 @@ type Props = {
   area?: "panel" | "admin";
 };
 
-function severityRank(s: AuditFinding["severity"]): number {
-  return { critical: 0, warning: 1, suggestion: 2, ok: 3 }[s];
-}
-
 const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
-  const { failCount, warnCount, running, run, lastRun } = useOperationalDiagnostics();
+  const { warnCount, running, run, lastRun, criticalIssues } = useOperationalDiagnostics();
   const { storeId } = useAdminStoreId();
   const diagnosticsPath = nav.admin("diagnostics");
-  const [storedReport, setStoredReport] = useState<FullAuditReport | null>(() =>
-    loadStoredFullAuditReport(),
-  );
   const [staffFindings, setStaffFindings] = useState<AuditFinding[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
 
   useEffect(() => {
-    const refresh = () => setStoredReport(loadStoredFullAuditReport());
-    refresh();
-    window.addEventListener("kebabturco:full-audit-updated", refresh);
-    return () => window.removeEventListener("kebabturco:full-audit-updated", refresh);
-  }, [lastRun]);
+    void run();
+  }, [run, storeId]);
 
   useEffect(() => {
-    if (!lastRun && !storedReport) void run();
-  }, [lastRun, run, storedReport]);
-
-  useEffect(() => {
-    const stored = loadStoredFullAuditReport();
-    const storedCritical =
-      stored?.allFindings.filter(
-        (f) =>
-          f.severity === "critical" &&
-          (f.panel === "backend" || f.category === "team" || f.id.startsWith("rpc-missing-manager_")),
-      ) ?? [];
-
-    if (storedCritical.length > 0) {
-      setStaffFindings(storedCritical);
+    if (!storeId) {
+      setStaffFindings([]);
       return;
     }
-
-    if (!storeId) return;
     let active = true;
     setStaffLoading(true);
     void probeStaffAuthAudit(storeId)
@@ -70,25 +41,19 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
     return () => {
       active = false;
     };
-  }, [storeId, lastRun, storedReport?.ranAt]);
-
-  const useAuditReport = Boolean(storedReport);
-  const auditIssues = useAuditReport ? issuesOnly(storedReport!) : [];
-  const auditCritical = storedReport?.summary.critical ?? 0;
-  const auditWarn = storedReport?.summary.warning ?? 0;
+  }, [storeId, lastRun]);
 
   const staffCriticalCount = staffFindings.length;
-  const totalFail = useAuditReport ? auditCritical : failCount + staffCriticalCount;
-  const totalWarn = useAuditReport ? auditWarn : warnCount;
+  const totalFail = criticalIssues.length + staffCriticalCount;
+  const totalWarn = warnCount;
 
   const topIssue = useMemo(() => {
-    if (useAuditReport && auditIssues.length > 0) {
-      return [...auditIssues].sort((a, b) => severityRank(a.severity) - severityRank(b.severity))[0];
+    const topOps = criticalIssues[0];
+    if (topOps) {
+      return { label: topOps.label, detail: topOps.detail, action: topOps.action };
     }
-    const topStaff = staffFindings[0];
-    if (topStaff) return topStaff;
-    return null;
-  }, [useAuditReport, auditIssues, staffFindings]);
+    return staffFindings[0] ?? null;
+  }, [criticalIssues, staffFindings]);
 
   const bannerMessage = useMemo(() => {
     if (totalFail > 0) {
@@ -98,7 +63,7 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
     return null;
   }, [totalFail, totalWarn]);
 
-  if ((running || staffLoading) && !lastRun && !storedReport && staffFindings.length === 0) {
+  if ((running || staffLoading) && !lastRun) {
     return (
       <div className="mb-4 rounded-xl border bg-muted/40 px-4 py-3 flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -136,7 +101,7 @@ const OperationalDiagnosticsBanner = ({ area = "panel" }: Props) => {
               )}
             </>
           )}
-          {area === "admin" && staffCriticalCount > 0 && !useAuditReport && (
+          {area === "admin" && staffCriticalCount > 0 && (
             <p className="text-xs mt-1 opacity-80">
               Inclui verificação de login da equipa e servidores críticos.
             </p>

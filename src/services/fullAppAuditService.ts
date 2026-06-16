@@ -200,6 +200,39 @@ export function loadStoredFullAuditReport(): FullAuditReport | null {
   }
 }
 
+function isStalePaymentAuditFinding(f: AuditFinding): boolean {
+  if (f.severity === "ok") return false;
+  return (
+    f.category === "payments" ||
+    f.id.startsWith("legacy-stripe") ||
+    f.id === "payments-no-stripe" ||
+    f.id === "payments-stripe-incomplete"
+  );
+}
+
+/** Remove avisos de recebimentos obsoletos do relatório guardado no browser. */
+export function purgeStalePaymentAuditFromStorage(): boolean {
+  try {
+    const stored = loadStoredFullAuditReport();
+    if (!stored) return false;
+    const remaining = stored.allFindings.filter((f) => !isStalePaymentAuditFinding(f));
+    if (remaining.length === stored.allFindings.length) return false;
+    const updated: FullAuditReport = {
+      ...stored,
+      allFindings: remaining,
+      summary: summarize(remaining),
+      sections: groupByPanel(remaining),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("kebabturco:full-audit-updated"));
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function issuesOnly(report: FullAuditReport): AuditFinding[] {
   return report.allFindings.filter((f) => f.severity !== "ok");
 }
