@@ -12,13 +12,14 @@ alwaysApply: true
 - Nos resumos, dizer só **o que a pessoa vê ou sente** ao usar a app.
 - Evitar: nomes de ficheiros, pastas, código, jargão técnico e palavras em inglês de programação (salvo nomes próprios como Lovable, GitHub, Stripe).
 
-## Git — commit e push
+## Git — commit, merge main e push (OBRIGATÓRIO)
 
-- Depois de alterações de código concluídas: **commit + push para `main`** automaticamente.
+- Depois de alterações concluídas: **commit → merge para `main` (se estiver noutra branch) → push `origin/main` → push `lovable/main`** — **na mesma resposta**, **sem o utilizador pedir**.
+- **Nunca** terminar só com push numa branch `cursor/...` — o código tem de acabar em **`main`** nos dois remotes.
 - **Não criar branch** separada, salvo se o utilizador pedir explicitamente.
 - **Não fazer push** só se o utilizador disser para não enviar.
-- Mensagem de commit: 1–2 frases, foco no **porquê**, em português ou inglês claro (seguir estilo do repositório).
-- Após push: avisar **«Sync + Publish na Lovable»** para ver em produção.
+- Mensagem de commit: 1–2 frases, foco no **porquê**.
+- Após push: avisar **«Já está no main — falta Publish no Lovable»**.
 
 ## Lovable
 
