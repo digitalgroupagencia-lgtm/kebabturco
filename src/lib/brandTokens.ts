@@ -95,7 +95,8 @@ export function winePaletteFromHex(hex: string): {
 }
 
 export function gradientHeaderFromPalette(p: ReturnType<typeof winePaletteFromHex>): string {
-  return `linear-gradient(180deg, hsl(${p.wineLight}) 0%, hsl(${p.wineDark}) 100%)`;
+  // Solid wine-dark — barra superior e header devem ter UMA cor só (sem gradiente).
+  return `hsl(${p.wineDark})`;
 }
 
 export function gradientPrimaryFromPalette(p: ReturnType<typeof winePaletteFromHex>): string {
