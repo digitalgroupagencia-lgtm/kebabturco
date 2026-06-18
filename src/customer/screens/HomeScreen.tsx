@@ -132,7 +132,7 @@ const HomeScreen = () => {
         className="pointer-events-none fixed inset-x-0 top-0 z-[35] md:hidden"
         style={{
           height: "env(safe-area-inset-top)",
-          background: "var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%))",
+          background: "var(--gradient-header, #5C1419)",
         }}
       />
       <header
