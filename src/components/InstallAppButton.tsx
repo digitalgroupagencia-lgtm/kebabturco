@@ -1,13 +1,20 @@
-import { useState } from "react";
-import { Download, Share, Plus, X } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { isAdminPreviewMode } from "@/lib/tenantPreview";
 
-const TEXT: Record<string, { install: string; iosTitle: string; s1: string; s2: string; s3: string; close: string }> = {
-  pt: { install: "Instalar app", iosTitle: "Instalar no iPhone", s1: "Toque em Compartilhar", s2: "Toque em 'Adicionar à Tela de Início'", s3: "Toque em 'Adicionar'", close: "Fechar" },
-  en: { install: "Install app", iosTitle: "Install on iPhone", s1: "Tap Share", s2: "Tap 'Add to Home Screen'", s3: "Tap 'Add'", close: "Close" },
-  es: { install: "Instalar app", iosTitle: "Instalar en iPhone", s1: "Toca Compartir", s2: "Toca 'Añadir a pantalla de inicio'", s3: "Toca 'Añadir'", close: "Cerrar" },
-  fr: { install: "Installer l'app", iosTitle: "Installer sur iPhone", s1: "Touchez Partager", s2: "Touchez 'Sur l'écran d'accueil'", s3: "Touchez 'Ajouter'", close: "Fermer" },
+/**
+ * Links das lojas oficiais do Kebab Turco.
+ * Atualize aqui se as URLs mudarem.
+ */
+const APP_STORE_URL =
+  "https://apps.apple.com/app/kebab-turco/id6753089684";
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=app.kebabturco.client";
+
+const TEXT: Record<string, { appStore: string; playStore: string }> = {
+  pt: { appStore: "App Store", playStore: "Google Play" },
+  en: { appStore: "App Store", playStore: "Google Play" },
+  es: { appStore: "App Store", playStore: "Google Play" },
+  fr: { appStore: "App Store", playStore: "Google Play" },
 };
 
 interface Props {
@@ -15,78 +22,90 @@ interface Props {
   variant?: "primary" | "subtle";
 }
 
+/** Detecta se já estamos dentro do app nativo (Capacitor). */
+function isNativeApp(): boolean {
+  if (typeof window === "undefined") return false;
+  const cap = (window as any).Capacitor;
+  if (cap?.isNativePlatform?.()) return true;
+  if (cap?.platform && cap.platform !== "web") return true;
+  // Fallback por user-agent (Capacitor WebView injeta " kebabturco/" via plugin se configurado)
+  return /CapacitorApp|kebabturco-native/i.test(navigator.userAgent || "");
+}
+
 const InstallAppButton = ({ lang = "es", variant = "primary" }: Props) => {
-  const { canInstall, isIOS, isStandalone, promptInstall } = useInstallPrompt();
-  const [showIOS, setShowIOS] = useState(false);
+  const { isStandalone } = useInstallPrompt();
   const t = TEXT[lang] || TEXT.es;
 
   if (isAdminPreviewMode()) return null;
+  // Já instalado (PWA standalone) ou já dentro do app nativo → não mostrar nada
   if (isStandalone) return null;
-  if (!canInstall && !isIOS) return null;
-
-  const handleClick = async () => {
-    if (canInstall) {
-      await promptInstall();
-    } else if (isIOS) {
-      setShowIOS(true);
-    }
-  };
+  if (isNativeApp()) return null;
 
   const isSubtle = variant === "subtle";
 
   return (
-    <>
-      <button
-        onClick={handleClick}
+    <div className={`w-full max-w-md mx-auto flex items-center justify-center gap-2 ${isSubtle ? "" : ""}`}>
+      <a
+        href={APP_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t.appStore}
         className={
           isSubtle
-            ? "flex items-center justify-center gap-1.5 w-full max-w-md mx-auto px-4 py-2 rounded-xl border border-border/35 bg-transparent text-muted-foreground font-medium text-xs active:scale-[0.98] transition-transform touch-action-manipulation hover:bg-secondary/30"
-            : "flex items-center justify-center gap-2 w-full max-w-md mx-auto px-5 py-3 rounded-2xl bg-success text-success-foreground font-bold text-sm shadow-[0_8px_24px_-8px_hsl(var(--success)/0.5)] active:scale-[0.97] transition-transform touch-action-manipulation"
+            ? "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border/35 bg-transparent text-muted-foreground text-xs font-medium active:scale-[0.98] transition-transform"
+            : "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl bg-black text-white shadow-[0_8px_22px_-10px_rgba(0,0,0,0.55)] active:scale-[0.97] transition-transform"
         }
       >
-        <Download className={isSubtle ? "w-3.5 h-3.5 opacity-70" : "w-4 h-4"} strokeWidth={isSubtle ? 2 : 2.5} />
-        {t.install}
-      </button>
-
-      {showIOS && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in"
-          onClick={() => setShowIOS(false)}
+        <svg
+          viewBox="0 0 384 512"
+          aria-hidden
+          className={isSubtle ? "w-4 h-4" : "w-5 h-5"}
+          fill="currentColor"
         >
-          <div
-            className="bg-card rounded-3xl shadow-2xl w-full max-w-md p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowIOS(false)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-secondary flex items-center justify-center"
-              aria-label={t.close}
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <h2 className="text-xl font-black text-foreground mb-5 pr-10">{t.iosTitle}</h2>
-            <div className="space-y-4">
-              <Step n={1} icon={<Share className="w-5 h-5 text-primary" />} text={t.s1} />
-              <Step n={2} icon={<Plus className="w-5 h-5 text-primary" />} text={t.s2} />
-              <Step n={3} icon={<Download className="w-5 h-5 text-primary" />} text={t.s3} />
-            </div>
-          </div>
+          <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zM260.6 110.1c25.6-30.4 23.3-58 22.5-67.9-22.6 1.3-48.7 15.4-63.6 32.7-16.4 18.6-26 41.6-23.9 67.4 24.4 1.9 46.8-11.7 65-32.2z" />
+        </svg>
+        <div className="flex flex-col items-start leading-tight">
+          <span className={isSubtle ? "text-[9px] uppercase opacity-70" : "text-[9px] uppercase opacity-80"}>
+            Download
+          </span>
+          <span className={isSubtle ? "text-[11px] font-bold" : "text-sm font-bold"}>
+            {t.appStore}
+          </span>
         </div>
-      )}
-    </>
+      </a>
+
+      <a
+        href={PLAY_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t.playStore}
+        className={
+          isSubtle
+            ? "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border/35 bg-transparent text-muted-foreground text-xs font-medium active:scale-[0.98] transition-transform"
+            : "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl bg-black text-white shadow-[0_8px_22px_-10px_rgba(0,0,0,0.55)] active:scale-[0.97] transition-transform"
+        }
+      >
+        <svg
+          viewBox="0 0 512 512"
+          aria-hidden
+          className={isSubtle ? "w-4 h-4" : "w-5 h-5"}
+        >
+          <path fill="#34A853" d="M325.3 234.3 104.6 13l280.8 161.2-60.1 60.1z" />
+          <path fill="#FBBC04" d="m104.6 499 220.7-221.3-60.1-60.1L104.6 499z" />
+          <path fill="#4285F4" d="m480.2 256.2-94.8-54.5-67.6 67.6 67.5 67.5 95-54.5c28.4-16.5 28.4-9.7-.1-26.1z" />
+          <path fill="#EA4335" d="M104.6 13c-4.4 1.6-8.4 3.8-11.7 6.4l216.5 216.4L385.4 174.4 104.6 13z" />
+        </svg>
+        <div className="flex flex-col items-start leading-tight">
+          <span className={isSubtle ? "text-[9px] uppercase opacity-70" : "text-[9px] uppercase opacity-80"}>
+            Get it on
+          </span>
+          <span className={isSubtle ? "text-[11px] font-bold" : "text-sm font-bold"}>
+            {t.playStore}
+          </span>
+        </div>
+      </a>
+    </div>
   );
 };
-
-const Step = ({ n, icon, text }: { n: number; icon: React.ReactNode; text: string }) => (
-  <div className="flex items-center gap-3">
-    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-black flex items-center justify-center shrink-0">
-      {n}
-    </div>
-    <div className="flex-1 flex items-center gap-2">
-      <span className="text-sm text-foreground">{text}</span>
-      <span className="ml-auto">{icon}</span>
-    </div>
-  </div>
-);
 
 export default InstallAppButton;

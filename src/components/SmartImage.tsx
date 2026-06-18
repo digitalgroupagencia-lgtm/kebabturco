@@ -102,7 +102,7 @@ export default function SmartImage({
         loading={priority ? "eager" : "lazy"}
         // @ts-ignore — fetchpriority é válido em HTML mas o tipo ainda não cobre
         fetchpriority={priority ? "high" : "auto"}
-        decoding="async"
+        decoding={priority ? "sync" : "async"}
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (!errored) setErrored(true);
@@ -110,7 +110,7 @@ export default function SmartImage({
         }}
         draggable={false}
         className={cn(
-          "h-full w-full object-cover object-center transition-opacity duration-300 ease-out",
+          "h-full w-full object-cover object-center transition-opacity duration-150 ease-out",
           loaded ? "opacity-100" : "opacity-0",
           className,
         )}
