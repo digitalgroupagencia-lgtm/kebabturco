@@ -3622,6 +3622,17 @@ export type Database = {
         }
         Returns: Json
       }
+      customer_order_push_message: {
+        Args: { _event: string; _order_number: string }
+        Returns: {
+          body: string
+          title: string
+        }[]
+      }
+      dispatch_customer_order_status_push: {
+        Args: { _event: string; _order_id: string; _order_number: string }
+        Returns: undefined
+      }
       dispatch_staff_new_order_push: {
         Args: { _order_id: string; _order_number: string; _store_id: string }
         Returns: undefined
@@ -3816,28 +3827,15 @@ export type Database = {
       get_store_team_members: {
         Args: { _store_id: string }
         Returns: {
-          avatar_url: string | null
-          birth_date: string | null
-          email: string | null
-          full_name: string | null
-          preferred_language: string | null
+          avatar_url: string
+          birth_date: string
+          email: string
+          full_name: string
+          preferred_language: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
           user_role_id: string
         }[]
-      }
-      save_team_member_by_manager: {
-        Args: {
-          _access_pin?: string
-          _birth_date?: string
-          _full_name: string
-          _preferred_language?: string
-          _role?: Database["public"]["Enums"]["app_role"]
-          _store_id: string
-          _user_id: string
-          _user_role_id: string
-        }
-        Returns: Json
       }
       get_table_session_detail: {
         Args: { _session_id: string }
@@ -4029,6 +4027,15 @@ export type Database = {
         Args: { _table_id: string }
         Returns: string
       }
+      register_native_push_subscription: {
+        Args: {
+          _customer_phone?: string
+          _fcm_token: string
+          _platform?: string
+          _store_id: string
+        }
+        Returns: undefined
+      }
       register_push_subscription: {
         Args: {
           _auth?: string
@@ -4065,6 +4072,19 @@ export type Database = {
         Returns: Json
       }
       retry_failed_print_jobs: { Args: { _store_id: string }; Returns: number }
+      save_team_member_by_manager: {
+        Args: {
+          _access_pin?: string
+          _birth_date?: string
+          _full_name: string
+          _preferred_language?: string
+          _role?: Database["public"]["Enums"]["app_role"]
+          _store_id: string
+          _user_id: string
+          _user_role_id: string
+        }
+        Returns: Json
+      }
       set_tenant_feature_override: {
         Args: {
           _enabled: boolean
