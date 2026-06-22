@@ -27,6 +27,7 @@ export type ReaderWarmUpStatus =
   | "error";
 
 let progressListenerAttached = false;
+let warmUpInFlight: Promise<ReaderWarmUpStatus> | null = null;
 
 const WARM_UP_TIMEOUT_MS = 90_000;
 const PAYMENT_TIMEOUT_MS = 120_000;
@@ -151,6 +152,27 @@ async function resolveTerminalContext(storeId: string) {
 }
 
 export async function warmUpTapToPayReader(
+  storeId: string,
+  opts?: {
+    onProgress?: (message: string) => void;
+    onStatus?: (status: ReaderWarmUpStatus) => void;
+  },
+): Promise<ReaderWarmUpStatus> {
+  if (!isTapToPayPlatform()) return "idle";
+
+  if (warmUpInFlight) {
+    return warmUpInFlight;
+  }
+
+  warmUpInFlight = warmUpTapToPayReaderInternal(storeId, opts);
+  try {
+    return await warmUpInFlight;
+  } finally {
+    warmUpInFlight = null;
+  }
+}
+
+async function warmUpTapToPayReaderInternal(
   storeId: string,
   opts?: {
     onProgress?: (message: string) => void;

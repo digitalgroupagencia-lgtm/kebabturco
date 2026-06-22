@@ -14,7 +14,6 @@ import type { Tables } from "@/integrations/supabase/types";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { useStaffT } from "@/hooks/useStaffT";
-import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
@@ -31,8 +30,7 @@ const CashierPage = () => {
   const { roleData } = useUserRole(user?.id);
   const storeId = roleData?.store_id;
   const { t } = useStaffT();
-  const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
-  const { requestTapToPay, TapToPayCheckoutDialog } = useTapToPayCheckout({
+  const { requestTapToPay, requestStaffPin, TapToPayCheckoutDialog } = useTapToPayCheckout({
     storeId: storeId ?? "",
     onSuccess: async () => {
       toast.success(t("tapToPay.step.success"));
@@ -410,7 +408,6 @@ const CashierPage = () => {
 
       </Dialog>
       <TapToPayStaffBootstrap storeId={storeId} />
-      <StaffPinDialog />
       <TapToPayCheckoutDialog />
     </div>
   );

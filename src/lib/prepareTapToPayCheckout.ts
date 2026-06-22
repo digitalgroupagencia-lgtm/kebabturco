@@ -8,6 +8,17 @@ import {
 
 export type TapToPayPrepareResult = { ok: true } | { ok: false; message: string };
 
+/** Aguarda a gaveta/modal do PIN fechar antes do warm-up nativo da Apple. */
+export async function waitForStaffPinUiDismiss(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.setTimeout(resolve, 400);
+      });
+    });
+  });
+}
+
 /** Prepara o leitor com ecrãs da app fechados — a Apple pode pedir termos por cima. */
 export async function ensureTapToPayReaderReady(storeId: string): Promise<TapToPayPrepareResult> {
   if (!isTapToPayPlatform()) {

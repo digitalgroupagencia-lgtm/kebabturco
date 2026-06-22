@@ -5,8 +5,10 @@ export function useStaffPinConfirm() {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<StaffPinConfirmOptions | undefined>();
   const resolverRef = useRef<((pin: string | null) => void) | null>(null);
+  const settledRef = useRef(false);
 
   const requestStaffPin = useCallback((opts?: StaffPinConfirmOptions) => {
+    settledRef.current = false;
     setOptions(opts);
     setOpen(true);
     return new Promise<string | null>((resolve) => {
@@ -15,8 +17,11 @@ export function useStaffPinConfirm() {
   }, []);
 
   const finish = useCallback((pin: string | null) => {
-    resolverRef.current?.(pin);
+    if (settledRef.current) return;
+    settledRef.current = true;
+    const resolve = resolverRef.current;
     resolverRef.current = null;
+    resolve?.(pin);
     setOpen(false);
     setOptions(undefined);
   }, []);

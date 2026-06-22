@@ -15,6 +15,12 @@ export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = 
 
   const runWarmUp = useCallback(async () => {
     if (!enabled || !storeId || !isTapToPayPlatform() || busyRef.current) return;
+    const current = await getTapToPayReaderStatus();
+    if (current.ready) {
+      setStatus("ready");
+      setErrorMessage(null);
+      return;
+    }
     busyRef.current = true;
     setStatus("preparing");
     setErrorMessage(null);
@@ -41,7 +47,10 @@ export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = 
 
     let sub: { remove: () => void } | undefined;
     void CapApp.addListener("appStateChange", ({ isActive }) => {
-      if (isActive) void runWarmUp();
+      if (!isActive) return;
+      void getTapToPayReaderStatus().then((current) => {
+        if (!current.ready) void runWarmUp();
+      });
     }).then((s) => {
       sub = s;
     });
