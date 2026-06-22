@@ -28,6 +28,12 @@ export interface ReaderStatusResult {
   connected?: boolean;
 }
 
+export interface AppleTermsStatusResult {
+  linked: boolean;
+  message: string;
+  explicitCheckAvailable?: boolean;
+}
+
 export interface StripeTerminalPlugin {
   processTapToPayPayment(
     options: ProcessTapToPayPaymentOptions,
@@ -38,6 +44,10 @@ export interface StripeTerminalPlugin {
   disconnectReader(): Promise<void>;
   isTapToPaySupported(): Promise<{ supported: boolean }>;
   getReaderStatus(): Promise<ReaderStatusResult>;
+  checkAppleTermsStatus(options: {
+    connectionToken: string;
+    connectAccountId: string;
+  }): Promise<AppleTermsStatusResult>;
   addListener(
     eventName: "readerProgress" | "readerStatusChanged",
     listenerFunc: (event: { progress?: number; message?: string; status?: string; ready?: boolean }) => void,

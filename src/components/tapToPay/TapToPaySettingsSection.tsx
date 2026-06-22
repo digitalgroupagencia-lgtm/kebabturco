@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
 import {
   createStoreTerminalLocation,
+  checkAppleTapToPayTerms,
   isTapToPayPlatform,
+  verifyStoreTerminalLocation,
   warmUpTapToPayReader,
 } from "@/lib/stripeTerminalService";
 import {
@@ -76,6 +78,40 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
     toast.success(t("tapToPay.settings.education_done"));
   };
 
+  const handleVerifyLocation = async () => {
+    setBusy(true);
+    try {
+      const res = await verifyStoreTerminalLocation(storeId);
+      if (res.ok) {
+        toast.success(
+          t("tapToPay.settings.location_verified").replace("{name}", res.displayName ?? res.locationId),
+        );
+      } else {
+        toast.error(res.error ?? t("tapToPay.settings.location_verify_fail"));
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("tapToPay.settings.location_verify_fail"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCheckAppleTerms = async () => {
+    setBusy(true);
+    try {
+      const res = await checkAppleTapToPayTerms(storeId);
+      if (res.linked) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message, { duration: 8000 });
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("tapToPay.settings.terms_check_fail"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const statusLabel = () => {
     if (iosOnly) return t("tapToPay.settings.status_web");
     if (!locationId) return t("tapToPay.settings.status_no_location");
@@ -122,6 +158,12 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
         <Button variant="outline" onClick={() => void handleCreateLocation()} disabled={busy || iosOnly}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
           {t("tapToPay.settings.create_location")}
+        </Button>
+        <Button variant="outline" onClick={() => void handleVerifyLocation()} disabled={busy || iosOnly}>
+          {t("tapToPay.settings.verify_location")}
+        </Button>
+        <Button variant="outline" onClick={() => void handleCheckAppleTerms()} disabled={busy || iosOnly}>
+          {t("tapToPay.settings.check_apple_terms")}
         </Button>
         <Button
           variant="ghost"

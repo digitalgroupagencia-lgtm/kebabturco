@@ -29,4 +29,12 @@ export class StripeTerminalWeb extends WebPlugin implements StripeTerminalPlugin
   async getReaderStatus(): Promise<{ status: string; ready: boolean; connected: boolean }> {
     return { status: "idle", ready: false, connected: false };
   }
+
+  async checkAppleTermsStatus(): Promise<{ linked: boolean; message: string; explicitCheckAvailable: boolean }> {
+    return {
+      linked: false,
+      message: "Só disponível na app iPhone da equipa.",
+      explicitCheckAvailable: false,
+    };
+  }
 }

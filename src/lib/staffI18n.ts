@@ -709,6 +709,31 @@ export const STAFF_I18N = {
     pt: "Não foi possível criar o local Terminal",
     en: "Could not create Terminal location",
   },
+  "tapToPay.settings.verify_location": {
+    es: "Verificar ubicación Stripe",
+    pt: "Verificar morada Stripe",
+    en: "Verify Stripe location",
+  },
+  "tapToPay.settings.location_verified": {
+    es: "Ubicación confirmada en Stripe: {name}",
+    pt: "Morada confirmada na Stripe: {name}",
+    en: "Location confirmed on Stripe: {name}",
+  },
+  "tapToPay.settings.location_verify_fail": {
+    es: "La ubicación no existe en la cuenta conectada de la tienda",
+    pt: "A morada não existe na conta da loja na Stripe",
+    en: "Location not found on the store's connected account",
+  },
+  "tapToPay.settings.check_apple_terms": {
+    es: "Estado términos Apple",
+    pt: "Estado termos Apple",
+    en: "Apple terms status",
+  },
+  "tapToPay.settings.terms_check_fail": {
+    es: "No se pudo comprobar los términos de Apple",
+    pt: "Não foi possível verificar os termos da Apple",
+    en: "Could not check Apple terms",
+  },
   "tapToPay.settings.preparing": {
     es: "Preparando Tap to Pay…",
     pt: "A preparar Tap to Pay…",

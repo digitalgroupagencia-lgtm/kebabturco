@@ -30,6 +30,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         CAPPluginMethod(name: "disconnectReader", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "isTapToPaySupported", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getReaderStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "checkAppleTermsStatus", returnType: CAPPluginReturnPromise),
     ]
 
     private let tokenProvider = PluginTokenProvider()
@@ -73,6 +74,37 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         ])
     }
 
+    @objc func checkAppleTermsStatus(_ call: CAPPluginCall) {
+        guard let connectionToken = call.getString("connectionToken"),
+              let connectAccountId = call.getString("connectAccountId"), !connectAccountId.isEmpty else {
+            call.reject("Parâmetros inválidos para verificar termos Apple")
+            return
+        }
+
+        tokenProvider.token = connectionToken
+        if Terminal.hasTokenProvider() == false {
+            Terminal.setTokenProvider(tokenProvider)
+        }
+
+        let connected = Terminal.shared.connectedReader != nil
+        let linked = readerReady && connected
+
+        if linked {
+            call.resolve([
+                "linked": true,
+                "message": "Leitor pronto — termos da Apple provavelmente aceites.",
+                "explicitCheckAvailable": false,
+            ])
+            return
+        }
+
+        call.resolve([
+            "linked": false,
+            "message": "Leitor ainda não está pronto. Vá a Definições → Preparar leitor. Quando a Apple pedir, leia até ao fim e toque Concordo uma vez. Aguarde 5 segundos.",
+            "explicitCheckAvailable": false,
+        ])
+    }
+
     @objc func warmUpTapToPay(_ call: CAPPluginCall) {
         guard let connectionToken = call.getString("connectionToken"),
               let locationId = call.getString("locationId"),
@@ -104,14 +136,15 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
 
         do {
             readerPhase = .discovering
+            print("🔵 [Tap to Pay] warm-up discover locationId=\(locationId) onBehalfOf=\(onBehalfOf)")
             let config = try TapToPayDiscoveryConfigurationBuilder().setSimulated(simulated).build()
             discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
                 if let error {
-                    self?.finishWithError(error.localizedDescription)
+                    self?.finishWithError("Erro ao descobrir leitor Tap to Pay", underlying: error)
                 }
             }
         } catch {
-            finishWithError(error.localizedDescription)
+            finishWithError("Configuração Tap to Pay inválida", underlying: error)
         }
     }
 
@@ -215,7 +248,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             Terminal.shared.connectReader(reader, connectionConfig: connectionConfig) { [weak self] _, error in
                 guard let self else { return }
                 if let error {
-                    self.finishWithError(error.localizedDescription)
+                    self.finishWithError("Erro ao ligar leitor Tap to Pay", underlying: error)
                     return
                 }
                 self.readerReady = true
@@ -328,11 +361,24 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         }
     }
 
-    private func finishWithError(_ message: String) {
+    private func finishWithError(_ message: String, underlying: Error? = nil) {
         readerPhase = .error
         readerReady = false
         warmUpOnly = false
-        activePromise?.reject(message)
+
+        var userMessage = message
+        if let underlying {
+            let ns = underlying as NSError
+            print("🔴 [Tap to Pay] \(ns.domain) code=\(ns.code) — \(underlying.localizedDescription)")
+            userMessage = "[\(ns.code)] \(underlying.localizedDescription)"
+            if ns.localizedDescription.lowercased().contains("terms")
+                || ns.localizedDescription.lowercased().contains("tos")
+                || ns.code == 2600 {
+                userMessage += " — Aceite os termos da Apple em Definições → Preparar leitor (Concordo, uma vez)."
+            }
+        }
+
+        activePromise?.reject(userMessage)
         activePromise = nil
         paymentCancelable?.cancel { _ in }
         discoverCancelable?.cancel { _ in }

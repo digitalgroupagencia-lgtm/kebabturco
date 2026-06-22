@@ -153,3 +153,77 @@ export async function createTerminalLocationForStore(
     created: true,
   };
 }
+
+/** Confirma na Stripe (conta conectada) que a morada do terminal existe. */
+export async function verifyTerminalLocationForStore(
+  service: SupabaseClient,
+  storeId: string,
+): Promise<{
+  ok: boolean;
+  locationId: string;
+  displayName?: string;
+  stripeConnectAccountId: string;
+  error?: string;
+}> {
+  const { data: storeRow, error: storeErr } = await service
+    .from("stores")
+    .select(
+      "id, stripe_terminal_location_id, stripe_connect_account_id, stripe_charges_enabled, stripe_connect_environment, stripe_connect_test_simulated",
+    )
+    .eq("id", storeId)
+    .maybeSingle();
+
+  if (storeErr || !storeRow) {
+    throw new Error("Loja não encontrada");
+  }
+
+  const locationId = storeRow.stripe_terminal_location_id?.trim();
+  const connectAccountId = storeRow.stripe_connect_account_id?.trim();
+  if (!connectAccountId || connectAccountId.startsWith("simulated-")) {
+    return {
+      ok: false,
+      locationId: locationId ?? "",
+      stripeConnectAccountId: connectAccountId ?? "",
+      error: "Conta Stripe Connect inválida",
+    };
+  }
+  if (!locationId) {
+    return {
+      ok: false,
+      locationId: "",
+      stripeConnectAccountId: connectAccountId,
+      error: "Morada do terminal em falta na loja",
+    };
+  }
+
+  const loaded = await loadStoreConnectPaymentRow(service, storeId);
+  const store = loaded.store ?? storeRow;
+  const connectEnv = await resolveStoreConnectEnvironment(store);
+  const stripeKey = pickStripeSecretForEnvironment(
+    connectEnv === "test" || store.stripe_connect_test_simulated ? "test" : connectEnv,
+  );
+  if (!stripeKey) {
+    throw new Error("Stripe não configurada no servidor");
+  }
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+  try {
+    const location = await stripe.terminal.locations.retrieve(locationId, {
+      stripeAccount: connectAccountId,
+    });
+    return {
+      ok: true,
+      locationId: location.id,
+      displayName: location.display_name ?? undefined,
+      stripeConnectAccountId: connectAccountId,
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Morada do terminal não encontrada na conta da loja";
+    return {
+      ok: false,
+      locationId,
+      stripeConnectAccountId: connectAccountId,
+      error: msg,
+    };
+  }
+}

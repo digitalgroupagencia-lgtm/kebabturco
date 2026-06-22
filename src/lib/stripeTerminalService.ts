@@ -118,6 +118,47 @@ export async function createStoreTerminalLocation(
   };
 }
 
+export async function verifyStoreTerminalLocation(storeId: string): Promise<{
+  ok: boolean;
+  locationId: string;
+  displayName?: string;
+  stripeConnectAccountId: string;
+  error?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke("stripe-verify-terminal-location", {
+    body: { storeId },
+  });
+  if (error) throw new Error(error.message || "Falha ao verificar morada do terminal");
+  if (data?.error) throw new Error(data.error);
+  return data as {
+    ok: boolean;
+    locationId: string;
+    displayName?: string;
+    stripeConnectAccountId: string;
+    error?: string;
+  };
+}
+
+export async function checkAppleTapToPayTerms(storeId: string): Promise<{
+  linked: boolean;
+  message: string;
+}> {
+  if (!isTapToPayPlatform()) {
+    return { linked: false, message: getTapToPayUnavailableMessage() };
+  }
+  const tokenPayload = await fetchTerminalConnectionToken(storeId);
+  const connectAccountId = tokenPayload.stripeConnectAccountId?.trim();
+  if (!connectAccountId) {
+    return { linked: false, message: "Recebimentos Stripe ainda não estão activos para esta loja." };
+  }
+  const terminal = await loadStripeTerminal();
+  const res = await terminal.checkAppleTermsStatus({
+    connectionToken: tokenPayload.secret,
+    connectAccountId,
+  });
+  return { linked: Boolean(res.linked), message: res.message };
+}
+
 async function resolveTerminalContext(storeId: string) {
   const [tokenPayload, profile] = await Promise.all([
     fetchTerminalConnectionToken(storeId),
