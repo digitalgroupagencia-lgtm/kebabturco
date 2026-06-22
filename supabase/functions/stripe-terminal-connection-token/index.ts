@@ -2,8 +2,6 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/stripePaymentActions.ts";
 import {
-  getStripeSecretKey,
-  getStripeSecretKeyTest,
   pickStripeSecretForEnvironment,
 } from "../_shared/stripeEnv.ts";
 import {
@@ -26,6 +24,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const storeId = typeof body?.storeId === "string" ? body.storeId : null;
+    const stripeAccountParam =
+      typeof body?.stripeAccount === "string" ? body.stripeAccount.trim() : "";
     if (!storeId) {
       return json({ error: "storeId é obrigatório" }, 400);
     }
@@ -62,6 +62,15 @@ Deno.serve(async (req) => {
       return json({ error: "Recebimentos Stripe ainda não activos para esta loja" }, 400);
     }
 
+    const connectAccountId = store.stripe_connect_account_id.trim();
+    if (!connectAccountId || connectAccountId.startsWith("simulated-")) {
+      return json({ error: "Conta Stripe Connect inválida para Terminal" }, 400);
+    }
+
+    if (stripeAccountParam && stripeAccountParam !== connectAccountId) {
+      return json({ error: "stripeAccount não corresponde à loja indicada" }, 400);
+    }
+
     const connectEnv = await resolveStoreConnectEnvironment(store);
     const stripeKey = pickStripeSecretForEnvironment(
       connectEnv === "test" || store.stripe_connect_test_simulated ? "test" : connectEnv,
@@ -71,11 +80,14 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    const connectionToken = await stripe.terminal.connectionTokens.create();
+    const connectionToken = await stripe.terminal.connectionTokens.create(
+      {},
+      { stripeAccount: connectAccountId },
+    );
 
     return json({
       secret: connectionToken.secret,
-      stripeConnectAccountId: store.stripe_connect_account_id,
+      stripeConnectAccountId: connectAccountId,
       stripeTerminalLocationId: store.stripe_terminal_location_id ?? null,
     });
   } catch (e) {
