@@ -12,19 +12,13 @@ function json(data: unknown, status = 200) {
 async function assertAccess(
   service: ReturnType<typeof createClient>,
   userId: string,
-  storeId: string,
 ): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
-  const [{ data: roles }, { data: store }] = await Promise.all([
-    service.from("user_roles").select("role, tenant_id").eq("user_id", userId),
-    service.from("stores").select("tenant_id").eq("id", storeId).maybeSingle(),
-  ]);
-
-  const isAdminMaster = (roles ?? []).some((r) => r.role === "admin_master");
-  const isRestaurantAdmin = (roles ?? []).some(
-    (r) => r.role === "restaurant_admin" && store && r.tenant_id === store.tenant_id,
+  const { data: roles } = await service.from("user_roles").select("role").eq("user_id", userId);
+  const allowed = (roles ?? []).some((r) =>
+    ["admin_master", "restaurant_admin", "operator", "cashier", "seller"].includes(r.role as string),
   );
 
-  if (isAdminMaster || isRestaurantAdmin) {
+  if (allowed) {
     return { ok: true };
   }
 
@@ -65,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     const service = createClient(supabaseUrl, serviceKey);
-    const access = await assertAccess(service, userData.user.id, storeId);
+    const access = await assertAccess(service, userData.user.id);
     if (!access.ok) {
       return json({ error: access.error }, access.status);
     }

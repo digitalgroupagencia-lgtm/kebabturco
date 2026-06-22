@@ -93,6 +93,14 @@ const PanelSettingsPage = () => {
   const [openTime, setOpenTime] = useState("09:00");
   const [closeTime, setCloseTime] = useState("22:00");
   const [closedToday, setClosedToday] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("store");
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "").toLowerCase();
+    if (hash === "tap-to-pay" || hash === "tap") {
+      setSettingsTab("tap");
+    }
+  }, []);
 
   const save = (section: string) => {
     toast.success(`${section} salvas (em memória)`);
@@ -106,7 +114,7 @@ const PanelSettingsPage = () => {
         subtitle={t("page.settings.subtitle")}
       />
 
-      <Tabs defaultValue="store" className="space-y-4">
+      <Tabs value={settingsTab} onValueChange={setSettingsTab} className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="store"><Store className="w-4 h-4 mr-1.5" /> {t("settings.tab.store")}</TabsTrigger>
           <TabsTrigger value="ops"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.ops")}</TabsTrigger>

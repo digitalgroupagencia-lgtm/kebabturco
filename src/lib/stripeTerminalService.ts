@@ -5,6 +5,7 @@ import {
   createStripePaymentIntent,
   fetchStoreFinancialProfile,
   markOrderPaidAtCounter,
+  pollStripePaymentConfirmation,
 } from "@/services/orderService";
 import { getStripePublishableKeyForEnvironment } from "@/lib/stripePublishableKey";
 import { normalizeOptionalEmail } from "@/lib/emailValidation";
@@ -142,15 +143,21 @@ export async function createStoreTerminalLocation(
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
-    if (!isNetworkOrEdgeUnavailable(msg)) throw e;
-    const token = await fetchTerminalConnectionToken(storeId);
-    const fromToken = token.stripeTerminalLocationId?.trim();
+    const token = await fetchTerminalConnectionToken(storeId).catch(() => null);
+    const fromToken = token?.stripeTerminalLocationId?.trim();
     if (fromToken) {
       return { locationId: fromToken, created: false };
     }
-    throw new Error(
-      "Não foi possível criar a morada no servidor. Use «Verificar ubicación Stripe» — se já estiver confirmada, pode ignorar este botão.",
-    );
+    if (
+      isNetworkOrEdgeUnavailable(msg) ||
+      msg.toLowerCase().includes("permissão") ||
+      msg.toLowerCase().includes("permission")
+    ) {
+      throw new Error(
+        "Não foi possível criar a morada no servidor. Use «Verificar ubicación Stripe» — se já estiver confirmada, pode ignorar este botão.",
+      );
+    }
+    throw e;
   }
 }
 
@@ -161,34 +168,28 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
   stripeConnectAccountId: string;
   error?: string;
 }> {
-  const invokeServerVerify = async (functionName: string, body: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke(functionName, { body });
-    if (error) {
-      const raw = error.message || "Falha ao verificar morada do terminal";
-      const wrapped = new Error(raw);
-      throw wrapped;
-    }
-    if (data?.error) throw new Error(data.error);
-    if (typeof data?.ok !== "boolean") return null;
-    return data as {
-      ok: boolean;
-      locationId: string;
-      displayName?: string;
-      stripeConnectAccountId: string;
-      error?: string;
-    };
+  type VerifyResult = {
+    ok: boolean;
+    locationId: string;
+    displayName?: string;
+    stripeConnectAccountId: string;
+    error?: string;
   };
 
   for (const attempt of [
-    () => invokeServerVerify("stripe-terminal-connection-token", { storeId, action: "verifyLocation" }),
-    () => invokeServerVerify("stripe-verify-terminal-location", { storeId }),
+    () =>
+      invokeEdgeFunction<VerifyResult>("stripe-terminal-connection-token", {
+        storeId,
+        action: "verifyLocation",
+      }),
+    () => invokeEdgeFunction<VerifyResult>("stripe-verify-terminal-location", { storeId }),
   ]) {
     try {
       const serverResult = await attempt();
-      if (serverResult) return serverResult;
+      if (typeof serverResult.ok === "boolean") return serverResult;
     } catch (e) {
       const raw = e instanceof Error ? e.message : "";
-      if (!isNetworkOrEdgeUnavailable(raw)) throw new Error(raw);
+      if (!isNetworkOrEdgeUnavailable(raw)) throw e;
     }
   }
 
@@ -288,10 +289,11 @@ async function resolveTerminalContext(storeId: string) {
 
   const locationId = tokenPayload.stripeTerminalLocationId ?? profile?.stripe_terminal_location_id;
 
-  let resolvedLocationId = locationId?.trim() ?? "";
+  const resolvedLocationId = locationId?.trim() ?? "";
   if (!resolvedLocationId) {
-    const created = await createStoreTerminalLocation(storeId);
-    resolvedLocationId = created.locationId;
+    throw new Error(
+      "Morada do terminal em falta. Vá a Definições → Tap to Pay e toque em Verificar ubicación Stripe.",
+    );
   }
 
   const connectAccountId = tokenPayload.stripeConnectAccountId ?? profile?.stripe_connect_account_id;
@@ -407,8 +409,22 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("connecting", "A preparar leitor…");
 
-  const readerStatus = await getTapToPayReaderStatus();
-  if (readerStatus.status === "error") {
+  let readerStatus = await getTapToPayReaderStatus();
+  if (!readerStatus.ready) {
+    const warmed = await warmUpTapToPayReader(params.storeId, {
+      onProgress: (message) => params.onStep?.("connecting", message),
+    });
+    if (warmed !== "ready") {
+      const detail = consumeLastTapToPayWarmUpError();
+      throw new Error(
+        detail ??
+          "O leitor Tap to Pay não está pronto. Vá a Definições → Preparar leitor e aceite os termos da Apple.",
+      );
+    }
+    readerStatus = await getTapToPayReaderStatus();
+  }
+
+  if (!readerStatus.ready) {
     throw new Error("O leitor Tap to Pay não está pronto. Active-o nas definições e tente novamente.");
   }
 
@@ -457,14 +473,29 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("processing", "A confirmar pagamento…");
 
-  await supabase.functions.invoke("stripe-verify-payment-intent", {
-    body: { paymentIntentId: result.paymentIntentId },
-  });
+  try {
+    await pollStripePaymentConfirmation({
+      storeId: params.storeId,
+      paymentIntentId: result.paymentIntentId,
+      orderId: params.orderId,
+    });
+  } catch (e) {
+    console.warn("[TapToPay] verify payment intent", e);
+  }
 
   await markOrderPaidAtCounter(params.orderId, "card", params.staffPin, result.paymentIntentId);
 
   params.onStep?.("success", "Pagamento aprovado!");
   return { paymentIntentId: result.paymentIntentId };
+}
+
+export async function cancelTapToPayPayment(): Promise<void> {
+  if (!isTapToPayPlatform()) return;
+  try {
+    await (await loadStripeTerminal()).cancelPayment();
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function disconnectTapToPayReader(): Promise<void> {

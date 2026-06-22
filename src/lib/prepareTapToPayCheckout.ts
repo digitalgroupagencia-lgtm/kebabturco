@@ -1,5 +1,6 @@
 import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import {
+  consumeLastTapToPayWarmUpError,
   getTapToPayReaderStatus,
   getTapToPayUnavailableMessage,
   isTapToPayPlatform,

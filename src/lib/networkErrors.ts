@@ -11,6 +11,9 @@ export function isNetworkOrEdgeUnavailable(message: string): boolean {
     m.includes("functions/v1") ||
     m.includes("edge function") ||
     m.includes("err_connection") ||
-    m.includes("cors")
+    m.includes("cors") ||
+    m.includes("404") ||
+    m.includes("not found") ||
+    m.includes("demorou demasiado")
   );
 }

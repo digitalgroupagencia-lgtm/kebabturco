@@ -224,9 +224,9 @@ export async function fetchStoreFinancialProfile(storeId: string): Promise<Store
   if (edgeProfile) return edgeProfile;
 
   const withEnv =
-    "stripe_connect_account_id, stripe_connect_environment, stripe_connect_test_simulated, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
+    "name, stripe_connect_account_id, stripe_connect_environment, stripe_connect_test_simulated, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at, stripe_terminal_location_id";
   const legacy =
-    "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at";
+    "name, stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_iban_last4, stripe_business_name, stripe_payout_status, stripe_last_payout_at, stripe_terminal_location_id";
 
   let { data, error } = await supabase.from("stores").select(withEnv).eq("id", storeId).maybeSingle();
 

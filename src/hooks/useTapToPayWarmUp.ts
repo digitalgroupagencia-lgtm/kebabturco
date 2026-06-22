@@ -71,7 +71,9 @@ export function useTapToPayWarmUp(
 
     return () => {
       sub?.remove();
-      void disconnectTapToPayReader();
+      if (autoStart) {
+        void disconnectTapToPayReader();
+      }
     };
   }, [enabled, storeId, autoStart, runWarmUp]);
 

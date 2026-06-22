@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStaffT } from "@/hooks/useStaffT";
 import {
-  disconnectTapToPayReader,
+  cancelTapToPayPayment,
   runTapToPayForOrder,
   type TapToPayStep,
 } from "@/lib/stripeTerminalService";
@@ -101,29 +101,29 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
 
   useEffect(() => {
     if (!open || !order) return;
+
+    setEmail(order.customer_email?.trim() ?? "");
+    setBusy(false);
+
     if (!tapEnabled) {
       setReaderReady(false);
       setStep("error");
       setError(t("tapToPay.settings.help"));
       return;
     }
+
+    setStep("idle");
+    setError(null);
     void prepareReader();
   }, [open, order, prepareReader, tapEnabled, t]);
 
-  useEffect(() => {
-    if (open && order) {
-      setEmail(order.customer_email?.trim() ?? "");
-      setStep("idle");
-      setError(null);
-      setBusy(false);
-    }
-  }, [open, order]);
-
   const handleClose = useCallback(() => {
-    void disconnectTapToPayReader();
+    if (busy) {
+      void cancelTapToPayPayment();
+    }
     reset();
     onClose();
-  }, [onClose, reset]);
+  }, [busy, onClose, reset]);
 
   const startPayment = async () => {
     if (!order || busy) return;

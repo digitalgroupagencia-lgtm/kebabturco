@@ -3,6 +3,7 @@ import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
 import { isTapToPayPlatform, getTapToPayUnavailableMessage } from "@/lib/stripeTerminalService";
+import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
 
@@ -28,6 +29,10 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
     async (order: TapToPayOrder) => {
       if (!isTapToPayPlatform()) {
         toast.error(getTapToPayUnavailableMessage());
+        return false;
+      }
+      if (!isTapToPayUserEnabled()) {
+        toast.error("Active o Tap to Pay em Definições → Tap to Pay antes de cobrar.");
         return false;
       }
       const pin = await requestStaffPin({
