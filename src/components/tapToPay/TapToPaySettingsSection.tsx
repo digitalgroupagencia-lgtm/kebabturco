@@ -29,13 +29,16 @@ type Props = {
   compact?: boolean;
 };
 
+type BusyAction = "create" | "verify" | "terms" | null;
+
 export default function TapToPaySettingsSection({ storeId, compact = false }: Props) {
   const { t } = useStaffT();
   const [awarenessOpen, setAwarenessOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const { status, progressMessage, errorMessage, isPreparing, isReady, hasError, refreshWarmUp } = useTapToPayWarmUp(
     storeId,
     isTapToPayPlatform() && isTapToPayUserEnabled(),
+    false,
   );
 
   const { data: profile, refetch } = useQuery({
@@ -48,7 +51,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
   const iosOnly = !isTapToPayPlatform();
 
   const handleCreateLocation = async () => {
-    setBusy(true);
+    setBusyAction("create");
     try {
       const res = await createStoreTerminalLocation(storeId);
       await refetch();
@@ -60,7 +63,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("tapToPay.settings.location_error"));
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   };
 
@@ -79,7 +82,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
   };
 
   const handleVerifyLocation = async () => {
-    setBusy(true);
+    setBusyAction("verify");
     try {
       const res = await verifyStoreTerminalLocation(storeId);
       if (res.ok) {
@@ -92,12 +95,12 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("tapToPay.settings.location_verify_fail"));
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   };
 
   const handleCheckAppleTerms = async () => {
-    setBusy(true);
+    setBusyAction("terms");
     try {
       const res = await checkAppleTapToPayTerms(storeId);
       if (res.linked) {
@@ -108,7 +111,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("tapToPay.settings.terms_check_fail"));
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   };
 
@@ -155,14 +158,16 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
           <Smartphone className="h-4 w-4 mr-2" />
           {isTapToPayUserEnabled() ? t("tapToPay.settings.prepare") : t("tapToPay.settings.enable")}
         </Button>
-        <Button variant="outline" onClick={() => void handleCreateLocation()} disabled={busy || iosOnly}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
+        <Button variant="outline" onClick={() => void handleCreateLocation()} disabled={busyAction !== null || iosOnly}>
+          {busyAction === "create" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
           {t("tapToPay.settings.create_location")}
         </Button>
-        <Button variant="outline" onClick={() => void handleVerifyLocation()} disabled={busy || iosOnly}>
+        <Button variant="outline" onClick={() => void handleVerifyLocation()} disabled={busyAction !== null || iosOnly}>
+          {busyAction === "verify" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           {t("tapToPay.settings.verify_location")}
         </Button>
-        <Button variant="outline" onClick={() => void handleCheckAppleTerms()} disabled={busy || iosOnly}>
+        <Button variant="outline" onClick={() => void handleCheckAppleTerms()} disabled={busyAction !== null || iosOnly}>
+          {busyAction === "terms" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           {t("tapToPay.settings.check_apple_terms")}
         </Button>
         <Button

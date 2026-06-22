@@ -7,7 +7,11 @@ import {
   type ReaderWarmUpStatus,
 } from "@/lib/stripeTerminalService";
 
-export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = true) {
+export function useTapToPayWarmUp(
+  storeId: string | null | undefined,
+  enabled = true,
+  autoStart = true,
+) {
   const [status, setStatus] = useState<ReaderWarmUpStatus>("idle");
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -43,6 +47,15 @@ export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = 
 
   useEffect(() => {
     if (!enabled || !storeId || !isTapToPayPlatform()) return;
+
+    if (!autoStart) {
+      void getTapToPayReaderStatus().then((current) => {
+        setStatus(current.status);
+        if (current.ready) setErrorMessage(null);
+      });
+      return;
+    }
+
     void runWarmUp();
 
     let sub: { remove: () => void } | undefined;
@@ -59,7 +72,7 @@ export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = 
       sub?.remove();
       void disconnectTapToPayReader();
     };
-  }, [enabled, storeId, runWarmUp]);
+  }, [enabled, storeId, autoStart, runWarmUp]);
 
   return {
     status,

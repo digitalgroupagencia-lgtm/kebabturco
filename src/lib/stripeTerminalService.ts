@@ -46,6 +46,18 @@ export function consumeLastTapToPayWarmUpError(): string | null {
 
 const WARM_UP_TIMEOUT_MS = 60_000;
 const PAYMENT_TIMEOUT_MS = 120_000;
+const EDGE_INVOKE_TIMEOUT_MS = 20_000;
+
+async function invokeEdgeFunction<T>(functionName: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke(functionName, { body }),
+    EDGE_INVOKE_TIMEOUT_MS,
+    "O servidor demorou demasiado a responder. Tente outra vez.",
+  );
+  if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha na ligação ao servidor"));
+  if (data?.error) throw new Error(data.error);
+  return data as T;
+}
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -101,16 +113,7 @@ export async function fetchTerminalConnectionToken(storeId: string): Promise<{
   stripeConnectAccountId: string | null;
   stripeTerminalLocationId: string | null;
 }> {
-  const { data, error } = await supabase.functions.invoke("stripe-terminal-connection-token", {
-    body: { storeId },
-  });
-  if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha ao ligar ao Terminal"));
-  if (data?.error) throw new Error(data.error);
-  return data as {
-    secret: string;
-    stripeConnectAccountId: string | null;
-    stripeTerminalLocationId: string | null;
-  };
+  return invokeEdgeFunction("stripe-terminal-connection-token", { storeId });
 }
 
 export async function createStoreTerminalLocation(
@@ -122,15 +125,33 @@ export async function createStoreTerminalLocation(
     postal_code?: string;
   },
 ): Promise<{ locationId: string; created: boolean }> {
-  const { data, error } = await supabase.functions.invoke("stripe-create-terminal-location", {
-    body: { storeId, address },
-  });
-  if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha ao criar Terminal Location"));
-  if (data?.error) throw new Error(data.error);
-  return {
-    locationId: data.locationId as string,
-    created: Boolean(data.created),
-  };
+  const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
+  const existing = profile?.stripe_terminal_location_id?.trim();
+  if (existing) {
+    return { locationId: existing, created: false };
+  }
+
+  try {
+    const data = await invokeEdgeFunction<{ locationId: string; created?: boolean }>(
+      "stripe-create-terminal-location",
+      { storeId, address },
+    );
+    return {
+      locationId: data.locationId,
+      created: Boolean(data.created),
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (!isNetworkOrEdgeUnavailable(msg)) throw e;
+    const token = await fetchTerminalConnectionToken(storeId);
+    const fromToken = token.stripeTerminalLocationId?.trim();
+    if (fromToken) {
+      return { locationId: fromToken, created: false };
+    }
+    throw new Error(
+      "Não foi possível criar a morada no servidor. Use «Verificar ubicación Stripe» — se já estiver confirmada, pode ignorar este botão.",
+    );
+  }
 }
 
 export async function verifyStoreTerminalLocation(storeId: string): Promise<{
@@ -222,17 +243,41 @@ export async function checkAppleTapToPayTerms(storeId: string): Promise<{
   if (!isTapToPayPlatform()) {
     return { linked: false, message: getTapToPayUnavailableMessage() };
   }
-  const tokenPayload = await fetchTerminalConnectionToken(storeId);
-  const connectAccountId = tokenPayload.stripeConnectAccountId?.trim();
-  if (!connectAccountId) {
-    return { linked: false, message: "Recebimentos Stripe ainda não estão activos para esta loja." };
+
+  const reader = await withTimeout(
+    getTapToPayReaderStatus(),
+    8_000,
+    "Não foi possível ler o estado do leitor. Tente outra vez.",
+  );
+
+  if (reader.ready) {
+    return { linked: true, message: "Leitor pronto — termos da Apple aceites." };
   }
-  const terminal = await loadStripeTerminal();
-  const res = await terminal.checkAppleTermsStatus({
-    connectionToken: tokenPayload.secret,
-    connectAccountId,
-  });
-  return { linked: Boolean(res.linked), message: res.message };
+
+  if (reader.status === "preparing" || reader.status === "discovering" || reader.status === "connecting" || reader.status === "updating") {
+    return {
+      linked: false,
+      message: "O leitor ainda está a ligar. Aguarde ou toque em Preparar leitor.",
+    };
+  }
+
+  try {
+    const tokenPayload = await fetchTerminalConnectionToken(storeId);
+    if (!tokenPayload.stripeConnectAccountId?.trim()) {
+      return { linked: false, message: "Recebimentos Stripe ainda não estão activos para esta loja." };
+    }
+  } catch (e) {
+    return {
+      linked: false,
+      message: e instanceof Error ? e.message : "Não foi possível verificar os termos da Apple.",
+    };
+  }
+
+  return {
+    linked: false,
+    message:
+      "Leitor ainda não preparado. Toque em Preparar leitor — quando a Apple pedir, leia até ao fim e toque Concordo uma vez.",
+  };
 }
 
 async function resolveTerminalContext(storeId: string) {
