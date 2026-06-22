@@ -8,9 +8,17 @@ import {
 import { DEFAULT_BUSINESS_WEBSITE } from "./stripeConnectCustomProvision.ts";
 
 export const DEFAULT_SUPPORT_EMAIL = "suporte@kebabturco.net";
-/** Vinho oficial Kebab Turco — não usar vermelhos legacy (#D62300, #CC0000). */
-export const BRAND_WINE_HEX = "#8B1A1A";
-const LEGACY_RED_HEXES = new Set(["#D62300", "#CC0000", "#E63946"]);
+/** Cor oficial Kebab Turco (#5F0504). */
+export const KEBAB_OFFICIAL_WINE_HEX = "#5F0504";
+const LEGACY_RED_HEXES = new Set([
+  "#8B1A1A",
+  "#5C1419",
+  "#962E34",
+  "#D62300",
+  "#CC0000",
+  "#E63946",
+  "#910318",
+]);
 
 export type BrandingInput = {
   storeId: string;
@@ -77,15 +85,17 @@ export function resolvePublicAssetUrl(url: string | null | undefined, baseUrl = 
 
 function pickBrandColor(settings: CompanySettingsRow | null): string {
   const primary = settings?.primary_color?.trim().toUpperCase();
-  const header = settings?.header_color?.trim();
-  if (header && /^#[0-9A-Fa-f]{6}$/.test(header)) {
-    if (!primary || LEGACY_RED_HEXES.has(primary)) return header;
+  const header = settings?.header_color?.trim().toUpperCase();
+  if (header && /^#[0-9A-F]{6}$/.test(header)) {
+    if (!primary || LEGACY_RED_HEXES.has(primary)) {
+      return LEGACY_RED_HEXES.has(header) ? KEBAB_OFFICIAL_WINE_HEX : header;
+    }
   }
-  if (primary && /^#[0-9A-Fa-f]{6}$/.test(primary)) {
-    if (LEGACY_RED_HEXES.has(primary)) return BRAND_WINE_HEX;
+  if (primary && /^#[0-9A-F]{6}$/.test(primary)) {
+    if (LEGACY_RED_HEXES.has(primary)) return KEBAB_OFFICIAL_WINE_HEX;
     return primary;
   }
-  return BRAND_WINE_HEX;
+  return KEBAB_OFFICIAL_WINE_HEX;
 }
 
 function pickIconUrl(settings: CompanySettingsRow | null): string | null {

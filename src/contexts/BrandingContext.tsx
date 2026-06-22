@@ -2,7 +2,14 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
-import { applyBrandWineTokens, BRAND_WINE_HEX, applyBrowserChromeColor, hexToHslParts, hslString } from "@/lib/brandTokens";
+import {
+  applyBrandWineTokens,
+  applyBrowserChromeColor,
+  hexToHslParts,
+  hslString,
+  KEBAB_OFFICIAL_WINE_HEX,
+  LEGACY_BRAND_RED_HEXES,
+} from "@/lib/brandTokens";
 import { bumpAppCache } from "@/lib/appCacheBust";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isAdminPreviewMode, PREVIEW_MESSAGE_TYPE } from "@/lib/tenantPreview";
@@ -17,10 +24,19 @@ interface BrandingContextType {
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
 
+function resolveBrandHex(hex: string | null | undefined): string {
+  const normalized = hex?.trim().toUpperCase();
+  if (!normalized || !/^#[0-9A-F]{6}$/.test(normalized)) return KEBAB_OFFICIAL_WINE_HEX;
+  if (LEGACY_BRAND_RED_HEXES.has(normalized)) return KEBAB_OFFICIAL_WINE_HEX;
+  return normalized;
+}
+
 function applyTheme(s: CompanySettings) {
   try {
     const root = document.documentElement;
-    const headerHex = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
+    const headerHex = resolveBrandHex(
+      (s as { header_color?: string }).header_color || s.primary_color,
+    );
 
     applyBrandWineTokens(headerHex);
 
@@ -49,7 +65,9 @@ function applyTheme(s: CompanySettings) {
 function applyInstallMeta(s: CompanySettings, theme: "light" | "dark" = "light") {
   try {
     const name = s.company_name || "Restaurante";
-    const headerHex = (s as { header_color?: string }).header_color || s.primary_color || BRAND_WINE_HEX;
+    const headerHex = resolveBrandHex(
+      (s as { header_color?: string }).header_color || s.primary_color,
+    );
 
     // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.
     // Só actualiza meta tags dinâmicas (título e cor da barra).

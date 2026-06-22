@@ -63,7 +63,7 @@ const TotemConfigPage = () => {
   const [bgImageUrl, setBgImageUrl] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState("#D62300");
+  const [primaryColor, setPrimaryColor] = useState("#5F0504");
   const [secondaryColor, setSecondaryColor] = useState("#F5F5F5");
   const [accentColor, setAccentColor] = useState("#FFC72C");
   const [ctaColor, setCtaColor] = useState("#28A745");
@@ -122,7 +122,7 @@ const TotemConfigPage = () => {
       setConfig(data);
       setLogoUrl(data.logo_url || "");
       setBgImageUrl(data.bg_image_url || "");
-      setPrimaryColor(data.primary_color || "#D62300");
+      setPrimaryColor(data.primary_color || "#5F0504");
       setSecondaryColor(data.secondary_color || "#F5F5F5");
       setAccentColor(data.accent_color || "#FFC72C");
       setCtaColor(data.cta_color || "#28A745");

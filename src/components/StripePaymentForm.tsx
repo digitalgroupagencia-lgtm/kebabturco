@@ -564,7 +564,7 @@ export default function StripePaymentForm(props: {
       options={{
         clientSecret: props.clientSecret,
         locale,
-        appearance: { theme: "stripe", variables: { colorPrimary: "#D62300" } },
+        appearance: { theme: "stripe", variables: { colorPrimary: "#5F0504" } },
       }}
     >
       {checkoutMethod === "bizum" ? (

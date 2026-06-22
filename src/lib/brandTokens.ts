@@ -5,16 +5,27 @@
 
 import { isCustomerStorefrontPath, isStaffAppPath } from "@/lib/appRouteKind";
 
-/** Premium burgundy — matches header / theme-color */
-export const BRAND_WINE_HEX = "#8B1A1A";
-export const BRAND_WINE_DARK_HEX = "#5C1419";
-export const BRAND_WINE_LIGHT_HEX = "#962E34";
+/** Cor oficial Kebab Turco — substitui todos os vermelhos/vinhos anteriores. */
+export const KEBAB_OFFICIAL_WINE_HEX = "#5F0504";
+export const BRAND_WINE_HEX = KEBAB_OFFICIAL_WINE_HEX;
+export const BRAND_WINE_DARK_HEX = KEBAB_OFFICIAL_WINE_HEX;
+export const BRAND_WINE_LIGHT_HEX = "#7A1210";
 
 /**
  * Cor usada na barra do sistema / Safari / Chrome (chrome do browser).
- * Deve ser o vinho escuro — nunca branco nem vermelho puro.
  */
-export const BRAND_CHROME_HEX = BRAND_WINE_DARK_HEX;
+export const BRAND_CHROME_HEX = KEBAB_OFFICIAL_WINE_HEX;
+
+/** Cores antigas (vermelho fast-food ou vinhos anteriores) — migrar para oficial. */
+export const LEGACY_BRAND_RED_HEXES = new Set([
+  "#8B1A1A",
+  "#5C1419",
+  "#962E34",
+  "#D62300",
+  "#CC0000",
+  "#E63946",
+  "#910318",
+]);
 
 export type HslParts = { h: number; s: number; l: number };
 
@@ -247,5 +258,5 @@ export function applyBrandWineTokens(headerHex: string): void {
   root.style.setProperty("--shadow-header", shadowHeaderFromPalette(palette));
 }
 
-/** Legacy fallback replaced across static assets */
+/** @deprecated use KEBAB_OFFICIAL_WINE_HEX */
 export const LEGACY_RED_HEX = "#CC0000";

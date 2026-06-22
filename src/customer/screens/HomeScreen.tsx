@@ -130,7 +130,7 @@ const HomeScreen = () => {
         className="sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
         style={{
           paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
-          backgroundColor: "var(--browser-chrome-hex, #5C1419)",
+          backgroundColor: "var(--browser-chrome-hex, #5F0504)",
         }}
       >
         <div className="relative flex items-center justify-between gap-3 min-h-[48px]">
