@@ -1,0 +1,1 @@
+UPDATE public.company_settings SET primary_color = '#3A0205', header_color = '#3A0205';
