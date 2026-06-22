@@ -69,7 +69,7 @@ const PromoBannerCarousel = () => {
 
   return (
     <div className="w-full">
-      <div className="relative aspect-[16/9] w-full rounded-[22px] overflow-hidden shadow-card border border-border/70 bg-secondary/40">
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[22px] border border-border/70 bg-primary shadow-card">
         {currentIsVideo && ytId ? (
           <iframe
             key={currentItem.id}
@@ -110,7 +110,7 @@ const PromoBannerCarousel = () => {
             key={currentItem.id}
             src={currentItem.image_url ?? ""}
             alt="Promoção"
-            className="absolute inset-0 w-full h-full object-contain object-center"
+            className="absolute inset-0 h-full w-full object-cover object-center"
             loading={index === 0 ? "eager" : "lazy"}
           />
         )}
