@@ -1,6 +1,5 @@
 import Capacitor
 import Foundation
-import ProximityReader
 import StripeTerminal
 
 private final class PluginTokenProvider: NSObject, ConnectionTokenProvider {
@@ -20,7 +19,7 @@ private final class PluginTokenProvider: NSObject, ConnectionTokenProvider {
 }
 
 @objc(StripeTerminalPlugin)
-public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegate, LocalMobileReaderDelegate {
+public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegate, TapToPayReaderDelegate {
     public let identifier = "StripeTerminalPlugin"
     public let jsName = "StripeTerminal"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -91,7 +90,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             Terminal.setTokenProvider(tokenProvider)
         }
 
-        if let reader = Terminal.shared.connectedReader, readerReady {
+        if Terminal.shared.connectedReader != nil, readerReady {
             call.resolve(["status": "ready", "ready": true])
             activePromise = nil
             warmUpOnly = false
@@ -103,12 +102,16 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             readerReady = false
         }
 
-        readerPhase = .discovering
-        let config = LocalMobileDiscoveryConfiguration(simulated: simulated)
-        discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
-            if let error {
-                self?.finishWithError(error.localizedDescription)
+        do {
+            readerPhase = .discovering
+            let config = try TapToPayDiscoveryConfigurationBuilder().setSimulated(simulated).build()
+            discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
+                if let error {
+                    self?.finishWithError(error.localizedDescription)
+                }
             }
+        } catch {
+            finishWithError(error.localizedDescription)
         }
     }
 
@@ -132,7 +135,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             Terminal.setTokenProvider(tokenProvider)
         }
 
-        if let reader = Terminal.shared.connectedReader, readerReady {
+        if Terminal.shared.connectedReader != nil, readerReady {
             collectAndProcess(clientSecret: clientSecret)
             return
         }
@@ -142,40 +145,22 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             readerReady = false
         }
 
-        readerPhase = .discovering
-        let config = LocalMobileDiscoveryConfiguration(simulated: simulated)
-        discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
-            if let error {
-                self?.finishWithError(error.localizedDescription)
+        do {
+            readerPhase = .discovering
+            let config = try TapToPayDiscoveryConfigurationBuilder().setSimulated(simulated).build()
+            discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
+                if let error {
+                    self?.finishWithError(error.localizedDescription)
+                }
             }
+        } catch {
+            finishWithError(error.localizedDescription)
         }
     }
 
     @objc func showMerchantEducation(_ call: CAPPluginCall) {
-        DispatchQueue.main.async { [weak self] in
-            guard let root = self?.bridge?.viewController else {
-                call.reject("Interface indisponível")
-                return
-            }
-            if #available(iOS 18.0, *) {
-                Task {
-                    do {
-                        let discovery = ProximityReaderDiscovery()
-                        let content = try await discovery.content(for: .payment(.howToTap))
-                        var topVC = root
-                        while let presented = topVC.presentedViewController {
-                            topVC = presented
-                        }
-                        discovery.presentContent(content, from: topVC)
-                        call.resolve(["shown": true, "mode": "proximity-reader"])
-                    } catch {
-                        call.reject(error.localizedDescription)
-                    }
-                }
-            } else {
-                call.resolve(["shown": false, "mode": "in-app-fallback", "reason": "ios-version"])
-            }
-        }
+        // iOS 16–17: ecrã de educação na app. iOS 18+: Apple ProximityReader (opcional).
+        call.resolve(["shown": false, "mode": "in-app-fallback", "reason": "use-app-modal"])
     }
 
     @objc func cancelPayment(_ call: CAPPluginCall) {
@@ -215,30 +200,37 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         discoverCancelable = nil
 
         readerPhase = .connecting
-        let connectionConfig = LocalMobileConnectionConfiguration(
-            locationId: locationId,
-            onBehalfOf: onBehalfOf
-        )
 
-        Terminal.shared.connectLocalMobileReader(reader, delegate: self, connectionConfig: connectionConfig) { [weak self] _, error in
-            guard let self else { return }
-            if let error {
-                self.finishWithError(error.localizedDescription)
-                return
+        do {
+            let connectionConfig = try TapToPayConnectionConfigurationBuilder(
+                delegate: self,
+                locationId: locationId
+            )
+            .setOnBehalfOf(onBehalfOf)
+            .build()
+
+            Terminal.shared.connectReader(reader, connectionConfig: connectionConfig) { [weak self] _, error in
+                guard let self else { return }
+                if let error {
+                    self.finishWithError(error.localizedDescription)
+                    return
+                }
+                self.readerReady = true
+                self.readerPhase = .ready
+                if self.warmUpOnly {
+                    self.activePromise?.resolve(["status": "ready", "ready": true])
+                    self.activePromise = nil
+                    self.warmUpOnly = false
+                    return
+                }
+                if let clientSecret = call.getString("clientSecret") {
+                    self.collectAndProcess(clientSecret: clientSecret)
+                } else {
+                    self.finishWithError("PaymentIntent em falta")
+                }
             }
-            self.readerReady = true
-            self.readerPhase = .ready
-            if self.warmUpOnly {
-                self.activePromise?.resolve(["status": "ready", "ready": true])
-                self.activePromise = nil
-                self.warmUpOnly = false
-                return
-            }
-            if let clientSecret = call.getString("clientSecret") {
-                self.collectAndProcess(clientSecret: clientSecret)
-            } else {
-                self.finishWithError("PaymentIntent em falta")
-            }
+        } catch {
+            finishWithError(error.localizedDescription)
         }
     }
 
@@ -248,9 +240,13 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         }
     }
 
-    // MARK: - LocalMobileReaderDelegate
+    // MARK: - TapToPayReaderDelegate
 
-    public func localMobileReader(_ reader: Reader, didStartInstallingUpdate update: ReaderSoftwareUpdate, cancelable: Cancelable?) {
+    public func tapToPayReader(
+        _ reader: Reader,
+        didStartInstallingUpdate update: ReaderSoftwareUpdate,
+        cancelable: Cancelable?
+    ) {
         readerPhase = .updating
         notifyListeners("readerProgress", data: [
             "progress": 0.1,
@@ -258,24 +254,30 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         ])
     }
 
-    public func localMobileReader(_ reader: Reader, didReportReaderSoftwareUpdateProgress progress: Float) {
+    public func tapToPayReader(_ reader: Reader, didReportReaderSoftwareUpdateProgress progress: Float) {
         notifyListeners("readerProgress", data: [
             "progress": Double(progress),
             "message": "A configurar leitor…",
         ])
     }
 
-    public func localMobileReader(_ reader: Reader, didFinishInstallingUpdate update: ReaderSoftwareUpdate?, error: Error?) {
+    public func tapToPayReader(_ reader: Reader, didFinishInstallingUpdate update: ReaderSoftwareUpdate?, error: Error?) {
         if let error {
             finishWithError(error.localizedDescription)
         }
     }
 
-    public func localMobileReader(_ reader: Reader, didRequestReaderInput inputOptions: ReaderInputOptions = []) {
+    public func tapToPayReaderDidAcceptTermsOfService(_ reader: Reader) {
+        notifyListeners("readerProgress", data: [
+            "message": "Termos aceites — pronto para cobrar",
+        ])
+    }
+
+    public func tapToPayReader(_ reader: Reader, didRequestReaderInput inputOptions: ReaderInputOptions = []) {
         /* UI handled by Stripe */
     }
 
-    public func localMobileReader(_ reader: Reader, didRequestReaderDisplayMessage displayMessage: ReaderDisplayMessage) {
+    public func tapToPayReader(_ reader: Reader, didRequestReaderDisplayMessage displayMessage: ReaderDisplayMessage) {
         /* UI handled by Stripe */
     }
 
