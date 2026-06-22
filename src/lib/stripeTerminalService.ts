@@ -140,10 +140,15 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
   stripeConnectAccountId: string;
   error?: string;
 }> {
-  const invokeVerify = async (functionName: string, body: Record<string, unknown>) => {
+  const invokeServerVerify = async (functionName: string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke(functionName, { body });
-    if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha ao verificar morada do terminal"));
+    if (error) {
+      const raw = error.message || "Falha ao verificar morada do terminal";
+      const wrapped = new Error(raw);
+      throw wrapped;
+    }
     if (data?.error) throw new Error(data.error);
+    if (typeof data?.ok !== "boolean") return null;
     return data as {
       ok: boolean;
       locationId: string;
@@ -153,22 +158,61 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
     };
   };
 
-  try {
-    return await invokeVerify("stripe-verify-terminal-location", { storeId });
-  } catch (primaryErr) {
-    const msg = primaryErr instanceof Error ? primaryErr.message : "";
-    if (!isNetworkOrEdgeUnavailable(msg)) throw primaryErr;
-    const fallback = await invokeVerify("stripe-terminal-connection-token", {
-      storeId,
-      action: "verifyLocation",
-    });
-    if (typeof fallback.ok !== "boolean") {
-      throw new Error(
-        "A verificação da morada ainda não está activa no servidor. Faça Publish no Lovable e tente outra vez dentro de alguns minutos.",
-      );
+  for (const attempt of [
+    () => invokeServerVerify("stripe-terminal-connection-token", { storeId, action: "verifyLocation" }),
+    () => invokeServerVerify("stripe-verify-terminal-location", { storeId }),
+  ]) {
+    try {
+      const serverResult = await attempt();
+      if (serverResult) return serverResult;
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
+      if (!isNetworkOrEdgeUnavailable(raw)) throw new Error(raw);
     }
-    return fallback;
   }
+
+  const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
+  const tokenPayload = await fetchTerminalConnectionToken(storeId);
+  const connectAccountId = tokenPayload.stripeConnectAccountId?.trim() ?? "";
+  const locationId =
+    profile?.stripe_terminal_location_id?.trim() ||
+    tokenPayload.stripeTerminalLocationId?.trim() ||
+    "";
+
+  if (!connectAccountId) {
+    return {
+      ok: false,
+      locationId,
+      stripeConnectAccountId: "",
+      error: "Recebimentos Stripe ainda não estão activos para esta loja.",
+    };
+  }
+  if (!locationId) {
+    return {
+      ok: false,
+      locationId: "",
+      stripeConnectAccountId: connectAccountId,
+      error: "Morada do terminal em falta na loja.",
+    };
+  }
+
+  const tokenLoc = tokenPayload.stripeTerminalLocationId?.trim();
+  const profileLoc = profile?.stripe_terminal_location_id?.trim();
+  if (tokenLoc && profileLoc && tokenLoc !== profileLoc) {
+    return {
+      ok: false,
+      locationId,
+      stripeConnectAccountId: connectAccountId,
+      error: "A morada guardada não coincide com a da conta Stripe.",
+    };
+  }
+
+  return {
+    ok: true,
+    locationId,
+    displayName: profile?.stripe_business_name || profile?.name || undefined,
+    stripeConnectAccountId: connectAccountId,
+  };
 }
 
 export async function checkAppleTapToPayTerms(storeId: string): Promise<{
