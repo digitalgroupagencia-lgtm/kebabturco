@@ -64,6 +64,27 @@ workflows:
       - name: Criar IPA Development (instalar em iPhone registado)
         script: |
           set -eo pipefail
+
+          DEV_PROFILE_NAME=""
+          for dir in \
+            "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            for p in "$dir"/*.mobileprovision; do
+              [ -f "$p" ] || continue
+              DECODED=$(security cms -D -i "$p" 2>/dev/null)
+              if echo "$DECODED" | grep -q 'proximity-reader.payment.acceptance' && \
+                 echo "$DECODED" | grep -q 'get-task-allow'; then
+                DEV_PROFILE_NAME=$(echo "$DECODED" | plutil -extract Name raw -)
+                break 2
+              fi
+            done
+          done
+          if [ -z "$DEV_PROFILE_NAME" ]; then
+            echo "ERRO: Perfil Development não encontrado para exportação."
+            exit 1
+          fi
+          echo "Perfil Development: $DEV_PROFILE_NAME"
+
           ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/xcarchive/App-dev.xcarchive"
           EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa-dev"
           mkdir -p "$(dirname "$ARCHIVE_PATH")" "$EXPORT_PATH"
@@ -79,9 +100,10 @@ workflows:
             DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Development" \
+            PROVISIONING_PROFILE_SPECIFIER="$DEV_PROFILE_NAME" \
             2>&1 | tee /tmp/xcodebuild-dev-archive.log
 
-          cat > /tmp/exportOptionsDev.plist <<'PLIST'
+          cat > /tmp/exportOptionsDev.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -92,6 +114,13 @@ workflows:
             <string>4QW32SBR7H</string>
             <key>signingStyle</key>
             <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Development</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>net.kebabturco.app</key>
+              <string>${DEV_PROFILE_NAME}</string>
+            </dict>
           </dict>
           </plist>
           PLIST

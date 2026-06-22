@@ -9,6 +9,12 @@ npx cap sync ios
 
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"
+# Assinatura manual no Debug (servidor de compilação não tem conta Apple ligada).
+sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' "$PBX"
+grep -q 'CODE_SIGN_IDENTITY = "Apple Development"' "$PBX" || \
+  sed -i '' '/CODE_SIGN_STYLE = Manual;/a\
+				CODE_SIGN_IDENTITY = "Apple Development";
+' "$PBX"
 
 echo "✓ iOS Development: net.kebabturco.app"
 echo "  · Debug → App.entitlements (aps-environment=development + Tap to Pay)"
