@@ -2,6 +2,110 @@
 # Guia: scripts/CODEMAGIC-PASSO-A-PASSO.txt
 
 workflows:
+  kebabturco-ios-development:
+    name: Kebab Turco — iPhone Development (Tap to Pay)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: kebabturco
+
+    environment:
+      vars:
+        XCODE_SCHEME: App-Development
+        BUNDLE_ID: net.kebabturco.app
+        DEVELOPMENT_TEAM: 4QW32SBR7H
+      node: 22
+      xcode: 16.4
+
+    scripts:
+      - name: Instalar dependências
+        script: npm ci
+
+      - name: Compilar site + sincronizar iPhone (Development)
+        script: bash scripts/sync-ios-for-development.sh
+
+      - name: Perfil Development + certificado (API Apple)
+        script: |
+          set -euo pipefail
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_DEVELOPMENT \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Verificar Tap to Pay no perfil Development
+        script: |
+          set -euo pipefail
+          FOUND=0
+          for dir in \
+            "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            for p in "$dir"/*.mobileprovision; do
+              [ -f "$p" ] || continue
+              DECODED=$(security cms -D -i "$p" 2>/dev/null)
+              echo "=== $(basename "$p") ==="
+              echo "$DECODED" | plutil -p - 2>/dev/null | grep -E '"Name"|proximity|aps-environment|get-task-allow' || true
+              if echo "$DECODED" | grep -q 'proximity-reader.payment.acceptance'; then
+                FOUND=1
+              fi
+            done
+          done
+          if [ "$FOUND" -ne 1 ]; then
+            echo "ERRO: Perfil Development sem Tap to Pay."
+            echo "Registe o iPhone em Dispositivos e crie perfil iOS App Development com Tap to Pay no portal Apple."
+            exit 1
+          fi
+          echo "OK: perfil Development inclui Tap to Pay"
+
+      - name: Criar IPA Development (instalar em iPhone registado)
+        script: |
+          set -eo pipefail
+          ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/xcarchive/App-dev.xcarchive"
+          EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa-dev"
+          mkdir -p "$(dirname "$ARCHIVE_PATH")" "$EXPORT_PATH"
+
+          xcodebuild \
+            -project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Development" \
+            2>&1 | tee /tmp/xcodebuild-dev-archive.log
+
+          cat > /tmp/exportOptionsDev.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>teamID</key>
+            <string>4QW32SBR7H</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist /tmp/exportOptionsDev.plist \
+            2>&1 | tee /tmp/xcodebuild-dev-export.log
+
+    artifacts:
+      - build/ios/ipa-dev/*.ipa
+      - /tmp/xcodebuild-dev-archive.log
+      - /tmp/xcodebuild-dev-export.log
+
   kebabturco-ios-appstore:
     name: Kebab Turco — iPhone App Store
     max_build_duration: 120
