@@ -4,6 +4,7 @@ import {
   disconnectTapToPayReader,
   getTapToPayReaderStatus,
   isTapToPayPlatform,
+  safeGetTapToPayReaderStatus,
   warmUpTapToPayReader,
   type ReaderWarmUpStatus,
 } from "@/lib/stripeTerminalService";
@@ -50,7 +51,7 @@ export function useTapToPayWarmUp(
     if (!enabled || !storeId || !isTapToPayPlatform()) return;
 
     if (!autoStart) {
-      void getTapToPayReaderStatus().then((current) => {
+      void safeGetTapToPayReaderStatus().then((current) => {
         setStatus(current.status);
         if (current.ready) setErrorMessage(null);
       });

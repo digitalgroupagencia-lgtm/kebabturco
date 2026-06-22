@@ -293,6 +293,17 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
   };
 }
 
+export async function safeGetTapToPayReaderStatus(): Promise<{
+  status: ReaderWarmUpStatus;
+  ready: boolean;
+}> {
+  try {
+    return await withTimeout(getTapToPayReaderStatus(), 3_000, "TIMEOUT");
+  } catch {
+    return { status: "idle", ready: false };
+  }
+}
+
 export async function checkAppleTapToPayTerms(storeId: string): Promise<{
   linked: boolean;
   message: string;
@@ -301,41 +312,38 @@ export async function checkAppleTapToPayTerms(storeId: string): Promise<{
     return { linked: false, message: getTapToPayUnavailableMessage() };
   }
 
-  const reader = await withTimeout(
-    getTapToPayReaderStatus(),
-    8_000,
-    "Não foi possível ler o estado do leitor. Tente outra vez.",
-  );
+  const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
+  const hasLocation = Boolean(profile?.stripe_terminal_location_id?.trim());
+  const connectOk =
+    Boolean(profile?.stripe_connect_account_id?.trim()) && profile?.stripe_charges_enabled === true;
+
+  if (!connectOk) {
+    return { linked: false, message: "Recebimentos Stripe ainda não estão activos para esta loja." };
+  }
+
+  const reader = await safeGetTapToPayReaderStatus();
 
   if (reader.ready) {
     return { linked: true, message: "Leitor pronto — termos da Apple aceites." };
   }
 
-  if (reader.status === "preparing" || reader.status === "discovering" || reader.status === "connecting" || reader.status === "updating") {
+  if (
+    reader.status === "preparing" ||
+    reader.status === "discovering" ||
+    reader.status === "connecting" ||
+    reader.status === "updating"
+  ) {
     return {
       linked: false,
       message: "O leitor ainda está a ligar. Aguarde ou toque em Preparar leitor.",
     };
   }
 
-  try {
-    const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
-    const connectOk =
-      Boolean(profile?.stripe_connect_account_id?.trim()) && profile?.stripe_charges_enabled === true;
-    if (!connectOk) {
-      return { linked: false, message: "Recebimentos Stripe ainda não estão activos para esta loja." };
-    }
-  } catch (e) {
-    return {
-      linked: false,
-      message: e instanceof Error ? e.message : "Não foi possível verificar os termos da Apple.",
-    };
-  }
+  const locationNote = hasLocation ? " A morada da loja já está configurada." : "";
 
   return {
     linked: false,
-    message:
-      "Leitor ainda não preparado. Toque em Preparar leitor — quando a Apple pedir, leia até ao fim e toque Concordo uma vez.",
+    message: `Leitor ainda não preparado.${locationNote} Toque em Preparar leitor — quando a Apple pedir, leia até ao fim e toque Concordo uma vez.`,
   };
 }
 

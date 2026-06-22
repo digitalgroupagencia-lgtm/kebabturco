@@ -53,6 +53,12 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
   const handleCreateLocation = async () => {
     setBusyAction("create");
     try {
+      const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
+      const existing = profile?.stripe_terminal_location_id?.trim();
+      if (existing) {
+        toast.success(t("tapToPay.settings.location_exists").replace("{id}", existing));
+        return;
+      }
       const res = await createStoreTerminalLocation(storeId);
       await refetch();
       toast.success(
