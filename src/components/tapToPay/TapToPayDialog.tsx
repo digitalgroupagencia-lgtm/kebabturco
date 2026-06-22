@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, Smartphone, X } from "lucide-react";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   type TapToPayStep,
 } from "@/lib/stripeTerminalService";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
+import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
 
 export type TapToPayDialogOrder = {
   id: string;
@@ -64,6 +65,15 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
     setEmail("");
   }, []);
 
+  useEffect(() => {
+    if (open && order) {
+      setEmail(order.customer_email?.trim() ?? "");
+      setStep("idle");
+      setError(null);
+      setBusy(false);
+    }
+  }, [open, order]);
+
   const handleClose = useCallback(() => {
     void disconnectTapToPayReader();
     reset();
@@ -105,48 +115,57 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-primary" />
-            {t("tapToPay.title")} #{order.order_number}
-          </DialogTitle>
-        </DialogHeader>
-
-        <p className="text-sm text-muted-foreground">{t("tapToPay.subtitle")}</p>
-        <p className="text-2xl font-black">€{Number(order.total).toFixed(2)}</p>
-
-        <div className="space-y-2">
-          <Label htmlFor="tap-email">{t("tapToPay.emailLabel")}</Label>
-          <Input
-            id="tap-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t("tapToPay.emailPlaceholder")}
-            disabled={busy}
-          />
+      <DialogContent
+        className={tapToPayDialogContentClass("sm:max-w-md flex flex-col gap-0 p-0 overflow-hidden")}
+      >
+        <div className="shrink-0 border-b px-4 pt-4 pb-3 sm:px-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 pr-8">
+              <Smartphone className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">{t("tapToPay.title")} #{order.order_number}</span>
+            </DialogTitle>
+          </DialogHeader>
         </div>
 
-        {step !== "idle" && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
-            {busy && step !== "success" && step !== "error" ? (
-              <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
-            ) : null}
-            <p className="text-sm font-medium">{stepMessage(step, t)}</p>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 space-y-4">
+          <p className="text-sm text-muted-foreground">{t("tapToPay.subtitle")}</p>
+          <p className="text-2xl font-black">€{Number(order.total).toFixed(2)}</p>
+
+          <div className="space-y-2">
+            <Label htmlFor="tap-email">{t("tapToPay.emailLabel")}</Label>
+            <Input
+              id="tap-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("tapToPay.emailPlaceholder")}
+              disabled={busy}
+              className="text-base"
+            />
           </div>
-        )}
 
-        {error && (
-          <p className="text-sm text-destructive font-medium">{error}</p>
-        )}
+          {step !== "idle" && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
+              {busy && step !== "success" && step !== "error" ? (
+                <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
+              ) : null}
+              <p className="text-sm font-medium">{stepMessage(step, t)}</p>
+            </div>
+          )}
 
-        <div className="flex gap-2 justify-end pt-2">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={busy}>
+          {error && (
+            <p className="text-sm text-destructive font-medium">{error}</p>
+          )}
+        </div>
+
+        <div className="shrink-0 flex flex-col-reverse gap-2 border-t bg-background px-4 py-3 sm:px-6 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={handleClose} disabled={busy} className="w-full sm:w-auto">
             <X className="w-4 h-4 mr-1" />
             {t("tapToPay.cancel")}
           </Button>
-          <Button type="button" onClick={() => void startPayment()} disabled={busy}>
+          <Button type="button" onClick={() => void startPayment()} disabled={busy} className="w-full sm:w-auto">
             {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
             {t("order.detail.tap_to_pay")}
           </Button>

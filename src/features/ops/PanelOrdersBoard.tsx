@@ -413,9 +413,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         }
         onCancel={cancelOrder}
         onSetPrepMinutes={setPrepMinutes}
-        onMarkPaid={(o, m) => {
-          void confirmMarkPaid(o, m);
-        }}
+        onMarkPaid={(o, m) => confirmMarkPaid(o, m)}
         onReprint={(o) => reprintOrder(o)}
       />
 

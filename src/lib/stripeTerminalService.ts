@@ -28,8 +28,35 @@ export type ReaderWarmUpStatus =
 
 let progressListenerAttached = false;
 
+const WARM_UP_TIMEOUT_MS = 90_000;
+const PAYMENT_TIMEOUT_MS = 120_000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function isTapToPayPlatform(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+}
+
+export function getTapToPayUnavailableMessage(): string {
+  if (!Capacitor.isNativePlatform()) {
+    return "Tap to Pay só funciona na app iPhone da equipa (não no browser).";
+  }
+  if (Capacitor.getPlatform() !== "ios") {
+    return "Tap to Pay só está disponível no iPhone.";
+  }
+  return "Tap to Pay indisponível neste dispositivo.";
 }
 
 async function loadStripeTerminal(): Promise<StripeTerminalPlugin> {
@@ -137,13 +164,17 @@ export async function warmUpTapToPayReader(
 
   try {
     const ctx = await resolveTerminalContext(storeId);
-    const result = await (await loadStripeTerminal()).warmUpTapToPay({
-      connectionToken: ctx.tokenPayload.secret,
-      locationId: ctx.locationId,
-      onBehalfOf: ctx.connectAccountId,
-      simulated: ctx.simulated,
-    });
-    const status = result.ready ? "ready" : "preparing";
+    const result = await withTimeout(
+      (await loadStripeTerminal()).warmUpTapToPay({
+        connectionToken: ctx.tokenPayload.secret,
+        locationId: ctx.locationId,
+        onBehalfOf: ctx.connectAccountId,
+        simulated: ctx.simulated,
+      }),
+      WARM_UP_TIMEOUT_MS,
+      "A preparação do Tap to Pay demorou demasiado. Verifique a ligação e tente novamente.",
+    );
+    const status = result.ready ? "ready" : "error";
     opts?.onStatus?.(status);
     return status;
   } catch (e) {
@@ -182,6 +213,11 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("connecting", "A preparar leitor…");
 
+  const readerStatus = await getTapToPayReaderStatus();
+  if (readerStatus.status === "error") {
+    throw new Error("O leitor Tap to Pay não está pronto. Active-o nas definições e tente novamente.");
+  }
+
   const ctx = await resolveTerminalContext(params.storeId);
   const amountCents = Math.round(params.amountEuro * 100);
   const customerEmail = normalizeOptionalEmail(params.customerEmail);
@@ -211,14 +247,18 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("waiting_card", "Aproxime o cartão ou telemóvel do cliente…");
 
-  const result = await (await loadStripeTerminal()).processTapToPayPayment({
-    publishableKey,
-    connectionToken: ctx.tokenPayload.secret,
-    locationId: ctx.locationId,
-    onBehalfOf: ctx.connectAccountId,
-    clientSecret: pi.clientSecret,
-    simulated: ctx.simulated,
-  });
+  const result = await withTimeout(
+    (await loadStripeTerminal()).processTapToPayPayment({
+      publishableKey,
+      connectionToken: ctx.tokenPayload.secret,
+      locationId: ctx.locationId,
+      onBehalfOf: ctx.connectAccountId,
+      clientSecret: pi.clientSecret,
+      simulated: ctx.simulated,
+    }),
+    PAYMENT_TIMEOUT_MS,
+    "O pagamento Tap to Pay demorou demasiado. Cancele e tente novamente.",
+  );
 
   params.onStep?.("processing", "A confirmar pagamento…");
 

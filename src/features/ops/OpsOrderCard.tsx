@@ -242,14 +242,20 @@ const OpsOrderCard = memo(function OpsOrderCard({
                     showTapToPayButton ? "flex-1" : "flex-1"
                   }`}
                   disabled={payingNow}
-                  onClick={async (e) => {
+                  onClick={(e) => {
                     e.stopPropagation();
-                    setPayingNow(true);
-                    try {
-                      await onMarkPaid!(order, "card");
-                    } finally {
-                      setPayingNow(false);
+                    if (showTapToPayButton) {
+                      void onMarkPaid!(order, "card");
+                      return;
                     }
+                    void (async () => {
+                      setPayingNow(true);
+                      try {
+                        await onMarkPaid!(order, "card");
+                      } finally {
+                        setPayingNow(false);
+                      }
+                    })();
                   }}
                 >
                   <CreditCard className="h-3 w-3 mr-1" />

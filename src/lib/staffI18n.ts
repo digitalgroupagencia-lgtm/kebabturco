@@ -721,6 +721,16 @@ export const STAFF_I18N = {
     en: "Configuring reader…",
   },
   "tapToPay.settings.status_idle": { es: "No preparado", pt: "Não preparado", en: "Not prepared" },
+  "tapToPay.settings.status_error": {
+    es: "Error al preparar Tap to Pay",
+    pt: "Erro ao preparar Tap to Pay",
+    en: "Tap to Pay setup failed",
+  },
+  "tapToPay.settings.warmup_error": {
+    es: "No se pudo preparar Tap to Pay. Compruebe la conexión y la configuración de la tienda.",
+    pt: "Não foi possível preparar o Tap to Pay. Verifique a ligação e a configuração da loja.",
+    en: "Could not prepare Tap to Pay. Check connection and store setup.",
+  },
   "tapToPay.settings.reset_demo": {
     es: "Reiniciar demo (vídeos Apple)",
     pt: "Reiniciar demo (vídeos Apple)",

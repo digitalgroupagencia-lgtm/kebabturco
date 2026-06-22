@@ -1,4 +1,5 @@
-import { Smartphone, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Smartphone, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,8 @@ import {
   setTapToPayUserEnabled,
 } from "@/lib/tapToPayPrefs";
 import { showTapToPayMerchantEducation, warmUpTapToPayReader } from "@/lib/stripeTerminalService";
+import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import { toast } from "sonner";
 
 type Props = {
   open: boolean;
@@ -24,15 +27,27 @@ type Props = {
 
 export default function TapToPayAwarenessModal({ open, storeId, onOpenChange, onEnabled }: Props) {
   const { t } = useStaffT();
+  const [enabling, setEnabling] = useState(false);
 
   const handleEnable = async () => {
-    markTapToPayAwarenessSeen();
-    setTapToPayUserEnabled(true);
-    await showTapToPayMerchantEducation();
-    markTapToPayEducationSeen();
-    void warmUpTapToPayReader(storeId);
-    onEnabled?.();
-    onOpenChange(false);
+    if (enabling) return;
+    setEnabling(true);
+    try {
+      markTapToPayAwarenessSeen();
+      setTapToPayUserEnabled(true);
+      await showTapToPayMerchantEducation();
+      markTapToPayEducationSeen();
+      const status = await warmUpTapToPayReader(storeId);
+      if (status === "error") {
+        toast.error(t("tapToPay.settings.warmup_error"));
+      }
+      onEnabled?.();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("tapToPay.settings.warmup_error"));
+    } finally {
+      setEnabling(false);
+    }
   };
 
   const handleLater = () => {
@@ -42,13 +57,15 @@ export default function TapToPayAwarenessModal({ open, storeId, onOpenChange, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border-primary/20 p-0 overflow-hidden gap-0">
-        <div className="bg-gradient-to-b from-primary to-primary/85 px-6 pt-8 pb-6 text-primary-foreground text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-foreground/15 ring-2 ring-primary-foreground/25">
-            <Smartphone className="h-8 w-8" />
+      <DialogContent
+        className={tapToPayDialogContentClass("max-w-md border-primary/20 p-0 gap-0 flex flex-col overflow-hidden")}
+      >
+        <div className="shrink-0 bg-gradient-to-b from-primary to-primary/85 px-5 pt-6 pb-5 text-primary-foreground text-center sm:px-6 sm:pt-8 sm:pb-6">
+          <div className="mx-auto mb-3 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-primary-foreground/15 ring-2 ring-primary-foreground/25">
+            <Smartphone className="h-7 w-7 sm:h-8 sm:w-8" />
           </div>
           <DialogHeader className="space-y-2 text-center">
-            <DialogTitle className="text-xl font-black text-primary-foreground">
+            <DialogTitle className="text-lg sm:text-xl font-black text-primary-foreground">
               {t("tapToPay.awareness.title")}
             </DialogTitle>
             <DialogDescription className="text-sm text-primary-foreground/85 leading-relaxed">
@@ -57,26 +74,33 @@ export default function TapToPayAwarenessModal({ open, storeId, onOpenChange, on
           </DialogHeader>
         </div>
 
-        <div className="space-y-4 bg-card px-6 py-5">
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-card px-5 py-4 sm:px-6 sm:py-5">
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex gap-2.5">
               <Sparkles className="h-4 w-4 shrink-0 text-primary mt-0.5" />
               <span>{t("tapToPay.awareness.point1")}</span>
             </li>
-            <li className="flex gap-2">
+            <li className="flex gap-2.5">
               <Sparkles className="h-4 w-4 shrink-0 text-primary mt-0.5" />
               <span>{t("tapToPay.awareness.point2")}</span>
             </li>
-            <li className="flex gap-2">
+            <li className="flex gap-2.5">
               <Sparkles className="h-4 w-4 shrink-0 text-primary mt-0.5" />
               <span>{t("tapToPay.awareness.point3")}</span>
             </li>
           </ul>
+        </div>
 
-          <Button className="w-full h-12 font-black text-base" onClick={() => void handleEnable()}>
+        <div className="shrink-0 space-y-2 border-t bg-card px-5 py-4 sm:px-6 sm:py-5">
+          <Button
+            className="w-full h-12 font-black text-base"
+            onClick={() => void handleEnable()}
+            disabled={enabling}
+          >
+            {enabling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             {t("tapToPay.awareness.enable")}
           </Button>
-          <Button variant="ghost" className="w-full" onClick={handleLater}>
+          <Button variant="ghost" className="w-full" onClick={handleLater} disabled={enabling}>
             {t("tapToPay.awareness.later")}
           </Button>
         </div>

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
-import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
+import { isTapToPayPlatform, getTapToPayUnavailableMessage } from "@/lib/stripeTerminalService";
 import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
 
@@ -26,7 +26,7 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
   const requestTapToPay = useCallback(
     async (order: TapToPayOrder) => {
       if (!isTapToPayPlatform()) {
-        toast.error(t("tapToPay.ios_only"));
+        toast.error(getTapToPayUnavailableMessage());
         return false;
       }
       const pin = await requestStaffPin({

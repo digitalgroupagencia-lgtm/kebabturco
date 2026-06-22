@@ -321,13 +321,19 @@ const OpsOrderDetailSheet = ({
                   variant="secondary"
                   className="flex-1 h-10 font-bold"
                   disabled={markingPaid}
-                  onClick={async () => {
-                    setMarkingPaid(true);
-                    try {
-                      await onMarkPaid(order, "card");
-                    } finally {
-                      setMarkingPaid(false);
+                  onClick={() => {
+                    if (isTapToPayPlatform()) {
+                      void onMarkPaid(order, "card");
+                      return;
                     }
+                    void (async () => {
+                      setMarkingPaid(true);
+                      try {
+                        await onMarkPaid(order, "card");
+                      } finally {
+                        setMarkingPaid(false);
+                      }
+                    })();
                   }}
                 >
                   {isTapToPayPlatform() ? t("order.detail.tap_to_pay") : t("order.detail.mark_card")}

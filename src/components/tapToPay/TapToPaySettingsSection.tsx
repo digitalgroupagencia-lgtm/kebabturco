@@ -31,7 +31,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
   const { t } = useStaffT();
   const [awarenessOpen, setAwarenessOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const { status, progressMessage, isPreparing, isReady, refreshWarmUp } = useTapToPayWarmUp(
+  const { status, progressMessage, errorMessage, isPreparing, isReady, hasError, refreshWarmUp } = useTapToPayWarmUp(
     storeId,
     isTapToPayPlatform() && isTapToPayUserEnabled(),
   );
@@ -80,6 +80,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
     if (iosOnly) return t("tapToPay.settings.status_web");
     if (!locationId) return t("tapToPay.settings.status_no_location");
     if (isReady || status === "ready") return t("tapToPay.settings.status_ready");
+    if (hasError) return errorMessage || t("tapToPay.settings.status_error");
     if (isPreparing) return progressMessage || t("tapToPay.settings.status_preparing");
     return t("tapToPay.settings.status_idle");
   };
@@ -87,7 +88,7 @@ export default function TapToPaySettingsSection({ storeId, compact = false }: Pr
   const content = (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={isReady ? "default" : "secondary"}>{statusLabel()}</Badge>
+        <Badge variant={isReady ? "default" : hasError ? "destructive" : "secondary"}>{statusLabel()}</Badge>
         {locationId ? (
           <Badge variant="outline" className="font-mono text-[10px]">
             {locationId}

@@ -10,20 +10,26 @@ import {
 export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = true) {
   const [status, setStatus] = useState<ReaderWarmUpStatus>("idle");
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const busyRef = useRef(false);
 
   const runWarmUp = useCallback(async () => {
     if (!enabled || !storeId || !isTapToPayPlatform() || busyRef.current) return;
     busyRef.current = true;
     setStatus("preparing");
+    setErrorMessage(null);
     try {
       const result = await warmUpTapToPayReader(storeId, {
         onProgress: (message) => setProgressMessage(message),
         onStatus: setStatus,
       });
       setStatus(result);
-    } catch {
+      if (result === "error") {
+        setErrorMessage("Não foi possível preparar o Tap to Pay. Verifique a ligação e as definições da loja.");
+      }
+    } catch (e) {
       setStatus("error");
+      setErrorMessage(e instanceof Error ? e.message : "Erro ao preparar Tap to Pay.");
     } finally {
       busyRef.current = false;
     }
@@ -49,8 +55,10 @@ export function useTapToPayWarmUp(storeId: string | null | undefined, enabled = 
   return {
     status,
     progressMessage,
+    errorMessage,
     refreshWarmUp: runWarmUp,
     isPreparing: status === "preparing" || status === "discovering" || status === "connecting" || status === "updating",
     isReady: status === "ready",
+    hasError: status === "error",
   };
 }
