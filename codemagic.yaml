@@ -11,6 +11,11 @@ workflows:
       app_store_connect: kebabturco
 
     environment:
+      ios_signing:
+        provisioning_profiles:
+          - kebabturco_dev
+        certificates:
+          - kebabturco_dev
       vars:
         XCODE_SCHEME: App-Development
         BUNDLE_ID: net.kebabturco.app
@@ -25,13 +30,10 @@ workflows:
       - name: Compilar site + sincronizar iPhone (Development)
         script: bash scripts/sync-ios-for-development.sh
 
-      - name: Perfil Development + certificado (API Apple)
+      - name: Assinatura Development (certificados guardados no Codemagic)
         script: |
           set -euo pipefail
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_DEVELOPMENT \
-            --create
           keychain add-certificates
           xcode-project use-profiles
 

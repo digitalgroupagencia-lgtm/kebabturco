@@ -66,6 +66,39 @@ C) Perfil no Codemagic:
 D) Start new build outra vez
 
 ────────────────────────────────────────────────────────────
+PARTE 4b — Development / Tap to Pay no iPhone (configurar UMA vez)
+────────────────────────────────────────────────────────────
+
+A) Registar o iPhone na Apple:
+   1. developer.apple.com → Dispositivos → +
+   2. Nome + UDID do iPhone de teste
+
+B) Certificado Development no Codemagic:
+   1. Team settings → Code signing identities → iOS certificates
+   2. Generate certificate
+   3. Reference name: kebabturco_dev
+   4. Tipo: Apple Development (NÃO Distribution)
+   5. Chave API: kebabturco
+   6. Create certificate
+   7. Descarregar .p12 e guardar a password (só uma vez)
+
+C) Perfil Development no Codemagic:
+   1. iOS provisioning profiles → Fetch profiles
+   2. Em Development profiles, marcar perfil de net.kebabturco.app
+      (tem de incluir o iPhone registado + Tap to Pay no App ID)
+   3. Reference name: kebabturco_dev
+   4. Download selected
+
+   Se não aparecer perfil Development: criar na Apple
+   (Perfis → + → Desenvolvimento → iOS App Development → net.kebabturco.app
+    → certificado Development → marcar iPhone → Gerar)
+   e repetir Fetch profiles.
+
+D) Build no Codemagic:
+   Workflow: Kebab Turco — iPhone Development (Tap to Pay)
+   (NÃO usar o workflow App Store para testes)
+
+────────────────────────────────────────────────────────────
 PARTE 5 — Ligar o repositório (3 min)
 ────────────────────────────────────────────────────────────
 
