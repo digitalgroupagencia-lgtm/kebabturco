@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import {
   Dialog,
   DialogContent,
@@ -6,6 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +24,7 @@ import {
   staffAccessPinHint,
   validateStaffAccessPin,
 } from "@/lib/staffAccessPin";
-import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import { staffMobileSheetClass } from "@/components/tapToPay/tapToPayDialogClasses";
 
 export type StaffPinConfirmOptions = {
   title?: string;
@@ -31,10 +39,26 @@ type Props = {
   onConfirm: (pin: string) => void;
 };
 
+function usePreferBottomSheet() {
+  const [preferSheet, setPreferSheet] = useState(false);
+  useEffect(() => {
+    const update = () => {
+      const native = Capacitor.isNativePlatform();
+      const narrow = typeof window !== "undefined" && window.innerWidth < 768;
+      setPreferSheet(native || narrow);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return preferSheet;
+}
+
 const StaffPinConfirmDialog = ({ open, options, onOpenChange, onConfirm }: Props) => {
   const { t, lang } = useStaffT();
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const preferSheet = usePreferBottomSheet();
 
   useEffect(() => {
     if (open) {
@@ -52,55 +76,85 @@ const StaffPinConfirmDialog = ({ open, options, onOpenChange, onConfirm }: Props
     onConfirm(pin.trim());
   };
 
+  const title = options?.title ?? t("staffPin.confirm.title");
+  const description = options?.description ?? t("staffPin.confirm.description");
+
+  const body = (
+    <div className="space-y-4 px-4 pb-2 sm:px-6">
+      <p className="text-sm text-muted-foreground">{description}</p>
+      {options?.amountLabel ? (
+        <p className="text-xl font-black text-primary tabular-nums">{options.amountLabel}</p>
+      ) : null}
+      <div>
+        <Label htmlFor="staff-payment-pin" className="text-sm font-semibold">
+          {t("staffPin.confirm.label")}
+        </Label>
+        <SecretInput
+          id="staff-payment-pin"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          enterKeyHint="done"
+          autoFocus={open && !preferSheet}
+          value={pin}
+          onChange={(e) => {
+            setPin(sanitizeStaffAccessPinInput(e.target.value));
+            setError(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleConfirm();
+          }}
+          placeholder={t("staffPin.confirm.placeholder")}
+          className="mt-2 h-14 text-center text-2xl tracking-[0.35em] font-mono"
+        />
+        <p className="text-xs text-muted-foreground mt-2">{staffAccessPinHint(lang)}</p>
+        {error ? <p className="text-sm text-destructive mt-2 font-medium">{error}</p> : null}
+      </div>
+    </div>
+  );
+
+  const actions = (
+    <>
+      <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto h-12">
+        {t("common.cancel")}
+      </Button>
+      <Button type="button" onClick={handleConfirm} className="w-full sm:w-auto h-12 font-bold">
+        {t("staffPin.confirm.submit")}
+      </Button>
+    </>
+  );
+
+  if (preferSheet) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className={staffMobileSheetClass("px-0")}>
+          <DrawerHeader className="text-left px-4 pt-2">
+            <DrawerTitle className="flex items-center gap-2 text-lg font-black">
+              <KeyRound className="h-5 w-5 text-primary shrink-0" />
+              <span className="truncate">{title}</span>
+            </DrawerTitle>
+          </DrawerHeader>
+          {body}
+          <DrawerFooter className="flex-row gap-2 border-t pt-3">{actions}</DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={tapToPayDialogContentClass("max-w-sm flex flex-col gap-0 p-0 overflow-hidden")}>
+      <DialogContent className="max-w-sm gap-0 p-0 overflow-hidden">
         <div className="shrink-0 px-4 pt-4 pb-3 sm:px-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 pr-8">
               <KeyRound className="h-5 w-5 text-primary shrink-0" />
-              <span className="truncate">{options?.title ?? t("staffPin.confirm.title")}</span>
+              <span className="truncate">{title}</span>
             </DialogTitle>
           </DialogHeader>
         </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-2 sm:px-6 space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {options?.description ?? t("staffPin.confirm.description")}
-          </p>
-          {options?.amountLabel ? (
-            <p className="text-base font-bold text-primary tabular-nums">{options.amountLabel}</p>
-          ) : null}
-          <div>
-            <Label htmlFor="staff-payment-pin">{t("staffPin.confirm.label")}</Label>
-            <SecretInput
-              id="staff-payment-pin"
-              inputMode="numeric"
-              autoComplete="off"
-              autoFocus
-              value={pin}
-              onChange={(e) => {
-                setPin(sanitizeStaffAccessPinInput(e.target.value));
-                setError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleConfirm();
-              }}
-              placeholder={t("staffPin.confirm.placeholder")}
-              className="mt-1 text-center text-lg tracking-[0.3em] font-mono"
-            />
-            <p className="text-xs text-muted-foreground mt-1.5">{staffAccessPinHint(lang)}</p>
-            {error ? <p className="text-xs text-destructive mt-1">{error}</p> : null}
-          </div>
-        </div>
-
+        {body}
         <DialogFooter className="shrink-0 gap-2 border-t px-4 py-3 sm:px-6 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            {t("common.cancel")}
-          </Button>
-          <Button type="button" onClick={handleConfirm} className="w-full sm:w-auto">
-            {t("staffPin.confirm.submit")}
-          </Button>
+          {actions}
         </DialogFooter>
       </DialogContent>
     </Dialog>

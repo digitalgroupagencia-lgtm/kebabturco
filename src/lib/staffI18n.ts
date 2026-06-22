@@ -620,6 +620,16 @@ export const STAFF_I18N = {
   "tapToPay.step.processing": { es: "Procesando pago…", pt: "A processar pagamento…", en: "Processing payment…" },
   "tapToPay.step.success": { es: "¡Pago aprobado!", pt: "Pagamento aprovado!", en: "Payment approved!" },
   "tapToPay.step.error": { es: "Error en el pago", pt: "Erro no pagamento", en: "Payment error" },
+  "tapToPay.reader_not_ready": {
+    es: "El lector no está listo. Active Tap to Pay en Ajustes o pulse reintentar.",
+    pt: "O leitor não está pronto. Active o Tap to Pay nas Definições ou toque em tentar outra vez.",
+    en: "Reader not ready. Enable Tap to Pay in Settings or tap retry.",
+  },
+  "tapToPay.retry_reader": {
+    es: "Reintentar",
+    pt: "Tentar outra vez",
+    en: "Retry",
+  },
   "order.detail.tap_to_pay": { es: "Tap to Pay en iPhone", pt: "Tap to Pay no iPhone", en: "Tap to Pay on iPhone" },
   "tapToPay.ios_only": {
     es: "Tap to Pay solo funciona en la app iPhone de la equipa.",

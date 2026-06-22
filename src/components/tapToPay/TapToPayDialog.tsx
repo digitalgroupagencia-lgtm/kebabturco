@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Smartphone, X } from "lucide-react";
+import { Loader2, RefreshCw, Smartphone, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,6 @@ import {
   disconnectTapToPayReader,
   getTapToPayReaderStatus,
   runTapToPayForOrder,
-  warmUpTapToPayReader,
   type TapToPayStep,
 } from "@/lib/stripeTerminalService";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
@@ -60,7 +59,6 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [readerReady, setReaderReady] = useState(false);
-  const [preparingReader, setPreparingReader] = useState(false);
 
   const reset = useCallback(() => {
     setStep("idle");
@@ -68,41 +66,22 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
     setBusy(false);
     setEmail("");
     setReaderReady(false);
-    setPreparingReader(false);
   }, []);
 
+  const refreshReaderStatus = useCallback(async () => {
+    const status = await getTapToPayReaderStatus();
+    setReaderReady(status.ready);
+    if (!status.ready) {
+      setError(t("tapToPay.settings.warmup_error"));
+    } else {
+      setError(null);
+    }
+  }, [t]);
+
   useEffect(() => {
-    if (!open || !order || !storeId) return;
-    let cancelled = false;
-    setPreparingReader(true);
-    setError(null);
-    void (async () => {
-      try {
-        const status = await getTapToPayReaderStatus();
-        if (cancelled) return;
-        if (status.ready) {
-          setReaderReady(true);
-          return;
-        }
-        const warmed = await warmUpTapToPayReader(storeId);
-        if (cancelled) return;
-        if (warmed === "ready") {
-          setReaderReady(true);
-        } else {
-          setError(t("tapToPay.settings.warmup_error"));
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : t("tapToPay.settings.warmup_error"));
-        }
-      } finally {
-        if (!cancelled) setPreparingReader(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, order, storeId, t]);
+    if (!open || !order) return;
+    void refreshReaderStatus();
+  }, [open, order, refreshReaderStatus]);
 
   useEffect(() => {
     if (open && order) {
@@ -185,10 +164,13 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             />
           </div>
 
-          {preparingReader && (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
-              <p className="text-sm font-medium">{t("tapToPay.step.connecting")}</p>
+          {!readerReady && !busy && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 space-y-2">
+              <p className="text-sm font-medium">{t("tapToPay.reader_not_ready")}</p>
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void refreshReaderStatus()}>
+                <RefreshCw className="w-4 h-4 mr-1" />
+                {t("tapToPay.retry_reader")}
+              </Button>
             </div>
           )}
 
@@ -214,7 +196,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
           <Button
             type="button"
             onClick={() => void startPayment()}
-            disabled={busy || preparingReader || !readerReady}
+            disabled={busy || !readerReady}
             className="w-full sm:w-auto"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}

@@ -35,6 +35,8 @@ export default function TapToPayAwarenessModal({ open, storeId, onOpenChange, on
     try {
       markTapToPayAwarenessSeen();
       setTapToPayUserEnabled(true);
+      onOpenChange(false);
+      await new Promise((r) => window.setTimeout(r, 350));
       await showTapToPayMerchantEducation();
       markTapToPayEducationSeen();
       const status = await warmUpTapToPayReader(storeId);

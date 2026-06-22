@@ -26,6 +26,7 @@ import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
 import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
+import { ensureTapToPayReaderReady } from "@/lib/prepareTapToPayCheckout";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
 import { listStoreDrivers } from "@/services/orderService";
@@ -249,13 +250,18 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
       });
       if (!pin) return false;
       if (method === "card" && isTapToPayPlatform()) {
+        const prepared = await ensureTapToPayReaderReady(storeId);
+        if (!prepared.ok) {
+          toast.error(prepared.message);
+          return false;
+        }
         setTapPayPin(pin);
         setTapPayOrder(order);
         return true;
       }
       return markOrderPaid(order, method, pin);
     },
-    [markOrderPaid, requestStaffPin],
+    [markOrderPaid, requestStaffPin, storeId],
   );
 
   const cardProps = (order: PanelOrder) => ({

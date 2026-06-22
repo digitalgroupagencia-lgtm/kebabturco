@@ -124,13 +124,14 @@ async function resolveTerminalContext(storeId: string) {
   ]);
 
   const locationId = tokenPayload.stripeTerminalLocationId ?? profile?.stripe_terminal_location_id;
-  const connectAccountId = tokenPayload.stripeConnectAccountId ?? profile?.stripe_connect_account_id;
 
-  if (!locationId?.trim()) {
-    throw new Error(
-      "Falta configurar o local Stripe Terminal da loja. Peça ao administrador para activar Tap to Pay nas definições.",
-    );
+  let resolvedLocationId = locationId?.trim() ?? "";
+  if (!resolvedLocationId) {
+    const created = await createStoreTerminalLocation(storeId);
+    resolvedLocationId = created.locationId;
   }
+
+  const connectAccountId = tokenPayload.stripeConnectAccountId ?? profile?.stripe_connect_account_id;
   if (!connectAccountId?.trim()) {
     throw new Error("Recebimentos Stripe ainda não estão activos para esta loja.");
   }
@@ -141,7 +142,7 @@ async function resolveTerminalContext(storeId: string) {
   return {
     tokenPayload,
     profile,
-    locationId: locationId.trim(),
+    locationId: resolvedLocationId,
     connectAccountId: connectAccountId.trim(),
     simulated,
   };
