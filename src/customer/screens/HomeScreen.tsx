@@ -184,14 +184,14 @@ const HomeScreen = () => {
                   }`}
                 >
                   <div className="aspect-square w-full overflow-hidden rounded-2xl bg-secondary/25">
-                    <SmartImage
-                      src={category.image}
-                      alt={tProduct(category.name)}
-                      targetWidth={176}
-                      priority
-                      className="h-full w-full object-cover object-center"
-                      wrapperClassName="h-full w-full"
-                    />
+                  <SmartImage
+                    src={category.image}
+                    alt={tProduct(category.name)}
+                    targetWidth={176}
+                    priority
+                    className="h-full w-full object-contain object-center"
+                    wrapperClassName="flex h-full w-full items-center justify-center"
+                  />
                   </div>
                   <span
                     className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
@@ -257,8 +257,8 @@ const HomeScreen = () => {
                     alt={cleanName}
                     targetWidth={400}
                     priority={isPriority}
-                    className="h-full w-full object-cover object-center"
-                    wrapperClassName="h-full w-full"
+                    className="h-full w-full object-contain object-center"
+                    wrapperClassName="flex h-full w-full items-center justify-center"
                   />
                 </div>
 

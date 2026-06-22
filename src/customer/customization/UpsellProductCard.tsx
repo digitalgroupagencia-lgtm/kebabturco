@@ -35,8 +35,8 @@ export default function UpsellProductCard({ product, menuProducts = [], onClick,
           src={imageSrc}
           alt={cleanName}
           targetWidth={200}
-          className="h-full w-full object-cover object-center"
-          wrapperClassName="h-full w-full"
+          className="h-full w-full object-contain object-center"
+          wrapperClassName="flex h-full w-full items-center justify-center"
           onError={() => setBroken(true)}
         />
       </div>
