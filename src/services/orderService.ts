@@ -290,11 +290,25 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     _stripe_connect_account_id: params.stripeConnectAccountId || undefined,
   };
 
-  const { data, error } = await supabase.rpc("create_customer_order", args);
+  let { data, error } = await supabase.rpc("create_customer_order", args);
+
+  if (error && args._customer_email && isCustomerEmailRpcUnavailable(error)) {
+    const { _customer_email: _omit, ...argsWithoutEmail } = args;
+    ({ data, error } = await supabase.rpc("create_customer_order", argsWithoutEmail));
+  }
 
   if (error) throw new Error(error.message || "Não foi possível criar o pedido");
   const result = data as CreateCustomerOrderResult;
   return result;
+}
+
+function isCustomerEmailRpcUnavailable(error: { code?: string; message?: string }): boolean {
+  const msg = (error.message ?? "").toLowerCase();
+  return (
+    error.code === "PGRST202" ||
+    msg.includes("customer_email") ||
+    msg.includes("could not find the function")
+  );
 }
 
 export async function markOrderPaidAtCounter(
@@ -303,12 +317,20 @@ export async function markOrderPaidAtCounter(
   staffPin: string,
   stripePaymentIntentId?: string | null,
 ) {
-  const { data, error } = await supabase.rpc("mark_order_paid_at_counter", {
+  const paidArgs = {
     _order_id: orderId,
     _payment_method: paymentMethod,
     _staff_pin: staffPin,
     _stripe_payment_intent_id: stripePaymentIntentId || undefined,
-  });
+  };
+  let { data, error } = await supabase.rpc("mark_order_paid_at_counter", paidArgs);
+  if (error && paidArgs._stripe_payment_intent_id && isCustomerEmailRpcUnavailable(error)) {
+  ({ data, error } = await supabase.rpc("mark_order_paid_at_counter", {
+      _order_id: orderId,
+      _payment_method: paymentMethod,
+      _staff_pin: staffPin,
+    }));
+  }
   if (error) throw error;
   if (data && typeof data === "object" && (data as { error?: string }).error) {
     throw new Error((data as { error: string }).error);
