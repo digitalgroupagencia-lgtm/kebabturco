@@ -177,13 +177,13 @@ const HomeScreen = () => {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`group relative flex w-full flex-col items-stretch gap-1.5 rounded-2xl p-1.5 transition-all touch-action-manipulation ${
+                  className={`group relative flex w-full flex-col items-stretch gap-1.5 rounded-2xl p-2 transition-all touch-action-manipulation ${
                     isActive
                       ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)] ring-1 ring-primary/25"
                       : "bg-card shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.08)] active:scale-[0.97]"
                   }`}
                 >
-                  <div className="aspect-square w-full overflow-hidden rounded-2xl bg-secondary/30">
+                  <div className="aspect-square w-full overflow-hidden rounded-2xl bg-secondary/25">
                     <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
@@ -239,9 +239,9 @@ const HomeScreen = () => {
               <button
                 key={product.id}
                 onClick={() => openProduct(product.id)}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card text-left active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
+                className="group flex flex-col rounded-2xl border border-border/60 bg-card p-2 text-left active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
               >
-                <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-secondary/20">
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-secondary/25">
                   {product.isPromo && (
                     <span className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
                       Oferta
@@ -257,18 +257,18 @@ const HomeScreen = () => {
                     alt={cleanName}
                     targetWidth={400}
                     priority={isPriority}
-                    className="h-full w-full object-contain object-center p-1.5"
+                    className="h-full w-full object-cover object-center"
                     wrapperClassName="h-full w-full"
                   />
                 </div>
 
-                <div className="px-2.5 pt-2 pb-2.5 flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 pt-2">
                   <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] min-h-[34px] flex flex-col">
                     <span className="block">{l1}</span>
                     {l2 && <span className="block">{l2}</span>}
                   </span>
 
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 pb-0.5">
                     <span className="text-[16px] font-black text-price tabular-nums tracking-tight">
                       {product.price.toFixed(2)}€
                     </span>

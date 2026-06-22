@@ -27,7 +27,7 @@ const CustomerHomeSkeleton = () => (
     <div className="flex flex-1 overflow-hidden min-h-0">
       <aside className="w-[98px] min-w-[98px] shrink-0 border-r border-border/40 bg-secondary/30 px-2 py-2 space-y-2">
         {Array.from({ length: CATEGORY_PLACEHOLDERS }).map((_, index) => (
-          <div key={index} className="rounded-2xl bg-card p-1.5 space-y-1.5">
+          <div key={index} className="rounded-2xl bg-card p-2 space-y-1.5">
             <Skeleton className="aspect-square w-full rounded-2xl" />
             <Skeleton className="mx-auto h-2.5 w-[80%] rounded" />
           </div>
@@ -42,9 +42,9 @@ const CustomerHomeSkeleton = () => (
         </div>
         <div className="grid grid-cols-2 gap-2.5 pb-16">
           {Array.from({ length: PRODUCT_PLACEHOLDERS }).map((_, index) => (
-            <div key={index} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-              <Skeleton className="aspect-square w-full" />
-              <div className="p-2.5 space-y-2">
+            <div key={index} className="rounded-2xl border border-border/60 bg-card p-2">
+              <Skeleton className="aspect-square w-full rounded-2xl" />
+              <div className="pt-2 space-y-2">
                 <Skeleton className="h-3.5 w-full rounded" />
                 <Skeleton className="h-3.5 w-[70%] rounded" />
                 <div className="flex items-center justify-between pt-1">
