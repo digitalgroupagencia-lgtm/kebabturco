@@ -3,6 +3,7 @@ export interface ProcessTapToPayPaymentOptions {
   connectionToken: string;
   locationId: string;
   onBehalfOf: string;
+  merchantDisplayName?: string;
   clientSecret: string;
   /** Modo simulado (testes sem entitlement Apple). */
   simulated?: boolean;
@@ -12,6 +13,7 @@ export interface WarmUpTapToPayOptions {
   connectionToken: string;
   locationId: string;
   onBehalfOf: string;
+  merchantDisplayName?: string;
   simulated?: boolean;
 }
 

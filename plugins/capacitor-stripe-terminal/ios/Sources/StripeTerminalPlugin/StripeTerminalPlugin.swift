@@ -202,12 +202,15 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         readerPhase = .connecting
 
         do {
-            let connectionConfig = try TapToPayConnectionConfigurationBuilder(
+            var builder = TapToPayConnectionConfigurationBuilder(
                 delegate: self,
                 locationId: locationId
             )
             .setOnBehalfOf(onBehalfOf)
-            .build()
+            if let merchantName = call.getString("merchantDisplayName"), !merchantName.isEmpty {
+                builder = builder.setMerchantDisplayName(merchantName)
+            }
+            let connectionConfig = try builder.build()
 
             Terminal.shared.connectReader(reader, connectionConfig: connectionConfig) { [weak self] _, error in
                 guard let self else { return }

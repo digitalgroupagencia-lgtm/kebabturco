@@ -144,6 +144,8 @@ async function resolveTerminalContext(storeId: string) {
     profile,
     locationId: resolvedLocationId,
     connectAccountId: connectAccountId.trim(),
+    merchantDisplayName:
+      (profile?.stripe_business_name || profile?.name || "Kebab Turco").trim().slice(0, 100),
     simulated,
   };
 }
@@ -170,6 +172,7 @@ export async function warmUpTapToPayReader(
         connectionToken: ctx.tokenPayload.secret,
         locationId: ctx.locationId,
         onBehalfOf: ctx.connectAccountId,
+        merchantDisplayName: ctx.merchantDisplayName,
         simulated: ctx.simulated,
       }),
       WARM_UP_TIMEOUT_MS,
@@ -254,6 +257,7 @@ export async function runTapToPayForOrder(params: {
       connectionToken: ctx.tokenPayload.secret,
       locationId: ctx.locationId,
       onBehalfOf: ctx.connectAccountId,
+      merchantDisplayName: ctx.merchantDisplayName,
       clientSecret: pi.clientSecret,
       simulated: ctx.simulated,
     }),
