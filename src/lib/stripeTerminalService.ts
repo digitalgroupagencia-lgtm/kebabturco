@@ -17,6 +17,17 @@ export type TapToPayStep =
   | "success"
   | "error";
 
+export type ReaderWarmUpStatus =
+  | "idle"
+  | "preparing"
+  | "discovering"
+  | "connecting"
+  | "updating"
+  | "ready"
+  | "error";
+
+let progressListenerAttached = false;
+
 export function isTapToPayPlatform(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 }
@@ -24,6 +35,22 @@ export function isTapToPayPlatform(): boolean {
 async function loadStripeTerminal(): Promise<StripeTerminalPlugin> {
   const mod = await import("capacitor-stripe-terminal");
   return mod.StripeTerminal;
+}
+
+async function attachProgressListener(
+  onProgress?: (message: string) => void,
+  onStatus?: (status: ReaderWarmUpStatus) => void,
+): Promise<void> {
+  if (!onProgress && !onStatus) return;
+  const terminal = await loadStripeTerminal();
+  if (progressListenerAttached || !terminal.addListener) return;
+  progressListenerAttached = true;
+  await terminal.addListener("readerProgress", (event) => {
+    if (event.message) onProgress?.(event.message);
+  });
+  await terminal.addListener("readerStatusChanged", (event) => {
+    if (event.status) onStatus?.(event.status as ReaderWarmUpStatus);
+  });
 }
 
 export async function fetchTerminalConnectionToken(storeId: string): Promise<{
@@ -41,6 +68,98 @@ export async function fetchTerminalConnectionToken(storeId: string): Promise<{
     stripeConnectAccountId: string | null;
     stripeTerminalLocationId: string | null;
   };
+}
+
+export async function createStoreTerminalLocation(
+  storeId: string,
+  address?: {
+    line1?: string;
+    city?: string;
+    country?: string;
+    postal_code?: string;
+  },
+): Promise<{ locationId: string; created: boolean }> {
+  const { data, error } = await supabase.functions.invoke("stripe-create-terminal-location", {
+    body: { storeId, address },
+  });
+  if (error) throw new Error(error.message || "Falha ao criar Terminal Location");
+  if (data?.error) throw new Error(data.error);
+  return {
+    locationId: data.locationId as string,
+    created: Boolean(data.created),
+  };
+}
+
+async function resolveTerminalContext(storeId: string) {
+  const [tokenPayload, profile] = await Promise.all([
+    fetchTerminalConnectionToken(storeId),
+    fetchStoreFinancialProfile(storeId),
+  ]);
+
+  const locationId = tokenPayload.stripeTerminalLocationId ?? profile?.stripe_terminal_location_id;
+  const connectAccountId = tokenPayload.stripeConnectAccountId ?? profile?.stripe_connect_account_id;
+
+  if (!locationId?.trim()) {
+    throw new Error(
+      "Falta configurar o local Stripe Terminal da loja. Peça ao administrador para activar Tap to Pay nas definições.",
+    );
+  }
+  if (!connectAccountId?.trim()) {
+    throw new Error("Recebimentos Stripe ainda não estão activos para esta loja.");
+  }
+
+  const env = profile?.stripe_connect_environment ?? "live";
+  const simulated = profile?.stripe_connect_test_simulated === true || env === "test";
+
+  return {
+    tokenPayload,
+    profile,
+    locationId: locationId.trim(),
+    connectAccountId: connectAccountId.trim(),
+    simulated,
+  };
+}
+
+export async function warmUpTapToPayReader(
+  storeId: string,
+  opts?: {
+    onProgress?: (message: string) => void;
+    onStatus?: (status: ReaderWarmUpStatus) => void;
+  },
+): Promise<ReaderWarmUpStatus> {
+  if (!isTapToPayPlatform()) return "idle";
+
+  const support = await (await loadStripeTerminal()).isTapToPaySupported();
+  if (!support.supported) return "error";
+
+  await attachProgressListener(opts?.onProgress, opts?.onStatus);
+  opts?.onStatus?.("preparing");
+
+  try {
+    const ctx = await resolveTerminalContext(storeId);
+    const result = await (await loadStripeTerminal()).warmUpTapToPay({
+      connectionToken: ctx.tokenPayload.secret,
+      locationId: ctx.locationId,
+      onBehalfOf: ctx.connectAccountId,
+      simulated: ctx.simulated,
+    });
+    const status = result.ready ? "ready" : "preparing";
+    opts?.onStatus?.(status);
+    return status;
+  } catch (e) {
+    console.warn("[TapToPay warm-up]", e);
+    opts?.onStatus?.("error");
+    return "error";
+  }
+}
+
+export async function showTapToPayMerchantEducation(): Promise<void> {
+  if (!isTapToPayPlatform()) return;
+  try {
+    await (await loadStripeTerminal()).showMerchantEducation();
+  } catch {
+    /* optional */
+  }
 }
 
 export async function runTapToPayForOrder(params: {
@@ -63,23 +182,7 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("connecting", "A preparar leitor…");
 
-  const [tokenPayload, profile] = await Promise.all([
-    fetchTerminalConnectionToken(params.storeId),
-    fetchStoreFinancialProfile(params.storeId),
-  ]);
-
-  const locationId = tokenPayload.stripeTerminalLocationId ?? profile?.stripe_terminal_location_id;
-  const connectAccountId = tokenPayload.stripeConnectAccountId ?? profile?.stripe_connect_account_id;
-
-  if (!locationId?.trim()) {
-    throw new Error(
-      "Falta configurar o local Stripe Terminal da loja (Dashboard Stripe → Terminal → Locations).",
-    );
-  }
-  if (!connectAccountId?.trim()) {
-    throw new Error("Recebimentos Stripe ainda não estão activos para esta loja.");
-  }
-
+  const ctx = await resolveTerminalContext(params.storeId);
   const amountCents = Math.round(params.amountEuro * 100);
   const customerEmail = normalizeOptionalEmail(params.customerEmail);
 
@@ -99,7 +202,7 @@ export async function runTapToPayForOrder(params: {
     },
   });
 
-  const env = pi.connectEnvironment ?? profile?.stripe_connect_environment ?? "live";
+  const env = pi.connectEnvironment ?? ctx.profile?.stripe_connect_environment ?? "live";
   const publishableKey =
     pi.publishableKey ?? getStripePublishableKeyForEnvironment(env === "test" ? "test" : "live");
   if (!publishableKey) {
@@ -108,15 +211,13 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("waiting_card", "Aproxime o cartão ou telemóvel do cliente…");
 
-  const simulated = profile?.stripe_connect_test_simulated === true || env === "test";
-
   const result = await (await loadStripeTerminal()).processTapToPayPayment({
     publishableKey,
-    connectionToken: tokenPayload.secret,
-    locationId: locationId.trim(),
-    onBehalfOf: connectAccountId.trim(),
+    connectionToken: ctx.tokenPayload.secret,
+    locationId: ctx.locationId,
+    onBehalfOf: ctx.connectAccountId,
     clientSecret: pi.clientSecret,
-    simulated,
+    simulated: ctx.simulated,
   });
 
   params.onStep?.("processing", "A confirmar pagamento…");
@@ -137,5 +238,21 @@ export async function disconnectTapToPayReader(): Promise<void> {
     await (await loadStripeTerminal()).disconnectReader();
   } catch {
     /* ignore */
+  }
+}
+
+export async function getTapToPayReaderStatus(): Promise<{
+  status: ReaderWarmUpStatus;
+  ready: boolean;
+}> {
+  if (!isTapToPayPlatform()) return { status: "idle", ready: false };
+  try {
+    const res = await (await loadStripeTerminal()).getReaderStatus();
+    return {
+      status: (res.status as ReaderWarmUpStatus) || "idle",
+      ready: Boolean(res.ready),
+    };
+  } catch {
+    return { status: "error", ready: false };
   }
 }

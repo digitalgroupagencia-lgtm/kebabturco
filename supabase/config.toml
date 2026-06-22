@@ -53,6 +53,12 @@ verify_jwt = true
 [functions.admin-configure-all-stores-branding]
 verify_jwt = true
 
+[functions.stripe-create-terminal-location]
+verify_jwt = true
+
+[functions.admin-create-all-terminal-locations]
+verify_jwt = true
+
 # A Stripe envia eventos sem login Supabase — só com assinatura stripe-signature.
 [functions.stripe-webhook]
 verify_jwt = false

@@ -24,21 +24,90 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     public let jsName = "StripeTerminal"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "processTapToPayPayment", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "warmUpTapToPay", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "showMerchantEducation", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "cancelPayment", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "disconnectReader", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "isTapToPaySupported", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getReaderStatus", returnType: CAPPluginReturnPromise),
     ]
 
     private let tokenProvider = PluginTokenProvider()
     private var discoverCancelable: Cancelable?
     private var paymentCancelable: Cancelable?
     private var activePromise: CAPPluginCall?
+    private var warmUpOnly = false
+    private var readerReady = false
+
+    private enum ReaderPhase: String {
+        case idle
+        case discovering
+        case connecting
+        case updating
+        case ready
+        case error
+    }
+
+    private var readerPhase: ReaderPhase = .idle {
+        didSet {
+            notifyListeners("readerStatusChanged", data: [
+                "status": readerPhase.rawValue,
+                "ready": readerReady,
+            ])
+        }
+    }
 
     @objc func isTapToPaySupported(_ call: CAPPluginCall) {
         if #available(iOS 15.4, *) {
             call.resolve(["supported": true])
         } else {
             call.resolve(["supported": false])
+        }
+    }
+
+    @objc func getReaderStatus(_ call: CAPPluginCall) {
+        call.resolve([
+            "status": readerPhase.rawValue,
+            "ready": readerReady,
+            "connected": Terminal.shared.connectedReader != nil,
+        ])
+    }
+
+    @objc func warmUpTapToPay(_ call: CAPPluginCall) {
+        guard let connectionToken = call.getString("connectionToken"),
+              let locationId = call.getString("locationId"),
+              let onBehalfOf = call.getString("onBehalfOf") else {
+            call.reject("Parâmetros inválidos para preparar Tap to Pay")
+            return
+        }
+
+        let simulated = call.getBool("simulated") ?? false
+        warmUpOnly = true
+        activePromise = call
+        tokenProvider.token = connectionToken
+
+        if Terminal.hasTokenProvider() == false {
+            Terminal.setTokenProvider(tokenProvider)
+        }
+
+        if let reader = Terminal.shared.connectedReader, readerReady {
+            call.resolve(["status": "ready", "ready": true])
+            activePromise = nil
+            warmUpOnly = false
+            return
+        }
+
+        if Terminal.shared.connectedReader != nil {
+            Terminal.shared.disconnectReader { _ in }
+            readerReady = false
+        }
+
+        readerPhase = .discovering
+        let config = LocalMobileDiscoveryConfiguration(simulated: simulated)
+        discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
+            if let error {
+                self?.finishWithError(error.localizedDescription)
+            }
         }
     }
 
@@ -52,7 +121,9 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             return
         }
 
+        _ = publishableKey
         let simulated = call.getBool("simulated") ?? false
+        warmUpOnly = false
         activePromise = call
         tokenProvider.token = connectionToken
 
@@ -60,16 +131,28 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
             Terminal.setTokenProvider(tokenProvider)
         }
 
-        if Terminal.shared.connectedReader != nil {
-            Terminal.shared.disconnectReader { _ in }
+        if let reader = Terminal.shared.connectedReader, readerReady {
+            collectAndProcess(clientSecret: clientSecret)
+            return
         }
 
+        if Terminal.shared.connectedReader != nil {
+            Terminal.shared.disconnectReader { _ in }
+            readerReady = false
+        }
+
+        readerPhase = .discovering
         let config = LocalMobileDiscoveryConfiguration(simulated: simulated)
         discoverCancelable = Terminal.shared.discoverReaders(config, delegate: self) { [weak self] error in
             if let error {
                 self?.finishWithError(error.localizedDescription)
             }
         }
+    }
+
+    @objc func showMerchantEducation(_ call: CAPPluginCall) {
+        // Merchant education is shown by Stripe / Apple UI during first Tap to Pay enablement.
+        call.resolve(["shown": true, "mode": "system"])
     }
 
     @objc func cancelPayment(_ call: CAPPluginCall) {
@@ -79,6 +162,8 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     }
 
     @objc func disconnectReader(_ call: CAPPluginCall) {
+        readerReady = false
+        readerPhase = .idle
         Terminal.shared.disconnectReader { error in
             if let error {
                 call.reject(error.localizedDescription)
@@ -98,8 +183,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
 
         guard let call = activePromise,
               let locationId = call.getString("locationId"),
-              let onBehalfOf = call.getString("onBehalfOf"),
-              let clientSecret = call.getString("clientSecret") else {
+              let onBehalfOf = call.getString("onBehalfOf") else {
             finishWithError("Sessão de pagamento inválida")
             return
         }
@@ -107,17 +191,31 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         discoverCancelable?.cancel { _ in }
         discoverCancelable = nil
 
+        readerPhase = .connecting
         let connectionConfig = LocalMobileConnectionConfiguration(
             locationId: locationId,
             onBehalfOf: onBehalfOf
         )
 
         Terminal.shared.connectLocalMobileReader(reader, delegate: self, connectionConfig: connectionConfig) { [weak self] _, error in
+            guard let self else { return }
             if let error {
-                self?.finishWithError(error.localizedDescription)
+                self.finishWithError(error.localizedDescription)
                 return
             }
-            self?.collectAndProcess(clientSecret: clientSecret)
+            self.readerReady = true
+            self.readerPhase = .ready
+            if self.warmUpOnly {
+                self.activePromise?.resolve(["status": "ready", "ready": true])
+                self.activePromise = nil
+                self.warmUpOnly = false
+                return
+            }
+            if let clientSecret = call.getString("clientSecret") {
+                self.collectAndProcess(clientSecret: clientSecret)
+            } else {
+                self.finishWithError("PaymentIntent em falta")
+            }
         }
     }
 
@@ -130,11 +228,18 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     // MARK: - LocalMobileReaderDelegate
 
     public func localMobileReader(_ reader: Reader, didStartInstallingUpdate update: ReaderSoftwareUpdate, cancelable: Cancelable?) {
-        /* optional progress */
+        readerPhase = .updating
+        notifyListeners("readerProgress", data: [
+            "progress": 0.1,
+            "message": "A preparar Tap to Pay no iPhone…",
+        ])
     }
 
     public func localMobileReader(_ reader: Reader, didReportReaderSoftwareUpdateProgress progress: Float) {
-        /* optional progress */
+        notifyListeners("readerProgress", data: [
+            "progress": Double(progress),
+            "message": "A configurar leitor…",
+        ])
     }
 
     public func localMobileReader(_ reader: Reader, didFinishInstallingUpdate update: ReaderSoftwareUpdate?, error: Error?) {
@@ -154,6 +259,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     // MARK: - Payment
 
     private func collectAndProcess(clientSecret: String) {
+        readerPhase = .ready
         Terminal.shared.retrievePaymentIntent(clientSecret: clientSecret) { [weak self] retrieveResult, retrieveError in
             guard let self else { return }
             if let retrieveError {
@@ -195,6 +301,9 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     }
 
     private func finishWithError(_ message: String) {
+        readerPhase = .error
+        readerReady = false
+        warmUpOnly = false
         activePromise?.reject(message)
         activePromise = nil
         paymentCancelable?.cancel { _ in }

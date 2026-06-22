@@ -19,6 +19,9 @@ import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import { isAwaitingCounterPaymentConfirmation, isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
+import { useTapToPayCheckout } from "@/hooks/useTapToPayCheckout";
+import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -29,7 +32,13 @@ const CashierPage = () => {
   const storeId = roleData?.store_id;
   const { t } = useStaffT();
   const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
-
+  const { requestTapToPay, TapToPayCheckoutDialog } = useTapToPayCheckout({
+    storeId: storeId ?? "",
+    onSuccess: async () => {
+      toast.success(t("tapToPay.step.success"));
+      await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
+    },
+  });
 
   const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +88,16 @@ const CashierPage = () => {
   }, [storeId, fetchPendingOrders]);
 
   const confirmCashPayment = async (order: PendingOrder, method: "cash" | "card" = "cash") => {
+    if (method === "card" && isTapToPayPlatform()) {
+      await requestTapToPay({
+        id: order.id,
+        order_number: order.order_number,
+        total: order.total,
+        customer_email: (order as { customer_email?: string | null }).customer_email,
+      });
+      return;
+    }
+
     const pin = await requestStaffPin({
       amountLabel: `#${order.order_number} · €${Number(order.total).toFixed(2)}`,
     });
@@ -324,7 +343,7 @@ const CashierPage = () => {
                       onClick={() => void confirmCashPayment(o, "card")}
                     >
                       <CreditCard className="h-4 w-4 mr-1" />
-                      {t("cashier.method.card")}
+                      {isTapToPayPlatform() ? t("ops.card.tap_to_pay") : t("cashier.method.card")}
                     </Button>
                   </li>
                 );
@@ -390,7 +409,9 @@ const CashierPage = () => {
         </DialogContent>
 
       </Dialog>
+      <TapToPayStaffBootstrap storeId={storeId} />
       <StaffPinDialog />
+      <TapToPayCheckoutDialog />
     </div>
   );
 };

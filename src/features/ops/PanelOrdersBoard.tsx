@@ -23,7 +23,8 @@ import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } f
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
-import TapToPayDialog from "@/components/panel/TapToPayDialog";
+import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
+import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
 import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
@@ -270,6 +271,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
     onMarkPaid: confirmMarkPaid,
+    showTapToPayButton: isTapToPayPlatform(),
   });
 
   if (loading) {
@@ -311,6 +313,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
 
   return (
     <>
+      <TapToPayStaffBootstrap storeId={storeId} />
       {mode === "live" && <PanelUrgentAlertOverlay />}
       {mode === "live" && (
         <PanelAlertsPermissionDialog

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Send, User, Phone, Hash, Truck, Store } from "lucide-react";
+import { Loader2, Send, User, Phone, Hash, Truck, Store, Smartphone, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,21 +11,43 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useSellerMode } from "@/contexts/SellerModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { nav } from "@/lib/navPaths";
+import { useTapToPayCheckout } from "@/hooks/useTapToPayCheckout";
+import { useStaffT } from "@/hooks/useStaffT";
 
 type OrderTypeChoice = "dine_in" | "takeaway";
 
+type SavedOrder = {
+  id: string;
+  order_number: string;
+  total: number;
+  customer_email?: string | null;
+};
+
 const SellerCheckoutForm = () => {
   const navigate = useNavigate();
+  const { t } = useStaffT();
   const { items, totalPrice, clearCart } = useCart();
   const { storeId, setScreen } = useOrder();
   const { sellerId, sellerName } = useSellerMode();
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [tableNumber, setTableNumber] = useState("");
   const [type, setType] = useState<OrderTypeChoice>("dine_in");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const [savedOrder, setSavedOrder] = useState<SavedOrder | null>(null);
+
+  const { requestTapToPay, TapToPayCheckoutDialog, isTapToPayAvailable } = useTapToPayCheckout({
+    storeId: storeId ?? "",
+    onSuccess: () => {
+      toast.success(t("tapToPay.step.success"));
+      clearCart();
+      setScreen("home");
+      navigate(nav.seller());
+    },
+  });
 
   const submit = async () => {
     if (!customerName.trim()) return toast.error("Informe o nome do cliente");
@@ -46,6 +68,7 @@ const SellerCheckoutForm = () => {
           payment_status: "pending",
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim() || null,
+          customer_email: customerEmail.trim() || null,
           table_number: type === "dine_in" ? tableNumber.trim() : null,
           notes: notes.trim() || null,
           subtotal: totalPrice,
@@ -53,7 +76,7 @@ const SellerCheckoutForm = () => {
           seller_id: sellerId,
           source: "seller" as any,
         })
-        .select("id, order_number")
+        .select("id, order_number, total, customer_email")
         .single();
       if (error) throw error;
 
@@ -80,9 +103,12 @@ const SellerCheckoutForm = () => {
       if (itemsError) throw itemsError;
 
       toast.success(`Pedido #${orderRow.order_number} registado`);
-      clearCart();
-      setScreen("home");
-      navigate(nav.seller());
+      setSavedOrder({
+        id: orderRow.id,
+        order_number: orderRow.order_number,
+        total: Number(orderRow.total ?? totalPrice),
+        customer_email: orderRow.customer_email,
+      });
     } catch (e: any) {
       console.error(e);
       toast.error(e.message ?? "Falha ao registar pedido");
@@ -90,6 +116,56 @@ const SellerCheckoutForm = () => {
       setBusy(false);
     }
   };
+
+  const finishWithoutCharge = () => {
+    clearCart();
+    setScreen("home");
+    setSavedOrder(null);
+    navigate(nav.seller());
+  };
+
+  if (savedOrder) {
+    return (
+      <div className="flex h-full min-h-0 flex-col bg-secondary/20 overflow-y-auto">
+        <TapToPayCheckoutDialog />
+        <div className="px-4 py-8 space-y-5 max-w-md mx-auto w-full text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+            <CheckCircle2 className="h-9 w-9" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
+              {t("tapToPay.seller.order_saved")}
+            </p>
+            <p className="text-3xl font-black mt-1">#{savedOrder.order_number}</p>
+            <p className="text-2xl font-black text-primary mt-2 tabular-nums">
+              {savedOrder.total.toFixed(2)}€
+            </p>
+          </div>
+
+          {isTapToPayAvailable ? (
+            <Button
+              className="w-full h-14 font-black text-base"
+              onClick={() =>
+                void requestTapToPay({
+                  id: savedOrder.id,
+                  order_number: savedOrder.order_number,
+                  total: savedOrder.total,
+                  customer_email: savedOrder.customer_email,
+                })
+              }
+            >
+              <Smartphone className="h-5 w-5 mr-2" />
+              {t("tapToPay.seller.charge_now")}
+            </Button>
+          ) : null}
+
+          <Button variant="outline" className="w-full" onClick={finishWithoutCharge}>
+            Cobrar depois / voltar ao início
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-secondary/20 overflow-y-auto">
@@ -148,6 +224,18 @@ const SellerCheckoutForm = () => {
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="+34 ..."
               inputMode="tel"
+              className="mt-1 h-11"
+            />
+          </div>
+          <div>
+            <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Email recibo (opcional)
+            </Label>
+            <Input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="cliente@email.com"
               className="mt-1 h-11"
             />
           </div>

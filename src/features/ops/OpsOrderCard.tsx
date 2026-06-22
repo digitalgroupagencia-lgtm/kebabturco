@@ -1,7 +1,7 @@
 import { memo, useState, type MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Clock, Bike, XCircle, Banknote } from "lucide-react";
+import { ChevronRight, Clock, Bike, XCircle, Banknote, CreditCard } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
@@ -41,6 +41,7 @@ interface OpsOrderCardProps {
   onRequestAccept: (order: PanelOrder) => void;
   onRequestAssignDriver: (order: PanelOrder) => void;
   onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void> | Promise<boolean>;
+  showTapToPayButton?: boolean;
 }
 
 const OpsOrderCard = memo(function OpsOrderCard({
@@ -56,6 +57,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onRequestAccept,
   onRequestAssignDriver,
   onMarkPaid,
+  showTapToPayButton = false,
 }: OpsOrderCardProps) {
   const { t, lang } = useStaffT();
   const payment = getPanelPaymentBadge(order, lang);
@@ -213,26 +215,51 @@ const OpsOrderCard = memo(function OpsOrderCard({
           )}
           {canQuickPay && (
             <div className={action ? "space-y-1" : "flex gap-1"}>
-              <Button
-                size="sm"
-                variant="outline"
-                className={`h-8 font-bold text-[11px] touch-action-manipulation border-green-600/60 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400 ${
-                  action ? "w-full" : "flex-1"
-                }`}
-                disabled={payingNow}
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  setPayingNow(true);
-                  try {
-                    await onMarkPaid!(order, "cash");
-                  } finally {
-                    setPayingNow(false);
-                  }
-                }}
-              >
-                <Banknote className="h-3 w-3 mr-1" />
-                {payingNow ? t("ops.card.registering") : `${t("ops.card.confirm_payment")} €${Number(order.total).toFixed(2)}`}
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`h-8 font-bold text-[11px] touch-action-manipulation border-green-600/60 text-green-700 hover:bg-green-600 hover:text-white dark:text-green-400 ${
+                    showTapToPayButton ? "flex-1" : action ? "w-full" : "flex-1"
+                  }`}
+                  disabled={payingNow}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    setPayingNow(true);
+                    try {
+                      await onMarkPaid!(order, "cash");
+                    } finally {
+                      setPayingNow(false);
+                    }
+                  }}
+                >
+                  <Banknote className="h-3 w-3 mr-1" />
+                  {payingNow ? t("ops.card.registering") : t("cashier.method.cash")}
+                </Button>
+                <Button
+                  size="sm"
+                  className={`h-8 font-bold text-[11px] touch-action-manipulation bg-primary hover:bg-primary/90 text-primary-foreground ${
+                    showTapToPayButton ? "flex-1" : "flex-1"
+                  }`}
+                  disabled={payingNow}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    setPayingNow(true);
+                    try {
+                      await onMarkPaid!(order, "card");
+                    } finally {
+                      setPayingNow(false);
+                    }
+                  }}
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  {payingNow
+                    ? t("ops.card.registering")
+                    : showTapToPayButton
+                      ? t("ops.card.tap_to_pay")
+                      : t("order.detail.mark_card")}
+                </Button>
+              </div>
               {!action && canCancel && (
                 <Button
                   size="sm"

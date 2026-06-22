@@ -620,7 +620,158 @@ export const STAFF_I18N = {
   "tapToPay.step.processing": { es: "Procesando pago…", pt: "A processar pagamento…", en: "Processing payment…" },
   "tapToPay.step.success": { es: "¡Pago aprobado!", pt: "Pagamento aprovado!", en: "Payment approved!" },
   "tapToPay.step.error": { es: "Error en el pago", pt: "Erro no pagamento", en: "Payment error" },
-  "order.detail.tap_to_pay": { es: "Cobrar con Tap to Pay", pt: "Cobrar com Tap to Pay", en: "Charge with Tap to Pay" },
+  "order.detail.tap_to_pay": { es: "Tap to Pay en iPhone", pt: "Tap to Pay no iPhone", en: "Tap to Pay on iPhone" },
+  "tapToPay.ios_only": {
+    es: "Tap to Pay solo funciona en la app iPhone de la equipa.",
+    pt: "Tap to Pay só funciona na app iPhone da equipa.",
+    en: "Tap to Pay only works in the staff iPhone app.",
+  },
+  "tapToPay.pin_desc": {
+    es: "Confirme con su PIN de acceso para cobrar.",
+    pt: "Confirme com o seu PIN de acesso para cobrar.",
+    en: "Confirm with your staff PIN to charge.",
+  },
+  "tapToPay.awareness.title": {
+    es: "Tap to Pay en iPhone",
+    pt: "Tap to Pay no iPhone",
+    en: "Tap to Pay on iPhone",
+  },
+  "tapToPay.awareness.desc": {
+    es: "Acepte pagos sin contacto con tarjeta, Apple Pay y otras carteras usando solo este iPhone.",
+    pt: "Aceite pagamentos sem contacto com cartão, Apple Pay e outras carteiras usando só este iPhone.",
+    en: "Accept contactless card, Apple Pay and wallet payments using only this iPhone.",
+  },
+  "tapToPay.awareness.point1": {
+    es: "Sin terminal extra — el iPhone es el datáfono.",
+    pt: "Sem terminal extra — o iPhone é a maquininha.",
+    en: "No extra terminal — the iPhone is the reader.",
+  },
+  "tapToPay.awareness.point2": {
+    es: "Ideal para mesas y pedidos del vendedor.",
+    pt: "Ideal para mesas e pedidos do vendedor.",
+    en: "Ideal for tables and seller orders.",
+  },
+  "tapToPay.awareness.point3": {
+    es: "La primera vez, Apple pedirá aceptar los términos.",
+    pt: "Na primeira vez, a Apple pedirá aceitar os termos.",
+    en: "The first time, Apple will ask to accept the terms.",
+  },
+  "tapToPay.awareness.enable": {
+    es: "Activar Tap to Pay",
+    pt: "Activar Tap to Pay",
+    en: "Enable Tap to Pay",
+  },
+  "tapToPay.awareness.later": { es: "Ahora no", pt: "Agora não", en: "Not now" },
+  "tapToPay.settings.title": {
+    es: "Tap to Pay en iPhone",
+    pt: "Tap to Pay no iPhone",
+    en: "Tap to Pay on iPhone",
+  },
+  "tapToPay.settings.subtitle": {
+    es: "Prepare el iPhone para cobrar en mesa y en el mostrador.",
+    pt: "Prepare o iPhone para cobrar na mesa e no balcão.",
+    en: "Prepare the iPhone to charge at tables and counter.",
+  },
+  "tapToPay.settings.help": {
+    es: "Use un iPhone XS o superior. El dinero va a la cuenta Stripe del restaurante.",
+    pt: "Use um iPhone XS ou superior. O dinheiro vai para a conta Stripe do restaurante.",
+    en: "Use an iPhone XS or newer. Funds go to the restaurant Stripe account.",
+  },
+  "tapToPay.settings.enable": { es: "Activar Tap to Pay", pt: "Activar Tap to Pay", en: "Enable Tap to Pay" },
+  "tapToPay.settings.prepare": { es: "Preparar lector", pt: "Preparar leitor", en: "Prepare reader" },
+  "tapToPay.settings.create_location": {
+    es: "Crear local Terminal",
+    pt: "Criar local Terminal",
+    en: "Create Terminal location",
+  },
+  "tapToPay.settings.location_created": {
+    es: "Local Terminal creado: {id}",
+    pt: "Local Terminal criado: {id}",
+    en: "Terminal location created: {id}",
+  },
+  "tapToPay.settings.location_exists": {
+    es: "Local Terminal ya existía: {id}",
+    pt: "Local Terminal já existia: {id}",
+    en: "Terminal location already existed: {id}",
+  },
+  "tapToPay.settings.location_error": {
+    es: "No se pudo crear el local Terminal",
+    pt: "Não foi possível criar o local Terminal",
+    en: "Could not create Terminal location",
+  },
+  "tapToPay.settings.preparing": {
+    es: "Preparando Tap to Pay…",
+    pt: "A preparar Tap to Pay…",
+    en: "Preparing Tap to Pay…",
+  },
+  "tapToPay.settings.status_web": {
+    es: "Solo disponible en la app iPhone",
+    pt: "Só disponível na app iPhone",
+    en: "Only available in the iPhone app",
+  },
+  "tapToPay.settings.status_no_location": {
+    es: "Falta local Terminal — pulse crear",
+    pt: "Falta local Terminal — carregue criar",
+    en: "Missing Terminal location — tap create",
+  },
+  "tapToPay.settings.status_ready": { es: "Listo para cobrar", pt: "Pronto para cobrar", en: "Ready to charge" },
+  "tapToPay.settings.status_preparing": {
+    es: "Configurando lector…",
+    pt: "A configurar leitor…",
+    en: "Configuring reader…",
+  },
+  "tapToPay.settings.status_idle": { es: "No preparado", pt: "Não preparado", en: "Not prepared" },
+  "tapToPay.settings.reset_demo": {
+    es: "Reiniciar demo (vídeos Apple)",
+    pt: "Reiniciar demo (vídeos Apple)",
+    en: "Reset demo (Apple videos)",
+  },
+  "tapToPay.settings.reset_local": {
+    es: "Estado local reiniciado",
+    pt: "Estado local reiniciado",
+    en: "Local state reset",
+  },
+  "tapToPay.education.title": {
+    es: "Cómo cobrar",
+    pt: "Como cobrar",
+    en: "How to charge",
+  },
+  "tapToPay.education.contactless": {
+    es: "• Acerque la tarjeta contactless al iPhone.",
+    pt: "• Aproxime o cartão sem contacto ao iPhone.",
+    en: "• Hold contactless card near the top of the iPhone.",
+  },
+  "tapToPay.education.wallets": {
+    es: "• Apple Pay y otras carteras también funcionan.",
+    pt: "• Apple Pay e outras carteiras também funcionam.",
+    en: "• Apple Pay and other wallets work too.",
+  },
+  "tapToPay.education.pin": {
+    es: "• Si se pide PIN, el cliente lo introduce en pantalla (con opciones de accesibilidad).",
+    pt: "• Se pedir PIN, o cliente introduz no ecrã (com opções de acessibilidade).",
+    en: "• If PIN is required, customer enters it on screen (with accessibility options).",
+  },
+  "tapToPay.education.mark_done": {
+    es: "Marcar educación vista",
+    pt: "Marcar educação vista",
+    en: "Mark education seen",
+  },
+  "tapToPay.education.completed": {
+    es: "Educación completada",
+    pt: "Educação concluída",
+    en: "Education completed",
+  },
+  "tapToPay.seller.charge_now": {
+    es: "Cobrar con Tap to Pay en iPhone",
+    pt: "Cobrar com Tap to Pay no iPhone",
+    en: "Charge with Tap to Pay on iPhone",
+  },
+  "tapToPay.seller.order_saved": {
+    es: "Pedido registrado — ¿cobrar ahora?",
+    pt: "Pedido registado — cobrar agora?",
+    en: "Order saved — charge now?",
+  },
+  "ops.card.tap_to_pay": { es: "Tap to Pay", pt: "Tap to Pay", en: "Tap to Pay" },
 
   ...STAFF_I18N_CATALOG,
 } as const satisfies Record<string, Record<StaffUiLang, string>>;

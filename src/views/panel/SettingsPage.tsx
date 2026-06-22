@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings as SettingsIcon, Save, Store, Bell, Clock, Receipt, Volume2, Trash2, AlertTriangle } from "lucide-react";
+import { Settings as SettingsIcon, Save, Store, Bell, Clock, Receipt, Volume2, Trash2, AlertTriangle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import ResetDataDialog from "@/components/ResetDataDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,7 @@ import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
+import TapToPaySettingsSection from "@/components/tapToPay/TapToPaySettingsSection";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -111,6 +112,7 @@ const PanelSettingsPage = () => {
           <TabsTrigger value="ops"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.ops")}</TabsTrigger>
           <TabsTrigger value="receipt"><Receipt className="w-4 h-4 mr-1.5" /> {t("settings.tab.receipt")}</TabsTrigger>
           <TabsTrigger value="notif"><Bell className="w-4 h-4 mr-1.5" /> {t("settings.tab.notif")}</TabsTrigger>
+          <TabsTrigger value="tap"><Smartphone className="w-4 h-4 mr-1.5" /> Tap to Pay</TabsTrigger>
           <TabsTrigger value="hours"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.hours")}</TabsTrigger>
         </TabsList>
 
@@ -267,6 +269,15 @@ const PanelSettingsPage = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="tap">
+          {effectiveStoreId ? (
+            <TapToPaySettingsSection storeId={effectiveStoreId} />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">{t("settings.hours.loading")}</CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         <TabsContent value="hours">
           <Card>

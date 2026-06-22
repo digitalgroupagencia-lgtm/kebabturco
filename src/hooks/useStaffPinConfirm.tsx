@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import StaffPinConfirmDialog, { type StaffPinConfirmOptions } from "@/components/panel/StaffPinConfirmDialog";
+import StaffPinConfirmDialog, { type StaffPinConfirmOptions } from "@/components/tapToPay/StaffPinConfirmDialog";
 
 export function useStaffPinConfirm() {
   const [open, setOpen] = useState(false);

@@ -5,7 +5,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { nav } from "@/lib/navPaths.ts";
+import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
+import { nav } from "@/lib/navPaths";
 
 type Props = {
   page?: ComponentType<object>;
@@ -61,6 +62,7 @@ const SellerLayout = ({ page: Page }: Props) => {
       </header>
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
+        <TapToPayStaffBootstrap storeId={roleData?.store_id ?? undefined} />
         {Page ? <Page /> : <Outlet />}
       </main>
 

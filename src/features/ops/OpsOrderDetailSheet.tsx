@@ -22,6 +22,7 @@ import {
   orderItemCount,
   requiresEtaBeforeAccept,
 } from "./opsOrderUi";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 
 type OrderItem = Tables<"order_items">;
 
@@ -329,7 +330,7 @@ const OpsOrderDetailSheet = ({
                     }
                   }}
                 >
-                  {t("order.detail.mark_card")}
+                  {isTapToPayPlatform() ? t("order.detail.tap_to_pay") : t("order.detail.mark_card")}
                 </Button>
               </div>
             </div>

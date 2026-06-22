@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const service = createClient(supabaseUrl, serviceKey);
     const { data: roles } = await service.from("user_roles").select("role").eq("user_id", userData.user.id);
     const allowed = (roles ?? []).some((r) =>
-      ["admin_master", "restaurant_admin", "operator", "cashier"].includes(r.role as string),
+      ["admin_master", "restaurant_admin", "operator", "cashier", "seller"].includes(r.role as string),
     );
     if (!allowed) {
       return json({ error: "Sem permissão" }, 403);
