@@ -8,6 +8,14 @@ import {
 } from "@/services/orderService";
 import { getStripePublishableKeyForEnvironment } from "@/lib/stripePublishableKey";
 import { normalizeOptionalEmail } from "@/lib/emailValidation";
+import { isNetworkOrEdgeUnavailable } from "@/lib/networkErrors";
+
+function humanizeEdgeInvokeError(message: string): string {
+  if (isNetworkOrEdgeUnavailable(message)) {
+    return "O servidor de pagamentos ainda não respondeu. Aguarde alguns minutos e tente outra vez — se continuar, peça para publicar a app no Lovable.";
+  }
+  return message;
+}
 
 export type TapToPayStep =
   | "idle"
@@ -96,7 +104,7 @@ export async function fetchTerminalConnectionToken(storeId: string): Promise<{
   const { data, error } = await supabase.functions.invoke("stripe-terminal-connection-token", {
     body: { storeId },
   });
-  if (error) throw new Error(error.message || "Falha ao ligar ao Terminal");
+  if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha ao ligar ao Terminal"));
   if (data?.error) throw new Error(data.error);
   return data as {
     secret: string;
@@ -117,7 +125,7 @@ export async function createStoreTerminalLocation(
   const { data, error } = await supabase.functions.invoke("stripe-create-terminal-location", {
     body: { storeId, address },
   });
-  if (error) throw new Error(error.message || "Falha ao criar Terminal Location");
+  if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha ao criar Terminal Location"));
   if (data?.error) throw new Error(data.error);
   return {
     locationId: data.locationId as string,
@@ -132,18 +140,26 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
   stripeConnectAccountId: string;
   error?: string;
 }> {
-  const { data, error } = await supabase.functions.invoke("stripe-verify-terminal-location", {
-    body: { storeId },
-  });
-  if (error) throw new Error(error.message || "Falha ao verificar morada do terminal");
-  if (data?.error) throw new Error(data.error);
-  return data as {
-    ok: boolean;
-    locationId: string;
-    displayName?: string;
-    stripeConnectAccountId: string;
-    error?: string;
+  const invokeVerify = async (functionName: string, body: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke(functionName, { body });
+    if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha ao verificar morada do terminal"));
+    if (data?.error) throw new Error(data.error);
+    return data as {
+      ok: boolean;
+      locationId: string;
+      displayName?: string;
+      stripeConnectAccountId: string;
+      error?: string;
+    };
   };
+
+  try {
+    return await invokeVerify("stripe-verify-terminal-location", { storeId });
+  } catch (primaryErr) {
+    const msg = primaryErr instanceof Error ? primaryErr.message : "";
+    if (!isNetworkOrEdgeUnavailable(msg)) throw primaryErr;
+    return invokeVerify("stripe-terminal-connection-token", { storeId, action: "verifyLocation" });
+  }
 }
 
 export async function checkAppleTapToPayTerms(storeId: string): Promise<{

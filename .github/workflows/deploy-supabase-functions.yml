@@ -37,6 +37,7 @@ jobs:
           supabase functions deploy stripe-verify-payment-intent --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy stripe-terminal-connection-token --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy stripe-create-terminal-location --project-ref "$SUPABASE_PROJECT_ID"
+          supabase functions deploy stripe-verify-terminal-location --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy admin-create-all-terminal-locations --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy configure-store-stripe-branding --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy admin-configure-all-stores-branding --project-ref "$SUPABASE_PROJECT_ID"

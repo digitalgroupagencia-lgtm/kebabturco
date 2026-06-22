@@ -8,6 +8,7 @@ import {
   loadStoreConnectPaymentRow,
   resolveStoreConnectEnvironment,
 } from "../_shared/stripeStoreConnect.ts";
+import { verifyTerminalLocationForStore } from "../_shared/stripeTerminalLocation.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -24,6 +25,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const storeId = typeof body?.storeId === "string" ? body.storeId : null;
+    const action = typeof body?.action === "string" ? body.action.trim() : "";
     const stripeAccountParam =
       typeof body?.stripeAccount === "string" ? body.stripeAccount.trim() : "";
     if (!storeId) {
@@ -54,6 +56,11 @@ Deno.serve(async (req) => {
     );
     if (!allowed) {
       return json({ error: "Sem permissão" }, 403);
+    }
+
+    if (action === "verifyLocation") {
+      const outcome = await verifyTerminalLocationForStore(service, storeId);
+      return json(outcome, outcome.ok ? 200 : 404);
     }
 
     const loaded = await loadStoreConnectPaymentRow(service, storeId);

@@ -56,6 +56,9 @@ verify_jwt = true
 [functions.stripe-create-terminal-location]
 verify_jwt = true
 
+[functions.stripe-verify-terminal-location]
+verify_jwt = true
+
 [functions.admin-create-all-terminal-locations]
 verify_jwt = true
 
