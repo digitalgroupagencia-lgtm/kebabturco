@@ -26,28 +26,27 @@ const PanelAlertsPermissionDialog = ({ open, storeId, onOpenChange, onEnabled }:
   const [busy, setBusy] = useState(false);
 
   const handleActivate = async () => {
+    if (busy) return;
     setBusy(true);
     try {
-      const soundOk = await enablePanelAlerts();
+      await enablePanelAlerts();
+      onOpenChange(false);
+      onEnabled?.();
+
       let pushOk = false;
       if (isStaffPushSupported()) {
         const push = await subscribeStaffPush(storeId);
         pushOk = push.ok;
-        if (!push.ok && push.error && push.error !== "Permissão de notificações negada") {
-          console.warn("[PanelAlertsPermissionDialog]", push.error);
-        }
       }
 
       if (isPanelAlertsEnabled()) {
         toast.success(pushOk ? t("alerts.enabled_sound_push") : t("alerts.enabled_sound"));
-        onEnabled?.();
-        onOpenChange(false);
-      } else if (soundOk) {
-        onEnabled?.();
-        onOpenChange(false);
       } else {
         toast.warning(t("alerts.enable_sound_failed"));
       }
+    } catch {
+      toast.warning(t("alerts.enable_sound_failed"));
+      onOpenChange(false);
     } finally {
       setBusy(false);
     }

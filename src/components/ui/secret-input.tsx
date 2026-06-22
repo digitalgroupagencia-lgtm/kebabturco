@@ -11,7 +11,7 @@ type SecretInputProps = Omit<React.ComponentProps<typeof Input>, "type"> & {
 };
 
 const SecretInput = React.forwardRef<HTMLInputElement, SecretInputProps>(
-  ({ className, visible, onVisibleChange, defaultVisible = false, ...props }, ref) => {
+  ({ className, visible, onVisibleChange, defaultVisible = false, type: _ignoredType, ...props }, ref) => {
     const [internalVisible, setInternalVisible] = React.useState(defaultVisible);
     const isControlled = visible !== undefined;
     const shown = isControlled ? visible : internalVisible;
@@ -31,7 +31,10 @@ const SecretInput = React.forwardRef<HTMLInputElement, SecretInputProps>(
         <Input
           ref={ref}
           type={shown ? "text" : "password"}
-          className={cn("pr-10", className)}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          className={cn("pr-10", !shown && "font-mono tracking-[0.35em]", className)}
           {...props}
         />
         <Button

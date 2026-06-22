@@ -271,7 +271,9 @@ const PanelSettingsPage = () => {
 
         <TabsContent value="tap">
           {effectiveStoreId ? (
-            <TapToPaySettingsSection storeId={effectiveStoreId} />
+            <div id="tap-to-pay">
+              <TapToPaySettingsSection storeId={effectiveStoreId} />
+            </div>
           ) : (
             <Card>
               <CardContent className="p-6 text-sm text-muted-foreground">{t("settings.hours.loading")}</CardContent>

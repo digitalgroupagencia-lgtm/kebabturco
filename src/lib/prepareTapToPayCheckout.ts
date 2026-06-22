@@ -41,10 +41,12 @@ export async function ensureTapToPayReaderReady(storeId: string): Promise<TapToP
     const warmed = await warmUpTapToPayReader(storeId);
     if (warmed === "ready") return { ok: true };
 
+    const detail = consumeLastTapToPayWarmUpError();
     return {
       ok: false,
       message:
-        "Não foi possível preparar o Tap to Pay. Se o iPhone pedir para aceitar termos da Apple, aceite e tente outra vez nas Definições.",
+        detail ??
+        "Não foi possível preparar o Tap to Pay. Vá a Definições (ícone engrenagem) → Preparar leitor e aceite os termos da Apple.",
     };
   } catch (e) {
     return {

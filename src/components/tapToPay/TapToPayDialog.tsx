@@ -16,8 +16,11 @@ import {
   type TapToPayStep,
 } from "@/lib/stripeTerminalService";
 import { ensureTapToPayReaderReady } from "@/lib/prepareTapToPayCheckout";
+import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
 import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import { useNavigate } from "react-router-dom";
+import { nav } from "@/lib/navPaths";
 
 export type TapToPayDialogOrder = {
   id: string;
@@ -54,6 +57,8 @@ const stepMessage = (step: TapToPayStep, t: (k: string) => string): string => {
 
 export default function TapToPayDialog({ open, order, storeId, staffPin, onClose, onSuccess }: Props) {
   const { t } = useStaffT();
+  const navigate = useNavigate();
+  const tapEnabled = isTapToPayUserEnabled();
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<TapToPayStep>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -96,8 +101,14 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
 
   useEffect(() => {
     if (!open || !order) return;
+    if (!tapEnabled) {
+      setReaderReady(false);
+      setStep("error");
+      setError(t("tapToPay.settings.help"));
+      return;
+    }
     void prepareReader();
-  }, [open, order, prepareReader]);
+  }, [open, order, prepareReader, tapEnabled, t]);
 
   useEffect(() => {
     if (open && order) {
@@ -180,14 +191,30 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             />
           </div>
 
-          {preparingReader && (
+          {!tapEnabled && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-3 space-y-2">
+              <p className="text-sm font-medium">{t("tapToPay.settings.help")}</p>
+              <Button
+                type="button"
+                className="w-full font-bold"
+                onClick={() => {
+                  handleClose();
+                  navigate(`${nav.panel("settings")}#tap-to-pay`);
+                }}
+              >
+                {t("tapToPay.settings.enable")}
+              </Button>
+            </div>
+          )}
+
+          {tapEnabled && preparingReader && (
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
               <p className="text-sm font-medium">{t("tapToPay.step.connecting")}</p>
             </div>
           )}
 
-          {!readerReady && !busy && !preparingReader && (
+          {tapEnabled && !readerReady && !busy && !preparingReader && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 space-y-2">
               <p className="text-sm font-medium">{error ?? t("tapToPay.reader_not_ready")}</p>
               <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void prepareReader()}>

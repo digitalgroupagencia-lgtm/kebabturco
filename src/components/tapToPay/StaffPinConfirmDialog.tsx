@@ -83,13 +83,13 @@ const StaffPinConfirmDialog = ({ open, options, onOpenChange, onConfirm }: Props
             <Label htmlFor="staff-payment-pin" className="text-sm font-semibold">
               {t("staffPin.confirm.label")}
             </Label>
-            <SecretInput
-              id="staff-payment-pin"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              enterKeyHint="done"
-              autoFocus={open && !isNative}
+        <SecretInput
+          id="staff-payment-pin"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          enterKeyHint="done"
+          autoFocus={open && !isNative}
+          defaultVisible={false}
               value={pin}
               onChange={(e) => {
                 setPin(sanitizeStaffAccessPinInput(e.target.value));

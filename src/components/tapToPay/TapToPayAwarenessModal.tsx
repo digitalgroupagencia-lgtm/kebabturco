@@ -14,6 +14,8 @@ import {
   markTapToPayEducationSeen,
   setTapToPayUserEnabled,
 } from "@/lib/tapToPayPrefs";
+import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
+import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { showTapToPayMerchantEducation, warmUpTapToPayReader } from "@/lib/stripeTerminalService";
 import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
 import { toast } from "sonner";
@@ -36,17 +38,18 @@ export default function TapToPayAwarenessModal({ open, storeId, onOpenChange, on
       markTapToPayAwarenessSeen();
       setTapToPayUserEnabled(true);
       onOpenChange(false);
-      await new Promise((r) => window.setTimeout(r, 350));
+      await waitForStaffPinUiDismiss();
       await showTapToPayMerchantEducation();
       markTapToPayEducationSeen();
       const status = await warmUpTapToPayReader(storeId);
       if (status === "error") {
-        toast.error(t("tapToPay.settings.warmup_error"));
+        toast.error(t("tapToPay.settings.warmup_error"), { duration: 8000 });
+      } else {
+        toast.success(t("tapToPay.settings.status_ready"));
       }
       onEnabled?.();
-      onOpenChange(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("tapToPay.settings.warmup_error"));
+      toast.error(e instanceof Error ? e.message : t("tapToPay.settings.warmup_error"), { duration: 8000 });
     } finally {
       setEnabling(false);
     }

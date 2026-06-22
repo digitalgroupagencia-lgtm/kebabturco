@@ -28,8 +28,15 @@ export type ReaderWarmUpStatus =
 
 let progressListenerAttached = false;
 let warmUpInFlight: Promise<ReaderWarmUpStatus> | null = null;
+let lastWarmUpError: string | null = null;
 
-const WARM_UP_TIMEOUT_MS = 90_000;
+export function consumeLastTapToPayWarmUpError(): string | null {
+  const msg = lastWarmUpError;
+  lastWarmUpError = null;
+  return msg;
+}
+
+const WARM_UP_TIMEOUT_MS = 60_000;
 const PAYMENT_TIMEOUT_MS = 120_000;
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -242,9 +249,15 @@ async function warmUpTapToPayReaderInternal(
       "A preparação do Tap to Pay demorou demasiado. Verifique a ligação e tente novamente.",
     );
     const status = result.ready ? "ready" : "error";
+    if (status === "error") {
+      lastWarmUpError = "O leitor não ficou pronto. Tente em Definições → Preparar leitor.";
+    } else {
+      lastWarmUpError = null;
+    }
     opts?.onStatus?.(status);
     return status;
   } catch (e) {
+    lastWarmUpError = e instanceof Error ? e.message : "Erro ao preparar Tap to Pay.";
     console.warn("[TapToPay warm-up]", e);
     opts?.onStatus?.("error");
     return "error";
