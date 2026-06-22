@@ -158,7 +158,16 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
   } catch (primaryErr) {
     const msg = primaryErr instanceof Error ? primaryErr.message : "";
     if (!isNetworkOrEdgeUnavailable(msg)) throw primaryErr;
-    return invokeVerify("stripe-terminal-connection-token", { storeId, action: "verifyLocation" });
+    const fallback = await invokeVerify("stripe-terminal-connection-token", {
+      storeId,
+      action: "verifyLocation",
+    });
+    if (typeof fallback.ok !== "boolean") {
+      throw new Error(
+        "A verificação da morada ainda não está activa no servidor. Faça Publish no Lovable e tente outra vez dentro de alguns minutos.",
+      );
+    }
+    return fallback;
   }
 }
 
