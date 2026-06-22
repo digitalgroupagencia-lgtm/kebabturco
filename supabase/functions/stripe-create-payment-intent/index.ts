@@ -29,6 +29,11 @@ import {
 } from "../_shared/stripeStoreConnect.ts";
 import { syncConnectAccountById } from "../_shared/stripeConnectSync.ts";
 import {
+  authenticateStaffTerminalRequest,
+  createTerminalConnectionTokenPayload,
+  verifyTerminalLocationPayload,
+} from "../_shared/stripeTerminalActions.ts";
+import {
   handleStaffCreateMember,
   handleStaffUpdateMember,
   handleStaffAuditPing,
@@ -111,6 +116,34 @@ Deno.serve(async (req) => {
     if (body?.action === "refund_order") {
       const { handleRefundOrder } = await import("../_shared/stripeRefundActions.ts");
       return handleRefundOrder(req, body);
+    }
+
+    if (body?.action === "terminal_connection_token" || body?.action === "verify_terminal_location") {
+      const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";
+      if (!storeId) {
+        return json({ error: "storeId é obrigatório" }, 400);
+      }
+      const auth = await authenticateStaffTerminalRequest(req);
+      if (!auth.ok) {
+        return json({ error: auth.error }, auth.status);
+      }
+      if (body.action === "verify_terminal_location") {
+        const outcome = await verifyTerminalLocationPayload(auth.service, storeId);
+        return json(outcome, outcome.ok ? 200 : 404);
+      }
+      try {
+        const stripeAccountParam =
+          typeof body?.stripeAccount === "string" ? body.stripeAccount.trim() : "";
+        const payload = await createTerminalConnectionTokenPayload(
+          auth.service,
+          storeId,
+          stripeAccountParam,
+        );
+        return json(payload);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Erro ao criar token Terminal";
+        return json({ error: msg }, 500);
+      }
     }
 
     if (body?.action === "staff_update_member") {

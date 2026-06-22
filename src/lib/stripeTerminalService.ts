@@ -49,15 +49,65 @@ const WARM_UP_TIMEOUT_MS = 60_000;
 const PAYMENT_TIMEOUT_MS = 120_000;
 const EDGE_INVOKE_TIMEOUT_MS = 20_000;
 
+type EdgeInvokeResult<T> = {
+  data: T | null;
+  rawMessage: string;
+  dataError: string | null;
+};
+
+async function invokeEdgeFunctionRaw<T = Record<string, unknown>>(
+  functionName: string,
+  body: Record<string, unknown>,
+): Promise<EdgeInvokeResult<T>> {
+  try {
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke(functionName, { body }),
+      EDGE_INVOKE_TIMEOUT_MS,
+      "EDGE_TIMEOUT",
+    );
+    const dataError =
+      data && typeof data === "object" && "error" in data && typeof data.error === "string"
+        ? data.error
+        : null;
+    return {
+      data: (data as T) ?? null,
+      rawMessage: error?.message ?? dataError ?? "",
+      dataError,
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "EDGE_TIMEOUT";
+    return { data: null, rawMessage: msg, dataError: null };
+  }
+}
+
+function shouldTryNextEdgeEndpoint(rawMessage: string): boolean {
+  return isNetworkOrEdgeUnavailable(rawMessage) || rawMessage === "EDGE_TIMEOUT";
+}
+
+async function invokeEdgeWithFallbacks<T>(
+  attempts: Array<{ functionName: string; body: Record<string, unknown> }>,
+): Promise<T> {
+  let lastMessage = "Falha na ligação ao servidor";
+
+  for (const attempt of attempts) {
+    const { data, rawMessage, dataError } = await invokeEdgeFunctionRaw<T>(
+      attempt.functionName,
+      attempt.body,
+    );
+    if (data && !dataError) {
+      return data;
+    }
+    lastMessage = dataError || rawMessage || lastMessage;
+    if (!shouldTryNextEdgeEndpoint(rawMessage) && !dataError?.toLowerCase().includes("not found")) {
+      break;
+    }
+  }
+
+  throw new Error(humanizeEdgeInvokeError(lastMessage));
+}
+
 async function invokeEdgeFunction<T>(functionName: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await withTimeout(
-    supabase.functions.invoke(functionName, { body }),
-    EDGE_INVOKE_TIMEOUT_MS,
-    "O servidor demorou demasiado a responder. Tente outra vez.",
-  );
-  if (error) throw new Error(humanizeEdgeInvokeError(error.message || "Falha na ligação ao servidor"));
-  if (data?.error) throw new Error(data.error);
-  return data as T;
+  return invokeEdgeWithFallbacks<T>([{ functionName, body }]);
 }
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -114,7 +164,14 @@ export async function fetchTerminalConnectionToken(storeId: string): Promise<{
   stripeConnectAccountId: string | null;
   stripeTerminalLocationId: string | null;
 }> {
-  return invokeEdgeFunction("stripe-terminal-connection-token", { storeId });
+  return invokeEdgeWithFallbacks<{
+    secret: string;
+    stripeConnectAccountId: string | null;
+    stripeTerminalLocationId: string | null;
+  }>([
+    { functionName: "stripe-terminal-connection-token", body: { storeId } },
+    { functionName: "stripe-create-payment-intent", body: { storeId, action: "terminal_connection_token" } },
+  ]);
 }
 
 export async function createStoreTerminalLocation(
@@ -133,10 +190,9 @@ export async function createStoreTerminalLocation(
   }
 
   try {
-    const data = await invokeEdgeFunction<{ locationId: string; created?: boolean }>(
-      "stripe-create-terminal-location",
-      { storeId, address },
-    );
+    const data = await invokeEdgeWithFallbacks<{ locationId: string; created?: boolean }>([
+      { functionName: "stripe-create-terminal-location", body: { storeId, address } },
+    ]);
     return {
       locationId: data.locationId,
       created: Boolean(data.created),
@@ -176,30 +232,41 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
     error?: string;
   };
 
-  for (const attempt of [
-    () =>
-      invokeEdgeFunction<VerifyResult>("stripe-terminal-connection-token", {
-        storeId,
-        action: "verifyLocation",
-      }),
-    () => invokeEdgeFunction<VerifyResult>("stripe-verify-terminal-location", { storeId }),
-  ]) {
-    try {
-      const serverResult = await attempt();
-      if (typeof serverResult.ok === "boolean") return serverResult;
-    } catch (e) {
-      const raw = e instanceof Error ? e.message : "";
-      if (!isNetworkOrEdgeUnavailable(raw)) throw e;
-    }
+  const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
+  const profileLoc = profile?.stripe_terminal_location_id?.trim() ?? "";
+  const profileConnect = profile?.stripe_connect_account_id?.trim() ?? "";
+
+  if (profileLoc && profileConnect && profile?.stripe_charges_enabled) {
+    return {
+      ok: true,
+      locationId: profileLoc,
+      displayName: profile.stripe_business_name ?? undefined,
+      stripeConnectAccountId: profileConnect,
+    };
   }
 
-  const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
-  const tokenPayload = await fetchTerminalConnectionToken(storeId);
-  const connectAccountId = tokenPayload.stripeConnectAccountId?.trim() ?? "";
-  const locationId =
-    profile?.stripe_terminal_location_id?.trim() ||
-    tokenPayload.stripeTerminalLocationId?.trim() ||
-    "";
+  try {
+    return await invokeEdgeWithFallbacks<VerifyResult>([
+      { functionName: "stripe-terminal-connection-token", body: { storeId, action: "verifyLocation" } },
+      { functionName: "stripe-verify-terminal-location", body: { storeId } },
+      { functionName: "stripe-create-payment-intent", body: { storeId, action: "verify_terminal_location" } },
+    ]);
+  } catch {
+    /* tenta dados parciais abaixo */
+  }
+
+  let connectAccountId = profileConnect;
+  let locationId = profileLoc;
+
+  if (!connectAccountId || !locationId) {
+    try {
+      const tokenPayload = await fetchTerminalConnectionToken(storeId);
+      connectAccountId = connectAccountId || tokenPayload.stripeConnectAccountId?.trim() || "";
+      locationId = locationId || tokenPayload.stripeTerminalLocationId?.trim() || "";
+    } catch {
+      /* sem servidor */
+    }
+  }
 
   if (!connectAccountId) {
     return {
@@ -218,21 +285,10 @@ export async function verifyStoreTerminalLocation(storeId: string): Promise<{
     };
   }
 
-  const tokenLoc = tokenPayload.stripeTerminalLocationId?.trim();
-  const profileLoc = profile?.stripe_terminal_location_id?.trim();
-  if (tokenLoc && profileLoc && tokenLoc !== profileLoc) {
-    return {
-      ok: false,
-      locationId,
-      stripeConnectAccountId: connectAccountId,
-      error: "A morada guardada não coincide com a da conta Stripe.",
-    };
-  }
-
   return {
     ok: true,
     locationId,
-    displayName: profile?.stripe_business_name || profile?.name || undefined,
+    displayName: profile?.stripe_business_name ?? undefined,
     stripeConnectAccountId: connectAccountId,
   };
 }
@@ -263,8 +319,10 @@ export async function checkAppleTapToPayTerms(storeId: string): Promise<{
   }
 
   try {
-    const tokenPayload = await fetchTerminalConnectionToken(storeId);
-    if (!tokenPayload.stripeConnectAccountId?.trim()) {
+    const profile = await fetchStoreFinancialProfile(storeId).catch(() => null);
+    const connectOk =
+      Boolean(profile?.stripe_connect_account_id?.trim()) && profile?.stripe_charges_enabled === true;
+    if (!connectOk) {
       return { linked: false, message: "Recebimentos Stripe ainda não estão activos para esta loja." };
     }
   } catch (e) {

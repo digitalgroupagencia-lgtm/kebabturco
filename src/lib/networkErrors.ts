@@ -14,6 +14,8 @@ export function isNetworkOrEdgeUnavailable(message: string): boolean {
     m.includes("cors") ||
     m.includes("404") ||
     m.includes("not found") ||
-    m.includes("demorou demasiado")
+    m.includes("demorou demasiado") ||
+    m.includes("edge_timeout") ||
+    m.includes("servidor de pagamentos")
   );
 }
