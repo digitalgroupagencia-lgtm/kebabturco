@@ -11,16 +11,17 @@ workflows:
       app_store_connect: kebabturco
 
     environment:
+      # Escolhe automaticamente o perfil App Store válido para net.kebabturco.app
+      # (ex.: Kebab TapToPay Final) — evita confusão com nomes kebabturco_dist / kebabturco_appstore.
       ios_signing:
-        provisioning_profiles:
-          - kebabturco_appstore
-        certificates:
-          - kebabturco_dist
+        distribution_type: app_store
+        bundle_identifier: net.kebabturco.app
       vars:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
+        DEVELOPMENT_TEAM: 4QW32SBR7H
       node: 22
-      xcode: latest
+      xcode: 16.4
 
     triggering:
       events:
@@ -39,14 +40,34 @@ workflows:
       - name: Assinatura Apple (certificados na nuvem)
         script: xcode-project use-profiles
 
+      - name: Diagnóstico de assinatura (perfis e permissões)
+        script: |
+          set -e
+          echo "=== Perfis instalados no build ==="
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" || true
+          for p in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            [ -f "$p" ] || continue
+            echo "--- $p ---"
+            security cms -D -i "$p" 2>/dev/null | plutil -p - 2>/dev/null | grep -E '"Name"|application-identifier|proximity|aps-environment' || true
+          done
+          echo "=== Entitlements da app ==="
+          plutil -p "$CM_BUILD_DIR/ios/App/App/App.entitlements" || true
+
       - name: Criar pacote para a App Store
         script: |
+          set -o pipefail
           xcode-project build-ipa \
             --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --verbose 2>&1 | tee /tmp/xcodebuild-archive.log || {
+              echo "===== ÚLTIMAS 80 LINHAS DO LOG ====="
+              tail -80 /tmp/xcodebuild-archive.log || true
+              exit 65
+            }
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild-archive.log
 
     publishing:
       app_store_connect:
