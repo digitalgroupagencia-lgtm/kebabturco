@@ -39,7 +39,6 @@ const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenH
       }`}
       style={{
         paddingTop: "calc(env(safe-area-inset-top) + 1rem)",
-        marginTop: sticky ? "calc(-1 * env(safe-area-inset-top))" : undefined,
       }}
     >
       {/* Glows decorativos sutis (mesmo padrão da Home) */}

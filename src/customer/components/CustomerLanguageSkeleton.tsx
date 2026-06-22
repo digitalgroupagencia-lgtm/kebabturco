@@ -12,8 +12,11 @@ const CustomerLanguageSkeleton = ({ languageCount = 3 }: Props) => (
     aria-label="A carregar"
   >
     <div
-      className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
-      style={{ height: "env(safe-area-inset-top)" }}
+      className="absolute top-0 left-0 right-0 pointer-events-none z-0"
+      style={{
+        height: "env(safe-area-inset-top)",
+        background: "var(--browser-chrome-hex, #5C1419)",
+      }}
     />
     <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
       <Skeleton className="h-9 w-9 rounded-full" />

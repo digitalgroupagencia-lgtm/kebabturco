@@ -1,58 +1,18 @@
 import { useEffect, useRef, useState, type ImgHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
+import { menuImageUrl } from "@/lib/menuImageUrl";
 
 type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "loading" | "onLoad"> & {
   src: string | null | undefined;
   alt: string;
-  /** Card aspect ratio container. Default: deixar o pai controlar. */
   aspect?: string;
-  /** Prioridade alta: pré-carrega, sem lazy, fetchpriority=high. */
   priority?: boolean;
-  /** Largura alvo em px para variante responsiva (Supabase image transform). */
   targetWidth?: number;
-  /** Classe do wrapper. */
   wrapperClassName?: string;
-  /** Cor do skeleton. */
   skeletonClassName?: string;
-  /** Placeholder fallback quando src vazio. */
   fallbackSrc?: string;
 };
 
-/**
- * Aplica Supabase image transform quando a URL é /storage/v1/object/public/.
- * Converte para /render/image/public/ com width/quality/format=auto.
- */
-function transformUrl(src: string, width?: number): string {
-  if (!src) return src;
-  try {
-    const url = new URL(src, window.location.origin);
-    if (
-      url.pathname.includes("/storage/v1/object/public/") &&
-      /supabase\.co$/i.test(url.hostname.replace(/^.+\./, "supabase.co"))
-    ) {
-      url.pathname = url.pathname.replace(
-        "/storage/v1/object/public/",
-        "/storage/v1/render/image/public/",
-      );
-      if (width && !url.searchParams.has("width")) {
-        url.searchParams.set("width", String(width));
-        url.searchParams.set("quality", "70");
-        url.searchParams.set("resize", "cover");
-      }
-      return url.toString();
-    }
-  } catch {
-    /* ignore */
-  }
-  return src;
-}
-
-/**
- * Imagem com skeleton, fade-in suave e suporte a prioridade.
- * - Sem layout shift: pai define aspect-ratio.
- * - Nada de "imagem em partes": opacity 0 → 1 só quando completa.
- * - priority=true: eager + fetchpriority=high para above-the-fold.
- */
 export default function SmartImage({
   src,
   alt,
@@ -70,9 +30,13 @@ export default function SmartImage({
   const imgRef = useRef<HTMLImageElement>(null);
 
   const effective = src && src.trim() ? src : fallbackSrc;
-  const finalSrc = errored ? fallbackSrc : transformUrl(effective, targetWidth);
+  const finalSrc = errored ? fallbackSrc : menuImageUrl(effective, targetWidth);
 
-  // Detecta cache: se a imagem já está pronta no mount (cache), marca loaded.
+  useEffect(() => {
+    setLoaded(false);
+    setErrored(false);
+  }, [finalSrc]);
+
   useEffect(() => {
     const el = imgRef.current;
     if (el && el.complete && el.naturalWidth > 0) {
@@ -89,8 +53,7 @@ export default function SmartImage({
         <div
           aria-hidden
           className={cn(
-            "absolute inset-0 bg-gradient-to-br from-secondary/40 via-secondary/30 to-secondary/40",
-            "animate-pulse",
+            "absolute inset-0 bg-secondary/35",
             skeletonClassName,
           )}
         />
@@ -100,9 +63,9 @@ export default function SmartImage({
         src={finalSrc}
         alt={alt}
         loading={priority ? "eager" : "lazy"}
-        // @ts-ignore — fetchpriority é válido em HTML mas o tipo ainda não cobre
+        // @ts-expect-error fetchpriority válido em HTML
         fetchpriority={priority ? "high" : "auto"}
-        decoding="async"
+        decoding={priority ? "sync" : "async"}
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (!errored) setErrored(true);
@@ -110,7 +73,7 @@ export default function SmartImage({
         }}
         draggable={false}
         className={cn(
-          "h-full w-full object-cover object-center transition-opacity duration-300 ease-out",
+          "h-full w-full object-cover object-center transition-opacity duration-150 ease-out",
           loaded ? "opacity-100" : "opacity-0",
           className,
         )}

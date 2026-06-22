@@ -44,6 +44,10 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
         <img
           src={option.icon}
           alt={option.label}
+          loading="eager"
+          decoding="sync"
+          // @ts-expect-error fetchpriority válido em HTML
+          fetchpriority="high"
           className={`object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.16)] transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[0.98] ${
             compact ? "w-[72px] h-[72px]" : "w-[100px] h-[100px] sm:w-[120px] sm:h-[120px]"
           }`}
@@ -191,8 +195,11 @@ const OrderTypeScreen = () => {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div
-        className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
-        style={{ height: "env(safe-area-inset-top)" }}
+        className="absolute top-0 left-0 right-0 pointer-events-none z-0"
+        style={{
+          height: "env(safe-area-inset-top)",
+          background: "var(--browser-chrome-hex, #5C1419)",
+        }}
       />
       <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />

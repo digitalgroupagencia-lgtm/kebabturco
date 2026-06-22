@@ -7,21 +7,9 @@ const PRODUCT_PLACEHOLDERS = 6;
 const CustomerHomeSkeleton = () => (
   <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background" aria-busy="true" aria-label="A carregar o menu">
     {!shouldHideHeader() && (
-      <>
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-x-0 top-0 z-[35] md:hidden"
-          style={{
-            height: "env(safe-area-inset-top)",
-            background: "var(--gradient-header, linear-gradient(180deg, #962E34 0%, #5C1419 100%))",
-          }}
-        />
         <header
-          className="sticky top-0 z-30 relative bg-gradient-header px-4 pb-3 shrink-0 shadow-header rounded-b-[18px]"
-          style={{
-            paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
-            marginTop: "calc(-1 * env(safe-area-inset-top))",
-          }}
+          className="sticky top-0 z-30 shrink-0 bg-gradient-header px-4 pb-3 shadow-header rounded-b-[18px]"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
         >
           <div className="flex items-center justify-between gap-3 min-h-[48px]">
             <Skeleton className="h-11 w-36 max-w-[55%] rounded-lg bg-primary-foreground/25" />
@@ -31,7 +19,6 @@ const CustomerHomeSkeleton = () => (
             </div>
           </div>
         </header>
-      </>
     )}
 
     <div className="flex flex-1 overflow-hidden min-h-0">

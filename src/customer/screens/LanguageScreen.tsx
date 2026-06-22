@@ -68,8 +68,11 @@ const LanguageScreen = () => {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div
-        className="absolute top-0 left-0 right-0 bg-gradient-header pointer-events-none z-0"
-        style={{ height: "env(safe-area-inset-top)" }}
+        className="absolute top-0 left-0 right-0 pointer-events-none z-0"
+        style={{
+          height: "env(safe-area-inset-top)",
+          background: "var(--browser-chrome-hex, #5C1419)",
+        }}
       />
       <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <ThemeToggle />
@@ -119,6 +122,8 @@ const LanguageScreen = () => {
                   <img
                     src={icon}
                     alt={label}
+                    loading="eager"
+                    decoding="sync"
                     className="w-full h-full object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.25)]"
                     draggable={false}
                   />
