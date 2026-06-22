@@ -11,11 +11,6 @@ workflows:
       app_store_connect: kebabturco
 
     environment:
-      # Escolhe automaticamente o perfil App Store válido para net.kebabturco.app
-      # (ex.: Kebab TapToPay Final) — evita confusão com nomes kebabturco_dist / kebabturco_appstore.
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: net.kebabturco.app
       vars:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
@@ -37,21 +32,43 @@ workflows:
       - name: Compilar site + sincronizar iPhone
         script: bash scripts/sync-ios-for-release.sh
 
-      - name: Assinatura Apple (certificados na nuvem)
-        script: xcode-project use-profiles
-
-      - name: Diagnóstico de assinatura (perfis e permissões)
+      # Cria/baixa perfil NOVO via API Apple (inclui Tap to Pay se o App ID tiver a capability).
+      # Não usa perfis antigos guardados no Codemagic — eram sem proximity-reader.
+      - name: Perfil e certificado Apple (API automática)
         script: |
-          set -e
-          echo "=== Perfis instalados no build ==="
-          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" || true
-          for p in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
-            [ -f "$p" ] || continue
-            echo "--- $p ---"
-            security cms -D -i "$p" 2>/dev/null | plutil -p - 2>/dev/null | grep -E '"Name"|application-identifier|proximity|aps-environment' || true
+          set -euo pipefail
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --delete-stale-profiles
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Verificar perfil Tap to Pay
+        script: |
+          set +e
+          FOUND=0
+          for dir in \
+            "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            for p in "$dir"/*.mobileprovision; do
+              [ -f "$p" ] || continue
+              echo "=== $(basename "$p") ==="
+              DECODED=$(security cms -D -i "$p" 2>/dev/null)
+              echo "$DECODED" | plutil -p - 2>/dev/null | grep -E '"Name"|application-identifier' || true
+              if echo "$DECODED" | grep -q 'proximity-reader.payment.acceptance'; then
+                echo "OK: perfil inclui Tap to Pay"
+                FOUND=1
+              else
+                echo "AVISO: perfil SEM Tap to Pay"
+              fi
+            done
           done
-          echo "=== Entitlements da app ==="
-          plutil -p "$CM_BUILD_DIR/ios/App/App/App.entitlements" || true
+          if [ "$FOUND" -ne 1 ]; then
+            echo "ERRO: Nenhum perfil com Tap to Pay. No portal Apple, confirme Tap to Pay no identificador net.kebabturco.app e regenere."
+            exit 1
+          fi
 
       - name: Criar pacote para a App Store
         script: |
@@ -60,7 +77,6 @@ workflows:
           EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
           mkdir -p "$(dirname "$ARCHIVE_PATH")" "$EXPORT_PATH"
 
-          # Obrigatório: Release + destino iOS genérico (Debug rebenta com perfil App Store).
           xcodebuild \
             -project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
             -scheme "$XCODE_SCHEME" \
