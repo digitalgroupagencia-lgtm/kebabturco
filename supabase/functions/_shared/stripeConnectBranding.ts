@@ -109,17 +109,15 @@ async function uploadBrandingFile(
       };
     }
     const ext = contentType.includes("jpeg") ? "jpg" : contentType.includes("webp") ? "webp" : "png";
-    const file = await stripe.files.create(
-      {
-        purpose,
-        file: {
-          data: buffer,
-          name: `${purpose}.${ext}`,
-          type: contentType,
-        },
+    const file = await stripe.files.create({
+      purpose,
+      file: {
+        data: buffer,
+        name: `${purpose}.${ext}`,
+        type: contentType,
       },
-      { stripeAccount: connectAccountId },
-    );
+    });
+    void connectAccountId;
     return { fileId: file.id };
   } catch (err) {
     console.warn(`[branding] upload ${purpose} failed`, err);
