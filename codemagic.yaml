@@ -55,19 +55,53 @@ workflows:
 
       - name: Criar pacote para a App Store
         script: |
-          set -o pipefail
-          xcode-project build-ipa \
-            --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
-            --scheme "$XCODE_SCHEME" \
-            --verbose 2>&1 | tee /tmp/xcodebuild-archive.log || {
-              echo "===== ÚLTIMAS 80 LINHAS DO LOG ====="
-              tail -80 /tmp/xcodebuild-archive.log || true
-              exit 65
-            }
+          set -eo pipefail
+          ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/xcarchive/App.xcarchive"
+          EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
+          mkdir -p "$(dirname "$ARCHIVE_PATH")" "$EXPORT_PATH"
+
+          # Obrigatório: Release + destino iOS genérico (Debug rebenta com perfil App Store).
+          xcodebuild \
+            -project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            2>&1 | tee /tmp/xcodebuild-archive.log
+
+          cat > /tmp/exportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>4QW32SBR7H</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist /tmp/exportOptions.plist \
+            2>&1 | tee /tmp/xcodebuild-export.log
 
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild-archive.log
+      - /tmp/xcodebuild-export.log
 
     publishing:
       app_store_connect:
