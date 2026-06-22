@@ -63,7 +63,11 @@ workflows:
             done
           done
           if [ "$FOUND_TTP" -ne 1 ]; then
-            echo "AVISO: Perfil sem Tap to Pay por dentro — build segue sem essa permissão na app até a Apple activar na conta."
+            echo ""
+            echo "BLOQUEADO: O perfil na Apple ainda NÃO inclui Tap to Pay para publicação."
+            echo "Marcar a caixa no portal NÃO chega — a Apple tem de aprovar o caso 20642317 (entitlement de produção)."
+            echo "Não fazemos build sem Tap to Pay. Quando a Apple aprovar, crie perfil novo e volte a carregar no Codemagic."
+            exit 1
           fi
 
       - name: Criar pacote para a App Store
