@@ -154,7 +154,7 @@ const ScreenRouter = () => {
 const CustomerShell = () => (
     <div className="customer-shell relative mx-auto grid h-full min-h-[100dvh] w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background">
       <CustomerBootDismiss />
-      <div className="min-h-0 overflow-hidden">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <ScreenRouter />
       </div>
       <CustomerScreenErrorBoundary scope="bootstrap">

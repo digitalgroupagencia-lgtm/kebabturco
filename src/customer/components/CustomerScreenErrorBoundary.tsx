@@ -78,6 +78,10 @@ export default class CustomerScreenErrorBoundary extends React.Component<Props, 
       );
     }
 
-    return this.props.children;
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {this.props.children}
+      </div>
+    );
   }
 }

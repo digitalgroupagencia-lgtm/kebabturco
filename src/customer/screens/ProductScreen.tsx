@@ -120,7 +120,11 @@ const ProductScreen = () => {
       />
     );
 
-  return productContent;
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {productContent}
+    </div>
+  );
 };
 
 export default ProductScreen;

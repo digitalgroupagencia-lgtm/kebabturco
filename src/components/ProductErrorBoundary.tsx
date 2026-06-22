@@ -30,7 +30,9 @@ export default class ProductErrorBoundary extends React.Component<Props, State> 
 
   render() {
     if (this.state.error) {
-      if (this.props.fallback) return this.props.fallback;
+      if (this.props.fallback) {
+        return <div className="flex h-full min-h-0 flex-col">{this.props.fallback}</div>;
+      }
 
       return (
         <div className="flex h-full min-h-0 flex-col bg-background">
@@ -54,6 +56,6 @@ export default class ProductErrorBoundary extends React.Component<Props, State> 
       );
     }
 
-    return this.props.children;
+    return <div className="flex h-full min-h-0 flex-col">{this.props.children}</div>;
   }
 }
