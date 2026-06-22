@@ -1,74 +1,79 @@
 import { isAdminPreviewMode } from "@/lib/tenantPreview";
 import { isNativeApp, isStandalonePwa } from "@/lib/nativeApp";
 
-/** Confirma estes links na App Store Connect / Google Play Console. */
 const APP_STORE_URL = "https://apps.apple.com/app/kebab-turco/id6753089684";
-const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.eurobusinessgroup.kebabturco";
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.eurobusinessgroup.kebabturco";
+
+const TEXT: Record<string, { appStore: string; playStore: string }> = {
+  pt: { appStore: "App Store", playStore: "Google Play" },
+  en: { appStore: "App Store", playStore: "Google Play" },
+  es: { appStore: "App Store", playStore: "Google Play" },
+  fr: { appStore: "App Store", playStore: "Google Play" },
+};
 
 interface Props {
   lang?: string;
   variant?: "primary" | "subtle";
 }
 
-const LABELS: Record<string, { appStore: string; playStore: string }> = {
-  pt: { appStore: "Disponível na App Store", playStore: "Disponível no Google Play" },
-  en: { appStore: "Download on the App Store", playStore: "Get it on Google Play" },
-  es: { appStore: "Disponible en App Store", playStore: "Disponible en Google Play" },
-  fr: { appStore: "Télécharger sur l'App Store", playStore: "Disponible sur Google Play" },
-};
-
-const AppleIcon = () => (
-  <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6 shrink-0 fill-current">
-    <path d="M16.365 1.43c0 1.14-.493 2.22-1.277 3.034-.88.92-2.32 1.63-3.56 1.53-.15-1.09.48-2.26 1.23-3.01.84-.87 2.31-1.56 3.61-1.56zM20.88 17.17c-.57 1.31-.85 1.9-1.59 3.06-1.03 1.58-2.48 3.55-4.28 3.57-1.6.02-2.01-1.04-4.18-1.04-2.17 0-2.64 1.06-4.2 1.07-1.8.01-3.17-1.75-4.2-3.33-2.88-4.4-3.18-9.55-1.4-12.3 1.26-1.95 3.26-3.09 5.14-3.09 1.91 0 3.11 1.04 4.69 1.04 1.53 0 2.46-1.04 4.66-1.04 1.66 0 3.42.9 4.68 2.46-4.11 2.24-3.45 8.07.68 9.6z" />
-  </svg>
-);
-
-const PlayIcon = () => (
-  <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6 shrink-0 fill-current">
-    <path d="M3.6 2.4 20.4 12 3.6 21.6V2.4zm2.4 2.89v13.42L17.21 12 6 5.29z" />
-  </svg>
-);
-
-const StoreBadge = ({
-  href,
-  label,
-  icon,
-  subtle,
-}: {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-  subtle: boolean;
-}) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className={
-      subtle
-        ? "flex flex-1 min-w-0 items-center justify-center gap-2 rounded-xl border border-border/40 bg-foreground px-3 py-2.5 text-background active:scale-[0.98] transition-transform"
-        : "flex flex-1 min-w-0 items-center justify-center gap-2.5 rounded-2xl bg-foreground px-4 py-3 text-background shadow-lg active:scale-[0.98] transition-transform"
-    }
-  >
-    {icon}
-    <span className={`font-semibold leading-tight text-left ${subtle ? "text-[10px]" : "text-[11px]"}`}>
-      {label}
-    </span>
-  </a>
-);
-
 const InstallAppButton = ({ lang = "es", variant = "primary" }: Props) => {
-  const t = LABELS[lang] || LABELS.es;
-  const subtle = variant === "subtle";
+  const t = TEXT[lang] || TEXT.es;
 
   if (isAdminPreviewMode()) return null;
   if (isNativeApp()) return null;
   if (isStandalonePwa()) return null;
 
+  const isSubtle = variant === "subtle";
+
   return (
-    <div className={`flex w-full max-w-md mx-auto gap-2.5 ${subtle ? "" : "px-1"}`}>
-      <StoreBadge href={APP_STORE_URL} label={t.appStore} icon={<AppleIcon />} subtle={subtle} />
-      <StoreBadge href={PLAY_STORE_URL} label={t.playStore} icon={<PlayIcon />} subtle={subtle} />
+    <div className="w-full max-w-md mx-auto flex items-center justify-center gap-2">
+      <a
+        href={APP_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t.appStore}
+        className={
+          isSubtle
+            ? "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border/35 bg-transparent text-muted-foreground text-xs font-medium active:scale-[0.98] transition-transform"
+            : "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl bg-black text-white shadow-[0_8px_22px_-10px_rgba(0,0,0,0.55)] active:scale-[0.97] transition-transform"
+        }
+      >
+        <svg viewBox="0 0 384 512" aria-hidden className={isSubtle ? "w-4 h-4" : "w-5 h-5"} fill="currentColor">
+          <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zM260.6 110.1c25.6-30.4 23.3-58 22.5-67.9-22.6 1.3-48.7 15.4-63.6 32.7-16.4 18.6-26 41.6-23.9 67.4 24.4 1.9 46.8-11.7 65-32.2z" />
+        </svg>
+        <div className="flex flex-col items-start leading-tight">
+          <span className={isSubtle ? "text-[9px] uppercase opacity-70" : "text-[9px] uppercase opacity-80"}>
+            Download
+          </span>
+          <span className={isSubtle ? "text-[11px] font-bold" : "text-sm font-bold"}>{t.appStore}</span>
+        </div>
+      </a>
+
+      <a
+        href={PLAY_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t.playStore}
+        className={
+          isSubtle
+            ? "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border/35 bg-transparent text-muted-foreground text-xs font-medium active:scale-[0.98] transition-transform"
+            : "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl bg-black text-white shadow-[0_8px_22px_-10px_rgba(0,0,0,0.55)] active:scale-[0.97] transition-transform"
+        }
+      >
+        <svg viewBox="0 0 512 512" aria-hidden className={isSubtle ? "w-4 h-4" : "w-5 h-5"}>
+          <path fill="#34A853" d="M325.3 234.3 104.6 13l280.8 161.2-60.1 60.1z" />
+          <path fill="#FBBC04" d="m104.6 499 220.7-221.3-60.1-60.1L104.6 499z" />
+          <path fill="#4285F4" d="m480.2 256.2-94.8-54.5-67.6 67.6 67.5 67.5 95-54.5c28.4-16.5 28.4-9.7-.1-26.1z" />
+          <path fill="#EA4335" d="M104.6 13c-4.4 1.6-8.4 3.8-11.7 6.4l216.5 216.4L385.4 174.4 104.6 13z" />
+        </svg>
+        <div className="flex flex-col items-start leading-tight">
+          <span className={isSubtle ? "text-[9px] uppercase opacity-70" : "text-[9px] uppercase opacity-80"}>
+            Get it on
+          </span>
+          <span className={isSubtle ? "text-[11px] font-bold" : "text-sm font-bold"}>{t.playStore}</span>
+        </div>
+      </a>
     </div>
   );
 };

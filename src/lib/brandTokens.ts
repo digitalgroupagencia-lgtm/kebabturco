@@ -95,7 +95,6 @@ export function winePaletteFromHex(hex: string): {
 }
 
 export function gradientHeaderFromPalette(p: ReturnType<typeof winePaletteFromHex>): string {
-  // Cor sólida — evita faixa clara no topo (barra do iPhone + cabeçalho iguais).
   return `hsl(${p.wineDark})`;
 }
 
