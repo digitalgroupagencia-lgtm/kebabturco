@@ -85,7 +85,7 @@ const CustomerTabBar = () => {
         </div>
       )}
 
-      <div className="flex items-end justify-around px-0.5 pt-0.5">
+      <div className="flex min-h-[58px] items-center justify-around px-1 py-2">
         {tabs.map(({ id, label, icon: Icon, onClick }) => {
           const active = activeTab === id;
           const showCartBadge = id === "cart" && totalItems > 0 && !active;
@@ -95,18 +95,18 @@ const CustomerTabBar = () => {
               key={id}
               type="button"
               onClick={onClick}
-              className="relative flex min-w-0 flex-1 flex-col items-center touch-manipulation pb-0.5"
+              className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 touch-manipulation"
               aria-current={active ? "page" : undefined}
               aria-label={label}
             >
               <span
                 className={`relative flex items-center justify-center rounded-full transition-all ${
                   active
-                    ? "h-8 w-8 bg-gradient-primary text-primary-foreground shadow-primary"
-                    : "h-7 w-7 text-muted-foreground"
+                    ? "h-9 w-9 bg-gradient-primary text-primary-foreground shadow-primary"
+                    : "h-8 w-8 text-muted-foreground"
                 }`}
               >
-                <Icon className="h-4 w-4" strokeWidth={active ? 2.25 : 2} />
+                <Icon className={`${active ? "h-5 w-5" : "h-[18px] w-[18px]"}`} strokeWidth={active ? 2.25 : 2} />
                 {showCartBadge && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-primary px-0.5 text-[7px] font-black text-primary-foreground">
                     {totalItems > 99 ? "99+" : totalItems}
@@ -114,7 +114,7 @@ const CustomerTabBar = () => {
                 )}
               </span>
               <span
-                className={`mt-px max-w-[68px] truncate text-[8px] font-bold leading-none ${
+                className={`max-w-[72px] truncate text-[9px] font-bold leading-none ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >

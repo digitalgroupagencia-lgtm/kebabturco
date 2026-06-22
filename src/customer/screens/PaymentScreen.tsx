@@ -23,6 +23,7 @@ import {
   loadSavedOrderType,
   saveSavedCustomerName,
   saveSavedCustomerPhone,
+  saveSavedCustomerEmail,
   saveSavedDeliveryAddress,
   hasCustomerProfile,
   formatDeliveryComplement,
@@ -55,6 +56,8 @@ import {
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
+import { isValidOptionalEmail, normalizeOptionalEmail } from "@/lib/emailValidation";
+import CustomerEmailField from "@/components/customer/CustomerEmailField";
 import PhoneInput from "@/components/PhoneInput";
 import { CreditCard, Banknote, Smartphone, QrCode, Store, Link2, Check, User, Phone, MapPin, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -126,6 +129,8 @@ const PaymentScreen = () => {
     setCustomerName,
     customerPhone,
     setCustomerPhone,
+    customerEmail,
+    setCustomerEmail,
     phoneDialCode,
     setPhoneDialCode,
     deliveryAddress,
@@ -195,7 +200,7 @@ const PaymentScreen = () => {
   const [stripePreparedOrder, setStripePreparedOrder] = useState<{ order_id: string; order_number: string } | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConnectEnvironment, setStripeConnectEnvironment] = useState<StripePublishableEnvironment>("live");
-  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone" | "store">(null);
+  const [showError, setShowError] = useState<null | "name" | "table" | "phone" | "email" | "address" | "number" | "postal" | "city" | "method" | "minOrder" | "zone" | "store">(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
@@ -325,6 +330,7 @@ const PaymentScreen = () => {
         discountCents: Math.round(couponDiscount * 100),
         orderType: orderTypeDb,
         paymentMethodType: method,
+        customerEmail: normalizeOptionalEmail(customerEmail) ?? undefined,
       }),
     };
   }, [
@@ -404,10 +410,12 @@ const PaymentScreen = () => {
     if (isTableOrder) {
       if (!mesaValidated) { setShowError("table"); return false; }
       if (!isValidCustomerPhone(phoneDialCode, customerPhone)) { setShowError("phone"); return false; }
+      if (!isValidOptionalEmail(customerEmail)) { setShowError("email"); return false; }
       return true;
     }
     if (!customerName.trim() || customerName.trim().length < 2) { setShowError("name"); return false; }
     if (!isValidCustomerPhone(phoneDialCode, customerPhone)) { setShowError("phone"); return false; }
+    if (!isValidOptionalEmail(customerEmail)) { setShowError("email"); return false; }
     if (orderType === "delivery") {
       if (!deliveryAddress.trim()) { setShowError("address"); return false; }
       if (!deliveryNumber.trim()) { setShowError("number"); return false; }
@@ -479,6 +487,7 @@ const PaymentScreen = () => {
       tableNumber: mesaValidated ? tableNumber.trim() || null : null,
       customerName: customerName.trim() || null,
       customerPhone: fullCustomerPhone || null,
+      customerEmail: normalizeOptionalEmail(customerEmail),
       paymentMethod: printOpts.paymentMethod,
       paymentStatus: printOpts.paymentStatus,
       paidViaApp: printOpts.paidViaApp ?? printOpts.paymentStatus === "paid",
@@ -537,6 +546,7 @@ const PaymentScreen = () => {
       qrToken: mesaValidated ? loadSavedMesaToken() : null,
       customerName: customerName.trim() || null,
       customerPhone: fullCustomerPhone || null,
+      customerEmail: normalizeOptionalEmail(customerEmail),
       notes,
       paymentMethod: paymentMethodDb,
       paymentStatus: opts.paymentStatus,
@@ -571,6 +581,7 @@ const PaymentScreen = () => {
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
     if (customerPhone.trim()) saveSavedCustomerPhone(phoneDialCode, customerPhone.trim());
+    if (customerEmail.trim()) saveSavedCustomerEmail(customerEmail);
     if (orderType === "delivery") {
       saveSavedDeliveryAddress({
         street: deliveryAddress.trim(),
@@ -700,6 +711,7 @@ const PaymentScreen = () => {
             discountCents,
             orderType: orderTypeDb,
             paymentMethodType,
+            customerEmail: normalizeOptionalEmail(customerEmail) ?? undefined,
           });
 
       setStripePaymentIntentId(pi.paymentIntentId);
@@ -739,6 +751,7 @@ const PaymentScreen = () => {
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
     if (customerPhone.trim()) saveSavedCustomerPhone(phoneDialCode, customerPhone.trim());
+    if (customerEmail.trim()) saveSavedCustomerEmail(customerEmail);
 
     appendLocalOrderHistory({
       id: result.order_id,
@@ -867,6 +880,7 @@ const PaymentScreen = () => {
       qrToken: mesaValidated ? loadSavedMesaToken() : null,
       customerName: customerName.trim() || null,
       customerPhone: fullCustomerPhone || null,
+      customerEmail: normalizeOptionalEmail(customerEmail),
       notes,
       paymentMethod: paymentMethodOverride ?? stripeCheckoutMethod,
       paymentStatus: "pending",
@@ -1158,6 +1172,13 @@ const PaymentScreen = () => {
                   />
                   <p className="text-[10px] text-muted-foreground mt-1.5">{t("phoneOrderHint")}</p>
                 </div>
+                <CustomerEmailField
+                  value={customerEmail}
+                  onChange={setCustomerEmail}
+                  showError={showError === "email"}
+                  onClearError={() => setShowError(null)}
+                  className="border-t-0"
+                />
               </div>
             )}
 
@@ -1198,6 +1219,12 @@ const PaymentScreen = () => {
                   />
                   <p className="text-[10px] text-muted-foreground mt-1.5">{t("phoneOrderHint")}</p>
                 </div>
+                <CustomerEmailField
+                  value={customerEmail}
+                  onChange={setCustomerEmail}
+                  showError={showError === "email"}
+                  onClearError={() => setShowError(null)}
+                />
               </div>
             )}
 
@@ -1238,6 +1265,12 @@ const PaymentScreen = () => {
                   />
                   <p className="text-[10px] text-muted-foreground mt-1.5">{t("phoneOrderHint")}</p>
                 </div>
+                <CustomerEmailField
+                  value={customerEmail}
+                  onChange={setCustomerEmail}
+                  showError={showError === "email"}
+                  onClearError={() => setShowError(null)}
+                />
                 <div className="px-3 py-3 border-t border-border space-y-2">
                   <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>
                     <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">

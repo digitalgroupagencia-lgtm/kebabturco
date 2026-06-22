@@ -17,6 +17,7 @@ export type StoreFinancialProfile = StoreStripeSettings & {
   stripe_business_name: string | null;
   stripe_payout_status: string;
   stripe_last_payout_at: string | null;
+  stripe_terminal_location_id?: string | null;
 };
 
 export type StripePlatformStatus = {
@@ -51,6 +52,7 @@ type CreateCustomerOrderArgs = {
   _table_id?: string;
   _customer_name?: string;
   _customer_phone?: string;
+  _customer_email?: string;
   _notes?: string;
   _payment_method?: string;
   _payment_status?: string;
@@ -107,6 +109,7 @@ export interface CreateCustomerOrderParams {
   qrToken?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  customerEmail?: string | null;
   notes?: string | null;
   paymentMethod?: string | null;
   paymentStatus?: "pending" | "paid" | "failed";
@@ -180,6 +183,8 @@ function parseCheckoutStripeProfile(data: unknown): StoreFinancialProfile | null
       typeof row.stripe_payout_status === "string" ? row.stripe_payout_status : "",
     stripe_last_payout_at:
       typeof row.stripe_last_payout_at === "string" ? row.stripe_last_payout_at : null,
+    stripe_terminal_location_id:
+      typeof row.stripe_terminal_location_id === "string" ? row.stripe_terminal_location_id : null,
   };
 }
 
@@ -261,6 +266,7 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     
     _customer_name: params.customerName || undefined,
     _customer_phone: params.customerPhone || undefined,
+    _customer_email: params.customerEmail || undefined,
     _notes: params.notes || undefined,
     _payment_method: params.paymentMethod || undefined,
     _payment_status: params.paymentStatus || "pending",
@@ -295,11 +301,13 @@ export async function markOrderPaidAtCounter(
   orderId: string,
   paymentMethod: "cash" | "card" = "cash",
   staffPin: string,
+  stripePaymentIntentId?: string | null,
 ) {
   const { data, error } = await supabase.rpc("mark_order_paid_at_counter", {
     _order_id: orderId,
     _payment_method: paymentMethod,
     _staff_pin: staffPin,
+    _stripe_payment_intent_id: stripePaymentIntentId || undefined,
   });
   if (error) throw error;
   if (data && typeof data === "object" && (data as { error?: string }).error) {
@@ -504,6 +512,9 @@ export async function createStripePaymentIntent(params: {
   discountCents: number;
   orderType: string;
   paymentMethodType?: "card" | "bizum";
+  paymentChannel?: "online" | "terminal";
+  amountCents?: number;
+  customerEmail?: string;
   metadata?: Record<string, string>;
 }) {
   const { data, error } = await supabase.functions.invoke("stripe-create-payment-intent", {

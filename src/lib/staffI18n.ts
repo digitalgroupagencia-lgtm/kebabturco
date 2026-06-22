@@ -591,6 +591,37 @@ export const STAFF_I18N = {
   "finance.toast.load_error": { es: "Error al cargar los datos", pt: "Erro ao carregar dados", en: "Failed to load data" },
   "finance.toast.save_error": { es: "Error al guardar", pt: "Erro ao guardar", en: "Save failed" },
 
+  "tapToPay.title": { es: "Tap to Pay", pt: "Tap to Pay", en: "Tap to Pay" },
+  "tapToPay.subtitle": {
+    es: "Cobra con tarjeta o móvil acercándolo al iPhone.",
+    pt: "Cobre com cartão ou telemóvel aproximando ao iPhone.",
+    en: "Charge card or phone by tapping on this iPhone.",
+  },
+  "tapToPay.emailLabel": {
+    es: "Email del cliente para recibo (opcional)",
+    pt: "Email do cliente para recibo (opcional)",
+    en: "Customer email for receipt (optional)",
+  },
+  "tapToPay.emailPlaceholder": {
+    es: "cliente@email.com",
+    pt: "cliente@email.com",
+    en: "customer@email.com",
+  },
+  "tapToPay.start": { es: "Iniciar cobro", pt: "Iniciar cobrança", en: "Start payment" },
+  "tapToPay.cancel": { es: "Cancelar", pt: "Cancelar", en: "Cancel" },
+  "tapToPay.failed": { es: "Pago fallido", pt: "Pagamento falhou", en: "Payment failed" },
+  "tapToPay.invalidEmail": { es: "Email no válido", pt: "Email inválido", en: "Invalid email" },
+  "tapToPay.step.connecting": { es: "Conectando lector…", pt: "A ligar ao leitor…", en: "Connecting reader…" },
+  "tapToPay.step.waiting": {
+    es: "Acerque la tarjeta o el móvil del cliente",
+    pt: "Aproxime o cartão ou telemóvel do cliente",
+    en: "Ask customer to tap card or phone",
+  },
+  "tapToPay.step.processing": { es: "Procesando pago…", pt: "A processar pagamento…", en: "Processing payment…" },
+  "tapToPay.step.success": { es: "¡Pago aprobado!", pt: "Pagamento aprovado!", en: "Payment approved!" },
+  "tapToPay.step.error": { es: "Error en el pago", pt: "Erro no pagamento", en: "Payment error" },
+  "order.detail.tap_to_pay": { es: "Cobrar con Tap to Pay", pt: "Cobrar com Tap to Pay", en: "Charge with Tap to Pay" },
+
   ...STAFF_I18N_CATALOG,
 } as const satisfies Record<string, Record<StaffUiLang, string>>;
 

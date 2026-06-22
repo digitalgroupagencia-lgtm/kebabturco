@@ -203,6 +203,7 @@ export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "d
 
   root.style.setProperty("--browser-chrome-bg", `hsl(${palette.wineDark})`);
   root.style.setProperty("--browser-chrome-hex", chromeHex);
+  root.style.setProperty("--gradient-header", chromeHex);
   root.style.backgroundColor = chromeHex;
   root.style.colorScheme = "dark";
 
@@ -240,7 +241,7 @@ export function applyBrandWineTokens(headerHex: string): void {
   root.style.setProperty("--brand-wine-dark", palette.wineDark);
   root.style.setProperty("--brand-wine-light", palette.wineLight);
   root.style.setProperty("--brand-wine-muted", palette.wineMuted);
-  root.style.setProperty("--gradient-header", gradientHeaderFromPalette(palette));
+  root.style.setProperty("--gradient-header", chromeHexFromHeader(headerHex));
   root.style.setProperty("--gradient-primary", gradientPrimaryFromPalette(palette));
   root.style.setProperty("--shadow-primary", shadowPrimaryFromPalette(palette));
   root.style.setProperty("--shadow-header", shadowHeaderFromPalette(palette));

@@ -73,7 +73,7 @@ export default function SmartImage({
         }}
         draggable={false}
         className={cn(
-          "h-full w-full object-cover object-center transition-opacity duration-150 ease-out",
+          "max-h-full max-w-full object-contain object-center transition-opacity duration-150 ease-out",
           loaded ? "opacity-100" : "opacity-0",
           className,
         )}

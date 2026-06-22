@@ -10,10 +10,11 @@ export type StoreConnectPaymentRow = {
   stripe_onboarding_completed: boolean;
   stripe_payouts_enabled: boolean;
   stripe_connect_test_simulated?: boolean;
+  stripe_terminal_location_id?: string | null;
 };
 
 const STORE_CONNECT_SELECT =
-  "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_connect_test_simulated";
+  "stripe_connect_account_id, stripe_connect_environment, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled, stripe_connect_test_simulated, stripe_terminal_location_id";
 
 const STORE_CONNECT_SELECT_LEGACY =
   "stripe_connect_account_id, stripe_charges_enabled, stripe_onboarding_completed, stripe_payouts_enabled";

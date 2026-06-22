@@ -519,6 +519,30 @@ const translations: Translations = {
   tableHint: { pt: "Indique sua mesa para entregarmos o pedido.", en: "Tell us your table so we can deliver your order.", es: "Indica tu mesa para que te llevemos el pedido.", fr: "Indiquez votre table pour la livraison." },
   yourName: { pt: "Seu nome", en: "Your name", es: "Tu nombre", fr: "Votre prénom" },
   yourPhone: { pt: "Telefone", en: "Phone", es: "Teléfono", fr: "Téléphone" },
+  receiptEmailLabel: {
+    pt: "Email para recibo (opcional)",
+    en: "Email for receipt (optional)",
+    es: "Email para recibo (opcional)",
+    fr: "E-mail pour le reçu (optionnel)",
+  },
+  receiptEmailPlaceholder: {
+    pt: "exemplo@email.com",
+    en: "you@email.com",
+    es: "ejemplo@email.com",
+    fr: "exemple@email.com",
+  },
+  receiptEmailHint: {
+    pt: "Se indicar, enviamos o recibo automaticamente após o pagamento.",
+    en: "If provided, we send the receipt automatically after payment.",
+    es: "Si lo indicas, enviamos el recibo automáticamente tras el pago.",
+    fr: "Si vous l'indiquez, nous envoyons le reçu automatiquement après le paiement.",
+  },
+  emailInvalid: {
+    pt: "Email inválido",
+    en: "Invalid email",
+    es: "Email no válido",
+    fr: "E-mail invalide",
+  },
   phoneOrderHint: {
     pt: "Guardamos o teu número para acompanhar o pedido e pedir de novo mais tarde.",
     en: "We save your number so you can track your order and reorder later.",

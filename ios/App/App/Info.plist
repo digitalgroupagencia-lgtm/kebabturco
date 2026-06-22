@@ -45,7 +45,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <true/>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Necessário para processar pagamentos presenciais com Tap to Pay no iPhone.</string>
 </dict>
 </plist>

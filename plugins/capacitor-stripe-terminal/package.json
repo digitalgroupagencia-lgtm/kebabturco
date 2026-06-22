@@ -1,0 +1,30 @@
+{
+  "name": "capacitor-stripe-terminal",
+  "version": "1.0.0",
+  "description": "Stripe Terminal Tap to Pay for Capacitor iOS",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/definitions.ts",
+  "files": [
+    "dist/",
+    "ios/",
+    "CapacitorStripeTerminal.podspec"
+  ],
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  },
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc --module es2015 --target es2017 --outDir dist/esm --declaration --declarationDir dist/esm src/index.ts src/definitions.ts src/web.ts",
+    "build:cjs": "tsc --module commonjs --target es2017 --outDir dist src/index.ts src/definitions.ts src/web.ts && mv dist/index.js dist/plugin.cjs.js"
+  },
+  "devDependencies": {
+    "@capacitor/core": "^8.4.0",
+    "typescript": "^5.8.3"
+  }
+}

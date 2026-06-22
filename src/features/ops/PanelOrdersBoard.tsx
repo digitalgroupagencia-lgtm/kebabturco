@@ -23,7 +23,8 @@ import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } f
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
-import type { PanelOrder } from "@/features/ops/usePanelOrders";
+import TapToPayDialog from "@/components/panel/TapToPayDialog";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
 import { listStoreDrivers } from "@/services/orderService";
@@ -84,6 +85,8 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [etaDialogOrder, setEtaDialogOrder] = useState<PanelOrder | null>(null);
   const [assignOrder, setAssignOrder] = useState<PanelOrder | null>(null);
+  const [tapPayOrder, setTapPayOrder] = useState<PanelOrder | null>(null);
+  const [tapPayPin, setTapPayPin] = useState("");
   const [drivers, setDrivers] = useState<StoreDriver[]>([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [accepting, setAccepting] = useState(false);
@@ -244,6 +247,11 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         amountLabel: `#${order.order_number} · €${Number(order.total).toFixed(2)}`,
       });
       if (!pin) return false;
+      if (method === "card" && isTapToPayPlatform()) {
+        setTapPayPin(pin);
+        setTapPayOrder(order);
+        return true;
+      }
       return markOrderPaid(order, method, pin);
     },
     [markOrderPaid, requestStaffPin],
@@ -430,6 +438,21 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         assigning={assigning}
       />
       <StaffPinDialog />
+
+      <TapToPayDialog
+        open={!!tapPayOrder}
+        order={tapPayOrder}
+        storeId={storeId}
+        staffPin={tapPayPin}
+        onClose={() => {
+          setTapPayOrder(null);
+          setTapPayPin("");
+        }}
+        onSuccess={() => {
+          toast.success(t("tapToPay.step.success"));
+          void refresh();
+        }}
+      />
     </>
   );
 };

@@ -17,11 +17,13 @@ import {
   loadSavedMesaToken,
   loadSavedOrderType,
   loadSavedCustomerName,
+  loadSavedCustomerEmail,
   loadSavedCustomerPhone,
   loadSavedDeliveryAddress,
   loadSavedTableNumber,
   resolveScreenAfterLanguageSkip,
   saveSavedCustomerName,
+  saveSavedCustomerEmail,
   saveSavedCustomerPhone,
   saveSavedDeliveryAddress,
   type SavedDeliveryAddress,
@@ -71,6 +73,8 @@ interface OrderContextType {
   setCustomerName: (n: string) => void;
   customerPhone: string;
   setCustomerPhone: (p: string) => void;
+  customerEmail: string;
+  setCustomerEmail: (e: string) => void;
   phoneDialCode: string;
   setPhoneDialCode: (code: string) => void;
   deliveryAddress: string;
@@ -257,6 +261,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setCustomerPhone = (value: string) => {
     setCustomerPhoneState(value);
     saveSavedCustomerPhone(phoneDialCode, value);
+  };
+  const [customerEmail, setCustomerEmailState] = useState(() =>
+    typeof window === "undefined" ? "" : loadSavedCustomerEmail(),
+  );
+  const setCustomerEmail = (value: string) => {
+    setCustomerEmailState(value);
+    saveSavedCustomerEmail(value);
   };
   const [deliveryAddress, setDeliveryAddressState] = useState(savedDelivery?.street ?? "");
   const [deliveryNumber, setDeliveryNumberState] = useState(savedDelivery?.number ?? "");
@@ -458,6 +469,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCustomerName,
         customerPhone,
         setCustomerPhone,
+        customerEmail,
+        setCustomerEmail,
         phoneDialCode,
         setPhoneDialCode,
         deliveryAddress,

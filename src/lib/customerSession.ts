@@ -209,6 +209,7 @@ export function saveSavedCustomerPhone(dialCode: string, local: string) {
 }
 
 export const KIOSK_CUSTOMER_NAME_KEY = "kiosk-customer-name";
+export const KIOSK_CUSTOMER_EMAIL_KEY = "kiosk-customer-email";
 export const KIOSK_DELIVERY_KEY = "kiosk-delivery-address";
 
 export type SavedDeliveryAddress = {
@@ -300,6 +301,24 @@ export function saveSavedCustomerName(name: string) {
     const trimmed = name.trim();
     if (trimmed) localStorage.setItem(KIOSK_CUSTOMER_NAME_KEY, trimmed);
     else localStorage.removeItem(KIOSK_CUSTOMER_NAME_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadSavedCustomerEmail(): string {
+  try {
+    return localStorage.getItem(KIOSK_CUSTOMER_EMAIL_KEY)?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveSavedCustomerEmail(email: string) {
+  try {
+    const trimmed = email.trim().toLowerCase();
+    if (trimmed) localStorage.setItem(KIOSK_CUSTOMER_EMAIL_KEY, trimmed);
+    else localStorage.removeItem(KIOSK_CUSTOMER_EMAIL_KEY);
   } catch {
     /* ignore */
   }

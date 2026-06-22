@@ -8,8 +8,11 @@ const CustomerHomeSkeleton = () => (
   <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background" aria-busy="true" aria-label="A carregar o menu">
     {!shouldHideHeader() && (
         <header
-          className="sticky top-0 z-30 shrink-0 bg-gradient-header px-4 pb-3 shadow-header rounded-b-[18px]"
-          style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
+          className="sticky top-0 z-30 shrink-0 px-4 pb-3 shadow-header rounded-b-[18px]"
+          style={{
+            paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
+            backgroundColor: "var(--browser-chrome-hex, #5C1419)",
+          }}
         >
           <div className="flex items-center justify-between gap-3 min-h-[48px]">
             <Skeleton className="h-11 w-36 max-w-[55%] rounded-lg bg-primary-foreground/25" />

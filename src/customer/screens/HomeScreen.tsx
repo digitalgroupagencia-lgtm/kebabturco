@@ -127,12 +127,12 @@ const HomeScreen = () => {
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {!shouldHideHeader() && (
       <header
-        className="sticky top-0 z-30 shrink-0 bg-gradient-header text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
+        className="sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
+          backgroundColor: "var(--browser-chrome-hex, #5C1419)",
+        }}
       >
-        <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
-
         <div className="relative flex items-center justify-between gap-3 min-h-[48px]">
           <button
             type="button"
@@ -183,13 +183,14 @@ const HomeScreen = () => {
                       : "bg-card/70 shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.1)] active:scale-[0.97]"
                   }`}
                 >
-                  <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[10px] bg-secondary/40">
+                  <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[10px] bg-secondary/40 flex items-center justify-center p-1.5">
                     <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
                       targetWidth={160}
                       priority
-                      className="h-full w-full object-cover object-center"
+                      className="max-h-full max-w-full object-contain object-center"
+                      wrapperClassName="flex h-full w-full items-center justify-center"
                     />
                   </div>
                   <span
@@ -253,13 +254,14 @@ const HomeScreen = () => {
 
                 {/* Imagem dentro da moldura do card — alinhada ao grid */}
                 <div className="aspect-[5/4] p-2 pb-1">
-                  <div className="relative h-full w-full overflow-hidden rounded-[14px] bg-secondary/30 ring-1 ring-border/30">
+                  <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[14px] bg-secondary/30 p-1.5 ring-1 ring-border/30">
                     <SmartImage
                       src={product.image}
                       alt={cleanName}
                       targetWidth={360}
                       priority={isPriority}
-                      className="h-full w-full object-cover object-center transition-transform group-hover:scale-[1.02]"
+                      className="max-h-full max-w-full object-contain object-center"
+                      wrapperClassName="flex h-full w-full items-center justify-center"
                     />
                   </div>
                 </div>

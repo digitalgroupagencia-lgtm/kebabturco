@@ -200,20 +200,39 @@ Deno.serve(async (req) => {
       orderType,
       metadata = {},
       paymentMethodType,
+      customerEmail: rawCustomerEmail,
+      paymentChannel: rawPaymentChannel,
     } = body;
 
-    const stripePaymentMethod =
-      typeof paymentMethodType === "string" && paymentMethodType.trim().toLowerCase() === "bizum"
-        ? "bizum"
-        : "card";
+    const customerEmail =
+      typeof rawCustomerEmail === "string" && rawCustomerEmail.trim().includes("@")
+        ? rawCustomerEmail.trim().toLowerCase()
+        : undefined;
+    const paymentChannel = rawPaymentChannel === "terminal" ? "terminal" : "online";
 
-    const restaurantPortionCents = computeRestaurantPortionCents(
-      Number(subtotalCents) || 0,
-      Number(deliveryCents) || 0,
-      Number(discountCents) || 0,
-    );
-    const onlineServiceFeeCents = computeOnlineServiceFeeCents(restaurantPortionCents);
-    const amountCents = computeCustomerTotalCents(restaurantPortionCents);
+    const stripePaymentMethod =
+      paymentChannel === "terminal"
+        ? "card_present"
+        : typeof paymentMethodType === "string" && paymentMethodType.trim().toLowerCase() === "bizum"
+          ? "bizum"
+          : "card";
+
+    const terminalAmountCents = Number(body?.amountCents) || 0;
+
+    const restaurantPortionCents =
+      paymentChannel === "terminal" && terminalAmountCents >= 50
+        ? terminalAmountCents
+        : computeRestaurantPortionCents(
+            Number(subtotalCents) || 0,
+            Number(deliveryCents) || 0,
+            Number(discountCents) || 0,
+          );
+    const onlineServiceFeeCents =
+      paymentChannel === "terminal" ? 0 : computeOnlineServiceFeeCents(restaurantPortionCents);
+    const amountCents =
+      paymentChannel === "terminal"
+        ? restaurantPortionCents
+        : computeCustomerTotalCents(restaurantPortionCents);
     const applicationFeeCents = computeApplicationFeeCents(restaurantPortionCents);
     const platformFeeCents = computePlatformFeeCents(restaurantPortionCents);
     const estimatedStripeFeeCents = estimatedStripeFeeInServiceFee(
@@ -225,7 +244,13 @@ Deno.serve(async (req) => {
       return json({ error: "Parâmetros inválidos" }, 400);
     }
 
-    const ALLOWED_META_KEYS = new Set(["order_id", "order_number", "table_number", "customer_name"]);
+    const ALLOWED_META_KEYS = new Set([
+      "order_id",
+      "order_number",
+      "table_number",
+      "customer_name",
+      "payment_channel",
+    ]);
     const safeMeta: Record<string, string> = {};
     if (metadata && typeof metadata === "object") {
       for (const [k, v] of Object.entries(metadata)) {
@@ -314,6 +339,7 @@ Deno.serve(async (req) => {
       ...safeMeta,
       store_id: storeId,
       order_type: orderType || "dine_in",
+      payment_channel: paymentChannel,
       stripe_connect_account_id: store.stripe_connect_account_id ?? "",
       restaurant_portion_cents: String(restaurantPortionCents),
       online_service_fee_cents: String(onlineServiceFeeCents),
@@ -324,11 +350,19 @@ Deno.serve(async (req) => {
       discount_cents: String(discountCents),
     };
 
+    const receiptEmailField = customerEmail ? { receipt_email: customerEmail } : {};
+    const orderDescription =
+      typeof safeMeta.order_number === "string" && safeMeta.order_number
+        ? `Pedido #${safeMeta.order_number}`
+        : `Pedido Kebab Turco`;
+
     const intent = testSimulated
       ? await stripe.paymentIntents.create({
           amount: amountCents,
           currency: "eur",
-          payment_method_types: [stripePaymentMethod],
+          payment_method_types: [stripePaymentMethod === "card_present" ? "card" : stripePaymentMethod],
+          ...receiptEmailField,
+          description: orderDescription,
           metadata: {
             ...baseMeta,
             test_simulated: "true",
@@ -336,20 +370,38 @@ Deno.serve(async (req) => {
             checkout_payment_method: stripePaymentMethod,
           },
         })
-      : await stripe.paymentIntents.create({
-          amount: amountCents,
-          currency: "eur",
-          application_fee_amount: applicationFeeCents,
-          transfer_data: { destination: store.stripe_connect_account_id! },
-          on_behalf_of: store.stripe_connect_account_id!,
-          ...(stripePaymentMethod === "card"
-            ? { automatic_payment_methods: { enabled: true, allow_redirects: "never" as const } }
-            : { payment_method_types: [stripePaymentMethod] }),
-          metadata: {
-            ...baseMeta,
-            checkout_payment_method: stripePaymentMethod,
-          },
-        });
+      : paymentChannel === "terminal"
+        ? await stripe.paymentIntents.create({
+            amount: amountCents,
+            currency: "eur",
+            payment_method_types: ["card_present"],
+            capture_method: "automatic",
+            ...receiptEmailField,
+            description: orderDescription,
+            application_fee_amount: applicationFeeCents,
+            transfer_data: { destination: store.stripe_connect_account_id! },
+            on_behalf_of: store.stripe_connect_account_id!,
+            metadata: {
+              ...baseMeta,
+              checkout_payment_method: "card_present",
+            },
+          })
+        : await stripe.paymentIntents.create({
+            amount: amountCents,
+            currency: "eur",
+            application_fee_amount: applicationFeeCents,
+            transfer_data: { destination: store.stripe_connect_account_id! },
+            on_behalf_of: store.stripe_connect_account_id!,
+            ...receiptEmailField,
+            description: orderDescription,
+            ...(stripePaymentMethod === "card"
+              ? { automatic_payment_methods: { enabled: true, allow_redirects: "never" as const } }
+              : { payment_method_types: [stripePaymentMethod] }),
+            metadata: {
+              ...baseMeta,
+              checkout_payment_method: stripePaymentMethod,
+            },
+          });
 
     const responseEnvironment = connectEnv === "test" || testSimulated ? "test" : "live";
 
@@ -365,6 +417,7 @@ Deno.serve(async (req) => {
       connectEnvironment: responseEnvironment,
       publishableKey: getStripePublishableKey(responseEnvironment),
       testSimulated,
+      stripeTerminalLocationId: store.stripe_terminal_location_id ?? null,
       checkoutPaymentMethod: stripePaymentMethod,
       paymentMethodTypes: intent.payment_method_types ?? [stripePaymentMethod],
     });
