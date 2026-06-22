@@ -11,6 +11,11 @@ workflows:
       app_store_connect: kebabturco
 
     environment:
+      ios_signing:
+        provisioning_profiles:
+          - kebabturco_appstore
+        certificates:
+          - kebabturco_dist
       vars:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
@@ -32,23 +37,17 @@ workflows:
       - name: Compilar site + sincronizar iPhone
         script: bash scripts/sync-ios-for-release.sh
 
-      # Cria/baixa perfil NOVO via API Apple (inclui Tap to Pay se o App ID tiver a capability).
-      # Não usa perfis antigos guardados no Codemagic — eram sem proximity-reader.
-      - name: Perfil e certificado Apple (API automática)
+      - name: Perfil e certificado Apple (upload Codemagic)
         script: |
           set -euo pipefail
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create \
-            --delete-stale-profiles
           keychain add-certificates
           xcode-project use-profiles
 
-      - name: Verificar perfil Tap to Pay
+      - name: Verificar perfil carregado
         script: |
           set +e
-          FOUND=0
+          FOUND_TTP=0
           for dir in \
             "$HOME/Library/MobileDevice/Provisioning Profiles" \
             "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
@@ -58,16 +57,13 @@ workflows:
               DECODED=$(security cms -D -i "$p" 2>/dev/null)
               echo "$DECODED" | plutil -p - 2>/dev/null | grep -E '"Name"|application-identifier' || true
               if echo "$DECODED" | grep -q 'proximity-reader.payment.acceptance'; then
-                echo "OK: perfil inclui Tap to Pay"
-                FOUND=1
-              else
-                echo "AVISO: perfil SEM Tap to Pay"
+                echo "OK: Tap to Pay incluído no perfil"
+                FOUND_TTP=1
               fi
             done
           done
-          if [ "$FOUND" -ne 1 ]; then
-            echo "ERRO: Nenhum perfil com Tap to Pay. No portal Apple, confirme Tap to Pay no identificador net.kebabturco.app e regenere."
-            exit 1
+          if [ "$FOUND_TTP" -ne 1 ]; then
+            echo "AVISO: Perfil sem Tap to Pay por dentro — build segue sem essa permissão na app até a Apple activar na conta."
           fi
 
       - name: Criar pacote para a App Store
