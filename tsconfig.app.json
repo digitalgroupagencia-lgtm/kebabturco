@@ -19,6 +19,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "capacitor-stripe-terminal": [
+        "./plugins/capacitor-stripe-terminal/src/index.ts"
       ]
     },
     "skipLibCheck": true,

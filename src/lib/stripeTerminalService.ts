@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { StripeTerminal } from "capacitor-stripe-terminal";
+import type { StripeTerminalPlugin } from "../../plugins/capacitor-stripe-terminal/src/definitions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   createStripePaymentIntent,
@@ -19,6 +19,11 @@ export type TapToPayStep =
 
 export function isTapToPayPlatform(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+}
+
+async function loadStripeTerminal(): Promise<StripeTerminalPlugin> {
+  const mod = await import("capacitor-stripe-terminal");
+  return mod.StripeTerminal;
 }
 
 export async function fetchTerminalConnectionToken(storeId: string): Promise<{
@@ -51,7 +56,7 @@ export async function runTapToPayForOrder(params: {
     throw new Error("Tap to Pay só funciona na app iPhone da equipa.");
   }
 
-  const support = await StripeTerminal.isTapToPaySupported();
+  const support = await (await loadStripeTerminal()).isTapToPaySupported();
   if (!support.supported) {
     throw new Error("Este iPhone não suporta Tap to Pay (requer iOS 15.4+).");
   }
@@ -105,7 +110,7 @@ export async function runTapToPayForOrder(params: {
 
   const simulated = profile?.stripe_connect_test_simulated === true || env === "test";
 
-  const result = await StripeTerminal.processTapToPayPayment({
+  const result = await (await loadStripeTerminal()).processTapToPayPayment({
     publishableKey,
     connectionToken: tokenPayload.secret,
     locationId: locationId.trim(),
@@ -129,7 +134,7 @@ export async function runTapToPayForOrder(params: {
 export async function disconnectTapToPayReader(): Promise<void> {
   if (!isTapToPayPlatform()) return;
   try {
-    await StripeTerminal.disconnectReader();
+    await (await loadStripeTerminal()).disconnectReader();
   } catch {
     /* ignore */
   }

@@ -14,6 +14,7 @@ type CheckoutPrintInput = {
   tableNumber?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  customerEmail?: string | null;
   paymentMethod: string;
   paymentStatus: "pending" | "paid";
   paidViaApp?: boolean;

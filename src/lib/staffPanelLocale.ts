@@ -9,7 +9,7 @@ export function panelT(lang: StaffUiLang | undefined, key: StaffI18nKey, vars?: 
   let text = staffT(resolveStaffPanelLang(lang), key);
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
-      text = text.replaceAll(`{${k}}`, String(v));
+      text = text.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
     }
   }
   return text;

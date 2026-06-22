@@ -76,7 +76,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
       await runTapToPayForOrder({
         storeId,
         orderId: order.id,
-        orderNumber: order.order_number,
+        orderNumber: Number(order.order_number),
         amountEuro: Number(order.total),
         staffPin,
         customerEmail: email.trim() || (order as { customer_email?: string | null }).customer_email,

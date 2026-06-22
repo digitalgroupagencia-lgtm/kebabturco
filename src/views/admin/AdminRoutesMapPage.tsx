@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ExternalLink, Map } from "lucide-react";
+import { ExternalLink, Map, AlertCircle } from "lucide-react";
 import AdminPageHeader from "@/components/admin/premium/AdminPageHeader";
 import StatusPill from "@/components/admin/premium/StatusPill";
 import { Button } from "@/components/ui/button";

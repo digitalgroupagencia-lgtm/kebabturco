@@ -6,6 +6,7 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 import CustomerStoreSkeleton from "@/customer/components/CustomerStoreSkeleton";
+import { ChevronRight, MapPin, Store as StoreIcon } from "lucide-react";
 
 const TITLE: Record<string, string> = {
   pt: "Escolha a unidade",

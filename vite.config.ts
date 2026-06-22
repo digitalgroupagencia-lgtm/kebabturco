@@ -136,6 +136,10 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "capacitor-stripe-terminal": path.resolve(
+        __dirname,
+        "./plugins/capacitor-stripe-terminal/src/index.ts",
+      ),
     },
     dedupe: [
       "react",

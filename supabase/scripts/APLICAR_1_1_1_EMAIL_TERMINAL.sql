@@ -17,8 +17,13 @@ ALTER TABLE public.stores
 COMMENT ON COLUMN public.orders.customer_email IS 'Email opcional para recibo Stripe';
 COMMENT ON COLUMN public.stores.stripe_terminal_location_id IS 'Stripe Terminal location ID (tml_...) para Tap to Pay';
 
--- 2) Local Terminal — Gandia (ajuste o tml_ se criou noutra conta Stripe)
--- Pagamento no balcão com cartão real (Stripe Terminal) + PI
+-- 2) Local Terminal — Gandia (mude o tml_ se criou noutra conta Stripe)
+UPDATE public.stores
+SET stripe_terminal_location_id = 'tml_GIFbiAB2mWann3'
+WHERE id = '22222222-2222-2222-2222-222222222222'
+  AND (stripe_terminal_location_id IS NULL OR stripe_terminal_location_id = '');
+
+-- 3) Funções actualizadas
 CREATE OR REPLACE FUNCTION public.mark_order_paid_at_counter(
   _order_id uuid,
   _payment_method text DEFAULT 'cash',
