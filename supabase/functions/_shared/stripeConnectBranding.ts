@@ -226,9 +226,6 @@ export async function configureStoreStripeBranding(
       payments: {
         statement_descriptor: input.statementDescriptor,
       },
-      dashboard: {
-        display_name: input.businessName,
-      },
       card_payments: {
         statement_descriptor_prefix: input.statementDescriptorPrefix,
       },
