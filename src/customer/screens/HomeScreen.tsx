@@ -177,20 +177,20 @@ const HomeScreen = () => {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`group relative flex w-full flex-col items-stretch gap-1 overflow-hidden rounded-xl p-1 transition-all touch-action-manipulation ${
+                  className={`group relative flex w-full flex-col items-stretch gap-1.5 rounded-2xl p-1.5 transition-all touch-action-manipulation ${
                     isActive
-                      ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)] ring-1 ring-primary/20"
-                      : "bg-card/70 shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.1)] active:scale-[0.97]"
+                      ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)] ring-1 ring-primary/25"
+                      : "bg-card shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.08)] active:scale-[0.97]"
                   }`}
                 >
-                  <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-secondary/40 p-1">
+                  <div className="aspect-square w-full overflow-hidden rounded-2xl bg-secondary/30">
                     <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
                       targetWidth={176}
                       priority
-                      className="max-h-full max-w-full object-contain object-center"
-                      wrapperClassName="flex h-full w-full items-center justify-center"
+                      className="h-full w-full object-cover object-center"
+                      wrapperClassName="h-full w-full"
                     />
                   </div>
                   <span
@@ -239,34 +239,30 @@ const HomeScreen = () => {
               <button
                 key={product.id}
                 onClick={() => openProduct(product.id)}
-                className="group relative flex flex-col bg-card rounded-2xl border border-border/60 overflow-hidden active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card text-left active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
               >
-                {product.isPromo && (
-                  <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md z-10 shadow-sm">
-                    Oferta
-                  </span>
-                )}
-                {code && (
-                  <span className="absolute top-2 right-2 z-10 flex items-center justify-center min-w-[26px] h-[22px] px-1.5 rounded-full bg-foreground/85 text-background text-[10px] font-black tabular-nums shadow-sm backdrop-blur-sm">
-                    {code}
-                  </span>
-                )}
-
-                {/* Imagem quadrada — bordas arredondadas, alinhada ao topo e laterais do card */}
-                <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-secondary/30 p-1.5">
+                <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-secondary/20">
+                  {product.isPromo && (
+                    <span className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
+                      Oferta
+                    </span>
+                  )}
+                  {code && (
+                    <span className="absolute top-2 right-2 z-10 flex items-center justify-center min-w-[26px] h-[22px] px-1.5 rounded-full bg-foreground/85 text-background text-[10px] font-black tabular-nums shadow-sm backdrop-blur-sm">
+                      {code}
+                    </span>
+                  )}
                   <SmartImage
                     src={product.image}
                     alt={cleanName}
                     targetWidth={400}
                     priority={isPriority}
-                    className="max-h-full max-w-full object-contain object-center"
-                    wrapperClassName="flex h-full w-full items-center justify-center"
+                    className="h-full w-full object-contain object-center p-1.5"
+                    wrapperClassName="h-full w-full"
                   />
                 </div>
 
-
-                {/* Bloco inferior compacto: nome, preço e botão integrado */}
-                <div className="px-2.5 pt-1 pb-2.5 flex flex-col gap-1.5">
+                <div className="px-2.5 pt-2 pb-2.5 flex flex-col gap-1.5">
                   <span className="text-[14px] font-bold text-foreground text-left leading-[1.2] min-h-[34px] flex flex-col">
                     <span className="block">{l1}</span>
                     {l2 && <span className="block">{l2}</span>}

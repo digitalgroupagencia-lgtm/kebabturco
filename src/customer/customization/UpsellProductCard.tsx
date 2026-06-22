@@ -30,18 +30,18 @@ export default function UpsellProductCard({ product, menuProducts = [], onClick,
       onClick={onClick}
       className={`group shrink-0 w-[142px] overflow-hidden rounded-2xl border border-border/60 bg-card text-left shadow-card active:scale-[0.97] transition-transform touch-action-manipulation ${className}`}
     >
-      <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-secondary/30 p-1.5">
+      <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-secondary/20">
         <SmartImage
           src={imageSrc}
           alt={cleanName}
           targetWidth={200}
-          className="max-h-full max-w-full object-contain object-center"
-          wrapperClassName="flex h-full w-full items-center justify-center"
+          className="h-full w-full object-contain object-center p-1.5"
+          wrapperClassName="h-full w-full"
           onError={() => setBroken(true)}
         />
       </div>
 
-      <div className="flex flex-col gap-1.5 px-2.5 pt-1 pb-2.5">
+      <div className="flex flex-col gap-1.5 px-2.5 pt-2 pb-2.5">
         <span className="min-h-[34px] text-[13px] font-bold leading-[1.2] text-foreground line-clamp-2">
           <span className="block">{l1}</span>
           {l2 && <span className="block">{l2}</span>}

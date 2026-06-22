@@ -27,8 +27,8 @@ const CustomerHomeSkeleton = () => (
     <div className="flex flex-1 overflow-hidden min-h-0">
       <aside className="w-[98px] min-w-[98px] shrink-0 border-r border-border/40 bg-secondary/30 px-2 py-2 space-y-2">
         {Array.from({ length: CATEGORY_PLACEHOLDERS }).map((_, index) => (
-          <div key={index} className="rounded-xl bg-card/70 p-1 space-y-1.5">
-            <Skeleton className="aspect-square w-full rounded-xl" />
+          <div key={index} className="rounded-2xl bg-card p-1.5 space-y-1.5">
+            <Skeleton className="aspect-square w-full rounded-2xl" />
             <Skeleton className="mx-auto h-2.5 w-[80%] rounded" />
           </div>
         ))}
