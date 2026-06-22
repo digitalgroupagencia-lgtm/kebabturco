@@ -177,20 +177,20 @@ const HomeScreen = () => {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`group relative flex w-full flex-col items-stretch gap-1 overflow-hidden rounded-xl px-1.5 pb-1.5 pt-1.5 transition-all touch-action-manipulation ${
+                  className={`group relative flex w-full flex-col items-stretch gap-1 overflow-hidden rounded-xl p-1 transition-all touch-action-manipulation ${
                     isActive
                       ? "bg-card shadow-[0_6px_20px_-6px_hsla(0,0%,0%,0.18)] ring-1 ring-primary/20"
                       : "bg-card/70 shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.1)] active:scale-[0.97]"
                   }`}
                 >
-                  <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[10px] bg-secondary/40 flex items-center justify-center p-1.5">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-secondary/40">
                     <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
-                      targetWidth={160}
+                      targetWidth={176}
                       priority
-                      className="max-h-full max-w-full object-contain object-center"
-                      wrapperClassName="flex h-full w-full items-center justify-center"
+                      className="h-full w-full object-cover object-center"
+                      wrapperClassName="h-full w-full"
                     />
                   </div>
                   <span
@@ -252,18 +252,16 @@ const HomeScreen = () => {
                   </span>
                 )}
 
-                {/* Imagem dentro da moldura do card — alinhada ao grid */}
-                <div className="aspect-[5/4] p-2 pb-1">
-                  <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[14px] bg-secondary/30 p-1.5 ring-1 ring-border/30">
-                    <SmartImage
-                      src={product.image}
-                      alt={cleanName}
-                      targetWidth={360}
-                      priority={isPriority}
-                      className="max-h-full max-w-full object-contain object-center"
-                      wrapperClassName="flex h-full w-full items-center justify-center"
-                    />
-                  </div>
+                {/* Imagem quadrada — bordas arredondadas, alinhada ao topo e laterais do card */}
+                <div className="aspect-square w-full overflow-hidden bg-secondary/30">
+                  <SmartImage
+                    src={product.image}
+                    alt={cleanName}
+                    targetWidth={400}
+                    priority={isPriority}
+                    className="h-full w-full object-cover object-center"
+                    wrapperClassName="h-full w-full"
+                  />
                 </div>
 
 

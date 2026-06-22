@@ -16,7 +16,7 @@ export function menuImageUrl(src: string | null | undefined, width?: number): st
       if (width && !url.searchParams.has("width")) {
         url.searchParams.set("width", String(width));
         url.searchParams.set("quality", "75");
-        url.searchParams.set("resize", "contain");
+        url.searchParams.set("resize", "cover");
       }
       return url.toString();
     }

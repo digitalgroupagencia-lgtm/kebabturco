@@ -30,17 +30,15 @@ export default function UpsellProductCard({ product, menuProducts = [], onClick,
       onClick={onClick}
       className={`group shrink-0 w-[142px] overflow-hidden rounded-2xl border border-border/60 bg-card text-left shadow-card active:scale-[0.97] transition-transform touch-action-manipulation ${className}`}
     >
-      <div className="aspect-[5/4] p-2 pb-1">
-        <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[14px] bg-secondary/30 p-1.5 ring-1 ring-border/30">
-          <SmartImage
-            src={imageSrc}
-            alt={cleanName}
-            targetWidth={200}
-            className="max-h-full max-w-full object-contain object-center"
-            wrapperClassName="flex h-full w-full items-center justify-center"
-            onError={() => setBroken(true)}
-          />
-        </div>
+      <div className="aspect-square w-full overflow-hidden bg-secondary/30">
+        <SmartImage
+          src={imageSrc}
+          alt={cleanName}
+          targetWidth={200}
+          className="h-full w-full object-cover object-center"
+          wrapperClassName="h-full w-full"
+          onError={() => setBroken(true)}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5 px-2.5 pt-1 pb-2.5">
