@@ -36,8 +36,6 @@ jobs:
           supabase functions deploy stripe-create-payment-intent --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy stripe-verify-payment-intent --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy stripe-terminal-connection-token --project-ref "$SUPABASE_PROJECT_ID"
-          supabase functions deploy configure-store-stripe-branding --project-ref "$SUPABASE_PROJECT_ID"
-          supabase functions deploy admin-configure-all-stores-branding --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy stripe-webhook --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy send-push-notification --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy run-marketing-campaigns --project-ref "$SUPABASE_PROJECT_ID"
