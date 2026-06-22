@@ -32,7 +32,7 @@ export function useStaffPinConfirm() {
         open={open}
         options={options}
         onOpenChange={(next) => {
-          if (!next) finish(null);
+          if (!next && !settledRef.current) finish(null);
         }}
         onConfirm={(pin) => finish(pin)}
       />

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
-import { ensureTapToPayReaderReady, waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
+import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
 import { isTapToPayPlatform, getTapToPayUnavailableMessage } from "@/lib/stripeTerminalService";
 import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -38,14 +38,6 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
       if (!pin) return false;
 
       await waitForStaffPinUiDismiss();
-
-      const toastId = toast.loading(t("tapToPay.step.connecting"));
-      const prepared = await ensureTapToPayReaderReady(storeId);
-      toast.dismiss(toastId);
-      if (!prepared.ok) {
-        toast.error(prepared.message);
-        return false;
-      }
 
       setTapPayPin(pin);
       setTapPayOrder(order);

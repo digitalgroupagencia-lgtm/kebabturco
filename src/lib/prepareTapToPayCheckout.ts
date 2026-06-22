@@ -8,12 +8,15 @@ import {
 
 export type TapToPayPrepareResult = { ok: true } | { ok: false; message: string };
 
-/** Aguarda a gaveta/modal do PIN fechar antes do warm-up nativo da Apple. */
+/** Fecha teclado e aguarda modais animarem antes do próximo passo (Apple Tap to Pay). */
 export async function waitForStaffPinUiDismiss(): Promise<void> {
+  if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        window.setTimeout(resolve, 400);
+        window.setTimeout(resolve, 550);
       });
     });
   });

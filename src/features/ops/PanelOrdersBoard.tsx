@@ -26,7 +26,7 @@ import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
 import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
-import { ensureTapToPayReaderReady, waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
+import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
 import { listStoreDrivers } from "@/services/orderService";
@@ -245,24 +245,29 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
 
   const confirmMarkPaid = useCallback(
     async (order: PanelOrder, method: "cash" | "card" = "cash") => {
+      const isTapPay = method === "card" && isTapToPayPlatform();
+      if (isTapPay) {
+        setDetailOrderId(null);
+        await waitForStaffPinUiDismiss();
+      }
+
       const pin = await requestStaffPin({
         amountLabel: `#${order.order_number} · €${Number(order.total).toFixed(2)}`,
+        ...(isTapPay
+          ? { title: t("tapToPay.title"), description: t("tapToPay.pin_desc") }
+          : {}),
       });
       if (!pin) return false;
-      if (method === "card" && isTapToPayPlatform()) {
+
+      if (isTapPay) {
         await waitForStaffPinUiDismiss();
-        const prepared = await ensureTapToPayReaderReady(storeId);
-        if (!prepared.ok) {
-          toast.error(prepared.message);
-          return false;
-        }
         setTapPayPin(pin);
         setTapPayOrder(order);
         return true;
       }
       return markOrderPaid(order, method, pin);
     },
-    [markOrderPaid, requestStaffPin, storeId],
+    [markOrderPaid, requestStaffPin, t],
   );
 
   const cardProps = (order: PanelOrder) => ({

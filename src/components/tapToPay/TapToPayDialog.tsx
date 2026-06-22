@@ -12,10 +12,10 @@ import { Label } from "@/components/ui/label";
 import { useStaffT } from "@/hooks/useStaffT";
 import {
   disconnectTapToPayReader,
-  getTapToPayReaderStatus,
   runTapToPayForOrder,
   type TapToPayStep,
 } from "@/lib/stripeTerminalService";
+import { ensureTapToPayReaderReady } from "@/lib/prepareTapToPayCheckout";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
 import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
 
@@ -59,6 +59,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [readerReady, setReaderReady] = useState(false);
+  const [preparingReader, setPreparingReader] = useState(false);
 
   const reset = useCallback(() => {
     setStep("idle");
@@ -66,22 +67,37 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
     setBusy(false);
     setEmail("");
     setReaderReady(false);
+    setPreparingReader(false);
   }, []);
 
-  const refreshReaderStatus = useCallback(async () => {
-    const status = await getTapToPayReaderStatus();
-    setReaderReady(status.ready);
-    if (!status.ready) {
-      setError(t("tapToPay.settings.warmup_error"));
-    } else {
-      setError(null);
+  const prepareReader = useCallback(async () => {
+    setPreparingReader(true);
+    setError(null);
+    setStep("connecting");
+    try {
+      const result = await ensureTapToPayReaderReady(storeId);
+      if (result.ok) {
+        setReaderReady(true);
+        setStep("idle");
+        setError(null);
+      } else {
+        setReaderReady(false);
+        setStep("error");
+        setError(result.message);
+      }
+    } catch (e) {
+      setReaderReady(false);
+      setStep("error");
+      setError(e instanceof Error ? e.message : t("tapToPay.settings.warmup_error"));
+    } finally {
+      setPreparingReader(false);
     }
-  }, [t]);
+  }, [storeId, t]);
 
   useEffect(() => {
     if (!open || !order) return;
-    void refreshReaderStatus();
-  }, [open, order, refreshReaderStatus]);
+    void prepareReader();
+  }, [open, order, prepareReader]);
 
   useEffect(() => {
     if (open && order) {
@@ -134,7 +150,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
-        className={tapToPayDialogContentClass("sm:max-w-md flex flex-col gap-0 p-0 overflow-hidden")}
+        className={tapToPayDialogContentClass("z-[100] sm:max-w-md flex flex-col gap-0 p-0 overflow-hidden")}
       >
         <div className="shrink-0 border-b px-4 pt-4 pb-3 sm:px-6">
           <DialogHeader>
@@ -164,10 +180,17 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             />
           </div>
 
-          {!readerReady && !busy && (
+          {preparingReader && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
+              <p className="text-sm font-medium">{t("tapToPay.step.connecting")}</p>
+            </div>
+          )}
+
+          {!readerReady && !busy && !preparingReader && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 space-y-2">
-              <p className="text-sm font-medium">{t("tapToPay.reader_not_ready")}</p>
-              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void refreshReaderStatus()}>
+              <p className="text-sm font-medium">{error ?? t("tapToPay.reader_not_ready")}</p>
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void prepareReader()}>
                 <RefreshCw className="w-4 h-4 mr-1" />
                 {t("tapToPay.retry_reader")}
               </Button>
@@ -196,7 +219,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
           <Button
             type="button"
             onClick={() => void startPayment()}
-            disabled={busy || !readerReady}
+            disabled={busy || !readerReady || preparingReader}
             className="w-full sm:w-auto"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
