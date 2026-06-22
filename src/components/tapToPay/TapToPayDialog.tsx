@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { useStaffT } from "@/hooks/useStaffT";
 import {
   disconnectTapToPayReader,
+  getTapToPayReaderStatus,
   runTapToPayForOrder,
+  warmUpTapToPayReader,
   type TapToPayStep,
 } from "@/lib/stripeTerminalService";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
@@ -57,13 +59,50 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
   const [step, setStep] = useState<TapToPayStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [readerReady, setReaderReady] = useState(false);
+  const [preparingReader, setPreparingReader] = useState(false);
 
   const reset = useCallback(() => {
     setStep("idle");
     setError(null);
     setBusy(false);
     setEmail("");
+    setReaderReady(false);
+    setPreparingReader(false);
   }, []);
+
+  useEffect(() => {
+    if (!open || !order || !storeId) return;
+    let cancelled = false;
+    setPreparingReader(true);
+    setError(null);
+    void (async () => {
+      try {
+        const status = await getTapToPayReaderStatus();
+        if (cancelled) return;
+        if (status.ready) {
+          setReaderReady(true);
+          return;
+        }
+        const warmed = await warmUpTapToPayReader(storeId);
+        if (cancelled) return;
+        if (warmed === "ready") {
+          setReaderReady(true);
+        } else {
+          setError(t("tapToPay.settings.warmup_error"));
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : t("tapToPay.settings.warmup_error"));
+        }
+      } finally {
+        if (!cancelled) setPreparingReader(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, order, storeId, t]);
 
   useEffect(() => {
     if (open && order) {
@@ -146,6 +185,13 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             />
           </div>
 
+          {preparingReader && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+              <p className="text-sm font-medium">{t("tapToPay.step.connecting")}</p>
+            </div>
+          )}
+
           {step !== "idle" && (
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
               {busy && step !== "success" && step !== "error" ? (
@@ -165,7 +211,12 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             <X className="w-4 h-4 mr-1" />
             {t("tapToPay.cancel")}
           </Button>
-          <Button type="button" onClick={() => void startPayment()} disabled={busy} className="w-full sm:w-auto">
+          <Button
+            type="button"
+            onClick={() => void startPayment()}
+            disabled={busy || preparingReader || !readerReady}
+            className="w-full sm:w-auto"
+          >
             {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
             {t("order.detail.tap_to_pay")}
           </Button>

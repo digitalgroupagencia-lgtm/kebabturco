@@ -34,18 +34,15 @@ const ScreenHeader = ({ eyebrow, title, onBack, right, sticky = false }: ScreenH
 
   return (
     <header
-      className={`relative text-primary-foreground px-5 pb-5 shrink-0 shadow-header overflow-hidden rounded-b-[18px] bg-gradient-header ${
+      className={`sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px] ${
         sticky ? "sticky top-0 z-40" : ""
       }`}
       style={{
-        paddingTop: "calc(env(safe-area-inset-top) + 1rem)",
+        paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
+        backgroundColor: "var(--browser-chrome-hex, #3A0205)",
       }}
     >
-      {/* Glows decorativos sutis (mesmo padrão da Home) */}
-      <div className="pointer-events-none absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-black/15 blur-3xl" />
-
-      <div className="relative flex items-center justify-between gap-3">
+      <div className="relative flex items-center justify-between gap-3 min-h-[48px]">
         <div className="flex items-center gap-3 min-w-0">
           {onBack && (
             <button

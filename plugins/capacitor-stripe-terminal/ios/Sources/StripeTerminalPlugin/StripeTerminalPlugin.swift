@@ -1,5 +1,6 @@
 import Capacitor
 import Foundation
+import ProximityReader
 import StripeTerminal
 
 private final class PluginTokenProvider: NSObject, ConnectionTokenProvider {
@@ -151,8 +152,30 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     }
 
     @objc func showMerchantEducation(_ call: CAPPluginCall) {
-        // Merchant education is shown by Stripe / Apple UI during first Tap to Pay enablement.
-        call.resolve(["shown": true, "mode": "system"])
+        DispatchQueue.main.async { [weak self] in
+            guard let root = self?.bridge?.viewController else {
+                call.reject("Interface indisponível")
+                return
+            }
+            if #available(iOS 18.0, *) {
+                Task {
+                    do {
+                        let discovery = ProximityReaderDiscovery()
+                        let content = try await discovery.content(for: .payment(.howToTap))
+                        var topVC = root
+                        while let presented = topVC.presentedViewController {
+                            topVC = presented
+                        }
+                        discovery.presentContent(content, from: topVC)
+                        call.resolve(["shown": true, "mode": "proximity-reader"])
+                    } catch {
+                        call.reject(error.localizedDescription)
+                    }
+                }
+            } else {
+                call.resolve(["shown": false, "mode": "in-app-fallback", "reason": "ios-version"])
+            }
+        }
     }
 
     @objc func cancelPayment(_ call: CAPPluginCall) {

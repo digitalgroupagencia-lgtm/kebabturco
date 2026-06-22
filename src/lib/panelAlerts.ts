@@ -44,6 +44,27 @@ export type AlertDiagnostic = {
   isIOS: boolean;
 };
 
+function clearLockScreenMediaControls() {
+  try {
+    if (domAudio) {
+      domAudio.pause();
+      domAudio.currentTime = 0;
+      domAudio.removeAttribute("src");
+      domAudio.load();
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (typeof navigator !== "undefined" && "mediaSession" in navigator) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function isIOSLike(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
@@ -378,6 +399,7 @@ async function playHtmlBeep(isUnlock = false, urgent = false): Promise<boolean> 
       // Safari/iPhone: play() sem erro conta como sucesso — o evento "playing" falha muitas vezes.
       if (playing || (isIOSLike() && !audio.paused)) {
         if (isUnlock && isIOSLike()) iosAudioUnlocked = true;
+        window.setTimeout(() => clearLockScreenMediaControls(), urgent ? 700 : 450);
         saveAlertDiagnostic({
           ok: true,
           path: `html:${src}`,
@@ -448,8 +470,15 @@ async function playAlertSoundOnce(): Promise<boolean> {
   let path = "none";
 
   if (isIOSLike()) {
-    soundOk = await playHtmlBeep(false, urgent);
-    path = "ios-static-wav";
+    const ready = await ensureAudioReady();
+    if (ready && playWebBeep(urgent)) {
+      soundOk = true;
+      path = "web-audio-ios";
+    } else {
+      soundOk = await playHtmlBeep(false, urgent);
+      if (soundOk) window.setTimeout(() => clearLockScreenMediaControls(), urgent ? 700 : 450);
+      path = "ios-static-wav";
+    }
   } else {
     soundOk = await playHtmlBeep(false, urgent);
     path = "static-wav";
