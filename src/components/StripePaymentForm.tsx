@@ -12,6 +12,7 @@ import {
   clearStripeRedirectParams,
   readStripeRedirectFromUrl,
 } from "@/lib/stripeCheckoutSession";
+import { KEBAB_OFFICIAL_WINE_HEX } from "@/lib/brandTokens";
 import { DEFAULT_DIAL_CODE, formatFullPhone, isValidCustomerPhone } from "@/lib/phoneNumber";
 
 export type StripeCheckoutMethod = "card" | "bizum";
@@ -564,7 +565,7 @@ export default function StripePaymentForm(props: {
       options={{
         clientSecret: props.clientSecret,
         locale,
-        appearance: { theme: "stripe", variables: { colorPrimary: "#5F0504" } },
+        appearance: { theme: "stripe", variables: { colorPrimary: KEBAB_OFFICIAL_WINE_HEX } },
       }}
     >
       {checkoutMethod === "bizum" ? (

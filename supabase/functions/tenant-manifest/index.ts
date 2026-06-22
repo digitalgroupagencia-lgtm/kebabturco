@@ -19,8 +19,8 @@ const SNAPORDER_MANIFEST = {
   scope: "/",
   display: "standalone",
   orientation: "portrait",
-  background_color: "#5F0504",
-  theme_color: "#5F0504",
+  background_color: "#3A0205",
+  theme_color: "#3A0205",
   icons: [
     { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
@@ -45,8 +45,8 @@ function buildManifestForCompany(host: string, tenantName: string, settings: any
   const name = pick(settings?.company_name, tenantName) ?? "Restaurante";
   const shortName = pick(settings?.short_name, settings?.company_name, tenantName) ?? name;
   const themeColor =
-    pick(settings?.header_color, settings?.primary_color) ?? "#5F0504";
-  const bg = pick(settings?.background_color) ?? "#5F0504";
+    pick(settings?.header_color, settings?.primary_color) ?? "#3A0205";
+  const bg = pick(settings?.background_color) ?? "#3A0205";
   const logo = pick(settings?.logo_main_url, settings?.logo_secondary_url);
   const icon192 = pick(settings?.icon_192_url, logo) ?? "/icon-192.png";
   const icon512 = pick(settings?.icon_512_url, logo) ?? "/icon-512.png";

@@ -8,11 +8,12 @@ import {
 import { DEFAULT_BUSINESS_WEBSITE } from "./stripeConnectCustomProvision.ts";
 
 export const DEFAULT_SUPPORT_EMAIL = "suporte@kebabturco.net";
-/** Cor oficial Kebab Turco (#5F0504). */
-export const KEBAB_OFFICIAL_WINE_HEX = "#5F0504";
+/** Cor oficial Kebab Turco (#3A0205). */
+export const KEBAB_OFFICIAL_WINE_HEX = "#3A0205";
 const LEGACY_RED_HEXES = new Set([
   "#8B1A1A",
   "#5C1419",
+  "#5F0504",
   "#962E34",
   "#D62300",
   "#CC0000",

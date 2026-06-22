@@ -92,8 +92,8 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
         <DialogPrimitive.Content
           className={cn(
             "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2",
-            "rounded-3xl border border-[#a64d59]/30 p-6 pt-8 shadow-2xl outline-none",
-            "bg-gradient-to-b from-[#2d0a0a] to-[#1a0505] text-white",
+            "rounded-3xl border border-primary/30 p-6 pt-8 shadow-2xl outline-none",
+            "bg-gradient-to-b from-[#1a0204] to-[#0d0102] text-white",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -110,8 +110,8 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
           </DialogPrimitive.Close>
 
           <div className="flex flex-col items-center text-center">
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-[#a64d59]/60 bg-[#3d1218]/50">
-              <Bell className="h-8 w-8 text-[#c97882] stroke-[1.5]" />
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-primary/40 bg-primary/20">
+              <Bell className="h-8 w-8 text-primary-foreground stroke-[1.5]" />
             </div>
 
             <DialogPrimitive.Title className="text-xl font-bold leading-snug text-white">
@@ -128,9 +128,9 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
               onClick={() => void handleActivate()}
               className={cn(
                 "mt-6 flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5",
-                "border border-[#a64d59]/40 bg-gradient-to-r from-[#7f0f1e] to-[#5a0a14]",
+                "border border-primary/35 bg-gradient-to-r from-[#3A0205] to-[#2a0104]",
                 "text-base font-bold text-white shadow-lg transition",
-                "hover:from-[#92202f] hover:to-[#6b0f18] disabled:opacity-60",
+                "hover:from-[#4a0307] hover:to-[#350206] disabled:opacity-60",
               )}
             >
               <Bell className="h-4 w-4 shrink-0" />

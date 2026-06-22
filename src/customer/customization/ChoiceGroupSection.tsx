@@ -32,7 +32,7 @@ type Props = {
 };
 
 const INCLUDED = "border-emerald-500/45 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100";
-const REMOVED = "border-red-500/70 bg-red-500/10";
+const REMOVED = "border-primary/70 bg-primary/10";
 
 function updateOption(
   state: SelectionState,
@@ -149,7 +149,7 @@ export default function ChoiceGroupSection({
                   removed ? REMOVED : INCLUDED
                 }`}
               >
-                <span className={`block text-sm font-bold leading-tight ${removed ? "line-through text-red-700" : ""}`}>
+                <span className={`block text-sm font-bold leading-tight ${removed ? "line-through text-primary" : ""}`}>
                   {label}
                 </span>
               </button>

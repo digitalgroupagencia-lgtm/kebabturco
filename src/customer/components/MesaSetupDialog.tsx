@@ -118,7 +118,7 @@ const MesaSetupDialog = ({
         <div className="relative overflow-hidden rounded-t-[32px] bg-gradient-to-br from-primary/12 via-primary/5 to-background px-6 pb-5 pt-6">
           <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
           <DialogHeader className="items-center space-y-3 text-center">
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-primary text-primary-foreground shadow-[0_12px_28px_-10px_rgba(220,38,38,0.55)]">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-primary text-primary-foreground shadow-[0_12px_28px_-10px_rgba(58,2,5,0.55)]">
               <UtensilsCrossed className="h-8 w-8" strokeWidth={1.8} />
               <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-card text-primary shadow-sm">
                 <QrCode className="h-4 w-4" strokeWidth={2.2} />

@@ -6,10 +6,10 @@
 import { isCustomerStorefrontPath, isStaffAppPath } from "@/lib/appRouteKind";
 
 /** Cor oficial Kebab Turco — substitui todos os vermelhos/vinhos anteriores. */
-export const KEBAB_OFFICIAL_WINE_HEX = "#5F0504";
+export const KEBAB_OFFICIAL_WINE_HEX = "#3A0205";
 export const BRAND_WINE_HEX = KEBAB_OFFICIAL_WINE_HEX;
 export const BRAND_WINE_DARK_HEX = KEBAB_OFFICIAL_WINE_HEX;
-export const BRAND_WINE_LIGHT_HEX = "#7A1210";
+export const BRAND_WINE_LIGHT_HEX = "#5A0808";
 
 /**
  * Cor usada na barra do sistema / Safari / Chrome (chrome do browser).
@@ -20,6 +20,7 @@ export const BRAND_CHROME_HEX = KEBAB_OFFICIAL_WINE_HEX;
 export const LEGACY_BRAND_RED_HEXES = new Set([
   "#8B1A1A",
   "#5C1419",
+  "#5F0504",
   "#962E34",
   "#D62300",
   "#CC0000",
@@ -158,7 +159,7 @@ export function hslPartsToHex(parts: HslParts): string {
 export function chromeHexFromHeader(headerHex?: string): string {
   const base = headerHex || BRAND_WINE_HEX;
   const palette = winePaletteFromHex(base);
-  const wineDarkParts = hexToHslParts(BRAND_CHROME_HEX) ?? { h: 356, s: 64, l: 24 };
+  const wineDarkParts = hexToHslParts(BRAND_CHROME_HEX) ?? { h: 357, s: 93, l: 12 };
   const derived = hexToHslParts(base);
   const parts: HslParts = derived
     ? { h: derived.h, s: Math.min(derived.s + 4, 72), l: Math.max(derived.l - 10, 22) }

@@ -11,7 +11,7 @@ const CustomerHomeSkeleton = () => (
           className="sticky top-0 z-30 shrink-0 px-4 pb-3 shadow-header rounded-b-[18px]"
           style={{
             paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
-            backgroundColor: "var(--browser-chrome-hex, #5F0504)",
+            backgroundColor: "var(--browser-chrome-hex, #3A0205)",
           }}
         >
           <div className="flex items-center justify-between gap-3 min-h-[48px]">

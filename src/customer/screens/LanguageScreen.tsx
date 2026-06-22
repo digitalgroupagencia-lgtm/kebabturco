@@ -71,7 +71,7 @@ const LanguageScreen = () => {
         className="absolute top-0 left-0 right-0 pointer-events-none z-0"
         style={{
           height: "env(safe-area-inset-top)",
-          background: "var(--browser-chrome-hex, #5F0504)",
+          background: "var(--browser-chrome-hex, #3A0205)",
         }}
       />
       <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
