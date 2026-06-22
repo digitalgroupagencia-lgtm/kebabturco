@@ -183,14 +183,14 @@ const HomeScreen = () => {
                       : "bg-card/70 shadow-[0_4px_14px_-6px_hsla(0,0%,0%,0.1)] active:scale-[0.97]"
                   }`}
                 >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-secondary/40">
+                  <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-secondary/40 p-1">
                     <SmartImage
                       src={category.image}
                       alt={tProduct(category.name)}
                       targetWidth={176}
                       priority
-                      className="h-full w-full object-cover object-center"
-                      wrapperClassName="h-full w-full"
+                      className="max-h-full max-w-full object-contain object-center"
+                      wrapperClassName="flex h-full w-full items-center justify-center"
                     />
                   </div>
                   <span
@@ -253,14 +253,14 @@ const HomeScreen = () => {
                 )}
 
                 {/* Imagem quadrada — bordas arredondadas, alinhada ao topo e laterais do card */}
-                <div className="aspect-square w-full overflow-hidden bg-secondary/30">
+                <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-secondary/30 p-1.5">
                   <SmartImage
                     src={product.image}
                     alt={cleanName}
                     targetWidth={400}
                     priority={isPriority}
-                    className="h-full w-full object-cover object-center"
-                    wrapperClassName="h-full w-full"
+                    className="max-h-full max-w-full object-contain object-center"
+                    wrapperClassName="flex h-full w-full items-center justify-center"
                   />
                 </div>
 

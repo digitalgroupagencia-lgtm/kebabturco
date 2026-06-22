@@ -8,6 +8,9 @@ import {
 import { DEFAULT_BUSINESS_WEBSITE } from "./stripeConnectCustomProvision.ts";
 
 export const DEFAULT_SUPPORT_EMAIL = "suporte@kebabturco.net";
+/** Vinho oficial Kebab Turco — não usar vermelhos legacy (#D62300, #CC0000). */
+export const BRAND_WINE_HEX = "#8B1A1A";
+const LEGACY_RED_HEXES = new Set(["#D62300", "#CC0000", "#E63946"]);
 
 export type BrandingInput = {
   storeId: string;
@@ -73,9 +76,16 @@ export function resolvePublicAssetUrl(url: string | null | undefined, baseUrl = 
 }
 
 function pickBrandColor(settings: CompanySettingsRow | null): string {
-  const color = settings?.primary_color?.trim() || settings?.header_color?.trim();
-  if (color && /^#[0-9A-Fa-f]{6}$/.test(color)) return color;
-  return "#E63946";
+  const primary = settings?.primary_color?.trim().toUpperCase();
+  const header = settings?.header_color?.trim();
+  if (header && /^#[0-9A-Fa-f]{6}$/.test(header)) {
+    if (!primary || LEGACY_RED_HEXES.has(primary)) return header;
+  }
+  if (primary && /^#[0-9A-Fa-f]{6}$/.test(primary)) {
+    if (LEGACY_RED_HEXES.has(primary)) return BRAND_WINE_HEX;
+    return primary;
+  }
+  return BRAND_WINE_HEX;
 }
 
 function pickIconUrl(settings: CompanySettingsRow | null): string | null {
@@ -92,7 +102,6 @@ async function uploadBrandingFile(
   stripe: Stripe,
   url: string,
   purpose: "business_icon" | "business_logo",
-  connectAccountId: string,
 ): Promise<{ fileId: string | null; warning?: string }> {
   try {
     const res = await fetch(url);
@@ -109,17 +118,15 @@ async function uploadBrandingFile(
       };
     }
     const ext = contentType.includes("jpeg") ? "jpg" : contentType.includes("webp") ? "webp" : "png";
-    const file = await stripe.files.create(
-      {
-        purpose,
-        file: {
-          data: buffer,
-          name: `${purpose}.${ext}`,
-          type: contentType,
-        },
+    // Ficheiros na conta plataforma — Connect referencia por file_id no accounts.update.
+    const file = await stripe.files.create({
+      purpose,
+      file: {
+        data: buffer,
+        name: `${purpose}.${ext}`,
+        type: contentType,
       },
-      { stripeAccount: connectAccountId },
-    );
+    });
     return { fileId: file.id };
   } catch (err) {
     console.warn(`[branding] upload ${purpose} failed`, err);
@@ -196,7 +203,7 @@ export async function configureStoreStripeBranding(
   let logoFileId: string | null = null;
 
   if (input.iconUrl) {
-    const uploaded = await uploadBrandingFile(stripe, input.iconUrl, "business_icon", connectAccountId);
+    const uploaded = await uploadBrandingFile(stripe, input.iconUrl, "business_icon");
     iconFileId = uploaded.fileId;
     if (uploaded.warning) warnings.push(uploaded.warning);
   } else {
@@ -204,7 +211,7 @@ export async function configureStoreStripeBranding(
   }
 
   if (input.logoUrl) {
-    const uploaded = await uploadBrandingFile(stripe, input.logoUrl, "business_logo", connectAccountId);
+    const uploaded = await uploadBrandingFile(stripe, input.logoUrl, "business_logo");
     logoFileId = uploaded.fileId;
     if (uploaded.warning) warnings.push(uploaded.warning);
   }
@@ -225,9 +232,6 @@ export async function configureStoreStripeBranding(
       branding,
       payments: {
         statement_descriptor: input.statementDescriptor,
-      },
-      dashboard: {
-        display_name: input.businessName,
       },
       card_payments: {
         statement_descriptor_prefix: input.statementDescriptorPrefix,

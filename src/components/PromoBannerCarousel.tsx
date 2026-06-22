@@ -110,7 +110,7 @@ const PromoBannerCarousel = () => {
             key={currentItem.id}
             src={currentItem.image_url ?? ""}
             alt="Promoção"
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain object-center"
             loading={index === 0 ? "eager" : "lazy"}
           />
         )}
