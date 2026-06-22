@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { App as CapApp } from "@capacitor/app";
 import {
   disconnectTapToPayReader,
+  getTapToPayReaderStatus,
   isTapToPayPlatform,
   warmUpTapToPayReader,
   type ReaderWarmUpStatus,
