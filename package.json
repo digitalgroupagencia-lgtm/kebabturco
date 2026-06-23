@@ -15,6 +15,7 @@
     "cap:open:ios": "npx cap open ios",
     "cap:prepare:ios": "bash scripts/prepare-ios-app.sh",
     "cap:prepare:ios:dev": "bash scripts/sync-ios-for-development.sh",
+    "cap:prepare:android": "bash scripts/sync-android-for-release.sh",
     "apple:diagnose": "node scripts/apple-developer-diagnose.mjs",
     "dev": "vite",
     "build": "vite build",

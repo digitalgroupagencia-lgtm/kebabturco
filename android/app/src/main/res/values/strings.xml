@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">kebabturco</string>
-    <string name="title_activity_main">kebabturco</string>
-    <string name="package_name">app.lovable.d04adf9611f44dc9b79cf756a89ef084</string>
-    <string name="custom_url_scheme">app.lovable.d04adf9611f44dc9b79cf756a89ef084</string>
+    <string name="app_name">Kebab Turco</string>
+    <string name="title_activity_main">Kebab Turco</string>
+    <string name="package_name">com.eurobusinessgroup.kebabturco</string>
+    <string name="custom_url_scheme">com.eurobusinessgroup.kebabturco</string>
 </resources>

@@ -1,0 +1,104 @@
+KEBAB TURCO — PUBLICAR ANDROID NA GOOGLE PLAY (Codemagic)
+============================================================
+
+O Codemagic compila o pacote Android (.aab) na nuvem.
+Você configura uma vez no browser e depois é só carregar em «Start new build».
+
+────────────────────────────────────────────────────────────
+PAGAMENTOS — iPhone vs Android (importante)
+────────────────────────────────────────────────────────────
+
+• iPhone (app nativa): pagamento por aproximação (Tap to Pay) no telemóvel.
+  Só funciona no iOS — é exclusivo da Apple.
+
+• Android (tablet ou telemóvel): NÃO há Tap to Pay nesta app.
+  Os pagamentos com cartão funcionam pelo site https://kebabturco.net
+  dentro da app (Stripe online). Isto é normal e não impede publicar na Play Store.
+
+────────────────────────────────────────────────────────────
+PARTE 1 — Conta Codemagic (se ainda não tiver)
+────────────────────────────────────────────────────────────
+
+1. https://codemagic.io/signup
+2. Entrar com GitHub (repositório kebabturco)
+3. Autorizar acesso ao repo
+
+────────────────────────────────────────────────────────────
+PARTE 2 — Keystore Android no Codemagic
+────────────────────────────────────────────────────────────
+
+1. Codemagic → Team settings → Code signing identities
+2. Separador Android keystores → Add keystore
+3. Reference name: kebabturco_play  (igual ao codemagic.yaml)
+4. Carregar o ficheiro .jks ou .keystore da Play Store
+   (se não tiver: Play Console → Configuração → Integridade da app → Assinatura)
+5. Guardar alias e passwords no Codemagic
+
+Nota: O nome kebabturco_play tem de coincidir com android_signing no codemagic.yaml.
+
+────────────────────────────────────────────────────────────
+PARTE 3 — Firebase (notificações push no Android)
+────────────────────────────────────────────────────────────
+
+O pacote da app na Play Store é: com.eurobusinessgroup.kebabturco
+
+1. Abrir https://console.firebase.google.com → projeto kebab-turco-gandia
+2. Definições do projeto → As suas apps → Adicionar app → Android
+3. Nome do pacote Android: com.eurobusinessgroup.kebabturco
+4. Registar app → Descarregar google-services.json
+5. Substituir o ficheiro em android/app/google-services.json no repo
+   (ou pedir ao agente para fazer commit)
+6. O mobilesdk_app_id no JSON tem de ser o da app nova no Firebase.
+   Se o build falhar por Firebase, é quase sempre isto.
+
+────────────────────────────────────────────────────────────
+PARTE 4 — Conta de serviço Google Play (upload automático, opcional)
+────────────────────────────────────────────────────────────
+
+Para o Codemagic enviar o .aab sozinho para a Play Store:
+
+1. Play Console → Utilizadores e permissões → Convidar utilizador
+2. Criar conta de serviço na Google Cloud com acesso à Play Console
+3. Descarregar JSON da conta de serviço
+4. Codemagic → Team settings → Global variables and secrets
+5. Nome: GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS (conteúdo do JSON)
+6. No codemagic.yaml, descomentar a secção publishing → google_play
+
+Sem isto: descarrega o .aab dos artefactos do build e faz upload manual
+na Play Console → Teste fechado → Criar nova versão.
+
+────────────────────────────────────────────────────────────
+PARTE 5 — Correr o workflow
+────────────────────────────────────────────────────────────
+
+1. Codemagic → Apps → kebabturco → Start new build
+2. Escolher workflow: «Kebab Turco — Android Google Play 1.1»
+3. Branch: main
+4. Start build
+
+O build faz:
+  • npm ci
+  • compilar site + cap sync android (v1.1, com.eurobusinessgroup.kebabturco)
+  • ./gradlew bundleRelease → ficheiro .aab assinado
+
+────────────────────────────────────────────────────────────
+PARTE 6 — Submeter na Play Store (teste fechado)
+────────────────────────────────────────────────────────────
+
+1. Play Console → Kebab Turco
+2. Teste → Teste fechado (ou o canal que já usava)
+3. Criar nova versão → Carregar o .aab (versionCode 2, versão 1.1)
+4. Notas da versão → Rever → Enviar para revisão
+
+A app já estava em teste fechado — esta versão 1.1 actualiza a listagem
+existente (mesmo pacote com.eurobusinessgroup.kebabturco).
+
+────────────────────────────────────────────────────────────
+Resumo rápido
+────────────────────────────────────────────────────────────
+
+□ Keystore kebabturco_play no Codemagic
+□ Firebase: app Android com.eurobusinessgroup.kebabturco + google-services.json
+□ Build workflow «Android Google Play 1.1» na branch main
+□ Upload .aab para teste fechado na Play Console
+□ Pagamentos no Android = cartão online no site (não aproximação)

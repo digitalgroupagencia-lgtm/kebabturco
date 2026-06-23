@@ -259,3 +259,49 @@ workflows:
         auth: integration
         submit_to_testflight: false
         submit_to_app_store: false
+
+  kebabturco-android-playstore:
+    name: Kebab Turco — Android Google Play 1.1
+    max_build_duration: 120
+    instance_type: linux_x2
+
+    environment:
+      android_signing:
+        - kebabturco_play
+      vars:
+        PACKAGE_NAME: com.eurobusinessgroup.kebabturco
+        VERSION_NAME: "1.1"
+        VERSION_CODE: "2"
+      node: 22
+      java: 17
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Instalar dependências
+        script: npm ci
+
+      - name: Compilar site + sincronizar Android
+        script: bash scripts/sync-android-for-release.sh
+
+      - name: Criar pacote AAB para Google Play
+        script: |
+          set -euo pipefail
+          cd android
+          ./gradlew bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+
+    # Publicação automática (opcional): descomente depois de configurar
+    # credenciais Google Play no Codemagic (ver CODEMAGIC-ANDROID-PASSO-A-PASSO.txt)
+    # publishing:
+    #   google_play:
+    #     credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+    #     track: internal
+    #     submit_as_draft: true

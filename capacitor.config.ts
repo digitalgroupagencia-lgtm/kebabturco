@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "app.lovable.d04adf9611f44dc9b79cf756a89ef084",
-  appName: "kebabturco",
+  appId: "com.eurobusinessgroup.kebabturco",
+  appName: "Kebab Turco",
   webDir: "dist",
   server: {
     // Aponta para o app publicado — atualizações no Lovable chegam ao tablet
