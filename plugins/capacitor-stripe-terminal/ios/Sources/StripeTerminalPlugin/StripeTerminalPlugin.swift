@@ -209,12 +209,18 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     }
 
     @objc func cancelPayment(_ call: CAPPluginCall) {
+        cancelOperationTimeout()
         paymentCancelable?.cancel { _ in }
         discoverCancelable?.cancel { _ in }
+        activePromise?.reject("Operação Tap to Pay cancelada.")
+        activePromise = nil
+        warmUpOnly = false
+        readerPhase = .idle
         call.resolve()
     }
 
     @objc func disconnectReader(_ call: CAPPluginCall) {
+        cancelOperationTimeout()
         readerReady = false
         readerPhase = .idle
         Terminal.shared.disconnectReader { error in
