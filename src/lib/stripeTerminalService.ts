@@ -376,7 +376,7 @@ async function resolveTerminalContext(storeId: string) {
     locationId: resolvedLocationId,
     connectAccountId: connectAccountId.trim(),
     merchantDisplayName:
-      (profile?.stripe_business_name || profile?.name || "Kebab Turco").trim().slice(0, 100),
+      (profile?.stripe_business_name || (profile as { name?: string } | null)?.name || "Kebab Turco").trim().slice(0, 100),
     simulated,
   };
 }
