@@ -990,7 +990,6 @@ export const STAFF_I18N_CATALOG = {
   "finance.admin.toast.link_error": { es: "Error al generar el enlace", pt: "Erro ao gerar o link", en: "Failed to generate link" },
   "finance.admin.toast.test_activated": { es: "Modo teste activo — recibos de teste activos", pt: "Modo teste activo — recebimentos de teste activos", en: "Test mode active — test payouts enabled" },
   "finance.admin.toast.test_error": { es: "Error al activar recibos de teste", pt: "Erro ao activar recebimentos de teste", en: "Failed to activate test payouts" },
-  "finance.admin.load_error": { es: "Error al cargar recibos", pt: "Erro ao carregar recebimentos", en: "Failed to load payouts" },
 
   // --- Settings push toasts ---
   "settings.push.disabled": { es: "Push desactivado en este dispositivo", pt: "Push desactivado neste dispositivo", en: "Push disabled on this device" },
