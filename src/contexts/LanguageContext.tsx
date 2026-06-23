@@ -803,6 +803,18 @@ const translations: Translations = {
     es: "Un momento — conectando con el banco.",
     fr: "Un instant — connexion à la banque.",
   },
+  cashSubmittingOrder: {
+    pt: "A enviar o pedido…",
+    en: "Sending your order…",
+    es: "Enviando tu pedido…",
+    fr: "Envoi de votre commande…",
+  },
+  cashSubmittingOrderSub: {
+    pt: "O restaurante vai receber o pedido em dinheiro.",
+    en: "The restaurant will receive your cash order.",
+    es: "El restaurante recibirá tu pedido en efectivo.",
+    fr: "Le restaurant recevra votre commande en espèces.",
+  },
   stripeRecoveringPayment: {
     pt: "A confirmar o seu pagamento…",
     en: "Confirming your payment…",

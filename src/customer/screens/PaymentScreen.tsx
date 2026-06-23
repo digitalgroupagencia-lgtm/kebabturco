@@ -111,6 +111,14 @@ const METHOD_SUBS: Record<PaymentMethodId, Record<string, string>> = {
 
 const hiddenCheckoutFeature = (_name: string) => false;
 
+function isOnlineCheckoutMethod(method: PaymentMethodId | null): method is "card" | "bizum" {
+  return method === "card" || method === "bizum";
+}
+
+function isCounterCashMethod(method: PaymentMethodId | null): boolean {
+  return method === "cash" || method === "counter";
+}
+
 const PaymentScreen = () => {
   const {
     setScreen,
@@ -182,6 +190,11 @@ const PaymentScreen = () => {
   );
   const logoUrl = brandingCtx?.settings?.logo_main_url ?? null;
   const [selected, setSelected] = useState<PaymentMethodId | null>(null);
+  const selectedMethodRef = useRef<PaymentMethodId | null>(null);
+
+  useEffect(() => {
+    selectedMethodRef.current = selected;
+  }, [selected]);
   const [processing, setProcessing] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
@@ -393,17 +406,40 @@ const PaymentScreen = () => {
   useEffect(() => {
     if (checkoutMethods.length === 0) {
       setSelected(null);
+      selectedMethodRef.current = null;
       return;
     }
     setSelected((current) => {
       if (current && checkoutMethods.some((m) => m.id === current)) {
         return current;
       }
+      const cashMethod = checkoutMethods.find((m) => m.id === "cash");
+      if (cashMethod) return "cash";
       const cardMethod = checkoutMethods.find((m) => m.id === "card");
       if (cardMethod) return "card";
       return checkoutMethods[0]?.id ?? null;
     });
   }, [checkoutMethods]);
+
+  const selectPaymentMethod = (methodId: PaymentMethodId) => {
+    selectedMethodRef.current = methodId;
+    setSelected(methodId);
+    setShowError(null);
+    setPaymentError(null);
+    stripePrefetchRef.current = null;
+    if (isCounterCashMethod(methodId)) {
+      setStripeClientSecret(null);
+      setStripePaymentIntentId(null);
+      setStripePaymentMeta(null);
+      setStripePreparedOrder(null);
+      clearStripeCheckoutSession();
+    } else if (isOnlineCheckoutMethod(methodId)) {
+      setStripeClientSecret(null);
+      setStripePaymentIntentId(null);
+      setStripePaymentMeta(null);
+      setStripePreparedOrder(null);
+    }
+  };
 
   const validateDetailsStep = () => {
     if (!orderType) { setShowError("method"); return false; }
@@ -442,7 +478,7 @@ const PaymentScreen = () => {
       setShowError("method");
       return false;
     }
-    if ((method === "card" || method === "bizum") && !stripePublishableKey) {
+    if (isOnlineCheckoutMethod(method) && !stripePublishableKey) {
       setPaymentError(stripeIssue || "Pagamento online indisponível neste momento.");
       setShowError("method");
       return false;
@@ -619,20 +655,23 @@ const PaymentScreen = () => {
       mesaValidated,
     );
 
-    if (printOk) {
-      await enqueueCheckoutPrint(result, {
-        paymentMethod: opts.paymentMethod,
-        paymentStatus: opts.paymentStatus,
-        paidViaApp: opts.paymentStatus === "paid",
-      });
-    }
-
     clearCart();
     if (awaitsCounterPayment) {
       setScreen("cashPending");
-      return result;
+    } else {
+      setScreen("confirmation");
     }
-    setScreen("confirmation");
+
+    if (printOk) {
+      void enqueueCheckoutPrint(result, {
+        paymentMethod: opts.paymentMethod,
+        paymentStatus: opts.paymentStatus,
+        paidViaApp: opts.paymentStatus === "paid",
+      }).catch((printErr) => {
+        console.warn("[checkout] impressão falhou após pedido em dinheiro:", printErr);
+      });
+    }
+
     return result;
   };
 
@@ -813,7 +852,8 @@ const PaymentScreen = () => {
   };
 
   useEffect(() => {
-    if (!storeId || stripeClientSecret || recoveringCheckout || stripeCheckoutPreparing) return;
+    if (!storeId || stripeClientSecret || recoveringCheckout || stripeCheckoutPreparing || processing) return;
+    if (isCounterCashMethod(selectedMethodRef.current ?? selected)) return;
 
     const session = loadStripeCheckoutSession();
     if (!session || session.storeId !== storeId) return;
@@ -856,7 +896,7 @@ const PaymentScreen = () => {
     return () => {
       cancelled = true;
     };
-  }, [storeId, stripeClientSecret, recoveringCheckout, stripeCheckoutPreparing]);
+  }, [storeId, stripeClientSecret, recoveringCheckout, stripeCheckoutPreparing, processing, selected]);
 
   const createPendingCardOrder = async (
     paymentIntentIdOverride?: string,
@@ -913,7 +953,7 @@ const PaymentScreen = () => {
       setShowError("method");
       return;
     }
-    const method = selected ?? checkoutMethods[0]?.id ?? null;
+    const method = selectedMethodRef.current ?? selected ?? checkoutMethods[0]?.id ?? null;
     if (!method) {
       setShowError("method");
       setPaymentError(t("checkoutPickPayment"));
@@ -924,7 +964,7 @@ const PaymentScreen = () => {
   };
 
   const confirm = async (methodOverride?: PaymentMethodId) => {
-    const method = methodOverride ?? selected;
+    const method = methodOverride ?? selectedMethodRef.current ?? selected;
     if (processing || !validate(method) || !method) return;
 
     if (!openStatus.open) {
@@ -932,10 +972,7 @@ const PaymentScreen = () => {
       return;
     }
 
-
-
-
-    if (method === "card" || method === "bizum") {
+    if (isOnlineCheckoutMethod(method)) {
       if (!stripePublishableKey) {
         setPaymentError(stripeIssue || "Pagamento online indisponível neste momento.");
         setShowError("method");
@@ -966,12 +1003,20 @@ const PaymentScreen = () => {
       return;
     }
 
+    clearStripeCheckoutSession();
     setProcessing(true);
+    setPaymentError(null);
     try {
       await finishOrder({
         paymentMethod: method,
         paymentStatus: "pending",
       });
+    } catch (e) {
+      console.error("[checkout] pedido em dinheiro falhou:", e);
+      setPaymentError(
+        e instanceof Error ? e.message : "Não foi possível enviar o pedido. Tente novamente.",
+      );
+      setShowError("method");
     } finally {
       setProcessing(false);
     }
@@ -1063,8 +1108,16 @@ const PaymentScreen = () => {
           <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
             <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-foreground">{t("stripePreparingPayment")}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t("stripePreparingPaymentSub")}</p>
+              <p className="text-sm font-bold text-foreground">
+                {isCounterCashMethod(selectedMethodRef.current ?? selected) && !stripeCheckoutPreparing
+                  ? t("cashSubmittingOrder")
+                  : t("stripePreparingPayment")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isCounterCashMethod(selectedMethodRef.current ?? selected) && !stripeCheckoutPreparing
+                  ? t("cashSubmittingOrderSub")
+                  : t("stripePreparingPaymentSub")}
+              </p>
             </div>
           </div>
         )}
@@ -1401,23 +1454,7 @@ const PaymentScreen = () => {
                       <button
                         key={pm.id}
                         type="button"
-                        onClick={() => {
-                          setSelected(pm.id);
-                          setShowError(null);
-                          setPaymentError(null);
-                          if (pm.id === "cash" || pm.id === "counter") {
-                            setStripeClientSecret(null);
-                            setStripePaymentIntentId(null);
-                            setStripePaymentMeta(null);
-                            setStripePreparedOrder(null);
-                          }
-                          if (pm.id === "card" || pm.id === "bizum") {
-                            setStripeClientSecret(null);
-                            setStripePaymentIntentId(null);
-                            setStripePaymentMeta(null);
-                            setStripePreparedOrder(null);
-                          }
-                        }}
+                        onClick={() => selectPaymentMethod(pm.id)}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all touch-action-manipulation ${
                           isSel ? "border-success bg-success/5" : "border-border bg-card"
                         }`}

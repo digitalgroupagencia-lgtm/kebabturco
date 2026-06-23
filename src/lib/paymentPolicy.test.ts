@@ -50,7 +50,7 @@ describe("paymentPolicy", () => {
       resolveCheckoutMethods({
         orderType: "takeaway",
         mesaValidated: false,
-        settings: { ...baseSettings, pay_cash_takeaway: true },
+        settings: { ...baseSettings, pay_cash_takeaway: true, require_prepayment_takeaway: false },
         stripeReady: true,
         stripePublishableKey: true,
       }),
@@ -68,7 +68,7 @@ describe("paymentPolicy", () => {
       resolveCheckoutMethods({
         orderType: "delivery",
         mesaValidated: false,
-        settings: { ...baseSettings, pay_cash_delivery: true },
+        settings: { ...baseSettings, pay_cash_delivery: true, require_prepayment_delivery: false },
         stripeReady: true,
         stripePublishableKey: true,
       }),
@@ -112,10 +112,23 @@ describe("paymentPolicy", () => {
     expect(methods).toContain("bizum");
   });
 
-  it("prepayment default: balcão não exige online; delivery exige", () => {
-    expect(requiresPrepayment("takeaway", baseSettings)).toBe(false);
+  it("prepayment: takeaway e delivery respeitam flags; mesa não exige online", () => {
+    expect(requiresPrepayment("takeaway", baseSettings)).toBe(true);
+    expect(requiresPrepayment("takeaway", { ...baseSettings, require_prepayment_takeaway: false })).toBe(false);
     expect(requiresPrepayment("delivery", baseSettings)).toBe(true);
     expect(requiresPrepayment("here", baseSettings)).toBe(false);
+  });
+
+  it("takeaway com pré-pagamento obrigatório: sem dinheiro no checkout", () => {
+    expect(
+      resolveCheckoutMethods({
+        orderType: "takeaway",
+        mesaValidated: false,
+        settings: { ...baseSettings, pay_cash_takeaway: true, require_prepayment_takeaway: true },
+        stripeReady: true,
+        stripePublishableKey: true,
+      }),
+    ).toEqual(["bizum", "card"]);
   });
 
   it("não imprime takeaway pendente; imprime mesa validada pendente", () => {

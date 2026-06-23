@@ -60,7 +60,7 @@ export function resolveCheckoutMethods(input: PaymentPolicyInput): PaymentMethod
 
   const methods = onlineCheckoutMethods(cardVisible, settings);
 
-  if (cashAllowedForOrderType(orderType, settings)) {
+  if (cashAllowedForOrderType(orderType, settings) && !requiresPrepayment(orderType, settings)) {
     methods.push("cash");
   }
 
@@ -71,7 +71,9 @@ export function requiresPrepayment(
   orderType: CustomerOrderType,
   settings: OperationsSettings | null,
 ): boolean {
-  if (orderType === "takeaway") return false;
+  if (orderType === "takeaway") {
+    return opsFlag(settings, "require_prepayment_takeaway", false);
+  }
   if (orderType === "delivery") return opsFlag(settings, "require_prepayment_delivery", false);
   return false;
 }
