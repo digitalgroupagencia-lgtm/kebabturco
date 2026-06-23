@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, ChefHat, Package, CheckCircle2, XCircle } from "lucide-react";
 import { getStatusLabel, type OrderStatus } from "@/lib/orderStatusLabels";
 import { panelColumnStatus } from "@/lib/orderOperationalFlow";
-import { usePanelOrders } from "@/features/ops/usePanelOrders";
+import { usePanelOrders, type PanelOrder } from "@/features/ops/usePanelOrders";
 import OpsOrdersLayout from "@/features/ops/OpsOrdersLayout";
 import OpsStatusTabs from "@/features/ops/OpsStatusTabs";
 import OpsOrderCard from "@/features/ops/OpsOrderCard";
