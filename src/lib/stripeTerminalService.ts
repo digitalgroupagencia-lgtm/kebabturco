@@ -629,19 +629,27 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("waiting_card", "Aproxime o cartão ou telemóvel do cliente…");
 
-  const result = await withTimeout(
-    (await loadStripeTerminal()).processTapToPayPayment({
-      publishableKey,
-      connectionToken: ctx.tokenPayload.secret,
-      locationId: ctx.locationId,
-      onBehalfOf: ctx.connectAccountId,
-      merchantDisplayName: ctx.merchantDisplayName,
-      clientSecret: pi.clientSecret,
-      simulated: ctx.simulated,
-    }),
-    PAYMENT_TIMEOUT_MS,
-    "O pagamento Tap to Pay demorou demasiado. Cancele e tente novamente.",
-  );
+  let result: { paymentIntentId: string };
+  try {
+    result = await withTimeout(
+      (await loadStripeTerminal()).processTapToPayPayment({
+        publishableKey,
+        connectionToken: ctx.tokenPayload.secret,
+        locationId: ctx.locationId,
+        onBehalfOf: ctx.connectAccountId,
+        merchantDisplayName: ctx.merchantDisplayName,
+        clientSecret: pi.clientSecret,
+        simulated: ctx.simulated,
+      }),
+      PAYMENT_TIMEOUT_MS,
+      "O pagamento Tap to Pay demorou demasiado. Cancele e tente novamente.",
+    );
+  } catch (e) {
+    const diag = buildDiagnostics("payment", e);
+    lastWarmUpDiagnostics = diag;
+    console.warn("[TapToPay payment]", diag, e);
+    throw new Error(formatTapToPayDiagnostics(diag));
+  }
 
   params.onStep?.("processing", "A confirmar pagamento…");
 
