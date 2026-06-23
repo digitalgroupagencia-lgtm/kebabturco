@@ -38,11 +38,112 @@ export type ReaderWarmUpStatus =
 let progressListenerAttached = false;
 let warmUpInFlight: Promise<ReaderWarmUpStatus> | null = null;
 let lastWarmUpError: string | null = null;
+let lastWarmUpDiagnostics: TapToPayDiagnostics | null = null;
+
+export type TapToPayDiagnostics = {
+  stage: "warmup" | "payment" | "reader_status" | "context";
+  timestamp: string;
+  message: string;
+  code?: string;
+  name?: string;
+  rawErrorJson?: string;
+  hint?: string;
+};
 
 export function consumeLastTapToPayWarmUpError(): string | null {
   const msg = lastWarmUpError;
   lastWarmUpError = null;
   return msg;
+}
+
+export function getLastTapToPayDiagnostics(): TapToPayDiagnostics | null {
+  return lastWarmUpDiagnostics;
+}
+
+export function clearLastTapToPayDiagnostics(): void {
+  lastWarmUpDiagnostics = null;
+}
+
+function buildTapToPayHint(rawMessage: string, code?: string): string | undefined {
+  const m = `${code ?? ""} ${rawMessage}`.toLowerCase();
+  if (
+    m.includes("entitlement") ||
+    m.includes("proximity-reader") ||
+    m.includes("not entitled") ||
+    m.includes("missing entitlement") ||
+    m.includes("readererror") ||
+    m.includes("not supported") ||
+    m.includes("nfcreaderusagedescription")
+  ) {
+    return "Provável entitlement Apple `com.apple.developer.proximity-reader.payment.acceptance` ainda não aprovado. Verifique o caso aberto na Apple e o capability no provisioning profile.";
+  }
+  if (m.includes("timeout") || m.includes("demorou") || m.includes("não respondeu")) {
+    return "O SDK nativo não respondeu dentro do tempo limite. Confirme entitlement aprovado, ligação à internet, e que está em iPhone físico (não simulador) com iOS 16.7+.";
+  }
+  if (m.includes("location") || m.includes("ubicación") || m.includes("morada")) {
+    return "Verifique se a localização Stripe Terminal está criada (Definições → Tap to Pay → Verificar ubicación Stripe).";
+  }
+  if (m.includes("connection token") || m.includes("connectiontoken")) {
+    return "Token de ligação Stripe inválido. Confirme que `stripe-terminal-connection-token` está publicada e a conta Connect activa.";
+  }
+  if (m.includes("network") || m.includes("offline") || m.includes("internet")) {
+    return "Sem internet ou edge function indisponível. Tente novamente em Wi-Fi.";
+  }
+  return undefined;
+}
+
+function buildDiagnostics(
+  stage: TapToPayDiagnostics["stage"],
+  err: unknown,
+): TapToPayDiagnostics {
+  let message = "";
+  let code: string | undefined;
+  let name: string | undefined;
+  let rawErrorJson: string | undefined;
+
+  if (err instanceof Error) {
+    message = err.message;
+    name = err.name;
+    const anyErr = err as unknown as Record<string, unknown>;
+    if (typeof anyErr.code === "string") code = anyErr.code;
+  } else if (err && typeof err === "object") {
+    const rec = err as Record<string, unknown>;
+    message = typeof rec.message === "string" ? rec.message : JSON.stringify(rec);
+    if (typeof rec.code === "string") code = rec.code;
+    if (typeof rec.name === "string") name = rec.name;
+  } else {
+    message = String(err ?? "");
+  }
+
+  try {
+    rawErrorJson = JSON.stringify(err, Object.getOwnPropertyNames(err ?? {})).slice(0, 800);
+  } catch {
+    rawErrorJson = undefined;
+  }
+
+  return {
+    stage,
+    timestamp: new Date().toISOString(),
+    message: message || "(sem mensagem)",
+    code,
+    name,
+    rawErrorJson,
+    hint: buildTapToPayHint(message, code),
+  };
+}
+
+export function formatTapToPayDiagnostics(d: TapToPayDiagnostics): string {
+  const lines: string[] = [];
+  lines.push(`Erro Tap to Pay (${d.stage})`);
+  lines.push(`Mensagem: ${d.message}`);
+  if (d.code) lines.push(`Código: ${d.code}`);
+  if (d.name) lines.push(`Tipo: ${d.name}`);
+  if (d.hint) lines.push(`Dica: ${d.hint}`);
+  lines.push(`Hora: ${d.timestamp}`);
+  if (d.rawErrorJson && d.rawErrorJson !== "{}") {
+    lines.push(`Detalhe nativo: ${d.rawErrorJson}`);
+  }
+  return lines.join("\n");
 }
 
 const WARM_UP_TIMEOUT_MS = 60_000;
@@ -432,15 +533,20 @@ async function warmUpTapToPayReaderInternal(
     );
     const status = result.ready ? "ready" : "error";
     if (status === "error") {
-      lastWarmUpError = "O leitor não ficou pronto. Tente em Definições → Preparar leitor.";
+      const diag = buildDiagnostics("warmup", new Error("O leitor não ficou pronto após inicializar (ready=false)."));
+      lastWarmUpDiagnostics = diag;
+      lastWarmUpError = formatTapToPayDiagnostics(diag);
     } else {
       lastWarmUpError = null;
+      lastWarmUpDiagnostics = null;
     }
     opts?.onStatus?.(status);
     return status;
   } catch (e) {
-    lastWarmUpError = e instanceof Error ? e.message : "Erro ao preparar Tap to Pay.";
-    console.warn("[TapToPay warm-up]", e);
+    const diag = buildDiagnostics("warmup", e);
+    lastWarmUpDiagnostics = diag;
+    lastWarmUpError = formatTapToPayDiagnostics(diag);
+    console.warn("[TapToPay warm-up]", diag, e);
     opts?.onStatus?.("error");
     return "error";
   }
@@ -523,19 +629,27 @@ export async function runTapToPayForOrder(params: {
 
   params.onStep?.("waiting_card", "Aproxime o cartão ou telemóvel do cliente…");
 
-  const result = await withTimeout(
-    (await loadStripeTerminal()).processTapToPayPayment({
-      publishableKey,
-      connectionToken: ctx.tokenPayload.secret,
-      locationId: ctx.locationId,
-      onBehalfOf: ctx.connectAccountId,
-      merchantDisplayName: ctx.merchantDisplayName,
-      clientSecret: pi.clientSecret,
-      simulated: ctx.simulated,
-    }),
-    PAYMENT_TIMEOUT_MS,
-    "O pagamento Tap to Pay demorou demasiado. Cancele e tente novamente.",
-  );
+  let result: { paymentIntentId: string };
+  try {
+    result = await withTimeout(
+      (await loadStripeTerminal()).processTapToPayPayment({
+        publishableKey,
+        connectionToken: ctx.tokenPayload.secret,
+        locationId: ctx.locationId,
+        onBehalfOf: ctx.connectAccountId,
+        merchantDisplayName: ctx.merchantDisplayName,
+        clientSecret: pi.clientSecret,
+        simulated: ctx.simulated,
+      }),
+      PAYMENT_TIMEOUT_MS,
+      "O pagamento Tap to Pay demorou demasiado. Cancele e tente novamente.",
+    );
+  } catch (e) {
+    const diag = buildDiagnostics("payment", e);
+    lastWarmUpDiagnostics = diag;
+    console.warn("[TapToPay payment]", diag, e);
+    throw new Error(formatTapToPayDiagnostics(diag));
+  }
 
   params.onStep?.("processing", "A confirmar pagamento…");
 
