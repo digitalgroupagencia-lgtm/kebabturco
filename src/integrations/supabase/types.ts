@@ -3582,80 +3582,43 @@ export type Database = {
         Returns: Json
       }
       count_active_sellers: { Args: { _tenant_id: string }; Returns: number }
-      create_customer_order:
-        | {
-            Args: {
-              _application_fee_cents?: number
-              _coupon_code?: string
-              _coupon_id?: string
-              _customer_email?: string
-              _customer_name?: string
-              _customer_phone?: string
-              _delivery_city?: string
-              _delivery_complement?: string
-              _delivery_fee?: number
-              _delivery_notes?: string
-              _delivery_number?: string
-              _delivery_postal_code?: string
-              _delivery_street?: string
-              _delivery_zone_id?: string
-              _delivery_zone_name?: string
-              _discount_amount?: number
-              _items: Json
-              _net_to_store_cents?: number
-              _notes?: string
-              _online_service_fee_cents?: number
-              _order_type: string
-              _payment_method?: string
-              _payment_status?: string
-              _platform_fee_cents?: number
-              _store_id: string
-              _stripe_connect_account_id?: string
-              _stripe_fee_cents?: number
-              _stripe_payment_intent_id?: string
-              _subtotal?: number
-              _table_id?: string
-              _table_number?: string
-              _total: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _application_fee_cents?: number
-              _coupon_code?: string
-              _coupon_id?: string
-              _customer_name?: string
-              _customer_phone?: string
-              _delivery_city?: string
-              _delivery_complement?: string
-              _delivery_fee?: number
-              _delivery_notes?: string
-              _delivery_number?: string
-              _delivery_postal_code?: string
-              _delivery_street?: string
-              _delivery_zone_id?: string
-              _delivery_zone_name?: string
-              _discount_amount?: number
-              _items: Json
-              _net_to_store_cents?: number
-              _notes?: string
-              _online_service_fee_cents?: number
-              _order_type: string
-              _payment_method?: string
-              _payment_status?: string
-              _platform_fee_cents?: number
-              _store_id: string
-              _stripe_connect_account_id?: string
-              _stripe_fee_cents?: number
-              _stripe_payment_intent_id?: string
-              _subtotal?: number
-              _table_id?: string
-              _table_number?: string
-              _total: number
-            }
-            Returns: Json
-          }
+      create_customer_order: {
+        Args: {
+          _application_fee_cents?: number
+          _coupon_code?: string
+          _coupon_id?: string
+          _customer_email?: string
+          _customer_name?: string
+          _customer_phone?: string
+          _delivery_city?: string
+          _delivery_complement?: string
+          _delivery_fee?: number
+          _delivery_notes?: string
+          _delivery_number?: string
+          _delivery_postal_code?: string
+          _delivery_street?: string
+          _delivery_zone_id?: string
+          _delivery_zone_name?: string
+          _discount_amount?: number
+          _items: Json
+          _net_to_store_cents?: number
+          _notes?: string
+          _online_service_fee_cents?: number
+          _order_type: string
+          _payment_method?: string
+          _payment_status?: string
+          _platform_fee_cents?: number
+          _store_id: string
+          _stripe_connect_account_id?: string
+          _stripe_fee_cents?: number
+          _stripe_payment_intent_id?: string
+          _subtotal?: number
+          _table_id?: string
+          _table_number?: string
+          _total: number
+        }
+        Returns: Json
+      }
       create_seller_order: {
         Args: {
           _customer_name: string

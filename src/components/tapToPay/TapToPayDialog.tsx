@@ -88,7 +88,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
       } else {
         setReaderReady(false);
         setStep("error");
-        setError(result.message);
+        setError((result as { ok: false; message: string }).message);
       }
     } catch (e) {
       setReaderReady(false);

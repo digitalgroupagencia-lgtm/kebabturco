@@ -10,7 +10,7 @@ import { staffT, type StaffI18nKey } from "@/lib/staffI18n";
 export function useStaffT(defaultLang?: "es" | "pt" | "en") {
   const lang = useStaffUiLang(defaultLang);
   const t = useCallback(
-    (key: StaffI18nKey, fallback?: string) => staffT(lang, key, fallback),
+    (key: StaffI18nKey | string, fallback?: string) => staffT(lang, key as StaffI18nKey, fallback),
     [lang],
   );
   return { t, lang };
