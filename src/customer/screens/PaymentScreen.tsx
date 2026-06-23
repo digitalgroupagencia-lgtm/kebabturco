@@ -1023,6 +1023,13 @@ const PaymentScreen = () => {
   };
 
   const compact = isTableOrder;
+  const activeCheckoutMethod = selectedMethodRef.current ?? selected;
+  const showCheckoutSpinner =
+    !stripeClientSecret &&
+    (stripeCheckoutPreparing ||
+      recoveringCheckout ||
+      (processing &&
+        (isOnlineCheckoutMethod(activeCheckoutMethod) || isCounterCashMethod(activeCheckoutMethod))));
 
   if (sellerMode.active) {
     return <SellerCheckoutForm />;
@@ -1104,34 +1111,6 @@ const PaymentScreen = () => {
           </div>
         )}
 
-        {(processing || stripeCheckoutPreparing) && !stripeClientSecret && (
-          <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-bold text-foreground">
-                {isCounterCashMethod(selectedMethodRef.current ?? selected) && !stripeCheckoutPreparing
-                  ? t("cashSubmittingOrder")
-                  : t("stripePreparingPayment")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isCounterCashMethod(selectedMethodRef.current ?? selected) && !stripeCheckoutPreparing
-                  ? t("cashSubmittingOrderSub")
-                  : t("stripePreparingPaymentSub")}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {recoveringCheckout && (
-          <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-bold text-foreground">{t("stripeRecoveringPayment")}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t("stripeRecoveringPaymentSub")}</p>
-            </div>
-          </div>
-        )}
-
         {stripeClientSecret ? (
           <div className={`mt-3 bg-card rounded-2xl border border-border shadow-card ${compact ? "p-3" : "p-4 mt-5 rounded-[24px]"}`}>
             <p className="text-sm font-black text-foreground mb-2">
@@ -1193,6 +1172,10 @@ const PaymentScreen = () => {
                 }
               }}
             />
+          </div>
+        ) : showCheckoutSpinner ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-9 h-9 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <>
@@ -1494,7 +1477,7 @@ const PaymentScreen = () => {
         </div>
       </div>
 
-      {!stripeClientSecret && (
+      {!stripeClientSecret && !showCheckoutSpinner && (
         <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           {showError === "store" && (
             <div className="mb-2 px-1">
@@ -1527,13 +1510,18 @@ const PaymentScreen = () => {
               type="button"
               onClick={handlePayClick}
               disabled={!payButtonReady}
-              className="w-full flex items-center justify-between gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base disabled:opacity-40 touch-action-manipulation"
+              className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-gradient-cta text-success-foreground rounded-2xl font-black text-base disabled:opacity-40 touch-action-manipulation"
             >
-              <span className="flex items-center gap-2">
-                {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {processing ? t("processing") : isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
-              </span>
-              <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
+              {processing || stripeCheckoutPreparing ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <>
+                  <span className="flex-1 text-left">
+                    {isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
+                  </span>
+                  <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
+                </>
+              )}
             </button>
           )}
         </div>

@@ -73,14 +73,10 @@ function useCheckoutGuards(busy: boolean, waitingBank: boolean, recoveringRedire
   }, [busy, waitingBank, recoveringRedirect]);
 }
 
-function WaitingBankBanner({ copy, compact }: { copy: StripeFormCopy; compact?: boolean }) {
+function WaitingBankBanner({ compact }: { compact?: boolean }) {
   return (
-    <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
-      <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
-      <div>
-        <p className={`font-bold text-foreground ${compact ? "text-xs" : "text-sm"}`}>{copy.waitingBank}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{copy.waitingBankSub}</p>
-      </div>
+    <div className={`flex items-center justify-center ${compact ? "py-8" : "py-12"}`}>
+      <Loader2 className={`animate-spin text-muted-foreground ${compact ? "w-7 h-7" : "w-9 h-9"}`} />
     </div>
   );
 }
@@ -291,7 +287,7 @@ function BizumCheckoutForm({
 
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
-      {waitingBank && <WaitingBankBanner copy={copy} compact={compact} />}
+      {waitingBank && <WaitingBankBanner compact={compact} />}
       <div>
         <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">{copy.phoneLabel}</label>
         <PhoneInput
@@ -476,7 +472,7 @@ function CardCheckoutForm({
 
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
-      {waitingBank && <WaitingBankBanner copy={copy} compact={compact} />}
+      {waitingBank && <WaitingBankBanner compact={compact} />}
       <PaymentElement
         options={{
           layout: (compact ? "accordion" : "tabs") as "accordion" | "tabs",
