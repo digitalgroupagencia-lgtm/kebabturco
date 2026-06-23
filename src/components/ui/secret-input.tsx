@@ -11,7 +11,8 @@ type SecretInputProps = Omit<React.ComponentProps<typeof Input>, "type"> & {
 };
 
 const SecretInput = React.forwardRef<HTMLInputElement, SecretInputProps>(
-  ({ className, visible, onVisibleChange, defaultVisible = false, type: _ignoredType, ...props }, ref) => {
+  ({ className, visible, onVisibleChange, defaultVisible = false, ...rest }, ref) => {
+    const { type: _ignoredType, ...props } = rest as typeof rest & { type?: string };
     const [internalVisible, setInternalVisible] = React.useState(defaultVisible);
     const isControlled = visible !== undefined;
     const shown = isControlled ? visible : internalVisible;
