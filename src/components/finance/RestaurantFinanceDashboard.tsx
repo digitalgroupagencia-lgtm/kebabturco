@@ -108,6 +108,10 @@ export default function RestaurantFinanceDashboard({
   const nextDate = snapshot?.nextPayoutDate ?? null;
   const bankLast4 = snapshot?.ibanLast4 ?? ibanLast4 ?? null;
 
+  const periodNetReceived = filteredMovements
+    .filter((m) => m.kind === "payment")
+    .reduce((s, m) => s + m.youReceiveCents, 0);
+
   const periodLabel =
     period === "today"
       ? "Hoje"
@@ -240,8 +244,8 @@ export default function RestaurantFinanceDashboard({
           icon={Receipt}
           tone="orange"
           label="Líquido recebido"
-          value={fmtPeriod(analytics.byMethod.reduce((s, m) => s + m.volumeCents, 0))}
-          sub="Após filtro"
+          value={fmtPeriod(periodNetReceived)}
+          sub="O que fica para o restaurante após taxas"
         />
       </EqualCardGrid>
 
