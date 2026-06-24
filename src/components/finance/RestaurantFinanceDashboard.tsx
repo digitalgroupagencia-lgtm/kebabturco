@@ -172,27 +172,76 @@ export default function RestaurantFinanceDashboard({
         </div>
       )}
 
+      <div className="rounded-xl border bg-card p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+          <CalendarRange className="h-3.5 w-3.5" />
+          Período do histórico
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {([
+            ["today", "Hoje"],
+            ["7d", "Últimos 7 dias"],
+            ["30d", "Últimos 30 dias"],
+            ["all", "Tudo"],
+            ["custom", "Personalizado"],
+          ] as [PeriodKey, string][]).map(([key, label]) => (
+            <Button
+              key={key}
+              type="button"
+              variant={period === key ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setPeriod(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        {period === "custom" && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              De
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              Até
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
       <EqualCardGrid cols={3}>
         <PremiumMetricCard
           icon={Wallet}
           tone="info"
-          label="Hoje"
-          value={fmtPeriod(analytics.today.grossCents)}
-          sub={`${analytics.today.count} pedido(s)`}
+          label={periodLabel}
+          value={fmtPeriod(periodTotal)}
+          sub={`${periodCount} pedido(s)`}
         />
         <PremiumMetricCard
           icon={TrendingUp}
           tone="purple"
-          label="Últimos 7 dias"
-          value={fmtPeriod(analytics.week.grossCents)}
-          sub={`${analytics.week.count} pedido(s)`}
+          label="Ticket médio"
+          value={periodCount > 0 ? fmtPeriod(Math.round(periodTotal / periodCount)) : "—"}
+          sub="Valor médio por pedido"
         />
         <PremiumMetricCard
           icon={Receipt}
           tone="orange"
-          label="Este mês"
-          value={fmtPeriod(analytics.month.grossCents)}
-          sub={`${analytics.month.count} pedido(s)`}
+          label="Líquido recebido"
+          value={fmtPeriod(analytics.byMethod.reduce((s, m) => s + m.volumeCents, 0))}
+          sub="Após filtro"
         />
       </EqualCardGrid>
 
