@@ -33,16 +33,36 @@ PARTE 3 — Certificado de distribuição (5 min)
 
 1. Team settings → codemagic.yaml settings → Code signing identities
 2. Separador iOS certificates → Generate certificate
-3. Reference name: kebabturco_dist
+3. Reference name: kebabturco_appstore
 4. Tipo: Apple Distribution
 5. Chave API: kebabturco
 6. Create certificate
 
+(Se já existir certificado «kebabturco_appstore» na lista, ignore este passo.)
+
 ────────────────────────────────────────────────────────────
-PARTE 4 — Perfil App Store (OBRIGATÓRIO se build falhar perfis)
+PARTE 4 — Perfil App Store (OBRIGATÓRIO — falta este passo!)
 ────────────────────────────────────────────────────────────
 
-Se o build disser "No matching profiles found":
+O workflow da App Store precisa do perfil kebabturco_appstore.
+Só ter kebabturco_dev (Development) NÃO chega.
+
+A) No Codemagic (browser):
+   1. Settings → Code signing identities
+   2. Separador iOS provisioning profiles
+   3. Botão «Fetch profiles»
+   4. Em «App Store profiles», marque:
+      Kebab Turco App Store TapToPay Final (net.kebabturco.app)
+   5. «Download selected»
+   6. Reference name: kebabturco_appstore
+   7. Confirme que aparece na tabela (tipo app_store, não development)
+
+B) Certificado na mesma página (iOS certificates):
+   Deve existir kebabturco_appstore (production) — já tem.
+
+C) Start new build → workflow «Kebab Turco — iPhone App Store»
+
+Se o build disser "No matching profiles found" (método antigo):
 
 A) Criar perfil na Apple (browser):
    1. developer.apple.com → Certificates, Identifiers & Profiles → Profiles
@@ -55,7 +75,7 @@ B) Certificado no Codemagic (se ainda não fez upload do .p12):
    1. Code signing → iOS certificates → Upload
    2. Ficheiro .p12 descarregado do Codemagic
    3. Password: (a que guardou ao gerar)
-   4. Reference name: kebabturco_dist
+   4. Reference name: kebabturco_appstore
 
 C) Perfil no Codemagic:
    1. iOS provisioning profiles → Fetch profiles

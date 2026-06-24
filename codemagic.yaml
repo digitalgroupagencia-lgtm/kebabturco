@@ -147,8 +147,10 @@ workflows:
 
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: net.kebabturco.app
+        provisioning_profiles:
+          - kebabturco_appstore
+        certificates:
+          - kebabturco_appstore
       vars:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
