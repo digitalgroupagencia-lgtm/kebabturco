@@ -41,9 +41,7 @@ const OpsOrdersLayout = ({
   const countByStatus = (status: OrderStatus) =>
     orders.filter((o) => panelColumnStatus(o.status) === status).length;
 
-  const connectionLabel: Record<PanelConnectionStatus, { text: string; className: string }> = {
-    connecting: { text: t("ops.layout.conn.connecting"), className: "text-muted-foreground" },
-    live: { text: t("ops.layout.conn.live"), className: "text-success" },
+  const connectionLabel: Record<"backup", { text: string; className: string }> = {
     backup: { text: t("ops.layout.conn.backup"), className: "text-amber-600" },
   };
 
@@ -57,12 +55,12 @@ const OpsOrdersLayout = ({
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl md:text-2xl font-bold tracking-tight">{title}</h2>
         <div className="flex items-center gap-2">
-          <span
-            className={`hidden sm:flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${connectionLabel[connectionStatus].className}`}
-          >
-            <Radio className={`h-3 w-3 ${connectionStatus === "live" ? "animate-pulse" : ""}`} />
-            {connectionLabel[connectionStatus].text}
-          </span>
+          {connectionStatus === "backup" ? (
+            <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-amber-600">
+              <Radio className="h-3 w-3" />
+              {connectionLabel.backup.text}
+            </span>
+          ) : null}
           {onRefresh && (
             <Button
               type="button"

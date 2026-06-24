@@ -226,12 +226,27 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             </div>
           )}
 
-          {tapEnabled && preparingReader && (
+          {tapEnabled &&
+          (preparingReader ||
+            step === "connecting" ||
+            step === "waiting_card" ||
+            step === "processing" ||
+            (busy && step !== "success" && step !== "error")) ? (
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
-              <p className="text-sm font-medium">{t("tapToPay.step.connecting")}</p>
+              <p className="text-sm font-medium">
+                {preparingReader && step === "idle"
+                  ? t("tapToPay.step.connecting")
+                  : stepMessage(step, t)}
+              </p>
             </div>
-          )}
+          ) : null}
+
+          {step === "success" ? (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
+              <p className="text-sm font-medium text-emerald-800">{stepMessage(step, t)}</p>
+            </div>
+          ) : null}
 
           {tapEnabled && !readerReady && !busy && !preparingReader && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 space-y-2">
@@ -243,16 +258,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
             </div>
           )}
 
-          {step !== "idle" && (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-start gap-2">
-              {busy && step !== "success" && step !== "error" ? (
-                <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0 mt-0.5" />
-              ) : null}
-              <p className="text-sm font-medium">{stepMessage(step, t)}</p>
-            </div>
-          )}
-
-          {error && (
+          {error && step === "error" ? (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2.5 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-xs font-bold uppercase tracking-wide text-destructive">Detalhes do erro</p>
@@ -274,7 +280,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
               </div>
               <pre className="text-xs font-mono whitespace-pre-wrap break-words text-destructive leading-relaxed max-h-48 overflow-y-auto">{error}</pre>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="shrink-0 flex flex-col-reverse gap-2 border-t bg-background px-4 py-3 sm:px-6 sm:flex-row sm:justify-end">

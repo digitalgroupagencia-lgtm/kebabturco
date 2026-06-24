@@ -64,7 +64,7 @@ export function usePanelOrders(storeId: string | undefined) {
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<PanelConnectionStatus>("connecting");
+  const [connectionStatus, setConnectionStatus] = useState<PanelConnectionStatus>("live");
   const knownPendingRef = useRef<Set<string>>(new Set());
   const pendingDuringBootstrapRef = useRef<PanelOrder[]>([]);
   const initializedRef = useRef(false);
@@ -156,7 +156,6 @@ export function usePanelOrders(storeId: string | undefined) {
     if (!storeId) return;
 
     setLoading(true);
-    setConnectionStatus("connecting");
     void fetchOrders();
 
     let pollId: number | null = null;

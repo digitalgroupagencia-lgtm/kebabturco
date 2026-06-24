@@ -66,7 +66,6 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
   const {
     orders,
     itemsByOrder,
-    loading,
     connectionStatus,
     updateStatus,
     cancelOrder,
@@ -285,14 +284,6 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     onMarkPaid: confirmMarkPaid,
     showTapToPayButton: isTapToPayPlatform(),
   });
-
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center gap-2">
-        <Loader2 className="animate-spin h-4 w-4" /> {t("ops.loading.orders")}
-      </div>
-    );
-  }
 
   const mobileOrders = getOrdersByStatus(mobileTab);
   const isLive = mode === "live";
