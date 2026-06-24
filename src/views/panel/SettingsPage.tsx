@@ -20,6 +20,7 @@ import {
   subscribeStaffPush,
   unsubscribeStaffPush,
 } from "@/lib/staffPush";
+import { useOptionalPanelStore } from "@/contexts/PanelStoreContext";
 import MarketingBroadcastCard from "@/components/panel/MarketingBroadcastCard";
 import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
@@ -32,9 +33,10 @@ import TapToPaySettingsSection from "@/components/tapToPay/TapToPaySettingsSecti
 const PanelSettingsPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const { storeId: adminStoreId } = useAdminStoreId();
+  const panelStore = useOptionalPanelStore();
+  const { storeId: adminStoreId, loading: storeLoading } = useAdminStoreId();
   const { t, lang } = useStaffT();
-  const effectiveStoreId = roleData?.store_id ?? adminStoreId ?? "";
+  const effectiveStoreId = roleData?.store_id ?? panelStore?.storeId ?? adminStoreId ?? "";
   const [resetOpen, setResetOpen] = useState(false);
   const [storeName, setStoreName] = useState("Minha Loja");
   const [storePhone, setStorePhone] = useState("");
@@ -55,6 +57,7 @@ const PanelSettingsPage = () => {
   const [notifyKitchen, setNotifyKitchen] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(() => isStaffPushEnabled());
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushPending, setPushPending] = useState(false);
   const [pushLastError, setPushLastError] = useState<string | null>(null);
   const [pushClientMode, setPushClientMode] = useState<"native" | "web" | "needs-native-app" | "unsupported" | null>(
     null,
@@ -81,39 +84,93 @@ const PanelSettingsPage = () => {
   const handlePushToggle = async (enabled: boolean) => {
     setPushLastError(null);
     if (!enabled) {
+      setPushPending(false);
       setPushNotifications(false);
       setStaffPushEnabled(false);
       await unsubscribeStaffPush();
       toast.info(t("settings.push.disabled"));
       return;
     }
+
+    const mode = await getStaffPushClientMode();
+    setPushClientMode(mode);
+
+    if (mode === "needs-native-app") {
+      const msg = t("settings.push.native_required");
+      setPushLastError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (storeLoading) {
+      const msg = "A carregar a loja — espere um momento e tente outra vez.";
+      setPushLastError(msg);
+      toast.error(msg);
+      return;
+    }
+
     if (!effectiveStoreId) {
       setPushLastError(t("settings.push.no_store"));
       toast.error(t("settings.push.no_store"));
       return;
     }
-    if (!isStaffPushSupported()) {
+
+    if (mode === "unsupported") {
       setPushLastError(t("settings.push.unavailable"));
       toast.error(t("settings.push.unavailable"));
       return;
     }
-    if (enabled) {
-      const mode = await getStaffPushClientMode();
-      setPushClientMode(mode);
-      if (mode === "needs-native-app") {
-        const msg = t("settings.push.native_required");
-        setPushLastError(msg);
-        toast.error(msg);
+
+    setPushBusy(true);
+    setPushPending(true);
+
+    try {
+      if (mode === "native") {
+        const { initNativePushBridge, requestNativePushPermissionOnly, registerNativeStaffPush } =
+          await import("@/services/nativePush");
+        await initNativePushBridge();
+        const perm = await requestNativePushPermissionOnly();
+        if (!perm.granted) {
+          setPushPending(false);
+          setPushNotifications(false);
+          const err =
+            perm.receive === "denied"
+              ? "Notificações bloqueadas — vá a Definições do iPhone → Kebab Turco → Notificações e permita."
+              : "Permissão não concedida — tente outra vez.";
+          setPushLastError(err);
+          toast.error(err);
+          return;
+        }
+
+        setPushNotifications(true);
+        setStaffPushEnabled(true);
+        toast.info("A registar este telemóvel — pode demorar até 1 minuto.");
+
+        const res = await registerNativeStaffPush(effectiveStoreId, { skipPermissionRequest: true });
+        if (res.ok) {
+          setPushLastError(null);
+          setPushNativeHint("Telemóvel registado para alertas.");
+          toast.success(t("settings.push.enabled"));
+        } else {
+          const err = res.reason ?? t("settings.push.enable_error");
+          setPushLastError(err);
+          toast.error(err);
+        }
         return;
       }
-    }
-    setPushBusy(true);
-    try {
+
+      if (!isStaffPushSupported()) {
+        setPushPending(false);
+        setPushNotifications(false);
+        setPushLastError(t("settings.push.unavailable"));
+        toast.error(t("settings.push.unavailable"));
+        return;
+      }
+
       const res = await subscribeStaffPush(effectiveStoreId);
       if (res.ok) {
         setPushNotifications(true);
         setPushLastError(null);
-        setPushNativeHint("Telemóvel registado para alertas.");
         toast.success(t("settings.push.enabled"));
       } else {
         setPushNotifications(false);
@@ -122,6 +179,7 @@ const PanelSettingsPage = () => {
         toast.error(err);
       }
     } finally {
+      setPushPending(false);
       setPushBusy(false);
     }
   };
@@ -277,6 +335,22 @@ const PanelSettingsPage = () => {
               <CardDescription>{t("settings.notif.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {pushClientMode === null ? (
+                <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                  A verificar se está na app instalada ou no browser…
+                </div>
+              ) : null}
+              {storeLoading ? (
+                <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                  A carregar a loja…
+                </div>
+              ) : null}
+              {!storeLoading && !effectiveStoreId ? (
+                <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+                  <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                  <p>Loja não identificada — saia e entre outra vez no painel, ou escolha a unidade no menu.</p>
+                </div>
+              ) : null}
               {pushClientMode === "needs-native-app" ? (
                 <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
                   <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
@@ -317,7 +391,7 @@ const PanelSettingsPage = () => {
                   icon: Volume2,
                 },
                 { label: t("settings.notif.kitchen"), desc: t("settings.notif.kitchen.desc"), val: notifyKitchen, set: setNotifyKitchen, icon: Bell },
-                { label: t("settings.notif.push"), desc: t("settings.notif.push.desc"), val: pushNotifications, set: (v: boolean) => { void handlePushToggle(v); }, icon: Bell, disabled: pushBusy },
+                { label: t("settings.notif.push"), desc: t("settings.notif.push.desc"), val: pushNotifications || pushPending, set: (v: boolean) => { void handlePushToggle(v); }, icon: Bell, disabled: pushBusy || storeLoading },
               ].map((n) => (
                 <div key={n.label} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20">
                   <div className="flex items-start gap-3">

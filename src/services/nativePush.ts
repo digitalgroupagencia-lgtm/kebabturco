@@ -354,7 +354,27 @@ async function requestNativePermission(): Promise<{
 
   const req = await PushNotifications.requestPermissions();
   logNative("info", "requestPermissions", { receive: req.receive });
+  if (req.receive === "granted") {
+    try {
+      logNative("info", "register() após permissão concedida");
+      await PushNotifications.register();
+    } catch (e) {
+      logNative("warn", "register() após permissão falhou", { error: String(e) });
+    }
+  }
   return { granted: req.receive === "granted", receive: req.receive };
+}
+
+/** Pedir só permissão (para ligar o interruptor logo após o utilizador aceitar). */
+export async function requestNativePushPermissionOnly(): Promise<{
+  granted: boolean;
+  receive: string;
+}> {
+  if (!(await isNativePushAvailable())) {
+    return { granted: false, receive: "unsupported" };
+  }
+  await initNativePushBridge();
+  return requestNativePermission();
 }
 
 async function triggerRegisterWithRetries(platform: "ios" | "android"): Promise<void> {
@@ -374,7 +394,7 @@ async function triggerRegisterWithRetries(platform: "ios" | "android"): Promise<
 /** Pedir permissão + registar token FCM/APNs. Idempotente. */
 export async function registerNativeStaffPush(
   storeId: string,
-  opts?: { forceRefresh?: boolean },
+  opts?: { forceRefresh?: boolean; skipPermissionRequest?: boolean },
 ): Promise<{
   ok: boolean;
   reason?: string;
@@ -413,7 +433,9 @@ export async function registerNativeStaffPush(
       }
     }
 
-    const { granted, receive } = await requestNativePermission();
+    const { granted, receive } = opts?.skipPermissionRequest
+      ? { granted: true, receive: "granted" }
+      : await requestNativePermission();
     if (!granted) {
       return {
         ok: false,
