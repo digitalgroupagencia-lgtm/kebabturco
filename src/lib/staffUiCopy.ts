@@ -45,6 +45,10 @@ const staffLoginCopy = {
     signupLink: "Crear cuenta",
     loginToggle: "¿Ya tiene cuenta?",
     loginLink: "Entrar",
+    lastLoginLabel: "Último acceso",
+    lastLoginContinue: "Toque para continuar",
+    lastLoginContinueGoogle: "Toque para entrar con Google",
+    lastLoginOther: "Usar otra cuenta",
   },
   pt: {
     title: "Área da equipe",
@@ -83,6 +87,10 @@ const staffLoginCopy = {
     signupLink: "Criar conta",
     loginToggle: "Já tem conta?",
     loginLink: "Entrar",
+    lastLoginLabel: "Último acesso",
+    lastLoginContinue: "Toque para continuar",
+    lastLoginContinueGoogle: "Toque para entrar com Google",
+    lastLoginOther: "Usar outra conta",
   },
   en: {
     title: "Team area",
@@ -121,6 +129,10 @@ const staffLoginCopy = {
     signupLink: "Create account",
     loginToggle: "Already have an account?",
     loginLink: "Sign in",
+    lastLoginLabel: "Last sign-in",
+    lastLoginContinue: "Tap to continue",
+    lastLoginContinueGoogle: "Tap to sign in with Google",
+    lastLoginOther: "Use another account",
   },
 } as const;
 
