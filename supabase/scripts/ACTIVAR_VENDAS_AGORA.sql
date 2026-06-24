@@ -39,7 +39,7 @@ GRANT EXECUTE ON FUNCTION public.get_store_checkout_stripe_profile(uuid) TO anon
 -- 2) Conta Stripe live do restaurante
 UPDATE public.stores
 SET
-  stripe_connect_account_id = 'acct_1ThGBRCmGR5UPOtp',
+  stripe_connect_account_id = 'acct_1TlpAkCeaelUf7YU',
   stripe_connect_environment = 'live',
   stripe_connect_test_simulated = false,
   stripe_charges_enabled = true,

@@ -3,7 +3,8 @@
 # Obter a chave em Lovable Cloud → Segredos → STRIPE_SECRET_KEY (sk_live_...)
 set -euo pipefail
 
-ACCOUNT_ID="${STRIPE_CONNECT_ACCOUNT:-acct_1ThGBRCmGR5UPOtp}"
+# Conta ligada na app (Gandia) — NÃO usar acct_1ThGBRCmGR5UPOtp (duplicada antiga, 11 Jun).
+ACCOUNT_ID="${STRIPE_CONNECT_ACCOUNT:-acct_1TlpAkCeaelUf7YU}"
 SECRET="${STRIPE_SECRET_KEY:-}"
 
 if [ -z "$SECRET" ]; then

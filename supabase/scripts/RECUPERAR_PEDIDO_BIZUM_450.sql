@@ -10,7 +10,7 @@ DO $$
 DECLARE
   v_store_id uuid := '22222222-2222-2222-2222-222222222222'::uuid;
   v_payment_intent_id text := 'COLOCAR_pi_xxx_DA_STRIPE_AQUI';
-  v_connect_account text := 'acct_1ThGBRCmGR5UPOtp';
+  v_connect_account text := 'acct_1TlpAkCeaelUf7YU';
   v_customer_name text := 'Matheus';
   v_customer_phone text := '+34637917350';
   v_order_id uuid;
