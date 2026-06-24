@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { Bell, Loader2 } from "lucide-react";
+import { Bell, Loader2, ArchiveX } from "lucide-react";
 import PanelOrdersBoard from "@/features/ops/PanelOrdersBoard";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import OldPendingOrdersDialog from "@/components/panel/OldPendingOrdersDialog";
 
 const LiveOrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { t } = useStaffT();
   const [showAlerts, setShowAlerts] = useState(false);
+  const [showOldPending, setShowOldPending] = useState(false);
 
   if (storeLoading) {
     return (
