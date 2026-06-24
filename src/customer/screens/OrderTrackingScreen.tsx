@@ -116,6 +116,34 @@ const OrderTrackingScreen = () => {
                   orderNumber={order.order_number}
                 />
 
+                {(() => {
+                  const ageMs = now - new Date(order.created_at).getTime();
+                  const TWO_HOURS = 2 * 60 * 60 * 1000;
+                  if (ageMs < TWO_HOURS) return null;
+                  return (
+                    <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Já passou mais de 2 horas. Se já recebeu o seu pedido ou já resolveu com o restaurante, pode marcar como resolvido para esconder este acompanhamento.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-1.5 font-bold"
+                        onClick={() => {
+                          clearStoredActiveOrder();
+                          setActiveOrderId("");
+                          setTrackingOrderId("");
+                          setScreen("home");
+                        }}
+                      >
+                        <EyeOff className="h-4 w-4" />
+                        Marcar como resolvido
+                      </Button>
+                    </div>
+                  );
+                })()}
+
                 <div className="text-center space-y-2">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
                     {t("trackingCurrentStatus")}
