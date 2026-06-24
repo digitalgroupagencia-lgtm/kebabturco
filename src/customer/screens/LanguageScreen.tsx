@@ -4,6 +4,8 @@ import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { readMenuCache } from "@/lib/menuCache";
+import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
 import { dismissBootShell } from "@/lib/bootShell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -30,9 +32,9 @@ const TITLE_BY_LANG: Record<string, string> = {
 
 const LanguageScreen = () => {
   const { setScreen } = useOrder();
-  const { setLang, primaryLang, activeLangs, langIcons, langsReady } = useLanguage();
+  const { setLang, primaryLang, activeLangs, langIcons, langsReady, ensureMenuLocalizedReady } = useLanguage();
   const { settings, loading: brandingLoading } = useBranding();
-  const { stores, setSelectedStoreId, loading: storeLoading } = useResolvedStore();
+  const { stores, setSelectedStoreId, storeId, loading: storeLoading } = useResolvedStore();
   const { theme } = useTheme();
   const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
@@ -55,6 +57,12 @@ const LanguageScreen = () => {
 
   const handleSelect = (code: "pt" | "en" | "es" | "fr") => {
     setLang(code);
+    if (storeId && code !== primaryLang) {
+      const cached = readMenuCache(storeId);
+      if (cached) {
+        void ensureMenuLocalizedReady(collectMenuCatalogFields(cached.categories, cached.products));
+      }
+    }
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
   };
 

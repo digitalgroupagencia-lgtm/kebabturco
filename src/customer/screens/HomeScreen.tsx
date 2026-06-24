@@ -13,12 +13,13 @@ import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
+import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import SmartImage from "@/components/SmartImage";
 
 
 const HomeScreen = () => {
   const { setScreen, setSelectedProductId, setProductReturnScreen, setEditingCartItemId, selectedCategory, setSelectedCategory } = useOrder();
-  const { t, tProduct, preloadMenuTranslations, lang, primaryLang } = useLanguage();
+  const { t, tProduct, preloadMenuTranslations, ensureMenuLocalizedReady, lang, primaryLang } = useLanguage();
   const { settings } = useBranding();
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
@@ -58,14 +59,31 @@ const HomeScreen = () => {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
   }, [selectedCategory]);
 
+  const [menuLocaleReady, setMenuLocaleReady] = useState(() => lang === primaryLang);
+
   useEffect(() => {
-    if (loading || lang === primaryLang) return;
-    preloadMenuTranslations([
-      ...categories.map((category) => category.name),
-      ...products.map((product) => product.name),
-      ...products.map((product) => product.description),
-    ]);
-  }, [loading, categories, products, lang, primaryLang, preloadMenuTranslations]);
+    if (loading) {
+      setMenuLocaleReady(false);
+      return;
+    }
+    if (lang === primaryLang) {
+      setMenuLocaleReady(true);
+      return;
+    }
+    let alive = true;
+    setMenuLocaleReady(false);
+    void ensureMenuLocalizedReady(collectMenuCatalogFields(categories, products)).then(() => {
+      if (alive) setMenuLocaleReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [loading, categories, products, lang, primaryLang, ensureMenuLocalizedReady]);
+
+  useEffect(() => {
+    if (loading || lang === primaryLang || !menuLocaleReady) return;
+    preloadMenuTranslations(collectMenuCatalogFields(categories, products));
+  }, [loading, categories, products, lang, primaryLang, menuLocaleReady, preloadMenuTranslations]);
 
   const allCategories = [
     ...(products.some((product) => product.isBestseller) ? [{
@@ -95,7 +113,7 @@ const HomeScreen = () => {
     setScreen("product");
   };
 
-  if (loading && products.length === 0 && categories.length === 0) {
+  if ((loading && products.length === 0 && categories.length === 0) || !menuLocaleReady) {
     return <CustomerHomeSkeleton />;
   }
 

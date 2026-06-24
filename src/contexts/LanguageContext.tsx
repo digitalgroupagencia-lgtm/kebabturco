@@ -5,7 +5,8 @@ import { getEmbedLang, isEmbedded } from "@/lib/embed-mode";
 import { loadSavedLang, readLangFromUrl, saveSavedLang } from "@/lib/customerSession";
 import { pickSourceText, readLocalized, type AppLang } from "@/lib/localizedText";
 import { getCachedMenuTranslation } from "@/lib/menuTranslationCache";
-import { translateMenuTexts } from "@/services/menuTranslationService";
+import { collectTranslationSources, type LocalizedField } from "@/lib/menuLocale";
+import { translateMenuTexts, ensureMenuTranslationSources } from "@/services/menuTranslationService";
 
 type Lang = "pt" | "en" | "es" | "fr";
 
@@ -1008,6 +1009,8 @@ interface LanguageContextType {
   langIcons: Partial<Record<Lang, string>>;
   /** Pré-carrega traduções automáticas de nomes/descrições do cardápio */
   preloadMenuTranslations: (items: (Record<string, string> | string | null | undefined)[]) => void;
+  /** Aguarda traduções do cardápio antes de mostrar nomes noutro idioma */
+  ensureMenuLocalizedReady: (items: LocalizedField[]) => Promise<void>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -1154,13 +1157,24 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
     [lang, primaryLang, flushTranslations],
   );
 
+  const ensureMenuLocalizedReady = useCallback(
+    async (items: LocalizedField[]) => {
+      if (lang === primaryLang) return;
+      const sources = collectTranslationSources(items, primaryLang, lang);
+      if (!sources.length) return;
+      await ensureMenuTranslationSources(sources, primaryLang, lang);
+      setTranslationTick((n) => n + 1);
+    },
+    [lang, primaryLang],
+  );
+
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
   return (
     <LanguageContext.Provider
-      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langsReady, langIcons, preloadMenuTranslations }}
+      value={{ lang, setLang, t, tProduct, primaryLang, activeLangs, langsReady, langIcons, preloadMenuTranslations, ensureMenuLocalizedReady }}
     >
       {children}
     </LanguageContext.Provider>

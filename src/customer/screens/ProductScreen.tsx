@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useCart } from "@/customer/contexts/CartContext";
 import { useMenuData } from "@/hooks/useMenuData";
@@ -9,6 +9,7 @@ import ProductErrorBoundary from "@/components/ProductErrorBoundary";
 import CustomerProductSkeleton from "@/customer/components/CustomerProductSkeleton";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { collectMenuCatalogFields, collectModifierConfigFields } from "@/lib/menuLocale";
 
 /** Escolhe ecrã legado vs personalização avançada — sem violar regras de hooks do React. */
 const ProductScreen = () => {
@@ -36,7 +37,7 @@ const ProductScreen = () => {
   };
 
   const { items } = useCart();
-  const { t, tProduct } = useLanguage();
+  const { t, tProduct, ensureMenuLocalizedReady, lang, primaryLang } = useLanguage();
   const { products, loading: menuLoading, categories } = useMenuData();
   const product = products.find((item) => item.id === selectedProductId);
   const { config: modifierConfig, loading: modifierLoading, hasStructuredModifiers } =
@@ -50,6 +51,31 @@ const ProductScreen = () => {
     () => (editingCartItemId ? items.find((i) => i.id === editingCartItemId) : undefined),
     [editingCartItemId, items],
   );
+
+  const [modifierLocaleReady, setModifierLocaleReady] = useState(() => lang === primaryLang);
+
+  useEffect(() => {
+    if (!product || modifierLoading) {
+      setModifierLocaleReady(lang === primaryLang);
+      return;
+    }
+    if (lang === primaryLang) {
+      setModifierLocaleReady(true);
+      return;
+    }
+    let alive = true;
+    setModifierLocaleReady(false);
+    const fields = [
+      ...collectMenuCatalogFields([], [product]),
+      ...collectModifierConfigFields(modifierConfig),
+    ];
+    void ensureMenuLocalizedReady(fields).then(() => {
+      if (alive) setModifierLocaleReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [product, modifierConfig, modifierLoading, lang, primaryLang, ensureMenuLocalizedReady]);
 
   const productLabel = product ? tProduct(product.name) : undefined;
 
@@ -79,7 +105,7 @@ const ProductScreen = () => {
     return <CustomerProductSkeleton />;
   }
 
-  if (modifierLoading) {
+  if (modifierLoading || !modifierLocaleReady) {
     return <CustomerProductSkeleton />;
   }
 

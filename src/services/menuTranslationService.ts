@@ -42,3 +42,30 @@ export async function translateMenuTexts(
 
   return result;
 }
+
+const BATCH_SIZE = 40;
+
+/** Traduz todos os textos em lotes (API aceita até 40 por pedido). */
+export async function translateMenuTextsBatched(
+  texts: string[],
+  from: AppLang,
+  to: AppLang,
+): Promise<Record<string, string>> {
+  const unique = [...new Set(texts.map((t) => t.trim()).filter(Boolean))];
+  const merged: Record<string, string> = {};
+  for (let i = 0; i < unique.length; i += BATCH_SIZE) {
+    const chunk = unique.slice(i, i + BATCH_SIZE);
+    const part = await translateMenuTexts(chunk, from, to);
+    Object.assign(merged, part);
+  }
+  return merged;
+}
+
+export async function ensureMenuTranslationSources(
+  sources: string[],
+  from: AppLang,
+  to: AppLang,
+): Promise<void> {
+  if (from === to || !sources.length) return;
+  await translateMenuTextsBatched(sources, from, to);
+}
