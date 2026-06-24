@@ -99,7 +99,7 @@ export function mapLedgerRowToMovement(row: LedgerDbRow): FinanceMovement {
   };
 }
 
-export async function fetchFinanceMovements(storeId: string, limit = 60): Promise<FinanceMovement[]> {
+export async function fetchFinanceMovements(storeId: string, limit = 500): Promise<FinanceMovement[]> {
   const { data, error } = await supabase
     .from("store_payment_ledger")
     .select(

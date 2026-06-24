@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, RefreshCw, Smartphone, X } from "lucide-react";
+import { Copy, Loader2, RefreshCw, Smartphone, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -88,7 +89,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
       } else {
         setReaderReady(false);
         setStep("error");
-        setError(result.message);
+        setError((result as { ok: false; message: string }).message);
       }
     } catch (e) {
       setReaderReady(false);
@@ -234,7 +235,27 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
           )}
 
           {error && (
-            <p className="text-sm text-destructive font-medium">{error}</p>
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2.5 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-destructive">Detalhes do erro</p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 -mt-1 -mr-1"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(error).then(
+                      () => toast.success("Erro copiado"),
+                      () => toast.error("Não foi possível copiar"),
+                    );
+                  }}
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Copiar
+                </Button>
+              </div>
+              <pre className="text-xs font-mono whitespace-pre-wrap break-words text-destructive leading-relaxed max-h-48 overflow-y-auto">{error}</pre>
+            </div>
           )}
         </div>
 

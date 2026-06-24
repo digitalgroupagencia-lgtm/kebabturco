@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
@@ -8,17 +8,25 @@ import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTrackin
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import ScreenHeader from "@/components/ScreenHeader";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
-import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
+import { Loader2, CheckCircle2, Circle, Radio, EyeOff } from "lucide-react";
 import OrderReviewForm from "@/customer/components/OrderReviewForm";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
+import { Button } from "@/components/ui/button";
 
 const OrderTrackingScreen = () => {
-  const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
+  const { trackingOrderId, setScreen, orderNumber, screen, setActiveOrderId, setTrackingOrderId } = useOrder();
   const { t } = useLanguage();
   const { settings } = useOperationsSettings();
   const [order, setOrder] = useState<PublicOrderTrack | null>(null);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const { storeId } = useResolvedStore();
 
@@ -107,6 +115,34 @@ const OrderTrackingScreen = () => {
                   createdAt={order.created_at}
                   orderNumber={order.order_number}
                 />
+
+                {(() => {
+                  const ageMs = now - new Date(order.created_at).getTime();
+                  const TWO_HOURS = 2 * 60 * 60 * 1000;
+                  if (ageMs < TWO_HOURS) return null;
+                  return (
+                    <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Já passou mais de 2 horas. Se já recebeu o seu pedido ou já resolveu com o restaurante, pode marcar como resolvido para esconder este acompanhamento.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-1.5 font-bold"
+                        onClick={() => {
+                          clearStoredActiveOrder();
+                          setActiveOrderId("");
+                          setTrackingOrderId("");
+                          setScreen("home");
+                        }}
+                      >
+                        <EyeOff className="h-4 w-4" />
+                        Marcar como resolvido
+                      </Button>
+                    </div>
+                  );
+                })()}
 
                 <div className="text-center space-y-2">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">

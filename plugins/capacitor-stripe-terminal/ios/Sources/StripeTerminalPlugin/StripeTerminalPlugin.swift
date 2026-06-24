@@ -39,6 +39,9 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     private var activePromise: CAPPluginCall?
     private var warmUpOnly = false
     private var readerReady = false
+    private var operationTimeoutWorkItem: DispatchWorkItem?
+    private let warmUpTimeoutSeconds: TimeInterval = 45
+    private let paymentTimeoutSeconds: TimeInterval = 120
 
     private enum ReaderPhase: String {
         case idle
@@ -116,6 +119,10 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         let simulated = call.getBool("simulated") ?? false
         warmUpOnly = true
         activePromise = call
+        scheduleOperationTimeout(
+            seconds: warmUpTimeoutSeconds,
+            message: "O leitor Tap to Pay não respondeu. Isto normalmente acontece quando os termos/capability da Apple ainda não estão disponíveis neste iPhone."
+        )
         tokenProvider.token = connectionToken
 
         if Terminal.hasTokenProvider() == false {
@@ -123,6 +130,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         }
 
         if Terminal.shared.connectedReader != nil, readerReady {
+            cancelOperationTimeout()
             call.resolve(["status": "ready", "ready": true])
             activePromise = nil
             warmUpOnly = false
@@ -162,6 +170,10 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
         let simulated = call.getBool("simulated") ?? false
         warmUpOnly = false
         activePromise = call
+        scheduleOperationTimeout(
+            seconds: paymentTimeoutSeconds,
+            message: "O pagamento Tap to Pay demorou demasiado. Cancele e tente novamente."
+        )
         tokenProvider.token = connectionToken
 
         if Terminal.hasTokenProvider() == false {
@@ -197,12 +209,18 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
     }
 
     @objc func cancelPayment(_ call: CAPPluginCall) {
+        cancelOperationTimeout()
         paymentCancelable?.cancel { _ in }
         discoverCancelable?.cancel { _ in }
+        activePromise?.reject("Operação Tap to Pay cancelada.")
+        activePromise = nil
+        warmUpOnly = false
+        readerPhase = .idle
         call.resolve()
     }
 
     @objc func disconnectReader(_ call: CAPPluginCall) {
+        cancelOperationTimeout()
         readerReady = false
         readerPhase = .idle
         Terminal.shared.disconnectReader { error in
@@ -254,6 +272,7 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
                 self.readerReady = true
                 self.readerPhase = .ready
                 if self.warmUpOnly {
+                    self.cancelOperationTimeout()
                     self.activePromise?.resolve(["status": "ready", "ready": true])
                     self.activePromise = nil
                     self.warmUpOnly = false
@@ -355,13 +374,30 @@ public class StripeTerminalPlugin: CAPPlugin, CAPBridgedPlugin, DiscoveryDelegat
                         "paymentIntentId": confirmedIntent.stripeId ?? "",
                         "status": confirmedIntent.status.rawValue,
                     ])
+                    self.cancelOperationTimeout()
                     self.activePromise = nil
                 }
             }
         }
     }
 
+    private func scheduleOperationTimeout(seconds: TimeInterval, message: String) {
+        cancelOperationTimeout()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.activePromise != nil else { return }
+            self.finishWithError(message)
+        }
+        operationTimeoutWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: item)
+    }
+
+    private func cancelOperationTimeout() {
+        operationTimeoutWorkItem?.cancel()
+        operationTimeoutWorkItem = nil
+    }
+
     private func finishWithError(_ message: String, underlying: Error? = nil) {
+        cancelOperationTimeout()
         readerPhase = .error
         readerReady = false
         warmUpOnly = false

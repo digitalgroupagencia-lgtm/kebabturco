@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { Bell, Loader2 } from "lucide-react";
+import { Bell, Loader2, ArchiveX } from "lucide-react";
 import PanelOrdersBoard from "@/features/ops/PanelOrdersBoard";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import OldPendingOrdersDialog from "@/components/panel/OldPendingOrdersDialog";
 
 const LiveOrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { t } = useStaffT();
   const [showAlerts, setShowAlerts] = useState(false);
+  const [showOldPending, setShowOldPending] = useState(false);
 
   if (storeLoading) {
     return (
@@ -47,6 +49,17 @@ const LiveOrdersPage = () => {
           <Button
             type="button"
             variant="ghost"
+            size="sm"
+            className="h-9 gap-1.5 px-2 text-xs font-bold"
+            onClick={() => setShowOldPending(true)}
+            title="Cancelar pedidos abertos de dias anteriores"
+          >
+            <ArchiveX className="h-4 w-4" />
+            <span className="hidden sm:inline">Pendentes antigos</span>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
             size="icon"
             className="h-9 w-9 rounded-full"
             onClick={() => setShowAlerts(true)}
@@ -69,6 +82,8 @@ const LiveOrdersPage = () => {
           <p className="text-xs text-muted-foreground">{t("live.alerts.hint")}</p>
         </DialogContent>
       </Dialog>
+
+      <OldPendingOrdersDialog open={showOldPending} onOpenChange={setShowOldPending} storeId={storeId} />
     </div>
   );
 };
