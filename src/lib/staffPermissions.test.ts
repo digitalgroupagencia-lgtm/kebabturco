@@ -31,6 +31,12 @@ describe("staffPermissions", () => {
     expect(canAssignDeliveryDriver("delivery")).toBe(false);
   });
 
+  it("allows cashier live orders and cashier screen", () => {
+    expect(panelSegmentAllowed("cashier", "live")).toBe(true);
+    expect(panelSegmentAllowed("cashier", "cashier")).toBe(true);
+    expect(panelSegmentAllowed("cashier", "finance")).toBe(false);
+  });
+
   it("has labels for all staff roles", () => {
     expect(STAFF_ROLE_LABELS.delivery).toBe("Entregador");
     expect(STAFF_ROLE_LABELS.manager).toBe("Gerente");

@@ -132,7 +132,7 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
     ],
     cashier: [
       "══ CAJA — QUÉ HACER ══",
-      "1. Use «Caixa» para cobros y cuadre del día.",
+      "1. Use «Pedidos ao vivo» para ver pedidos nuevos y «Caixa» para cobros.",
       "2. Pedidos en efectivo: confirme el pago en el sistema antes de cocinar.",
       "3. Imprima ticket si el cliente lo necesita.",
     ],
@@ -186,7 +186,7 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
     ],
     cashier: [
       "══ CAIXA — O QUE FAZER ══",
-      "1. Use «Caixa» para cobranças e fecho do dia.",
+      "1. Use «Pedidos ao vivo» para ver pedidos novos e «Caixa» para cobranças.",
       "2. Pedidos em dinheiro: confirme pagamento no sistema antes de cozinhar.",
       "3. Imprima talão se o cliente precisar.",
     ],

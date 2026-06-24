@@ -51,7 +51,7 @@ const PANEL_SEGMENTS_BY_ROLE: Partial<Record<StaffRole, ReadonlySet<string>>> = 
   manager: MANAGER_PANEL_SEGMENTS,
   operator: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
   kitchen: new Set(["", "live", "kitchen", "guide"]),
-  cashier: new Set(["", "cashier", "guide"]),
+  cashier: new Set(["", "live", "cashier", "guide"]),
   attendant: new Set(["", "live", "dashboard", "cashier", "table-map", "tables", "guide"]),
   seller: new Set([]),
   delivery: new Set([]),

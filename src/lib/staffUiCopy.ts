@@ -122,7 +122,9 @@ const staffLoginCopy = {
     loginToggle: "Already have an account?",
     loginLink: "Sign in",
   },
-} as const; = (typeof staffLoginCopy)[StaffUiLang];
+} as const;
+
+export type StaffLoginCopy = (typeof staffLoginCopy)[StaffUiLang];
 
 export function getStaffLoginCopy(lang: StaffUiLang): StaffLoginCopy {
   return staffLoginCopy[lang] ?? staffLoginCopy.es;
