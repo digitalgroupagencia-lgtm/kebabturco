@@ -24,7 +24,7 @@ type Props = {
   storeId: string;
 };
 
-const STATUSES_OPEN = ["pending", "preparing", "ready", "out_for_delivery"];
+const STATUSES_OPEN = ["pending", "preparing", "ready", "out_for_delivery"] as const;
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("pt-PT", {
