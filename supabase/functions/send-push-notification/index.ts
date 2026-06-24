@@ -215,12 +215,12 @@ type ApnsConfig = {
 let cachedApnsJwt: { token: string; expiresAt: number } | null = null;
 
 function getApnsConfig(): ApnsConfig | null {
-  const keyId = Deno.env.get("APNS_KEY_ID") ?? "";
-  const teamId = Deno.env.get("APNS_TEAM_ID") ?? "";
-  const privateKey = (Deno.env.get("APNS_PRIVATE_KEY") ?? "").replace(/\\n/g, "\n");
-  const topic = Deno.env.get("APNS_BUNDLE_ID") ?? "net.kebabturco.app";
+  const keyId = (Deno.env.get("APNS_KEY_ID") ?? "").trim();
+  const teamId = (Deno.env.get("APNS_TEAM_ID") ?? "").trim();
+  const privateKey = (Deno.env.get("APNS_PRIVATE_KEY") ?? "").replace(/\\n/g, "\n").trim();
+  const topic = (Deno.env.get("APNS_BUNDLE_ID") ?? "net.kebabturco.app").trim();
   if (!keyId || !teamId || !privateKey.includes("BEGIN PRIVATE KEY")) return null;
-  const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") ?? "true").toLowerCase() !== "false";
+  const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") ?? "true").toLowerCase().trim() !== "false";
   return { keyId, teamId, privateKey, topic, useSandbox };
 }
 
@@ -246,8 +246,13 @@ async function sendApns(
   deviceToken: string,
   payload: { title: string; body: string; tag?: string; url?: string },
   config: ApnsConfig,
-): Promise<void> {
+  opts?: { tryBothHosts?: boolean },
+): Promise<{ host: string }> {
   const token = deviceToken.replace(/[<>\s]/g, "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/i.test(token)) {
+    throw new Error(`APNs token inválido (formato): ${token.slice(0, 16)}…`);
+  }
+
   const jwt = await getApnsJwt(config);
   const body = JSON.stringify({
     aps: {
@@ -259,11 +264,11 @@ async function sendApns(
     tag: payload.tag ?? "",
   });
 
-  const hosts = config.useSandbox
-    ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
-    : ["api.push.apple.com", "api.sandbox.push.apple.com"];
+  const primaryHost = config.useSandbox ? "api.sandbox.push.apple.com" : "api.push.apple.com";
+  const alternateHost = config.useSandbox ? "api.push.apple.com" : "api.sandbox.push.apple.com";
+  const hosts = opts?.tryBothHosts ? [primaryHost, alternateHost] : [primaryHost];
 
-  let lastError = "APNs send failed";
+  const attemptErrors: string[] = [];
   for (const host of hosts) {
     const res = await fetch(`https://${host}/3/device/${token}`, {
       method: "POST",
@@ -276,15 +281,19 @@ async function sendApns(
       },
       body,
     });
-    if (res.ok) return;
+    if (res.ok) return { host };
     const text = await res.text();
-    lastError = `APNs ${host}: ${res.status} ${text}`;
+    attemptErrors.push(`${host}: ${res.status} ${text}`);
     if (res.status === 400 && /DeviceTokenNotForTopic/i.test(text)) break;
+    if (!opts?.tryBothHosts) break;
     if (res.status === 400 && /BadDeviceToken/i.test(text)) continue;
     if (res.status === 410) break;
   }
-  const err = new Error(lastError) as Error & { statusCode?: number };
+
+  const lastError = attemptErrors[attemptErrors.length - 1] ?? "APNs send failed";
+  const err = new Error(`APNs ${lastError}`) as Error & { statusCode?: number; attemptErrors?: string[] };
   err.statusCode = 400;
+  err.attemptErrors = attemptErrors;
   throw err;
 }
 
@@ -510,6 +519,7 @@ Deno.serve(async (req) => {
     }
 
     if (testDirect && nativeDirectToken && nativePlatform) {
+      targetMap.clear();
       const cleanToken = normalizeNativeToken(String(nativeDirectToken));
       const plat = String(nativePlatform).toLowerCase();
       const platform = plat === "ios" || plat === "android" ? plat : "ios";
@@ -529,15 +539,34 @@ Deno.serve(async (req) => {
     let sentApns = 0;
     const errors: { endpoint: string; status?: number; message: string; channel: string }[] = [];
 
+    let apnsDeliveryNote: string | undefined;
+    const apnsTryBothHosts = Boolean(pushDiagnostic && testDirect && nativeDirectToken);
+
     for (const sub of subs) {
       const platform = (sub.platform ?? "web").toLowerCase();
       try {
         if (platform === "ios") {
           if (!apns) throw new Error("APNs not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
-          await sendApns(token, { title, body: msgBody, tag, url, requireInteraction }, apns);
+          const apnsResult = await sendApns(
+            token,
+            { title, body: msgBody, tag, url, requireInteraction },
+            apns,
+            { tryBothHosts: apnsTryBothHosts },
+          );
           sent++;
           sentApns++;
+          const expectedHost = apns.useSandbox ? "api.sandbox.push.apple.com" : "api.push.apple.com";
+          if (apnsResult.host !== expectedHost) {
+            apnsDeliveryNote =
+              apnsResult.host === "api.push.apple.com"
+                ? "Aviso entregue via ambiente App Store. Na Lovable defina APNS_USE_SANDBOX=false e Publish."
+                : "Aviso entregue via ambiente teste. Na Lovable defina APNS_USE_SANDBOX=true e Publish.";
+            console.warn("[send-push-notification] APNs entregou no ambiente alternativo", {
+              host: apnsResult.host,
+              configuredSandbox: apns.useSandbox,
+            });
+          }
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
@@ -556,9 +585,9 @@ Deno.serve(async (req) => {
           sent++; sentWeb++;
         }
       } catch (e: unknown) {
-        const err = e as { statusCode?: number; status?: number; body?: string; message?: string };
+        const err = e as { statusCode?: number; status?: number; body?: string; message?: string; attemptErrors?: string[] };
         const status = err.statusCode ?? err.status;
-        const message = err.body || err.message || String(e);
+        const message = err.attemptErrors?.join(" | ") || err.body || err.message || String(e);
         console.error("[send-push-notification] error", {
           endpoint: sub.endpoint.slice(0, 60), platform, status, message,
         });
@@ -582,6 +611,7 @@ Deno.serve(async (req) => {
         partial,
         matched: matchedInDb,
         targeted: subs.length,
+        apnsDeliveryNote,
         errors: errors.length ? errors : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

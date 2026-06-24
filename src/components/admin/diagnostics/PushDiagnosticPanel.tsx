@@ -155,8 +155,9 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       const result = await sendNativeDeviceTestPush({ storeId, title: testTitle, body: testBody });
       setTestResult(result);
       setTestStatus(result.ok ? "success" : "error");
-      if (result.ok) toast.success("Notificação enviada para este telemóvel");
-      else {
+      if (result.ok) {
+        toast.success(result.userMessage ?? "Notificação enviada para este telemóvel");
+      } else {
         if (/BadDeviceToken|DeviceTokenNotForTopic|token deste iPhone/i.test(result.userMessage ?? "")) {
           clearCachedNativePushToken();
         }

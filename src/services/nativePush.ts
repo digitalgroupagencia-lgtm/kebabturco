@@ -265,6 +265,18 @@ export async function registerNativeStaffPush(
 
     if (opts?.forceRefresh) {
       clearCachedNativePushToken();
+      if (platform === "ios") {
+        try {
+          await supabase
+            .from("push_subscriptions")
+            .delete()
+            .eq("store_id", storeId)
+            .eq("platform", "ios")
+            .eq("customer_phone", "__staff__");
+        } catch {
+          /* ignore — RLS pode bloquear; RPC no registo trata do resto */
+        }
+      }
     }
 
     const cached = readCachedNativePushToken();

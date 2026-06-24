@@ -84,6 +84,7 @@ function parseSendPayload(data: unknown): {
   skipped?: boolean;
   reason?: string;
   error?: string;
+  apnsDeliveryNote?: string;
   errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
 } {
   return (data ?? {}) as {
@@ -103,8 +104,20 @@ function parseSendPayload(data: unknown): {
 }
 
 function apnsErrorUserMessage(message: string): string {
-  if (/BadDeviceToken|DeviceTokenNotForTopic/i.test(message)) {
-    return "A Apple recusou o token deste iPhone. Toque «Registar push» outra vez (com a app fechada e reaberta). Se usa a app de teste (.ipa), o servidor tem de estar em modo teste Apple (APNS_USE_SANDBOX=true).";
+  if (/DeviceTokenNotForTopic/i.test(message)) {
+    return "O identificador da app no servidor não coincide com o iPhone. Confirme que a chave Apple é para net.kebabturco.app.";
+  }
+  if (/BadDeviceToken/i.test(message)) {
+    if (/sandbox/.test(message) && /api\.push\.apple/.test(message)) {
+      return "A Apple recusou o token nos dois modos (teste e loja). Desinstale a app Kebab Turco do iPhone, instale de novo pelo ficheiro .ipa, abra, toque «Registar push», feche a app e teste com o ecrã bloqueado.";
+    }
+    if (/api\.push\.apple\.com/.test(message) && !/sandbox/.test(message)) {
+      return "O servidor está em modo teste mas o iPhone parece ser de loja. Na Lovable mude APNS_USE_SANDBOX para false, Publish, e teste outra vez. Ou reinstale a app pelo ficheiro .ipa de teste.";
+    }
+    if (/sandbox/.test(message)) {
+      return "Token recusado no modo teste. Desinstale a app, reinstale o .ipa, «Registar push» outra vez e teste com ecrã bloqueado.";
+    }
+    return "A Apple recusou o token deste iPhone. Desinstale a app, reinstale, «Registar push» outra vez e teste com ecrã bloqueado.";
   }
   return `Erro da Apple: ${message.slice(0, 280)}`;
 }
@@ -150,7 +163,7 @@ function finalizeNativeDirectResult(
     };
   }
 
-  return { ok: true, sent: channelSent, matched: payload.matched, targeted: payload.targeted };
+  return { ok: true, sent: channelSent, matched: payload.matched, targeted: payload.targeted, userMessage: payload.apnsDeliveryNote };
 }
 
 function finalizeWebDirectResult(payload: ReturnType<typeof parseSendPayload>): PushTestSendResult {
