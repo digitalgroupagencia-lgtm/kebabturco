@@ -24,7 +24,7 @@ import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
-import { Auth, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
+import { StaffAuthRedirect, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
 import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
@@ -66,7 +66,7 @@ const internal = (
 const LovablePreviewRoutes = () => (
   <Routes>
     <Route path="/" element={tenantStore} />
-    <Route path="/auth" element={withSuspense(<Auth />)} />
+    <Route path="/auth" element={withSuspense(<StaffAuthRedirect />)} />
     <Route
       path="/staff"
       element={withSuspense(

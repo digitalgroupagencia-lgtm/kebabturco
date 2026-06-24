@@ -4,7 +4,7 @@
 import { lazy } from "react";
 
 export const Index = lazy(() => import("@/customer/Index.tsx"));
-export const Auth = lazy(() => import("@/pages/Auth.tsx"));
+export const StaffAuthRedirect = lazy(() => import("@/pages/StaffAuthRedirect.tsx"));
 export const StaffLogin = lazy(() => import("@/components/staff/StaffEmailLoginScreen.tsx"));
 export const NotFound = lazy(() => import("@/pages/NotFound.tsx"));
 

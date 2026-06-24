@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const pagesRoot = path.join(process.cwd(), "src", "pages");
-const allowedFiles = new Set(["Index.tsx", "Auth.tsx", "StaffLogin.tsx", "Install.tsx", "NotFound.tsx", "README.md"]);
+const allowedFiles = new Set(["Index.tsx", "StaffAuthRedirect.tsx", "StaffLogin.tsx", "Install.tsx", "NotFound.tsx", "README.md"]);
 const allowedDirs = new Set(["legal"]);
 
 if (!fs.existsSync(pagesRoot)) {

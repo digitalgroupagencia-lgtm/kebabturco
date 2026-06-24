@@ -7,7 +7,7 @@ export const RESTAURANT_GUIDE_SECTIONS: FaqSection[] = [
     items: [
       {
         q: "Como acedo ao painel?",
-        a: "Entre em /auth com o seu email e senha. Será redireccionado para /panel.\n\nAcesso rápido no telemóvel: abra o menu do cliente, toque no logótipo 5 vezes e use o código de acesso (com #) na Área da equipe.",
+        a: "Toque 5 vezes no logótipo do menu do cliente para abrir a Área da equipa. Use o e-mail e a senha que o restaurante lhe deu (ou crie conta / entre com Google).\n\nDepois de entrar, abre o painel do restaurante ou a administração conforme o seu perfil.",
       },
       {
         q: "Como adiciono um membro da equipa?",

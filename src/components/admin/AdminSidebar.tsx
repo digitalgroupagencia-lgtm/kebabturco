@@ -298,7 +298,7 @@ export function AdminSidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground"
-          onClick={() => void signOut("/auth")}
+          onClick={() => void signOut(nav.staff())}
         >
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && "Sair"}

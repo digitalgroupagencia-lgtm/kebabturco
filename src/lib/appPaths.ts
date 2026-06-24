@@ -34,7 +34,8 @@ export function fixBrokenEditorPath(pathname: string): string {
   if (!pathname.includes("*")) return pathname;
   if (pathname.startsWith("/admin")) return "/admin";
   if (pathname.startsWith("/panel")) return "/panel";
-  if (pathname.startsWith("/auth")) return "/auth";
+  if (pathname.startsWith("/staff")) return "/staff";
+  if (pathname.startsWith("/auth")) return "/staff";
   if (pathname.startsWith("/seller")) return "/seller";
   if (pathname.startsWith("/delivery")) return "/delivery";
   return "/";

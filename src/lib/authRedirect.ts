@@ -11,6 +11,7 @@ function sanitizeNextPath(next: string | null | undefined): string | null {
   if (!next.startsWith("/")) return null;
   if (next.startsWith("//")) return null;
   if (next === "/auth" || next.startsWith("/auth/")) return null;
+  if (next === "/staff" || next.startsWith("/staff?")) return null;
   return next;
 }
 

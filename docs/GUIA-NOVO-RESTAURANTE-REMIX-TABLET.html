@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guia — Novo restaurante (Remix) + Tablet</title>
+  <style>
+    @page { margin: 18mm 16mm; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      line-height: 1.55;
+      font-size: 11pt;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 { font-size: 22pt; color: #b91c1c; border-bottom: 3px solid #b91c1c; padding-bottom: 8px; }
+    h2 { font-size: 15pt; color: #991b1b; margin-top: 28px; page-break-after: avoid; }
+    h3 { font-size: 12pt; color: #374151; margin-top: 18px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 10pt; }
+    th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #fef2f2; color: #7f1d1d; }
+    blockquote { background: #fff7ed; border-left: 4px solid #f59e0b; margin: 12px 0; padding: 10px 14px; }
+    code, pre { background: #f3f4f6; border-radius: 4px; font-size: 9pt; }
+    pre { padding: 10px; overflow-x: auto; }
+    ul, ol { padding-left: 22px; }
+    li { margin: 4px 0; }
+    .meta { color: #6b7280; font-size: 10pt; margin-bottom: 20px; }
+    .checklist li { list-style: none; margin-left: -18px; }
+    .checklist li::before { content: "☐ "; }
+    .footer { margin-top: 36px; font-size: 9pt; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    .highlight { background: #ecfdf5; border: 1px solid #6ee7b7; padding: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Guia completo — Novo restaurante (Remix) + Tablet</h1>
+  <p class="meta"><strong>Euro Business Group · SnapOrder / Kebab Turco Master</strong><br>
+  Versão: Junho 2026 · Para clonar um restaurante novo na Lovable e ligar o tablet da loja.</p>
+
+  <h2>O que vai conseguir no fim</h2>
+  <ol>
+    <li>Um <strong>restaurante novo</strong> online (site + painel), com nome, logo e cores do cliente.</li>
+    <li>Um <strong>ficheiro de instalação (APK)</strong> no tablet — a app da cozinha/mostrador.</li>
+    <li><strong>RustDesk</strong> instalado — para aceder ao tablet à distância.</li>
+    <li><strong>Não</strong> precisa de copiar a pasta do projeto para o tablet.</li>
+  </ol>
+
+  <h2>Visão geral (ordem certa)</h2>
+  <table>
+    <tr><th>Passo</th><th>O quê</th><th>Quem faz</th><th>Tempo</th></tr>
+    <tr><td>1</td><td>Remix na Lovable</td><td>Tu / Cursor</td><td>5 min</td></tr>
+    <tr><td>2</td><td>Ativar nuvem + base de dados</td><td>Tu / Cursor</td><td>5 min</td></tr>
+    <tr><td>3</td><td>Correr script de arranque (SQL)</td><td>Tu / Cursor</td><td>5 min</td></tr>
+    <tr><td>4</td><td>Nome, cores, logo, cardápio</td><td>Tu</td><td>30–60 min</td></tr>
+    <tr><td>5</td><td>Publish na Lovable</td><td>Tu</td><td>2 min</td></tr>
+    <tr><td>6</td><td>Gerar APK no Mac</td><td>Cursor / técnico</td><td>20–40 min</td></tr>
+    <tr><td>7</td><td>Instalar APK no tablet</td><td>Tu (RustDesk ou USB)</td><td>10 min</td></tr>
+    <tr><td>8</td><td>Instalar RustDesk no tablet</td><td>Tu</td><td>5 min</td></tr>
+    <tr><td>9</td><td>Testar pedido + impressão</td><td>Tu</td><td>15 min</td></tr>
+  </table>
+
+  <h2>PARTE 1 — Remix na Lovable</h2>
+  <h3>1.1 Fazer o Remix</h3>
+  <ol>
+    <li>Abre <strong>lovable.dev</strong> e entra no projeto <strong>Kebab Turco SnapOrder</strong> (Master).</li>
+    <li>Menu do projeto → <strong>Remix this project</strong>.</li>
+    <li>Escolhe um nome (ex.: Pastelanche SnapOrder).</li>
+    <li>Confirma — nasce um projeto novo e separado.</li>
+  </ol>
+  <blockquote>O Remix copia o aspeto e o código. <strong>Não copia</strong> pedidos, clientes, base de dados cheia nem chaves Stripe.</blockquote>
+
+  <h3>1.2 Ativar a nuvem</h3>
+  <ol>
+    <li>No projeto novo: <strong>More → Cloud</strong>.</li>
+    <li>Ativa a nuvem — cria a base de dados desse restaurante.</li>
+  </ol>
+
+  <h3>1.3 Script de arranque (obrigatório)</h3>
+  <ol>
+    <li><strong>More → Cloud → SQL Editor</strong>.</li>
+    <li>Copia todo o ficheiro <code>BOOTSTRAP_MASTER_TEMPLATE.sql</code> do projeto Master.</li>
+    <li>Cola no editor e clica <strong>Run</strong>.</li>
+  </ol>
+
+  <h3>1.4 Personalizar</h3>
+  <table>
+    <tr><th>Item</th><th>Onde</th></tr>
+    <tr><td>Nome</td><td>Admin → Configurações</td></tr>
+    <tr><td>Logo e cores</td><td>Admin → Branding</td></tr>
+    <tr><td>Cardápio</td><td>Admin → Cardápio</td></tr>
+    <tr><td>Horários</td><td>Admin → Horários</td></tr>
+    <tr><td>Entrega</td><td>Admin → Entrega</td></tr>
+  </table>
+
+  <h3>1.5 Segredos e Publish</h3>
+  <p>Em <strong>Cloud → Secrets</strong>: Stripe, webhooks, IA, notificações. Depois clica <strong>Publish</strong> e anota o endereço (ex.: <code>https://pastelanche.net</code>).</p>
+
+  <h2>PARTE 2 — Gerar o APK (app do tablet)</h2>
+  <p class="highlight"><strong>Importante:</strong> O tablet usa o <strong>APK</strong>, não a pasta do projeto no Mac.</p>
+  <h3>2.1 URL do restaurante novo</h3>
+  <p>No ficheiro <code>capacitor.config.ts</code>, altera:</p>
+  <pre>server: {
+  url: "https://SEU-DOMINIO-AQUI.net",
+}</pre>
+  <h3>2.2 Compilar</h3>
+  <pre>npm install
+npm run build
+npx cap sync android
+npx cap open android</pre>
+  <p>No Android Studio: <strong>Build → Build APK(s)</strong>. O ficheiro fica em <code>android/app/build/outputs/apk/release/</code>.</p>
+  <p>Renomeia para algo claro, ex.: <code>Pastelanche-SnapOrder-tablet-v1.apk</code></p>
+
+  <h2>PARTE 3 — RustDesk (acesso remoto)</h2>
+  <p><strong>RustDesk</strong> permite ver e controlar o tablet à distância — instalar APK, configurar impressora, resolver problemas.</p>
+  <blockquote><strong>Não copies</strong> a pasta inteira do projeto para o tablet. Isso não instala a app.</blockquote>
+  <h3>3.1 No Mac</h3>
+  <ol>
+    <li>Site: <strong>https://rustdesk.com</strong></li>
+    <li>Instala versão macOS.</li>
+    <li>Anota o teu ID e define palavra-passe.</li>
+  </ol>
+  <h3>3.2 No tablet Android</h3>
+  <ol>
+    <li>Instala RustDesk (Play Store ou site oficial).</li>
+    <li>Anota o ID do tablet e define palavra-passe.</li>
+    <li>No Mac: liga ao ID do tablet.</li>
+  </ol>
+  <h3>3.3 Enviar o APK</h3>
+  <ol>
+    <li>RustDesk → <strong>Transferência de ficheiros</strong>.</li>
+    <li>Envia <strong>só o ficheiro .apk</strong> (~30–80 MB).</li>
+    <li>No tablet: pasta Download → toca no APK → Instalar.</li>
+  </ol>
+
+  <h2>PARTE 4 — Configurar o tablet</h2>
+  <ul>
+    <li>Wi‑Fi estável e tablet ligado à corrente.</li>
+    <li>Abre a app — deve mostrar o site do restaurante novo.</li>
+    <li>Configura impressora no Admin e faz pedido de teste.</li>
+  </ul>
+
+  <h2>PARTE 5 — Atualizações (Cursor + Lovable)</h2>
+  <table>
+    <tr><th>Quem</th><th>Ação</th></tr>
+    <tr><td><strong>Cursor</strong></td><td>Altera código → commit → push main → push Lovable → confirma sync</td></tr>
+    <tr><td><strong>Tu</strong></td><td>Na Lovable: só <strong>Publish</strong></td></tr>
+  </table>
+
+  <h2>Checklist final</h2>
+  <ul class="checklist">
+    <li>Site abre no telemóvel</li>
+    <li>Cliente faz pedido (levar / mesa / entrega)</li>
+    <li>Painel e cozinha recebem o pedido</li>
+    <li>APK instalado com o site certo</li>
+    <li>Impressão funciona</li>
+    <li>RustDesk instalado (ID guardado)</li>
+    <li>Nome, logo, cores e preços corretos</li>
+  </ul>
+
+  <h2>Erros comuns</h2>
+  <table>
+    <tr><th>Problema</th><th>Solução</th></tr>
+    <tr><td>Site novo em branco</td><td>Correr script SQL de arranque</td></tr>
+    <tr><td>Tablet mostra restaurante errado</td><td>Alterar URL e gerar APK novo</td></tr>
+    <tr><td>Copiar pasta não funciona</td><td>Instalar só o APK</td></tr>
+    <tr><td>Alteração não aparece na Lovable</td><td>Cursor faz push + sync; tu Publish</td></tr>
+  </table>
+
+  <p class="footer"><strong>Resumo:</strong> Remix → nuvem → SQL → personalizar → Publish → APK com domínio novo → RustDesk → instalar no tablet → testar.<br>
+  Euro Business Group · Documento gerado em Junho 2026.</p>
+</body>
+</html>

@@ -7,14 +7,15 @@ export function joinPath(...segments: string[]): string {
 
 export const nav = {
   home: () => joinPath(),
-  auth: () => joinPath("auth"),
+  staff: () => joinPath("staff"),
+  /** Único login — alias legado para links antigos /auth. */
+  auth: () => joinPath("staff"),
   install: () => joinPath("install"),
   cashier: () => joinPath("cashier"),
   panel: (...rest: string[]) => joinPath("panel", ...rest),
   admin: (...rest: string[]) => joinPath("admin", ...rest),
   seller: (...rest: string[]) => joinPath("seller", ...rest),
   delivery: (...rest: string[]) => joinPath("delivery", ...rest),
-  staff: () => joinPath("staff"),
   privacy: () => joinPath("privacy"),
   terms: () => joinPath("terms"),
   deleteAccount: () => joinPath("delete-account"),
@@ -22,7 +23,7 @@ export const nav = {
 } as const;
 
 /** Lista curada — dropdown preview Lovable (só loja + login). */
-export const LOVABLE_PREVIEW_PATHS = ["/", "/auth"] as const;
+export const LOVABLE_PREVIEW_PATHS = ["/", "/staff"] as const;
 
 export type AppArea = "panel" | "admin" | "seller" | "delivery";
 

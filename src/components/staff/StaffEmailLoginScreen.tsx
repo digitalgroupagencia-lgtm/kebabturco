@@ -14,6 +14,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
 import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
+import { resolvePostLoginDestination } from "@/lib/authRedirect";
 import { signInStaffWithGoogle } from "@/lib/staffGoogleOAuth";
 import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
 import { getStaffLoginCopy } from "@/lib/staffUiCopy";
@@ -40,6 +41,7 @@ const StaffEmailLoginScreen = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const signupFromUrl = searchParams.get("signup") === "1" || searchParams.get("mode") === "signup";
+  const nextParam = searchParams.get("next");
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const { storeId, loading: storeLoading } = useStaffLoginStore();
@@ -82,14 +84,22 @@ const StaffEmailLoginScreen = () => {
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
 
-    if (canAccessDeliveryPanel(role) && role === "delivery") {
-      navigate(resolveStaffLoginDestination(role), { replace: true });
-      return;
-    }
-    if (canAccessPanel(role) || role === "admin_master" || role === "seller") {
-      navigate(resolveStaffLoginDestination(role), { replace: true });
-    }
-  }, [authLoading, roleLoading, user, roleData?.role, navigate, googleFlowActive]);
+    void (async () => {
+      if (nextParam) {
+        const dest = await resolvePostLoginDestination(user.id, nextParam);
+        navigate(dest.path, { replace: true });
+        return;
+      }
+
+      if (canAccessDeliveryPanel(role) && role === "delivery") {
+        navigate(resolveStaffLoginDestination(role), { replace: true });
+        return;
+      }
+      if (canAccessPanel(role) || role === "admin_master" || role === "seller") {
+        navigate(resolveStaffLoginDestination(role), { replace: true });
+      }
+    })();
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, googleFlowActive, nextParam]);
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
@@ -197,7 +207,8 @@ const StaffEmailLoginScreen = () => {
     markStaffSession();
 
     try {
-      const redirectUri = `${window.location.origin}${nav.staff()}`;
+      const nextQuery = nextParam ? `?next=${encodeURIComponent(nextParam)}` : "";
+      const redirectUri = `${window.location.origin}${nav.staff()}${nextQuery}`;
       await signInStaffWithGoogle({ redirectUri, lang });
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);

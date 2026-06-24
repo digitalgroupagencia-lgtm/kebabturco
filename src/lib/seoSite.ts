@@ -25,7 +25,7 @@ export const PUBLIC_SITEMAP_ENTRIES: readonly SitemapEntry[] = [
 export const SEO_NOINDEX_PREFIXES = [
   "/admin",
   "/panel",
-  "/auth",
+  "/staff",
   "/staff",
   "/seller",
   "/delivery",
