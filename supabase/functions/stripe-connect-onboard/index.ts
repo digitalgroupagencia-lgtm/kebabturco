@@ -121,22 +121,48 @@ Deno.serve(async (req) => {
 
       const Stripe = (await import("https://esm.sh/stripe@14.21.0?target=deno")).default;
       const stripe = new Stripe(secret, { apiVersion: "2023-10-16" });
-      const accountId = store?.stripe_connect_account_id ?? null;
+      const { sanitizeStoredConnectAccount } = await import("../_shared/stripeConnectAccountGuard.ts");
+      const { RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT } = await import("../_shared/stripePayoutPolicy.ts");
 
-      const { applyConnectPayoutPolicy, RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT } = await import(
-        "../_shared/stripePayoutPolicy.ts"
-      );
+      let accountId = store?.stripe_connect_account_id ?? null;
+      if (store?.id && accountId) {
+        const sanitized = await sanitizeStoredConnectAccount(stripe, service, {
+          id: store.id,
+          stripe_connect_account_id: accountId,
+        });
+        if (sanitized.cleared) accountId = null;
+      }
+
+      const { applyConnectPayoutPolicy } = await import("../_shared/stripePayoutPolicy.ts");
 
       if (mode === "enforce_payout_policy") {
-        const payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
-        return json({
-          ok: true,
-          accountId,
-          payoutPolicy,
-          handlerVersion: CONNECT_HANDLER_VERSION,
-          message:
-            "Plataforma em repasse manual; restaurante em repasse automático às quintas-feiras.",
-        });
+        if (!accountId) {
+          return json({
+            ok: false,
+            accountId: null,
+            message: "Conta de recebimentos ainda não ligada.",
+            handlerVersion: CONNECT_HANDLER_VERSION,
+          });
+        }
+        try {
+          const payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
+          return json({
+            ok: true,
+            accountId,
+            payoutPolicy,
+            handlerVersion: CONNECT_HANDLER_VERSION,
+            message:
+              "Plataforma em repasse manual; restaurante em repasse automático às quintas-feiras.",
+          });
+        } catch (e) {
+          console.warn("[connect] enforce_payout_policy", e);
+          return json({
+            ok: false,
+            accountId,
+            message: "Não foi possível aplicar a política de repasses agora.",
+            handlerVersion: CONNECT_HANDLER_VERSION,
+          });
+        }
       }
 
       if (mode === "finance_snapshot") {
@@ -154,9 +180,24 @@ Deno.serve(async (req) => {
             liveDataUnavailable: true,
           });
         }
-        const { buildRestaurantFinanceSnapshot } = await import("../_shared/stripeFinanceSnapshot.ts");
-        const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
-        return json(snapshot);
+        try {
+          const { buildRestaurantFinanceSnapshot } = await import("../_shared/stripeFinanceSnapshot.ts");
+          const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
+          return json(snapshot);
+        } catch (e) {
+          console.warn("[connect] finance_snapshot fast path", e);
+          return json({
+            availableCents: 0,
+            pendingCents: 0,
+            payoutInterval: "weekly",
+            payoutWeekday: RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
+            nextPayoutDate: null,
+            nextPayoutAmountCents: null,
+            ibanLast4: store?.stripe_iban_last4 ?? null,
+            simulated: false,
+            liveDataUnavailable: true,
+          });
+        }
       }
 
       if (mode === "sync_payouts") {
@@ -164,13 +205,18 @@ Deno.serve(async (req) => {
           return json({ synced: 0, message: "Conta Stripe ainda não ligada." });
         }
         try {
-          await applyConnectPayoutPolicy(stripe, accountId);
+          try {
+            await applyConnectPayoutPolicy(stripe, accountId);
+          } catch (e) {
+            console.warn("[connect] payout policy (sync_payouts)", e);
+          }
+          const { syncStorePayoutsFromStripe } = await import("../_shared/stripePayoutActions.ts");
+          const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
+          return json({ synced, accountId, handlerVersion: CONNECT_HANDLER_VERSION });
         } catch (e) {
-          console.warn("[connect] payout policy (sync_payouts)", e);
+          console.warn("[connect] sync_payouts fast path", e);
+          return json({ synced: 0, accountId, message: "Não foi possível sincronizar repasses agora." });
         }
-        const { syncStorePayoutsFromStripe } = await import("../_shared/stripePayoutActions.ts");
-        const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
-        return json({ synced, accountId, handlerVersion: CONNECT_HANDLER_VERSION });
       }
     }
 

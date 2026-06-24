@@ -89,7 +89,10 @@ function isStripeSyncStaleError(message: string): boolean {
     m.includes("not authorized to edit") ||
     m.includes("business_type") ||
     m.includes("non-2xx") ||
-    m.includes("edge function")
+    m.includes("edge function") ||
+    m.includes("própria conta") ||
+    m.includes("platform_account_stored") ||
+    m.includes("conta da plataforma")
   );
 }
 

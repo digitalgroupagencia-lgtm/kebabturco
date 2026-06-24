@@ -11,6 +11,7 @@ import {
   resolveStoreConnectEnvironment,
   type StoreConnectPaymentRow,
 } from "./stripeStoreConnect.ts";
+import { sanitizeStoredConnectAccount } from "./stripeConnectAccountGuard.ts";
 
 export type PublicConnectSyncResult = {
   accountId: string;
@@ -60,10 +61,6 @@ export async function runStoreConnectStatusSync(
 
   let store = await refreshLiveConnectStore(service, storeId, loaded.store);
 
-  if (!store.stripe_connect_account_id) {
-    throw new Error("Conta de recebimentos não ligada a esta loja");
-  }
-
   const connectEnv = await resolveStoreConnectEnvironment(store);
   const stripeKey = pickStripeSecretForEnvironment(
     connectEnv === "test" || store.stripe_connect_test_simulated ? "test" : connectEnv,
@@ -73,6 +70,18 @@ export async function runStoreConnectStatusSync(
   }
 
   const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+  const sanitized = await sanitizeStoredConnectAccount(stripe, service, store);
+  store = sanitized.store as StoreConnectPaymentRow;
+  if (sanitized.cleared) {
+    throw new Error(
+      "A conta antiga era inválida (conta da plataforma) e foi removida. Clique «Recriar conta Stripe» para criar a conta do restaurante.",
+    );
+  }
+
+  if (!store.stripe_connect_account_id) {
+    throw new Error("Conta de recebimentos não ligada a esta loja");
+  }
+
   const status = await syncConnectAccountById(
     stripe,
     service,
@@ -128,9 +137,15 @@ export async function runStoreBizumEnable(
     throw new Error("Chave Stripe live em falta no servidor");
   }
   const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+  const sanitized = await sanitizeStoredConnectAccount(stripe, service, loaded.store);
+  if (sanitized.cleared || !sanitized.store.stripe_connect_account_id) {
+    throw new Error(
+      "Conta de recebimentos inválida — use «Recriar conta Stripe» no painel de administração.",
+    );
+  }
   const bizum = await ensureBizumEnabledOnConnectAccount(
     stripe,
-    loaded.store.stripe_connect_account_id,
+    sanitized.store.stripe_connect_account_id,
   );
-  return { ...bizum, accountId: loaded.store.stripe_connect_account_id };
+  return { ...bizum, accountId: sanitized.store.stripe_connect_account_id };
 }

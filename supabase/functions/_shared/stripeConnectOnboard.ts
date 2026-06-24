@@ -9,11 +9,16 @@ import {
 import {
   inspectPlatformConnectStatus,
   isPlatformProfileBlockedError,
+  isStripeOwnAccountError,
   PlatformPendingError,
   platformStatusPayload,
   resolveStripeConnectContext,
   type StripeConnectContext,
 } from "./stripePlatform.ts";
+import {
+  clearStoreConnectAccountFields,
+  sanitizeStoredConnectAccount,
+} from "./stripeConnectAccountGuard.ts";
 import { provisionTestConnectAccount } from "./stripeConnectTestProvision.ts";
 import {
   accountNeedsEmbeddedCompletionStep,
@@ -42,7 +47,7 @@ import {
 } from "./stripePayoutPolicy.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-24-payout-thursday-v2";
+export const CONNECT_HANDLER_VERSION = "2026-06-24-platform-account-guard-v1";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -333,17 +338,7 @@ async function clearStoreConnectAccount(
   service: SupabaseClient,
   storeId: string,
 ): Promise<void> {
-  await service
-    .from("stores")
-    .update({
-      stripe_connect_account_id: null,
-      stripe_charges_enabled: false,
-      stripe_payouts_enabled: false,
-      stripe_onboarding_completed: false,
-      stripe_payout_status: "pending",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", storeId);
+  await clearStoreConnectAccountFields(service, storeId);
 }
 
 function normalizeMatchText(value: string | null | undefined): string {
@@ -401,11 +396,14 @@ async function rebuildIncompleteConnectAccount(
   service: SupabaseClient,
   store: ConnectStoreRow,
 ): Promise<ConnectStoreRow> {
-  const accountId = store.stripe_connect_account_id;
-  if (!accountId || accountId.startsWith("simulated-")) return store;
+  const sanitized = await sanitizeStoredConnectAccount(stripe, service, store);
+  if (sanitized.cleared) return sanitized.store as ConnectStoreRow;
+
+  const accountId = sanitized.store.stripe_connect_account_id;
+  if (!accountId || accountId.startsWith("simulated-")) return sanitized.store as ConnectStoreRow;
 
   const replace = await shouldReplaceStripeAccount(stripe, accountId);
-  if (!replace) return store;
+  if (!replace) return sanitized.store as ConnectStoreRow;
 
   try {
     await stripe.accounts.del(accountId);
@@ -413,8 +411,8 @@ async function rebuildIncompleteConnectAccount(
     console.warn("[connect] could not delete incomplete stripe account", accountId, e);
   }
 
-  await clearStoreConnectAccount(service, store.id);
-  return { ...store, stripe_connect_account_id: null };
+  await clearStoreConnectAccount(service, sanitized.store.id);
+  return { ...sanitized.store, stripe_connect_account_id: null } as ConnectStoreRow;
 }
 
 export async function ensureConnectAccount(
@@ -441,8 +439,10 @@ export async function ensureConnectAccount(
     : null;
 
   let workingStore = store;
+  const sanitized = await sanitizeStoredConnectAccount(ctx.stripe, service, workingStore);
+  workingStore = sanitized.store;
   if (ctx.environment === "live" && store.stripe_connect_account_id) {
-    workingStore = await rebuildIncompleteConnectAccount(ctx.stripe, service, store);
+    workingStore = await rebuildIncompleteConnectAccount(ctx.stripe, service, workingStore);
   }
 
   const useCustom = ctx.environment === "live" && intakeComplete(payoutIntake);
@@ -1134,13 +1134,25 @@ export async function handleStripeConnectRequest(
 
     // Stripe sync is best-effort — dados do restaurante ficam sempre guardados.
     try {
-      const needsLiveReset =
-        store.stripe_connect_environment === "test" ||
-        Boolean((store as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
-        !store.stripe_connect_account_id ||
-        store.stripe_connect_account_id.startsWith("simulated-");
+      let intakeStore = store;
+      const liveKeyForSanitize = getStripeSecretKey();
+      if (liveKeyForSanitize && intakeStore.stripe_connect_account_id) {
+        const liveStripeForSanitize = new Stripe(liveKeyForSanitize, { apiVersion: "2023-10-16" });
+        const sanitized = await sanitizeStoredConnectAccount(
+          liveStripeForSanitize,
+          service,
+          intakeStore,
+        );
+        intakeStore = sanitized.store;
+      }
 
-      let workingStore = store;
+      const needsLiveReset =
+        intakeStore.stripe_connect_environment === "test" ||
+        Boolean((intakeStore as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
+        !intakeStore.stripe_connect_account_id ||
+        intakeStore.stripe_connect_account_id.startsWith("simulated-");
+
+      let workingStore = intakeStore;
       if (needsLiveReset) {
         const liveKey = getStripeSecretKey();
         if (!liveKey) {
@@ -1289,13 +1301,25 @@ export async function handleStripeConnectRequest(
       );
     }
 
-    const needsLiveReset =
-      store.stripe_connect_environment === "test" ||
-      Boolean((store as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
-      !store.stripe_connect_account_id ||
-      store.stripe_connect_account_id.startsWith("simulated-");
+    let resyncStore = store;
+    const liveKeyForSanitize = getStripeSecretKey();
+    if (liveKeyForSanitize && resyncStore.stripe_connect_account_id) {
+      const liveStripeForSanitize = new Stripe(liveKeyForSanitize, { apiVersion: "2023-10-16" });
+      const sanitized = await sanitizeStoredConnectAccount(
+        liveStripeForSanitize,
+        service,
+        resyncStore,
+      );
+      resyncStore = sanitized.store;
+    }
 
-    let workingStore = store;
+    const needsLiveReset =
+      resyncStore.stripe_connect_environment === "test" ||
+      Boolean((resyncStore as { stripe_connect_test_simulated?: boolean }).stripe_connect_test_simulated) ||
+      !resyncStore.stripe_connect_account_id ||
+      resyncStore.stripe_connect_account_id.startsWith("simulated-");
+
+    let workingStore = resyncStore;
     if (needsLiveReset) {
       const liveKey = getStripeSecretKey();
       if (!liveKey || stripeKeyMode(liveKey) !== "live") {
@@ -1630,8 +1654,23 @@ export async function handleStripeConnectRequest(
         liveDataUnavailable: true,
       });
     }
-    const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
-    return json(snapshot);
+    try {
+      const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
+      return json(snapshot);
+    } catch (e) {
+      console.warn("[connect] finance_snapshot", e);
+      return json({
+        availableCents: 0,
+        pendingCents: 0,
+        payoutInterval: "weekly",
+        payoutWeekday: RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
+        nextPayoutDate: null,
+        nextPayoutAmountCents: null,
+        ibanLast4: store.stripe_iban_last4 ?? null,
+        simulated: false,
+        liveDataUnavailable: true,
+      });
+    }
   }
 
   if (mode === "sync_payouts") {
@@ -1639,12 +1678,17 @@ export async function handleStripeConnectRequest(
       return json({ synced: 0, message: "Conta Stripe ainda não ligada." });
     }
     try {
-      await applyConnectPayoutPolicy(stripe, accountId);
+      try {
+        await applyConnectPayoutPolicy(stripe, accountId);
+      } catch (e) {
+        console.warn("[connect] payout policy (sync_payouts)", e);
+      }
+      const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
+      return json({ synced, accountId });
     } catch (e) {
-      console.warn("[connect] payout policy (sync_payouts)", e);
+      console.warn("[connect] sync_payouts", e);
+      return json({ synced: 0, accountId, message: "Não foi possível sincronizar repasses agora." });
     }
-    const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
-    return json({ synced, accountId });
   }
 
   if (mode === "sync_status") {
@@ -1664,6 +1708,19 @@ export async function handleStripeConnectRequest(
         ...meta,
       });
     } catch (e) {
+      if (isStripeOwnAccountError(e)) {
+        await clearStoreConnectAccount(service, store.id);
+        return json(
+          {
+            error:
+              "A conta guardada era inválida (conta da plataforma). Foi removida — use «Recriar conta Stripe».",
+            code: "platform_account_stored",
+            cleared: true,
+            ...meta,
+          },
+          400,
+        );
+      }
       if (environment === "test" || ctx.platform.productionBlocked) {
         return json(
           {
@@ -1725,6 +1782,16 @@ export function connectErrorResponse(e: unknown): Response {
         code: "connect_not_enabled",
       },
       503,
+    );
+  }
+  if (isStripeOwnAccountError(e)) {
+    return json(
+      {
+        error:
+          "A conta guardada era a conta da plataforma, não do restaurante. Foi removida — clique «Recriar conta Stripe» para criar a conta correcta.",
+        code: "platform_account_stored",
+      },
+      400,
     );
   }
   const msg = e instanceof Error ? e.message : "Erro ao iniciar recebimentos";

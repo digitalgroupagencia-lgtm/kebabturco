@@ -28,6 +28,36 @@ export function isPlatformProfileBlockedError(err: unknown): boolean {
   );
 }
 
+/** Stripe rejects Connect APIs when the target id is the platform account itself. */
+export function isStripeOwnAccountError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes("own account") ||
+    lower.includes("própria conta") ||
+    lower.includes("connected accounts") ||
+    lower.includes("contas conectadas")
+  );
+}
+
+export async function resolvePlatformAccountId(stripe: Stripe): Promise<string> {
+  const platform = await stripe.accounts.retrieve();
+  return platform.id;
+}
+
+export async function isPlatformConnectAccountId(
+  stripe: Stripe,
+  accountId: string | null | undefined,
+): Promise<boolean> {
+  if (!accountId || accountId.startsWith("simulated-")) return false;
+  try {
+    const platformId = await resolvePlatformAccountId(stripe);
+    return accountId === platformId;
+  } catch {
+    return false;
+  }
+}
+
 /** Verifica se contas Connect live podem ser criadas (sem guardar conta). */
 async function probeLiveConnectAllowed(stripe: Stripe): Promise<boolean> {
   try {
