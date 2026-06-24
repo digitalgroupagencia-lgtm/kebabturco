@@ -32,7 +32,7 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
         return false;
       }
       if (!isTapToPayUserEnabled()) {
-        toast.error("Active o Tap to Pay em Definições → Tap to Pay antes de cobrar.");
+        toast.error(t("tapToPay.checkout.enable_first"));
         return false;
       }
       const pin = await requestStaffPin({

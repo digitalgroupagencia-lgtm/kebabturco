@@ -52,10 +52,10 @@ const LiveOrdersPage = () => {
             size="sm"
             className="h-9 gap-1.5 px-2 text-xs font-bold"
             onClick={() => setShowOldPending(true)}
-            title="Cancelar pedidos abertos de dias anteriores"
+            title={t("live.old_pending.tooltip")}
           >
             <ArchiveX className="h-4 w-4" />
-            <span className="hidden sm:inline">Pendentes antigos</span>
+            <span className="hidden sm:inline">{t("live.old_pending.btn")}</span>
           </Button>
           <Button
             type="button"

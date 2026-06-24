@@ -446,6 +446,99 @@ export const STAFF_I18N_CATALOG = {
   "howto.live.step4": { es: "Pedidos rojos = retrasados. Amarillos = cerca del límite.", pt: "Pedidos vermelhos = atrasados. Amarelos = a chegar perto do limite.", en: "Red orders = late. Yellow = nearing the limit." },
   "howto.live.confirm": { es: "Cada pedido nuevo dispara sonido + vibración. Si no suena, active alertas en Configuración → Notificaciones.", pt: "Cada pedido novo dispara som + vibração. Se não tocar, vá em Configurações → Notificações.", en: "Each new order triggers sound + vibration. If silent, enable alerts in Settings → Notifications." },
   "howto.live.assistant": { es: "¿Cómo funciona la pantalla de Pedidos en vivo y qué significa cada color/columna?", pt: "Como funciona a tela de Pedidos ao vivo e o que cada cor/coluna significa?", en: "How does Live orders work and what does each color/column mean?" },
+
+  "howto.cashier.purpose": {
+    es: "Controla la apertura y cierre de caja del día y confirma los pagos en efectivo en mostrador.",
+    pt: "Controla a abertura e fecho do caixa do dia e confirma os pagamentos em dinheiro no balcão.",
+    en: "Controls daily register open/close and confirms cash payments at the counter.",
+  },
+  "howto.cashier.when": {
+    es: "Abra al iniciar el turno. Cierre al final del día para cuadrar lo cobrado.",
+    pt: "Abra ao iniciar o expediente. Feche no fim do dia para conferir o que entrou.",
+    en: "Open at shift start. Close at end of day to reconcile takings.",
+  },
+  "howto.cashier.step1": {
+    es: "Pulse Abrir caja e indique el saldo inicial (cambio).",
+    pt: "Toque em Abrir caixa e digite o valor inicial (troco).",
+    en: "Tap Open register and enter the opening float.",
+  },
+  "howto.cashier.step2": {
+    es: "Durante el día, los pedidos en efectivo aparecen en Pendientes — confirme cada uno.",
+    pt: "Durante o dia, os pedidos pagos em dinheiro caem na lista de Pendentes — confirme cada um.",
+    en: "During the day, cash orders appear in Pending — confirm each one.",
+  },
+  "howto.cashier.step3": {
+    es: "Al cerrar, pulse Cerrar caja e indique el efectivo contado.",
+    pt: "No fim do dia, toque Fechar caixa e digite o valor real contado.",
+    en: "At close, tap Close register and enter the counted cash.",
+  },
+  "howto.cashier.step4": {
+    es: "El sistema muestra la diferencia entre lo esperado y lo contado.",
+    pt: "O sistema mostra a diferença entre o esperado e o contado.",
+    en: "The system shows the difference between expected and counted.",
+  },
+  "howto.cashier.confirm": {
+    es: "Si el total de ventas al cierre coincide con la caja física, está correcto. Si sobra o falta mucho, revise pedidos cancelados.",
+    pt: "Se o total de vendas no fecho bater com o caixa físico, está certo. Se sobrar ou faltar muito, revise pedidos cancelados.",
+    en: "If closing sales match physical cash, you're good. If there's a big gap, review cancelled orders.",
+  },
+  "howto.cashier.assistant": {
+    es: "¿Para qué sirve la pantalla de Caja y qué pasa si no abro/cierro?",
+    pt: "Por que existe a tela de Caixa e o que acontece se eu não abrir/fechar?",
+    en: "What is the Cashier screen for and what happens if I don't open/close?",
+  },
+
+  "live.old_pending.btn": { es: "Pendientes antiguos", pt: "Pendentes antigos", en: "Old pending" },
+  "live.old_pending.tooltip": {
+    es: "Cancelar pedidos abiertos de días anteriores",
+    pt: "Cancelar pedidos abertos de dias anteriores",
+    en: "Cancel open orders from previous days",
+  },
+
+  "old_pending.title": { es: "Pedidos pendientes antiguos", pt: "Pedidos pendentes antigos", en: "Old pending orders" },
+  "old_pending.desc": {
+    es: "Pedidos abiertos de días anteriores sin resolver. Cancélelos para limpiar la operación.",
+    pt: "Pedidos abertos de dias anteriores que ficaram por resolver. Cancele para limpar a operação.",
+    en: "Open orders from previous days still unresolved. Cancel them to clear operations.",
+  },
+  "old_pending.empty": {
+    es: "Ningún pedido antiguo pendiente.",
+    pt: "Nenhum pedido antigo pendente.",
+    en: "No old pending orders.",
+  },
+  "old_pending.badge.paid": { es: "pagado", pt: "pago", en: "paid" },
+  "old_pending.badge.unpaid": { es: "por pagar", pt: "por pagar", en: "unpaid" },
+  "old_pending.confirm": {
+    es: "¿Cancelar pedido #{number}? Esta acción no se puede deshacer.",
+    pt: "Cancelar pedido #{number}? Esta acção não pode ser desfeita.",
+    en: "Cancel order #{number}? This cannot be undone.",
+  },
+  "old_pending.cancel_reason": {
+    es: "Pedido antiguo cancelado por el restaurante",
+    pt: "Pedido antigo cancelado pelo restaurante",
+    en: "Old order cancelled by the restaurant",
+  },
+  "old_pending.toast.success": {
+    es: "Pedido #{number} cancelado",
+    pt: "Pedido #{number} cancelado",
+    en: "Order #{number} cancelled",
+  },
+  "old_pending.toast.error": {
+    es: "No se pudo cancelar el pedido",
+    pt: "Não foi possível cancelar o pedido",
+    en: "Could not cancel the order",
+  },
+  "old_pending.toast.error_generic": {
+    es: "Error al cancelar",
+    pt: "Erro ao cancelar",
+    en: "Cancel failed",
+  },
+
+  "tapToPay.checkout.enable_first": {
+    es: "Active Tap to Pay en Ajustes → Tap to Pay antes de cobrar.",
+    pt: "Active o Tap to Pay em Definições → Tap to Pay antes de cobrar.",
+    en: "Enable Tap to Pay in Settings → Tap to Pay before charging.",
+  },
   "live.alerts.title": { es: "Alertas de pedidos", pt: "Alertas de pedidos", en: "Order alerts" },
   "live.alerts.hint": { es: "Active o desactive el sonido y flash cuando entra un pedido nuevo.", pt: "Active ou desactive o som e flash que avisa quando entra um pedido novo.", en: "Turn sound and flash on or off when a new order arrives." },
   "live.help.aria": { es: "Cómo usar esta pantalla", pt: "Como usar este ecrã", en: "How to use this screen" },

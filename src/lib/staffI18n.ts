@@ -150,6 +150,16 @@ export const STAFF_I18N = {
   "settings.tab.receipt": { es: "Recibo", pt: "Recibo", en: "Receipt" },
   "settings.tab.notif": { es: "Notificaciones", pt: "Notificações", en: "Notifications" },
   "settings.tab.hours": { es: "Horario", pt: "Horário", en: "Hours" },
+  "settings.tab.tap": { es: "Tap to Pay", pt: "Tap to Pay", en: "Tap to Pay" },
+  "settings.toast.saved_memory": {
+    es: "{section} guardado (en memoria)",
+    pt: "{section} guardado (em memória)",
+    en: "{section} saved (in memory)",
+  },
+  "lang.aria": { es: "Idioma", pt: "Idioma", en: "Language" },
+  "lang.changed.es": { es: "Idioma: Español", pt: "Idioma: Espanhol", en: "Language: Spanish" },
+  "lang.changed.pt": { es: "Idioma: Portugués", pt: "Idioma: Português", en: "Language: Portuguese" },
+  "lang.changed.en": { es: "Idioma: Inglés", pt: "Idioma: Inglês", en: "Language: English" },
 
   // --- KDS (cozinha) ---
   "kds.title": { es: "KDS — Cocina", pt: "KDS — Cozinha", en: "KDS — Kitchen" },

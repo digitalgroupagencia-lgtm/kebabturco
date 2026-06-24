@@ -24,6 +24,7 @@ import OfficialSiteQrCard from "@/components/shared/OfficialSiteQrCard";
 import WeeklyHoursEditor from "@/components/panel/WeeklyHoursEditor";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import TapToPaySettingsSection from "@/components/tapToPay/TapToPaySettingsSection";
 
@@ -31,7 +32,7 @@ const PanelSettingsPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { storeId: adminStoreId } = useAdminStoreId();
-  const { t } = useStaffT();
+  const { t, lang } = useStaffT();
   const effectiveStoreId = roleData?.store_id ?? adminStoreId ?? "";
   const [resetOpen, setResetOpen] = useState(false);
   const [storeName, setStoreName] = useState("Minha Loja");
@@ -102,8 +103,8 @@ const PanelSettingsPage = () => {
     }
   }, []);
 
-  const save = (section: string) => {
-    toast.success(`${section} salvas (em memória)`);
+  const save = (sectionKey: "settings.tab.store" | "settings.tab.ops" | "settings.tab.receipt" | "settings.tab.notif") => {
+    toast.success(panelT(lang, "settings.toast.saved_memory", { section: t(sectionKey) }));
   };
 
   return (
@@ -120,7 +121,7 @@ const PanelSettingsPage = () => {
           <TabsTrigger value="ops"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.ops")}</TabsTrigger>
           <TabsTrigger value="receipt"><Receipt className="w-4 h-4 mr-1.5" /> {t("settings.tab.receipt")}</TabsTrigger>
           <TabsTrigger value="notif"><Bell className="w-4 h-4 mr-1.5" /> {t("settings.tab.notif")}</TabsTrigger>
-          <TabsTrigger value="tap"><Smartphone className="w-4 h-4 mr-1.5" /> Tap to Pay</TabsTrigger>
+          <TabsTrigger value="tap"><Smartphone className="w-4 h-4 mr-1.5" /> {t("settings.tab.tap")}</TabsTrigger>
           <TabsTrigger value="hours"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.hours")}</TabsTrigger>
         </TabsList>
 
@@ -149,7 +150,7 @@ const PanelSettingsPage = () => {
                 <Label>{t("settings.store.address")}</Label>
                 <Textarea rows={2} value={storeAddress} onChange={(e) => setStoreAddress(e.target.value)} />
               </div>
-              <Button onClick={() => save("Loja")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+              <Button onClick={() => save("settings.tab.store")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
 
             </CardContent>
           </Card>
@@ -191,7 +192,7 @@ const PanelSettingsPage = () => {
                     placeholder={t("settings.ops.prefix.ph")} maxLength={5} />
                 </div>
               </div>
-              <Button onClick={() => save("Operação")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+              <Button onClick={() => save("settings.tab.ops")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
 
             </CardContent>
           </Card>
@@ -228,7 +229,7 @@ const PanelSettingsPage = () => {
                   onChange={(e) => setTaxRate(Number(e.target.value))} />
                 <p className="text-xs text-muted-foreground mt-1">{t("settings.print.tax.desc")}</p>
               </div>
-              <Button onClick={() => save("Recibo")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+              <Button onClick={() => save("settings.tab.receipt")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
 
             </CardContent>
           </Card>
@@ -272,7 +273,7 @@ const PanelSettingsPage = () => {
                   tenantId={roleData.tenant_id}
                 />
               )}
-              <Button onClick={() => save(t("settings.notif.title"))}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
+              <Button onClick={() => save("settings.tab.notif")}><Save className="w-4 h-4 mr-2" /> {t("common.save")}</Button>
             </CardContent>
           </Card>
         </TabsContent>

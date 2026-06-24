@@ -85,18 +85,15 @@ const PanelFinancePage = () => {
         <div>
           <h1 className="text-xl font-black flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
-            {t("nav.finance", "Recebimentos")}
+            {t("nav.finance")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-            {t(
-              "finance.panel.subtitle",
-              "Veja quanto entrou nos pedidos online, as taxas e quando o dinheiro cai na conta bancária.",
-            )}
+            {t("finance.panel.subtitle")}
           </p>
         </div>
         <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => void load()} disabled={loading}>
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          {t("common.refresh", "Actualizar")}
+          {t("common.refresh")}
         </Button>
       </div>
 
@@ -119,12 +116,9 @@ const PanelFinancePage = () => {
         />
       ) : (
         <div className="rounded-2xl border bg-card p-6 space-y-3 text-sm leading-relaxed">
-          <p className="font-semibold">{t("finance.panel.pending.title", "Recebimentos em configuração")}</p>
+          <p className="font-semibold">{t("finance.panel.pending.title")}</p>
           <p className="text-muted-foreground">
-            {t(
-              "finance.panel.pending.body",
-              "Ainda não há movimentos a mostrar. A equipa Kebab Turco activa a conta bancária e os pagamentos online — quando houver vendas, aparecem aqui automaticamente.",
-            )}
+            {t("finance.panel.pending.body")}
           </p>
         </div>
       )}

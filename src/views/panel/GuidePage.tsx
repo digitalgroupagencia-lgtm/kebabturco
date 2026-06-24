@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BookOpen, Search } from "lucide-react";
-import { RESTAURANT_GUIDE_SECTIONS } from "@/lib/restaurantGuideContent";
+import { getRestaurantGuideSections } from "@/lib/restaurantGuideByLang";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
 
@@ -11,7 +11,8 @@ export default function GuidePage() {
   const { t, lang } = useStaffT();
   const [q, setQ] = useState("");
   const filter = q.trim().toLowerCase();
-  const filtered = RESTAURANT_GUIDE_SECTIONS.map((s) => ({
+  const sections = getRestaurantGuideSections(lang);
+  const filtered = sections.map((s) => ({
     ...s,
     items: filter ? s.items.filter((i) => (i.q + " " + i.a).toLowerCase().includes(filter)) : s.items,
   })).filter((s) => s.items.length > 0);

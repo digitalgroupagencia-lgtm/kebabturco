@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { notifyStaffUiLangChange } from "@/lib/staffUiCopy";
+import { staffT } from "@/lib/staffI18n";
 
 const STAFF_UI_LANG_KEY = "staff-ui-lang";
 
@@ -66,7 +67,7 @@ const StaffLanguageToggle = ({ defaultLang = "es", compact }: Props) => {
         { onConflict: "user_id" },
       );
     }
-    toast.success(next === "es" ? "Idioma: Español" : next === "pt" ? "Idioma: Português" : "Language: English");
+    toast.success(staffT(next, `lang.changed.${next}` as "lang.changed.es"));
   };
 
   const current = OPTIONS.find((o) => o.value === lang)?.label ?? "🌐";
@@ -74,7 +75,7 @@ const StaffLanguageToggle = ({ defaultLang = "es", compact }: Props) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size={compact ? "icon" : "sm"} className="shrink-0" aria-label="Idioma">
+        <Button variant="ghost" size={compact ? "icon" : "sm"} className="shrink-0" aria-label={staffT(lang, "lang.aria")}>
           {compact ? <Languages className="h-4 w-4" /> : <span className="text-sm">{current}</span>}
         </Button>
       </DropdownMenuTrigger>

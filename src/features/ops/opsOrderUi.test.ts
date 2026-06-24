@@ -43,19 +43,25 @@ describe("opsOrderUi", () => {
   });
 
   it("blocks pending takeaway until payment is confirmed", () => {
-    expect(getCompactActionLabel(baseOrder)).toBe(null);
-    expect(getCompactActionLabel({ ...baseOrder, payment_status: "paid" } as PanelOrder)).toBe("Aceitar");
+    expect(getCompactActionLabel(baseOrder, undefined, "pt")).toBe(null);
+    expect(getCompactActionLabel({ ...baseOrder, payment_status: "paid" } as PanelOrder, undefined, "pt")).toBe("Aceitar");
   });
 
   it("shows assign driver label for ready delivery orders", () => {
     expect(
-      getCompactActionLabel({ ...baseOrder, status: "ready", order_type: "delivery" } as PanelOrder, "operator"),
+      getCompactActionLabel({ ...baseOrder, status: "ready", order_type: "delivery" } as PanelOrder, "operator", "pt"),
     ).toBe("Atribuir entregador");
   });
 
   it("shows mark ready label for preparing orders", () => {
     expect(
-      getCompactActionLabel({ ...baseOrder, status: "preparing" } as PanelOrder),
+      getCompactActionLabel({ ...baseOrder, status: "preparing" } as PanelOrder, undefined, "pt"),
     ).toBe("Marcar pronto");
+  });
+
+  it("uses Spanish labels when lang is es", () => {
+    expect(
+      getCompactActionLabel({ ...baseOrder, payment_status: "paid" } as PanelOrder, undefined, "es"),
+    ).toBe("Aceptar");
   });
 });

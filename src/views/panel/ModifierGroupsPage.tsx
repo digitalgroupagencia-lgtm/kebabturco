@@ -208,7 +208,7 @@ export default function ModifierGroupsPage() {
   const saveGroup = async () => {
     if (!storeId || !editingGroup) return;
     if (!groupName.trim()) {
-      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
+      toast.error(panelT(lang, "menu.toast.name_required", { lang: LANG_LABELS[primaryLang] }));
       return;
     }
     const kind = (editingGroup.group_kind || "choice") as ModifierGroupKind;
@@ -267,7 +267,7 @@ export default function ModifierGroupsPage() {
   const saveOption = async () => {
     if (!editingOption?.group_id) return;
     if (!optionName.trim()) {
-      toast.error(`Nome (${LANG_LABELS[primaryLang]}) é obrigatório`);
+      toast.error(panelT(lang, "menu.toast.name_required", { lang: LANG_LABELS[primaryLang] }));
       return;
     }
     const payload = {

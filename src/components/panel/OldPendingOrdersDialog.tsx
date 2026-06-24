@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cancelOrderWithRefund } from "@/services/orderRefund";
+import { useStaffT } from "@/hooks/useStaffT";
+import { formatStaffPanelDateTime, panelT } from "@/lib/staffPanelLocale";
 
 type Row = {
   id: string;
@@ -26,16 +28,8 @@ type Props = {
 
 const STATUSES_OPEN = ["pending", "preparing", "ready", "out_for_delivery"] as const;
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("pt-PT", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
+  const { t, lang } = useStaffT();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -62,18 +56,19 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
   }, [open, load]);
 
   const handleCancel = async (row: Row) => {
-    if (!confirm(`Cancelar pedido #${row.order_number}? Esta acção não pode ser desfeita.`)) return;
+    const confirmMsg = panelT(lang, "old_pending.confirm", { number: row.order_number });
+    if (!confirm(confirmMsg)) return;
     setCancellingId(row.id);
     try {
-      const res = await cancelOrderWithRefund(storeId, row.id, "Pedido antigo cancelado pelo restaurante");
+      const res = await cancelOrderWithRefund(storeId, row.id, t("old_pending.cancel_reason"));
       if (res.success) {
-        toast.success(`Pedido #${row.order_number} cancelado`);
+        toast.success(panelT(lang, "old_pending.toast.success", { number: row.order_number }));
         setRows((prev) => prev.filter((r) => r.id !== row.id));
       } else {
-        toast.error(res.error || "Não foi possível cancelar o pedido");
+        toast.error(res.error || t("old_pending.toast.error"));
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao cancelar");
+      toast.error(e instanceof Error ? e.message : t("old_pending.toast.error_generic"));
     } finally {
       setCancellingId(null);
     }
@@ -85,11 +80,9 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Pedidos pendentes antigos
+            {t("old_pending.title")}
           </DialogTitle>
-          <DialogDescription>
-            Pedidos abertos de dias anteriores que ficaram por resolver. Cancele para limpar a operação.
-          </DialogDescription>
+          <DialogDescription>{t("old_pending.desc")}</DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -97,9 +90,7 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : rows.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-10">
-            Nenhum pedido antigo pendente. 
-          </p>
+          <p className="text-center text-sm text-muted-foreground py-10">{t("old_pending.empty")}</p>
         ) : (
           <div className="space-y-2">
             {rows.map((r) => (
@@ -114,7 +105,7 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
                       {r.status}
                     </span>
                     <span className="text-[10px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                      {r.payment_status === "paid" ? "pago" : "por pagar"}
+                      {r.payment_status === "paid" ? t("old_pending.badge.paid") : t("old_pending.badge.unpaid")}
                     </span>
                     {r.order_type && (
                       <span className="text-[10px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
@@ -123,7 +114,7 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {formatDate(r.created_at)} · {Number(r.total).toFixed(2)}€
+                    {formatStaffPanelDateTime(r.created_at, lang)} · {Number(r.total).toFixed(2)}€
                     {r.customer_name ? ` · ${r.customer_name}` : ""}
                   </p>
                 </div>
@@ -134,7 +125,7 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
                   disabled={cancellingId === r.id}
                   className="shrink-0"
                 >
-                  {cancellingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cancelar"}
+                  {cancellingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.cancel")}
                 </Button>
               </div>
             ))}

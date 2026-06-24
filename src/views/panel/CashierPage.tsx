@@ -212,16 +212,16 @@ const CashierPage = () => {
   return (
     <div className="space-y-6">
       <HowToUsePanel
-        purpose="Controla a abertura e fecho do caixa do dia, e confirma os pagamentos em dinheiro no balcão."
-        whenToUse="Abra ao iniciar o expediente. Feche no fim do dia para conferir o que entrou."
+        purpose={t("howto.cashier.purpose")}
+        whenToUse={t("howto.cashier.when")}
         steps={[
-          "Toque em Abrir caixa e digite o valor inicial (troco).",
-          "Durante o dia, os pedidos pagos em dinheiro caem na lista de Pendentes — confirme cada um.",
-          "No fim do dia, toque Fechar caixa e digite o valor real contado.",
-          "O sistema mostra a diferença entre o esperado e o contado.",
+          t("howto.cashier.step1"),
+          t("howto.cashier.step2"),
+          t("howto.cashier.step3"),
+          t("howto.cashier.step4"),
         ]}
-        howToConfirm="Se o total de vendas no fecho bater com o caixa físico, está certo. Se sobrar ou faltar muito, revise pedidos cancelados."
-        assistantQuestion="Por que existe a tela de Caixa e o que acontece se eu não abrir/fechar?"
+        howToConfirm={t("howto.cashier.confirm")}
+        assistantQuestion={t("howto.cashier.assistant")}
       />
       <PremiumPageHeader
         icon={DollarSign}
