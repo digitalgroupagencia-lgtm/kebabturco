@@ -202,29 +202,68 @@ function finalizeWebDirectResult(payload: ReturnType<typeof parseSendPayload>): 
   return { ok: true, sent: sentWeb, targeted: payload.targeted, sentWeb };
 }
 
+function withChannelCounts(
+  base: PushTestSendResult,
+  payload: ReturnType<typeof parseSendPayload>,
+): PushTestSendResult {
+  return {
+    ...base,
+    sentApns: payload.sentApns ?? 0,
+    sentFcm: payload.sentFcm ?? 0,
+    sentWeb: payload.sentWeb ?? 0,
+    failed: payload.failed ?? payload.errors?.length ?? 0,
+  };
+}
+
+function broadcastDeliveryMessage(payload: ReturnType<typeof parseSendPayload>): string | undefined {
+  const sentApns = payload.sentApns ?? 0;
+  const sentWeb = payload.sentWeb ?? 0;
+  const sentFcm = payload.sentFcm ?? 0;
+
+  if (sentApns === 0 && sentFcm === 0 && sentWeb > 0) {
+    return `A mensagem foi para ${sentWeb} computador/browser — nenhum telemóvel recebeu. No iPhone: abra a app Kebab Turco → Painel → Definições → ligue «Notificações push» e aceite quando o iPhone pedir.`;
+  }
+  if (sentApns > 0 && sentWeb === 0 && sentFcm === 0) {
+    return `Enviado para ${sentApns} iPhone(s). Feche a app ou bloqueie o ecrã para ver o aviso.`;
+  }
+  if (sentApns > 0 && sentWeb > 0) {
+    return `Enviado para ${sentApns} iPhone(s) e ${sentWeb} browser(s). No telemóvel, veja com a app em segundo plano.`;
+  }
+  if (sentFcm > 0) {
+    return `Enviado para ${sentFcm} Android e ${sentApns} iPhone(s).`;
+  }
+  return undefined;
+}
+
 function finalizeBroadcastResult(
   payload: ReturnType<typeof parseSendPayload>,
   emptyMessage: string,
 ): PushTestSendResult {
   const base = finalizeSendResult(payload, emptyMessage);
-  if (!base.ok) return base;
+  if (!base.ok) return withChannelCounts(base, payload);
 
+  const enriched = withChannelCounts(base, payload);
+  const channelMessage = broadcastDeliveryMessage(payload);
   const failed = payload.failed ?? payload.errors?.length ?? 0;
+
   if (failed > 0 || payload.partial) {
     const iosFailed = payload.errors?.filter((e) => e.channel === "ios").length ?? 0;
     return {
-      ...base,
+      ...enriched,
       ok: true,
       partial: true,
-      failed,
       userMessage:
         iosFailed > 0
-          ? `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam — peça para «Registar push» outra vez.`
-          : `Enviado para ${base.sent} dispositivo(s), ${failed} falharam.`,
+          ? `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam — no telemóvel: Definições → Kebab Turco → Notificações (ligar) e registe outra vez na app.`
+          : channelMessage ?? `Enviado para ${base.sent} dispositivo(s), ${failed} falharam.`,
     };
   }
 
-  return base;
+  if (channelMessage) {
+    return { ...enriched, partial: (payload.sentWeb ?? 0) > 0 && (payload.sentApns ?? 0) === 0, userMessage: channelMessage };
+  }
+
+  return enriched;
 }
 
 function finalizeSendResult(
@@ -252,7 +291,44 @@ function finalizeSendResult(
     return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
   }
 
-  return { ok: true, sent, matched, targeted: payload.targeted, errors };
+  return {
+    ok: true,
+    sent,
+    matched,
+    targeted: payload.targeted,
+    errors,
+    sentApns: payload.sentApns,
+    sentFcm: payload.sentFcm,
+    sentWeb: payload.sentWeb,
+  };
+}
+
+export async function fetchStoreStaffPushDeviceCounts(storeId: string): Promise<{
+  ios: number;
+  android: number;
+  web: number;
+}> {
+  const fallback = { ios: 0, android: 0, web: 0 };
+  try {
+    const { data, error } = await supabase
+      .from("push_subscriptions")
+      .select("platform")
+      .eq("store_id", storeId)
+      .eq("customer_phone", "__staff__");
+    if (error || !data) return fallback;
+    return data.reduce(
+      (acc, row) => {
+        const p = (row.platform ?? "web").toLowerCase();
+        if (p === "ios") acc.ios += 1;
+        else if (p === "android") acc.android += 1;
+        else acc.web += 1;
+        return acc;
+      },
+      { ...fallback },
+    );
+  } catch {
+    return fallback;
+  }
 }
 
 export function translateServerVapidReason(reason?: string): string {

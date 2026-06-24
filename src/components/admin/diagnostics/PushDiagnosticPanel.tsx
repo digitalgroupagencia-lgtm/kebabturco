@@ -31,6 +31,7 @@ import {
   sendBroadcastTestPushNotification,
   sendNativeDeviceTestPush,
   fetchServerVapidDiagnostics,
+  fetchStoreStaffPushDeviceCounts,
   type PushTestAudience,
   type PushTestSendResult,
   type ServerVapidDiagnostics,
@@ -69,6 +70,9 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const [testBody, setTestBody] = useState("Se vês isto, as notificações push estão a funcionar.");
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [testResult, setTestResult] = useState<PushTestSendResult | null>(null);
+  const [storeStaffDevices, setStoreStaffDevices] = useState<{ ios: number; android: number; web: number } | null>(
+    null,
+  );
 
   const refreshProbe = useCallback(async () => {
     setRefreshing(true);
@@ -84,8 +88,13 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
     const device = await getLocalDevicePushStatus();
     setDeviceStatus(device);
     setLocalDeviceReady(device.ready);
+    if (storeId) {
+      setStoreStaffDevices(await fetchStoreStaffPushDeviceCounts(storeId));
+    } else {
+      setStoreStaffDevices(null);
+    }
     setRefreshing(false);
-  }, []);
+  }, [storeId]);
 
   useEffect(() => {
     void refreshProbe();
@@ -195,7 +204,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
         toast.success(
           result.partial
             ? (result.userMessage ?? `Enviado com avisos — ${result.sent ?? 0} dispositivo(s)`)
-            : `Broadcast enviado — ${result.sent ?? 0} dispositivo(s)`,
+            : result.userMessage ?? `Broadcast enviado — ${result.sent ?? 0} dispositivo(s)`,
         );
       } else toast.error(result.userMessage ?? result.error ?? "Falha no broadcast");
       void refreshProbe();
@@ -221,7 +230,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       ? "A enviar agora…"
       : testStatus === "success"
         ? testResult?.partial
-          ? "Enviado com avisos"
+          ? "Enviado — ver aviso"
           : "Sucesso — notificação enviada"
         : testStatus === "error"
           ? "Erro no envio"
@@ -371,6 +380,22 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
     <>
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4 text-sm space-y-2">
+          {!isNativeApp ? (
+            <div className="rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs space-y-1">
+              <p className="font-semibold text-amber-900">Está no computador — isto não regista o iPhone</p>
+              <p>
+                «Registar push» aqui só pede permissão ao browser do PC. Para o telemóvel: abra a <strong>app Kebab Turco</strong> no
+                iPhone → <strong>Painel → Definições</strong> → ligue <strong>Notificações push</strong> e aceite quando o iPhone
+                pedir.
+              </p>
+              {storeStaffDevices ? (
+                <p>
+                  Nesta loja: {storeStaffDevices.ios} iPhone(s) · {storeStaffDevices.android} Android ·{" "}
+                  {storeStaffDevices.web} browser(s) registados para a equipa.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <p>
             Estado {isNativeApp ? "deste telemóvel" : "deste browser"}:{" "}
             {localDeviceReady ? (
@@ -389,7 +414,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No computador use «Testar neste browser». Para o iPhone da equipa use «Enviar para todos os dispositivos».
+              No computador, «Enviar para todos» só chega a telemóveis já registados na app. Registe primeiro no iPhone (passos
+              acima).
             </p>
           )}
         </CardContent>
@@ -419,7 +445,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             <div className="flex items-end">
               <Button className="w-full" disabled={subscribeBusy || !storeId} onClick={() => void handleSubscribe()}>
                 {subscribeBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bell className="h-4 w-4 mr-2" />}
-                Registar push
+                {isNativeApp ? "Registar push" : "Registar neste browser (não é o iPhone)"}
               </Button>
             </div>
           </div>
@@ -450,10 +476,26 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             {testResult ? (
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>
-                  Enviados: {testResult.sent ?? 0} · Alvos: {testResult.targeted ?? 0} · Encontrados: {testResult.matched ?? 0}
+                  Enviados: {testResult.sent ?? 0} · Alvos: {testResult.targeted ?? 0} · Encontrados:{" "}
+                  {testResult.matched ?? 0}
+                  {typeof testResult.sentApns === "number" ||
+                  typeof testResult.sentWeb === "number" ||
+                  typeof testResult.sentFcm === "number" ? (
+                    <>
+                      {" "}
+                      · iPhone: {testResult.sentApns ?? 0} · Android: {testResult.sentFcm ?? 0} · Browser:{" "}
+                      {testResult.sentWeb ?? 0}
+                    </>
+                  ) : null}
                 </p>
                 {testResult.userMessage || testResult.error ? (
-                  <p className="text-destructive font-medium">{testResult.userMessage ?? testResult.error}</p>
+                  <p
+                    className={
+                      testResult.partial ? "text-amber-800 font-medium" : "text-destructive font-medium"
+                    }
+                  >
+                    {testResult.userMessage ?? testResult.error}
+                  </p>
                 ) : null}
                 {testResult.errors?.length ? (
                   <pre className="whitespace-pre-wrap break-all rounded-md bg-background p-2 text-[10px]">
@@ -499,8 +541,14 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           </div>
           {!isNativeApp && permission !== "granted" ? (
             <p className="text-xs text-amber-700">
-              Permissão negada neste browser — isso não impede o teste no iPhone. Use o broadcast ou teste directamente
-              na app.
+              Permissão negada neste browser — normal no computador. Isso não regista o iPhone. Use a app no telemóvel
+              (Painel → Definições → Notificações push).
+            </p>
+          ) : null}
+          {!isNativeApp && storeStaffDevices && storeStaffDevices.ios === 0 ? (
+            <p className="text-xs text-destructive font-medium">
+              Nenhum iPhone da equipa registado nesta loja — «Enviar para todos» não pode chegar ao seu telemóvel até
+              ligar notificações na app.
             </p>
           ) : null}
           {isNativeApp && !localDeviceReady ? (
