@@ -276,16 +276,46 @@ function isStaffStoreBroadcast(body: {
   return Boolean(body.storeId && !body.orderId && body.audience !== "marketing");
 }
 
-function authorizeStaffBroadcast(req: Request, body: { orderId?: string; storeId?: string; audience?: string; testDirect?: boolean }): boolean {
-  const internalSecret = Deno.env.get("STAFF_PUSH_INTERNAL_SECRET");
+const STAFF_PUSH_ROLES = new Set([
+  "admin_master",
+  "restaurant_admin",
+  "operator",
+  "cashier",
+  "seller",
+]);
+
+async function authorizeStaffBroadcast(
+  req: Request,
+  body: { orderId?: string; storeId?: string; audience?: string; testDirect?: boolean },
+): Promise<boolean> {
   if (!isStaffStoreBroadcast(body)) return true;
-  if (!internalSecret) return true;
+
+  const internalSecret = Deno.env.get("STAFF_PUSH_INTERNAL_SECRET");
   const headerSecret = req.headers.get("x-staff-push-secret");
-  if (headerSecret === internalSecret) return true;
+  if (internalSecret && headerSecret === internalSecret) return true;
+
   const auth = req.headers.get("Authorization") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (serviceKey && auth.includes(serviceKey)) return true;
-  return false;
+
+  // Painel / app equipa: utilizador autenticado com role de staff pode enviar teste broadcast.
+  if (!internalSecret) return true;
+  if (!auth.startsWith("Bearer ")) return false;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: auth } },
+  });
+  const { data: userData, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userData.user) return false;
+
+  const service = createClient(supabaseUrl, serviceKey);
+  const { data: roles } = await service
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id);
+  return (roles ?? []).some((r) => STAFF_PUSH_ROLES.has(r.role as string));
 }
 
 function buildHealthPayload() {
@@ -363,11 +393,16 @@ Deno.serve(async (req) => {
       requireInteraction,
     } = body;
 
-    if (!authorizeStaffBroadcast(req, body)) {
-      return new Response(JSON.stringify({ error: "Unauthorized staff push" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!(await authorizeStaffBroadcast(req, body))) {
+      return new Response(
+        JSON.stringify({
+          error: "Sem autorização para enviar alertas da equipa. Inicie sessão no painel ou configure o segredo interno.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");

@@ -15,6 +15,7 @@ export type PushLogStage =
   | "subscription_parse"
   | "db_register"
   | "test_send"
+  | "broadcast_send"
   | "unsubscribe";
 
 export type PushLogEntry = DiagnosticLogEntry & {

@@ -34,6 +34,22 @@ const SERVER_VAPID_REASON_PT: Record<string, string> = {
     "O servidor não tem as chaves VAPID (pública + privada). Configure nos segredos da Lovable Cloud.",
 };
 
+function formatInvokeError(error: { message?: string; context?: unknown }): string {
+  const ctx = error.context as { body?: string; status?: number } | undefined;
+  if (ctx?.body) {
+    try {
+      const parsed = JSON.parse(ctx.body) as { error?: string };
+      if (parsed.error) return parsed.error;
+    } catch {
+      if (ctx.body.length < 280) return ctx.body;
+    }
+  }
+  if (error.message?.includes("non-2xx")) {
+    return "O servidor recusou o envio (sessão expirada ou sem permissão). Saia e entre outra vez no painel.";
+  }
+  return error.message ?? "Erro ao contactar o servidor de push";
+}
+
 export function translateServerVapidReason(reason?: string): string {
   if (!reason) return "Chaves de envio não configuradas no servidor";
   return SERVER_VAPID_REASON_PT[reason] ?? reason;
@@ -130,11 +146,13 @@ async function invokeStoreBroadcast(opts: {
   });
 
   if (error) {
+    const userMessage = formatInvokeError(error);
     pushLog("test", "broadcast_send", "error", "Função de envio push falhou no servidor", {
       message: error.message,
+      userMessage,
       audience: audience ?? "staff",
     });
-    return { ok: false, error: error.message, userMessage: "Erro ao contactar o servidor de push" };
+    return { ok: false, error: error.message, userMessage };
   }
 
   const payload = data as {
@@ -285,11 +303,13 @@ export async function sendTestPushNotification(opts: {
     });
 
     if (error) {
+      const userMessage = formatInvokeError(error);
       pushLog("test", "test_send", "error", "Função de envio push falhou no servidor", {
         message: error.message,
+        userMessage,
         name: error.name,
       });
-      return { ok: false, error: error.message, userMessage: "Erro ao contactar o servidor de push" };
+      return { ok: false, error: error.message, userMessage };
     }
 
     const payload = data as {
