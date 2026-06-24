@@ -1,0 +1,1 @@
+UPDATE public.stores SET stripe_connect_account_id = NULL, stripe_connect_environment = 'test', updated_at = now() WHERE id = '22222222-2222-2222-2222-222222222222';
