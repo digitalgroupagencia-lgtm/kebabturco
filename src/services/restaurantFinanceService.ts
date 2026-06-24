@@ -31,7 +31,25 @@ export type RestaurantFinanceSnapshot = {
   nextPayoutAmountCents: number | null;
   ibanLast4: string | null;
   simulated: boolean;
+  /** Saldo real da Stripe indisponível — não usar totais do extrato como saldo. */
+  liveDataUnavailable?: boolean;
 };
+
+const FINANCE_SNAPSHOT_TIMEOUT_MS = 20_000;
+
+function unavailableFinanceSnapshot(): RestaurantFinanceSnapshot {
+  return {
+    availableCents: 0,
+    pendingCents: 0,
+    payoutInterval: "weekly",
+    payoutWeekday: "segunda-feira",
+    nextPayoutDate: null,
+    nextPayoutAmountCents: null,
+    ibanLast4: null,
+    simulated: false,
+    liveDataUnavailable: true,
+  };
+}
 
 type LedgerDbRow = {
   id: string;
@@ -152,12 +170,16 @@ export async function syncFinancePayoutsFromStripe(storeId: string): Promise<num
 
 export async function fetchRestaurantFinanceSnapshot(
   storeId: string,
-  ledgerNetCents: number,
+  ledgerNetCents = 0,
 ): Promise<RestaurantFinanceSnapshot | null> {
   try {
-    const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+    const invokePromise = supabase.functions.invoke("stripe-connect-onboard", {
       body: { storeId, mode: "finance_snapshot", ledgerNetCents },
     });
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("finance_snapshot_timeout")), FINANCE_SNAPSHOT_TIMEOUT_MS);
+    });
+    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
     if (error || !data || typeof data !== "object") {
       throw error ?? new Error("snapshot_unavailable");
     }
@@ -166,16 +188,7 @@ export async function fetchRestaurantFinanceSnapshot(
     }
     return data as RestaurantFinanceSnapshot;
   } catch {
-    return {
-      availableCents: Math.max(0, ledgerNetCents),
-      pendingCents: 0,
-      payoutInterval: "weekly",
-      payoutWeekday: "segunda-feira",
-      nextPayoutDate: null,
-      nextPayoutAmountCents: ledgerNetCents > 0 ? ledgerNetCents : null,
-      ibanLast4: null,
-      simulated: true,
-    };
+    return unavailableFinanceSnapshot();
   }
 }
 

@@ -1591,7 +1591,7 @@ export async function handleStripeConnectRequest(
     const ledgerNetCents = Number(body.ledgerNetCents) || 0;
     if (!accountId) {
       return json({
-        availableCents: Math.max(0, ledgerNetCents),
+        availableCents: 0,
         pendingCents: 0,
         payoutInterval: "weekly",
         payoutWeekday: "segunda-feira",
@@ -1599,6 +1599,7 @@ export async function handleStripeConnectRequest(
         nextPayoutAmountCents: null,
         ibanLast4: store.stripe_iban_last4 ?? null,
         simulated: true,
+        liveDataUnavailable: true,
       });
     }
     const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });

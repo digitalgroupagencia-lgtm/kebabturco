@@ -107,6 +107,11 @@ export default function RestaurantFinanceDashboard({
   const nextPayout = snapshot?.nextPayoutAmountCents ?? null;
   const nextDate = snapshot?.nextPayoutDate ?? null;
   const bankLast4 = snapshot?.ibanLast4 ?? ibanLast4 ?? null;
+  const balanceUnavailable = Boolean(snapshot?.liveDataUnavailable);
+  const paidPayoutsTotal = payouts
+    .filter((p) => p.status === "paid")
+    .reduce((s, p) => s + p.amountCents, 0);
+  const showNextDeposit = available > 0 && nextPayout != null && nextPayout > 0;
 
   const periodNetReceived = filteredMovements
     .filter((m) => m.kind === "payment")
@@ -134,6 +139,11 @@ export default function RestaurantFinanceDashboard({
           <CalendarClock className="h-3.5 w-3.5 shrink-0" />
           {payoutScheduleText(snapshot)}
         </p>
+        {balanceUnavailable && (
+          <p className="mt-2 text-amber-800 dark:text-amber-200">
+            O saldo em tempo real está temporariamente indisponível. Os depósitos já feitos aparecem na lista abaixo.
+          </p>
+        )}
       </div>
 
       <EqualCardGrid cols={3}>
@@ -141,8 +151,16 @@ export default function RestaurantFinanceDashboard({
           icon={PiggyBank}
           tone="success"
           label="Disponível para repasse"
-          value={`${formatEur(available)}€`}
-          sub="Na sua conta de recebimentos"
+          value={balanceUnavailable ? "—" : `${formatEur(available)}€`}
+          sub={
+            balanceUnavailable
+              ? "A consultar conta de recebimentos"
+              : available > 0
+                ? "Na sua conta de recebimentos"
+                : paidPayoutsTotal > 0
+                  ? "Já enviado — nada pendente"
+                  : "Sem saldo pendente"
+          }
         />
         <PremiumMetricCard
           icon={Timer}
@@ -155,8 +173,14 @@ export default function RestaurantFinanceDashboard({
           icon={Landmark}
           tone="primary"
           label="Próximo depósito no banco"
-          value={nextPayout != null && nextPayout > 0 ? `${formatEur(nextPayout)}€` : "—"}
-          sub={nextDate ? `Previsão: ${formatShortDate(nextDate)}` : "Assim que houver saldo"}
+          value={showNextDeposit ? `${formatEur(nextPayout)}€` : "—"}
+          sub={
+            showNextDeposit && nextDate
+              ? `Previsão: ${formatShortDate(nextDate)}`
+              : paidPayoutsTotal > 0
+                ? "Consulte os depósitos já feitos abaixo"
+                : "Assim que houver saldo"
+          }
         />
       </EqualCardGrid>
 

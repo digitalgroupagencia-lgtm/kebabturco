@@ -45,18 +45,21 @@ const PanelFinancePage = () => {
         fetchStoreFinancialProfile(storeId).catch(() => null),
         fetchFinanceMovements(storeId),
       ]);
-      if (isStripeConnectReady(profile)) {
-        await syncFinancePayoutsFromStripe(storeId);
-      }
-      const po = await fetchFinancePayouts(storeId);
+      const connectReady = isStripeConnectReady(profile);
+      const syncPromise = connectReady
+        ? syncFinancePayoutsFromStripe(storeId).catch(() => 0)
+        : Promise.resolve(0);
+      const snapPromise = connectReady
+        ? fetchRestaurantFinanceSnapshot(storeId)
+        : Promise.resolve(null);
+      await syncPromise;
+      const [po, snap] = await Promise.all([fetchFinancePayouts(storeId), snapPromise]);
       setMovements(mv);
       setPayouts(po);
       setIbanLast4(profile?.stripe_iban_last4 ?? null);
       setBusinessName(profile?.stripe_business_name ?? null);
       setLastPayoutAt(profile?.stripe_last_payout_at ?? null);
-      setPaymentsActive(isStripeConnectReady(profile));
-      const ledgerNet = mv.reduce((s, m) => s + m.youReceiveCents, 0);
-      const snap = await fetchRestaurantFinanceSnapshot(storeId, ledgerNet);
+      setPaymentsActive(connectReady);
       setFinanceSnapshot(snap);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));
