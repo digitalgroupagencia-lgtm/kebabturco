@@ -18,7 +18,7 @@ function clearRotateClasses() {
   document.body.style.removeProperty("--fl-h");
 }
 
-/** Só o totem cliente usa rotate CSS — painel admin NUNCA (viewport ficava estreito). */
+/** Totem em landscape físico → CSS vertical; painel admin em portrait → CSS horizontal. */
 function resolveRotateMode(
   portraitLock: boolean,
   landscapeLock: boolean,
@@ -26,7 +26,7 @@ function resolveRotateMode(
   w: number,
   h: number,
 ): RotateMode {
-  if (landscapeLock) return "none";
+  if (landscapeLock && touch && h > w) return "fp";
   if (portraitLock && touch && w > h && w >= 600) return "fp";
   return "none";
 }
@@ -41,7 +41,7 @@ function applyRotateMode(mode: RotateMode, w: number, h: number) {
 
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
- * Admin/painel: lock landscape nativo — sem rotate CSS (layout igual ao desktop).
+ * Admin/painel: lock landscape nativo quando possível; em telemóvel vertical usa rotate CSS.
  */
 export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();

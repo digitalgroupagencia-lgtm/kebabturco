@@ -1,18 +1,15 @@
 import { useScreenOrientationLock } from "@/hooks/useScreenOrientationLock";
-import StaffLandscapePrompt from "@/components/StaffLandscapePrompt";
 
 /**
  * Orientação por área:
  * - Cliente / entregador / login equipa → vertical
- * - Admin / painel / KDS → horizontal real (layout largo como desktop)
+ * - Admin / painel / KDS → horizontal (rotação automática no telemóvel)
  */
 export default function ScreenOrientationEffect() {
   useScreenOrientationLock();
 
   return (
-    <>
-      <StaffLandscapePrompt />
-      <style>{`
+    <style>{`
         body.fp-rotate {
           overflow: hidden !important;
           position: fixed !important;
@@ -36,6 +33,5 @@ export default function ScreenOrientationEffect() {
           min-height: 100dvh;
         }
       `}</style>
-    </>
   );
 }
