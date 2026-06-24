@@ -147,10 +147,8 @@ workflows:
 
     environment:
       ios_signing:
-        provisioning_profiles:
-          - kebabturco_appstore
-        certificates:
-          - kebabturco_dist
+        distribution_type: app_store
+        bundle_identifier: net.kebabturco.app
       vars:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
@@ -177,35 +175,9 @@ workflows:
           set -euo pipefail
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles \
-            --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
-            --archive-method app-store
-
-      - name: Verificar perfil App Store (push, sem Tap to Pay)
-        script: |
-          set +e
-          echo "Perfis instalados após use-profiles:"
-          for dir in \
-            "$HOME/Library/MobileDevice/Provisioning Profiles" \
-            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
-            for p in "$dir"/*.mobileprovision "$dir"/*.provisionprofile; do
-              [ -f "$p" ] || continue
-              DECODED=$(security cms -D -i "$p" 2>/dev/null)
-              NAME=$(echo "$DECODED" | plutil -extract Name raw - 2>/dev/null)
-              APP_ID=$(echo "$DECODED" | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
-              echo "  · $NAME → $APP_ID"
-              echo "$DECODED" | plutil -p - 2>/dev/null | grep -E 'aps-environment|proximity-reader' || true
-            done
-          done
 
       - name: Criar pacote para a App Store
-        script: |
-          set -eo pipefail
-          xcode-project build-ipa \
-            --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
-            --scheme "$XCODE_SCHEME" \
-            --config Release \
-            2>&1 | tee /tmp/xcodebuild-build-ipa.log
+        script: bash scripts/codemagic-ios-appstore-build.sh
 
     artifacts:
       - build/ios/ipa/*.ipa
