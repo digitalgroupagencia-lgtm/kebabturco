@@ -1,5 +1,6 @@
--- Limpar tokens iPhone da equipa (correr no SQL Editor se a Apple recusar o token).
--- Depois: desinstalar app no iPhone, reinstalar .ipa, Registar push.
+-- Limpar tokens iPhone da equipa antes de voltar a registar.
+-- App Store: APNS_USE_SANDBOX=false na Lovable + Publish, depois instalar da loja, abrir app, Registar push.
+-- Development (.ipa): APNS_USE_SANDBOX=true.
 
 DELETE FROM public.push_subscriptions
 WHERE platform = 'ios'

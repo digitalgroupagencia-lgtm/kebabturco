@@ -388,6 +388,16 @@ function buildHealthPayload() {
     apnsConfigured: Boolean(apns),
     apnsTopic: apns?.topic ?? null,
     apnsSandbox: apns?.useSandbox ?? null,
+    apnsPrimaryHost: apns
+      ? apns.useSandbox
+        ? "api.sandbox.push.apple.com"
+        : "api.push.apple.com"
+      : null,
+    apnsAlternateHost: apns
+      ? apns.useSandbox
+        ? "api.push.apple.com"
+        : "api.sandbox.push.apple.com"
+      : null,
   };
 }
 

@@ -261,6 +261,18 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           </div>
         </div>
       ) : null}
+      {serverVapid && serverApnsOk && isNativeApp && serverVapid.apnsSandbox === true ? (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">Servidor em modo teste (.ipa)</p>
+            <p className="text-xs mt-1 opacity-90">
+              Se instalou a app pela <strong>App Store</strong>, na Lovable defina APNS_USE_SANDBOX=false, Publish, e
+              volte a «Registar push» no telemóvel.
+            </p>
+          </div>
+        </div>
+      ) : null}
       {serverVapid && serverApnsOk && isNativeApp && serverVapid.apnsSandbox === false ? (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
           <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
