@@ -113,7 +113,10 @@ const SplashScreen = () => {
         <div className="splash-shimmer absolute inset-0" />
       </div>
 
-      <div className="absolute bottom-4 left-0 right-0 px-6">
+      <div
+        className="absolute left-0 right-0 px-4"
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
         <InstallAppButton lang={lang} />
       </div>
     </div>

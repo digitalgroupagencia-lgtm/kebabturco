@@ -265,8 +265,8 @@ const OrderTypeScreen = () => {
       />
 
       <div
-        className="shrink-0 px-6 pt-6 mt-auto space-y-4"
-        style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+        className="shrink-0 px-4 pt-4 mt-auto space-y-3 [@media(hover:hover)_and_(pointer:fine)]:px-6"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
       >
         <InstallAppButton lang={lang} variant="subtle" />
         <p className="text-center text-[9px] uppercase tracking-[0.22em] text-muted-foreground/30 font-medium pb-1">

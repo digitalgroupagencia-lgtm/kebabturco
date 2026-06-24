@@ -143,8 +143,8 @@ const LanguageScreen = () => {
       </div>
 
       <div
-        className="shrink-0 px-6 pt-2 space-y-2"
-        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+        className="shrink-0 px-4 pt-2 space-y-2 [@media(hover:hover)_and_(pointer:fine)]:px-6"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
       >
         <InstallAppButton lang={primaryLang} />
         <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-bold pb-1">
