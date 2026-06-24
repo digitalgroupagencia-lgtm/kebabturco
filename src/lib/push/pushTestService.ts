@@ -105,6 +105,9 @@ function parseSendPayload(data: unknown): {
 }
 
 function apnsErrorUserMessage(message: string): string {
+  if (/BadEnvironmentKeyInToken/i.test(message)) {
+    return "A Apple recusou o iPhone porque o token não combina com o modo teste/loja. Desinstale a app, reinstale o ficheiro .ipa de teste, ligue notificações em Definições → Kebab Turco, e registe outra vez na app (Painel → Definições).";
+  }
   if (/DeviceTokenNotForTopic/i.test(message)) {
     return "O identificador da app no servidor não coincide com o iPhone. Confirme que a chave Apple é para net.kebabturco.app.";
   }
@@ -248,13 +251,19 @@ function finalizeBroadcastResult(
 
   if (failed > 0 || payload.partial) {
     const iosFailed = payload.errors?.filter((e) => e.channel === "ios").length ?? 0;
+    const iosErr = payload.errors?.find((e) => e.channel === "ios");
+    const iosHint =
+      iosErr && /BadEnvironmentKeyInToken|BadDeviceToken/i.test(iosErr.message)
+        ? apnsErrorUserMessage(iosErr.message)
+        : null;
     return {
       ...enriched,
       ok: true,
       partial: true,
       userMessage:
         iosFailed > 0
-          ? `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam — no telemóvel: Definições → Kebab Turco → Notificações (ligar) e registe outra vez na app.`
+          ? iosHint ??
+            `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam — no telemóvel: Definições → Kebab Turco → Notificações (ligar) e registe outra vez na app.`
           : channelMessage ?? `Enviado para ${base.sent} dispositivo(s), ${failed} falharam.`,
     };
   }

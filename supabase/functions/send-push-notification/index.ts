@@ -19,7 +19,9 @@ function isInvalidPushTokenError(message: string, status?: number): boolean {
     status === 403 ||
     status === 404 ||
     status === 410 ||
-    /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|BadDeviceToken|DeviceTokenNotForTopic/i.test(message)
+    /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|BadDeviceToken|BadEnvironmentKeyInToken|DeviceTokenNotForTopic/i.test(
+      message,
+    )
   );
 }
 
@@ -287,6 +289,7 @@ async function sendApns(
     if (res.status === 400 && /DeviceTokenNotForTopic/i.test(text)) break;
     if (!opts?.tryBothHosts) break;
     if (res.status === 400 && /BadDeviceToken/i.test(text)) continue;
+    if (res.status === 403 && /BadEnvironmentKeyInToken/i.test(text)) continue;
     if (res.status === 410) break;
   }
 
@@ -540,7 +543,8 @@ Deno.serve(async (req) => {
     const errors: { endpoint: string; status?: number; message: string; channel: string }[] = [];
 
     let apnsDeliveryNote: string | undefined;
-    const apnsTryBothHosts = Boolean(pushDiagnostic && testDirect && nativeDirectToken);
+    // Sempre tentar sandbox + produção no iOS — corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
+    const apnsTryBothHosts = true;
 
     for (const sub of subs) {
       const platform = (sub.platform ?? "web").toLowerCase();
