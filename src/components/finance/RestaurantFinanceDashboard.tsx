@@ -73,8 +73,31 @@ export default function RestaurantFinanceDashboard({
   businessName,
   lastPayoutAt,
 }: Props) {
-  const analytics = useMemo(() => buildFinanceAnalytics(movements), [movements]);
+  const [period, setPeriod] = useState<PeriodKey>("30d");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
+  const { start, end } = useMemo(
+    () => rangeForPeriod(period, customStart, customEnd),
+    [period, customStart, customEnd],
+  );
+
+  const filteredMovements = useMemo(() => {
+    if (!start && !end) return movements;
+    return movements.filter((m) => {
+      const t = new Date(m.createdAt).getTime();
+      if (start && t < start.getTime()) return false;
+      if (end && t > end.getTime()) return false;
+      return true;
+    });
+  }, [movements, start, end]);
+
+  const analytics = useMemo(() => buildFinanceAnalytics(filteredMovements), [filteredMovements]);
+
+  const periodTotal = filteredMovements
+    .filter((m) => m.kind === "payment")
+    .reduce((s, m) => s + m.customerPaidCents, 0);
+  const periodCount = filteredMovements.filter((m) => m.kind === "payment").length;
   const totalCustomerPaid = movements
     .filter((m) => m.kind === "payment")
     .reduce((s, m) => s + m.customerPaidCents, 0);
@@ -84,6 +107,17 @@ export default function RestaurantFinanceDashboard({
   const nextPayout = snapshot?.nextPayoutAmountCents ?? null;
   const nextDate = snapshot?.nextPayoutDate ?? null;
   const bankLast4 = snapshot?.ibanLast4 ?? ibanLast4 ?? null;
+
+  const periodLabel =
+    period === "today"
+      ? "Hoje"
+      : period === "7d"
+        ? "Últimos 7 dias"
+        : period === "30d"
+          ? "Últimos 30 dias"
+          : period === "all"
+            ? "Tudo"
+            : "Personalizado";
 
   return (
     <div className="space-y-5">
