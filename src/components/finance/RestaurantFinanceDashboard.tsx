@@ -107,7 +107,6 @@ export default function RestaurantFinanceDashboard({
   const nextPayout = snapshot?.nextPayoutAmountCents ?? null;
   const nextDate = snapshot?.nextPayoutDate ?? null;
   const bankLast4 = snapshot?.ibanLast4 ?? ibanLast4 ?? null;
-  const balanceUnavailable = Boolean(snapshot?.liveDataUnavailable);
   const paidPayoutsTotal = payouts
     .filter((p) => p.status === "paid")
     .reduce((s, p) => s + p.amountCents, 0);
@@ -139,11 +138,6 @@ export default function RestaurantFinanceDashboard({
           <CalendarClock className="h-3.5 w-3.5 shrink-0" />
           {payoutScheduleText(snapshot)}
         </p>
-        {balanceUnavailable && (
-          <p className="mt-2 text-amber-800 dark:text-amber-200">
-            O saldo em tempo real está temporariamente indisponível. Os depósitos já feitos aparecem na lista abaixo.
-          </p>
-        )}
       </div>
 
       <EqualCardGrid cols={3}>
@@ -151,15 +145,13 @@ export default function RestaurantFinanceDashboard({
           icon={PiggyBank}
           tone="success"
           label="Disponível para repasse"
-          value={balanceUnavailable ? "—" : `${formatEur(available)}€`}
+          value={`${formatEur(available)}€`}
           sub={
-            balanceUnavailable
-              ? "A consultar conta de recebimentos"
-              : available > 0
-                ? "Na sua conta de recebimentos"
-                : paidPayoutsTotal > 0
-                  ? "Já enviado — nada pendente"
-                  : "Sem saldo pendente"
+            available > 0
+              ? "Na sua conta de recebimentos"
+              : paidPayoutsTotal > 0
+                ? "Já enviado — nada pendente"
+                : "Sem saldo pendente"
           }
         />
         <PremiumMetricCard
@@ -173,7 +165,7 @@ export default function RestaurantFinanceDashboard({
           icon={Landmark}
           tone="primary"
           label="Próximo depósito no banco"
-          value={showNextDeposit ? `${formatEur(nextPayout)}€` : "—"}
+          value={`${formatEur(showNextDeposit && nextPayout != null ? nextPayout : 0)}€`}
           sub={
             showNextDeposit && nextDate
               ? `Previsão: ${formatShortDate(nextDate)}`
