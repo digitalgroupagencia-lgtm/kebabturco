@@ -26,6 +26,7 @@ import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/st
 import { nav } from "@/lib/navPaths";
 import {
   registerStaffGoogleLoginWithRetry,
+  userHasAnyStaffRole,
   userHasRoleAtStore,
   userSignedInWithGoogle,
   type StaffGoogleLoginStatus,
@@ -66,7 +67,8 @@ const StaffEmailLoginScreen = () => {
   const [staffAccessLoading, setStaffAccessLoading] = useState(false);
 
   const googleOAuthReturn =
-    hasStaffGoogleLoginIntent() || Boolean(user && userSignedInWithGoogle(user) && !roleData?.role);
+    (hasStaffGoogleLoginIntent() && !roleData?.role) ||
+    Boolean(user && userSignedInWithGoogle(user) && !roleData?.role);
 
   const accessFlowActive =
     googleOAuthReturn ||
@@ -82,11 +84,15 @@ const StaffEmailLoginScreen = () => {
     (staffAccessStatus === "pending" || staffAccessLoading || (googleOAuthReturn && staffAccessStatus !== "active"));
 
   useEffect(() => {
-    if (authLoading || roleLoading || !user) return;
-    if (accessFlowActive) return;
+    if (!roleData?.role) return;
+    if (hasStaffGoogleLoginIntent()) consumeStaffGoogleLoginIntent();
+    setStaffAccessLoading(false);
+    setStaffAccessStatus("active");
+  }, [roleData?.role]);
 
-    const role = roleData?.role as StaffRole | undefined;
-    if (!role) return;
+  useEffect(() => {
+    if (authLoading || roleLoading || !user) return;
+    if (!roleData?.role) return;
 
     void (async () => {
       if (nextParam) {
@@ -103,11 +109,14 @@ const StaffEmailLoginScreen = () => {
         navigate(resolveStaffLoginDestination(role), { replace: true });
       }
     })();
-  }, [authLoading, roleLoading, user, roleData?.role, navigate, accessFlowActive, nextParam]);
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, nextParam]);
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
-    if (roleData?.role) return;
+    if (roleData?.role) {
+      consumeStaffGoogleLoginIntent();
+      return;
+    }
     if (storeLoading) return;
 
     let cancelled = false;
@@ -116,7 +125,9 @@ const StaffEmailLoginScreen = () => {
     void (async () => {
       try {
         const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
-        const alreadyAtStore = await userHasRoleAtStore(user.id, resolvedStoreId);
+        const alreadyAtStore =
+          (await userHasRoleAtStore(user.id, resolvedStoreId)) ||
+          (await userHasAnyStaffRole(user.id));
         if (alreadyAtStore) {
           consumeStaffGoogleLoginIntent();
           if (!cancelled) setStaffAccessStatus("active");

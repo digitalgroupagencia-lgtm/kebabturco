@@ -9,6 +9,7 @@ import {
 } from "@/lib/staffGoogleLoginIntent";
 import {
   registerStaffGoogleLoginWithRetry,
+  userHasAnyStaffRole,
   userHasRoleAtStore,
   userSignedInWithGoogle,
 } from "@/services/staffGoogleLogin";
@@ -36,7 +37,9 @@ export default function StaffGoogleLoginRegistrar() {
     void (async () => {
       try {
         const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
-        const alreadyAtStore = await userHasRoleAtStore(user.id, resolvedStoreId);
+        const alreadyAtStore =
+          (await userHasRoleAtStore(user.id, resolvedStoreId)) ||
+          (await userHasAnyStaffRole(user.id));
         if (alreadyAtStore) {
           consumeStaffGoogleLoginIntent();
           return;

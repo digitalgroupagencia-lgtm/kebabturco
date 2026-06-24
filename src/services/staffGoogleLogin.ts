@@ -32,6 +32,14 @@ export function userSignedInWithGoogle(user: {
 }
 
 export async function userHasRoleAtStore(userId: string, storeId: string): Promise<boolean> {
+  const { data: master, error: masterError } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role", "admin_master")
+    .maybeSingle();
+  if (!masterError && master) return true;
+
   const { data, error } = await supabase
     .from("user_roles")
     .select("id")
@@ -40,6 +48,16 @@ export async function userHasRoleAtStore(userId: string, storeId: string): Promi
     .maybeSingle();
   if (error) return false;
   return Boolean(data);
+}
+
+export async function userHasAnyStaffRole(userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .limit(1);
+  if (error) return false;
+  return Boolean(data?.length);
 }
 
 export async function registerStaffGoogleLogin(storeId: string): Promise<{
