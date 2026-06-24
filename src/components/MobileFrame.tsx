@@ -21,7 +21,7 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
           className="pointer-events-none absolute top-3 left-1/2 z-20 hidden h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-black [@media(hover:hover)_and_(pointer:fine)]:block"
           aria-hidden
         />
-        <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden [@media(hover:hover)_and_(pointer:fine)]:overflow-hidden [@media(hover:hover)_and_(pointer:fine)]:rounded-[2.3rem] [@media(hover:hover)_and_(pointer:fine)]:bg-background">
+        <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden [@media(hover:hover)_and_(pointer:fine)]:rounded-[2.3rem] [@media(hover:hover)_and_(pointer:fine)]:bg-background [@media(hover:hover)_and_(pointer:fine)]:pb-6">
           <AdminMasterStorefrontBack />
           <div
             aria-hidden

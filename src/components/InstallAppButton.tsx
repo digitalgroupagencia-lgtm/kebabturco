@@ -42,9 +42,7 @@ const InstallAppButton = ({ lang = "es", variant = "primary" }: Props) => {
     : "text-[13px] font-bold leading-tight truncate max-w-full";
 
   return (
-    <div
-      className="w-full max-w-[340px] mx-auto px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] [@media(hover:hover)_and_(pointer:fine)]:pb-6"
-    >
+    <div className="w-full max-w-[340px] mx-auto px-1">
       <div className="grid grid-cols-2 gap-2.5 w-full items-stretch">
         <a
           href={APP_STORE_URL}

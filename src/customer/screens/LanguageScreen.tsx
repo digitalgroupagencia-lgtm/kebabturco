@@ -15,6 +15,7 @@ import flagUs from "@/assets/flag-us.png";
 import flagEs from "@/assets/flag-es.png";
 import flagFr from "@/assets/flag-fr.png";
 import CustomerLanguageSkeleton from "@/customer/components/CustomerLanguageSkeleton";
+import { STOREFRONT_FOOTER_WRAP_CLASS } from "@/lib/storefrontFooter";
 
 const FALLBACK_FLAG: Record<string, string> = {
   pt: flagBr,
@@ -72,7 +73,7 @@ const LanguageScreen = () => {
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background"
+      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div
@@ -109,21 +110,23 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      {/* Bandeiras logo abaixo do título — tamanho original */}
-      <div className="flex items-center justify-center px-4 pt-2 pb-1 w-full shrink-0 flex-1 min-h-0">
+      {/* Bandeiras — altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
+      <div className="flex min-h-0 items-center justify-center overflow-hidden px-4 py-2 w-full">
         <div
-          className="flex flex-row items-start justify-center w-full max-w-md flex-nowrap"
+          className="flex flex-row items-center justify-center w-full max-w-md flex-nowrap"
           style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
         >
           {langs.map((code) => {
             const icon = langIcons[code] || FALLBACK_FLAG[code];
             const label = LANG_LABELS[code];
+            const flagMax =
+              langs.length >= 4 ? "max-w-[88px]" : langs.length === 3 ? "max-w-[110px]" : "max-w-[148px]";
             return (
               <button
                 key={code}
                 type="button"
                 onClick={() => handleSelect(code)}
-                className="active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0"
+                className={`active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0 ${flagMax}`}
                 aria-label={label}
               >
                 <div className="w-full aspect-square flex items-center justify-center">
@@ -142,10 +145,7 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      <div
-        className="shrink-0 px-4 pt-2 space-y-2 [@media(hover:hover)_and_(pointer:fine)]:px-6"
-        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-      >
+      <div className={`${STOREFRONT_FOOTER_WRAP_CLASS} space-y-2`}>
         <InstallAppButton lang={primaryLang} />
         <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-bold pb-1">
           Desenvolvido por Euro Business Group

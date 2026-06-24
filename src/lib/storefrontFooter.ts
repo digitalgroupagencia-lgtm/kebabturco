@@ -1,0 +1,13 @@
+/** Rodapé das páginas iniciais — margem extra no preview desktop (moldura arredondada). */
+export const STOREFRONT_FOOTER_PAD_CLASS =
+  "pb-[max(1.25rem,env(safe-area-inset-bottom))] [@media(hover:hover)_and_(pointer:fine)]:pb-10";
+
+export const STOREFRONT_FOOTER_WRAP_CLASS = `shrink-0 px-4 pt-2 [@media(hover:hover)_and_(pointer:fine)]:px-6 ${STOREFRONT_FOOTER_PAD_CLASS}`;
+
+/** Para rodapés com position absolute (ex.: splash). */
+export const STOREFRONT_FOOTER_BOTTOM_STYLE = {
+  bottom: "max(1.25rem, env(safe-area-inset-bottom))",
+} as const;
+
+export const STOREFRONT_FOOTER_BOTTOM_CLASS =
+  "[@media(hover:hover)_and_(pointer:fine)]:!bottom-10";

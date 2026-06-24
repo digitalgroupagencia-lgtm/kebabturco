@@ -7,6 +7,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import InstallAppButton from "@/components/InstallAppButton";
 import CustomerStoreSkeleton from "@/customer/components/CustomerStoreSkeleton";
 import { ChevronRight, MapPin, Store as StoreIcon } from "lucide-react";
+import { STOREFRONT_FOOTER_WRAP_CLASS } from "@/lib/storefrontFooter";
 
 const TITLE: Record<string, string> = {
   pt: "Escolha a unidade",
@@ -111,10 +112,7 @@ const StoreSelectionScreen = () => {
         ))}
       </div>
 
-      <div
-        className="shrink-0 px-4 space-y-3"
-        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-      >
+      <div className={`${STOREFRONT_FOOTER_WRAP_CLASS} space-y-3`}>
         <InstallAppButton lang={lang} />
         <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           {brandName}

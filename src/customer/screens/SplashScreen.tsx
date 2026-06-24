@@ -9,6 +9,10 @@ import CustomerSplashSkeleton from "@/customer/components/CustomerSplashSkeleton
 import { hasMesaQrInUrl } from "@/lib/customerSession";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import { nav } from "@/lib/navPaths";
+import {
+  STOREFRONT_FOOTER_BOTTOM_CLASS,
+  STOREFRONT_FOOTER_BOTTOM_STYLE,
+} from "@/lib/storefrontFooter";
 
 const STAFF_LONG_PRESS_MS = 5000;
 
@@ -114,8 +118,8 @@ const SplashScreen = () => {
       </div>
 
       <div
-        className="absolute left-0 right-0 px-4"
-        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        className={`absolute left-0 right-0 px-4 ${STOREFRONT_FOOTER_BOTTOM_CLASS}`}
+        style={STOREFRONT_FOOTER_BOTTOM_STYLE}
       >
         <InstallAppButton lang={lang} />
       </div>
