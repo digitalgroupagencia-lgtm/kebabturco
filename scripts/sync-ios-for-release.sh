@@ -31,6 +31,9 @@ cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 </plist>
 ENTITLEMENTS
 
+cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
+
 echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
+echo "  · Package SPM: sem Stripe Terminal (App Store)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=false"
