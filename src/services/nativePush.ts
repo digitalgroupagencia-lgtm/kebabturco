@@ -5,11 +5,22 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "native-push-token";
+const REGISTER_TIMEOUT_MS = 25_000;
 
 type NativeAvailability = {
   isNative: boolean;
   platform: "android" | "ios" | "web";
 };
+
+type NativePushPermission = "granted" | "denied" | "prompt" | "unknown";
+
+let bridgeReady = false;
+let cachedToken: string | null = null;
+const tokenWaiters = new Set<{
+  resolve: (token: string) => void;
+  reject: (reason: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+}>();
 
 async function getCapacitorAvailability(): Promise<NativeAvailability> {
   try {
@@ -26,6 +37,55 @@ export async function isNativePushAvailable(): Promise<boolean> {
   return isNative && (platform === "android" || platform === "ios");
 }
 
+export function readCachedNativePushToken(): string | null {
+  if (cachedToken) return cachedToken;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) cachedToken = stored;
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+export async function getNativePushPermission(): Promise<NativePushPermission> {
+  if (!(await isNativePushAvailable())) return "unknown";
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    const perm = await PushNotifications.checkPermissions();
+    if (perm.receive === "granted") return "granted";
+    if (perm.receive === "denied") return "denied";
+    return "prompt";
+  } catch {
+    return "unknown";
+  }
+}
+
+function notifyTokenWaiters(token: string) {
+  for (const waiter of tokenWaiters) {
+    clearTimeout(waiter.timer);
+    waiter.resolve(token);
+    tokenWaiters.delete(waiter);
+  }
+}
+
+function notifyTokenWaitersError(message: string) {
+  for (const waiter of tokenWaiters) {
+    clearTimeout(waiter.timer);
+    waiter.reject(new Error(message));
+    tokenWaiters.delete(waiter);
+  }
+}
+
+function rememberNativeToken(token: string) {
+  cachedToken = token;
+  try {
+    localStorage.setItem(STORAGE_KEY, token);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function persistTokenToBackend(token: string, storeId: string, platform: "android" | "ios") {
   const { error } = await supabase.rpc("register_native_push_subscription", {
     _store_id: storeId,
@@ -34,11 +94,95 @@ async function persistTokenToBackend(token: string, storeId: string, platform: "
     _customer_phone: "__staff__",
   });
   if (error) throw error;
-  try {
-    localStorage.setItem(STORAGE_KEY, token);
-  } catch {
-    /* ignore */
+  rememberNativeToken(token);
+}
+
+function waitForNativeToken(): Promise<string> {
+  const existing = readCachedNativePushToken();
+  if (existing) return Promise.resolve(existing);
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      tokenWaiters.delete(waiter);
+      reject(
+        new Error(
+          "O telemóvel não devolveu o token a tempo. Feche a app por completo, abra outra vez e tente de novo.",
+        ),
+      );
+    }, REGISTER_TIMEOUT_MS);
+
+    const waiter = {
+      resolve: (token: string) => {
+        clearTimeout(timer);
+        tokenWaiters.delete(waiter);
+        resolve(token);
+      },
+      reject: (err: Error) => {
+        clearTimeout(timer);
+        tokenWaiters.delete(waiter);
+        reject(err);
+      },
+      timer,
+    };
+    tokenWaiters.add(waiter);
+  });
+}
+
+/** Arranca os listeners cedo — evita perder o token no iPhone. */
+export async function initNativePushBridge(): Promise<void> {
+  if (bridgeReady || !(await isNativePushAvailable())) return;
+  bridgeReady = true;
+
+  const { PushNotifications } = await import("@capacitor/push-notifications");
+
+  await PushNotifications.addListener("registration", (t) => {
+    rememberNativeToken(t.value);
+    notifyTokenWaiters(t.value);
+  });
+
+  await PushNotifications.addListener("registrationError", (err) => {
+    const message = String(err?.error ?? "Erro ao registar push no telemóvel");
+    console.error("[native-push] registration error", err);
+    notifyTokenWaitersError(message);
+  });
+
+  await PushNotifications.addListener("pushNotificationReceived", () => {
+    /* som local do painel cobre foreground */
+  });
+
+  await PushNotifications.addListener("pushNotificationActionPerformed", (a) => {
+    const url = (a?.notification?.data as { url?: string })?.url;
+    if (url && typeof window !== "undefined") {
+      window.location.hash = "";
+      window.location.assign(url);
+    }
+  });
+
+  const perm = await PushNotifications.checkPermissions();
+  if (perm.receive === "granted") {
+    try {
+      await PushNotifications.register();
+    } catch (e) {
+      console.warn("[native-push] early register failed", e);
+    }
   }
+}
+
+export async function getNativeDevicePushStatus(): Promise<{
+  ready: boolean;
+  permission: NativePushPermission;
+  tokenPreview: string | null;
+  platform: "android" | "ios" | "web";
+}> {
+  const { platform } = await getCapacitorAvailability();
+  const permission = await getNativePushPermission();
+  const token = readCachedNativePushToken();
+  return {
+    ready: permission === "granted" && Boolean(token),
+    permission,
+    tokenPreview: token ? `${token.slice(0, 8)}…${token.slice(-4)}` : null,
+    platform: platform === "android" || platform === "ios" ? platform : "web",
+  };
 }
 
 /** Pedir permissão + registar token FCM/APNs. Idempotente. */
@@ -50,6 +194,8 @@ export async function registerNativeStaffPush(storeId: string): Promise<{
   const { isNative, platform } = await getCapacitorAvailability();
   if (!isNative || platform === "web") return { ok: false, reason: "not-native" };
 
+  await initNativePushBridge();
+
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
 
@@ -59,45 +205,37 @@ export async function registerNativeStaffPush(storeId: string): Promise<{
       const req = await PushNotifications.requestPermissions();
       granted = req.receive === "granted";
     }
-    if (!granted) return { ok: false, reason: "denied" };
+    if (!granted) {
+      return {
+        ok: false,
+        reason: "Permissão de notificações negada no telemóvel — active em Definições → Kebab Turco → Notificações.",
+      };
+    }
 
-    return await new Promise(async (resolve) => {
-      const onReg = await PushNotifications.addListener("registration", async (t) => {
-        try {
-          await persistTokenToBackend(t.value, storeId, platform as "android" | "ios");
-          onReg.remove();
-          onErr.remove();
-          resolve({ ok: true, token: t.value });
-        } catch (e) {
-          onReg.remove();
-          onErr.remove();
-          resolve({
-            ok: false,
-            reason: e instanceof Error ? e.message : String(e),
-          });
-        }
-      });
-      const onErr = await PushNotifications.addListener("registrationError", (err) => {
-        onReg.remove();
-        onErr.remove();
-        resolve({ ok: false, reason: String(err?.error ?? "register-error") });
-      });
+    const cached = readCachedNativePushToken();
+    if (cached) {
+      try {
+        await persistTokenToBackend(cached, storeId, platform as "android" | "ios");
+        return { ok: true, token: cached };
+      } catch (e) {
+        console.warn("[native-push] cached token persist failed, retrying register", e);
+      }
+    }
 
-      await PushNotifications.addListener("pushNotificationReceived", () => {
-        /* som local do painel cobre foreground */
-      });
-      await PushNotifications.addListener("pushNotificationActionPerformed", (a) => {
-        const url = (a?.notification?.data as { url?: string })?.url;
-        if (url && typeof window !== "undefined") {
-          window.location.hash = "";
-          window.location.assign(url);
-        }
-      });
-
-      await PushNotifications.register();
-    });
+    const tokenPromise = waitForNativeToken();
+    await PushNotifications.register();
+    const token = await tokenPromise;
+    await persistTokenToBackend(token, storeId, platform as "android" | "ios");
+    return { ok: true, token };
   } catch (e) {
-    return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+    const message = e instanceof Error ? e.message : String(e);
+    if (/login necessário/i.test(message)) {
+      return { ok: false, reason: "Tem de estar com sessão da equipa iniciada para registar alertas." };
+    }
+    if (/sem permissão/i.test(message)) {
+      return { ok: false, reason: "Sem permissão para esta loja — escolha a unidade correcta." };
+    }
+    return { ok: false, reason: message };
   }
 }
 

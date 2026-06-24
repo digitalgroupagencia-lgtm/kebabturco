@@ -34,7 +34,8 @@ import {
   type PushTestSendResult,
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
-import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
+import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
+import { isNativePushAvailable } from "@/services/nativePush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 import type { DiagnosticLogEntry } from "@/lib/diagnostics/createDiagnosticLogger";
@@ -56,6 +57,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const [logs, setLogs] = useState<DiagnosticLogEntry[]>(() => pushDiagnosticLogger.getLogs());
   const [serverVapid, setServerVapid] = useState<ServerVapidDiagnostics | null>(null);
   const [localDeviceReady, setLocalDeviceReady] = useState<boolean | null>(null);
+  const [deviceStatus, setDeviceStatus] = useState<LocalDevicePushStatus | null>(null);
+  const [isNativeApp, setIsNativeApp] = useState(false);
   const [subscribeBusy, setSubscribeBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
   const [broadcastBusy, setBroadcastBusy] = useState(false);
@@ -68,15 +71,18 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
 
   const refreshProbe = useCallback(async () => {
     setRefreshing(true);
+    const native = await isNativePushAvailable();
+    setIsNativeApp(native);
     setVapid(getVapidKeyDiagnostics());
     setBrowser(getBrowserPushSupport());
     setPermission(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
-    const swDiag = await probePushServiceWorker("test");
+    const swDiag = native ? null : await probePushServiceWorker("test");
     setSw(swDiag);
     const serverDiag = await fetchServerVapidDiagnostics();
     setServerVapid(serverDiag);
-    const local = await getLocalPushSubscription();
-    setLocalDeviceReady(Boolean(local));
+    const device = await getLocalDevicePushStatus();
+    setDeviceStatus(device);
+    setLocalDeviceReady(device.ready);
     setRefreshing(false);
   }, []);
 
@@ -92,14 +98,17 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
     }
     setSubscribeBusy(true);
     try {
+      if (isNativeApp && audience === "marketing") {
+        toast.error("No telemóvel da equipa só pode registar alertas de equipa. Cliente usa o menu no browser.");
+        return;
+      }
       const result =
         audience === "marketing"
           ? await subscribeCustomerMarketingPush(storeId)
           : await subscribeStaffPush(storeId);
       if (result.ok) {
-        toast.success("Este dispositivo está subscrito para push");
-        setPermission(Notification.permission);
-        setLocalDeviceReady(true);
+        toast.success(isNativeApp ? "Este telemóvel está registado para alertas" : "Este dispositivo está subscrito para push");
+        await refreshProbe();
       } else {
         toast.error(result.error ?? "Falha na subscrição — veja os logs abaixo");
       }
@@ -166,9 +175,9 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const clientVapidOk = vapid.loaded && vapid.validFormat && vapid.decodable;
   const serverVapidOk = Boolean(serverVapid?.configured);
   const serverFcmOk = Boolean(serverVapid?.fcmConfigured);
-  const permOk = permission === "granted";
-  const canSendLocalTest = serverVapidOk && permOk && Boolean(storeId);
+  const canSendLocalTest = !isNativeApp && serverVapidOk && permission === "granted" && Boolean(storeId);
   const canSendBroadcast = Boolean(storeId) && (serverVapidOk || serverFcmOk);
+  const canSendNativeSelfTest = isNativeApp && Boolean(storeId) && (serverFcmOk || serverVapidOk);
   const testStatusLabel =
     testStatus === "sending"
       ? "A enviar agora…"
@@ -200,7 +209,35 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
     </>
   );
 
-  const statusCards = (
+  const statusCards = isNativeApp ? (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Este telemóvel</CardTitle>
+          <CardDescription>App nativa iPhone / Android</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <AdminDiagnosticStatusBadge ok={Boolean(localDeviceReady)} label={deviceStatus?.label ?? "A verificar…"} />
+          {deviceStatus?.tokenPreview ? (
+            <p className="text-xs text-muted-foreground font-mono truncate">Token {deviceStatus.tokenPreview}</p>
+          ) : null}
+        </CardContent>
+      </Card>
+      <Card className={!serverFcmOk ? "border-amber-500/40" : undefined}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Servidor (FCM)</CardTitle>
+          <CardDescription>Necessário para chegar ao iPhone</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {serverVapid === null ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <AdminDiagnosticStatusBadge ok={serverFcmOk} label={serverFcmOk ? "Pronto" : "Não configurado"} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  ) : (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <Card>
         <CardHeader className="pb-2">
@@ -240,7 +277,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           <CardTitle className="text-base">Permissões</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-xs">
-          <AdminDiagnosticStatusBadge ok={permOk} label={String(permission)} />
+          <AdminDiagnosticStatusBadge ok={permission === "granted"} label={String(permission)} />
           <p>PushManager: {browser.pushManagerSupported ? "Sim" : "Não"}</p>
         </CardContent>
       </Card>
@@ -252,20 +289,26 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4 text-sm space-y-2">
           <p>
-            Estado deste browser:{" "}
+            Estado {isNativeApp ? "deste telemóvel" : "deste browser"}:{" "}
             {localDeviceReady ? (
-              <span className="text-emerald-600 font-semibold">registado</span>
+              <span className="text-emerald-600 font-semibold">{deviceStatus?.label ?? "registado"}</span>
             ) : (
-              <span className="text-amber-600 font-semibold">não registado</span>
+              <span className="text-amber-600 font-semibold">{deviceStatus?.label ?? "não registado"}</span>
             )}
           </p>
           <p className="text-xs text-muted-foreground">
             Equipa → {STAFF_PUSH_TAG} · Cliente → {CUSTOMER_MARKETING_PUSH_TAG}
           </p>
-          <p className="text-xs text-muted-foreground">
-            O botão «neste computador» só testa o browser onde está agora. Para o iPhone da equipa,
-            use «Enviar para todos os dispositivos» depois de aceitar notificações na app.
-          </p>
+          {isNativeApp ? (
+            <p className="text-xs text-muted-foreground">
+              1) Carregue em «Registar push» · 2) Depois «Enviar teste para este telemóvel». Tem de estar com sessão
+              da equipa iniciada.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No computador use «Testar neste browser». Para o iPhone da equipa use «Enviar para todos os dispositivos».
+            </p>
+          )}
         </CardContent>
       </Card>
       <Card>
@@ -276,7 +319,11 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select value={audience} onValueChange={(v) => setAudience(v as PushTestAudience)}>
+              <Select
+                value={audience}
+                onValueChange={(v) => setAudience(v as PushTestAudience)}
+                disabled={isNativeApp}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -336,12 +383,26 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             )}
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button disabled={sendBusy || broadcastBusy || !canSendLocalTest} onClick={() => void handleSendTest()}>
-              {sendBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-              Testar neste computador
-            </Button>
+            {!isNativeApp ? (
+              <Button disabled={sendBusy || broadcastBusy || !canSendLocalTest} onClick={() => void handleSendTest()}>
+                {sendBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                Testar neste browser
+              </Button>
+            ) : (
+              <Button
+                disabled={sendBusy || broadcastBusy || !canSendNativeSelfTest || !localDeviceReady}
+                onClick={() => void handleBroadcastTest()}
+              >
+                {broadcastBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Enviar teste para este telemóvel
+              </Button>
+            )}
             <Button
-              variant="secondary"
+              variant={isNativeApp ? "outline" : "secondary"}
               disabled={sendBusy || broadcastBusy || !canSendBroadcast}
               onClick={() => void handleBroadcastTest()}
             >
@@ -350,13 +411,18 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
               ) : (
                 <Bell className="h-4 w-4 mr-2" />
               )}
-              Enviar para todos os dispositivos
+              {isNativeApp ? "Enviar para toda a equipa" : "Enviar para todos os dispositivos"}
             </Button>
           </div>
-          {!permOk ? (
+          {!isNativeApp && permission !== "granted" ? (
             <p className="text-xs text-amber-700">
-              Permissão negada neste browser — isso não impede o teste no iPhone. Active notificações em
-              Definições do site ou use só o broadcast.
+              Permissão negada neste browser — isso não impede o teste no iPhone. Use o broadcast ou teste directamente
+              na app.
+            </p>
+          ) : null}
+          {isNativeApp && !localDeviceReady ? (
+            <p className="text-xs text-amber-700">
+              Registe primeiro com «Registar push». Se ficar a carregar, feche a app por completo e abra outra vez.
             </p>
           ) : null}
         </CardContent>
