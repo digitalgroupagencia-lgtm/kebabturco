@@ -1581,14 +1581,13 @@ export async function handleStripeConnectRequest(
   const stripe = ctx.stripe;
   const meta = connectMeta(ctx);
 
-  let payoutPolicy: Awaited<ReturnType<typeof applyConnectPayoutPolicy>> | null = null;
-  try {
-    payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
-  } catch (e) {
-    console.warn("[connect] payout policy", e);
-  }
-
   if (mode === "enforce_payout_policy") {
+    let payoutPolicy: Awaited<ReturnType<typeof applyConnectPayoutPolicy>> | null = null;
+    try {
+      payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
+    } catch (e) {
+      console.warn("[connect] payout policy", e);
+    }
     return json({
       ok: true,
       accountId,
@@ -1638,6 +1637,11 @@ export async function handleStripeConnectRequest(
   if (mode === "sync_payouts") {
     if (!accountId) {
       return json({ synced: 0, message: "Conta Stripe ainda não ligada." });
+    }
+    try {
+      await applyConnectPayoutPolicy(stripe, accountId);
+    } catch (e) {
+      console.warn("[connect] payout policy (sync_payouts)", e);
     }
     const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
     return json({ synced, accountId });

@@ -9,9 +9,7 @@ import { fetchStoreFinancialProfile } from "@/services/orderService";
 import {
   fetchFinanceMovements,
   fetchFinancePayouts,
-  fetchRestaurantFinanceSnapshot,
-  syncFinancePayoutsFromStripe,
-  enforceStripePayoutPolicy,
+  refreshStripeFinanceExtras,
   type FinanceMovement,
   type FinancePayout,
   type RestaurantFinanceSnapshot,
@@ -42,32 +40,29 @@ const PanelFinancePage = () => {
     }
     setLoadError(null);
     try {
-      const [profile, mv] = await Promise.all([
+      const [profile, mv, po] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         fetchFinanceMovements(storeId),
+        fetchFinancePayouts(storeId),
       ]);
       const connectReady = isStripeConnectReady(profile);
-      const syncPromise = connectReady
-        ? Promise.all([
-            syncFinancePayoutsFromStripe(storeId).catch(() => 0),
-            enforceStripePayoutPolicy(storeId),
-          ])
-        : Promise.resolve([0, undefined] as const);
-      const snapPromise = connectReady
-        ? fetchRestaurantFinanceSnapshot(storeId)
-        : Promise.resolve(null);
-      await syncPromise;
-      const [po, snap] = await Promise.all([fetchFinancePayouts(storeId), snapPromise]);
       setMovements(mv);
       setPayouts(po);
       setIbanLast4(profile?.stripe_iban_last4 ?? null);
       setBusinessName(profile?.stripe_business_name ?? null);
       setLastPayoutAt(profile?.stripe_last_payout_at ?? null);
       setPaymentsActive(connectReady);
-      setFinanceSnapshot(snap);
+      if (!options?.silent) setLoading(false);
+
+      if (connectReady) {
+        void refreshStripeFinanceExtras(storeId).then(async ({ snapshot }) => {
+          if (snapshot) setFinanceSnapshot(snapshot);
+          const freshPo = await fetchFinancePayouts(storeId);
+          setPayouts(freshPo);
+        });
+      }
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));
-    } finally {
       if (!options?.silent) setLoading(false);
     }
   }, [storeId, t]);

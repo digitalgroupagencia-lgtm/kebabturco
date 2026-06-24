@@ -51,9 +51,7 @@ import RestaurantFinanceDashboard from "@/components/finance/RestaurantFinanceDa
 import {
   fetchFinanceMovements,
   fetchFinancePayouts,
-  fetchRestaurantFinanceSnapshot,
-  syncFinancePayoutsFromStripe,
-  enforceStripePayoutPolicy,
+  refreshStripeFinanceExtras,
   type FinanceMovement,
   type FinancePayout,
   type RestaurantFinanceSnapshot,
@@ -100,44 +98,48 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const prof = await fetchStoreFinancialProfile(storeId).catch(() => null);
+      const [prof, mv, po] = await Promise.all([
+        fetchStoreFinancialProfile(storeId).catch(() => null),
+        fetchFinanceMovements(storeId),
+        fetchFinancePayouts(storeId),
+      ]);
+      setProfile(prof);
+      setMovements(mv);
+      setPayouts(po);
+      if (!options?.silent) setLoading(false);
+
       const connectReady = isStripeConnectReady(prof);
-      const syncPromise = connectReady
-        ? Promise.all([
-            syncFinancePayoutsFromStripe(storeId).catch(() => 0),
-            enforceStripePayoutPolicy(storeId),
-          ])
-        : Promise.resolve([0, undefined] as const);
-      const snapPromise = connectReady
-        ? fetchRestaurantFinanceSnapshot(storeId)
-        : Promise.resolve(null);
-      await syncPromise;
-      const [schema, mv, po, serverPlatform, ledgerOk, checkoutRpc, edgeHealth, snap] =
-        await Promise.all([
+
+      void (async () => {
+        if (connectReady) {
+          try {
+            const { snapshot } = await refreshStripeFinanceExtras(storeId);
+            if (snapshot) setFinanceSnapshot(snapshot);
+            const freshPo = await fetchFinancePayouts(storeId);
+            setPayouts(freshPo);
+          } catch {
+            /* saldo Stripe opcional */
+          }
+        }
+
+        const [schema, serverPlatform, ledgerOk, checkoutRpc, edgeHealth] = await Promise.all([
           probeSchemaFallback().catch(() => null),
-          fetchFinanceMovements(storeId),
-          fetchFinancePayouts(storeId),
           fetchStripePlatformStatus(storeId).catch(() => null),
           probeLedgerTable(storeId),
           probeCheckoutStripeRpc(),
           fetchStripeConnectEdgeHealth(),
-          snapPromise,
         ]);
-      setCheckoutRpcReady(checkoutRpc);
-      setEdgeNeedsDeploy(!isStripeConnectEdgeUpToDate(edgeHealth));
-      setProfile(prof);
-      setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
-      setSchemaProbe(schema);
-      setMovements(mv);
-      setLedgerTableOk(ledgerOk);
-      setPayouts(po);
-      setFinanceSnapshot(snap);
+        setCheckoutRpcReady(checkoutRpc);
+        setEdgeNeedsDeploy(!isStripeConnectEdgeUpToDate(edgeHealth));
+        setPlatformStatus(serverPlatform ?? inferStripePlatformStatus(prof));
+        setSchemaProbe(schema);
+        setLedgerTableOk(ledgerOk);
+      })();
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));
-    } finally {
       if (!options?.silent) setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
 
   useEffect(() => {
     void load();

@@ -35,7 +35,7 @@ export type RestaurantFinanceSnapshot = {
   liveDataUnavailable?: boolean;
 };
 
-const FINANCE_SNAPSHOT_TIMEOUT_MS = 20_000;
+const FINANCE_SNAPSHOT_TIMEOUT_MS = 10_000;
 
 function unavailableFinanceSnapshot(): RestaurantFinanceSnapshot {
   return {
@@ -155,16 +155,6 @@ export async function fetchFinancePayouts(storeId: string, limit = 20): Promise<
   }));
 }
 
-export async function enforceStripePayoutPolicy(storeId: string): Promise<void> {
-  try {
-    await supabase.functions.invoke("stripe-connect-onboard", {
-      body: { storeId, mode: "enforce_payout_policy" },
-    });
-  } catch {
-    /* best-effort */
-  }
-}
-
 export async function syncFinancePayoutsFromStripe(storeId: string): Promise<number> {
   try {
     const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
@@ -176,6 +166,18 @@ export async function syncFinancePayoutsFromStripe(storeId: string): Promise<num
   } catch {
     return 0;
   }
+}
+
+/** Sincroniza saldo Stripe e depósitos em segundo plano (aplica política de repasses no servidor). */
+export async function refreshStripeFinanceExtras(storeId: string): Promise<{
+  snapshot: RestaurantFinanceSnapshot | null;
+  payoutsSynced: number;
+}> {
+  const [snapshot, payoutsSynced] = await Promise.all([
+    fetchRestaurantFinanceSnapshot(storeId).catch(() => null),
+    syncFinancePayoutsFromStripe(storeId).catch(() => 0),
+  ]);
+  return { snapshot, payoutsSynced };
 }
 
 export async function fetchRestaurantFinanceSnapshot(

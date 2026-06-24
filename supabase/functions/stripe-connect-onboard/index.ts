@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       );
       const { data: store } = await service
         .from("stores")
-        .select("stripe_connect_account_id, stripe_connect_environment")
+        .select("id, stripe_connect_account_id, stripe_connect_environment, stripe_iban_last4")
         .eq("id", storeId)
         .maybeSingle();
 
@@ -123,7 +123,9 @@ Deno.serve(async (req) => {
       const stripe = new Stripe(secret, { apiVersion: "2023-10-16" });
       const accountId = store?.stripe_connect_account_id ?? null;
 
-      const { applyConnectPayoutPolicy } = await import("../_shared/stripePayoutPolicy.ts");
+      const { applyConnectPayoutPolicy, RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT } = await import(
+        "../_shared/stripePayoutPolicy.ts"
+      );
 
       if (mode === "enforce_payout_policy") {
         const payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
@@ -137,10 +139,38 @@ Deno.serve(async (req) => {
         });
       }
 
-      try {
-        await applyConnectPayoutPolicy(stripe, accountId);
-      } catch (e) {
-        console.warn("[connect] payout policy (direct route)", e);
+      if (mode === "finance_snapshot") {
+        const ledgerNetCents = Number(body.ledgerNetCents) || 0;
+        if (!accountId) {
+          return json({
+            availableCents: 0,
+            pendingCents: 0,
+            payoutInterval: "weekly",
+            payoutWeekday: RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
+            nextPayoutDate: null,
+            nextPayoutAmountCents: null,
+            ibanLast4: store?.stripe_iban_last4 ?? null,
+            simulated: true,
+            liveDataUnavailable: true,
+          });
+        }
+        const { buildRestaurantFinanceSnapshot } = await import("../_shared/stripeFinanceSnapshot.ts");
+        const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
+        return json(snapshot);
+      }
+
+      if (mode === "sync_payouts") {
+        if (!accountId || !store?.id) {
+          return json({ synced: 0, message: "Conta Stripe ainda não ligada." });
+        }
+        try {
+          await applyConnectPayoutPolicy(stripe, accountId);
+        } catch (e) {
+          console.warn("[connect] payout policy (sync_payouts)", e);
+        }
+        const { syncStorePayoutsFromStripe } = await import("../_shared/stripePayoutActions.ts");
+        const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
+        return json({ synced, accountId, handlerVersion: CONNECT_HANDLER_VERSION });
       }
     }
 
