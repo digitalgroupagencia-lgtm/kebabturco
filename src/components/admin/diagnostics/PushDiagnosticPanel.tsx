@@ -28,6 +28,7 @@ import {
 import { pushDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import {
   sendTestPushNotification,
+  sendBroadcastTestPushNotification,
   fetchServerVapidDiagnostics,
   type PushTestAudience,
   type PushTestSendResult,
@@ -57,7 +58,9 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const [localDeviceReady, setLocalDeviceReady] = useState<boolean | null>(null);
   const [subscribeBusy, setSubscribeBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
+  const [broadcastBusy, setBroadcastBusy] = useState(false);
   const [audience, setAudience] = useState<PushTestAudience>("staff");
+  const [alsoNotifyStaff, setAlsoNotifyStaff] = useState(true);
   const [testTitle, setTestTitle] = useState("Teste push Kebab Turco");
   const [testBody, setTestBody] = useState("Se vês isto, as notificações push estão a funcionar.");
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -130,10 +133,42 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
     }
   };
 
+  const handleBroadcastTest = async () => {
+    if (!storeId) {
+      toast.error("Escolha uma unidade");
+      return;
+    }
+    setBroadcastBusy(true);
+    setTestStatus("sending");
+    setTestResult(null);
+    try {
+      const result = await sendBroadcastTestPushNotification({
+        storeId,
+        audience,
+        title: testTitle,
+        body: testBody,
+        alsoNotifyStaff: audience === "marketing" ? alsoNotifyStaff : false,
+      });
+      setTestResult(result);
+      setTestStatus(result.ok ? "success" : "error");
+      if (result.ok) toast.success(`Broadcast enviado — ${result.sent ?? 0} dispositivo(s)`);
+      else toast.error(result.userMessage ?? result.error ?? "Falha no broadcast");
+      void refreshProbe();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setTestStatus("error");
+      setTestResult({ ok: false, error: message, userMessage: message });
+    } finally {
+      setBroadcastBusy(false);
+    }
+  };
+
   const clientVapidOk = vapid.loaded && vapid.validFormat && vapid.decodable;
   const serverVapidOk = Boolean(serverVapid?.configured);
+  const serverFcmOk = Boolean(serverVapid?.fcmConfigured);
   const permOk = permission === "granted";
-  const canSendTest = serverVapidOk && permOk && Boolean(storeId);
+  const canSendLocalTest = serverVapidOk && permOk && Boolean(storeId);
+  const canSendBroadcast = Boolean(storeId) && (serverVapidOk || serverFcmOk);
   const testStatusLabel =
     testStatus === "sending"
       ? "A enviar agora…"
@@ -215,7 +250,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const testSection = (
     <>
       <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="pt-4 text-sm space-y-1">
+        <CardContent className="pt-4 text-sm space-y-2">
           <p>
             Estado deste browser:{" "}
             {localDeviceReady ? (
@@ -226,6 +261,10 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           </p>
           <p className="text-xs text-muted-foreground">
             Equipa → {STAFF_PUSH_TAG} · Cliente → {CUSTOMER_MARKETING_PUSH_TAG}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O botão «neste computador» só testa o browser onde está agora. Para o iPhone da equipa,
+            use «Enviar para todos os dispositivos» depois de aceitar notificações na app.
           </p>
         </CardContent>
       </Card>
@@ -262,6 +301,17 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             <Label>Mensagem</Label>
             <Input value={testBody} onChange={(e) => setTestBody(e.target.value)} />
           </div>
+          {audience === "marketing" ? (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={alsoNotifyStaff}
+                onChange={(e) => setAlsoNotifyStaff(e.target.checked)}
+                className="h-4 w-4 rounded border-border"
+              />
+              Também enviar para dispositivos da equipa (teste completo)
+            </label>
+          ) : null}
           <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold">Resultado em tempo real</span>
@@ -285,10 +335,30 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
               <p className="text-xs text-muted-foreground">O resultado aparece aqui assim que o servidor responder.</p>
             )}
           </div>
-          <Button disabled={sendBusy || !canSendTest} onClick={() => void handleSendTest()}>
-            {sendBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-            Enviar push de teste agora
-          </Button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button disabled={sendBusy || broadcastBusy || !canSendLocalTest} onClick={() => void handleSendTest()}>
+              {sendBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+              Testar neste computador
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={sendBusy || broadcastBusy || !canSendBroadcast}
+              onClick={() => void handleBroadcastTest()}
+            >
+              {broadcastBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Bell className="h-4 w-4 mr-2" />
+              )}
+              Enviar para todos os dispositivos
+            </Button>
+          </div>
+          {!permOk ? (
+            <p className="text-xs text-amber-700">
+              Permissão negada neste browser — isso não impede o teste no iPhone. Active notificações em
+              Definições do site ou use só o broadcast.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </>

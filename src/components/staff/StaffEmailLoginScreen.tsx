@@ -39,6 +39,7 @@ import {
 import {
   loadLastStaffLogin,
   saveLastStaffLogin,
+  hydrateLastStaffLogin,
   type StaffLastLogin,
 } from "@/lib/staffLoginMemory";
 
@@ -93,7 +94,9 @@ const StaffEmailLoginScreen = () => {
 
   useEffect(() => {
     if (isSignup) return;
-    setLastLogin(loadLastStaffLogin());
+    void hydrateLastStaffLogin().then((saved) => {
+      if (saved) setLastLogin(saved);
+    });
     setDismissedSuggestion(false);
   }, [isSignup]);
 

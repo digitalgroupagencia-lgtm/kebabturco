@@ -24,6 +24,7 @@ export type ServerVapidDiagnostics = {
   publicKey?: string | null;
   publicKeyPreview: string | null;
   keysMatchClient: boolean | null;
+  fcmConfigured?: boolean;
   probeError?: string;
 };
 
@@ -64,6 +65,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       hasPrivateKey?: boolean;
       publicKey?: string | null;
       publicKeyPreview?: string | null;
+      fcmConfigured?: boolean;
     };
 
     const clientKey = getVapidPublicKey();
@@ -83,6 +85,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       publicKey: payload.publicKey ?? null,
       publicKeyPreview: payload.publicKeyPreview ?? null,
       keysMatchClient,
+      fcmConfigured: Boolean(payload.fcmConfigured),
     };
 
     pushLog(
@@ -100,6 +103,145 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
     const message = e instanceof Error ? e.message : String(e);
     pushLog("test", "vapid_check", "error", message);
     return { ...fallback, probeError: message };
+  }
+}
+
+async function invokeStoreBroadcast(opts: {
+  storeId: string;
+  audience?: "marketing";
+  title: string;
+  body: string;
+  url: string;
+}): Promise<PushTestSendResult> {
+  const { storeId, audience, title, body: msgBody, url } = opts;
+
+  const { data, error } = await supabase.functions.invoke("send-push-notification", {
+    body: {
+      storeId,
+      audience,
+      title,
+      body: msgBody,
+      tag: `push-test-${Date.now()}-${audience ?? "staff"}`,
+      url,
+    },
+  });
+
+  if (error) {
+    pushLog("test", "broadcast_send", "error", "Função de envio push falhou no servidor", {
+      message: error.message,
+      audience: audience ?? "staff",
+    });
+    return { ok: false, error: error.message, userMessage: "Erro ao contactar o servidor de push" };
+  }
+
+  const payload = data as {
+    sent?: number;
+    matched?: number;
+    targeted?: number;
+    skipped?: boolean;
+    reason?: string;
+    error?: string;
+    errors?: { endpoint: string; status?: number; message: string }[];
+  };
+
+  if (payload.error) {
+    return { ok: false, error: payload.error, userMessage: payload.error };
+  }
+
+  if (payload.skipped) {
+    const userMessage = translateServerVapidReason(payload.reason);
+    return { ok: false, skipped: true, reason: payload.reason, userMessage };
+  }
+
+  const sent = payload.sent ?? 0;
+  const matched = payload.matched ?? 0;
+  const errors = payload.errors;
+
+  if (sent === 0) {
+    const firstErr = errors?.[0];
+    const userMessage = firstErr
+      ? `Erro do serviço de push${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 240)}`
+      : audience === "marketing"
+        ? "Nenhum cliente com notificações activas nesta loja. Peça para aceitar no menu ou registe um telemóvel de teste."
+        : "Nenhum dispositivo da equipa registado nesta loja. Abra a app no iPhone, entre na equipa e aceite notificações.";
+    return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
+  }
+
+  return { ok: true, sent, matched, targeted: payload.targeted, errors };
+}
+
+/** Envia para todos os dispositivos registados na loja (iPhone, tablet, browser). */
+export async function sendBroadcastTestPushNotification(opts: {
+  storeId: string;
+  audience: PushTestAudience;
+  title: string;
+  body: string;
+  alsoNotifyStaff?: boolean;
+}): Promise<PushTestSendResult> {
+  const { storeId, audience, title, body: msgBody, alsoNotifyStaff } = opts;
+
+  pushLog("test", "broadcast_send", "info", "A enviar broadcast de teste", {
+    storeId,
+    audience,
+    alsoNotifyStaff,
+  });
+
+  try {
+    if (audience === "staff") {
+      const result = await invokeStoreBroadcast({
+        storeId,
+        title,
+        body: msgBody,
+        url: "/panel/live",
+      });
+      if (result.ok) {
+        pushLog("test", "broadcast_send", "info", `Broadcast equipa: ${result.sent ?? 0} dispositivo(s)`, result);
+      }
+      return result;
+    }
+
+    const marketing = await invokeStoreBroadcast({
+      storeId,
+      audience: "marketing",
+      title,
+      body: msgBody,
+      url: "/",
+    });
+
+    if (!alsoNotifyStaff) return marketing;
+
+    const staff = await invokeStoreBroadcast({
+      storeId,
+      title,
+      body: msgBody,
+      url: "/panel/live",
+    });
+
+    const sent = (marketing.sent ?? 0) + (staff.sent ?? 0);
+    const matched = (marketing.matched ?? 0) + (staff.matched ?? 0);
+    const targeted = (marketing.targeted ?? 0) + (staff.targeted ?? 0);
+    const ok = sent > 0;
+    const userMessage =
+      sent === 0
+        ? "Nenhum dispositivo recebeu. Registe clientes no menu e equipa na app."
+        : !marketing.ok && staff.ok
+          ? `Só a equipa recebeu (${staff.sent}). Nenhum cliente com notificações activas.`
+          : !staff.ok && marketing.ok
+            ? `Só clientes receberam (${marketing.sent}). Nenhum dispositivo da equipa registado.`
+            : undefined;
+
+    return {
+      ok,
+      sent,
+      matched,
+      targeted,
+      userMessage,
+      errors: [...(marketing.errors ?? []), ...(staff.errors ?? [])],
+    };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    pushLog("test", "broadcast_send", "error", message);
+    return { ok: false, error: message, userMessage: message };
   }
 }
 
