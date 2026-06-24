@@ -10,6 +10,30 @@ const corsHeaders = {
 const STAFF_PHONE_TAG = "__staff__";
 const MARKETING_PHONE_TAG = "__marketing__";
 
+function normalizeNativeToken(raw: string): string {
+  return String(raw).replace(/[<>\s]/g, "").toLowerCase();
+}
+
+function isInvalidPushTokenError(message: string, status?: number): boolean {
+  return (
+    status === 403 ||
+    status === 404 ||
+    status === 410 ||
+    /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|BadDeviceToken|DeviceTokenNotForTopic/i.test(message)
+  );
+}
+
+async function deleteInvalidSubscription(
+  supabase: ReturnType<typeof createClient>,
+  sub: PushSubRow,
+): Promise<void> {
+  await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+  const token = sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, "");
+  if (token) {
+    await supabase.from("push_subscriptions").delete().eq("fcm_token", normalizeNativeToken(token));
+  }
+}
+
 type PushSubRow = {
   endpoint: string;
   p256dh: string | null;
@@ -255,7 +279,8 @@ async function sendApns(
     if (res.ok) return;
     const text = await res.text();
     lastError = `APNs ${host}: ${res.status} ${text}`;
-    if (res.status === 400 && /BadDeviceToken|DeviceTokenNotForTopic/i.test(text)) continue;
+    if (res.status === 400 && /DeviceTokenNotForTopic/i.test(text)) break;
+    if (res.status === 400 && /BadDeviceToken/i.test(text)) continue;
     if (res.status === 410) break;
   }
   const err = new Error(lastError) as Error & { statusCode?: number };
@@ -304,7 +329,6 @@ async function authorizeStaffBroadcast(
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (serviceKey && auth.includes(serviceKey)) return true;
 
-  if (!internalSecret) return true;
   if (!auth.startsWith("Bearer ")) return false;
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -448,8 +472,16 @@ Deno.serve(async (req) => {
     const targetMap = new Map<string, PushSubRow>();
     let matchedInDb = 0;
     const nativeDirectOnly = Boolean(testDirect && nativeDirectToken && nativePlatform);
+    const webDirectOnly = Boolean(
+      testDirect &&
+        directSubscription?.endpoint &&
+        directSubscription?.p256dh &&
+        directSubscription?.auth &&
+        !nativeDirectToken,
+    );
+    const directOnly = nativeDirectOnly || webDirectOnly;
 
-    if (!nativeDirectOnly && (storeId || orderId)) {
+    if (!directOnly && (storeId || orderId)) {
       let query = supabase
         .from("push_subscriptions")
         .select("endpoint, p256dh, auth, order_id, customer_phone, platform, fcm_token");
@@ -461,7 +493,14 @@ Deno.serve(async (req) => {
       for (const sub of matched) targetMap.set(sub.endpoint, sub);
     }
 
-    if (!nativeDirectOnly && testDirect && directSubscription?.endpoint && directSubscription?.p256dh && directSubscription?.auth) {
+    if (webDirectOnly) {
+      targetMap.set(directSubscription.endpoint, {
+        endpoint: directSubscription.endpoint,
+        p256dh: directSubscription.p256dh,
+        auth: directSubscription.auth,
+        platform: "web",
+      });
+    } else if (!nativeDirectOnly && testDirect && directSubscription?.endpoint && directSubscription?.p256dh && directSubscription?.auth) {
       targetMap.set(directSubscription.endpoint, {
         endpoint: directSubscription.endpoint,
         p256dh: directSubscription.p256dh,
@@ -471,7 +510,7 @@ Deno.serve(async (req) => {
     }
 
     if (testDirect && nativeDirectToken && nativePlatform) {
-      const cleanToken = String(nativeDirectToken).replace(/[<>\s]/g, "").toLowerCase();
+      const cleanToken = normalizeNativeToken(String(nativeDirectToken));
       const plat = String(nativePlatform).toLowerCase();
       const platform = plat === "ios" || plat === "android" ? plat : "ios";
       targetMap.set(`fcm://${cleanToken}`, {
@@ -495,13 +534,13 @@ Deno.serve(async (req) => {
       try {
         if (platform === "ios") {
           if (!apns) throw new Error("APNs not configured");
-          const token = sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//, "");
+          const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           await sendApns(token, { title, body: msgBody, tag, url, requireInteraction }, apns);
           sent++;
           sentApns++;
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
-          const token = sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//, "");
+          const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           await sendFcmV1(token, { title, body: msgBody, tag, url, requireInteraction }, fcm);
           sent++;
           sentFcm++;
@@ -524,15 +563,14 @@ Deno.serve(async (req) => {
           endpoint: sub.endpoint.slice(0, 60), platform, status, message,
         });
         errors.push({ endpoint: sub.endpoint.slice(0, 60), status, message, channel: platform });
-        // Token inválido -> remover
-        if (
-          status === 403 || status === 404 || status === 410 ||
-          /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|BadDeviceToken|DeviceTokenNotForTopic/i.test(message)
-        ) {
-          await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+        if (isInvalidPushTokenError(message, status)) {
+          await deleteInvalidSubscription(supabase, sub);
         }
       }
     }
+
+    const failed = errors.length;
+    const partial = sent > 0 && failed > 0;
 
     return new Response(
       JSON.stringify({
@@ -540,6 +578,8 @@ Deno.serve(async (req) => {
         sentWeb,
         sentFcm,
         sentApns,
+        failed,
+        partial,
         matched: matchedInDb,
         targeted: subs.length,
         errors: errors.length ? errors : undefined,

@@ -10,16 +10,21 @@ export type PushTestAudience = "staff" | "marketing";
 export type PushTestSendResult = {
   ok: boolean;
   sent?: number;
+  sentApns?: number;
+  sentFcm?: number;
+  sentWeb?: number;
+  failed?: number;
+  partial?: boolean;
   matched?: number;
   targeted?: number;
-  errors?: { endpoint: string; status?: number; message: string }[];
+  errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
   skipped?: boolean;
   reason?: string;
   error?: string;
   userMessage?: string;
 };
 
-export type ServerVapidDiagnostics = {
+export type ServerPushDiagnostics = {
   configured: boolean;
   hasPublicKey: boolean;
   hasPrivateKey: boolean;
@@ -31,7 +36,12 @@ export type ServerVapidDiagnostics = {
   apnsSandbox?: boolean | null;
   apnsTopic?: string | null;
   probeError?: string;
+  staffSecretConfigured?: boolean | null;
+  iosStaffDevices?: number | null;
 };
+
+/** @deprecated use ServerPushDiagnostics */
+export type ServerVapidDiagnostics = ServerPushDiagnostics;
 
 const SERVER_VAPID_REASON_PT: Record<string, string> = {
   "VAPID not configured":
@@ -67,6 +77,8 @@ function parseSendPayload(data: unknown): {
   sentApns?: number;
   sentFcm?: number;
   sentWeb?: number;
+  failed?: number;
+  partial?: boolean;
   matched?: number;
   targeted?: number;
   skipped?: boolean;
@@ -79,6 +91,8 @@ function parseSendPayload(data: unknown): {
     sentApns?: number;
     sentFcm?: number;
     sentWeb?: number;
+    failed?: number;
+    partial?: boolean;
     matched?: number;
     targeted?: number;
     skipped?: boolean;
@@ -139,6 +153,66 @@ function finalizeNativeDirectResult(
   return { ok: true, sent: channelSent, matched: payload.matched, targeted: payload.targeted };
 }
 
+function finalizeWebDirectResult(payload: ReturnType<typeof parseSendPayload>): PushTestSendResult {
+  if (payload.error) {
+    return { ok: false, error: payload.error, userMessage: payload.error };
+  }
+  if (payload.skipped) {
+    const userMessage = translateServerVapidReason(payload.reason);
+    return { ok: false, skipped: true, reason: payload.reason, userMessage };
+  }
+
+  const errors = payload.errors ?? [];
+  const webErrors = errors.filter((e) => e.channel === "web");
+  if (webErrors.length > 0) {
+    return {
+      ok: false,
+      sent: 0,
+      targeted: payload.targeted,
+      errors,
+      userMessage: `Este browser não recebeu: ${webErrors[0].message.slice(0, 200)}`,
+    };
+  }
+
+  const sentWeb = payload.sentWeb ?? 0;
+  if (sentWeb === 0) {
+    return {
+      ok: false,
+      sent: 0,
+      targeted: payload.targeted,
+      errors,
+      userMessage: "O servidor não entregou a este browser. Registe push outra vez.",
+    };
+  }
+
+  return { ok: true, sent: sentWeb, targeted: payload.targeted, sentWeb };
+}
+
+function finalizeBroadcastResult(
+  payload: ReturnType<typeof parseSendPayload>,
+  emptyMessage: string,
+): PushTestSendResult {
+  const base = finalizeSendResult(payload, emptyMessage);
+  if (!base.ok) return base;
+
+  const failed = payload.failed ?? payload.errors?.length ?? 0;
+  if (failed > 0 || payload.partial) {
+    const iosFailed = payload.errors?.filter((e) => e.channel === "ios").length ?? 0;
+    return {
+      ...base,
+      ok: true,
+      partial: true,
+      failed,
+      userMessage:
+        iosFailed > 0
+          ? `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam — peça para «Registar push» outra vez.`
+          : `Enviado para ${base.sent} dispositivo(s), ${failed} falharam.`,
+    };
+  }
+
+  return base;
+}
+
 function finalizeSendResult(
   payload: ReturnType<typeof parseSendPayload>,
   emptyMessage: string,
@@ -172,8 +246,8 @@ export function translateServerVapidReason(reason?: string): string {
   return SERVER_VAPID_REASON_PT[reason] ?? reason;
 }
 
-export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnostics> {
-  const fallback: ServerVapidDiagnostics = {
+export async function fetchServerVapidDiagnostics(): Promise<ServerPushDiagnostics> {
+  const fallback: ServerPushDiagnostics = {
     configured: false,
     hasPublicKey: false,
     hasPrivateKey: false,
@@ -215,7 +289,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       keysMatchClient = clientPreview === payload.publicKeyPreview;
     }
 
-    const result: ServerVapidDiagnostics = {
+    const result: ServerPushDiagnostics = {
       configured: Boolean(payload.configured),
       hasPublicKey: Boolean(payload.hasPublicKey),
       hasPrivateKey: Boolean(payload.hasPrivateKey),
@@ -227,6 +301,20 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       apnsSandbox: payload.apnsSandbox ?? null,
       apnsTopic: payload.apnsTopic ?? null,
     };
+
+    try {
+      const { data: dispatchStatus } = await supabase.rpc("get_push_dispatch_status");
+      const status = dispatchStatus as {
+        staffSecretConfigured?: boolean;
+        iosSubscriptions?: number;
+      } | null;
+      if (status) {
+        result.staffSecretConfigured = Boolean(status.staffSecretConfigured);
+        result.iosStaffDevices = status.iosSubscriptions ?? null;
+      }
+    } catch {
+      /* RPC may not exist until migration runs */
+    }
 
     pushLog(
       "test",
@@ -300,7 +388,10 @@ async function invokeStoreBroadcast(opts: {
     return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
   }
 
-  return { ok: true, sent, matched, targeted: payload.targeted, errors };
+  return finalizeBroadcastResult(
+    payload,
+    "Nenhum dispositivo recebeu o broadcast.",
+  );
 }
 
 /** Envia para todos os dispositivos registados na loja (iPhone, tablet, browser). */
@@ -423,53 +514,15 @@ export async function sendTestPushNotification(opts: {
       return { ok: false, error: error.message, userMessage };
     }
 
-    const payload = data as {
-      sent?: number;
-      matched?: number;
-      targeted?: number;
-      skipped?: boolean;
-      reason?: string;
-      error?: string;
-    };
+    const result = finalizeWebDirectResult(parseSendPayload(data));
 
-    if (payload.error) {
-      pushLog("test", "test_send", "error", payload.error);
-      return { ok: false, error: payload.error, userMessage: payload.error };
+    if (result.ok) {
+      pushLog("test", "test_send", "info", `Notificação enviada para este browser`, result);
+    } else {
+      pushLog("test", "test_send", "error", result.userMessage ?? "Falha no envio", result);
     }
 
-    if (payload.skipped) {
-      const userMessage = translateServerVapidReason(payload.reason);
-      pushLog("test", "test_send", "warn", userMessage, { reason: payload.reason });
-      return {
-        ok: false,
-        skipped: true,
-        reason: payload.reason,
-        userMessage,
-      };
-    }
-
-    const sent = payload.sent ?? 0;
-    const matched = payload.matched ?? 0;
-    const errors = (payload as any).errors as
-      | { endpoint: string; status?: number; message: string }[]
-      | undefined;
-
-    if (sent === 0) {
-      const firstErr = errors?.[0];
-      const userMessage = firstErr
-        ? `Erro do serviço de push${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 240)}`
-        : "Nenhum dispositivo recebeu. Registe de novo com o mesmo tipo e a mesma loja seleccionada.";
-      pushLog("test", "test_send", "error", userMessage, { matched, targeted: payload.targeted, errors });
-      return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
-    }
-
-    pushLog("test", "test_send", "info", `Notificação enviada para ${sent} dispositivo(s)`, {
-      sent,
-      matched,
-      targeted: payload.targeted,
-    });
-
-    return { ok: true, sent, matched, targeted: payload.targeted };
+    return result;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     pushLog("test", "test_send", "error", message);

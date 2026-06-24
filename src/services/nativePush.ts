@@ -88,16 +88,47 @@ function notifyTokenWaitersError(message: string) {
 }
 
 function rememberNativeToken(token: string) {
-  cachedToken = token;
+  const normalized = token.replace(/[<>\s]/g, "").toLowerCase();
+  cachedToken = normalized;
   try {
-    localStorage.setItem(STORAGE_KEY, token);
+    localStorage.setItem(STORAGE_KEY, normalized);
   } catch {
     /* ignore */
   }
 }
 
+async function ensureAndroidNotificationChannel(): Promise<void> {
+  const { platform } = await getCapacitorAvailability();
+  if (platform !== "android") return;
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    await PushNotifications.createChannel({
+      id: "staff_orders",
+      name: "Pedidos da equipa",
+      description: "Alertas de novos pedidos no painel",
+      importance: 5,
+      sound: "default",
+      vibration: true,
+      visibility: 1,
+    });
+  } catch (e) {
+    console.warn("[native-push] createChannel failed", e);
+  }
+}
+
+function handleForegroundPush(notification: { data?: Record<string, unknown>; tag?: string }) {
+  const tag = String(notification?.data?.tag ?? notification?.tag ?? "");
+  if (!tag.startsWith("staff-new-order-")) return;
+  const orderId = tag.replace("staff-new-order-", "");
+  if (!orderId) return;
+  void import("@/lib/panelAlerts").then(({ registerNewPendingOrderAlert, playNewOrderAlert }) => {
+    registerNewPendingOrderAlert(orderId);
+    playNewOrderAlert(orderId);
+  });
+}
+
 async function persistTokenToBackend(token: string, storeId: string, platform: "android" | "ios") {
-  const cleanToken = token.replace(/[<>\s]/g, "");
+  const cleanToken = token.replace(/[<>\s]/g, "").toLowerCase();
   const { error } = await supabase.rpc("register_native_push_subscription", {
     _store_id: storeId,
     _fcm_token: cleanToken,
@@ -146,6 +177,8 @@ export async function initNativePushBridge(): Promise<void> {
 
   const { PushNotifications } = await import("@capacitor/push-notifications");
 
+  await ensureAndroidNotificationChannel();
+
   await PushNotifications.addListener("registration", (t) => {
     rememberNativeToken(t.value);
     notifyTokenWaiters(t.value);
@@ -157,15 +190,19 @@ export async function initNativePushBridge(): Promise<void> {
     notifyTokenWaitersError(message);
   });
 
-  await PushNotifications.addListener("pushNotificationReceived", () => {
-    /* som local do painel cobre foreground */
+  await PushNotifications.addListener("pushNotificationReceived", (notification) => {
+    handleForegroundPush(notification as { data?: Record<string, unknown>; tag?: string });
   });
 
   await PushNotifications.addListener("pushNotificationActionPerformed", (a) => {
-    const url = (a?.notification?.data as { url?: string })?.url;
+    const data = (a?.notification?.data ?? {}) as Record<string, unknown>;
+    const url = typeof data.url === "string" ? data.url : undefined;
     if (url && typeof window !== "undefined") {
-      window.location.hash = "";
-      window.location.assign(url);
+      const path = url.startsWith("/") ? url : `/${url}`;
+      if (window.location.pathname !== path) {
+        window.history.pushState(null, "", path);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }
     }
   });
 
@@ -257,9 +294,28 @@ export async function registerNativeStaffPush(
   }
 }
 
-/** Para usar no boot do painel — re-regista se já estava ativo. */
+/** Remove registo push nativo deste telemóvel no servidor e localmente. */
+export async function unregisterNativeStaffPush(): Promise<void> {
+  const token = readCachedNativePushToken();
+  clearCachedNativePushToken();
+  if (token) {
+    const endpoint = `fcm://${token.replace(/[<>\s]/g, "").toLowerCase()}`;
+    await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+  }
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    await PushNotifications.removeAllListeners();
+    bridgeReady = false;
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Para usar no boot do painel — re-regista se o utilizador já tinha activado. */
 export async function restoreNativeStaffPushIfPossible(storeId: string): Promise<void> {
   if (!(await isNativePushAvailable())) return;
+  const { isStaffPushEnabled } = await import("@/lib/staffPush");
+  if (!isStaffPushEnabled()) return;
   await registerNativeStaffPush(storeId);
 }
 

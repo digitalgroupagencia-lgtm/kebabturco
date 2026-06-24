@@ -190,8 +190,13 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       });
       setTestResult(result);
       setTestStatus(result.ok ? "success" : "error");
-      if (result.ok) toast.success(`Broadcast enviado — ${result.sent ?? 0} dispositivo(s)`);
-      else toast.error(result.userMessage ?? result.error ?? "Falha no broadcast");
+      if (result.ok) {
+        toast.success(
+          result.partial
+            ? (result.userMessage ?? `Enviado com avisos — ${result.sent ?? 0} dispositivo(s)`)
+            : `Broadcast enviado — ${result.sent ?? 0} dispositivo(s)`,
+        );
+      } else toast.error(result.userMessage ?? result.error ?? "Falha no broadcast");
       void refreshProbe();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -208,12 +213,15 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const serverApnsOk = Boolean(serverVapid?.apnsConfigured);
   const canSendLocalTest = !isNativeApp && serverVapidOk && permission === "granted" && Boolean(storeId);
   const canSendBroadcast = Boolean(storeId) && (serverVapidOk || serverFcmOk || serverApnsOk);
-  const canSendNativeSelfTest = isNativeApp && Boolean(storeId) && (serverApnsOk || serverFcmOk);
+  const canSendNativeSelfTest =
+    isNativeApp && Boolean(storeId) && localDeviceReady && (serverApnsOk || serverFcmOk);
   const testStatusLabel =
     testStatus === "sending"
       ? "A enviar agora…"
       : testStatus === "success"
-        ? "Sucesso — notificação enviada"
+        ? testResult?.partial
+          ? "Enviado com avisos"
+          : "Sucesso — notificação enviada"
         : testStatus === "error"
           ? "Erro no envio"
           : "Aguardando teste";
@@ -254,7 +262,19 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           </div>
         </div>
       ) : null}
-      {serverVapid?.configured && serverVapid.keysMatchClient === false ? (
+      {serverVapid && serverApnsOk && isNativeApp && serverVapid.staffSecretConfigured === false ? (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">Alertas automáticos de pedidos podem não chegar</p>
+            <p className="text-xs mt-1 opacity-90">
+              O segredo de envio da equipa no Supabase ainda não está configurado. Peça ao suporte para alinhar com a
+              Lovable Cloud (STAFF_PUSH_INTERNAL_SECRET).
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {!isNativeApp && serverVapid?.configured && serverVapid.keysMatchClient === false ? (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
           <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
           <p className="font-semibold">Chaves do site e do servidor não coincidem</p>
@@ -455,7 +475,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
                 disabled={sendBusy || broadcastBusy || !canSendNativeSelfTest || !localDeviceReady}
                 onClick={() => void handleNativeSelfTest()}
               >
-                {broadcastBusy ? (
+                {sendBusy ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <Send className="h-4 w-4 mr-2" />

@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { subscribePushWithLogging } from "@/lib/push/pushSubscriptionCore";
 import { pushLog } from "@/lib/push/pushLogger";
-import { isNativePushAvailable, registerNativeStaffPush } from "@/services/nativePush";
+import { isNativePushAvailable, registerNativeStaffPush, unregisterNativeStaffPush } from "@/services/nativePush";
 
 export const STAFF_PUSH_TAG = "__staff__";
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
@@ -77,6 +77,10 @@ export async function subscribeStaffPush(
 
 export async function unsubscribeStaffPush(): Promise<void> {
   setStaffPushEnabled(false);
+  if (await isNativePushAvailable()) {
+    await unregisterNativeStaffPush();
+    return;
+  }
   if (!("serviceWorker" in navigator)) return;
 
   try {
