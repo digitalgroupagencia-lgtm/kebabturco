@@ -99,6 +99,7 @@ function parseSendPayload(data: unknown): {
     skipped?: boolean;
     reason?: string;
     error?: string;
+    apnsDeliveryNote?: string;
     errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
   };
 }
