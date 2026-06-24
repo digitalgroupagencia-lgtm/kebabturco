@@ -10,7 +10,7 @@ export function notifyStaffUiLangChange(lang: StaffUiLang) {
 const staffLoginCopy = {
   es: {
     title: "Área del equipo",
-    subtitle: "Acceso interno — no es para clientes",
+    subtitle: "Acceso interno, no es para clientes",
     instruction: "Introduzca el correo y la contraseña que el restaurante le dio en Equipo.",
     backAria: "Volver",
     submit: "Entrar",
