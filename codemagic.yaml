@@ -177,120 +177,39 @@ workflows:
           set -euo pipefail
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
+            --archive-method app-store
 
       - name: Verificar perfil App Store (push, sem Tap to Pay)
         script: |
           set +e
-          FOUND_PUSH=0
-          FOUND_TTP=0
+          echo "Perfis instalados após use-profiles:"
           for dir in \
             "$HOME/Library/MobileDevice/Provisioning Profiles" \
             "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
-            for p in "$dir"/*.mobileprovision; do
+            for p in "$dir"/*.mobileprovision "$dir"/*.provisionprofile; do
               [ -f "$p" ] || continue
-              echo "=== $(basename "$p") ==="
               DECODED=$(security cms -D -i "$p" 2>/dev/null)
-              echo "$DECODED" | plutil -p - 2>/dev/null | grep -E '"Name"|application-identifier|aps-environment' || true
-              if echo "$DECODED" | grep -q 'aps-environment'; then
-                echo "OK: perfil inclui notificações push"
-                FOUND_PUSH=1
-              fi
-              if echo "$DECODED" | grep -q 'proximity-reader.payment.acceptance'; then
-                echo "AVISO: perfil ainda inclui Tap to Pay (não é necessário para App Store)"
-                FOUND_TTP=1
-              fi
+              NAME=$(echo "$DECODED" | plutil -extract Name raw - 2>/dev/null)
+              APP_ID=$(echo "$DECODED" | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
+              echo "  · $NAME → $APP_ID"
+              echo "$DECODED" | plutil -p - 2>/dev/null | grep -E 'aps-environment|proximity-reader' || true
             done
           done
-          if [ "$FOUND_PUSH" -ne 1 ]; then
-            echo ""
-            echo "AVISO: Perfil sem aps-environment visível — confirme Push Notifications no portal Apple."
-            echo "O build continua (entitlements Release pedem aps-environment=production)."
-          fi
-          if [ "$FOUND_TTP" -eq 1 ]; then
-            echo "Tap to Pay no perfil é ignorado — Release entitlements não pedem Tap to Pay."
-          fi
 
       - name: Criar pacote para a App Store
         script: |
           set -eo pipefail
-          ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/xcarchive/App.xcarchive"
-          EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
-          mkdir -p "$(dirname "$ARCHIVE_PATH")" "$EXPORT_PATH"
-
-          APPSTORE_PROFILE_NAME=""
-          for dir in \
-            "$HOME/Library/MobileDevice/Provisioning Profiles" \
-            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
-            for p in "$dir"/*.mobileprovision; do
-              [ -f "$p" ] || continue
-              DECODED=$(security cms -D -i "$p" 2>/dev/null)
-              echo "$DECODED" | grep -q 'net.kebabturco.app' || continue
-              if echo "$DECODED" | grep -q 'get-task-allow'; then
-                continue
-              fi
-              APPSTORE_PROFILE_NAME=$(echo "$DECODED" | plutil -extract Name raw - 2>/dev/null)
-              if [ -n "$APPSTORE_PROFILE_NAME" ]; then
-                echo "Perfil App Store: $APPSTORE_PROFILE_NAME"
-                break 2
-              fi
-            done
-          done
-          if [ -z "$APPSTORE_PROFILE_NAME" ]; then
-            echo "ERRO: Perfil App Store (Distribution) não encontrado."
-            echo "Carregue kebabturco_appstore no Codemagic com Push Notifications activo."
-            exit 1
-          fi
-
-          xcodebuild \
-            -project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$ARCHIVE_PATH" \
-            archive \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$APPSTORE_PROFILE_NAME" \
-            2>&1 | tee /tmp/xcodebuild-archive.log
-
-          cat > /tmp/exportOptions.plist <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>teamID</key>
-            <string>4QW32SBR7H</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>net.kebabturco.app</key>
-              <string>${APPSTORE_PROFILE_NAME}</string>
-            </dict>
-            <key>destination</key>
-            <string>export</string>
-          </dict>
-          </plist>
-          PLIST
-
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$ARCHIVE_PATH" \
-            -exportPath "$EXPORT_PATH" \
-            -exportOptionsPlist /tmp/exportOptions.plist \
-            2>&1 | tee /tmp/xcodebuild-export.log
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" \
+            --scheme "$XCODE_SCHEME" \
+            --config Release \
+            2>&1 | tee /tmp/xcodebuild-build-ipa.log
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild-archive.log
-      - /tmp/xcodebuild-export.log
+      - /tmp/xcodebuild-build-ipa.log
 
     publishing:
       app_store_connect:
