@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
@@ -8,10 +8,12 @@ import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTrackin
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import ScreenHeader from "@/components/ScreenHeader";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
-import { Loader2, CheckCircle2, Circle, Radio } from "lucide-react";
+import { Loader2, CheckCircle2, Circle, Radio, EyeOff } from "lucide-react";
 import OrderReviewForm from "@/customer/components/OrderReviewForm";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
+import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
+import { Button } from "@/components/ui/button";
 
 const OrderTrackingScreen = () => {
   const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
