@@ -176,9 +176,16 @@ const StaffEmailLoginScreen = () => {
     setSubmitting(true);
     setError(null);
 
+    const registerPendingAccess = async () => {
+      const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
+      const result = await registerStaffGoogleLoginWithRetry(resolvedStoreId);
+      setStaffAccessStatus(result.status);
+      return result;
+    };
+
     try {
       if (isSignup) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
           options: {
@@ -187,6 +194,13 @@ const StaffEmailLoginScreen = () => {
           },
         });
         if (signUpError) throw signUpError;
+        markStaffSession();
+        if (data.session?.user) {
+          await registerPendingAccess();
+          toast.success(copy.signupSuccess);
+          setIsSignup(false);
+          return;
+        }
         toast.success(copy.signupSuccess);
         setIsSignup(false);
         return;
@@ -198,6 +212,9 @@ const StaffEmailLoginScreen = () => {
       });
       if (signInError) throw signInError;
       markStaffSession();
+      if (!roleData?.role) {
+        await registerPendingAccess();
+      }
     } catch (e) {
       setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
     } finally {
