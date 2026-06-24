@@ -36,6 +36,15 @@ const staffLoginCopy = {
       "El restaurante rechazó este acceso con Google. Si cree que es un error, hable con el administrador.",
     googleSignOut: "Salir y usar otra cuenta",
     googleError: "No se pudo entrar con Google",
+    signupInstruction: "Cree su cuenta para acceder al área del equipo.",
+    nameLabel: "Nombre",
+    signupSubmit: "Crear cuenta",
+    signupSubmitting: "Creando cuenta…",
+    signupSuccess: "Verifique su email para confirmar el registro.",
+    signupToggle: "¿No tiene cuenta?",
+    signupLink: "Crear cuenta",
+    loginToggle: "¿Ya tiene cuenta?",
+    loginLink: "Entrar",
   },
   pt: {
     title: "Área da equipe",
@@ -65,6 +74,15 @@ const staffLoginCopy = {
       "O restaurante recusou este acesso com Google. Se acha que é um erro, fale com o administrador.",
     googleSignOut: "Sair e usar outra conta",
     googleError: "Não foi possível entrar com Google",
+    signupInstruction: "Crie a sua conta para aceder à área da equipa.",
+    nameLabel: "Nome",
+    signupSubmit: "Criar conta",
+    signupSubmitting: "A criar conta…",
+    signupSuccess: "Verifique o e-mail para confirmar o cadastro!",
+    signupToggle: "Não tem conta?",
+    signupLink: "Criar conta",
+    loginToggle: "Já tem conta?",
+    loginLink: "Entrar",
   },
   en: {
     title: "Team area",
@@ -94,10 +112,17 @@ const staffLoginCopy = {
       "The restaurant declined this Google access. Contact the administrator if you think this is a mistake.",
     googleSignOut: "Sign out and use another account",
     googleError: "Could not sign in with Google",
+    signupInstruction: "Create your account to access the team area.",
+    nameLabel: "Name",
+    signupSubmit: "Create account",
+    signupSubmitting: "Creating account…",
+    signupSuccess: "Check your email to confirm sign-up.",
+    signupToggle: "Don't have an account?",
+    signupLink: "Create account",
+    loginToggle: "Already have an account?",
+    loginLink: "Sign in",
   },
-} as const;
-
-export type StaffLoginCopy = (typeof staffLoginCopy)[StaffUiLang];
+} as const; = (typeof staffLoginCopy)[StaffUiLang];
 
 export function getStaffLoginCopy(lang: StaffUiLang): StaffLoginCopy {
   return staffLoginCopy[lang] ?? staffLoginCopy.es;

@@ -7,22 +7,25 @@ import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Lock, User, ChefHat } from "lucide-react";
+import { Mail, Lock, User, ChefHat, Loader2 } from "lucide-react";
 import { APP_NAME } from "@/lib/appMode";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
+import { signInWithGoogleOAuth } from "@/lib/googleOAuth";
 import { nav } from "@/lib/navPaths.ts";
 import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const signupFromUrl = searchParams.get("signup") === "1" || searchParams.get("mode") === "signup";
+  const [isLogin, setIsLogin] = useState(!signupFromUrl);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const nextParam = searchParams.get("next");
   const { user, loading: authLoading } = useAuth();
 
@@ -89,6 +92,19 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const nextQuery = nextParam ? `?next=${encodeURIComponent(nextParam)}` : "";
+      await signInWithGoogleOAuth({
+        redirectUri: `${window.location.origin}${nav.auth()}${nextQuery}`,
+        lang: "pt",
+      });
+    } catch (error: unknown) {
+      toast.error(translateAppErrorFromException(error, "pt"));
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary p-4">
@@ -155,10 +171,36 @@ const Auth = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+            <Button type="submit" className="w-full h-12 text-base" disabled={loading || googleLoading}>
               {loading ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
             </Button>
           </form>
+
+          {!isLogin ? null : (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ou</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 text-base font-semibold"
+                disabled={loading || googleLoading}
+                onClick={() => void handleGoogleLogin()}
+              >
+                {googleLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    A abrir Google…
+                  </>
+                ) : (
+                  "Entrar com Google"
+                )}
+              </Button>
+            </>
+          )}
 
           <p className="text-center text-sm text-muted-foreground">
             {isLogin ? "Não tem conta?" : "Já tem conta?"}{" "}

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffUiLang } from "@/hooks/useStaffUiLang";
@@ -37,6 +38,8 @@ import {
 /** Login da equipa — e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const signupFromUrl = searchParams.get("signup") === "1" || searchParams.get("mode") === "signup";
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const { storeId, loading: storeLoading } = useStaffLoginStore();
@@ -52,6 +55,8 @@ const StaffEmailLoginScreen = () => {
   const brandName = settings?.company_name || "Logo";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [isSignup, setIsSignup] = useState(signupFromUrl);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,10 +144,30 @@ const StaffEmailLoginScreen = () => {
       return;
     }
 
+    if (isSignup && !fullName.trim()) {
+      setError(copy.nameLabel);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
+      if (isSignup) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: { full_name: fullName.trim() },
+            emailRedirectTo: `${window.location.origin}${nav.staff()}`,
+          },
+        });
+        if (signUpError) throw signUpError;
+        toast.success(copy.signupSuccess);
+        setIsSignup(false);
+        return;
+      }
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
@@ -233,10 +258,29 @@ const StaffEmailLoginScreen = () => {
             )}
             <h1 className="text-2xl font-bold leading-tight text-foreground">{copy.title}</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">{copy.subtitle}</p>
-            <p className="mt-4 text-sm text-muted-foreground">{copy.instruction}</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {isSignup ? copy.signupInstruction : copy.instruction}
+            </p>
           </div>
 
           <form className="space-y-4" onSubmit={(e) => void handleLogin(e)}>
+            {isSignup && (
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-name">{copy.nameLabel}</Label>
+                <Input
+                  id="staff-name"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder={copy.nameLabel}
+                  className="h-12 w-full"
+                  required
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="staff-email">{copy.emailLabel}</Label>
               <Input
@@ -276,14 +320,32 @@ const StaffEmailLoginScreen = () => {
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {copy.submitting}
+                  {isSignup ? copy.signupSubmitting : copy.submitting}
                 </>
+              ) : isSignup ? (
+                copy.signupSubmit
               ) : (
                 copy.submit
               )}
             </Button>
           </form>
 
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {isSignup ? copy.loginToggle : copy.signupToggle}{" "}
+            <button
+              type="button"
+              className="font-semibold text-primary hover:underline"
+              onClick={() => {
+                setIsSignup((v) => !v);
+                setError(null);
+              }}
+            >
+              {isSignup ? copy.loginLink : copy.signupLink}
+            </button>
+          </p>
+
+          {!isSignup && (
+            <>
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -308,6 +370,8 @@ const StaffEmailLoginScreen = () => {
               copy.googleButton
             )}
           </Button>
+            </>
+          )}
         </div>
       </main>
     </div>
