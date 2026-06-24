@@ -37,7 +37,7 @@ import {
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
-import { isNativePushAvailable, clearCachedNativePushToken, getNativePushRuntimeDiagnostics } from "@/services/nativePush";
+import { isNativePushAvailable, getNativePushRuntimeDiagnostics } from "@/services/nativePush";
 import type { NativePushRuntimeDiagnostics } from "@/services/nativePush";
 import { getStaffPushClientMode } from "@/lib/staffPush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
@@ -125,7 +125,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       const result =
         audience === "marketing"
           ? await subscribeCustomerMarketingPush(storeId)
-          : await subscribeStaffPush(storeId, isNativeApp ? { forceRefresh: true } : undefined);
+          : await subscribeStaffPush(storeId);
       if (result.ok) {
         toast.success(isNativeApp ? "Este telemóvel está registado para alertas" : "Este dispositivo está subscrito para push");
         await refreshProbe();
@@ -178,7 +178,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
         toast.success(result.userMessage ?? "Notificação enviada para este telemóvel");
       } else {
         if (/BadDeviceToken|DeviceTokenNotForTopic|token deste iPhone/i.test(result.userMessage ?? "")) {
-          clearCachedNativePushToken();
+          const { registerNativeStaffPush } = await import("@/services/nativePush");
+          await registerNativeStaffPush(storeId);
         }
         toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
       }

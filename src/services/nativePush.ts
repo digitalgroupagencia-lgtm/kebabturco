@@ -44,7 +44,19 @@ function logNative(
   pushLog("staff", "native_register", level, message, details);
 }
 
+function getCapacitorAvailabilitySync(): NativeAvailability | null {
+  if (typeof window === "undefined") return null;
+  const cap = (window as unknown as {
+    Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+  }).Capacitor;
+  if (!cap?.isNativePlatform?.()) return null;
+  const platform = (cap.getPlatform?.() ?? "web") as "android" | "ios" | "web";
+  return { isNative: true, platform };
+}
+
 async function getCapacitorAvailability(): Promise<NativeAvailability> {
+  const sync = getCapacitorAvailabilitySync();
+  if (sync) return sync;
   try {
     const { Capacitor } = await import("@capacitor/core");
     const platform = Capacitor.getPlatform() as "android" | "ios" | "web";
@@ -271,8 +283,9 @@ async function attachPushListeners(): Promise<void> {
   });
 }
 
+/** Só para casos extremos — no iPhone apagar listeners impede voltar a receber o token. */
 async function resetNativePushBridge(): Promise<void> {
-  logNative("info", "A reiniciar ligação push nativa");
+  logNative("warn", "Reinício completo da ligação push (evitar no iPhone)");
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
     await PushNotifications.removeAllListeners();
@@ -346,12 +359,15 @@ async function requestNativePermission(): Promise<{
 
 async function triggerRegisterWithRetries(platform: "ios" | "android"): Promise<void> {
   const { PushNotifications } = await import("@capacitor/push-notifications");
-  const attempts = platform === "ios" ? 3 : 1;
+  if (platform === "ios") {
+    await sleep(600);
+  }
+  const attempts = platform === "ios" ? 5 : 1;
   for (let i = 0; i < attempts; i++) {
-    logNative("info", "PushNotifications.register() chamado", { attempt: i + 1, attempts });
+    logNative("info", "Pedido de registo ao telemóvel", { attempt: i + 1, attempts });
     await PushNotifications.register();
     if (readCachedNativePushToken()) return;
-    if (i < attempts - 1) await sleep(1500 * (i + 1));
+    if (i < attempts - 1) await sleep(platform === "ios" ? 2000 * (i + 1) : 1500);
   }
 }
 
@@ -380,9 +396,21 @@ export async function registerNativeStaffPush(
 
   try {
     if (opts?.forceRefresh) {
-      clearCachedNativePushToken();
-      await resetNativePushBridge();
-      await initNativePushBridge();
+      const cachedForRefresh = readCachedNativePushToken();
+      if (nativePlatform === "ios") {
+        // No iPhone: nunca apagar listeners nem o token local — só voltar a sincronizar.
+        logNative("info", "Actualização suave (iPhone)", {
+          hasCachedToken: Boolean(cachedForRefresh),
+        });
+        if (cachedForRefresh) {
+          await persistTokenToBackend(cachedForRefresh, storeId, nativePlatform);
+          return { ok: true, token: cachedForRefresh };
+        }
+      } else {
+        clearCachedNativePushToken();
+        await resetNativePushBridge();
+        await initNativePushBridge();
+      }
     }
 
     const { granted, receive } = await requestNativePermission();
@@ -437,7 +465,8 @@ export async function unregisterNativeStaffPush(): Promise<void> {
     const endpoint = `fcm://${token.replace(/[<>\s]/g, "").toLowerCase()}`;
     await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   }
-  await resetNativePushBridge();
+  // Mantém listeners activos — no iPhone apagar a ponte impede voltar a obter token.
+  logNative("info", "Registo push desactivado neste telemóvel");
 }
 
 /** Para usar no boot do painel — re-regista se o utilizador já tinha activado. */

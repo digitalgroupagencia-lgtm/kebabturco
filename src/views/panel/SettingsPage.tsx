@@ -55,17 +55,31 @@ const PanelSettingsPage = () => {
   const [notifyKitchen, setNotifyKitchen] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(() => isStaffPushEnabled());
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushLastError, setPushLastError] = useState<string | null>(null);
   const [pushClientMode, setPushClientMode] = useState<"native" | "web" | "needs-native-app" | "unsupported" | null>(
     null,
   );
+  const [pushNativeHint, setPushNativeHint] = useState<string | null>(null);
 
   useEffect(() => {
     setSoundOnNewOrder(isPanelAlertsEnabled());
     setPushNotifications(isStaffPushEnabled());
     void getStaffPushClientMode().then(setPushClientMode);
+    void import("@/services/nativePush").then(async ({ getNativePushRuntimeDiagnostics, isNativePushAvailable }) => {
+      if (!(await isNativePushAvailable())) return;
+      const diag = await getNativePushRuntimeDiagnostics();
+      if (diag.permission === "denied") {
+        setPushNativeHint("Notificações bloqueadas no iPhone — Definições → Kebab Turco → Notificações → Permitir.");
+      } else if (diag.permission === "granted" && diag.hasCachedToken) {
+        setPushNativeHint("Telemóvel pronto para alertas.");
+      } else if (diag.permission === "granted") {
+        setPushNativeHint("Permissão OK — ao ligar o interruptor, o telemóvel pode demorar até 1 minuto.");
+      }
+    });
   }, []);
 
   const handlePushToggle = async (enabled: boolean) => {
+    setPushLastError(null);
     if (!enabled) {
       setPushNotifications(false);
       setStaffPushEnabled(false);
@@ -74,10 +88,12 @@ const PanelSettingsPage = () => {
       return;
     }
     if (!effectiveStoreId) {
+      setPushLastError(t("settings.push.no_store"));
       toast.error(t("settings.push.no_store"));
       return;
     }
     if (!isStaffPushSupported()) {
+      setPushLastError(t("settings.push.unavailable"));
       toast.error(t("settings.push.unavailable"));
       return;
     }
@@ -85,7 +101,9 @@ const PanelSettingsPage = () => {
       const mode = await getStaffPushClientMode();
       setPushClientMode(mode);
       if (mode === "needs-native-app") {
-        toast.error(t("settings.push.native_required"));
+        const msg = t("settings.push.native_required");
+        setPushLastError(msg);
+        toast.error(msg);
         return;
       }
     }
@@ -94,10 +112,14 @@ const PanelSettingsPage = () => {
       const res = await subscribeStaffPush(effectiveStoreId);
       if (res.ok) {
         setPushNotifications(true);
+        setPushLastError(null);
+        setPushNativeHint("Telemóvel registado para alertas.");
         toast.success(t("settings.push.enabled"));
       } else {
         setPushNotifications(false);
-        toast.error(res.error || t("settings.push.enable_error"));
+        const err = res.error || t("settings.push.enable_error");
+        setPushLastError(err);
+        toast.error(err);
       }
     } finally {
       setPushBusy(false);
@@ -270,6 +292,17 @@ const PanelSettingsPage = () => {
               {pushClientMode === "web" ? (
                 <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
                   {t("settings.push.web_hint")}
+                </div>
+              ) : null}
+              {pushNativeHint && pushClientMode === "native" ? (
+                <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                  {pushNativeHint}
+                </div>
+              ) : null}
+              {pushLastError ? (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive flex gap-2">
+                  <AlertTriangle className="h-5 w-5 shrink-0" />
+                  <p>{pushLastError}</p>
                 </div>
               ) : null}
               {[
