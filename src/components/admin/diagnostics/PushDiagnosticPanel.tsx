@@ -36,7 +36,7 @@ import {
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
-import { isNativePushAvailable } from "@/services/nativePush";
+import { isNativePushAvailable, clearCachedNativePushToken } from "@/services/nativePush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 import type { DiagnosticLogEntry } from "@/lib/diagnostics/createDiagnosticLogger";
@@ -106,7 +106,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       const result =
         audience === "marketing"
           ? await subscribeCustomerMarketingPush(storeId)
-          : await subscribeStaffPush(storeId);
+          : await subscribeStaffPush(storeId, isNativeApp ? { forceRefresh: true } : undefined);
       if (result.ok) {
         toast.success(isNativeApp ? "Este telemóvel está registado para alertas" : "Este dispositivo está subscrito para push");
         await refreshProbe();
@@ -156,7 +156,12 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       setTestResult(result);
       setTestStatus(result.ok ? "success" : "error");
       if (result.ok) toast.success("Notificação enviada para este telemóvel");
-      else toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
+      else {
+        if (/BadDeviceToken|DeviceTokenNotForTopic|token deste iPhone/i.test(result.userMessage ?? "")) {
+          clearCachedNativePushToken();
+        }
+        toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
+      }
       void refreshProbe();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -238,6 +243,17 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           </div>
         </div>
       ) : null}
+      {serverVapid && serverApnsOk && isNativeApp && serverVapid.apnsSandbox === false ? (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-semibold">Servidor em modo App Store — a sua app de teste precisa de modo teste</p>
+            <p className="text-xs mt-1 opacity-90">
+              Na Lovable Cloud, defina APNS_USE_SANDBOX=true (app instalada pelo ficheiro .ipa). Depois volte a «Registar push».
+            </p>
+          </div>
+        </div>
+      ) : null}
       {serverVapid?.configured && serverVapid.keysMatchClient === false ? (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
           <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
@@ -270,7 +286,15 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           {serverVapid === null ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <AdminDiagnosticStatusBadge ok={serverApnsOk} label={serverApnsOk ? "Pronto" : "Falta chave Apple"} />
+            <>
+              <AdminDiagnosticStatusBadge ok={serverApnsOk} label={serverApnsOk ? "Pronto" : "Falta chave Apple"} />
+              {serverApnsOk ? (
+                <p className="text-xs text-muted-foreground">
+                  Modo Apple: {serverVapid.apnsSandbox === false ? "App Store" : "Teste (.ipa)"}
+                  {serverVapid.apnsTopic ? ` · ${serverVapid.apnsTopic}` : ""}
+                </p>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>
@@ -462,6 +486,12 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             <p className="text-xs text-amber-700">
               Se «Registar push» falha, precisa da versão nova da app no iPhone (correcção nativa). Depois feche a app
               por completo e abra outra vez.
+            </p>
+          ) : null}
+          {isNativeApp && testStatus === "error" && testResult?.userMessage?.includes("token") ? (
+            <p className="text-xs text-destructive font-medium">
+              Toque «Registar push» outra vez (renova o token) e repita o teste com a app em segundo plano ou ecrã
+              bloqueado.
             </p>
           ) : null}
         </CardContent>

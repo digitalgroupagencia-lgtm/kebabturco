@@ -28,6 +28,8 @@ export type ServerVapidDiagnostics = {
   keysMatchClient: boolean | null;
   fcmConfigured?: boolean;
   apnsConfigured?: boolean;
+  apnsSandbox?: boolean | null;
+  apnsTopic?: string | null;
   probeError?: string;
 };
 
@@ -62,6 +64,9 @@ async function invokePushFunction(body: Record<string, unknown>) {
 
 function parseSendPayload(data: unknown): {
   sent?: number;
+  sentApns?: number;
+  sentFcm?: number;
+  sentWeb?: number;
   matched?: number;
   targeted?: number;
   skipped?: boolean;
@@ -71,6 +76,9 @@ function parseSendPayload(data: unknown): {
 } {
   return (data ?? {}) as {
     sent?: number;
+    sentApns?: number;
+    sentFcm?: number;
+    sentWeb?: number;
     matched?: number;
     targeted?: number;
     skipped?: boolean;
@@ -78,6 +86,57 @@ function parseSendPayload(data: unknown): {
     error?: string;
     errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
   };
+}
+
+function apnsErrorUserMessage(message: string): string {
+  if (/BadDeviceToken|DeviceTokenNotForTopic/i.test(message)) {
+    return "A Apple recusou o token deste iPhone. Toque «Registar push» outra vez (com a app fechada e reaberta). Se usa a app de teste (.ipa), o servidor tem de estar em modo teste Apple (APNS_USE_SANDBOX=true).";
+  }
+  return `Erro da Apple: ${message.slice(0, 280)}`;
+}
+
+function finalizeNativeDirectResult(
+  payload: ReturnType<typeof parseSendPayload>,
+  platform: "ios" | "android",
+): PushTestSendResult {
+  if (payload.error) {
+    return { ok: false, error: payload.error, userMessage: payload.error };
+  }
+  if (payload.skipped) {
+    const userMessage = translateServerVapidReason(payload.reason);
+    return { ok: false, skipped: true, reason: payload.reason, userMessage };
+  }
+
+  const errors = payload.errors ?? [];
+  const channelErrors = errors.filter((e) => e.channel === platform);
+  if (channelErrors.length > 0) {
+    const first = channelErrors[0];
+    return {
+      ok: false,
+      sent: payload.sent ?? 0,
+      matched: payload.matched,
+      targeted: payload.targeted,
+      errors,
+      userMessage: apnsErrorUserMessage(first.message),
+    };
+  }
+
+  const channelSent = platform === "ios" ? (payload.sentApns ?? 0) : (payload.sentFcm ?? 0);
+  if (channelSent === 0) {
+    return {
+      ok: false,
+      sent: 0,
+      matched: payload.matched,
+      targeted: payload.targeted,
+      errors,
+      userMessage:
+        platform === "ios"
+          ? "O servidor não entregou ao iPhone. Registe push outra vez e confirme APNS_USE_SANDBOX=true para a app de teste."
+          : "O servidor não entregou a este telemóvel Android.",
+    };
+  }
+
+  return { ok: true, sent: channelSent, matched: payload.matched, targeted: payload.targeted };
 }
 
 function finalizeSendResult(
@@ -142,6 +201,8 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       publicKeyPreview?: string | null;
       fcmConfigured?: boolean;
       apnsConfigured?: boolean;
+      apnsSandbox?: boolean | null;
+      apnsTopic?: string | null;
     };
 
     const clientKey = getVapidPublicKey();
@@ -163,6 +224,8 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       keysMatchClient,
       fcmConfigured: Boolean(payload.fcmConfigured),
       apnsConfigured: Boolean(payload.apnsConfigured),
+      apnsSandbox: payload.apnsSandbox ?? null,
+      apnsTopic: payload.apnsTopic ?? null,
     };
 
     pushLog(
@@ -466,10 +529,7 @@ export async function sendNativeDeviceTestPush(opts: {
       return { ok: false, error: error.message, userMessage };
     }
 
-    const result = finalizeSendResult(
-      parseSendPayload(data),
-      "O servidor não conseguiu entregar ao iPhone. Confirme APNS_USE_SANDBOX=true para a app de teste (.ipa).",
-    );
+    const result = finalizeNativeDirectResult(parseSendPayload(data), nativePlatform);
 
     if (result.ok) {
       pushLog("test", "test_send", "info", `Notificação enviada para este telemóvel`, result);

@@ -49,9 +49,12 @@ export function isStaffPushSupported(): boolean {
 }
 
 /** Subscrição push da equipa — app nativa (FCM) ou browser (VAPID). */
-export async function subscribeStaffPush(storeId: string): Promise<{ ok: boolean; error?: string }> {
+export async function subscribeStaffPush(
+  storeId: string,
+  opts?: { forceRefresh?: boolean },
+): Promise<{ ok: boolean; error?: string }> {
   if (await isNativePushAvailable()) {
-    const native = await registerNativeStaffPush(storeId);
+    const native = await registerNativeStaffPush(storeId, opts);
     if (native.ok) {
       setStaffPushEnabled(true);
       return { ok: true };

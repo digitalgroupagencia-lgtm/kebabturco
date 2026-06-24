@@ -48,6 +48,16 @@ export function readCachedNativePushToken(): string | null {
   }
 }
 
+/** Limpa token em cache — usar antes de voltar a registar após erro da Apple. */
+export function clearCachedNativePushToken(): void {
+  cachedToken = null;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function getNativePushPermission(): Promise<NativePushPermission> {
   if (!(await isNativePushAvailable())) return "unknown";
   try {
@@ -187,7 +197,10 @@ export async function getNativeDevicePushStatus(): Promise<{
 }
 
 /** Pedir permissão + registar token FCM/APNs. Idempotente. */
-export async function registerNativeStaffPush(storeId: string): Promise<{
+export async function registerNativeStaffPush(
+  storeId: string,
+  opts?: { forceRefresh?: boolean },
+): Promise<{
   ok: boolean;
   reason?: string;
   token?: string;
@@ -213,8 +226,12 @@ export async function registerNativeStaffPush(storeId: string): Promise<{
       };
     }
 
+    if (opts?.forceRefresh) {
+      clearCachedNativePushToken();
+    }
+
     const cached = readCachedNativePushToken();
-    if (cached) {
+    if (cached && !opts?.forceRefresh) {
       try {
         await persistTokenToBackend(cached, storeId, platform as "android" | "ios");
         return { ok: true, token: cached };

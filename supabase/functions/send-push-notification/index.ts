@@ -223,7 +223,7 @@ async function sendApns(
   payload: { title: string; body: string; tag?: string; url?: string },
   config: ApnsConfig,
 ): Promise<void> {
-  const token = deviceToken.replace(/[<>\s]/g, "");
+  const token = deviceToken.replace(/[<>\s]/g, "").toLowerCase();
   const jwt = await getApnsJwt(config);
   const body = JSON.stringify({
     aps: {
@@ -447,8 +447,9 @@ Deno.serve(async (req) => {
 
     const targetMap = new Map<string, PushSubRow>();
     let matchedInDb = 0;
+    const nativeDirectOnly = Boolean(testDirect && nativeDirectToken && nativePlatform);
 
-    if (storeId || orderId) {
+    if (!nativeDirectOnly && (storeId || orderId)) {
       let query = supabase
         .from("push_subscriptions")
         .select("endpoint, p256dh, auth, order_id, customer_phone, platform, fcm_token");
@@ -460,7 +461,7 @@ Deno.serve(async (req) => {
       for (const sub of matched) targetMap.set(sub.endpoint, sub);
     }
 
-    if (testDirect && directSubscription?.endpoint && directSubscription?.p256dh && directSubscription?.auth) {
+    if (!nativeDirectOnly && testDirect && directSubscription?.endpoint && directSubscription?.p256dh && directSubscription?.auth) {
       targetMap.set(directSubscription.endpoint, {
         endpoint: directSubscription.endpoint,
         p256dh: directSubscription.p256dh,
@@ -470,7 +471,7 @@ Deno.serve(async (req) => {
     }
 
     if (testDirect && nativeDirectToken && nativePlatform) {
-      const cleanToken = String(nativeDirectToken).replace(/[<>\s]/g, "");
+      const cleanToken = String(nativeDirectToken).replace(/[<>\s]/g, "").toLowerCase();
       const plat = String(nativePlatform).toLowerCase();
       const platform = plat === "ios" || plat === "android" ? plat : "ios";
       targetMap.set(`fcm://${cleanToken}`, {
@@ -524,7 +525,10 @@ Deno.serve(async (req) => {
         });
         errors.push({ endpoint: sub.endpoint.slice(0, 60), status, message, channel: platform });
         // Token inválido -> remover
-        if (status === 403 || status === 404 || status === 410 || /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT/i.test(message)) {
+        if (
+          status === 403 || status === 404 || status === 410 ||
+          /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|BadDeviceToken|DeviceTokenNotForTopic/i.test(message)
+        ) {
           await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
         }
       }
