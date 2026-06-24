@@ -42,7 +42,7 @@ function unavailableFinanceSnapshot(): RestaurantFinanceSnapshot {
     availableCents: 0,
     pendingCents: 0,
     payoutInterval: "weekly",
-    payoutWeekday: "segunda-feira",
+    payoutWeekday: "quinta-feira",
     nextPayoutDate: null,
     nextPayoutAmountCents: null,
     ibanLast4: null,

@@ -1,5 +1,9 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { isSimulatedConnectAccountId } from "./stripeConnectSync.ts";
+import {
+  nextThursdayIso,
+  RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
+} from "./stripePayoutPolicy.ts";
 
 export type FinanceSnapshotPayload = {
   availableCents: number;
@@ -25,14 +29,6 @@ function weekdayLabel(anchor: string | undefined): string | null {
   return anchor ? map[anchor] ?? anchor : null;
 }
 
-function nextMondayIso(from = new Date()): string {
-  const d = new Date(from);
-  const day = d.getDay();
-  const daysUntilMonday = day === 0 ? 1 : day === 1 ? 7 : 8 - day;
-  d.setDate(d.getDate() + daysUntilMonday);
-  return d.toISOString().slice(0, 10);
-}
-
 export async function buildRestaurantFinanceSnapshot(
   stripe: Stripe,
   accountId: string,
@@ -44,8 +40,8 @@ export async function buildRestaurantFinanceSnapshot(
       availableCents: net,
       pendingCents: 0,
       payoutInterval: "weekly",
-      payoutWeekday: "segunda-feira",
-      nextPayoutDate: nextMondayIso(),
+      payoutWeekday: RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
+      nextPayoutDate: nextThursdayIso(),
       nextPayoutAmountCents: net > 0 ? net : null,
       ibanLast4: "0000",
       simulated: true,
@@ -55,7 +51,7 @@ export async function buildRestaurantFinanceSnapshot(
   const account = await stripe.accounts.retrieve(accountId);
   const schedule = account.settings?.payouts?.schedule;
   const interval = (schedule?.interval as FinanceSnapshotPayload["payoutInterval"]) ?? "weekly";
-  const payoutWeekday = weekdayLabel(schedule?.weekly_anchor);
+  const payoutWeekday = weekdayLabel(schedule?.weekly_anchor) ?? RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT;
 
   let ibanLast4: string | null = null;
   try {
@@ -92,7 +88,7 @@ export async function buildRestaurantFinanceSnapshot(
   }
 
   if (!nextPayoutDate && interval === "weekly" && availableCents > 0) {
-    nextPayoutDate = nextMondayIso();
+    nextPayoutDate = nextThursdayIso();
     nextPayoutAmountCents = availableCents;
   }
 

@@ -35,10 +35,14 @@ import {
 } from "./stripeConnectIntakeMeta.ts";
 import { buildRestaurantFinanceSnapshot } from "./stripeFinanceSnapshot.ts";
 import { syncStorePayoutsFromStripe } from "./stripePayoutActions.ts";
-import { applyConnectPayoutPolicy } from "./stripePayoutPolicy.ts";
+import {
+  applyConnectPayoutPolicy,
+  RESTAURANT_PAYOUT_SCHEDULE,
+  RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
+} from "./stripePayoutPolicy.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-24-payout-policy-v1";
+export const CONNECT_HANDLER_VERSION = "2026-06-24-payout-thursday-v2";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -525,7 +529,7 @@ export async function ensureConnectAccount(
       },
       settings: {
         payouts: {
-          schedule: { interval: "weekly", weekly_anchor: "monday" },
+          schedule: RESTAURANT_PAYOUT_SCHEDULE,
           debit_negative_balances: true,
         },
       },
@@ -1590,7 +1594,7 @@ export async function handleStripeConnectRequest(
       accountId,
       payoutPolicy,
       message:
-        "Plataforma em repasse manual; restaurante em repasse automático semanal para o IBAN da loja.",
+        "Plataforma em repasse manual; restaurante em repasse automático às quintas-feiras para o IBAN da loja.",
       ...meta,
     });
   }
@@ -1619,7 +1623,7 @@ export async function handleStripeConnectRequest(
         availableCents: 0,
         pendingCents: 0,
         payoutInterval: "weekly",
-        payoutWeekday: "segunda-feira",
+        payoutWeekday: RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
         nextPayoutDate: null,
         nextPayoutAmountCents: null,
         ibanLast4: store.stripe_iban_last4 ?? null,

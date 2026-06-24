@@ -1,11 +1,18 @@
 import type Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { isSimulatedConnectAccountId } from "./stripeConnectSync.ts";
 
-/** Repasses automáticos só nas contas Connect dos restaurantes (segundas-feiras). */
+/**
+ * Repasses automáticos nas contas Connect (quintas-feiras).
+ * Com liquidação T+3 na Stripe, vendas de sex–dom ficam disponíveis antes da quinta seguinte.
+ */
+export const RESTAURANT_PAYOUT_WEEKLY_ANCHOR = "thursday" as const;
+
 export const RESTAURANT_PAYOUT_SCHEDULE = {
   interval: "weekly" as const,
-  weekly_anchor: "monday" as const,
+  weekly_anchor: RESTAURANT_PAYOUT_WEEKLY_ANCHOR,
 };
+
+export const RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT = "quinta-feira";
 
 export type PayoutPolicyResult = {
   platformInterval: string;
@@ -40,7 +47,7 @@ async function ensureRestaurantWeeklyPayouts(
   const schedule = account.settings?.payouts?.schedule;
   const interval = schedule?.interval ?? "unknown";
   const anchor = schedule?.weekly_anchor ?? null;
-  if (interval === "weekly" && anchor === "monday") {
+  if (interval === "weekly" && anchor === RESTAURANT_PAYOUT_WEEKLY_ANCHOR) {
     return { interval, updated: false };
   }
   await stripe.accounts.update(connectedAccountId, {
@@ -55,8 +62,8 @@ async function ensureRestaurantWeeklyPayouts(
 }
 
 /**
- * Plataforma (Euro Business Group): repasses MANUAIS — comissões ficam no saldo Stripe.
- * Restaurante (Connect): repasses AUTOMÁTICOS semanais para o IBAN do restaurante.
+ * Plataforma: repasses MANUAIS (comissões ficam no saldo Stripe).
+ * Restaurante (Connect): repasses AUTOMÁTICOS às quintas-feiras → IBAN da loja.
  */
 export async function applyConnectPayoutPolicy(
   stripe: Stripe,
@@ -78,4 +85,14 @@ export async function applyConnectPayoutPolicy(
     restaurantInterval,
     restaurantUpdated,
   };
+}
+
+/** Próxima quinta-feira (ISO date) — estimativa quando a Stripe não devolve payout pendente. */
+export function nextThursdayIso(from = new Date()): string {
+  const d = new Date(from);
+  const day = d.getDay();
+  let daysUntil = (4 - day + 7) % 7;
+  if (daysUntil === 0) daysUntil = 7;
+  d.setDate(d.getDate() + daysUntil);
+  return d.toISOString().slice(0, 10);
 }

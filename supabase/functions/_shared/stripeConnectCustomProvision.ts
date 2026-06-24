@@ -1,5 +1,6 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import type { ConnectStoreRow } from "./stripeConnectOnboard.ts";
+import { RESTAURANT_PAYOUT_SCHEDULE } from "./stripePayoutPolicy.ts";
 
 export const DEFAULT_BUSINESS_WEBSITE = "https://kebabturco.net";
 
@@ -281,7 +282,7 @@ function buildAccountCoreFields(
       : undefined,
     settings: {
       payouts: {
-        schedule: { interval: "weekly", weekly_anchor: "monday" },
+        schedule: RESTAURANT_PAYOUT_SCHEDULE,
         debit_negative_balances: true,
       },
       payments: {
@@ -356,7 +357,7 @@ export async function ensureConnectChargebackRecoverySettings(
   await stripe.accounts.update(accountId, {
     settings: {
       payouts: {
-        schedule: { interval: "weekly", weekly_anchor: "monday" },
+        schedule: RESTAURANT_PAYOUT_SCHEDULE,
         debit_negative_balances: true,
       },
     },

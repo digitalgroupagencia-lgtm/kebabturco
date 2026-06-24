@@ -4,7 +4,7 @@ import {
   connectErrorResponse,
   handleStripeConnectRequest,
 } from "../_shared/stripeConnectOnboard.ts";
-import { getStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { getStripeSecretKey, getStripeSecretKeyTest } from "../_shared/stripeEnv.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { runStoreConnectStatusSync } from "../_shared/stripeConnectPublicSync.ts";
 
@@ -96,6 +96,51 @@ Deno.serve(async (req) => {
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Erro ao activar Bizum";
         return json({ error: msg, code: "bizum_enable_failed" }, 400);
+      }
+    }
+
+    if (mode === "enforce_payout_policy" || mode === "sync_payouts" || mode === "finance_snapshot") {
+      const service = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: store } = await service
+        .from("stores")
+        .select("stripe_connect_account_id, stripe_connect_environment")
+        .eq("id", storeId)
+        .maybeSingle();
+
+      const useTest = store?.stripe_connect_environment === "test";
+      const secret =
+        (useTest ? getStripeSecretKeyTest() : getStripeSecretKey()) ??
+        getStripeSecretKey() ??
+        getStripeSecretKeyTest();
+      if (!secret) {
+        return json({ error: "Stripe não configurada no servidor." }, 503);
+      }
+
+      const Stripe = (await import("https://esm.sh/stripe@14.21.0?target=deno")).default;
+      const stripe = new Stripe(secret, { apiVersion: "2023-10-16" });
+      const accountId = store?.stripe_connect_account_id ?? null;
+
+      const { applyConnectPayoutPolicy } = await import("../_shared/stripePayoutPolicy.ts");
+
+      if (mode === "enforce_payout_policy") {
+        const payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
+        return json({
+          ok: true,
+          accountId,
+          payoutPolicy,
+          handlerVersion: CONNECT_HANDLER_VERSION,
+          message:
+            "Plataforma em repasse manual; restaurante em repasse automático às quintas-feiras.",
+        });
+      }
+
+      try {
+        await applyConnectPayoutPolicy(stripe, accountId);
+      } catch (e) {
+        console.warn("[connect] payout policy (direct route)", e);
       }
     }
 

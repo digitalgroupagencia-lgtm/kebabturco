@@ -55,6 +55,9 @@ type Props = {
 function payoutScheduleText(snapshot: RestaurantFinanceSnapshot | null): string {
   if (!snapshot) return "Repasses automáticos para a sua conta bancária";
   if (snapshot.payoutInterval === "daily") return "Repasses automáticos todos os dias úteis";
+  if (snapshot.payoutWeekday === "quinta-feira") {
+    return "Repasses automáticos às quintas-feiras (após liquidação dos pagamentos)";
+  }
   if (snapshot.payoutInterval === "weekly" && snapshot.payoutWeekday) {
     return `Repasses automáticos às ${snapshot.payoutWeekday}s`;
   }

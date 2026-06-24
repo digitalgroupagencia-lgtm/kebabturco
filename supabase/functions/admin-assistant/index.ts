@@ -211,11 +211,11 @@ Criar membro: **Equipa → Novo membro** (nome, e-mail, senha, função). Enviar
 
 ### Recebimentos e pagamentos (página Recebimentos / Cobros)
 - O dono preencheu **IBAN**, NIF, nome do negócio e morada — esse IBAN é onde cai o dinheiro dos pagamentos online.
-- **Transferência automática todas as segundas-feiras** (regra Stripe): na segunda chega o valor **disponível** (já confirmado). Pagamentos recentes podem aparecer como «em processamento» até ao próximo ciclo.
+- **Transferência automática às quintas-feiras** (regra Stripe): na quinta chega o valor **disponível** (já confirmado, ~4 dias após o pagamento T+3). Pagamentos muito recentes podem aparecer como «em processamento» até à quinta seguinte.
 - O **cliente paga o total normal** do pedido — o restaurante não cobra taxa extra ao cliente no checkout.
 - Dos pagamentos online desconta-se uma **comissão de serviço modesta** da plataforma (percentagem pequena do valor). O valor líquido aparece em cada movimento em Recebimentos. Ex.: pedido de 50 € → cerca de 48 €; pedido de 100 € → cerca de 97 €.
 - **Dinheiro no balcão** não passa por aqui — só cartão/Bizum online.
-- Cancelar pedido pago online → reembolso ao cliente; esse valor não entra no repasse da segunda-feira.
+- Cancelar pedido pago online → reembolso ao cliente; esse valor não entra no repasse da quinta-feira.
 
 ### Perguntas típicas do dono — respostas curtas
 - «O som não toca?» → Activar alertas em Pedidos ao vivo, volume máximo, modo silêncio desligado.
@@ -224,8 +224,8 @@ Criar membro: **Equipa → Novo membro** (nome, e-mail, senha, função). Enviar
 - «Como adiciono funcionário?» → Equipa → Novo membro ou aprovar Google pendente.
 - «O tablet precisa de ir ao restaurante para atualizar?» → Não, publicar versão nova + «Atualizar agora» no tablet (ou reabrir app).
 - «Como acedo de casa ao tablet?» → Ferramenta RustDesk (instalada à parte), não é dentro desta app.
-- «Quando recebo o dinheiro do cartão?» → **Todas as segundas-feiras** na conta IBAN registada; vê o valor disponível em Recebimentos.
-- «Porque o valor da segunda-feira é diferente das vendas?» → Cada linha em Recebimentos mostra o valor líquido de cada pedido.
+- «Quando recebo o dinheiro do cartão?» → **Às quintas-feiras** na conta IBAN registada; vê o valor disponível em Recebimentos.
+- «Porque o valor da quinta-feira é diferente das vendas?» → Cada linha em Recebimentos mostra o valor líquido de cada pedido.
 - «O cliente paga mais por usar a app?» → **Não.** Paga o preço normal; as comissões são descontadas do que o restaurante recebe.
 
 
