@@ -15,6 +15,7 @@ import { isPanelAlertsEnabled, setPanelAlertsEnabled } from "@/lib/panelAlerts";
 import {
   isStaffPushEnabled,
   isStaffPushSupported,
+  getStaffPushClientMode,
   setStaffPushEnabled,
   subscribeStaffPush,
   unsubscribeStaffPush,
@@ -54,10 +55,14 @@ const PanelSettingsPage = () => {
   const [notifyKitchen, setNotifyKitchen] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(() => isStaffPushEnabled());
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushClientMode, setPushClientMode] = useState<"native" | "web" | "needs-native-app" | "unsupported" | null>(
+    null,
+  );
 
   useEffect(() => {
     setSoundOnNewOrder(isPanelAlertsEnabled());
     setPushNotifications(isStaffPushEnabled());
+    void getStaffPushClientMode().then(setPushClientMode);
   }, []);
 
   const handlePushToggle = async (enabled: boolean) => {
@@ -75,6 +80,14 @@ const PanelSettingsPage = () => {
     if (!isStaffPushSupported()) {
       toast.error(t("settings.push.unavailable"));
       return;
+    }
+    if (enabled) {
+      const mode = await getStaffPushClientMode();
+      setPushClientMode(mode);
+      if (mode === "needs-native-app") {
+        toast.error(t("settings.push.native_required"));
+        return;
+      }
     }
     setPushBusy(true);
     try {
@@ -242,6 +255,23 @@ const PanelSettingsPage = () => {
               <CardDescription>{t("settings.notif.desc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {pushClientMode === "needs-native-app" ? (
+                <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+                  <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                  <p>{t("settings.push.native_required")}</p>
+                </div>
+              ) : null}
+              {pushClientMode === "native" ? (
+                <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm flex gap-2">
+                  <Smartphone className="h-5 w-5 shrink-0 text-emerald-700" />
+                  <p>{t("settings.push.native_hint")}</p>
+                </div>
+              ) : null}
+              {pushClientMode === "web" ? (
+                <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                  {t("settings.push.web_hint")}
+                </div>
+              ) : null}
               {[
                 {
                   label: t("settings.notif.sound"),

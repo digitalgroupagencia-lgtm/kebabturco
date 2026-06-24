@@ -1090,6 +1090,21 @@ export const STAFF_I18N_CATALOG = {
   "settings.push.unavailable": { es: "Push no disponible — configure VAPID y use HTTPS", pt: "Push não disponível — configure VAPID e use HTTPS", en: "Push unavailable — configure VAPID and use HTTPS" },
   "settings.push.enabled": { es: "Push activo — recibirá avisos incluso con el panel cerrado", pt: "Push activo — receberá avisos mesmo com o painel fechado", en: "Push on — you'll get alerts even with the panel closed" },
   "settings.push.enable_error": { es: "No se pudo activar push", pt: "Não foi possível activar push", en: "Could not enable push" },
+  "settings.push.native_required": {
+    es: "Abra la app Kebab Turco instalada en el iPhone (App Store). El navegador del móvil no registra alertas de equipo.",
+    pt: "Abra a app Kebab Turco instalada no iPhone (App Store). O browser do telemóvel não regista alertas da equipa.",
+    en: "Open the Kebab Turco app installed on your iPhone (App Store). The phone browser cannot register staff alerts.",
+  },
+  "settings.push.native_hint": {
+    es: "Está en la app instalada — al activar, el iPhone pedirá permiso de notificaciones.",
+    pt: "Está na app instalada — ao activar, o iPhone vai pedir permissão de notificações.",
+    en: "You are in the installed app — when you enable this, the iPhone will ask for notification permission.",
+  },
+  "settings.push.web_hint": {
+    es: "Está en el navegador del ordenador — las alertas llegan a este Chrome, no al iPhone.",
+    pt: "Está no browser do computador — os alertas chegam a este Chrome, não ao iPhone.",
+    en: "You are in the desktop browser — alerts go to this Chrome, not to the iPhone.",
+  },
   "settings.ops.prefix.ph": { es: "Ej: A, B, MESA", pt: "Ex: A, B, MESA", en: "E.g. A, B, TABLE" },
   "settings.danger.title": { es: "Zona peligrosa", pt: "Zona perigosa", en: "Danger zone" },
   "settings.danger.desc": { es: "Por defecto solo borra pedidos de prueba. Ventas reales solo se eliminan con la opción peligrosa. Requiere su contraseña.", pt: "Por defeito só apaga pedidos de teste. Vendas reais só são removidas se marcar a opção perigosa. Requer a sua senha.", en: "By default only deletes test orders. Real sales only removed with the dangerous option. Requires your password." },

@@ -16,7 +16,8 @@ export type PushLogStage =
   | "db_register"
   | "test_send"
   | "broadcast_send"
-  | "unsubscribe";
+  | "unsubscribe"
+  | "native_register";
 
 export type PushLogEntry = DiagnosticLogEntry & {
   context: PushLogContext;

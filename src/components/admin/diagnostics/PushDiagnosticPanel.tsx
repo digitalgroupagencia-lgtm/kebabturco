@@ -37,7 +37,9 @@ import {
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
-import { isNativePushAvailable, clearCachedNativePushToken } from "@/services/nativePush";
+import { isNativePushAvailable, clearCachedNativePushToken, getNativePushRuntimeDiagnostics } from "@/services/nativePush";
+import type { NativePushRuntimeDiagnostics } from "@/services/nativePush";
+import { getStaffPushClientMode } from "@/lib/staffPush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 import type { DiagnosticLogEntry } from "@/lib/diagnostics/createDiagnosticLogger";
@@ -61,6 +63,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const [localDeviceReady, setLocalDeviceReady] = useState<boolean | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<LocalDevicePushStatus | null>(null);
   const [isNativeApp, setIsNativeApp] = useState(false);
+  const [clientMode, setClientMode] = useState<"native" | "web" | "needs-native-app" | "unsupported" | null>(null);
+  const [nativeRuntime, setNativeRuntime] = useState<NativePushRuntimeDiagnostics | null>(null);
   const [subscribeBusy, setSubscribeBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
   const [broadcastBusy, setBroadcastBusy] = useState(false);
@@ -78,6 +82,12 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
     setRefreshing(true);
     const native = await isNativePushAvailable();
     setIsNativeApp(native);
+    setClientMode(await getStaffPushClientMode());
+    if (native) {
+      setNativeRuntime(await getNativePushRuntimeDiagnostics());
+    } else {
+      setNativeRuntime(null);
+    }
     setVapid(getVapidKeyDiagnostics());
     setBrowser(getBrowserPushSupport());
     setPermission(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
@@ -265,21 +275,36 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
           <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
           <div>
-            <p className="font-semibold">Servidor em modo teste (.ipa)</p>
+            <p className="font-semibold">Servidor em modo teste (.ipa Development)</p>
             <p className="text-xs mt-1 opacity-90">
-              Se instalou a app pela <strong>App Store</strong>, na Lovable defina APNS_USE_SANDBOX=false, Publish, e
-              volte a «Registar push» no telemóvel.
+              Correcto só para app instalada pelo ficheiro de teste. Se usa a <strong>App Store</strong>, defina
+              APNS_USE_SANDBOX=false na Lovable e Publish.
             </p>
           </div>
         </div>
       ) : null}
       {serverVapid && serverApnsOk && isNativeApp && serverVapid.apnsSandbox === false ? (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm flex gap-2">
+          <Bell className="h-5 w-5 shrink-0 text-emerald-700" />
+          <div>
+            <p className="font-semibold">Servidor em modo App Store</p>
+            <p className="text-xs mt-1 opacity-90">
+              Alinhado com a app descarregada da loja Apple. Registe push neste telemóvel e teste com a app fechada.
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {!isNativeApp ? (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
           <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
           <div>
-            <p className="font-semibold">Servidor em modo App Store — a sua app de teste precisa de modo teste</p>
+            <p className="font-semibold">Está no browser — não no app instalado</p>
             <p className="text-xs mt-1 opacity-90">
-              Na Lovable Cloud, defina APNS_USE_SANDBOX=true (app instalada pelo ficheiro .ipa). Depois volte a «Registar push».
+              Para registar o iPhone da equipa, abra a <strong>app Kebab Turco</strong> instalada (App Store ou .ipa).
+              O browser do computador só regista este Chrome, não o telemóvel.
+              {clientMode === "needs-native-app"
+                ? " Detetámos telemóvel no browser — use a app instalada."
+                : ""}
             </p>
           </div>
         </div>
@@ -316,6 +341,18 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           <AdminDiagnosticStatusBadge ok={Boolean(localDeviceReady)} label={deviceStatus?.label ?? "A verificar…"} />
           {deviceStatus?.tokenPreview ? (
             <p className="text-xs text-muted-foreground font-mono truncate">Token {deviceStatus.tokenPreview}</p>
+          ) : null}
+          {nativeRuntime ? (
+            <ul className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
+              <li>Ambiente: {nativeRuntime.environment === "native" ? "app instalada" : "browser"}</li>
+              <li>Plataforma: {nativeRuntime.platform}</li>
+              <li>Permissão: {nativeRuntime.permission}</li>
+              <li>Ligação push: {nativeRuntime.bridgeReady ? "activa" : "a iniciar…"}</li>
+              <li>Token local: {nativeRuntime.hasCachedToken ? "sim" : "não"}</li>
+              {nativeRuntime.lastRegistrationError ? (
+                <li className="text-destructive">Erro Apple: {nativeRuntime.lastRegistrationError}</li>
+              ) : null}
+            </ul>
           ) : null}
         </CardContent>
       </Card>

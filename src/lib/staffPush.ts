@@ -30,7 +30,7 @@ export function setStaffPushEnabled(enabled: boolean) {
   }
 }
 
-function isStaffWebPushSupported(): boolean {
+export function isStaffWebPushSupported(): boolean {
   return Boolean(
     getVapidPublicKey() &&
       typeof window !== "undefined" &&
@@ -38,6 +38,18 @@ function isStaffWebPushSupported(): boolean {
       "PushManager" in window &&
       "Notification" in window,
   );
+}
+
+export type StaffPushClientMode = "native" | "web" | "needs-native-app" | "unsupported";
+
+/** Onde o utilizador está a tentar activar push da equipa. */
+export async function getStaffPushClientMode(): Promise<StaffPushClientMode> {
+  if (await isNativePushAvailable()) return "native";
+  if (typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    return "needs-native-app";
+  }
+  if (isStaffWebPushSupported()) return "web";
+  return "unsupported";
 }
 
 export function isStaffPushSupported(): boolean {
@@ -53,13 +65,35 @@ export async function subscribeStaffPush(
   storeId: string,
   opts?: { forceRefresh?: boolean },
 ): Promise<{ ok: boolean; error?: string }> {
-  if (await isNativePushAvailable()) {
+  const mode = await getStaffPushClientMode();
+  if (mode === "needs-native-app") {
+    return {
+      ok: false,
+      error:
+        "Abra a app Kebab Turco instalada no telemóvel (App Store ou ficheiro de teste). O browser do telemóvel não regista alertas da equipa.",
+    };
+  }
+
+  if (mode === "native") {
     const native = await registerNativeStaffPush(storeId, opts);
     if (native.ok) {
       setStaffPushEnabled(true);
       return { ok: true };
     }
+    if (native.reason === "not-native") {
+      return {
+        ok: false,
+        error: "Esta função só funciona dentro da app instalada no telemóvel.",
+      };
+    }
     return { ok: false, error: native.reason ?? "Push nativo indisponível" };
+  }
+
+  if (mode === "unsupported") {
+    return {
+      ok: false,
+      error: "Push não disponível neste browser — use Chrome no computador ou a app no telemóvel.",
+    };
   }
 
   const result = await subscribePushWithLogging({
