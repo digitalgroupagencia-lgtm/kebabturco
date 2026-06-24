@@ -267,19 +267,25 @@ export default function RestaurantFinanceDashboard({
         <PremiumFunnelChart data={analytics.byMethod} />
       </PremiumChartCard>
 
-      <div className="rounded-xl border bg-card p-4 text-center">
-        <p className="text-[10px] text-muted-foreground uppercase font-bold">Total pago pelos clientes</p>
-        <p className="text-2xl font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
+      <div className="rounded-xl border bg-card p-4 grid grid-cols-2 gap-3 text-center">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Total no período ({periodLabel})</p>
+          <p className="text-2xl font-black tabular-nums mt-1">{formatEur(periodTotal)}€</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Total geral pago pelos clientes</p>
+          <p className="text-2xl font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
+        </div>
       </div>
 
       <div>
         <h2 className="text-sm font-bold mb-2 flex items-center gap-1.5">
           <Receipt className="h-4 w-4" />
-          Extrato de movimentos
+          Extrato de movimentos · {periodLabel}
         </h2>
-        {movements.length === 0 ? (
+        {filteredMovements.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-10 border border-dashed rounded-2xl">
-            Ainda sem movimentos — aparecem aqui assim que houver pagamentos online.
+            Sem movimentos no período selecionado.
           </p>
         ) : (
           <div className="rounded-2xl border overflow-hidden">
@@ -289,7 +295,7 @@ export default function RestaurantFinanceDashboard({
               <span className="text-right">Estado</span>
             </div>
             <div className="divide-y">
-              {movements.map((m) => (
+              {filteredMovements.map((m) => (
                 <div
                   key={m.id}
                   className="px-3 py-3 sm:grid sm:grid-cols-[1.4fr_1fr_0.8fr] sm:gap-2 sm:items-center hover:bg-muted/20"
