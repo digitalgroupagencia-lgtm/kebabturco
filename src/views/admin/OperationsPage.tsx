@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2, Copy, AlertTriangle } from "lucide-react";
+import { Wallet, Save, CreditCard, ArrowRight, CheckCircle2, Copy, AlertTriangle, Smartphone } from "lucide-react";
+import TapToPaySettingsSection from "@/components/tapToPay/TapToPaySettingsSection";
+import type { StoreFinancialProfile } from "@/services/orderService";
+import { stripeConnectSetupHint } from "@/lib/stripeConnectReady";
 import { BIZUM_COLUMN_ACTIVATION_SQL } from "@/lib/checkoutActivationSql";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
@@ -43,6 +46,7 @@ const OperationsPage = () => {
   const [loadingOps, setLoadingOps] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlineReady, setOnlineReady] = useState(false);
+  const [stripeProfile, setStripeProfile] = useState<StoreFinancialProfile | null>(null);
   const [bizumColumnReady, setBizumColumnReady] = useState(true);
   const [copyingSql, setCopyingSql] = useState(false);
 
@@ -110,8 +114,14 @@ const OperationsPage = () => {
     });
     void probeBizumColumn(STORE_ID);
     void fetchStoreFinancialProfile(STORE_ID)
-      .then((data) => setOnlineReady(isStripeConnectReady(data)))
-      .catch(() => setOnlineReady(false));
+      .then((data) => {
+        setStripeProfile(data);
+        setOnlineReady(isStripeConnectReady(data));
+      })
+      .catch(() => {
+        setStripeProfile(null);
+        setOnlineReady(false);
+      });
   }, [STORE_ID]);
 
   const update = (k: keyof Ops, v: Ops[keyof Ops]) => setS((p) => p ? { ...p, [k]: v } : p);
@@ -166,7 +176,7 @@ const OperationsPage = () => {
 
   const stripeIssue = onlineReady
     ? null
-    : stripeAdminConfigIssue(false, true);
+    : stripeAdminConfigIssue(false, true, stripeConnectSetupHint(stripeProfile));
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full">
@@ -184,10 +194,15 @@ const OperationsPage = () => {
       {stripeIssue && (
         <div className="rounded-xl border-2 border-destructive/40 bg-destructive/5 p-4 space-y-2">
           <p className="font-bold text-sm text-destructive">{stripeIssue.message}</p>
-          <p className="text-xs text-muted-foreground">{stripeIssue.action}</p>
-          <Button asChild variant="outline" size="sm" className="h-9">
-            <Link to={nav.admin("diagnostics")}>Abrir Estado do sistema</Link>
-          </Button>
+          <p className="text-xs text-muted-foreground leading-relaxed">{stripeIssue.action}</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button asChild variant="default" size="sm" className="h-9">
+              <Link to={nav.admin("finance")}>Ir para Recebimentos</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="h-9">
+              <Link to={nav.admin("diagnostics")}>Abrir Estado do sistema</Link>
+            </Button>
+          </div>
         </div>
       )}
 
@@ -215,6 +230,22 @@ const OperationsPage = () => {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Smartphone className="h-5 w-5" />
+            Tap to Pay no iPhone
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Cobrança presencial com cartão no iPhone da equipa (sem terminal extra). Active aqui antes de gravar o
+            vídeo para a Apple.
+          </p>
+          {STORE_ID ? <TapToPaySettingsSection storeId={STORE_ID} /> : null}
         </CardContent>
       </Card>
 

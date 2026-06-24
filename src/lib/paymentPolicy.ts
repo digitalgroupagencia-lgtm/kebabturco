@@ -114,6 +114,7 @@ export function stripeConfigIssue(stripeReady: boolean, hasPublishableKey: boole
 export function stripeAdminConfigIssue(
   stripeReady: boolean,
   hasPublishableKey: boolean,
+  setupHint?: { message: string; steps: string[] },
 ): { message: string; action: string } | null {
   if (!hasPublishableKey) {
     return {
@@ -122,9 +123,12 @@ export function stripeAdminConfigIssue(
     };
   }
   if (!stripeReady) {
+    const steps = setupHint?.steps?.length
+      ? setupHint.steps.map((s, i) => `${i + 1}. ${s}`).join(" ")
+      : "Admin → Recebimentos → Recriar conta Stripe → Sincronizar com Stripe.";
     return {
-      message: "Conta Stripe do restaurante incompleta.",
-      action: "Admin → Recebimentos → Conectar recebimentos do restaurante.",
+      message: setupHint?.message ?? "Conta Stripe do restaurante incompleta.",
+      action: steps,
     };
   }
   return null;
