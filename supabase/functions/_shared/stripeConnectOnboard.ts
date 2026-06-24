@@ -894,6 +894,94 @@ export async function handleStripeConnectRequest(
     }
   }
 
+  if (mode === "cleanup_duplicate_connect_accounts") {
+    if (!storeId) {
+      return json({ error: "storeId é obrigatório", code: "store_id_required" }, 400);
+    }
+
+    const internalSecret = Deno.env.get("STAFF_PUSH_INTERNAL_SECRET");
+    const headerSecret = req.headers.get("x-staff-push-secret");
+    const isInternal = Boolean(internalSecret && headerSecret && headerSecret === internalSecret);
+
+    const service = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    if (!isInternal) {
+      const userId = await resolveAuthUserId(req);
+      await assertAdminMaster(service, userId);
+    }
+
+    const liveKey = getStripeSecretKey();
+    if (!liveKey || stripeKeyMode(liveKey) !== "live") {
+      return json({ error: "Chave live da Stripe em falta no servidor.", code: "live_key_missing" }, 503);
+    }
+
+    const { data: store, error: storeErr } = await service
+      .from("stores")
+      .select("id, name, tenant_id, stripe_connect_account_id, stripe_connect_environment")
+      .eq("id", storeId)
+      .maybeSingle();
+
+    if (storeErr || !store) {
+      return json({ error: "Restaurante não encontrado.", code: "store_not_found" }, 404);
+    }
+
+    const preserveId = store.stripe_connect_account_id;
+    if (!preserveId || preserveId.startsWith("simulated-")) {
+      return json(
+        {
+          error: "Este restaurante ainda não tem conta Stripe ligada na app.",
+          code: "no_linked_account",
+        },
+        400,
+      );
+    }
+
+    const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+    const intake = await loadStorePayoutIntake(service, store.id);
+    const duplicates = await listDuplicateStripeAccountsForStore(liveStripe, store as ConnectStoreRow, intake);
+    const targets = duplicates.filter((a) => a.id !== preserveId);
+
+    const { deleted, failed } = await deleteDuplicateStripeAccountsForStore(
+      liveStripe,
+      store as ConnectStoreRow,
+      intake,
+      { preserveAccountId: preserveId },
+    );
+
+    let keptName: string | null = null;
+    try {
+      const kept = await liveStripe.accounts.retrieve(preserveId);
+      keptName =
+        kept.business_profile?.name ??
+        (typeof kept.company?.name === "string" ? kept.company.name : null);
+    } catch {
+      /* ignore */
+    }
+
+    return json({
+      ok: failed.length === 0,
+      kept: preserveId,
+      keptBusinessName: keptName,
+      duplicateCandidates: targets.map((a) => ({
+        id: a.id,
+        email: a.email ?? null,
+        created: a.created ?? null,
+      })),
+      deleted,
+      failed,
+      message:
+        deleted.length > 0
+          ? `Conta correcta mantida (${preserveId}). ${deleted.length} duplicada(s) removida(s).`
+          : failed.length > 0
+            ? "Não foi possível apagar a(s) duplicada(s) — pode haver saldo pendente na Stripe."
+            : "Nenhuma duplicada encontrada para apagar.",
+      handlerVersion: CONNECT_HANDLER_VERSION,
+    });
+  }
+
   const userId = await resolveAuthUserId(req);
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,

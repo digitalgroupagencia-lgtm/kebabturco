@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
         "embedded_onboarding",
         "platform_status",
         "sync_status",
+        "cleanup_duplicate_connect_accounts",
         "finance_snapshot",
         "sync_payouts",
         "enforce_payout_policy",
