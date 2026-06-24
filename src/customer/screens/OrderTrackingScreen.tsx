@@ -16,11 +16,17 @@ import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderSt
 import { Button } from "@/components/ui/button";
 
 const OrderTrackingScreen = () => {
-  const { trackingOrderId, setScreen, orderNumber, screen } = useOrder();
+  const { trackingOrderId, setScreen, orderNumber, screen, setActiveOrderId, setTrackingOrderId } = useOrder();
   const { t } = useLanguage();
   const { settings } = useOperationsSettings();
   const [order, setOrder] = useState<PublicOrderTrack | null>(null);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const { storeId } = useResolvedStore();
 
