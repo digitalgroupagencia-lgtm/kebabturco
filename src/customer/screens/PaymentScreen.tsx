@@ -65,6 +65,7 @@ import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import StoreClosedDialog from "@/customer/components/StoreClosedDialog";
 import SellerCheckoutForm from "@/customer/components/SellerCheckoutForm";
 import { useSellerMode } from "@/contexts/SellerModeContext";
+import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
 
 
 
@@ -1478,7 +1479,7 @@ const PaymentScreen = () => {
       </div>
 
       {!stripeClientSecret && !showCheckoutSpinner && (
-        <div className="shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+        <div className={`shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}>
           {showError === "store" && (
             <div className="mb-2 px-1">
               <p className="text-xs text-destructive font-bold">

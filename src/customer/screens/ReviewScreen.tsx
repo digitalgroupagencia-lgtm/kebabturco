@@ -14,6 +14,7 @@ import { configurationSummaryLines } from "@/lib/modifiers/legacyBridge";
 import type { CartConfiguration } from "@/lib/modifiers/types";
 import InAppConfirmDialog from "@/components/InAppConfirmDialog";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
+import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
 
 type LangMap = Record<string, string>;
 type SuggestionConfig = {
@@ -401,7 +402,7 @@ const ReviewScreen = () => {
 
       {/* Checkout compacto — acima da tab bar */}
       {items.length > 0 && (
-        <div className="shrink-0 z-40 border-t border-border/70 bg-background/98 backdrop-blur-md px-4 pt-2 pb-2 shadow-[0_-6px_20px_-16px_rgba(0,0,0,0.18)]">
+        <div className={`shrink-0 z-40 border-t border-border/70 bg-background/98 backdrop-blur-md px-4 pt-2 shadow-[0_-6px_20px_-16px_rgba(0,0,0,0.18)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}>
           <button
             type="button"
             onClick={() => setScreen("home")}

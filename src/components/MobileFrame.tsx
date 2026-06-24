@@ -32,7 +32,7 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
               boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.08)",
             }}
           />
-          {children}
+          <div className="flex min-h-0 flex-1 flex-col h-full">{children}</div>
         </div>
       </div>
     </div>

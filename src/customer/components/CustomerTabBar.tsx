@@ -4,6 +4,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveOrder } from "@/customer/active-order/useActiveOrder";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
+import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
 
 type TabId = "home" | "orders" | "cart" | "account";
 
@@ -57,8 +58,7 @@ const CustomerTabBar = () => {
 
   return (
     <nav
-      className="customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className={`customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
       aria-label={t("navHome")}
     >
       {showActiveOrderBanner && (

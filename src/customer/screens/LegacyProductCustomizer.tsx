@@ -18,6 +18,7 @@ import {
 import { resolveCustomerVariants } from "@/lib/modifiers/proteinRules";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CUSTOMER_ACTION_FOOTER_CLASS } from "@/lib/storefrontFooter";
 
 const ingredientMap: Record<string, string[]> = {
   "pita-kebab": ["Lechuga", "Col", "Tomate", "Cebolla", "Maíz", "Zanahoria", "Salsas"],
@@ -299,7 +300,7 @@ export default function LegacyProductCustomizer({ product, editingItem, editingC
         )}
       </div>
 
-      <section className="shrink-0 border-t border-border/60 bg-card/95 px-4 pt-3 backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <section className={CUSTOMER_ACTION_FOOTER_CLASS}>
         <button
           type="button"
           onClick={handleAdd}
