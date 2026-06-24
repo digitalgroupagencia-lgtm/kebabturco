@@ -256,7 +256,7 @@ export default function RestaurantFinanceDashboard({
 
         <PremiumChartCard
           title="Evolução diária"
-          subtitle="Últimos 30 dias — valor pago pelos clientes"
+          subtitle={`${periodLabel} — valor pago pelos clientes`}
           className="min-w-0"
         >
           <PremiumDualLineChart data={analytics.dailySeries} />
