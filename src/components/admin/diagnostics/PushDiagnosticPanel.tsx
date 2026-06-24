@@ -29,6 +29,7 @@ import { pushDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import {
   sendTestPushNotification,
   sendBroadcastTestPushNotification,
+  sendNativeDeviceTestPush,
   fetchServerVapidDiagnostics,
   type PushTestAudience,
   type PushTestSendResult,
@@ -131,6 +132,30 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
       setTestStatus(result.ok ? "success" : "error");
       if (result.ok) toast.success(`Notificação enviada — ${result.sent ?? 0} dispositivo(s)`);
       else if (result.skipped) toast.error(result.userMessage ?? "Servidor sem chaves VAPID");
+      else toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
+      void refreshProbe();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setTestStatus("error");
+      setTestResult({ ok: false, error: message, userMessage: message });
+    } finally {
+      setSendBusy(false);
+    }
+  };
+
+  const handleNativeSelfTest = async () => {
+    if (!storeId) {
+      toast.error("Escolha uma unidade");
+      return;
+    }
+    setSendBusy(true);
+    setTestStatus("sending");
+    setTestResult(null);
+    try {
+      const result = await sendNativeDeviceTestPush({ storeId, title: testTitle, body: testBody });
+      setTestResult(result);
+      setTestStatus(result.ok ? "success" : "error");
+      if (result.ok) toast.success("Notificação enviada para este telemóvel");
       else toast.error(result.userMessage ?? result.error ?? "Falha ao enviar teste");
       void refreshProbe();
     } catch (e) {
@@ -404,7 +429,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             ) : (
               <Button
                 disabled={sendBusy || broadcastBusy || !canSendNativeSelfTest || !localDeviceReady}
-                onClick={() => void handleBroadcastTest()}
+                onClick={() => void handleNativeSelfTest()}
               >
                 {broadcastBusy ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

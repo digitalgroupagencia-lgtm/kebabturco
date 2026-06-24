@@ -286,7 +286,13 @@ const STAFF_PUSH_ROLES = new Set([
 
 async function authorizeStaffBroadcast(
   req: Request,
-  body: { orderId?: string; storeId?: string; audience?: string; testDirect?: boolean },
+  body: {
+    orderId?: string;
+    storeId?: string;
+    audience?: string;
+    testDirect?: boolean;
+    pushDiagnostic?: boolean;
+  },
 ): Promise<boolean> {
   if (!isStaffStoreBroadcast(body)) return true;
 
@@ -298,7 +304,6 @@ async function authorizeStaffBroadcast(
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (serviceKey && auth.includes(serviceKey)) return true;
 
-  // Painel / app equipa: utilizador autenticado com role de staff pode enviar teste broadcast.
   if (!internalSecret) return true;
   if (!auth.startsWith("Bearer ")) return false;
 
@@ -315,7 +320,16 @@ async function authorizeStaffBroadcast(
     .from("user_roles")
     .select("role")
     .eq("user_id", userData.user.id);
-  return (roles ?? []).some((r) => STAFF_PUSH_ROLES.has(r.role as string));
+  if ((roles ?? []).some((r) => STAFF_PUSH_ROLES.has(r.role as string))) return true;
+
+  if (body.storeId) {
+    const { data: canAccess, error: accessErr } = await userClient.rpc("user_can_access_store", {
+      _store_id: body.storeId,
+    });
+    if (!accessErr && canAccess === true) return true;
+  }
+
+  return false;
 }
 
 function buildHealthPayload() {
@@ -390,10 +404,13 @@ Deno.serve(async (req) => {
       audience,
       testDirect,
       directSubscription,
+      nativeDirectToken,
+      nativePlatform,
       requireInteraction,
+      pushDiagnostic,
     } = body;
 
-    if (!(await authorizeStaffBroadcast(req, body))) {
+    if (!(await authorizeStaffBroadcast(req, { ...body, pushDiagnostic }))) {
       return new Response(
         JSON.stringify({
           error: "Sem autorização para enviar alertas da equipa. Inicie sessão no painel ou configure o segredo interno.",
@@ -449,6 +466,17 @@ Deno.serve(async (req) => {
         p256dh: directSubscription.p256dh,
         auth: directSubscription.auth,
         platform: "web",
+      });
+    }
+
+    if (testDirect && nativeDirectToken && nativePlatform) {
+      const cleanToken = String(nativeDirectToken).replace(/[<>\s]/g, "");
+      const plat = String(nativePlatform).toLowerCase();
+      const platform = plat === "ios" || plat === "android" ? plat : "ios";
+      targetMap.set(`fcm://${cleanToken}`, {
+        endpoint: `fcm://${cleanToken}`,
+        fcm_token: cleanToken,
+        platform,
       });
     }
 

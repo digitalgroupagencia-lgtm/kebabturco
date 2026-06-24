@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
 import { pushLog } from "@/lib/push/pushLogger";
+import { readCachedNativePushToken } from "@/services/nativePush";
+import { getLocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
 
 export type PushTestAudience = "staff" | "marketing";
 
@@ -48,6 +50,62 @@ function formatInvokeError(error: { message?: string; context?: unknown }): stri
     return "O servidor recusou o envio (sessão expirada ou sem permissão). Saia e entre outra vez no painel.";
   }
   return error.message ?? "Erro ao contactar o servidor de push";
+}
+
+async function invokePushFunction(body: Record<string, unknown>) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
+  return supabase.functions.invoke("send-push-notification", { body, headers });
+}
+
+function parseSendPayload(data: unknown): {
+  sent?: number;
+  matched?: number;
+  targeted?: number;
+  skipped?: boolean;
+  reason?: string;
+  error?: string;
+  errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
+} {
+  return (data ?? {}) as {
+    sent?: number;
+    matched?: number;
+    targeted?: number;
+    skipped?: boolean;
+    reason?: string;
+    error?: string;
+    errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
+  };
+}
+
+function finalizeSendResult(
+  payload: ReturnType<typeof parseSendPayload>,
+  emptyMessage: string,
+): PushTestSendResult {
+  if (payload.error) {
+    return { ok: false, error: payload.error, userMessage: payload.error };
+  }
+
+  if (payload.skipped) {
+    const userMessage = translateServerVapidReason(payload.reason);
+    return { ok: false, skipped: true, reason: payload.reason, userMessage };
+  }
+
+  const sent = payload.sent ?? 0;
+  const matched = payload.matched ?? 0;
+  const errors = payload.errors;
+
+  if (sent === 0) {
+    const firstErr = errors?.[0];
+    const userMessage = firstErr
+      ? `Erro da Apple/Google${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 280)}`
+      : emptyMessage;
+    return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
+  }
+
+  return { ok: true, sent, matched, targeted: payload.targeted, errors };
 }
 
 export function translateServerVapidReason(reason?: string): string {
@@ -134,15 +192,14 @@ async function invokeStoreBroadcast(opts: {
 }): Promise<PushTestSendResult> {
   const { storeId, audience, title, body: msgBody, url } = opts;
 
-  const { data, error } = await supabase.functions.invoke("send-push-notification", {
-    body: {
-      storeId,
-      audience,
-      title,
-      body: msgBody,
-      tag: `push-test-${Date.now()}-${audience ?? "staff"}`,
-      url,
-    },
+  const { data, error } = await invokePushFunction({
+    storeId,
+    audience,
+    title,
+    body: msgBody,
+    tag: `push-test-${Date.now()}-${audience ?? "staff"}`,
+    url,
+    pushDiagnostic: true,
   });
 
   if (error) {
@@ -155,15 +212,7 @@ async function invokeStoreBroadcast(opts: {
     return { ok: false, error: error.message, userMessage };
   }
 
-  const payload = data as {
-    sent?: number;
-    matched?: number;
-    targeted?: number;
-    skipped?: boolean;
-    reason?: string;
-    error?: string;
-    errors?: { endpoint: string; status?: number; message: string }[];
-  };
+  const payload = parseSendPayload(data);
 
   if (payload.error) {
     return { ok: false, error: payload.error, userMessage: payload.error };
@@ -181,7 +230,7 @@ async function invokeStoreBroadcast(opts: {
   if (sent === 0) {
     const firstErr = errors?.[0];
     const userMessage = firstErr
-      ? `Erro do serviço de push${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 240)}`
+      ? `Erro da Apple/Google${firstErr.status ? ` (${firstErr.status})` : ""}: ${firstErr.message.slice(0, 240)}`
       : audience === "marketing"
         ? "Nenhum cliente com notificações activas nesta loja. Peça para aceitar no menu ou registe um telemóvel de teste."
         : "Nenhum dispositivo da equipa registado nesta loja. Abra a app no iPhone, entre na equipa e aceite notificações.";
@@ -289,17 +338,16 @@ export async function sendTestPushNotification(opts: {
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke("send-push-notification", {
-      body: {
-        storeId,
-        audience: audience === "marketing" ? "marketing" : undefined,
-        title,
-        body: msgBody,
-        tag: `push-test-${Date.now()}`,
-        url: audience === "staff" ? "/panel/live" : "/",
-        testDirect: true,
-        directSubscription,
-      },
+    const { data, error } = await invokePushFunction({
+      storeId,
+      audience: audience === "marketing" ? "marketing" : undefined,
+      title,
+      body: msgBody,
+      tag: `push-test-${Date.now()}`,
+      url: audience === "staff" ? "/panel/live" : "/",
+      testDirect: true,
+      directSubscription,
+      pushDiagnostic: true,
     });
 
     if (error) {
@@ -359,6 +407,77 @@ export async function sendTestPushNotification(opts: {
     });
 
     return { ok: true, sent, matched, targeted: payload.targeted };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    pushLog("test", "test_send", "error", message);
+    return { ok: false, error: message, userMessage: message };
+  }
+}
+
+/** Teste directo no iPhone/Android — envia só para o token deste telemóvel (sem broadcast). */
+export async function sendNativeDeviceTestPush(opts: {
+  storeId: string;
+  title: string;
+  body: string;
+}): Promise<PushTestSendResult> {
+  const { storeId, title, body: msgBody } = opts;
+  const token = readCachedNativePushToken();
+  const device = await getLocalDevicePushStatus();
+
+  pushLog("test", "test_send", "info", "A enviar teste directo para este telemóvel", {
+    storeId,
+    hasToken: Boolean(token),
+    platform: device.mode,
+  });
+
+  if (!token || device.mode !== "native") {
+    const userMessage = "Este telemóvel ainda não tem token — toque em «Registar push» primeiro.";
+    pushLog("test", "test_send", "warn", userMessage);
+    return { ok: false, userMessage };
+  }
+
+  let nativePlatform: "ios" | "android" = "ios";
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.getPlatform() === "android") nativePlatform = "android";
+  } catch {
+    /* default ios */
+  }
+
+  try {
+    const { data, error } = await invokePushFunction({
+      storeId,
+      title,
+      body: msgBody,
+      tag: `push-native-test-${Date.now()}`,
+      url: "/panel/live",
+      testDirect: true,
+      pushDiagnostic: true,
+      nativeDirectToken: token,
+      nativePlatform,
+    });
+
+    if (error) {
+      const userMessage = formatInvokeError(error);
+      pushLog("test", "test_send", "error", "Envio directo falhou no servidor", {
+        message: error.message,
+        userMessage,
+      });
+      return { ok: false, error: error.message, userMessage };
+    }
+
+    const result = finalizeSendResult(
+      parseSendPayload(data),
+      "O servidor não conseguiu entregar ao iPhone. Confirme APNS_USE_SANDBOX=true para a app de teste (.ipa).",
+    );
+
+    if (result.ok) {
+      pushLog("test", "test_send", "info", `Notificação enviada para este telemóvel`, result);
+    } else {
+      pushLog("test", "test_send", "error", result.userMessage ?? "Falha no envio directo", result);
+    }
+
+    return result;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     pushLog("test", "test_send", "error", message);
