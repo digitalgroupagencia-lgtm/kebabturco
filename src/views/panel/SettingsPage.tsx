@@ -29,6 +29,7 @@ import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import TapToPaySettingsSection from "@/components/tapToPay/TapToPaySettingsSection";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -189,12 +190,14 @@ const PanelSettingsPage = () => {
   const [closedToday, setClosedToday] = useState(false);
   const [settingsTab, setSettingsTab] = useState("store");
 
+  const tapToPayAvailable = isTapToPayPlatform();
+
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "").toLowerCase();
-    if (hash === "tap-to-pay" || hash === "tap") {
+    if ((hash === "tap-to-pay" || hash === "tap") && tapToPayAvailable) {
       setSettingsTab("tap");
     }
-  }, []);
+  }, [tapToPayAvailable]);
 
   const save = (sectionKey: "settings.tab.store" | "settings.tab.ops" | "settings.tab.receipt" | "settings.tab.notif") => {
     toast.success(panelT(lang, "settings.toast.saved_memory", { section: t(sectionKey) }));
@@ -214,7 +217,9 @@ const PanelSettingsPage = () => {
           <TabsTrigger value="ops"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.ops")}</TabsTrigger>
           <TabsTrigger value="receipt"><Receipt className="w-4 h-4 mr-1.5" /> {t("settings.tab.receipt")}</TabsTrigger>
           <TabsTrigger value="notif"><Bell className="w-4 h-4 mr-1.5" /> {t("settings.tab.notif")}</TabsTrigger>
-          <TabsTrigger value="tap"><Smartphone className="w-4 h-4 mr-1.5" /> {t("settings.tab.tap")}</TabsTrigger>
+          {tapToPayAvailable ? (
+            <TabsTrigger value="tap"><Smartphone className="w-4 h-4 mr-1.5" /> {t("settings.tab.tap")}</TabsTrigger>
+          ) : null}
           <TabsTrigger value="hours"><Clock className="w-4 h-4 mr-1.5" /> {t("settings.tab.hours")}</TabsTrigger>
         </TabsList>
 
@@ -415,6 +420,7 @@ const PanelSettingsPage = () => {
           </Card>
         </TabsContent>
 
+        {tapToPayAvailable ? (
         <TabsContent value="tap">
           {effectiveStoreId ? (
             <div id="tap-to-pay">
@@ -426,6 +432,7 @@ const PanelSettingsPage = () => {
             </Card>
           )}
         </TabsContent>
+        ) : null}
 
         <TabsContent value="hours">
           <Card>

@@ -225,7 +225,9 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, message: string):
   }
 }
 
+/** Tap to Pay só em builds Development (VITE_IOS_TAP_TO_PAY_ENABLED=true). App Store fica desligado. */
 export function isTapToPayPlatform(): boolean {
+  if (import.meta.env.VITE_IOS_TAP_TO_PAY_ENABLED !== "true") return false;
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 }
 

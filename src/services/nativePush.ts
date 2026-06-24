@@ -28,6 +28,7 @@ export type NativePushRuntimeDiagnostics = {
 
 let bridgeReady = false;
 let bridgeInitPromise: Promise<void> | null = null;
+let appResumeHooked = false;
 let cachedToken: string | null = null;
 let lastRegistrationError: string | null = null;
 const tokenWaiters = new Set<{
@@ -297,6 +298,34 @@ async function resetNativePushBridge(): Promise<void> {
 }
 
 /** Arranca os listeners cedo — evita perder o token no iPhone. */
+async function hookNativePushAppResume(): Promise<void> {
+  if (appResumeHooked || !(await isNativePushAvailable())) return;
+  appResumeHooked = true;
+  try {
+    const { App } = await import("@capacitor/app");
+    await App.addListener("appStateChange", ({ isActive }) => {
+      if (!isActive) return;
+      void refreshNativePushTokenIfNeeded();
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+async function refreshNativePushTokenIfNeeded(): Promise<void> {
+  if (!(await isNativePushAvailable())) return;
+  await initNativePushBridge();
+  if ((await getNativePushPermission()) !== "granted") return;
+  if (readCachedNativePushToken()) return;
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    logNative("info", "register() ao reabrir a app (ainda sem token)");
+    await PushNotifications.register();
+  } catch (e) {
+    logNative("warn", "register() ao reabrir falhou", { error: String(e) });
+  }
+}
+
 export async function initNativePushBridge(): Promise<void> {
   if (!(await isNativePushAvailable())) return;
   if (bridgeInitPromise) return bridgeInitPromise;
@@ -310,6 +339,7 @@ export async function initNativePushBridge(): Promise<void> {
     await ensureAndroidNotificationChannel();
     await attachPushListeners();
     bridgeReady = true;
+    await hookNativePushAppResume();
 
     const perm = await PushNotifications.checkPermissions();
     logNative("info", "Permissão actual", { receive: perm.receive });
