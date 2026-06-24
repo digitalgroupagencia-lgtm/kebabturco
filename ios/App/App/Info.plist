@@ -49,5 +49,9 @@
     <true/>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Necessário para processar pagamentos presenciais com Tap to Pay no iPhone.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+    </array>
 </dict>
 </plist>

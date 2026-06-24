@@ -17,5 +17,6 @@ grep -q 'CODE_SIGN_IDENTITY = "Apple Development"' "$PBX" || \
 ' "$PBX"
 
 echo "✓ iOS Development: net.kebabturco.app"
+echo "  · Push: AppDelegate com handlers APNs (obrigatório Capacitor)"
 echo "  · Debug → App.entitlements (aps-environment=development + Tap to Pay)"
 echo "  · Release → App.Release.entitlements (só para App Store)"

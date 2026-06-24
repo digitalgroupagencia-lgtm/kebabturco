@@ -178,6 +178,92 @@ function getFcmServiceAccount(): {
 }
 
 // =============================================================
+// APNs HTTP/2 — iPhone nativo (token APNs do Capacitor)
+// =============================================================
+type ApnsConfig = {
+  keyId: string;
+  teamId: string;
+  privateKey: string;
+  topic: string;
+  useSandbox: boolean;
+};
+
+let cachedApnsJwt: { token: string; expiresAt: number } | null = null;
+
+function getApnsConfig(): ApnsConfig | null {
+  const keyId = Deno.env.get("APNS_KEY_ID") ?? "";
+  const teamId = Deno.env.get("APNS_TEAM_ID") ?? "";
+  const privateKey = (Deno.env.get("APNS_PRIVATE_KEY") ?? "").replace(/\\n/g, "\n");
+  const topic = Deno.env.get("APNS_BUNDLE_ID") ?? "net.kebabturco.app";
+  if (!keyId || !teamId || !privateKey.includes("BEGIN PRIVATE KEY")) return null;
+  const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") ?? "true").toLowerCase() !== "false";
+  return { keyId, teamId, privateKey, topic, useSandbox };
+}
+
+async function getApnsJwt(config: ApnsConfig): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedApnsJwt && cachedApnsJwt.expiresAt - 120 > now) {
+    return cachedApnsJwt.token;
+  }
+
+  const jose = await import("https://deno.land/x/jose@v5.2.0/index.ts");
+  const key = await jose.importPKCS8(config.privateKey, "ES256");
+  const jwt = await new jose.SignJWT({})
+    .setProtectedHeader({ alg: "ES256", kid: config.keyId })
+    .setIssuer(config.teamId)
+    .setIssuedAt(now)
+    .sign(key);
+
+  cachedApnsJwt = { token: jwt, expiresAt: now + 3300 };
+  return jwt;
+}
+
+async function sendApns(
+  deviceToken: string,
+  payload: { title: string; body: string; tag?: string; url?: string },
+  config: ApnsConfig,
+): Promise<void> {
+  const token = deviceToken.replace(/[<>\s]/g, "");
+  const jwt = await getApnsJwt(config);
+  const body = JSON.stringify({
+    aps: {
+      alert: { title: payload.title, body: payload.body },
+      sound: "default",
+      "interruption-level": "time-sensitive",
+    },
+    url: payload.url ?? "/",
+    tag: payload.tag ?? "",
+  });
+
+  const hosts = config.useSandbox
+    ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
+    : ["api.push.apple.com", "api.sandbox.push.apple.com"];
+
+  let lastError = "APNs send failed";
+  for (const host of hosts) {
+    const res = await fetch(`https://${host}/3/device/${token}`, {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${jwt}`,
+        "apns-topic": config.topic,
+        "apns-push-type": "alert",
+        "apns-priority": "10",
+        "content-type": "application/json",
+      },
+      body,
+    });
+    if (res.ok) return;
+    const text = await res.text();
+    lastError = `APNs ${host}: ${res.status} ${text}`;
+    if (res.status === 400 && /BadDeviceToken|DeviceTokenNotForTopic/i.test(text)) continue;
+    if (res.status === 410) break;
+  }
+  const err = new Error(lastError) as Error & { statusCode?: number };
+  err.statusCode = 400;
+  throw err;
+}
+
+// =============================================================
 // Auditoria / autorização
 // =============================================================
 function isStaffStoreBroadcast(body: {
@@ -206,6 +292,7 @@ function buildHealthPayload() {
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
   const fcm = getFcmServiceAccount();
+  const apns = getApnsConfig();
   return {
     ok: true,
     service: "send-push-notification",
@@ -218,6 +305,9 @@ function buildHealthPayload() {
       : null,
     fcmConfigured: Boolean(fcm),
     fcmProjectId: fcm?.project_id ?? null,
+    apnsConfigured: Boolean(apns),
+    apnsTopic: apns?.topic ?? null,
+    apnsSandbox: apns?.useSandbox ?? null,
   };
 }
 
@@ -283,8 +373,9 @@ Deno.serve(async (req) => {
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
     const fcm = getFcmServiceAccount();
+    const apns = getApnsConfig();
 
-    if (!vapidPublic && !fcm) {
+    if (!vapidPublic && !fcm && !apns) {
       return new Response(JSON.stringify({ skipped: true, reason: "No push provider configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -332,16 +423,24 @@ Deno.serve(async (req) => {
     let sent = 0;
     let sentWeb = 0;
     let sentFcm = 0;
+    let sentApns = 0;
     const errors: { endpoint: string; status?: number; message: string; channel: string }[] = [];
 
     for (const sub of subs) {
       const platform = (sub.platform ?? "web").toLowerCase();
       try {
-        if (platform === "android" || platform === "ios") {
+        if (platform === "ios") {
+          if (!apns) throw new Error("APNs not configured");
+          const token = sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//, "");
+          await sendApns(token, { title, body: msgBody, tag, url, requireInteraction }, apns);
+          sent++;
+          sentApns++;
+        } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//, "");
           await sendFcmV1(token, { title, body: msgBody, tag, url, requireInteraction }, fcm);
-          sent++; sentFcm++;
+          sent++;
+          sentFcm++;
         } else {
           if (!vapidPublic || !vapidPrivate) throw new Error("VAPID not configured");
           if (!sub.p256dh || !sub.auth) throw new Error("Incomplete VAPID keys");
@@ -373,6 +472,7 @@ Deno.serve(async (req) => {
         sent,
         sentWeb,
         sentFcm,
+        sentApns,
         matched: matchedInDb,
         targeted: subs.length,
         errors: errors.length ? errors : undefined,

@@ -25,6 +25,7 @@ export type ServerVapidDiagnostics = {
   publicKeyPreview: string | null;
   keysMatchClient: boolean | null;
   fcmConfigured?: boolean;
+  apnsConfigured?: boolean;
   probeError?: string;
 };
 
@@ -66,6 +67,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       publicKey?: string | null;
       publicKeyPreview?: string | null;
       fcmConfigured?: boolean;
+      apnsConfigured?: boolean;
     };
 
     const clientKey = getVapidPublicKey();
@@ -86,6 +88,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerVapidDiagnost
       publicKeyPreview: payload.publicKeyPreview ?? null,
       keysMatchClient,
       fcmConfigured: Boolean(payload.fcmConfigured),
+      apnsConfigured: Boolean(payload.apnsConfigured),
     };
 
     pushLog(

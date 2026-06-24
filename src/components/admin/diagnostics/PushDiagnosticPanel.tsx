@@ -175,9 +175,10 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const clientVapidOk = vapid.loaded && vapid.validFormat && vapid.decodable;
   const serverVapidOk = Boolean(serverVapid?.configured);
   const serverFcmOk = Boolean(serverVapid?.fcmConfigured);
+  const serverApnsOk = Boolean(serverVapid?.apnsConfigured);
   const canSendLocalTest = !isNativeApp && serverVapidOk && permission === "granted" && Boolean(storeId);
-  const canSendBroadcast = Boolean(storeId) && (serverVapidOk || serverFcmOk);
-  const canSendNativeSelfTest = isNativeApp && Boolean(storeId) && (serverFcmOk || serverVapidOk);
+  const canSendBroadcast = Boolean(storeId) && (serverVapidOk || serverFcmOk || serverApnsOk);
+  const canSendNativeSelfTest = isNativeApp && Boolean(storeId) && (serverApnsOk || serverFcmOk);
   const testStatusLabel =
     testStatus === "sending"
       ? "A enviar agora…"
@@ -196,6 +197,18 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             <p className="font-semibold">O site pode subscrever, mas o servidor ainda não envia</p>
             <p className="text-xs mt-1 opacity-90">
               Configure VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY nos segredos da Lovable Cloud.
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {serverVapid && !serverApnsOk && isNativeApp ? (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">Falta a chave Apple no servidor</p>
+            <p className="text-xs mt-1 opacity-90">
+              Adicione APNS_KEY_ID, APNS_TEAM_ID e APNS_PRIVATE_KEY nos segredos da Lovable Cloud (a mesma chave .p8
+              do Apple Developer).
             </p>
           </div>
         </div>
@@ -223,16 +236,16 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           ) : null}
         </CardContent>
       </Card>
-      <Card className={!serverFcmOk ? "border-amber-500/40" : undefined}>
+      <Card className={!serverApnsOk ? "border-amber-500/40" : undefined}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Servidor (FCM)</CardTitle>
+          <CardTitle className="text-base">Servidor (APNs iPhone)</CardTitle>
           <CardDescription>Necessário para chegar ao iPhone</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {serverVapid === null ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <AdminDiagnosticStatusBadge ok={serverFcmOk} label={serverFcmOk ? "Pronto" : "Não configurado"} />
+            <AdminDiagnosticStatusBadge ok={serverApnsOk} label={serverApnsOk ? "Pronto" : "Falta chave Apple"} />
           )}
         </CardContent>
       </Card>
@@ -301,8 +314,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           </p>
           {isNativeApp ? (
             <p className="text-xs text-muted-foreground">
-              1) Carregue em «Registar push» · 2) Depois «Enviar teste para este telemóvel». Tem de estar com sessão
-              da equipa iniciada.
+              1) Instale a versão nova da app no iPhone (build Codemagic) · 2) «Registar push» · 3) «Enviar teste para
+              este telemóvel»
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -422,7 +435,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
           ) : null}
           {isNativeApp && !localDeviceReady ? (
             <p className="text-xs text-amber-700">
-              Registe primeiro com «Registar push». Se ficar a carregar, feche a app por completo e abra outra vez.
+              Se «Registar push» falha, precisa da versão nova da app no iPhone (correcção nativa). Depois feche a app
+              por completo e abra outra vez.
             </p>
           ) : null}
         </CardContent>

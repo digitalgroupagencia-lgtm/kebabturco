@@ -87,14 +87,15 @@ function rememberNativeToken(token: string) {
 }
 
 async function persistTokenToBackend(token: string, storeId: string, platform: "android" | "ios") {
+  const cleanToken = token.replace(/[<>\s]/g, "");
   const { error } = await supabase.rpc("register_native_push_subscription", {
     _store_id: storeId,
-    _fcm_token: token,
+    _fcm_token: cleanToken,
     _platform: platform,
     _customer_phone: "__staff__",
   });
   if (error) throw error;
-  rememberNativeToken(token);
+  rememberNativeToken(cleanToken);
 }
 
 function waitForNativeToken(): Promise<string> {
