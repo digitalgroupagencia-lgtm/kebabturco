@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, Loader2, RefreshCw, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,7 +19,7 @@ import {
 import { ensureTapToPayReaderReady } from "@/lib/prepareTapToPayCheckout";
 import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
-import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import { tapToPayDialogContentClass, tapToPayDialogOpenFocusHandlers } from "@/components/tapToPay/tapToPayDialogClasses";
 import TapToPayChargeEducation from "@/components/tapToPay/TapToPayChargeEducation";
 import { useNavigate } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
@@ -61,6 +61,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
   const { t } = useStaffT();
   const navigate = useNavigate();
   const tapEnabled = isTapToPayUserEnabled();
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<TapToPayStep>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +120,19 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
     void prepareReader();
   }, [open, order, prepareReader, tapEnabled, t]);
 
+  /** iOS pode focar o email após fechar o PIN — blur sem abrir teclado ao mostrar instruções. */
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setTimeout(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+        active.blur();
+      }
+      cancelBtnRef.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
   const handleClose = useCallback(() => {
     if (busy) {
       void cancelTapToPayPayment();
@@ -164,6 +178,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
         className={tapToPayDialogContentClass("z-[100] sm:max-w-md flex flex-col gap-0 p-0 overflow-hidden")}
+        {...tapToPayDialogOpenFocusHandlers}
       >
         <div className="shrink-0 border-b px-4 pt-4 pb-3 sm:px-6">
           <DialogHeader>
@@ -186,6 +201,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
               type="email"
               inputMode="email"
               autoComplete="email"
+              autoFocus={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("tapToPay.emailPlaceholder")}
@@ -262,7 +278,14 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
         </div>
 
         <div className="shrink-0 flex flex-col-reverse gap-2 border-t bg-background px-4 py-3 sm:px-6 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={busy} className="w-full sm:w-auto">
+          <Button
+            ref={cancelBtnRef}
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={busy}
+            className="w-full sm:w-auto"
+          >
             <X className="w-4 h-4 mr-1" />
             {t("tapToPay.cancel")}
           </Button>

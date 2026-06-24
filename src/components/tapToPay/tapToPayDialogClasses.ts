@@ -1,4 +1,11 @@
 import { cn } from "@/lib/utils";
+import type { ComponentPropsWithoutRef } from "react";
+import type * as DialogPrimitive from "@radix-ui/react-dialog";
+
+/** Evita teclado ao abrir — Radix foca o primeiro input (email) e o iOS abre o teclado. */
+export const tapToPayDialogOpenFocusHandlers = {
+  onOpenAutoFocus: (e: Event) => e.preventDefault(),
+} satisfies Partial<ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>;
 
 /** Mobile-safe dialog shell for Tap to Pay flows (keyboard + safe area). */
 export function tapToPayDialogContentClass(...extra: (string | undefined)[]) {

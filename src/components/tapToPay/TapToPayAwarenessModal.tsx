@@ -17,7 +17,7 @@ import {
 import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
 import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { showTapToPayMerchantEducation, warmUpTapToPayReader } from "@/lib/stripeTerminalService";
-import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import { tapToPayDialogContentClass, tapToPayDialogOpenFocusHandlers } from "@/components/tapToPay/tapToPayDialogClasses";
 import { toast } from "sonner";
 
 type Props = {
@@ -64,6 +64,7 @@ export default function TapToPayAwarenessModal({ open, storeId, onOpenChange, on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={tapToPayDialogContentClass("max-w-md border-primary/20 p-0 gap-0 flex flex-col overflow-hidden")}
+        {...tapToPayDialogOpenFocusHandlers}
       >
         <div className="shrink-0 bg-gradient-to-b from-primary to-primary/85 px-5 pt-6 pb-5 text-primary-foreground text-center sm:px-6 sm:pt-8 sm:pb-6">
           <div className="mx-auto mb-3 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-primary-foreground/15 ring-2 ring-primary-foreground/25">
