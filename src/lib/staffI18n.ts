@@ -822,9 +822,19 @@ export const STAFF_I18N = {
     en: "Charge with Tap to Pay on iPhone",
   },
   "tapToPay.seller.order_saved": {
-    es: "Pedido registrado — ¿cobrar ahora?",
-    pt: "Pedido registado — cobrar agora?",
-    en: "Order saved — charge now?",
+    es: "Pedido registrado — ¿cómo paga el cliente?",
+    pt: "Pedido registado — como é que o cliente paga?",
+    en: "Order saved — how will the customer pay?",
+  },
+  "tapToPay.seller.pay_cash": {
+    es: "Efectivo",
+    pt: "Dinheiro",
+    en: "Cash",
+  },
+  "tapToPay.seller.pay_later": {
+    es: "Cobrar después",
+    pt: "Cobrar depois",
+    en: "Charge later",
   },
   "ops.card.tap_to_pay": { es: "Tap to Pay", pt: "Tap to Pay", en: "Tap to Pay" },
 

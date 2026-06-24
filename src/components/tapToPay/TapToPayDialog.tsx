@@ -20,6 +20,7 @@ import { ensureTapToPayReaderReady } from "@/lib/prepareTapToPayCheckout";
 import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { isValidOptionalEmail } from "@/lib/emailValidation";
 import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import TapToPayChargeEducation from "@/components/tapToPay/TapToPayChargeEducation";
 import { useNavigate } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 
@@ -174,6 +175,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 space-y-4">
+          <TapToPayChargeEducation />
           <p className="text-sm text-muted-foreground">{t("tapToPay.subtitle")}</p>
           <p className="text-2xl font-black">€{Number(order.total).toFixed(2)}</p>
 

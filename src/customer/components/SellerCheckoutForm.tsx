@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Send, User, Phone, Hash, Truck, Store, Smartphone, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, User, Phone, Hash, Truck, Store, Smartphone, CheckCircle2, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { nav } from "@/lib/navPaths";
 import { useTapToPayCheckout } from "@/hooks/useTapToPayCheckout";
 import { useStaffT } from "@/hooks/useStaffT";
+import TapToPayChargeEducation from "@/components/tapToPay/TapToPayChargeEducation";
+import { markOrderPaidAtCounter } from "@/services/orderService";
 
 type OrderTypeChoice = "dine_in" | "takeaway";
 
@@ -39,7 +41,7 @@ const SellerCheckoutForm = () => {
   const [busy, setBusy] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrder | null>(null);
 
-  const { requestTapToPay, TapToPayCheckoutDialog, isTapToPayAvailable } = useTapToPayCheckout({
+  const { requestTapToPay, requestStaffPin, TapToPayCheckoutDialog, isTapToPayAvailable } = useTapToPayCheckout({
     storeId: storeId ?? "",
     onSuccess: () => {
       toast.success(t("tapToPay.step.success"));
@@ -124,6 +126,25 @@ const SellerCheckoutForm = () => {
     navigate(nav.seller());
   };
 
+  const confirmCashPayment = async () => {
+    if (!savedOrder) return;
+    const pin = await requestStaffPin({
+      amountLabel: `#${savedOrder.order_number} · €${savedOrder.total.toFixed(2)}`,
+      description: t("tapToPay.seller.pay_cash"),
+    });
+    if (!pin) return;
+    setBusy(true);
+    try {
+      await markOrderPaidAtCounter(savedOrder.id, "cash", pin);
+      toast.success(t("tapToPay.step.success"));
+      finishWithoutCharge();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Falha ao registar pagamento");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (savedOrder) {
     return (
       <div className="flex h-full min-h-0 flex-col bg-secondary/20 overflow-y-auto">
@@ -143,24 +164,38 @@ const SellerCheckoutForm = () => {
           </div>
 
           {isTapToPayAvailable ? (
-            <Button
-              className="w-full h-14 font-black text-base"
-              onClick={() =>
-                void requestTapToPay({
-                  id: savedOrder.id,
-                  order_number: savedOrder.order_number,
-                  total: savedOrder.total,
-                  customer_email: savedOrder.customer_email,
-                })
-              }
-            >
-              <Smartphone className="h-5 w-5 mr-2" />
-              {t("tapToPay.seller.charge_now")}
-            </Button>
+            <div className="space-y-3 text-left">
+              <TapToPayChargeEducation />
+              <Button
+                className="w-full h-14 font-black text-base"
+                disabled={busy}
+                onClick={() =>
+                  void requestTapToPay({
+                    id: savedOrder.id,
+                    order_number: savedOrder.order_number,
+                    total: savedOrder.total,
+                    customer_email: savedOrder.customer_email,
+                  })
+                }
+              >
+                <Smartphone className="h-5 w-5 mr-2" />
+                {t("tapToPay.seller.charge_now")}
+              </Button>
+            </div>
           ) : null}
 
-          <Button variant="outline" className="w-full" onClick={finishWithoutCharge}>
-            Cobrar depois / voltar ao início
+          <Button
+            variant="outline"
+            className="w-full h-12 font-bold"
+            disabled={busy}
+            onClick={() => void confirmCashPayment()}
+          >
+            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Banknote className="h-5 w-5 mr-2" />}
+            {t("tapToPay.seller.pay_cash")}
+          </Button>
+
+          <Button variant="ghost" className="w-full" disabled={busy} onClick={finishWithoutCharge}>
+            {t("tapToPay.seller.pay_later")}
           </Button>
         </div>
       </div>
