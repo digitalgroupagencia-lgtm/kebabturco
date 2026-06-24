@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
         "platform_status",
         "sync_status",
         "finance_snapshot",
+        "sync_payouts",
         "public_link_info",
         "public_submit_intake",
         "public_onboarding_session",

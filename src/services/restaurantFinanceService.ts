@@ -137,20 +137,46 @@ export async function fetchFinancePayouts(storeId: string, limit = 20): Promise<
   }));
 }
 
+export async function syncFinancePayoutsFromStripe(storeId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+      body: { storeId, mode: "sync_payouts" },
+    });
+    if (error) return 0;
+    const synced = (data as { synced?: number } | null)?.synced;
+    return typeof synced === "number" ? synced : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function fetchRestaurantFinanceSnapshot(
-  _storeId: string,
+  storeId: string,
   ledgerNetCents: number,
 ): Promise<RestaurantFinanceSnapshot | null> {
-  return {
-    availableCents: Math.max(0, ledgerNetCents),
-    pendingCents: 0,
-    payoutInterval: "weekly",
-    payoutWeekday: "segunda-feira",
-    nextPayoutDate: null,
-    nextPayoutAmountCents: null,
-    ibanLast4: null,
-    simulated: true,
-  };
+  try {
+    const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+      body: { storeId, mode: "finance_snapshot", ledgerNetCents },
+    });
+    if (error || !data || typeof data !== "object") {
+      throw error ?? new Error("snapshot_unavailable");
+    }
+    if ("error" in data && (data as { error?: string }).error) {
+      throw new Error(String((data as { error: string }).error));
+    }
+    return data as RestaurantFinanceSnapshot;
+  } catch {
+    return {
+      availableCents: Math.max(0, ledgerNetCents),
+      pendingCents: 0,
+      payoutInterval: "weekly",
+      payoutWeekday: "segunda-feira",
+      nextPayoutDate: null,
+      nextPayoutAmountCents: ledgerNetCents > 0 ? ledgerNetCents : null,
+      ibanLast4: null,
+      simulated: true,
+    };
+  }
 }
 
 export function payoutStatusLabel(status: string): string {

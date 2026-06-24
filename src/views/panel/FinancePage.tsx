@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { useStorePayoutsRealtime } from "@/hooks/useStorePayoutsRealtime";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ import {
   fetchFinanceMovements,
   fetchFinancePayouts,
   fetchRestaurantFinanceSnapshot,
+  syncFinancePayoutsFromStripe,
   type FinanceMovement,
   type FinancePayout,
   type RestaurantFinanceSnapshot,
@@ -97,8 +98,11 @@ const FinancePage = () => {
       setLoadError(null);
     }
     try {
-      const [prof, schema, mv, po, serverPlatform, ledgerOk, checkoutRpc, edgeHealth] = await Promise.all([
-        fetchStoreFinancialProfile(storeId).catch(() => null),
+      const prof = await fetchStoreFinancialProfile(storeId).catch(() => null);
+      if (isStripeConnectReady(prof)) {
+        await syncFinancePayoutsFromStripe(storeId);
+      }
+      const [schema, mv, po, serverPlatform, ledgerOk, checkoutRpc, edgeHealth] = await Promise.all([
         probeSchemaFallback().catch(() => null),
         fetchFinanceMovements(storeId),
         fetchFinancePayouts(storeId),
@@ -128,6 +132,10 @@ const FinancePage = () => {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useStorePayoutsRealtime(storeId, () => {
+    void load({ silent: true });
+  });
 
   const refreshStatus = useCallback(async () => {
     if (!storeId) return;

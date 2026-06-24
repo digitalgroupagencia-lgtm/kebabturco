@@ -10,10 +10,12 @@ import {
   fetchFinanceMovements,
   fetchFinancePayouts,
   fetchRestaurantFinanceSnapshot,
+  syncFinancePayoutsFromStripe,
   type FinanceMovement,
   type FinancePayout,
   type RestaurantFinanceSnapshot,
 } from "@/services/restaurantFinanceService";
+import { useStorePayoutsRealtime } from "@/hooks/useStorePayoutsRealtime";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
 
 const PanelFinancePage = () => {
@@ -29,19 +31,24 @@ const PanelFinancePage = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!storeId) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
-      const [profile, mv, po] = await Promise.all([
+      const [profile, mv] = await Promise.all([
         fetchStoreFinancialProfile(storeId).catch(() => null),
         fetchFinanceMovements(storeId),
-        fetchFinancePayouts(storeId),
       ]);
+      if (isStripeConnectReady(profile)) {
+        await syncFinancePayoutsFromStripe(storeId);
+      }
+      const po = await fetchFinancePayouts(storeId);
       setMovements(mv);
       setPayouts(po);
       setIbanLast4(profile?.stripe_iban_last4 ?? null);
@@ -54,9 +61,13 @@ const PanelFinancePage = () => {
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
+
+  useStorePayoutsRealtime(storeId, () => {
+    void load({ silent: true });
+  });
 
   useEffect(() => {
     void load();

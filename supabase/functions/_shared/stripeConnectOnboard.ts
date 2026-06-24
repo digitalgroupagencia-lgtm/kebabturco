@@ -34,6 +34,7 @@ import {
   parseIntakeNotes,
 } from "./stripeConnectIntakeMeta.ts";
 import { buildRestaurantFinanceSnapshot } from "./stripeFinanceSnapshot.ts";
+import { syncStorePayoutsFromStripe } from "./stripePayoutActions.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
 export const CONNECT_HANDLER_VERSION = "2026-06-12-bizum-api-v28";
@@ -1602,6 +1603,14 @@ export async function handleStripeConnectRequest(
     }
     const snapshot = await buildRestaurantFinanceSnapshot(stripe, accountId, { ledgerNetCents });
     return json(snapshot);
+  }
+
+  if (mode === "sync_payouts") {
+    if (!accountId) {
+      return json({ synced: 0, message: "Conta Stripe ainda não ligada." });
+    }
+    const synced = await syncStorePayoutsFromStripe(stripe, service, store.id, accountId);
+    return json({ synced, accountId });
   }
 
   if (mode === "sync_status") {

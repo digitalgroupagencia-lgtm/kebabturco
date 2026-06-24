@@ -12,51 +12,22 @@ import {
   hasAnyStripeWebhookSecret,
   stripeKeyMode,
 } from "../_shared/stripeEnv.ts";
+import {
+  resolveStoreIdForConnectAccount,
+  upsertStorePayoutFromStripe,
+} from "../_shared/stripePayoutActions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-async function upsertPayout(
-  supabase: ReturnType<typeof createClient>,
-  storeId: string,
-  payout: Stripe.Payout,
-) {
-  await supabase.from("store_payouts").upsert(
-    {
-      store_id: storeId,
-      stripe_payout_id: payout.id,
-      amount_cents: payout.amount,
-      status: payout.status,
-      arrival_date: payout.arrival_date
-        ? new Date(payout.arrival_date * 1000).toISOString().slice(0, 10)
-        : null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "stripe_payout_id" },
-  );
-
-  if (payout.status === "paid") {
-    await supabase
-      .from("stores")
-      .update({
-        stripe_last_payout_at: new Date().toISOString(),
-        stripe_payout_status: "active",
-      })
-      .eq("id", storeId);
-  }
-
-  if (payout.status === "failed") {
-    await supabase
-      .from("stores")
-      .update({
-        stripe_payout_status: "failed",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", storeId);
-  }
-}
+const PAYOUT_EVENTS = new Set([
+  "payout.created",
+  "payout.paid",
+  "payout.updated",
+  "payout.failed",
+]);
 
 const ESTIMATED_DISPUTE_FEE_CENTS = 1500;
 
@@ -301,22 +272,17 @@ Deno.serve(async (req) => {
     }
   }
 
-  if (
-    event.type === "payout.paid" ||
-    event.type === "payout.updated" ||
-    event.type === "payout.failed"
-  ) {
+  if (PAYOUT_EVENTS.has(event.type)) {
     const payout = event.data.object as Stripe.Payout;
     const accountId = event.account as string | undefined;
     if (accountId) {
-      const { data: store } = await supabase
-        .from("stores")
-        .select("id")
-        .eq("stripe_connect_account_id", accountId)
-        .maybeSingle();
-
-      if (store?.id) {
-        await upsertPayout(supabase, store.id, payout);
+      const storeId = await resolveStoreIdForConnectAccount(supabase, accountId);
+      if (storeId) {
+        try {
+          await upsertStorePayoutFromStripe(supabase, storeId, payout);
+        } catch (e) {
+          console.error(`[stripe-webhook] ${event.type}`, payout.id, e);
+        }
       }
     }
   }
