@@ -35,9 +35,10 @@ import {
 } from "./stripeConnectIntakeMeta.ts";
 import { buildRestaurantFinanceSnapshot } from "./stripeFinanceSnapshot.ts";
 import { syncStorePayoutsFromStripe } from "./stripePayoutActions.ts";
+import { applyConnectPayoutPolicy } from "./stripePayoutPolicy.ts";
 
 /** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
-export const CONNECT_HANDLER_VERSION = "2026-06-12-bizum-api-v28";
+export const CONNECT_HANDLER_VERSION = "2026-06-24-payout-policy-v1";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
 export const connectCorsHeaders = {
@@ -1385,6 +1386,12 @@ export async function handleStripeConnectRequest(
     }
 
     const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
+    try {
+      const { applyConnectPayoutPolicy } = await import("./stripePayoutPolicy.ts");
+      await applyConnectPayoutPolicy(liveStripe, store.stripe_connect_account_id);
+    } catch (e) {
+      console.warn("[connect] live payout policy on activate", e);
+    }
     let livePlatform;
     try {
       livePlatform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
@@ -1569,6 +1576,24 @@ export async function handleStripeConnectRequest(
   const { accountId, environment, accountType } = ensured;
   const stripe = ctx.stripe;
   const meta = connectMeta(ctx);
+
+  let payoutPolicy: Awaited<ReturnType<typeof applyConnectPayoutPolicy>> | null = null;
+  try {
+    payoutPolicy = await applyConnectPayoutPolicy(stripe, accountId);
+  } catch (e) {
+    console.warn("[connect] payout policy", e);
+  }
+
+  if (mode === "enforce_payout_policy") {
+    return json({
+      ok: true,
+      accountId,
+      payoutPolicy,
+      message:
+        "Plataforma em repasse manual; restaurante em repasse automático semanal para o IBAN da loja.",
+      ...meta,
+    });
+  }
 
   if (mode === "embedded_onboarding" && accountType === "custom") {
     const status = await syncConnectAccountById(stripe, service, accountId);

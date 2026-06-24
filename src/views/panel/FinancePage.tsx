@@ -52,6 +52,7 @@ import {
   fetchFinancePayouts,
   fetchRestaurantFinanceSnapshot,
   syncFinancePayoutsFromStripe,
+  enforceStripePayoutPolicy,
   type FinanceMovement,
   type FinancePayout,
   type RestaurantFinanceSnapshot,
@@ -99,18 +100,28 @@ const FinancePage = () => {
     }
     try {
       const prof = await fetchStoreFinancialProfile(storeId).catch(() => null);
-      if (isStripeConnectReady(prof)) {
-        await syncFinancePayoutsFromStripe(storeId);
-      }
-      const [schema, mv, po, serverPlatform, ledgerOk, checkoutRpc, edgeHealth] = await Promise.all([
-        probeSchemaFallback().catch(() => null),
-        fetchFinanceMovements(storeId),
-        fetchFinancePayouts(storeId),
-        fetchStripePlatformStatus(storeId).catch(() => null),
-        probeLedgerTable(storeId),
-        probeCheckoutStripeRpc(),
-        fetchStripeConnectEdgeHealth(),
-      ]);
+      const connectReady = isStripeConnectReady(prof);
+      const syncPromise = connectReady
+        ? Promise.all([
+            syncFinancePayoutsFromStripe(storeId).catch(() => 0),
+            enforceStripePayoutPolicy(storeId),
+          ])
+        : Promise.resolve([0, undefined] as const);
+      const snapPromise = connectReady
+        ? fetchRestaurantFinanceSnapshot(storeId)
+        : Promise.resolve(null);
+      await syncPromise;
+      const [schema, mv, po, serverPlatform, ledgerOk, checkoutRpc, edgeHealth, snap] =
+        await Promise.all([
+          probeSchemaFallback().catch(() => null),
+          fetchFinanceMovements(storeId),
+          fetchFinancePayouts(storeId),
+          fetchStripePlatformStatus(storeId).catch(() => null),
+          probeLedgerTable(storeId),
+          probeCheckoutStripeRpc(),
+          fetchStripeConnectEdgeHealth(),
+          snapPromise,
+        ]);
       setCheckoutRpcReady(checkoutRpc);
       setEdgeNeedsDeploy(!isStripeConnectEdgeUpToDate(edgeHealth));
       setProfile(prof);
@@ -119,8 +130,6 @@ const FinancePage = () => {
       setMovements(mv);
       setLedgerTableOk(ledgerOk);
       setPayouts(po);
-      const ledgerNet = mv.reduce((s, m) => s + m.youReceiveCents, 0);
-      const snap = await fetchRestaurantFinanceSnapshot(storeId, ledgerNet);
       setFinanceSnapshot(snap);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : t("finance.admin.load_error"));

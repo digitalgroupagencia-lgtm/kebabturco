@@ -11,6 +11,7 @@ import {
   fetchFinancePayouts,
   fetchRestaurantFinanceSnapshot,
   syncFinancePayoutsFromStripe,
+  enforceStripePayoutPolicy,
   type FinanceMovement,
   type FinancePayout,
   type RestaurantFinanceSnapshot,
@@ -47,8 +48,11 @@ const PanelFinancePage = () => {
       ]);
       const connectReady = isStripeConnectReady(profile);
       const syncPromise = connectReady
-        ? syncFinancePayoutsFromStripe(storeId).catch(() => 0)
-        : Promise.resolve(0);
+        ? Promise.all([
+            syncFinancePayoutsFromStripe(storeId).catch(() => 0),
+            enforceStripePayoutPolicy(storeId),
+          ])
+        : Promise.resolve([0, undefined] as const);
       const snapPromise = connectReady
         ? fetchRestaurantFinanceSnapshot(storeId)
         : Promise.resolve(null);

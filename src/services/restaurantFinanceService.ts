@@ -155,6 +155,16 @@ export async function fetchFinancePayouts(storeId: string, limit = 20): Promise<
   }));
 }
 
+export async function enforceStripePayoutPolicy(storeId: string): Promise<void> {
+  try {
+    await supabase.functions.invoke("stripe-connect-onboard", {
+      body: { storeId, mode: "enforce_payout_policy" },
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
 export async function syncFinancePayoutsFromStripe(storeId: string): Promise<number> {
   try {
     const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
