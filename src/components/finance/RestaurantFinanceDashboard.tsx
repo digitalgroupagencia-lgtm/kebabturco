@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   type FinanceMovement,
   type FinancePayout,
@@ -15,7 +15,33 @@ import PremiumDonutChart from "@/components/admin/premium/PremiumDonutChart";
 import PremiumDualLineChart from "@/components/admin/premium/PremiumDualLineChart";
 import PremiumFunnelChart from "@/components/admin/premium/PremiumFunnelChart";
 import EqualCardGrid from "@/components/admin/premium/EqualCardGrid";
-import { CalendarClock, Landmark, PiggyBank, Receipt, Timer, TrendingUp, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarClock, Landmark, PiggyBank, Receipt, Timer, TrendingUp, Wallet, CalendarRange } from "lucide-react";
+
+type PeriodKey = "today" | "7d" | "30d" | "all" | "custom";
+
+function rangeForPeriod(period: PeriodKey, customStart: string, customEnd: string): { start: Date | null; end: Date | null } {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  if (period === "today") return { start: startOfToday, end: null };
+  if (period === "7d") {
+    const s = new Date(startOfToday);
+    s.setDate(s.getDate() - 6);
+    return { start: s, end: null };
+  }
+  if (period === "30d") {
+    const s = new Date(startOfToday);
+    s.setDate(s.getDate() - 29);
+    return { start: s, end: null };
+  }
+  if (period === "custom") {
+    const s = customStart ? new Date(customStart + "T00:00:00") : null;
+    const e = customEnd ? new Date(customEnd + "T23:59:59") : null;
+    return { start: s, end: e };
+  }
+  return { start: null, end: null };
+}
 
 type Props = {
   snapshot: RestaurantFinanceSnapshot | null;
