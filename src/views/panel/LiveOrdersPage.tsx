@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { Bell, Loader2, ArchiveX } from "lucide-react";
+import { Bell, Loader2 } from "lucide-react";
 import PanelOrdersBoard from "@/features/ops/PanelOrdersBoard";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import OldPendingOrdersDialog from "@/components/panel/OldPendingOrdersDialog";
 
 const LiveOrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { t } = useStaffT();
   const [showAlerts, setShowAlerts] = useState(false);
-  const [showOldPending, setShowOldPending] = useState(false);
 
   if (storeLoading) {
     return (
@@ -43,20 +41,7 @@ const LiveOrdersPage = () => {
   return (
     <div className="space-y-2">
       <HowToUsePanel {...liveHelp} />
-      <div className="sticky top-0 z-30 -mx-1 px-1 py-1.5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b flex items-center justify-between gap-2">
-        <h1 className="text-sm font-bold text-foreground px-1 truncate">{t("page.live.title")}</h1>
-        <div className="flex items-center gap-1.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-9 gap-1.5 px-2 text-xs font-bold"
-            onClick={() => setShowOldPending(true)}
-            title={t("live.old_pending.tooltip")}
-          >
-            <ArchiveX className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("live.old_pending.btn")}</span>
-          </Button>
+      <div className="sticky top-0 z-20 -mx-1 px-1 py-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b flex items-center justify-end gap-1.5">
           <Button
             type="button"
             variant="ghost"
@@ -68,7 +53,6 @@ const LiveOrdersPage = () => {
           >
             <Bell className="h-5 w-5" />
           </Button>
-        </div>
       </div>
 
       <PanelOrdersBoard storeId={storeId} mode="live" hideInlineAlertsBar />
@@ -82,8 +66,6 @@ const LiveOrdersPage = () => {
           <p className="text-xs text-muted-foreground">{t("live.alerts.hint")}</p>
         </DialogContent>
       </Dialog>
-
-      <OldPendingOrdersDialog open={showOldPending} onOpenChange={setShowOldPending} storeId={storeId} />
     </div>
   );
 };
