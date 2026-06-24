@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   type FinanceMovement,
   type FinancePayout,
@@ -15,7 +15,33 @@ import PremiumDonutChart from "@/components/admin/premium/PremiumDonutChart";
 import PremiumDualLineChart from "@/components/admin/premium/PremiumDualLineChart";
 import PremiumFunnelChart from "@/components/admin/premium/PremiumFunnelChart";
 import EqualCardGrid from "@/components/admin/premium/EqualCardGrid";
-import { CalendarClock, Landmark, PiggyBank, Receipt, Timer, TrendingUp, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarClock, Landmark, PiggyBank, Receipt, Timer, TrendingUp, Wallet, CalendarRange } from "lucide-react";
+
+type PeriodKey = "today" | "7d" | "30d" | "all" | "custom";
+
+function rangeForPeriod(period: PeriodKey, customStart: string, customEnd: string): { start: Date | null; end: Date | null } {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  if (period === "today") return { start: startOfToday, end: null };
+  if (period === "7d") {
+    const s = new Date(startOfToday);
+    s.setDate(s.getDate() - 6);
+    return { start: s, end: null };
+  }
+  if (period === "30d") {
+    const s = new Date(startOfToday);
+    s.setDate(s.getDate() - 29);
+    return { start: s, end: null };
+  }
+  if (period === "custom") {
+    const s = customStart ? new Date(customStart + "T00:00:00") : null;
+    const e = customEnd ? new Date(customEnd + "T23:59:59") : null;
+    return { start: s, end: e };
+  }
+  return { start: null, end: null };
+}
 
 type Props = {
   snapshot: RestaurantFinanceSnapshot | null;
@@ -47,8 +73,31 @@ export default function RestaurantFinanceDashboard({
   businessName,
   lastPayoutAt,
 }: Props) {
-  const analytics = useMemo(() => buildFinanceAnalytics(movements), [movements]);
+  const [period, setPeriod] = useState<PeriodKey>("30d");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
+  const { start, end } = useMemo(
+    () => rangeForPeriod(period, customStart, customEnd),
+    [period, customStart, customEnd],
+  );
+
+  const filteredMovements = useMemo(() => {
+    if (!start && !end) return movements;
+    return movements.filter((m) => {
+      const t = new Date(m.createdAt).getTime();
+      if (start && t < start.getTime()) return false;
+      if (end && t > end.getTime()) return false;
+      return true;
+    });
+  }, [movements, start, end]);
+
+  const analytics = useMemo(() => buildFinanceAnalytics(filteredMovements), [filteredMovements]);
+
+  const periodTotal = filteredMovements
+    .filter((m) => m.kind === "payment")
+    .reduce((s, m) => s + m.customerPaidCents, 0);
+  const periodCount = filteredMovements.filter((m) => m.kind === "payment").length;
   const totalCustomerPaid = movements
     .filter((m) => m.kind === "payment")
     .reduce((s, m) => s + m.customerPaidCents, 0);
@@ -58,6 +107,17 @@ export default function RestaurantFinanceDashboard({
   const nextPayout = snapshot?.nextPayoutAmountCents ?? null;
   const nextDate = snapshot?.nextPayoutDate ?? null;
   const bankLast4 = snapshot?.ibanLast4 ?? ibanLast4 ?? null;
+
+  const periodLabel =
+    period === "today"
+      ? "Hoje"
+      : period === "7d"
+        ? "Últimos 7 dias"
+        : period === "30d"
+          ? "Últimos 30 dias"
+          : period === "all"
+            ? "Tudo"
+            : "Personalizado";
 
   return (
     <div className="space-y-5">
@@ -112,27 +172,76 @@ export default function RestaurantFinanceDashboard({
         </div>
       )}
 
+      <div className="rounded-xl border bg-card p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+          <CalendarRange className="h-3.5 w-3.5" />
+          Período do histórico
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {([
+            ["today", "Hoje"],
+            ["7d", "Últimos 7 dias"],
+            ["30d", "Últimos 30 dias"],
+            ["all", "Tudo"],
+            ["custom", "Personalizado"],
+          ] as [PeriodKey, string][]).map(([key, label]) => (
+            <Button
+              key={key}
+              type="button"
+              variant={period === key ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setPeriod(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        {period === "custom" && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              De
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              Até
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
       <EqualCardGrid cols={3}>
         <PremiumMetricCard
           icon={Wallet}
           tone="info"
-          label="Hoje"
-          value={fmtPeriod(analytics.today.grossCents)}
-          sub={`${analytics.today.count} pedido(s)`}
+          label={periodLabel}
+          value={fmtPeriod(periodTotal)}
+          sub={`${periodCount} pedido(s)`}
         />
         <PremiumMetricCard
           icon={TrendingUp}
           tone="purple"
-          label="Últimos 7 dias"
-          value={fmtPeriod(analytics.week.grossCents)}
-          sub={`${analytics.week.count} pedido(s)`}
+          label="Ticket médio"
+          value={periodCount > 0 ? fmtPeriod(Math.round(periodTotal / periodCount)) : "—"}
+          sub="Valor médio por pedido"
         />
         <PremiumMetricCard
           icon={Receipt}
           tone="orange"
-          label="Este mês"
-          value={fmtPeriod(analytics.month.grossCents)}
-          sub={`${analytics.month.count} pedido(s)`}
+          label="Líquido recebido"
+          value={fmtPeriod(analytics.byMethod.reduce((s, m) => s + m.volumeCents, 0))}
+          sub="Após filtro"
         />
       </EqualCardGrid>
 
@@ -147,7 +256,7 @@ export default function RestaurantFinanceDashboard({
 
         <PremiumChartCard
           title="Evolução diária"
-          subtitle="Últimos 30 dias — valor pago pelos clientes"
+          subtitle={`${periodLabel} — valor pago pelos clientes`}
           className="min-w-0"
         >
           <PremiumDualLineChart data={analytics.dailySeries} />
@@ -158,19 +267,25 @@ export default function RestaurantFinanceDashboard({
         <PremiumFunnelChart data={analytics.byMethod} />
       </PremiumChartCard>
 
-      <div className="rounded-xl border bg-card p-4 text-center">
-        <p className="text-[10px] text-muted-foreground uppercase font-bold">Total pago pelos clientes</p>
-        <p className="text-2xl font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
+      <div className="rounded-xl border bg-card p-4 grid grid-cols-2 gap-3 text-center">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Total no período ({periodLabel})</p>
+          <p className="text-2xl font-black tabular-nums mt-1">{formatEur(periodTotal)}€</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold">Total geral pago pelos clientes</p>
+          <p className="text-2xl font-black tabular-nums mt-1">{formatEur(totalCustomerPaid)}€</p>
+        </div>
       </div>
 
       <div>
         <h2 className="text-sm font-bold mb-2 flex items-center gap-1.5">
           <Receipt className="h-4 w-4" />
-          Extrato de movimentos
+          Extrato de movimentos · {periodLabel}
         </h2>
-        {movements.length === 0 ? (
+        {filteredMovements.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-10 border border-dashed rounded-2xl">
-            Ainda sem movimentos — aparecem aqui assim que houver pagamentos online.
+            Sem movimentos no período selecionado.
           </p>
         ) : (
           <div className="rounded-2xl border overflow-hidden">
@@ -180,7 +295,7 @@ export default function RestaurantFinanceDashboard({
               <span className="text-right">Estado</span>
             </div>
             <div className="divide-y">
-              {movements.map((m) => (
+              {filteredMovements.map((m) => (
                 <div
                   key={m.id}
                   className="px-3 py-3 sm:grid sm:grid-cols-[1.4fr_1fr_0.8fr] sm:gap-2 sm:items-center hover:bg-muted/20"
