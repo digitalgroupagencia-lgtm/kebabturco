@@ -8,16 +8,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { SecretInput } from "@/components/ui/secret-input";
-import { Label } from "@/components/ui/label";
 import { KeyRound } from "lucide-react";
 import { useStaffT } from "@/hooks/useStaffT";
 import {
-  sanitizeStaffAccessPinInput,
   staffAccessPinHint,
   validateStaffAccessPin,
 } from "@/lib/staffAccessPin";
 import { tapToPayDialogContentClass } from "@/components/tapToPay/tapToPayDialogClasses";
+import StaffPinKeypad from "@/components/tapToPay/StaffPinKeypad";
 
 export type StaffPinConfirmOptions = {
   title?: string;
@@ -79,30 +77,18 @@ const StaffPinConfirmDialog = ({ open, options, onOpenChange, onConfirm }: Props
           {options?.amountLabel ? (
             <p className="text-xl font-black text-primary tabular-nums">{options.amountLabel}</p>
           ) : null}
-          <div>
-            <Label htmlFor="staff-payment-pin" className="text-sm font-semibold">
-              {t("staffPin.confirm.label")}
-            </Label>
-        <SecretInput
-          id="staff-payment-pin"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          enterKeyHint="done"
-          autoFocus={open && !isNative}
-          defaultVisible={false}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-center">{t("staffPin.confirm.label")}</p>
+            <StaffPinKeypad
               value={pin}
-              onChange={(e) => {
-                setPin(sanitizeStaffAccessPinInput(e.target.value));
+              onChange={(next) => {
+                setPin(next);
                 setError(null);
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleConfirm();
-              }}
-              placeholder={t("staffPin.confirm.placeholder")}
-              className="mt-2 h-14 text-center text-2xl tracking-[0.35em] font-mono"
+              disabled={false}
             />
-            <p className="text-xs text-muted-foreground mt-2">{staffAccessPinHint(lang)}</p>
-            {error ? <p className="text-sm text-destructive mt-2 font-medium">{error}</p> : null}
+            <p className="text-xs text-muted-foreground text-center">{staffAccessPinHint(lang)}</p>
+            {error ? <p className="text-sm text-destructive text-center font-medium">{error}</p> : null}
           </div>
         </div>
 
