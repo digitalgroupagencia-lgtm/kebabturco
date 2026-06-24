@@ -82,6 +82,8 @@ const LiveOrdersPage = () => {
           <p className="text-xs text-muted-foreground">{t("live.alerts.hint")}</p>
         </DialogContent>
       </Dialog>
+
+      <OldPendingOrdersDialog open={showOldPending} onOpenChange={setShowOldPending} storeId={storeId} />
     </div>
   );
 };
