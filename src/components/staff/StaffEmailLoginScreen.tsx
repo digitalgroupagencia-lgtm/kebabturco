@@ -13,7 +13,7 @@ import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
-import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart } from "@/lib/staffLogin";
+import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart, isStaffSessionFlagSet } from "@/lib/staffLogin";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
 import { signInStaffWithGoogle } from "@/lib/staffGoogleOAuth";
 import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
@@ -62,24 +62,28 @@ const StaffEmailLoginScreen = () => {
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [googleStatus, setGoogleStatus] = useState<StaffGoogleLoginStatus | null>(null);
-  const [googleStatusLoading, setGoogleStatusLoading] = useState(false);
+  const [staffAccessStatus, setStaffAccessStatus] = useState<StaffGoogleLoginStatus | null>(null);
+  const [staffAccessLoading, setStaffAccessLoading] = useState(false);
 
-  const googleFlowActive =
-    hasStaffGoogleLoginIntent() ||
-    googleStatusLoading ||
-    googleStatus === "pending" ||
-    googleStatus === "rejected" ||
-    Boolean(user && userSignedInWithGoogle(user) && !roleData?.role);
+  const googleOAuthReturn =
+    hasStaffGoogleLoginIntent() || Boolean(user && userSignedInWithGoogle(user) && !roleData?.role);
 
-  const showGooglePending =
+  const accessFlowActive =
+    googleOAuthReturn ||
+    staffAccessLoading ||
+    staffAccessStatus === "pending" ||
+    staffAccessStatus === "rejected" ||
+    Boolean(user && !roleData?.role && isStaffSessionFlagSet());
+
+  const showStaffPending =
     user &&
-    (googleStatus === "pending" ||
-      (userSignedInWithGoogle(user) && !roleData?.role && googleStatus !== "rejected" && !googleStatusLoading));
+    !roleData?.role &&
+    staffAccessStatus !== "rejected" &&
+    (staffAccessStatus === "pending" || staffAccessLoading || (googleOAuthReturn && staffAccessStatus !== "active"));
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
-    if (googleFlowActive) return;
+    if (accessFlowActive) return;
 
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
@@ -99,15 +103,15 @@ const StaffEmailLoginScreen = () => {
         navigate(resolveStaffLoginDestination(role), { replace: true });
       }
     })();
-  }, [authLoading, roleLoading, user, roleData?.role, navigate, googleFlowActive, nextParam]);
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, accessFlowActive, nextParam]);
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
-    if (!userSignedInWithGoogle(user) && !hasStaffGoogleLoginIntent()) return;
+    if (roleData?.role) return;
     if (storeLoading) return;
 
     let cancelled = false;
-    setGoogleStatusLoading(true);
+    setStaffAccessLoading(true);
 
     void (async () => {
       try {
@@ -115,36 +119,35 @@ const StaffEmailLoginScreen = () => {
         const alreadyAtStore = await userHasRoleAtStore(user.id, resolvedStoreId);
         if (alreadyAtStore) {
           consumeStaffGoogleLoginIntent();
-          if (!cancelled) setGoogleStatus("active");
+          if (!cancelled) setStaffAccessStatus("active");
           return;
         }
 
         const result = await registerStaffGoogleLoginWithRetry(resolvedStoreId);
         consumeStaffGoogleLoginIntent();
-        if (!cancelled) setGoogleStatus(result.status);
+        if (!cancelled) setStaffAccessStatus(result.status);
       } catch (e) {
-        console.error("[staff-google] register on login screen failed", e);
+        console.error("[staff-access] register on login screen failed", e);
         if (!cancelled) {
-          // Google já autenticou — mostrar espera amigável, não erro na página de login.
-          setGoogleStatus("pending");
+          setStaffAccessStatus("pending");
           setError(null);
         }
       } finally {
-        if (!cancelled) setGoogleStatusLoading(false);
+        if (!cancelled) setStaffAccessLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [authLoading, roleLoading, user, storeId, storeLoading, lang]);
+  }, [authLoading, roleLoading, user, roleData?.role, storeId, storeLoading]);
 
   useEffect(() => {
-    if (!user || googleStatusLoading || googleStatus !== "active") return;
+    if (!user || staffAccessLoading || staffAccessStatus !== "active") return;
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
     navigate(resolveStaffLoginDestination(role), { replace: true });
-  }, [user, googleStatusLoading, googleStatus, roleData?.role, navigate]);
+  }, [user, staffAccessLoading, staffAccessStatus, roleData?.role, navigate]);
 
   const handleLogin = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -217,7 +220,7 @@ const StaffEmailLoginScreen = () => {
     }
   };
 
-  if (authLoading || (user && roleLoading) || (user && googleFlowActive && googleStatusLoading)) {
+  if (authLoading || (user && roleLoading) || (user && accessFlowActive && staffAccessLoading && !staffAccessStatus)) {
     return (
       <StaffAuthWaitingScreen
         title={copy.googleReturning}
@@ -226,15 +229,15 @@ const StaffEmailLoginScreen = () => {
     );
   }
 
-  if (showGooglePending) {
+  if (showStaffPending) {
     return <StaffPendingApprovalScreen status="pending" email={user?.email} />;
   }
 
-  if (user && googleStatus === "rejected") {
+  if (user && staffAccessStatus === "rejected") {
     return <StaffPendingApprovalScreen status="rejected" email={user.email} />;
   }
 
-  if (user && userSignedInWithGoogle(user)) {
+  if (user && userSignedInWithGoogle(user) && staffAccessLoading) {
     return (
       <StaffAuthWaitingScreen
         title={copy.googleReturning}
