@@ -111,7 +111,10 @@ const StoreSelectionScreen = () => {
         ))}
       </div>
 
-      <div className="pb-6 px-6 space-y-3">
+      <div
+        className="shrink-0 px-4 space-y-3"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
         <InstallAppButton lang={lang} />
         <p className="text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-bold">
           {brandName}
