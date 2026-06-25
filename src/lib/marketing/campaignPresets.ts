@@ -269,6 +269,52 @@ export const CAMPAIGN_PRESETS: CampaignPresetDefinition[] = [
     },
     variables: ["proxima_abertura", "horario_hoje", "link_menu"],
   },
+  {
+    key: "promo_delivery_free",
+    name: "Entrega grátis +20€",
+    description: "Push com cupão de entrega grátis para pedidos acima de 20€.",
+    campaignType: "promo",
+    triggerEvent: "manual_only",
+    sendMode: "manual",
+    audienceType: "all_subscribers",
+    icon: "promo",
+    accent: "from-sky-900/30 to-sky-700/10",
+    suggestCoupon: "ENTREGA20",
+    title: {
+      pt: "Entrega grátis hoje 🛵",
+      es: "¡Envío gratis hoy! 🛵",
+      en: "Free delivery today 🛵",
+    },
+    message: {
+      pt: "Pedidos a partir de 20€ — use {cupao_codigo} no checkout.",
+      es: "Pedidos desde 20€ — usa {cupao_codigo} al pagar.",
+      en: "Orders over €20 — use {cupao_codigo} at checkout.",
+    },
+    variables: ["cupao_codigo", "nome_restaurante", "link_menu"],
+  },
+  {
+    key: "promo_combo_kebab",
+    name: "Combo 3 kebabs",
+    description: "3.º produto em destaque à metade do preço.",
+    campaignType: "promo",
+    triggerEvent: "manual_only",
+    sendMode: "manual",
+    audienceType: "all_subscribers",
+    icon: "promo",
+    accent: "from-orange-900/30 to-orange-700/10",
+    suggestCoupon: "KEBAB3X2",
+    title: {
+      pt: "Combo especial 🥙",
+      es: "¡Combo especial! 🥙",
+      en: "Special combo 🥙",
+    },
+    message: {
+      pt: "Peça 3 {produto_destaque} — 3.º com 50% off. Código {cupao_codigo}.",
+      es: "Pide 3 {produto_destaque} — 3.º con 50% dto. Código {cupao_codigo}.",
+      en: "Get 3 {produto_destaque} — 3rd 50% off. Code {cupao_codigo}.",
+    },
+    variables: ["produto_destaque", "cupao_codigo", "link_menu"],
+  },
 ];
 
 export function getPresetByKey(key: string): CampaignPresetDefinition | undefined {
@@ -277,6 +323,11 @@ export function getPresetByKey(key: string): CampaignPresetDefinition | undefine
 
 export function isWinbackPreset(key: string | null | undefined): boolean {
   return key === "winback_30d" || key === "winback_60d";
+}
+
+export function presetNeedsCoupon(key: string | null | undefined): boolean {
+  if (!key) return false;
+  return Boolean(getPresetByKey(key)?.suggestCoupon) || isWinbackPreset(key);
 }
 
 export const TEMPLATE_VARIABLES = [

@@ -269,7 +269,13 @@ const PaymentScreen = () => {
   const applyCoupon = async () => {
     if (!couponCode.trim() || !storeId || isTableOrder) return;
     try {
-      const result = await validateCoupon(storeId, couponCode.trim(), totalPrice);
+      const cartPayload = items.map((it) => ({
+        product_id: it.productId,
+        quantity: it.quantity,
+        unit_price: Number(it.unitPrice ?? it.basePrice ?? 0),
+        total_price: Number(it.totalPrice ?? 0),
+      }));
+      const result = await validateCoupon(storeId, couponCode.trim(), totalPrice, deliveryFee, cartPayload);
       if (!result.valid) {
         setCouponError(result.error || "Cupón inválido");
         setCouponDiscount(0);

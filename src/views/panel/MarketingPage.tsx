@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   History,
+  Lightbulb,
   Megaphone,
   Radio,
   Send,
@@ -12,10 +13,21 @@ import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useStaffT } from "@/hooks/useStaffT";
+import { panelT } from "@/lib/staffPanelLocale";
 import { useTenantFeatureFlags } from "@/hooks/usePlatformFeatures";
 import { isFeatureAvailableForPlan, normalizePlan } from "@/lib/platformFeatureGates";
 import { nav } from "@/lib/navPaths";
-import { CAMPAIGN_PRESETS, isWinbackPreset } from "@/lib/marketing/campaignPresets";
+import { CAMPAIGN_PRESETS, getPresetByKey, isWinbackPreset, presetNeedsCoupon } from "@/lib/marketing/campaignPresets";
+import { getCouponSuggestion, getCouponSuggestionForPreset } from "@/lib/marketing/couponSuggestions";
+import { MARKETING_SUGGESTIONS } from "@/lib/marketing/marketingSuggestions";
+import {
+  ensureCampaignCoupon,
+  fetchCouponByCode,
+  fetchFeaturedProductId,
+  verifyCouponInSystem,
+  createCouponFromSuggestion,
+  type CouponRow,
+} from "@/lib/marketing/marketingCouponService";
 import {
   resolveCampaignMessage,
   type MessageLocale,
@@ -33,6 +45,7 @@ import {
 } from "@/lib/marketing/marketingService";
 import { sendMarketingBroadcast } from "@/lib/diagnostics/campaignPushService";
 import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
+import MarketingSuggestionCard from "@/components/marketing/MarketingSuggestionCard";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,6 +82,9 @@ const MarketingPage = () => {
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [winbackHintKeys, setWinbackHintKeys] = useState<Set<string>>(new Set());
+  const [couponByCode, setCouponByCode] = useState<Record<string, CouponRow | null>>({});
+  const [couponValidByCode, setCouponValidByCode] = useState<Record<string, boolean>>({});
+  const [suggestionBusy, setSuggestionBusy] = useState<string | null>(null);
 
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastBody, setBroadcastBody] = useState("");
@@ -102,6 +118,34 @@ const MarketingPage = () => {
       setActiveCount(active);
       setHistory(hist);
       setMarketingOk(settings?.push_enabled !== false && settings?.manual_broadcast_enabled !== false);
+
+      const codes = new Set<string>();
+      for (const p of CAMPAIGN_PRESETS) {
+        if (p.suggestCoupon) codes.add(p.suggestCoupon);
+      }
+      for (const s of MARKETING_SUGGESTIONS) codes.add(s.coupon.code);
+      const couponMap: Record<string, CouponRow | null> = {};
+      const validMap: Record<string, boolean> = {};
+      await Promise.all(
+        [...codes].map(async (code) => {
+          const row = await fetchCouponByCode(storeId, code);
+          couponMap[code] = row;
+          if (row?.is_active) {
+            const tpl = getCouponSuggestion(code);
+            const v = await verifyCouponInSystem(
+              storeId,
+              code,
+              tpl?.minOrder && tpl.minOrder > 0 ? tpl.minOrder : 25,
+              tpl?.discountType === "free_delivery" ? 3.5 : 0,
+            );
+            validMap[code] = v.ok;
+          } else {
+            validMap[code] = false;
+          }
+        }),
+      );
+      setCouponByCode(couponMap);
+      setCouponValidByCode(validMap);
     } finally {
       setLoading(false);
     }
@@ -130,7 +174,29 @@ const MarketingPage = () => {
   }, [history, historyFilter]);
 
   const handleToggle = async (presetKey: string, campaign: MarketingCampaignRow | undefined, next: boolean) => {
-    if (!campaign) return;
+    if (!campaign || !storeId) return;
+
+    if (next && presetNeedsCoupon(presetKey)) {
+      const preset = getPresetByKey(presetKey);
+      const template =
+        getCouponSuggestionForPreset(presetKey) ||
+        (preset?.suggestCoupon ? getCouponSuggestion(preset.suggestCoupon) : undefined);
+      if (template) {
+        setTogglingId(campaign.id);
+        const featured =
+          template.discountType === "combo_nth" ? await fetchFeaturedProductId(storeId) : null;
+        const ensured = await ensureCampaignCoupon(storeId, campaign.id, template, featured);
+        setTogglingId(null);
+        if (!ensured.ok) {
+          toast.error(ensured.error ?? t("marketing.coupon.required"));
+          return;
+        }
+        if (ensured.created) {
+          toast.success(panelT(lang, "marketing.coupon.created", { code: template.code }));
+        }
+      }
+    }
+
     setTogglingId(campaign.id);
     const res = await toggleMarketingCampaign(campaign.id, next);
     setTogglingId(null);
@@ -143,6 +209,49 @@ const MarketingPage = () => {
     }
     toast.success(next ? t("marketing.toast.activated") : t("marketing.toast.paused"));
     void load();
+  };
+
+  const handleCreateSuggestionCoupon = async (suggestionId: string, code: string) => {
+    if (!storeId) return;
+    const suggestion = MARKETING_SUGGESTIONS.find((s) => s.id === suggestionId);
+    const template = suggestion?.coupon ?? getCouponSuggestion(code);
+    if (!template) return;
+    setSuggestionBusy(suggestionId);
+    try {
+      const featured =
+        template.discountType === "combo_nth" ? await fetchFeaturedProductId(storeId) : null;
+      const created = await createCouponFromSuggestion(storeId, template, featured);
+      if (!created.ok) {
+        toast.error(created.error ?? t("marketing.coupon.error"));
+        return;
+      }
+      const campaign = suggestion?.linkedPresetKey
+        ? campaignByPreset.get(suggestion.linkedPresetKey)
+        : undefined;
+      if (campaign && created.couponId) {
+        await supabase
+          .from("marketing_campaigns")
+          .update({ linked_coupon_id: created.couponId })
+          .eq("id", campaign.id);
+      }
+      toast.success(panelT(lang, "marketing.coupon.created", { code: template.code }));
+      void load();
+    } finally {
+      setSuggestionBusy(null);
+    }
+  };
+
+  const handleActivateSuggestionCampaign = async (linkedPresetKey: string, couponCode: string) => {
+    const campaign = campaignByPreset.get(linkedPresetKey);
+    if (!campaign) {
+      toast.error(t("marketing.suggestions.no_campaign"));
+      return;
+    }
+    if (!couponValidByCode[couponCode]) {
+      toast.error(t("marketing.coupon.required"));
+      return;
+    }
+    await handleToggle(linkedPresetKey, campaign, true);
   };
 
   const handleBroadcast = async () => {
@@ -239,10 +348,14 @@ const MarketingPage = () => {
       </div>
 
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
           <TabsTrigger value="home" className="text-xs gap-1">
             <BarChart3 className="h-3.5 w-3.5" />
             {t("marketing.tab.home")}
+          </TabsTrigger>
+          <TabsTrigger value="suggestions" className="text-xs gap-1">
+            <Lightbulb className="h-3.5 w-3.5" />
+            {t("marketing.tab.suggestions")}
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="text-xs gap-1">
             <Sparkles className="h-3.5 w-3.5" />
@@ -297,6 +410,31 @@ const MarketingPage = () => {
           )}
         </TabsContent>
 
+        <TabsContent value="suggestions" className="space-y-3 mt-4">
+          <p className="text-xs text-muted-foreground">{t("marketing.suggestions.hint")}</p>
+          {MARKETING_SUGGESTIONS.map((s) => {
+            const code = s.coupon.code;
+            const linked = s.linkedPresetKey ? campaignByPreset.get(s.linkedPresetKey) : undefined;
+            return (
+              <MarketingSuggestionCard
+                key={s.id}
+                suggestion={s}
+                lang={uiLang}
+                coupon={couponByCode[code]}
+                couponValid={couponValidByCode[code]}
+                busy={suggestionBusy === s.id}
+                onCreateCoupon={() => void handleCreateSuggestionCoupon(s.id, code)}
+                onActivateCampaign={
+                  s.linkedPresetKey
+                    ? () => void handleActivateSuggestionCampaign(s.linkedPresetKey!, code)
+                    : undefined
+                }
+                campaignActive={linked?.is_active}
+              />
+            );
+          })}
+        </TabsContent>
+
         <TabsContent value="campaigns" className="space-y-3 mt-4">
           <p className="text-xs text-muted-foreground">{t("marketing.campaigns.hint")}</p>
           {CAMPAIGN_PRESETS.map((preset) => {
@@ -310,6 +448,8 @@ const MarketingPage = () => {
                 toggling={togglingId === row?.id}
                 showWinbackHint={winbackHintKeys.has(preset.key)}
                 couponsHref={nav.admin("coupons")}
+                couponCode={preset.suggestCoupon}
+                couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
                 onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
               />
             );

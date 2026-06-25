@@ -201,6 +201,12 @@ async function resolveCoupon(
   else if (suggest) q = q.ilike("code", suggest);
   const { data } = await q.limit(1).maybeSingle();
   if (!data) return { code: suggest ?? "", discount: "10%" };
+  if (data.discount_type === "free_delivery") {
+    return { code: data.code, discount: "entrega grátis" };
+  }
+  if (data.discount_type === "combo_nth") {
+    return { code: data.code, discount: `${data.discount_value}% no 3.º` };
+  }
   const discount =
     data.discount_type === "percent" ? `${data.discount_value}%` : `${data.discount_value}€`;
   return { code: data.code, discount };

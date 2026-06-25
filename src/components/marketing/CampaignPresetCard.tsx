@@ -27,6 +27,8 @@ type Props = {
   toggling?: boolean;
   showWinbackHint?: boolean;
   couponsHref?: string;
+  couponCode?: string;
+  couponReady?: boolean;
 };
 
 export default function CampaignPresetCard({
@@ -38,6 +40,8 @@ export default function CampaignPresetCard({
   toggling,
   showWinbackHint,
   couponsHref,
+  couponCode,
+  couponReady,
 }: Props) {
   const Icon = ICONS[preset.icon] ?? Megaphone;
   const active = campaign?.is_active ?? false;
@@ -95,13 +99,28 @@ export default function CampaignPresetCard({
               </code>
             ))}
           </div>
-          {showWinbackHint && preset.suggestCoupon && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
-              Sugerimos criar cupão <strong>{preset.suggestCoupon}</strong> para esta campanha.
-              {couponsHref && (
-                <Button variant="link" className="h-auto p-0 pl-1 text-[11px] font-bold" style={{ color: WINE }} asChild>
-                  <a href={couponsHref}>Ir aos cupões →</a>
-                </Button>
+          {(showWinbackHint || preset.suggestCoupon) && preset.suggestCoupon && (
+            <div
+              className={cn(
+                "rounded-xl border p-2.5 text-[11px]",
+                couponReady
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100"
+                  : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100",
+              )}
+            >
+              {couponReady ? (
+                <>
+                  Cupão <strong>{preset.suggestCoupon}</strong> activo — validado no checkout.
+                </>
+              ) : (
+                <>
+                  Ao activar, criamos e validamos o cupão <strong>{preset.suggestCoupon}</strong> automaticamente.
+                  {couponsHref && (
+                    <Button variant="link" className="h-auto p-0 pl-1 text-[11px] font-bold" style={{ color: WINE }} asChild>
+                      <a href={couponsHref}>Ver cupões →</a>
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           )}

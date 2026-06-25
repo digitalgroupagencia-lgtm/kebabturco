@@ -139,13 +139,31 @@ export type ValidateCouponResult = {
   coupon_id?: string;
   code?: string;
   discount_amount?: number;
+  discount_type?: string;
+  free_delivery?: boolean;
+  combo_applied?: boolean;
 };
 
-export async function validateCoupon(storeId: string, code: string, subtotal: number) {
+export type CartItemForCoupon = {
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+};
+
+export async function validateCoupon(
+  storeId: string,
+  code: string,
+  subtotal: number,
+  deliveryFee = 0,
+  cartItems: CartItemForCoupon[] = [],
+) {
   const { data, error } = await supabase.rpc("validate_coupon", {
     _store_id: storeId,
     _code: code,
     _subtotal: subtotal,
+    _delivery_fee: deliveryFee,
+    _cart_items: cartItems,
   });
   if (error) throw error;
   return data as ValidateCouponResult;
