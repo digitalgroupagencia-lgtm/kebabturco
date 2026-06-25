@@ -1,5 +1,40 @@
--- Corrige: customer_first_orders é uma VIEW — o trigger de lifecycle fica em public.orders.
--- Correr DEPOIS de 20260626140000 (mesmo que tenha falhado no trigger, as tabelas já existem).
+-- Ciclo de vida marketing: script completo (corre sozinho, mesmo se tentativas anteriores falharam).
+-- Cria tabelas + trigger em pedidos + campanhas obrigatórias.
+
+CREATE TABLE IF NOT EXISTS public.customer_marketing_lifecycle (
+  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  customer_phone text NOT NULL,
+  stage text NOT NULL DEFAULT 'welcome' CHECK (stage IN ('welcome', 'relation', 'completed')),
+  started_at timestamptz NOT NULL DEFAULT now(),
+  welcome_ends_at timestamptz NOT NULL DEFAULT (now() + interval '30 days'),
+  relation_ends_at timestamptz NOT NULL DEFAULT (now() + interval '90 days'),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (store_id, customer_phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_marketing_lifecycle_store
+  ON public.customer_marketing_lifecycle (store_id);
+
+CREATE TABLE IF NOT EXISTS public.lifecycle_send_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  customer_phone text NOT NULL,
+  stage text NOT NULL,
+  lifecycle_day integer NOT NULL,
+  slot_index integer NOT NULL,
+  status text NOT NULL DEFAULT 'sent',
+  resolved_title text,
+  resolved_body text,
+  message_locale text,
+  sent_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (store_id, customer_phone, stage, lifecycle_day, slot_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lifecycle_send_log_store_sent
+  ON public.lifecycle_send_log (store_id, sent_at DESC);
+
+ALTER TABLE public.customer_marketing_lifecycle ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lifecycle_send_log ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.enroll_customer_marketing_lifecycle_from_order()
 RETURNS trigger
