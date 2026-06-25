@@ -3845,6 +3845,7 @@ export type Database = {
           seller_name: string
         }[]
       }
+      get_staff_push_secret_status: { Args: never; Returns: Json }
       get_store_checkout_stripe_profile: {
         Args: { _store_id: string }
         Returns: Json
