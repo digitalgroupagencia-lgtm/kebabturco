@@ -207,7 +207,7 @@ workflows:
   kebabturco-android-playstore:
     name: Kebab Turco — Android Google Play 1.2
     max_build_duration: 120
-    instance_type: linux_x2
+    instance_type: mac_mini_m2
 
     environment:
       groups:
