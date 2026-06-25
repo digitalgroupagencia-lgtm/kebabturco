@@ -10,6 +10,13 @@ import {
   resolveLocaleFromMode,
   type MessageLocale,
 } from "../_shared/campaignTemplateEngine.ts";
+import {
+  buildLifecycleMessage,
+  lifecycleDayIndex,
+  lifecycleSlotIndex,
+  resolveLifecycleStage,
+  type LifecycleStage,
+} from "../_shared/customerLifecycle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -326,6 +333,10 @@ async function audiencePhones(
     return subs?.length ? [{ phone: MARKETING_PHONE_TAG }] : [];
   }
 
+  if (event === "lifecycle_welcome" || event === "lifecycle_relation") {
+    return [];
+  }
+
   if (event === "schedule_cron") {
     const dow = dayOfWeekInTz(ctx.timezone);
     const days = campaign.schedule_days ?? [];
@@ -368,12 +379,151 @@ async function audiencePhones(
   return data?.length ? [{ phone: MARKETING_PHONE_TAG }] : [];
 }
 
+async function processLifecycleCampaign(
+  supabase: ReturnType<typeof createClient>,
+  campaign: CampaignRow,
+  ctx: StoreContext,
+  dryRun: boolean,
+) {
+  const results: Array<Record<string, unknown>> = [];
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  const lifecycleStage: LifecycleStage =
+    campaign.trigger_event === "lifecycle_relation" ? "relation" : "welcome";
+
+  if (campaign.quiet_hours_enabled !== false && isQuietHours(ctx.timezone)) {
+    return { sent, skipped: 1, failed, results: [{ campaignId: campaign.id, status: "skipped", reason: "quiet_hours" }] };
+  }
+
+  const slot = lifecycleSlotIndex(new Date(), ctx.timezone);
+  if (slot === null) {
+    return { sent, skipped: 1, failed, results: [{ campaignId: campaign.id, status: "skipped", reason: "no_slot" }] };
+  }
+
+  const { data: enrolled } = await supabase
+    .from("customer_marketing_lifecycle")
+    .select("customer_phone, started_at, stage")
+    .eq("store_id", campaign.store_id)
+    .in("stage", lifecycleStage === "welcome" ? ["welcome"] : ["relation", "welcome"]);
+
+  const featuredCache = new Map<MessageLocale, { name: string; price: string; category: string }>();
+  const coupon = await resolveCoupon(supabase, campaign.store_id, campaign.linked_coupon_id, campaign.audience_config);
+
+  for (const row of enrolled ?? []) {
+    const phone = String(row.customer_phone ?? "").trim();
+    if (!phone) continue;
+
+    const day = lifecycleDayIndex(String(row.started_at), ctx.timezone);
+    const stageNow = resolveLifecycleStage(day);
+    if (stageNow !== lifecycleStage) {
+      if (lifecycleStage === "welcome" && day > 30) {
+        await supabase
+          .from("customer_marketing_lifecycle")
+          .update({ stage: "relation", updated_at: new Date().toISOString() })
+          .eq("store_id", campaign.store_id)
+          .eq("customer_phone", phone);
+      }
+      skipped++;
+      continue;
+    }
+
+    const { data: prior } = await supabase
+      .from("lifecycle_send_log")
+      .select("id")
+      .eq("store_id", campaign.store_id)
+      .eq("customer_phone", phone)
+      .eq("stage", lifecycleStage)
+      .eq("lifecycle_day", day)
+      .eq("slot_index", slot)
+      .maybeSingle();
+    if (prior?.id) {
+      skipped++;
+      continue;
+    }
+
+    const { data: subs } = await supabase
+      .from("push_subscriptions")
+      .select("id")
+      .eq("store_id", campaign.store_id)
+      .or(`customer_phone.eq.${phone},customer_phone.eq.${MARKETING_PHONE_TAG}`)
+      .limit(1);
+    if (!subs?.length) {
+      skipped++;
+      continue;
+    }
+
+    const customerLocale = await getCustomerLocale(supabase, campaign.store_id, phone);
+    const locale = resolveLocaleFromMode(campaign.language_mode, customerLocale);
+    if (!featuredCache.has(locale)) {
+      featuredCache.set(
+        locale,
+        await resolveFeaturedProduct(supabase, campaign.store_id, campaign.linked_product_id, locale),
+      );
+    }
+    const featured = featuredCache.get(locale)!;
+    const vars = buildVars({
+      storeName: ctx.name,
+      customerName: null,
+      scheduleRaw: ctx.weekly_schedule,
+      timezone: ctx.timezone,
+      productName: featured.name,
+      productPrice: featured.price,
+      categoryName: featured.category,
+      couponCode: coupon.code,
+      couponDiscount: coupon.discount,
+      stampsRemaining: 2,
+      menuUrl: campaign.push_url ?? "/",
+    });
+    const { title, body } = buildLifecycleMessage(lifecycleStage, day, slot, locale, vars);
+
+    if (dryRun) {
+      sent++;
+      results.push({ phone, status: "dry_run", title, locale, lifecycleDay: day, slot });
+      continue;
+    }
+
+    const pushRes = await sendMarketingPush(supabase, campaign.store_id, title, body, campaign.push_url ?? "/", campaign.id, phone);
+    if (pushRes.ok) {
+      sent++;
+      await supabase.from("lifecycle_send_log").insert({
+        store_id: campaign.store_id,
+        customer_phone: phone,
+        stage: lifecycleStage,
+        lifecycle_day: day,
+        slot_index: slot,
+        status: "sent",
+        resolved_title: title,
+        resolved_body: body,
+        message_locale: locale,
+      });
+      await supabase.from("campaign_send_log").insert({
+        store_id: campaign.store_id,
+        campaign_id: campaign.id,
+        customer_phone: phone,
+        status: "sent",
+        resolved_title: title,
+        resolved_body: body,
+        message_locale: locale,
+      });
+    } else {
+      failed++;
+    }
+  }
+
+  return { sent, skipped, failed, results };
+}
+
 async function processCampaign(
   supabase: ReturnType<typeof createClient>,
   campaign: CampaignRow,
   ctx: StoreContext,
   dryRun: boolean,
 ) {
+  if (campaign.trigger_event === "lifecycle_welcome" || campaign.trigger_event === "lifecycle_relation") {
+    return processLifecycleCampaign(supabase, campaign, ctx, dryRun);
+  }
   const results: Array<Record<string, unknown>> = [];
   let sent = 0;
   let skipped = 0;
@@ -577,8 +727,9 @@ async function testSendCampaignToTeam(
       storeId,
       title: `[TESTE] ${title}`,
       body,
-      url: pushUrl,
-      tag: `campaign-test-${campaignId}`,
+      url: "/panel/live",
+      tag: `staff-new-order-test-${campaignId}-${Date.now()}`,
+      requireInteraction: true,
     },
   });
   if (error) {

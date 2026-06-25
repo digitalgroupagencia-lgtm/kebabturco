@@ -197,7 +197,7 @@ export async function sendCampaignTestToTeam(opts: {
     error?: string;
   };
   return {
-    ok: Boolean(payload.ok),
+    ok: Boolean(payload.testSendTeam ? (payload.sent ?? 0) > 0 : payload.ok),
     sent: payload.sent,
     title: payload.title,
     body: payload.body,

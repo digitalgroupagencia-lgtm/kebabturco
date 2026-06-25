@@ -17,7 +17,7 @@ import { panelT } from "@/lib/staffPanelLocale";
 import { useTenantFeatureFlags } from "@/hooks/usePlatformFeatures";
 import { isFeatureAvailableForPlan, normalizePlan } from "@/lib/platformFeatureGates";
 import { nav } from "@/lib/navPaths";
-import { CAMPAIGN_PRESETS, getPresetByKey, isWinbackPreset, presetNeedsCoupon } from "@/lib/marketing/campaignPresets";
+import { CAMPAIGN_PRESETS, getPresetByKey, isMandatoryPreset, isWinbackPreset, presetNeedsCoupon } from "@/lib/marketing/campaignPresets";
 import { getCouponSuggestion, getCouponSuggestionForPreset } from "@/lib/marketing/couponSuggestions";
 import { MARKETING_SUGGESTIONS } from "@/lib/marketing/marketingSuggestions";
 import {
@@ -30,6 +30,7 @@ import {
 } from "@/lib/marketing/marketingCouponService";
 import {
   resolveCampaignMessage,
+  pickLocalizedCampaignText,
   type MessageLocale,
 } from "@/lib/marketing/campaignTemplateEngine";
 import {
@@ -39,7 +40,6 @@ import {
   fetchMarketingCampaigns,
   fetchTenantMarketingSettings,
   installMarketingPresets,
-  sendCampaignTestToTeam,
   toggleMarketingCampaign,
   type MarketingCampaignRow,
   type CampaignSendLogEntry,
@@ -95,6 +95,32 @@ const MarketingPage = () => {
   const [campaignTestId, setCampaignTestId] = useState<string | null>(null);
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "sent" | "failed" | "skipped">("all");
+  const [activeTab, setActiveTab] = useState("home");
+
+  const MANDATORY_PRESETS = useMemo(
+    () => new Set(CAMPAIGN_PRESETS.filter((p) => isMandatoryPreset(p.key)).map((p) => p.key)),
+    [],
+  );
+
+  const refreshQuiet = useCallback(async () => {
+    if (!storeId || !tenantId) return;
+    try {
+      const [{ data: store }, camps, subs, active, hist] = await Promise.all([
+        supabase.from("stores").select("name").eq("id", storeId).maybeSingle(),
+        fetchMarketingCampaigns(storeId),
+        countMarketingSubscribers(storeId),
+        countActiveCampaigns(storeId),
+        fetchCampaignSendHistory(storeId, 100),
+      ]);
+      setStoreName(store?.name ?? "Restaurante");
+      setCampaigns(camps);
+      setSubscribers(subs);
+      setActiveCount(active);
+      setHistory(hist);
+    } catch {
+      /* keep current UI */
+    }
+  }, [storeId, tenantId]);
 
   const load = useCallback(async () => {
     if (!storeId || !tenantId) return;
@@ -180,6 +206,11 @@ const MarketingPage = () => {
   const handleToggle = async (presetKey: string, campaign: MarketingCampaignRow | undefined, next: boolean) => {
     if (!campaign || !storeId) return;
 
+    if (!next && MANDATORY_PRESETS.has(presetKey)) {
+      toast.error(t("marketing.campaign.mandatory"));
+      return;
+    }
+
     if (next && presetNeedsCoupon(presetKey)) {
       const preset = getPresetByKey(presetKey);
       const template =
@@ -212,7 +243,7 @@ const MarketingPage = () => {
       setWinbackHintKeys((prev) => new Set(prev).add(presetKey));
     }
     toast.success(next ? t("marketing.toast.activated") : t("marketing.toast.paused"));
-    void load();
+    void refreshQuiet();
   };
 
   const handleCreateSuggestionCoupon = async (suggestionId: string, code: string) => {
@@ -297,27 +328,48 @@ const MarketingPage = () => {
         toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.test_team_error"));
         return;
       }
-      toast.success(t("marketing.broadcast.test_team_sent"));
+      toast.success(res.userMessage ?? t("marketing.broadcast.test_team_sent"));
     } finally {
       setBroadcastTestSending(false);
     }
   };
 
-  const handleCampaignTestTeam = async (campaignId: string) => {
+  const previewCtx = useMemo(
+    () => ({
+      storeName,
+      customerName: "Maria",
+      locale: uiLang,
+      weeklySchedule: STORE_DEFAULTS,
+      timezone: "Europe/Madrid",
+      featuredProductName: "Kebab Mixto",
+      featuredProductPrice: "8,50 €",
+      menuUrl: "/",
+    }),
+    [storeName, uiLang],
+  );
+
+  const handleCampaignTestTeam = async (presetKey: string, campaign: MarketingCampaignRow) => {
     if (!storeId) return;
-    setCampaignTestId(campaignId);
+    setCampaignTestId(campaign.id);
     try {
-      const res = await sendCampaignTestToTeam({
+      const preset = getPresetByKey(presetKey);
+      const localized = pickLocalizedCampaignText(campaign, uiLang);
+      const rawTitle = localized.title || preset?.title[uiLang] || campaign.title || "";
+      const rawBody = localized.body || preset?.message[uiLang] || campaign.message_template || "";
+      const title = resolveCampaignMessage(rawTitle, previewCtx);
+      const body = resolveCampaignMessage(rawBody, previewCtx);
+
+      const res = await sendBroadcastTestPushNotification({
         storeId,
-        campaignId,
-        previewLocale: uiLang,
+        audience: "staff",
+        title: `[TESTE] ${title}`,
+        body,
       });
       if (!res.ok) {
-        toast.error(res.error ?? t("marketing.broadcast.test_team_error"));
+        toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.test_team_error"));
         return;
       }
-      toast.success(t("marketing.broadcast.test_team_sent"));
-      void load();
+      toast.success(res.userMessage ?? t("marketing.broadcast.test_team_sent"));
     } finally {
       setCampaignTestId(null);
     }
@@ -348,17 +400,6 @@ const MarketingPage = () => {
       </div>
     );
   }
-
-  const previewCtx = {
-    storeName,
-    customerName: "Maria",
-    locale: uiLang,
-    weeklySchedule: STORE_DEFAULTS,
-    timezone: "Europe/Madrid",
-    featuredProductName: "Kebab Mixto",
-    featuredProductPrice: "8,50 €",
-    menuUrl: "/",
-  };
 
   const previewTitle = resolveCampaignMessage(broadcastTitle, previewCtx);
   const previewBody = resolveCampaignMessage(broadcastBody, previewCtx);
@@ -391,7 +432,7 @@ const MarketingPage = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="home" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 h-auto">
           <TabsTrigger value="home" className="text-xs gap-1">
             <BarChart3 className="h-3.5 w-3.5" />
@@ -493,8 +534,9 @@ const MarketingPage = () => {
                 couponsHref={nav.admin("coupons")}
                 couponCode={preset.suggestCoupon}
                 couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
+                mandatory={isMandatoryPreset(preset.key)}
                 onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
-                onTestTeam={row ? () => void handleCampaignTestTeam(row.id) : undefined}
+                onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
               />
             );
           })}

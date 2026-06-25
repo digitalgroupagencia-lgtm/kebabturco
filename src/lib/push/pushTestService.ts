@@ -444,11 +444,11 @@ async function invokeStoreBroadcast(opts: {
 
   const { data, error } = await invokePushFunction({
     storeId,
-    audience,
     title,
     body: msgBody,
-    tag: `push-test-${Date.now()}-${audience ?? "staff"}`,
+    tag: `staff-new-order-test-${Date.now()}`,
     url,
+    requireInteraction: true,
     pushDiagnostic: true,
   });
 

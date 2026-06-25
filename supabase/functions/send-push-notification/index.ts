@@ -139,6 +139,7 @@ async function sendFcmV1(
   serviceAccount: { project_id: string; client_email: string; private_key: string; token_uri?: string },
 ): Promise<void> {
   const access = await getFcmAccessToken(serviceAccount);
+  const androidSound = payload.tag?.startsWith("staff-new-order") ? "staff_order_alert" : "default";
   const body = {
     message: {
       token,
@@ -151,7 +152,7 @@ async function sendFcmV1(
         priority: "HIGH",
         notification: {
           channel_id: "staff_orders",
-          sound: "default",
+          sound: androidSound,
           default_vibrate_timings: true,
           visibility: "PUBLIC",
           notification_priority: "PRIORITY_MAX",

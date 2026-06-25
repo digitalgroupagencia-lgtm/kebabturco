@@ -5,6 +5,8 @@ export type CampaignTriggerEvent =
   | "schedule_cron"
   | "store_open"
   | "new_subscriber"
+  | "lifecycle_welcome"
+  | "lifecycle_relation"
   | "manual_only";
 
 export type CampaignSendMode = "auto" | "manual" | "scheduled";
@@ -315,6 +317,50 @@ export const CAMPAIGN_PRESETS: CampaignPresetDefinition[] = [
     },
     variables: ["produto_destaque", "cupao_codigo", "link_menu"],
   },
+  {
+    key: "lifecycle_welcome",
+    name: "Boas-vindas 30 dias",
+    description: "Calendário automático — até 4 avisos/dia nos primeiros 30 dias (obrigatória).",
+    campaignType: "lifecycle",
+    triggerEvent: "lifecycle_welcome",
+    sendMode: "auto",
+    audienceType: "lifecycle_welcome",
+    icon: "welcome",
+    accent: "from-rose-900/30 to-rose-700/10",
+    title: {
+      pt: "Boas-vindas",
+      es: "Bienvenida",
+      en: "Welcome",
+    },
+    message: {
+      pt: "Mensagens variadas de boas-vindas ao longo de 30 dias.",
+      es: "Mensajes variados de bienvenida durante 30 días.",
+      en: "Varied welcome messages over 30 days.",
+    },
+    variables: ["nome_restaurante", "produto_destaque", "link_menu"],
+  },
+  {
+    key: "lifecycle_relation",
+    name: "Relação",
+    description: "Ligação contínua após os 30 dias iniciais (obrigatória).",
+    campaignType: "lifecycle",
+    triggerEvent: "lifecycle_relation",
+    sendMode: "auto",
+    audienceType: "lifecycle_relation",
+    icon: "welcome",
+    accent: "from-violet-900/30 to-violet-700/10",
+    title: {
+      pt: "Relação",
+      es: "Relación",
+      en: "Relationship",
+    },
+    message: {
+      pt: "Mensagens para manter a ligação com clientes fiéis.",
+      es: "Mensajes para mantener el vínculo con clientes fieles.",
+      en: "Messages to stay connected with loyal customers.",
+    },
+    variables: ["nome_restaurante", "produto_destaque", "link_menu"],
+  },
 ];
 
 export function getPresetByKey(key: string): CampaignPresetDefinition | undefined {
@@ -323,6 +369,15 @@ export function getPresetByKey(key: string): CampaignPresetDefinition | undefine
 
 export function isWinbackPreset(key: string | null | undefined): boolean {
   return key === "winback_30d" || key === "winback_60d";
+}
+
+export function isMandatoryPreset(key: string | null | undefined): boolean {
+  return (
+    key === "lifecycle_welcome" ||
+    key === "lifecycle_relation" ||
+    key === "winback_30d" ||
+    key === "winback_60d"
+  );
 }
 
 export function presetNeedsCoupon(key: string | null | undefined): boolean {

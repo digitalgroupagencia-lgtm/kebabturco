@@ -31,6 +31,7 @@ type Props = {
   couponsHref?: string;
   couponCode?: string;
   couponReady?: boolean;
+  mandatory?: boolean;
 };
 
 export default function CampaignPresetCard({
@@ -46,6 +47,7 @@ export default function CampaignPresetCard({
   couponsHref,
   couponCode,
   couponReady,
+  mandatory,
 }: Props) {
   const Icon = ICONS[preset.icon] ?? Megaphone;
   const active = campaign?.is_active ?? false;
@@ -74,7 +76,12 @@ export default function CampaignPresetCard({
             </div>
           </div>
           {onToggle && (
-            <Switch checked={active} disabled={toggling} onCheckedChange={onToggle} aria-label="Activar campanha" />
+            <Switch
+              checked={active}
+              disabled={toggling || (mandatory && active)}
+              onCheckedChange={onToggle}
+              aria-label="Activar campanha"
+            />
           )}
         </div>
         <div className="mt-3 flex flex-wrap gap-1">
@@ -88,7 +95,7 @@ export default function CampaignPresetCard({
             </Badge>
           )}
           <Badge variant={active ? "default" : "secondary"} className="text-[9px]" style={active ? { backgroundColor: WINE } : undefined}>
-            {active ? "Activa" : "Pausada"}
+            {mandatory ? "Obrigatória" : active ? "Activa" : "Pausada"}
           </Badge>
         </div>
       </div>
