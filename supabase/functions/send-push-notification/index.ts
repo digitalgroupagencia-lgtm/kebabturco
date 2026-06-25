@@ -344,6 +344,25 @@ async function authorizeStaffBroadcast(
   if (!auth.startsWith("Bearer ")) return false;
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  if (headerSecret) {
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (serviceKey) {
+      try {
+        const service = createClient(supabaseUrl, serviceKey);
+        const { data: cfg } = await service
+          .from("platform_push_config")
+          .select("staff_push_secret")
+          .eq("id", 1)
+          .maybeSingle();
+        if (String(cfg?.staff_push_secret ?? "").trim() === headerSecret) return true;
+      } catch (e) {
+        console.warn("[send-push-notification] DB staff secret check failed", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+  }
+
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: auth } },
