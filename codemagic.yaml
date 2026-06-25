@@ -156,7 +156,7 @@ workflows:
         BUNDLE_ID: net.kebabturco.app
         DEVELOPMENT_TEAM: 4QW32SBR7H
       node: 22
-      xcode: 16.4
+      xcode: 16.2
 
     triggering:
       events:
@@ -185,11 +185,8 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild-build-ipa.log
 
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: false
-        submit_to_app_store: false
+    # IPA nos artifacts — enviar à App Store com Transporter ou App Store Connect.
+    # (envio automático desactivado: falhava validação SDK em contas antigas)
 
   kebabturco-android-playstore:
     name: Kebab Turco — Android Google Play 1.1

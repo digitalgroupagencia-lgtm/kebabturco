@@ -5,6 +5,15 @@ ROOT="${CM_BUILD_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 PROJECT="$ROOT/ios/App/App.xcodeproj"
 SCHEME="${XCODE_SCHEME:-App}"
 
+# Garantir Xcode 16+ (evita IPA com SDK 15.5 rejeitado pela Apple)
+for XCODE_APP in /Applications/Xcode-16*.app /Applications/Xcode.app; do
+  [ -d "$XCODE_APP" ] || continue
+  sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+  break
+done
+echo "Xcode activo: $(xcodebuild -version | head -1)"
+echo "SDK iOS: $(xcrun --sdk iphoneos --show-sdk-version)"
+
 bash "$ROOT/scripts/ios-align-release-entitlements.sh"
 
 echo "=== Aplicar perfil App Store (kebabturco_appstore) ==="
