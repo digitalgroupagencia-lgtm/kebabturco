@@ -24,6 +24,12 @@ export type NativePushRuntimeDiagnostics = {
   hasCachedToken: boolean;
   tokenPreview: string | null;
   lastRegistrationError: string | null;
+  nativeBridge?: {
+    appDelegateReceived: boolean;
+    jsDelivered: boolean;
+    tokenPreview: string | null;
+  };
+  supabaseSaved: boolean;
 };
 
 let bridgeReady = false;
@@ -31,6 +37,9 @@ let bridgeInitPromise: Promise<void> | null = null;
 let appResumeHooked = false;
 let cachedToken: string | null = null;
 let lastRegistrationError: string | null = null;
+let lastSupabaseSaveOk = false;
+let apnsInjectionHooked = false;
+const NATIVE_APNS_WINDOW_KEY = "__kebabturcoNativeApnsToken";
 const tokenWaiters = new Set<{
   resolve: (token: string) => void;
   reject: (reason: Error) => void;
@@ -111,6 +120,27 @@ export async function getNativePushRuntimeDiagnostics(): Promise<NativePushRunti
   const { isNative, platform } = await getCapacitorAvailability();
   const permission = await getNativePushPermission();
   const token = readCachedNativePushToken();
+  let nativeBridge: NativePushRuntimeDiagnostics["nativeBridge"];
+
+  if (isNative && platform === "ios") {
+    try {
+      const { ApnsTokenBridge } = await import("capacitor-apns-token-bridge");
+      const diag = await ApnsTokenBridge.getBridgeDiagnostics();
+      nativeBridge = {
+        appDelegateReceived: Boolean(diag.appDelegateReceived),
+        jsDelivered: Boolean(diag.jsDelivered),
+        tokenPreview:
+          typeof diag.tokenPreview === "string"
+            ? diag.tokenPreview
+            : token
+              ? `${token.slice(0, 8)}…${token.slice(-4)}`
+              : null,
+      };
+    } catch {
+      nativeBridge = undefined;
+    }
+  }
+
   return {
     environment: isNative ? "native" : "web",
     platform: platform === "android" || platform === "ios" ? platform : "web",
@@ -119,6 +149,8 @@ export async function getNativePushRuntimeDiagnostics(): Promise<NativePushRunti
     hasCachedToken: Boolean(token),
     tokenPreview: token ? `${token.slice(0, 8)}…${token.slice(-4)}` : null,
     lastRegistrationError,
+    nativeBridge,
+    supabaseSaved: lastSupabaseSaveOk,
   };
 }
 
@@ -192,11 +224,72 @@ async function persistTokenToBackend(token: string, storeId: string, platform: "
     _customer_phone: "__staff__",
   });
   if (error) {
+    lastSupabaseSaveOk = false;
     logNative("error", "Servidor recusou o token", { code: error.code, message: error.message });
     throw error;
   }
   rememberNativeToken(cleanToken);
+  lastSupabaseSaveOk = true;
   logNative("info", "Token gravado no servidor com sucesso");
+}
+
+function readWindowInjectedApnsToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = (window as unknown as Record<string, unknown>)[NATIVE_APNS_WINDOW_KEY];
+  if (typeof raw !== "string" || raw.length === 0) return null;
+  return raw.replace(/[<>\s]/g, "").toLowerCase();
+}
+
+function hookApnsTokenInjectionEvent(): void {
+  if (apnsInjectionHooked || typeof window === "undefined") return;
+  apnsInjectionHooked = true;
+  window.addEventListener("kebabturco-apns-token", (event) => {
+    const detail = (event as CustomEvent<{ token?: string; source?: string }>).detail;
+    if (!detail?.token) return;
+    logNative("info", "Token recebido da ponte nativa iOS", { source: detail.source ?? "appdelegate" });
+    lastRegistrationError = null;
+    rememberNativeToken(detail.token);
+    notifyTokenWaiters(detail.token);
+    void import("capacitor-apns-token-bridge")
+      .then(({ ApnsTokenBridge }) => ApnsTokenBridge.markJsReceived())
+      .catch(() => null);
+  });
+}
+
+async function fetchTokenFromNativeBridge(): Promise<string | null> {
+  const injected = readWindowInjectedApnsToken();
+  if (injected) {
+    logNative("info", "Token lido da ponte injectada no ecrã");
+    return injected;
+  }
+
+  const { platform } = await getCapacitorAvailability();
+  if (platform !== "ios") return null;
+
+  try {
+    const { ApnsTokenBridge } = await import("capacitor-apns-token-bridge");
+    const saved = await ApnsTokenBridge.getSavedApnsToken();
+    if (saved.token) {
+      const normalized = saved.token.replace(/[<>\s]/g, "").toLowerCase();
+      logNative("info", "Token lido do armazenamento nativo iOS");
+      await ApnsTokenBridge.markJsReceived().catch(() => null);
+      return normalized;
+    }
+
+    await ApnsTokenBridge.redeliverToJavaScript().catch(() => null);
+    await sleep(600);
+    const retry = await ApnsTokenBridge.getSavedApnsToken();
+    if (retry.token) {
+      const normalized = retry.token.replace(/[<>\s]/g, "").toLowerCase();
+      logNative("info", "Token lido após reenvio da ponte nativa");
+      await ApnsTokenBridge.markJsReceived().catch(() => null);
+      return normalized;
+    }
+  } catch (e) {
+    logNative("warn", "Ponte APNs nativa indisponível", { error: String(e) });
+  }
+
+  return null;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -232,7 +325,14 @@ function waitForNativeToken(timeoutMs = REGISTER_TIMEOUT_MS): Promise<string> {
       if (polled) {
         logNative("info", "Token recebido (detecção por cache)");
         waiter.resolve(polled);
+        return;
       }
+      void fetchTokenFromNativeBridge().then((bridgeToken) => {
+        if (!bridgeToken) return;
+        rememberNativeToken(bridgeToken);
+        logNative("info", "Token recebido (ponte nativa iOS)");
+        waiter.resolve(bridgeToken);
+      });
     }, REGISTER_POLL_MS);
 
     waiter.timer = setTimeout(() => {
@@ -334,6 +434,12 @@ export async function initNativePushBridge(): Promise<void> {
     if (bridgeReady) return;
     const { platform } = await getCapacitorAvailability();
     logNative("info", "A iniciar bridge push nativo", { platform });
+
+    hookApnsTokenInjectionEvent();
+    const bridgeToken = await fetchTokenFromNativeBridge();
+    if (bridgeToken) {
+      rememberNativeToken(bridgeToken);
+    }
 
     const { PushNotifications } = await import("@capacitor/push-notifications");
     await ensureAndroidNotificationChannel();
@@ -488,9 +594,19 @@ export async function registerNativeStaffPush(
       }
     }
 
-    const tokenPromise = waitForNativeToken();
-    await triggerRegisterWithRetries(nativePlatform);
-    const token = await tokenPromise;
+    let token = readCachedNativePushToken();
+    if (!token) {
+      const tokenPromise = waitForNativeToken();
+      await triggerRegisterWithRetries(nativePlatform);
+
+      const bridgeFallback = await fetchTokenFromNativeBridge();
+      if (bridgeFallback) {
+        rememberNativeToken(bridgeFallback);
+        notifyTokenWaiters(bridgeFallback);
+      }
+
+      token = readCachedNativePushToken() ?? (await tokenPromise);
+    }
     await persistTokenToBackend(token, storeId, nativePlatform);
     return { ok: true, token };
   } catch (e) {

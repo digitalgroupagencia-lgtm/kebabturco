@@ -1,0 +1,148 @@
+import Capacitor
+import Foundation
+import UIKit
+import WebKit
+
+public final class ApnsTokenStore {
+    public static let shared = ApnsTokenStore()
+
+    public static let tokenDefaultsKey = "kebabturco_apns_device_token"
+    public static let receivedAtKey = "kebabturco_apns_received_at"
+    public static let jsDeliveredKey = "kebabturco_apns_js_delivered"
+    public static let lastErrorKey = "kebabturco_apns_last_error"
+
+    private var retryWorkItem: DispatchWorkItem?
+    private var retryCount = 0
+    private let maxRetries = 15
+
+    private init() {}
+
+    public func handle(deviceToken: Data) {
+        let token = Self.hexString(from: deviceToken)
+        UserDefaults.standard.set(token, forKey: Self.tokenDefaultsKey)
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.receivedAtKey)
+        UserDefaults.standard.set(false, forKey: Self.jsDeliveredKey)
+        UserDefaults.standard.removeObject(forKey: Self.lastErrorKey)
+
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+
+        retryCount = 0
+        deliverToJavaScript(token: token)
+    }
+
+    public func handleRegistrationError(_ error: Error) {
+        let message = error.localizedDescription
+        UserDefaults.standard.set(message, forKey: Self.lastErrorKey)
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
+    public func getSavedToken() -> String? {
+        UserDefaults.standard.string(forKey: Self.tokenDefaultsKey)
+    }
+
+    public func markJsDelivered() {
+        UserDefaults.standard.set(true, forKey: Self.jsDeliveredKey)
+    }
+
+    public func redeliverToJavaScript() {
+        guard let token = getSavedToken() else { return }
+        retryCount = 0
+        deliverToJavaScript(token: token)
+    }
+
+    public func getDiagnostics() -> [String: Any] {
+        let token = getSavedToken()
+        return [
+            "appDelegateReceived": token != nil,
+            "jsDelivered": UserDefaults.standard.bool(forKey: Self.jsDeliveredKey),
+            "receivedAt": UserDefaults.standard.double(forKey: Self.receivedAtKey),
+            "lastError": UserDefaults.standard.string(forKey: Self.lastErrorKey) as Any,
+            "tokenPreview": (token.map { Self.preview($0) }) as Any,
+            "hasToken": token != nil,
+        ]
+    }
+
+    private func deliverToJavaScript(token: String) {
+        retryWorkItem?.cancel()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard let webView = self.findWebView() else {
+                self.scheduleRetry(token: token)
+                return
+            }
+
+            let js = """
+            (function(t){
+              try {
+                window.__kebabturcoNativeApnsToken = t;
+                window.dispatchEvent(new CustomEvent('kebabturco-apns-token',{detail:{token:t,source:'appdelegate'}}));
+              } catch(e) {}
+            })('\(token)');
+            """
+
+            webView.evaluateJavaScript(js) { [weak self] _, error in
+                guard let self = self else { return }
+                if error == nil {
+                    self.markJsDelivered()
+                    self.retryCount = 0
+                } else {
+                    self.scheduleRetry(token: token)
+                }
+            }
+        }
+    }
+
+    private func scheduleRetry(token: String) {
+        guard retryCount < maxRetries else { return }
+        retryCount += 1
+        let work = DispatchWorkItem { [weak self] in
+            self?.deliverToJavaScript(token: token)
+        }
+        retryWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4 * Double(retryCount), execute: work)
+    }
+
+    private func findWebView() -> WKWebView? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        for scene in scenes {
+            for window in scene.windows where window.isKeyWindow {
+                if let webView = findWebView(in: window.rootViewController) {
+                    return webView
+                }
+            }
+        }
+        for scene in scenes {
+            for window in scene.windows {
+                if let webView = findWebView(in: window.rootViewController) {
+                    return webView
+                }
+            }
+        }
+        return nil
+    }
+
+    private func findWebView(in viewController: UIViewController?) -> WKWebView? {
+        guard let viewController = viewController else { return nil }
+        if let bridge = viewController as? CAPBridgeViewController {
+            return bridge.webView
+        }
+        for child in viewController.children {
+            if let found = findWebView(in: child) {
+                return found
+            }
+        }
+        if let presented = viewController.presentedViewController {
+            return findWebView(in: presented)
+        }
+        return nil
+    }
+
+    private static func hexString(from data: Data) -> String {
+        data.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func preview(_ token: String) -> String {
+        guard token.count > 12 else { return token }
+        return "\(token.prefix(8))…\(token.suffix(4))"
+    }
+}

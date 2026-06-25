@@ -350,6 +350,26 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
               <li>Permissão: {nativeRuntime.permission}</li>
               <li>Ligação push: {nativeRuntime.bridgeReady ? "activa" : "a iniciar…"}</li>
               <li>Token local: {nativeRuntime.hasCachedToken ? "sim" : "não"}</li>
+              <li>Gravado no servidor: {nativeRuntime.supabaseSaved ? "sim" : "não"}</li>
+              {nativeRuntime.nativeBridge ? (
+                <>
+                  <li>
+                    iPhone devolveu código:{" "}
+                    {nativeRuntime.nativeBridge.appDelegateReceived ? "sim" : "não"}
+                  </li>
+                  <li>
+                    Código chegou ao painel:{" "}
+                    {nativeRuntime.nativeBridge.jsDelivered || nativeRuntime.hasCachedToken
+                      ? "sim"
+                      : "não"}
+                  </li>
+                  {nativeRuntime.nativeBridge.tokenPreview ? (
+                    <li className="font-mono truncate">
+                      Código nativo: {nativeRuntime.nativeBridge.tokenPreview}
+                    </li>
+                  ) : null}
+                </>
+              ) : null}
               {nativeRuntime.lastRegistrationError ? (
                 <li className="text-destructive">Erro Apple: {nativeRuntime.lastRegistrationError}</li>
               ) : null}

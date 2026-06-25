@@ -33,6 +33,12 @@ ENTITLEMENTS
 
 cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
 
+# Garantir dependência da ponte APNs no project Xcode (cap sync pode não incluir)
+PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
+if ! grep -q 'CapacitorApnsTokenBridge' "$PBX"; then
+  echo "AVISO: CapacitorApnsTokenBridge em falta no project.pbxproj — correr cap sync ou aplicar patch manual"
+fi
+
 echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
 echo "  · Package SPM: sem Stripe Terminal (App Store)"

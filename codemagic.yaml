@@ -197,8 +197,12 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild-build-ipa.log
 
-    # IPA nos artifacts — enviar à App Store com Transporter ou App Store Connect.
-    # (envio automático desactivado: falhava validação SDK em contas antigas)
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+    # Alternativa sem Transporter no Mac: o Codemagic envia directo para a Apple.
 
   kebabturco-android-playstore:
     name: Kebab Turco — Android Google Play 1.1
