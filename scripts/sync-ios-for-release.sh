@@ -36,7 +36,7 @@ cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/P
 SOUND_SRC="$ROOT/public/sounds/new-order-notification.mp3"
 SOUND_DST="$ROOT/ios/App/App/staff_order_alert.caf"
 if command -v afconvert >/dev/null 2>&1 && [ -f "$SOUND_SRC" ]; then
-  afconvert "$SOUND_SRC" "$SOUND_DST" -d ima4 -f caff -v 2>/dev/null || true
+  afconvert "$SOUND_SRC" "$SOUND_DST" -d ima4 -f caff -c 1 -v 2>/dev/null || true
 fi
 
 echo "✓ iOS App Store: net.kebabturco.app"

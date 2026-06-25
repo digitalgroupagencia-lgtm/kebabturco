@@ -11,6 +11,17 @@ const corsHeaders = {
 
 const STAFF_PHONE_TAG = "__staff__";
 const MARKETING_PHONE_TAG = "__marketing__";
+/** Nome exacto do ficheiro no bundle iOS (mono .caf). */
+const STAFF_ORDER_IOS_SOUND = "staff_order_alert.caf";
+const STAFF_ORDER_ANDROID_SOUND = "staff_order_alert";
+
+function isStaffOrderPushTag(tag?: string | null): boolean {
+  return Boolean(tag && String(tag).startsWith("staff-new-order"));
+}
+
+function resolveStaffOrderSound(tag?: string | null): string | undefined {
+  return isStaffOrderPushTag(tag) ? STAFF_ORDER_IOS_SOUND : undefined;
+}
 
 function normalizeNativeToken(raw: string): string {
   return String(raw).replace(/[<>\s]/g, "").toLowerCase();
@@ -199,7 +210,8 @@ async function sendFcmV1(
   serviceAccount: { project_id: string; client_email: string; private_key: string; token_uri?: string },
 ): Promise<void> {
   const access = await getFcmAccessToken(serviceAccount);
-  const androidSound = payload.tag?.startsWith("staff-new-order") ? "staff_order_alert" : "default";
+  const androidSound = isStaffOrderPushTag(payload.tag) ? STAFF_ORDER_ANDROID_SOUND : "default";
+  const apnsSound = resolveStaffOrderSound(payload.tag) ?? "default";
   const body = {
     message: {
       token,
@@ -221,7 +233,7 @@ async function sendFcmV1(
       },
       apns: {
         payload: {
-          aps: { sound: "default", "interruption-level": "time-sensitive" },
+          aps: { sound: apnsSound },
         },
         headers: { "apns-priority": "10" },
       },
@@ -318,13 +330,11 @@ async function sendApns(
 
   const jwt = await getApnsJwt(config);
   const apnsSound =
-    payload.sound ??
-    (payload.tag?.startsWith("staff-new-order-") ? "staff_order_alert.caf" : "default");
+    payload.sound ?? resolveStaffOrderSound(payload.tag) ?? "default";
   const body = JSON.stringify({
     aps: {
       alert: { title: payload.title, body: payload.body },
       sound: apnsSound,
-      "interruption-level": "time-sensitive",
     },
     url: payload.url ?? "/",
     tag: payload.tag ?? "",
@@ -721,7 +731,7 @@ Deno.serve(async (req) => {
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           const apnsResult = await sendApns(
             token,
-            { title: subTitle, body: subBody, tag, url, requireInteraction },
+            { title: subTitle, body: subBody, tag, url, sound: resolveStaffOrderSound(tag) },
             apns,
             { tryBothHosts: apnsTryBothHosts },
           );
