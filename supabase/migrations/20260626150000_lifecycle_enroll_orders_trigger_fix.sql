@@ -1,41 +1,6 @@
--- Ciclo de vida automático: boas-vindas (30 dias) → relação → remarketing obrigatório.
+-- Corrige: customer_first_orders é uma VIEW — o trigger de lifecycle fica em public.orders.
+-- Correr DEPOIS de 20260626140000 (mesmo que tenha falhado no trigger, as tabelas já existem).
 
-CREATE TABLE IF NOT EXISTS public.customer_marketing_lifecycle (
-  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
-  customer_phone text NOT NULL,
-  stage text NOT NULL DEFAULT 'welcome' CHECK (stage IN ('welcome', 'relation', 'completed')),
-  started_at timestamptz NOT NULL DEFAULT now(),
-  welcome_ends_at timestamptz NOT NULL DEFAULT (now() + interval '30 days'),
-  relation_ends_at timestamptz NOT NULL DEFAULT (now() + interval '90 days'),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (store_id, customer_phone)
-);
-
-CREATE INDEX IF NOT EXISTS idx_customer_marketing_lifecycle_store
-  ON public.customer_marketing_lifecycle (store_id);
-
-CREATE TABLE IF NOT EXISTS public.lifecycle_send_log (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
-  customer_phone text NOT NULL,
-  stage text NOT NULL,
-  lifecycle_day integer NOT NULL,
-  slot_index integer NOT NULL,
-  status text NOT NULL DEFAULT 'sent',
-  resolved_title text,
-  resolved_body text,
-  message_locale text,
-  sent_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (store_id, customer_phone, stage, lifecycle_day, slot_index)
-);
-
-CREATE INDEX IF NOT EXISTS idx_lifecycle_send_log_store_sent
-  ON public.lifecycle_send_log (store_id, sent_at DESC);
-
-ALTER TABLE public.customer_marketing_lifecycle ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.lifecycle_send_log ENABLE ROW LEVEL SECURITY;
-
--- Inscreve cliente na fase boas-vindas na primeira encomenda (trigger em orders, não na view).
 CREATE OR REPLACE FUNCTION public.enroll_customer_marketing_lifecycle_from_order()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -83,7 +48,7 @@ CREATE TRIGGER trg_enroll_customer_lifecycle
   FOR EACH ROW
   EXECUTE FUNCTION public.enroll_customer_marketing_lifecycle_from_order();
 
--- Campanhas obrigatórias (activas por defeito) ao instalar presets.
+-- Resto de 20260626140000 (não aplicado se o script parou no trigger da view)
 CREATE OR REPLACE FUNCTION public.install_marketing_presets(_store_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -122,7 +87,6 @@ BEGIN
     (_store_id, 'Promo almoço', 'promo', 'Hoje ao almoço: {produto_destaque}!', NULL, 'schedule_cron', 'Oferta de almoço', '/', false, 'promo_lunch', 'scheduled', 'all_subscribers', 'preset', 'Oferta de almoço', 'Oferta de almuerzo', 'Lunch offer', 'Hoje ao almoço: {produto_destaque}!', 'Hoy al mediodía: {produto_destaque}!', 'Lunch today: {produto_destaque}!', 'customer_last', '{}'::jsonb, true, '12:30'::time, ARRAY[1,2,3,4,5]),
     (_store_id, 'Estamos abertos', 'operational', '{nome_restaurante} está aberto!', NULL, 'store_open', 'Estamos abertos!', '/', false, 'open_now', 'auto', 'all_subscribers', 'preset', 'Estamos abertos!', '¡Estamos abiertos!', 'We''re open!', '{nome_restaurante} está aberto!', '¡{nome_restaurante} está abierto!', '{nome_restaurante} is open!', 'customer_last', '{}'::jsonb, true, NULL::time, NULL::integer[]),
     (_store_id, 'Fecha em breve', 'operational', 'Fechamos em breve!', NULL, 'store_open', 'Última chamada', '/', false, 'closed_soon', 'auto', 'all_subscribers', 'preset', 'Última chamada', 'Última llamada', 'Last call', 'Fechamos em breve!', 'Cerramos pronto!', 'Closing soon!', 'customer_last', '{"closing_soon_minutes":30}'::jsonb, false, NULL::time, NULL::integer[]),
-  -- Obrigatórias (activas quando marketing está ligado)
     (_store_id, 'Ciclo Boas-vindas 30 dias', 'lifecycle', 'Mensagens automáticas nos primeiros 30 dias.', NULL, 'lifecycle_welcome', 'Boas-vindas', '/', true, 'lifecycle_welcome', 'auto', 'lifecycle_welcome', 'preset', 'Boas-vindas', 'Bienvenida', 'Welcome', 'Calendário automático de boas-vindas.', 'Calendario automático de bienvenida.', 'Automatic welcome calendar.', 'customer_last', '{"mandatory":true,"slots_per_day":4}'::jsonb, false, NULL::time, NULL::integer[]),
     (_store_id, 'Ciclo Relação', 'lifecycle', 'Mensagens de ligação após os 30 dias iniciais.', NULL, 'lifecycle_relation', 'Relação', '/', true, 'lifecycle_relation', 'auto', 'lifecycle_relation', 'preset', 'Relação', 'Relación', 'Relationship', 'Calendário automático de relação.', 'Calendario automático de relación.', 'Automatic relationship calendar.', 'customer_last', '{"mandatory":true,"slots_per_day":4}'::jsonb, false, NULL::time, NULL::integer[])
   ) AS v(store_id, name, campaign_type, message_template, trigger_days, trigger_event, title, push_url, is_active, preset_key, send_mode, audience_type, origin, title_pt, title_es, title_en, message_pt, message_es, message_en, language_mode, audience_config, only_when_open, schedule_time, schedule_days)
@@ -148,7 +112,6 @@ BEGIN
   SET presets_installed = true, auto_campaigns_enabled = true, updated_at = now()
   WHERE tenant_id = v_tenant_id;
 
-  -- Inscrever clientes existentes com primeira encomenda
   INSERT INTO public.customer_marketing_lifecycle (store_id, customer_phone, stage, started_at, welcome_ends_at, relation_ends_at)
   SELECT cfo.store_id, trim(cfo.customer_phone), 'welcome', cfo.first_order_at, cfo.first_order_at + interval '30 days', cfo.first_order_at + interval '90 days'
   FROM public.customer_first_orders cfo
@@ -159,7 +122,6 @@ BEGIN
 END;
 $$;
 
--- Ao activar marketing no tenant, garantir campanhas obrigatórias activas em todas as lojas.
 CREATE OR REPLACE FUNCTION public.sync_mandatory_marketing_campaigns(_tenant_id uuid)
 RETURNS void
 LANGUAGE plpgsql
