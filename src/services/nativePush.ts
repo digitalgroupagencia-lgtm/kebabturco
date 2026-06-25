@@ -3,6 +3,7 @@
  * Só corre dentro do APK/IPA; no browser web usa-se Web Push VAPID.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { ApnsTokenBridge } from "@/lib/apnsTokenBridge";
 import { pushLog } from "@/lib/push/pushLogger";
 
 const STORAGE_KEY = "native-push-token";
@@ -124,7 +125,6 @@ export async function getNativePushRuntimeDiagnostics(): Promise<NativePushRunti
 
   if (isNative && platform === "ios") {
     try {
-      const { ApnsTokenBridge } = await import("capacitor-apns-token-bridge");
       const diag = await ApnsTokenBridge.getBridgeDiagnostics();
       nativeBridge = {
         appDelegateReceived: Boolean(diag.appDelegateReceived),
@@ -250,9 +250,7 @@ function hookApnsTokenInjectionEvent(): void {
     lastRegistrationError = null;
     rememberNativeToken(detail.token);
     notifyTokenWaiters(detail.token);
-    void import("capacitor-apns-token-bridge")
-      .then(({ ApnsTokenBridge }) => ApnsTokenBridge.markJsReceived())
-      .catch(() => null);
+    void ApnsTokenBridge.markJsReceived().catch(() => null);
   });
 }
 
@@ -267,7 +265,6 @@ async function fetchTokenFromNativeBridge(): Promise<string | null> {
   if (platform !== "ios") return null;
 
   try {
-    const { ApnsTokenBridge } = await import("capacitor-apns-token-bridge");
     const saved = await ApnsTokenBridge.getSavedApnsToken();
     if (saved.token) {
       const normalized = saved.token.replace(/[<>\s]/g, "").toLowerCase();

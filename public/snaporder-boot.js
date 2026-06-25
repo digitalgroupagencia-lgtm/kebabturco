@@ -93,6 +93,10 @@
     }, ms);
   }
 
+  function bootTimeoutMs() {
+    return isLovableEditorHost() ? 120000 : 30000;
+  }
+
   function loadApp() {
     if (!document.body) {
       document.addEventListener("DOMContentLoaded", loadApp, { once: true });
@@ -121,11 +125,11 @@
         }
         return;
       }
-      scheduleBootTimeout(20000);
+      scheduleBootTimeout(isLovableEditorHost() ? 90000 : 20000);
     };
     document.body.appendChild(script);
 
-    scheduleBootTimeout(30000);
+    scheduleBootTimeout(bootTimeoutMs());
   }
 
   if (isLovableEditorHost()) {

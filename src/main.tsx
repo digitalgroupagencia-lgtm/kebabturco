@@ -7,12 +7,12 @@ import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { initNativePushBridge } from "./services/nativePush";
 
-startStripeDebugOverlayGuard();
-void initNativePushBridge();
-
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
 }
+
+startStripeDebugOverlayGuard();
+void initNativePushBridge();
 
 if (isStaffAppPath()) {
   applyStaffAppChrome();
