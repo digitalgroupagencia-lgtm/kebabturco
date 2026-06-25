@@ -798,9 +798,24 @@ export const STAFF_I18N_CATALOG = {
     en: "No customers with promo alerts enabled. Open the menu on the phone and accept promos, or use «Send test to team».",
   },
   "marketing.broadcast.hint_audience": {
-    es: "«Enviar a todos» = clientes que aceptaron promociones en el menú. La equipa usa el botón de prueba.",
-    pt: "«Enviar a todos» = clientes que aceitaram promoções no menu. A equipa usa o botão de teste.",
-    en: "«Send to all» = customers who accepted promos in the menu. Team uses the test button.",
+    es: "«Enviar a todos» = clientes con promociones + copia a la equipo (panel/app).",
+    pt: "«Enviar a todos» = clientes com promoções + cópia para a equipa (painel/app).",
+    en: "«Send to all» = customers with promos + copy to team (panel/app).",
+  },
+  "marketing.broadcast.sent_breakdown": {
+    es: "¡Enviado a {count}! ({customers} clientes + {staff} equipo)",
+    pt: "Enviado para {count}! ({customers} clientes + {staff} equipa)",
+    en: "Sent to {count}! ({customers} customers + {staff} team)",
+  },
+  "marketing.campaigns.mandatory_section": {
+    es: "Campañas obligatorias (no se pueden pausar ni eliminar)",
+    pt: "Campanhas obrigatórias (não se podem pausar nem apagar)",
+    en: "Mandatory campaigns (cannot pause or delete)",
+  },
+  "marketing.campaigns.optional_section": {
+    es: "Campañas opcionales (active cuando quiera)",
+    pt: "Campanhas opcionais (active quando quiser)",
+    en: "Optional campaigns (activate when you want)",
   },
   "marketing.broadcast.error": { es: "No se pudo enviar", pt: "Não foi possível enviar", en: "Could not send" },
   "marketing.broadcast.test_team": { es: "Enviar prueba al equipo", pt: "Enviar teste à equipa", en: "Send test to team" },

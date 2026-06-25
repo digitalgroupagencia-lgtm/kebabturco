@@ -297,19 +297,30 @@ const MarketingPage = () => {
     }
     setBroadcastSending(true);
     try {
-      const res = await sendMarketingBroadcast({
-        storeId,
-        title: broadcastTitle.trim(),
-        body: broadcastBody.trim(),
-        target: "all",
-      });
-      if (!res.ok) {
-        toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.none"));
+      const title = broadcastTitle.trim();
+      const body = broadcastBody.trim();
+      const [marketingRes, staffRes] = await Promise.all([
+        sendMarketingBroadcast({ storeId, title, body, target: "all" }),
+        sendBroadcastTestPushNotification({ storeId, audience: "staff", title, body }),
+      ]);
+
+      const customers = marketingRes.sent ?? 0;
+      const staff = staffRes.sent ?? 0;
+      const total = customers + staff;
+
+      if (total === 0) {
+        toast.error(
+          marketingRes.userMessage ?? staffRes.userMessage ?? t("marketing.broadcast.none"),
+        );
         return;
       }
-      const count = res.sent ?? 0;
+
       toast.success(
-        count > 0 ? panelT(lang, "marketing.broadcast.sent_count", { count: String(count) }) : t("marketing.broadcast.sent"),
+        panelT(lang, "marketing.broadcast.sent_breakdown", {
+          count: String(total),
+          customers: String(customers),
+          staff: String(staff),
+        }),
       );
       void refreshQuiet();
     } finally {
@@ -521,28 +532,58 @@ const MarketingPage = () => {
           })}
         </TabsContent>
 
-        <TabsContent value="campaigns" className="space-y-3 mt-4">
+        <TabsContent value="campaigns" className="space-y-4 mt-4">
           <p className="text-xs text-muted-foreground">{t("marketing.campaigns.hint")}</p>
-          {CAMPAIGN_PRESETS.map((preset) => {
-            const row = campaignByPreset.get(preset.key);
-            return (
-              <CampaignPresetCard
-                key={preset.key}
-                preset={preset}
-                campaign={row}
-                lang={uiLang}
-                toggling={togglingId === row?.id}
-                testingTeam={campaignTestId === row?.id}
-                showWinbackHint={winbackHintKeys.has(preset.key)}
-                couponsHref={nav.admin("coupons")}
-                couponCode={preset.suggestCoupon}
-                couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
-                mandatory={isMandatoryPreset(preset.key)}
-                onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
-                onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
-              />
-            );
-          })}
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold" style={{ color: WINE }}>
+              {t("marketing.campaigns.mandatory_section")}
+            </h3>
+            {CAMPAIGN_PRESETS.filter((p) => isMandatoryPreset(p.key)).map((preset) => {
+              const row = campaignByPreset.get(preset.key);
+              return (
+                <CampaignPresetCard
+                  key={preset.key}
+                  preset={preset}
+                  campaign={row}
+                  lang={uiLang}
+                  toggling={togglingId === row?.id}
+                  testingTeam={campaignTestId === row?.id}
+                  showWinbackHint={winbackHintKeys.has(preset.key)}
+                  couponsHref={nav.admin("coupons")}
+                  couponCode={preset.suggestCoupon}
+                  couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
+                  mandatory={true}
+                  onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
+                  onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
+                />
+              );
+            })}
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-muted-foreground">{t("marketing.campaigns.optional_section")}</h3>
+            {CAMPAIGN_PRESETS.filter((p) => !isMandatoryPreset(p.key)).map((preset) => {
+              const row = campaignByPreset.get(preset.key);
+              return (
+                <CampaignPresetCard
+                  key={preset.key}
+                  preset={preset}
+                  campaign={row}
+                  lang={uiLang}
+                  toggling={togglingId === row?.id}
+                  testingTeam={campaignTestId === row?.id}
+                  showWinbackHint={winbackHintKeys.has(preset.key)}
+                  couponsHref={nav.admin("coupons")}
+                  couponCode={preset.suggestCoupon}
+                  couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
+                  mandatory={false}
+                  onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
+                  onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
+                />
+              );
+            })}
+          </div>
         </TabsContent>
 
         <TabsContent value="broadcast" className="space-y-4 mt-4">
