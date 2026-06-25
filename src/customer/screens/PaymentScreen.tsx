@@ -612,6 +612,10 @@ const PaymentScreen = () => {
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
+    void supabase
+      .from("orders")
+      .update({ order_locale: lang } as Record<string, unknown>)
+      .eq("id", result.order_id);
     const awaitsCounterPayment =
       (opts.paymentMethod === "cash" || opts.paymentMethod === "counter") && opts.paymentStatus !== "paid";
     syncActiveOrderUrl(result.order_id, awaitsCounterPayment ? "cashPending" : "confirmation");

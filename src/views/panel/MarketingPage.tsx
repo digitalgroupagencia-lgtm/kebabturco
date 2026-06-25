@@ -183,6 +183,19 @@ const MarketingPage = () => {
     );
   }
 
+  if (loading) {
+    return <div className="p-6 text-sm text-muted-foreground">{t("ops.loading.orders")}</div>;
+  }
+
+  if (!marketingOk) {
+    return (
+      <div className="mx-auto max-w-lg p-6 text-center space-y-3">
+        <Megaphone className="mx-auto h-10 w-10 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">{t("marketing.broadcast.disabled")}</p>
+      </div>
+    );
+  }
+
   const previewCtx = {
     storeName,
     customerName: "Maria",
