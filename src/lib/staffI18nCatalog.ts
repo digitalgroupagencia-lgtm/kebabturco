@@ -117,7 +117,11 @@ export const STAFF_I18N_CATALOG = {
   "order.detail.items_with_count": { es: "Artículos ({count})", pt: "Itens ({count})", en: "Items ({count})" },
   "order.detail.adjust_prep": { es: "Ajustar tiempo", pt: "Ajustar tempo", en: "Adjust time" },
   "order.detail.payment_pending": { es: "Pago pendiente", pt: "Pagamento pendente", en: "Payment pending" },
-  "order.detail.counter_payment_required": { es: "Pedido de mostrador solo se imprime y prepara tras confirmar el pago.", pt: "Pedido de balcão só é impresso e preparado depois do pagamento confirmado.", en: "Counter order is only printed and prepared after payment is confirmed." },
+  "order.detail.counter_payment_required": {
+    es: "Primero toque «Registrar efectivo» o «Tarjeta» e introduzca SU código personal (ej. 5606). Después podrá aceptar el pedido.",
+    pt: "Primeiro toque «Registar dinheiro» ou «Cartão» e escreva o SEU código pessoal (ex. 5606). Só depois pode aceitar o pedido.",
+    en: "First tap «Record cash» or «Card» and enter YOUR personal code (e.g. 5606). Then you can accept the order.",
+  },
   "order.detail.updating": { es: "Actualizando…", pt: "A actualizar…", en: "Updating…" },
   "order.detail.sending": { es: "Enviando…", pt: "A enviar…", en: "Sending…" },
   "order.detail.driver_label": { es: "Repartidor: {name}", pt: "Entregador: {name}", en: "Driver: {name}" },

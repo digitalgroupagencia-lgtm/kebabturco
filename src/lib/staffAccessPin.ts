@@ -47,3 +47,30 @@ export function suggestStaffAccessPin(simple = true): string {
 export function sanitizeStaffAccessPinInput(raw: string): string {
   return raw.replace(/[^\d#]/g, "").slice(0, 10);
 }
+
+/** Mensagem clara quando o código de pagamento falha no balcão. */
+export function explainStaffPinPaymentError(raw: string, lang: UiLang = "es"): string {
+  const msg = raw.toLowerCase();
+  if (msg.includes("código incorreto") || msg.includes("codigo incorreto") || msg.includes("inativo")) {
+    return lang === "pt"
+      ? "Código não reconhecido nesta loja. O gerente tem de guardar o código em Equipa → editar membro → Código de pagamento."
+      : lang === "en"
+        ? "Payment code not recognized for this store. A manager must save it under Team → edit member → Payment code."
+        : "Código no reconocido en esta tienda. El gerente debe guardarlo en Equipo → editar miembro → Código de cobro.";
+  }
+  if (msg.includes("sem permissão") || msg.includes("sem permissao")) {
+    return lang === "pt"
+      ? "Sem permissão nesta loja. Entre com Google ou email aprovados em Equipa (acesso de teste pendente não serve)."
+      : lang === "en"
+        ? "No permission for this store. Sign in with Google or email approved in Team — pending test access is not enough."
+        : "Sin permiso en esta tienda. Entre con Google o correo aprobado en Equipo — el acceso de prueba pendiente no vale.";
+  }
+  if (msg.includes("autenticação") || msg.includes("autenticacao")) {
+    return lang === "pt"
+      ? "Sessão expirada. Saia e entre outra vez no painel (Google ou email oficial)."
+      : lang === "en"
+        ? "Session expired. Sign out and sign in again (Google or official email)."
+        : "Sesión caducada. Salga y entre otra vez (Google o correo oficial).";
+  }
+  return raw;
+}

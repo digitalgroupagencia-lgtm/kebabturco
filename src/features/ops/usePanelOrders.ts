@@ -19,6 +19,8 @@ import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderSe
 import { cancelOrderWithRefund } from "@/services/orderRefund";
 import { tryPrintPanelOrder, reprintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
+import { explainStaffPinPaymentError } from "@/lib/staffAccessPin";
+import { useStaffT } from "@/hooks/useStaffT";
 import {
   generateDeliveryConfirmationCode,
   isDeliveryOrder,
@@ -61,6 +63,7 @@ const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
 
 export function usePanelOrders(storeId: string | undefined) {
+  const { lang } = useStaffT();
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
@@ -472,13 +475,14 @@ export function usePanelOrders(storeId: string | undefined) {
         toast.success(`Pagamento registado — #${order.order_number}`);
         return true;
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");
+        const raw = e instanceof Error ? e.message : "Erro ao registar pagamento";
+        toast.error(explainStaffPinPaymentError(raw, lang));
         return false;
       } finally {
         updatingRef.current.delete(order.id);
       }
     },
-    [storeId, itemsByOrder],
+    [storeId, itemsByOrder, lang],
   );
 
   const assignDriver = useCallback(async (order: PanelOrder, driverUserId: string): Promise<boolean> => {
