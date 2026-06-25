@@ -474,10 +474,28 @@ function isMarketingAudienceRow(row: PushSubRow): boolean {
 
 function selectAudienceRows(
   rows: PushSubRow[],
-  opts: { orderId?: string; storeId?: string; audience?: string },
+  opts: { orderId?: string; storeId?: string; audience?: string; customerPhone?: string; marketingBroadcast?: boolean },
 ): PushSubRow[] {
   if (opts.orderId) return rows.filter((r) => r.order_id === opts.orderId);
-  if (opts.audience === "marketing") return rows.filter(isMarketingAudienceRow);
+  if (opts.audience === "marketing") {
+    if (opts.marketingBroadcast) {
+      return rows.filter(
+        (r) =>
+          r.customer_phone === MARKETING_PHONE_TAG ||
+          (r.customer_phone != null &&
+            r.customer_phone !== STAFF_PHONE_TAG &&
+            r.customer_phone !== MARKETING_PHONE_TAG &&
+            !r.customer_phone.startsWith("__")),
+      );
+    }
+    if (opts.customerPhone) {
+      const phone = opts.customerPhone.trim();
+      const direct = rows.filter((r) => r.customer_phone === phone);
+      if (direct.length) return direct;
+      return rows.filter((r) => r.customer_phone === MARKETING_PHONE_TAG);
+    }
+    return rows.filter(isMarketingAudienceRow);
+  }
   if (opts.storeId) return rows.filter(isStaffAudienceRow);
   return [];
 }
@@ -509,6 +527,8 @@ Deno.serve(async (req) => {
       nativePlatform,
       requireInteraction,
       pushDiagnostic,
+      customerPhone,
+      marketingBroadcast,
     } = body;
 
     if (!(await authorizeStaffBroadcast(req, { ...body, pushDiagnostic }))) {
@@ -565,7 +585,13 @@ Deno.serve(async (req) => {
       if (orderId) query = query.eq("order_id", orderId);
       else if (storeId) query = query.eq("store_id", storeId);
       const { data: rows } = await query;
-      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], { orderId, storeId, audience });
+      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], {
+        orderId,
+        storeId,
+        audience,
+        customerPhone: customerPhone as string | undefined,
+        marketingBroadcast: Boolean(marketingBroadcast),
+      });
       matchedInDb = matched.length;
       for (const sub of matched) targetMap.set(sub.endpoint, sub);
     }

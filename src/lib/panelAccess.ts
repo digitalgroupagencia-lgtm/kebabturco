@@ -31,6 +31,7 @@ export const PANEL_CONFIG_SEGMENT_TO_ADMIN: Readonly<Record<string, readonly str
   "delivery-zones": ["delivery-zones"],
   coupons: ["coupons"],
   loyalty: ["loyalty"],
+  marketing: ["marketing"],
   branding: ["branding"],
   stores: ["stores"],
   screens: ["screens"],

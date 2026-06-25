@@ -15,41 +15,8 @@ export type MarketingBroadcastResult = {
   userMessage?: string;
 };
 
-export type CampaignPreset = {
-  key: string;
-  name: string;
-  triggerDays: number;
-  title: string;
-  message: string;
-  triggerEvent: "first_order" | "inactive" | "promo_manual";
-};
-
-export const CAMPAIGN_PRESETS: CampaignPreset[] = [
-  {
-    key: "welcome-2d",
-    name: "Boas-vindas +2 dias",
-    triggerDays: 2,
-    title: "Obrigado pela primeira encomenda!",
-    message: "Volte em breve — temos novidades na carta.",
-    triggerEvent: "first_order",
-  },
-  {
-    key: "followup-5d",
-    name: "Reforço +5 dias",
-    triggerDays: 5,
-    title: "Como foi a experiência?",
-    message: "Peça de novo hoje com entrega rápida.",
-    triggerEvent: "first_order",
-  },
-  {
-    key: "winback-30d",
-    name: "Winback +30 dias",
-    triggerDays: 30,
-    title: "Sentimos a sua falta",
-    message: "Há tempo que não pede — volte hoje!",
-    triggerEvent: "first_order",
-  },
-];
+export { CAMPAIGN_PRESETS, WINBACK_SUGGESTED_COUPON } from "@/lib/marketing/campaignPresets";
+export type { CampaignPresetDefinition as CampaignPreset } from "@/lib/marketing/campaignPresets";
 
 export type CampaignRow = {
   id: string;
@@ -172,24 +139,42 @@ export async function fetchStoreCampaigns(storeId: string): Promise<CampaignRow[
   return (data ?? []) as CampaignRow[];
 }
 
-export async function upsertCampaignPreset(storeId: string, preset: CampaignPreset): Promise<{ ok: boolean; error?: string }> {
+export async function upsertCampaignPreset(
+  storeId: string,
+  preset: import("@/lib/marketing/campaignPresets").CampaignPresetDefinition,
+): Promise<{ ok: boolean; error?: string }> {
   const { data: existing } = await supabase
     .from("marketing_campaigns")
     .select("id")
     .eq("store_id", storeId)
-    .eq("name", preset.name)
+    .eq("preset_key", preset.key)
     .maybeSingle();
 
   const row = {
     store_id: storeId,
     name: preset.name,
-    campaign_type: "winback",
-    message_template: preset.message,
-    trigger_days: preset.triggerDays,
+    campaign_type: preset.campaignType,
+    message_template: preset.message.pt,
+    trigger_days: preset.triggerDays ?? null,
     trigger_event: preset.triggerEvent,
-    title: preset.title,
+    title: preset.title.pt,
     push_url: "/",
-    is_active: true,
+    is_active: false,
+    preset_key: preset.key,
+    send_mode: preset.sendMode,
+    audience_type: preset.audienceType,
+    audience_config: preset.audienceConfig ?? {},
+    origin: "preset",
+    language_mode: "customer_last",
+    title_pt: preset.title.pt,
+    title_es: preset.title.es,
+    title_en: preset.title.en,
+    message_pt: preset.message.pt,
+    message_es: preset.message.es,
+    message_en: preset.message.en,
+    only_when_open: preset.onlyWhenOpen ?? false,
+    schedule_time: preset.scheduleTime ?? null,
+    schedule_days: preset.scheduleDays ?? null,
   };
 
   if (existing?.id) {

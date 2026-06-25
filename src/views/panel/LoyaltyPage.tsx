@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
+import { nav } from "@/lib/navPaths";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { toast } from "sonner";
-import { Gift, Megaphone, Plus, ChevronDown } from "lucide-react";
+import { Gift, ChevronDown, Megaphone } from "lucide-react";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -22,39 +21,24 @@ type LoyaltyRow = {
   rewards_redeemed: number;
 };
 
-type Campaign = {
-  id: string;
-  name: string;
-  campaign_type: string;
-  message_template: string;
-  is_active: boolean;
-  trigger_days: number | null;
-};
-
 const STAMPS_NEEDED = 10;
+const WINE = "#3a0205";
 
 const LoyaltyPage = () => {
   const { t, lang } = useStaffT();
   const { storeId } = useAdminStoreId();
   const [accounts, setAccounts] = useState<LoyaltyRow[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [campName, setCampName] = useState("");
-  const [campMessage, setCampMessage] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
   const [clientsOpen, setClientsOpen] = useState(true);
-
-  useEffect(() => {
-    setCampMessage(t("loyalty.campaign.default_message"));
-  }, [t]);
 
   const load = async () => {
     if (!storeId) return;
-    const [{ data: loyalty }, { data: camps }] = await Promise.all([
-      supabase.from("loyalty_accounts").select("*").eq("store_id", storeId).order("stamps", { ascending: false }).limit(50),
-      supabase.from("marketing_campaigns").select("*").eq("store_id", storeId).order("created_at", { ascending: false }),
-    ]);
+    const { data: loyalty } = await supabase
+      .from("loyalty_accounts")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("stamps", { ascending: false })
+      .limit(50);
     setAccounts((loyalty as LoyaltyRow[]) || []);
-    setCampaigns((camps as Campaign[]) || []);
   };
 
   useEffect(() => {
@@ -72,35 +56,12 @@ const LoyaltyPage = () => {
     load();
   };
 
-  const createCampaign = async () => {
-    if (!storeId || !campName.trim()) return;
-    const { error } = await supabase.from("marketing_campaigns").insert({
-      store_id: storeId,
-      name: campName.trim(),
-      campaign_type: "winback",
-      message_template: campMessage,
-      trigger_days: 30,
-    });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(t("loyalty.toast.campaign_created"));
-    setCampName("");
-    setCreateOpen(false);
-    load();
-  };
-
-  const toggleCampaign = async (c: Campaign) => {
-    await supabase.from("marketing_campaigns").update({ is_active: !c.is_active }).eq("id", c.id);
-    load();
-  };
-
   if (!storeId) return <div className="p-6 text-sm text-muted-foreground">{t("common.no_store")}</div>;
 
   const readyCount = accounts.filter((a) => a.stamps >= STAMPS_NEEDED).length;
-  const subtitle = panelT(lang, "loyalty.subtitle", { stamps: STAMPS_NEEDED, clients: accounts.length })
-    + (readyCount > 0 ? panelT(lang, "loyalty.ready_count", { count: readyCount }) : "");
+  const subtitle =
+    panelT(lang, "loyalty.subtitle", { stamps: STAMPS_NEEDED, clients: accounts.length }) +
+    (readyCount > 0 ? panelT(lang, "loyalty.ready_count", { count: readyCount }) : "");
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-8">
@@ -122,6 +83,19 @@ const LoyaltyPage = () => {
           {t("page.loyalty.title")}
         </h2>
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+      </div>
+
+      <div className="rounded-2xl border bg-gradient-to-br from-[#3a0205]/10 to-transparent p-4 flex items-center justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <Megaphone className="h-5 w-5 shrink-0 mt-0.5" style={{ color: WINE }} />
+          <div>
+            <p className="text-sm font-bold">{t("loyalty.marketing_link.title")}</p>
+            <p className="text-xs text-muted-foreground">{t("loyalty.marketing_link.hint")}</p>
+          </div>
+        </div>
+        <Button asChild size="sm" className="shrink-0 font-bold" style={{ backgroundColor: WINE }}>
+          <Link to={nav.admin("marketing")}>{t("loyalty.marketing_link.cta")}</Link>
+        </Button>
       </div>
 
       <Collapsible open={clientsOpen} onOpenChange={setClientsOpen}>
@@ -167,63 +141,6 @@ const LoyaltyPage = () => {
           )}
         </CollapsibleContent>
       </Collapsible>
-
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold flex items-center gap-1.5">
-            <Megaphone className="w-4 h-4 text-primary" />
-            {t("loyalty.campaigns")}
-          </h3>
-          <Button variant="outline" size="sm" className="h-9 rounded-xl text-xs" onClick={() => setCreateOpen((v) => !v)}>
-            <Plus className="w-4 h-4 mr-1" />
-            {createOpen ? t("common.close") : t("coupons.new")}
-          </Button>
-        </div>
-
-        {createOpen && (
-          <div className="rounded-2xl border bg-card p-3.5 space-y-2.5 mb-2 shadow-sm">
-            <div>
-              <Label className="text-xs">{t("loyalty.campaign.name")}</Label>
-              <Input
-                value={campName}
-                onChange={(e) => setCampName(e.target.value)}
-                placeholder={t("loyalty.campaign.name_ph")}
-                className="h-10 mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">{t("loyalty.campaign.message")}</Label>
-              <Input value={campMessage} onChange={(e) => setCampMessage(e.target.value)} className="h-10 mt-1" />
-            </div>
-            <Button className="w-full h-11 font-bold" onClick={createCampaign}>
-              {t("loyalty.campaign.create")}
-            </Button>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {campaigns.map((c) => (
-            <OpsCompactCard
-              key={c.id}
-              title={c.name}
-              summary={panelT(lang, "loyalty.campaign.days", {
-                type: c.campaign_type,
-                days: c.trigger_days ?? "—",
-              })}
-              meta={c.message_template.length > 48 ? `${c.message_template.slice(0, 48)}…` : c.message_template}
-              inactive={!c.is_active}
-              badges={c.is_active ? [t("loyalty.badge.active")] : [t("coupons.badge.paused")]}
-              editable={false}
-              actions={<Switch checked={c.is_active} onCheckedChange={() => toggleCampaign(c)} />}
-            />
-          ))}
-          {campaigns.length === 0 && !createOpen && (
-            <p className="text-center text-sm text-muted-foreground py-6 border border-dashed rounded-2xl">
-              {t("loyalty.campaigns.empty")}
-            </p>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

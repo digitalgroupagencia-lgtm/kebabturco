@@ -127,3 +127,30 @@ export function useTenantLoyaltyProgram(tenantId: string | null | undefined) {
     },
   });
 }
+
+export function useTenantMarketingSettings(tenantId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["tenant-marketing-settings", tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenant_marketing_settings")
+        .select("*")
+        .eq("tenant_id", tenantId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export async function upsertTenantMarketingSettings(
+  tenantId: string,
+  patch: Record<string, unknown>,
+) {
+  const { error } = await supabase.from("tenant_marketing_settings").upsert(
+    { tenant_id: tenantId, ...patch, updated_at: new Date().toISOString() },
+    { onConflict: "tenant_id" },
+  );
+  if (error) throw error;
+}
