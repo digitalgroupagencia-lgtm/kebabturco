@@ -209,6 +209,23 @@ workflows:
 
     # Alternativa sem Transporter no Mac: o Codemagic envia directo para a Apple.
 
+  kebabturco-ios-submit-review:
+    name: Kebab Turco — Enviar 1.1.1 para revisão Apple
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: kebabturco
+
+    environment:
+      vars:
+        IOS_APP_STORE_VERSION: "1.1.1"
+      node: 22
+
+    scripts:
+      - name: Enviar versão 1.1.1 para revisão da App Store
+        script: bash scripts/codemagic-submit-appstore-review.sh
+
   kebabturco-android-playstore:
     name: Kebab Turco — Android Google Play 1.2
     max_build_duration: 120
