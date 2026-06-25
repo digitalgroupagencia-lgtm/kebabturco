@@ -1,6 +1,5 @@
 import UIKit
 import Capacitor
-import CapacitorApnsTokenBridge
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
