@@ -8,6 +8,7 @@ import {
   KACHING_ALERT_VOLUME_URGENT,
   KACHING_SOUND_URL,
 } from "@/lib/kachingSound";
+import { isNativeIOSAppSync } from "@/lib/nativeAppPlatform";
 
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
@@ -59,10 +60,23 @@ function clearLockScreenMediaControls() {
     if (typeof navigator !== "undefined" && "mediaSession" in navigator) {
       navigator.mediaSession.metadata = null;
       navigator.mediaSession.playbackState = "none";
+      const actions = ["play", "pause", "stop", "seekbackward", "seekforward", "previoustrack", "nexttrack"] as const;
+      for (const action of actions) {
+        try {
+          navigator.mediaSession.setActionHandler(action, null);
+        } catch {
+          /* ignore */
+        }
+      }
     }
   } catch {
     /* ignore */
   }
+}
+
+/** No iPhone instalado o som vem da notificação push do sistema — nunca do player web. */
+function shouldUseInAppAudio(): boolean {
+  return !isNativeIOSAppSync();
 }
 
 function isIOSLike(): boolean {
@@ -193,6 +207,10 @@ function installVisibilityHook() {
   if (visibilityHookInstalled || typeof document === "undefined") return;
   visibilityHookInstalled = true;
   document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && isNativeIOSAppSync()) {
+      clearLockScreenMediaControls();
+      return;
+    }
     if (document.visibilityState === "visible") void ensureAudioReady();
   });
 }
@@ -246,6 +264,17 @@ function beepSources(): string[] {
 export async function enablePanelAlerts(): Promise<boolean> {
   installVisibilityHook();
   try {
+    if (isNativeIOSAppSync()) {
+      iosAudioUnlocked = true;
+      setPanelAlertsEnabled(true);
+      if (unacknowledgedPending.size > 0) ensurePendingAlertLoop();
+      flashVisualAlert();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([200, 80, 200]);
+      }
+      return true;
+    }
+
     const heard = await playHtmlBeep(true);
     if (isIOSLike()) {
       // O toque no botão desbloqueia o áudio; no Safari o som pode falhar sem bloquear alertas.
@@ -380,6 +409,10 @@ function waitForPlaying(audio: HTMLAudioElement, ms = 800): Promise<boolean> {
 
 /** iPhone/Safari — ficheiro estático no servidor (mais fiável que blob). */
 async function playHtmlBeep(isUnlock = false, urgent = false): Promise<boolean> {
+  if (!shouldUseInAppAudio()) {
+    clearLockScreenMediaControls();
+    return false;
+  }
   const sources = beepSources();
   let lastError = "sem fonte";
 
@@ -439,6 +472,7 @@ async function playHtmlBeep(isUnlock = false, urgent = false): Promise<boolean> 
 }
 
 function playWebBeep(urgent = false): boolean {
+  if (!shouldUseInAppAudio()) return false;
   if (!audioCtx) audioCtx = new AudioContext();
   const ctx = audioCtx;
   if (ctx.state !== "running") return false;
@@ -464,6 +498,24 @@ async function playAlertSoundOnce(): Promise<boolean> {
   const urgent = hasUrgentPendingOrders();
   flashVisualAlert();
   if (urgent) flashVisualAlert();
+
+  if (!shouldUseInAppAudio()) {
+    clearLockScreenMediaControls();
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(
+        urgent ? [500, 150, 500, 150, 700, 150, 700] : [300, 120, 300, 120, 500],
+      );
+    }
+    deployDebugLog({
+      hypothesisId: "H-iOS-C",
+      location: "panelAlerts.ts:playAlertSoundOnce",
+      message: "native ios — som só via notificação push do sistema",
+      data: { pending: unacknowledgedPending.size, urgent },
+      runId: "alert-native-ios-v1",
+    });
+    return true;
+  }
+
   await ensureAudioReady();
 
   let soundOk = false;
@@ -553,6 +605,11 @@ export function stopPendingOrderAlertLoop() {
 
 export function isIOSPanelDevice(): boolean {
   return isIOSLike();
+}
+
+/** Remove controlos de «música» no ecrã bloqueado do iPhone (app instalada). */
+export function dismissNativeIOSMediaPlayer(): void {
+  if (isNativeIOSAppSync()) clearLockScreenMediaControls();
 }
 
 /** Prepara áudio e push se alertas já estavam activos numa sessão anterior. */

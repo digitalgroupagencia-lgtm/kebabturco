@@ -208,9 +208,8 @@ function handleForegroundPush(notification: { data?: Record<string, unknown>; ta
   if (!tag.startsWith("staff-new-order-")) return;
   const orderId = tag.replace("staff-new-order-", "");
   if (!orderId) return;
-  void import("@/lib/panelAlerts").then(({ registerNewPendingOrderAlert, playNewOrderAlert }) => {
+  void import("@/lib/panelAlerts").then(({ registerNewPendingOrderAlert }) => {
     registerNewPendingOrderAlert(orderId);
-    playNewOrderAlert(orderId);
   });
 }
 
