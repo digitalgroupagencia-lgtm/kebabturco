@@ -219,7 +219,7 @@ workflows:
         VERSION_NAME: "1.2"
         VERSION_CODE: "3"
       node: 22
-      java: 17
+      java: 21
 
     triggering:
       events:
