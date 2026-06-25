@@ -304,11 +304,14 @@ const MarketingPage = () => {
         target: "all",
       });
       if (!res.ok) {
-        toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.error"));
+        toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.none"));
         return;
       }
-      toast.success(t("marketing.broadcast.sent"));
-      void load();
+      const count = res.sent ?? 0;
+      toast.success(
+        count > 0 ? panelT(lang, "marketing.broadcast.sent_count", { count: String(count) }) : t("marketing.broadcast.sent"),
+      );
+      void refreshQuiet();
     } finally {
       setBroadcastSending(false);
     }
@@ -550,6 +553,7 @@ const MarketingPage = () => {
               <Label>{t("marketing.broadcast.body_field")}</Label>
               <Textarea rows={3} value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)} maxLength={180} />
               <Button
+                type="button"
                 className="w-full font-bold"
                 style={{ backgroundColor: WINE }}
                 disabled={broadcastSending || !marketingOk}
@@ -559,6 +563,7 @@ const MarketingPage = () => {
                 {broadcastSending ? t("marketing.broadcast.sending") : t("marketing.broadcast.send")}
               </Button>
               <Button
+                type="button"
                 variant="outline"
                 className="w-full text-xs"
                 disabled={broadcastTestSending}
@@ -566,6 +571,7 @@ const MarketingPage = () => {
               >
                 {broadcastTestSending ? t("marketing.broadcast.test_team_sending") : t("marketing.broadcast.test_team")}
               </Button>
+              <p className="text-[10px] text-muted-foreground">{t("marketing.broadcast.hint_audience")}</p>
             </div>
             <div className="flex flex-col items-center justify-center rounded-2xl border bg-muted/10 p-4">
               <p className="mb-3 text-xs font-semibold text-muted-foreground">{t("marketing.broadcast.preview")}</p>

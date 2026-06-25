@@ -787,6 +787,21 @@ export const STAFF_I18N_CATALOG = {
   "marketing.broadcast.preview": { es: "Vista previa", pt: "Pré-visualização", en: "Preview" },
   "marketing.broadcast.disabled": { es: "Envío manual desactivado", pt: "Envio manual desactivado", en: "Manual send disabled" },
   "marketing.broadcast.sent": { es: "¡Enviado!", pt: "Enviado!", en: "Sent!" },
+  "marketing.broadcast.sent_count": {
+    es: "¡Enviado a {count} dispositivo(s)!",
+    pt: "Enviado para {count} telemóvel/telemóveis!",
+    en: "Sent to {count} device(s)!",
+  },
+  "marketing.broadcast.none": {
+    es: "Ningún cliente con avisos de promoción activos. Abra el menú en el móvil y acepte promociones, o use «Enviar prueba al equipo».",
+    pt: "Nenhum cliente com avisos de promoções activos. Abra o menu no telemóvel e aceite promoções, ou use «Enviar teste à equipa».",
+    en: "No customers with promo alerts enabled. Open the menu on the phone and accept promos, or use «Send test to team».",
+  },
+  "marketing.broadcast.hint_audience": {
+    es: "«Enviar a todos» = clientes que aceptaron promociones en el menú. La equipa usa el botón de prueba.",
+    pt: "«Enviar a todos» = clientes que aceitaram promoções no menu. A equipa usa o botão de teste.",
+    en: "«Send to all» = customers who accepted promos in the menu. Team uses the test button.",
+  },
   "marketing.broadcast.error": { es: "No se pudo enviar", pt: "Não foi possível enviar", en: "Could not send" },
   "marketing.broadcast.test_team": { es: "Enviar prueba al equipo", pt: "Enviar teste à equipa", en: "Send test to team" },
   "marketing.broadcast.test_team_sending": { es: "Enviando prueba…", pt: "A enviar teste…", en: "Sending test…" },

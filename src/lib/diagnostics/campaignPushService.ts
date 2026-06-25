@@ -77,6 +77,7 @@ export async function sendMarketingBroadcast(opts: {
 
   if (target === "all") {
     bodyPayload.audience = "marketing";
+    bodyPayload.marketingBroadcast = true;
   } else {
     const directSubscription = await getLocalPushSubscription();
     if (!directSubscription) {
@@ -117,7 +118,16 @@ export async function sendMarketingBroadcast(opts: {
 
     const sent = payload.sent ?? 0;
     log("broadcast", sent > 0 ? "info" : "warn", `Enviado para ${sent} dispositivo(s)`, payload);
-    return { ok: sent > 0, ...payload };
+    if (sent === 0) {
+      return {
+        ok: false,
+        sent: 0,
+        ...payload,
+        userMessage:
+          "Nenhum telemóvel de cliente com promoções activas. Abra o menu no telemóvel e aceite avisos de promoções — ou use «Enviar teste à equipa» para o painel.",
+      };
+    }
+    return { ok: true, ...payload };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     log("broadcast", "error", message);
