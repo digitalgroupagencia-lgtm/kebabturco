@@ -166,6 +166,20 @@ workflows:
           include: true
 
     scripts:
+      - name: Confirmar Xcode 16 ou superior
+        script: |
+          set -euo pipefail
+          echo "=== Versões disponíveis ==="
+          ls /Applications | grep -i Xcode || true
+          xcodebuild -version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "SDK iOS activo: $SDK"
+          SDK_MAJOR="${SDK%%.*}"
+          if [ "${SDK_MAJOR:-0}" -lt 16 ]; then
+            echo "ERRO: SDK iOS $SDK é demasiado antigo. A Apple exige SDK 16+."
+            exit 1
+          fi
+
       - name: Instalar dependências
         script: npm ci
 
