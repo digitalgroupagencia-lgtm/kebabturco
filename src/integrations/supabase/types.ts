@@ -4097,6 +4097,7 @@ export type Database = {
         Args: {
           _customer_phone?: string
           _fcm_token: string
+          _order_id?: string | null
           _platform?: string
           _store_id: string
         }

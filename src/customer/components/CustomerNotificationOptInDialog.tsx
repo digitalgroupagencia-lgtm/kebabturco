@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Gift, Package, Sparkles } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
@@ -19,34 +19,46 @@ type Props = {
 
 const COPY = {
   pt: {
-    title: "Quer receber notificações?",
-    desc: "Active as notificações para acompanhar o seu pedido em tempo real e receber avisos importantes sobre a entrega.",
+    title: "Fique a par dos seus pedidos",
+    subtitle: "Active as notificações e não perca nada importante.",
+    benefitOrder: "Estado do pedido em tempo real",
+    benefitPromo: "Promoções e ofertas exclusivas",
+    benefitReady: "Aviso quando estiver pronto para recolher",
     activate: "Activar notificações",
-    later: "Agora não",
+    later: "Não, obrigado",
     success: "Notificações activadas!",
     denied: "Pode activar depois nas definições do telemóvel.",
   },
   es: {
-    title: "¿Quieres recibir notificaciones?",
-    desc: "Activa las notificaciones para seguir tu pedido en tiempo real y recibir avisos importantes sobre tu entrega.",
+    title: "No te pierdas tu pedido",
+    subtitle: "Activa las notificaciones y entérate al momento.",
+    benefitOrder: "Estado del pedido en tiempo real",
+    benefitPromo: "Promociones y ofertas exclusivas",
+    benefitReady: "Aviso cuando esté listo para recoger",
     activate: "Activar notificaciones",
-    later: "Ahora no",
+    later: "No, gracias",
     success: "¡Notificaciones activadas!",
     denied: "Puedes activarlas más tarde en los ajustes del móvil.",
   },
   en: {
-    title: "Want to receive notifications?",
-    desc: "Turn on notifications to track your order in real time and get important delivery updates.",
+    title: "Stay on top of your order",
+    subtitle: "Turn on notifications so you never miss an update.",
+    benefitOrder: "Real-time order status",
+    benefitPromo: "Exclusive deals and promotions",
+    benefitReady: "Alert when ready for pickup",
     activate: "Enable notifications",
-    later: "Not now",
+    later: "No thanks",
     success: "Notifications enabled!",
     denied: "You can enable them later in your phone settings.",
   },
   fr: {
-    title: "Voulez-vous recevoir des notifications ?",
-    desc: "Activez les notifications pour suivre votre commande en temps réel et recevoir des alertes importantes sur la livraison.",
+    title: "Suivez votre commande",
+    subtitle: "Activez les notifications pour ne rien manquer.",
+    benefitOrder: "Statut de commande en temps réel",
+    benefitPromo: "Promotions et offres exclusives",
+    benefitReady: "Alerte quand c'est prêt à récupérer",
     activate: "Activer les notifications",
-    later: "Pas maintenant",
+    later: "Non merci",
     success: "Notifications activées !",
     denied: "Vous pourrez les activer plus tard dans les réglages du téléphone.",
   },
@@ -57,6 +69,12 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
   const copy = COPY[lang as keyof typeof COPY] ?? COPY.es;
   const [busy, setBusy] = useState(false);
 
+  const benefits = [
+    { icon: Package, text: copy.benefitOrder },
+    { icon: Gift, text: copy.benefitPromo },
+    { icon: Sparkles, text: copy.benefitReady },
+  ];
+
   const handleLater = () => {
     markCustomerMarketingPromptShown();
     onOpenChange(false);
@@ -65,12 +83,13 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
   const handleActivate = async () => {
     if (!isCustomerMarketingPushSupported()) {
       appToastInfo(copy.denied);
-      onOpenChange(false);
+      handleLater();
       return;
     }
     setBusy(true);
     try {
       const result = await subscribeCustomerMarketingPush(storeId);
+      markCustomerMarketingPromptShown();
       if (result.ok) {
         appToastSuccess(copy.success);
         onOpenChange(false);
@@ -88,62 +107,87 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/70 backdrop-blur-sm" />
+        <DialogOverlay className="bg-black/75 backdrop-blur-sm" />
         <DialogPrimitive.Content
           className={cn(
             "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2",
-            "rounded-3xl border border-primary/30 p-6 pt-8 shadow-2xl outline-none",
-            "bg-gradient-to-b from-[#1a0204] to-[#0d0102] text-white",
+            "rounded-3xl border border-[#5a0a0e]/50 p-0 shadow-2xl outline-none overflow-hidden",
+            "bg-gradient-to-b from-[#3a0205] via-[#2a0104] to-[#1a0204] text-white",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           )}
         >
-          <DialogPrimitive.Close
-            className="absolute right-4 top-4 rounded-full p-1 text-white/70 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30"
-            onClick={handleLater}
-          >
-            <span className="text-xl leading-none" aria-hidden>
-              ×
-            </span>
-            <span className="sr-only">{copy.later}</span>
-          </DialogPrimitive.Close>
+          <div className="relative px-6 pt-8 pb-6">
+            <div
+              className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#6b1015]/30 blur-2xl"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -left-6 bottom-12 h-24 w-24 rounded-full bg-[#8b1a20]/20 blur-xl"
+              aria-hidden
+            />
 
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-primary/40 bg-primary/20">
-              <Bell className="h-8 w-8 text-primary-foreground stroke-[1.5]" />
-            </div>
-
-            <DialogPrimitive.Title className="text-xl font-bold leading-snug text-white">
-              {copy.title}
-            </DialogPrimitive.Title>
-
-            <DialogPrimitive.Description className="mt-3 text-sm leading-relaxed text-white/85">
-              {copy.desc}
-            </DialogPrimitive.Description>
-
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleActivate()}
-              className={cn(
-                "mt-6 flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5",
-                "border border-primary/35 bg-gradient-to-r from-[#3A0205] to-[#2a0104]",
-                "text-base font-bold text-white shadow-lg transition",
-                "hover:from-[#4a0307] hover:to-[#350206] disabled:opacity-60",
-              )}
-            >
-              <Bell className="h-4 w-4 shrink-0" />
-              {busy ? "…" : copy.activate}
-            </button>
-
-            <button
-              type="button"
+            <DialogPrimitive.Close
+              className="absolute right-4 top-4 rounded-full p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30"
               onClick={handleLater}
-              className="mt-4 text-sm font-medium text-white/55 transition hover:text-white/80"
             >
-              {copy.later}
-            </button>
+              <span className="text-xl leading-none" aria-hidden>
+                ×
+              </span>
+              <span className="sr-only">{copy.later}</span>
+            </DialogPrimitive.Close>
+
+            <div className="relative flex flex-col items-center text-center">
+              <div className="mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
+                <Bell className="h-9 w-9 text-white stroke-[1.5]" />
+              </div>
+
+              <DialogPrimitive.Title className="text-[1.35rem] font-bold leading-snug tracking-tight text-white">
+                {copy.title}
+              </DialogPrimitive.Title>
+
+              <DialogPrimitive.Description className="mt-2 text-sm leading-relaxed text-white/75">
+                {copy.subtitle}
+              </DialogPrimitive.Description>
+
+              <ul className="mt-5 w-full space-y-2.5 text-left">
+                {benefits.map(({ icon: Icon, text }) => (
+                  <li
+                    key={text}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#5a0a0e]/60">
+                      <Icon className="h-4 w-4 text-white/90" strokeWidth={1.75} />
+                    </span>
+                    <span className="text-sm font-medium leading-snug text-white/90">{text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleActivate()}
+                className={cn(
+                  "mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4",
+                  "bg-white text-[#3a0205]",
+                  "text-base font-bold shadow-[0_4px_20px_rgba(0,0,0,0.25)] transition",
+                  "hover:bg-white/95 active:scale-[0.98] disabled:opacity-60",
+                )}
+              >
+                <Bell className="h-4 w-4 shrink-0" />
+                {busy ? "…" : copy.activate}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLater}
+                className="mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white/55 transition hover:text-white/85"
+              >
+                {copy.later}
+              </button>
+            </div>
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>

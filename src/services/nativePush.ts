@@ -4,7 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { ApnsTokenBridge } from "@/lib/apnsTokenBridge";
-import { pushLog } from "@/lib/push/pushLogger";
+import { pushLog, type PushLogContext } from "@/lib/push/pushLogger";
 
 const STORAGE_KEY = "native-push-token";
 const REGISTER_TIMEOUT_MS = 45_000;
@@ -80,6 +80,12 @@ async function getCapacitorAvailability(): Promise<NativeAvailability> {
 export async function isNativePushAvailable(): Promise<boolean> {
   const { isNative, platform } = await getCapacitorAvailability();
   return isNative && (platform === "android" || platform === "ios");
+}
+
+/** Versão síncrona — útil em guards de UI antes do import dinâmico do Capacitor. */
+export function isNativePushAvailableSync(): boolean {
+  const sync = getCapacitorAvailabilitySync();
+  return Boolean(sync && (sync.platform === "android" || sync.platform === "ios"));
 }
 
 export function readCachedNativePushToken(): string | null {
@@ -213,23 +219,47 @@ function handleForegroundPush(notification: { data?: Record<string, unknown>; ta
   });
 }
 
-async function persistTokenToBackend(token: string, storeId: string, platform: "android" | "ios") {
+function logCustomerNative(
+  context: PushLogContext,
+  level: "info" | "warn" | "error",
+  message: string,
+  details?: Record<string, unknown>,
+) {
+  pushLog(context, "native_register", level, message, details);
+}
+
+async function persistTokenToBackend(
+  token: string,
+  storeId: string,
+  platform: "android" | "ios",
+  opts?: { customerPhone?: string; orderId?: string | null; logContext?: PushLogContext },
+) {
   const cleanToken = token.replace(/[<>\s]/g, "").toLowerCase();
-  logNative("info", "A gravar token no servidor", { storeId, platform });
+  const customerPhone = opts?.customerPhone ?? "__staff__";
+  const logContext = opts?.logContext ?? "staff";
+  const log =
+    logContext === "staff"
+      ? (level: "info" | "warn" | "error", message: string, details?: Record<string, unknown>) =>
+          logNative(level, message, details)
+      : (level: "info" | "warn" | "error", message: string, details?: Record<string, unknown>) =>
+          logCustomerNative(logContext, level, message, details);
+
+  log("info", "A gravar token no servidor", { storeId, platform, customerPhone, orderId: opts?.orderId });
   const { error } = await supabase.rpc("register_native_push_subscription", {
     _store_id: storeId,
     _fcm_token: cleanToken,
     _platform: platform,
-    _customer_phone: "__staff__",
+    _customer_phone: customerPhone,
+    _order_id: opts?.orderId ?? null,
   });
   if (error) {
     lastSupabaseSaveOk = false;
-    logNative("error", "Servidor recusou o token", { code: error.code, message: error.message });
+    log("error", "Servidor recusou o token", { code: error.code, message: error.message });
     throw error;
   }
   rememberNativeToken(cleanToken);
   lastSupabaseSaveOk = true;
-  logNative("info", "Token gravado no servidor com sucesso");
+  log("info", "Token gravado no servidor com sucesso");
 }
 
 function readWindowInjectedApnsToken(): string | null {
@@ -614,6 +644,113 @@ export async function registerNativeStaffPush(
     if (/sem permissão/i.test(message)) {
       return { ok: false, reason: "Sem permissão para esta loja — escolha a unidade correcta." };
     }
+    if (lastRegistrationError) {
+      return { ok: false, reason: lastRegistrationError };
+    }
+    return { ok: false, reason: message };
+  }
+}
+
+/** Pedir permissão + registar token FCM/APNs para cliente (promoções ou estado do pedido). */
+export async function registerNativeCustomerPush(
+  storeId: string,
+  opts: {
+    customerPhone: string;
+    orderId?: string | null;
+    forceRefresh?: boolean;
+    skipPermissionRequest?: boolean;
+    logContext?: PushLogContext;
+  },
+): Promise<{
+  ok: boolean;
+  reason?: string;
+  token?: string;
+}> {
+  const logContext = opts.logContext ?? (opts.orderId ? "order" : "customer_marketing");
+  const { isNative, platform } = await getCapacitorAvailability();
+  logCustomerNative(logContext, "info", "registerNativeCustomerPush iniciado", {
+    isNative,
+    platform,
+    customerPhone: opts.customerPhone,
+    orderId: opts.orderId,
+  });
+
+  if (!isNative || platform === "web") {
+    return { ok: false, reason: "not-native" };
+  }
+
+  const nativePlatform = platform as "android" | "ios";
+  await initNativePushBridge();
+
+  try {
+    if (opts.forceRefresh) {
+      const cachedForRefresh = readCachedNativePushToken();
+      if (nativePlatform === "ios" && cachedForRefresh) {
+        await persistTokenToBackend(cachedForRefresh, storeId, nativePlatform, {
+          customerPhone: opts.customerPhone,
+          orderId: opts.orderId,
+          logContext,
+        });
+        return { ok: true, token: cachedForRefresh };
+      }
+      if (nativePlatform === "android") {
+        clearCachedNativePushToken();
+        await resetNativePushBridge();
+        await initNativePushBridge();
+      }
+    }
+
+    const { granted, receive } = opts.skipPermissionRequest
+      ? { granted: true, receive: "granted" }
+      : await requestNativePermission();
+    if (!granted) {
+      return {
+        ok: false,
+        reason:
+          receive === "denied"
+            ? "Permissão de notificações negada no telemóvel — active em Definições → Kebab Turco → Notificações."
+            : "Permissão de notificações não concedida — tente outra vez.",
+      };
+    }
+
+    const cached = readCachedNativePushToken();
+    if (cached && !opts.forceRefresh) {
+      try {
+        await persistTokenToBackend(cached, storeId, nativePlatform, {
+          customerPhone: opts.customerPhone,
+          orderId: opts.orderId,
+          logContext,
+        });
+        return { ok: true, token: cached };
+      } catch (e) {
+        logCustomerNative(logContext, "warn", "Token em cache não gravou no servidor — a pedir novo", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
+    let token = readCachedNativePushToken();
+    if (!token) {
+      const tokenPromise = waitForNativeToken();
+      await triggerRegisterWithRetries(nativePlatform);
+
+      const bridgeFallback = await fetchTokenFromNativeBridge();
+      if (bridgeFallback) {
+        rememberNativeToken(bridgeFallback);
+        notifyTokenWaiters(bridgeFallback);
+      }
+
+      token = readCachedNativePushToken() ?? (await tokenPromise);
+    }
+    await persistTokenToBackend(token, storeId, nativePlatform, {
+      customerPhone: opts.customerPhone,
+      orderId: opts.orderId,
+      logContext,
+    });
+    return { ok: true, token };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    logCustomerNative(logContext, "error", "Registo nativo cliente falhou", { message });
     if (lastRegistrationError) {
       return { ok: false, reason: lastRegistrationError };
     }

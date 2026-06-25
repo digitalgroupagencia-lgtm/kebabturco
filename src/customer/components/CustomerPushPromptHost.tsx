@@ -7,7 +7,7 @@ import {
   shouldPromptCustomerMarketingPush,
 } from "@/lib/customerMarketingPush";
 
-const PROMPT_SCREENS = new Set(["home", "account", "review", "orderType"]);
+const PROMPT_SCREENS = new Set(["orderType"]);
 
 /** Pede activação de push marketing uma vez por sessão, ao entrar no fluxo cliente. */
 const CustomerPushPromptHost = () => {
