@@ -127,13 +127,23 @@ PARTE 5 — Ligar o repositório (3 min)
 3. Start your first build → workflow "Kebab Turco — iPhone App Store"
 
 ────────────────────────────────────────────────────────────
-PARTE 6 — Depois do build OK (App Store Connect)
+PARTE 6 — Depois do build OK (automático, SEM Transporter)
 ────────────────────────────────────────────────────────────
 
-1. appstoreconnect.apple.com → Kebab Turco → Distribuição → 1.0
-2. Secção Build → escolher o build que acabou de chegar
-3. Completar campos em falta
-4. Adicionar para revisão
+O Codemagic envia o pacote para a Apple sozinho. NÃO precisa de
+Transporter nem de Xcode no Mac.
+
+1. Build verde no Codemagic (workflow «Kebab Turco — iPhone App Store»)
+2. Esperar 15–45 min
+3. appstoreconnect.apple.com → Kebab Turco
+   • TestFlight → nova compilação «A processar» → «Pronta para testar»
+   • Distribuição → 1.1.1 → Adicionar compilação → escolher a build
+4. Adicionar para revisão (loja oficial)
+
+Se aparecer «post-processing failed» em builds antigos: ignore — o .ipa
+pode ter chegado na mesma. Nas builds novas isso foi corrigido.
+
+NUNCA é preciso descarregar .ipa nem usar Transporter no Mac.
 
 ────────────────────────────────────────────────────────────
 NOTAS
