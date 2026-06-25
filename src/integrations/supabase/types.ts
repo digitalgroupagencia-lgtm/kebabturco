@@ -564,6 +564,50 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_webhook_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string
+          id: string
+          last_error: string | null
+          order_id: string
+          sent_at: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          order_id: string
+          sent_at?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          order_id?: string
+          sent_at?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_webhook_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_accounts: {
         Row: {
           created_at: string
@@ -2678,6 +2722,7 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          flow_store_id: string | null
           geocoded_address: string | null
           id: string
           image_url: string | null
@@ -2708,6 +2753,7 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          flow_store_id?: string | null
           geocoded_address?: string | null
           id?: string
           image_url?: string | null
@@ -2738,6 +2784,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          flow_store_id?: string | null
           geocoded_address?: string | null
           id?: string
           image_url?: string | null
@@ -3777,6 +3824,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_push_dispatch_status: { Args: never; Returns: Json }
       get_sales_summary: {
         Args: { _since: string; _store_id: string }
         Returns: {
@@ -3797,6 +3845,7 @@ export type Database = {
           seller_name: string
         }[]
       }
+      get_staff_push_secret_status: { Args: never; Returns: Json }
       get_store_checkout_stripe_profile: {
         Args: { _store_id: string }
         Returns: Json
