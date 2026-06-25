@@ -101,7 +101,7 @@ export function isVariableProteinProduct(product: MenuProduct): boolean {
   return false;
 }
 
-/** Combo fechado — proteína já definida no nome (ex.: 10 piezas pollo crispy, 3 pizzas). */
+/** Combo fechado, proteína já definida no nome (ex.: 10 piezas pollo crispy, 3 pizzas). */
 export function isClosedProteinCombo(product: MenuProduct): boolean {
   const text = productText(product);
   if (/piezas?\s|pieza\s|nuggets|alitas|wings|crispy|broaster/i.test(text) && !/pita|rollo|pizza/i.test(text)) {

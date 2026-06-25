@@ -1,4 +1,4 @@
-/** Rodapé das páginas iniciais — margem extra no preview desktop (moldura arredondada). */
+/** Rodapé das páginas iniciais, margem extra no preview desktop (moldura arredondada). */
 export const STOREFRONT_FOOTER_PAD_CLASS =
   "pb-[max(1.25rem,env(safe-area-inset-bottom))] [@media(hover:hover)_and_(pointer:fine)]:pb-10";
 
@@ -12,7 +12,7 @@ export const STOREFRONT_FOOTER_BOTTOM_STYLE = {
 export const STOREFRONT_FOOTER_BOTTOM_CLASS =
   "[@media(hover:hover)_and_(pointer:fine)]:!bottom-10";
 
-/** Rodapé fixo com Continuar / Adicionar / Pagar — margem extra na moldura desktop. */
+/** Rodapé fixo com Continuar / Adicionar / Pagar, margem extra na moldura desktop. */
 export const CUSTOMER_ACTION_FOOTER_PAD_CLASS =
   "pb-[max(0.75rem,env(safe-area-inset-bottom))] [@media(hover:hover)_and_(pointer:fine)]:pb-8";
 

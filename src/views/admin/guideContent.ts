@@ -25,7 +25,7 @@ const ADMIN_INTERNAL_SECTIONS: FaqSection[] = [
       },
       {
         q: "Onde vejo o guia do restaurante?",
-        a: "Nesta central de ajuda, secção «Operação do restaurante» abaixo — é o mesmo conteúdo que a equipa vê em /panel/guide.",
+        a: "Nesta central de ajuda, secção «Operação do restaurante» abaixo, é o mesmo conteúdo que a equipa vê em /panel/guide.",
       },
     ],
   },
@@ -68,7 +68,7 @@ const KEBAB_SECTIONS: FaqSection[] = [
       },
       {
         q: "Como copiar o cardápio para Playa Gandia?",
-        a: "Admin → Cardápio → selector Playa Gandia. Cada unidade tem cardápio independente — editar na praia não muda Gandia.",
+        a: "Admin → Cardápio → selector Playa Gandia. Cada unidade tem cardápio independente, editar na praia não muda Gandia.",
       },
       {
         q: "Como importar um cardápio?",

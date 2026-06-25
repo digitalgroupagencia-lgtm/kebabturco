@@ -3,6 +3,7 @@ import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
 import { translateServerVapidReason } from "@/lib/push/pushTestService";
 import { campaignDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
+import { sanitizeNotificationText } from "@/lib/marketing/campaignTemplateEngine";
 
 export type MarketingBroadcastResult = {
   ok: boolean;
@@ -61,6 +62,8 @@ export async function sendMarketingBroadcast(opts: {
   target: "all" | "this_device";
 }): Promise<MarketingBroadcastResult> {
   const { storeId, title, body, url = "/", target } = opts;
+  const safeTitle = sanitizeNotificationText(title);
+  const safeBody = sanitizeNotificationText(body);
 
   log("broadcast", "info", target === "all" ? "Envio a todos os clientes" : "Envio a este dispositivo", {
     storeId,
@@ -69,8 +72,8 @@ export async function sendMarketingBroadcast(opts: {
 
   const bodyPayload: Record<string, unknown> = {
     storeId,
-    title,
-    body,
+    title: safeTitle,
+    body: safeBody,
     tag: `marketing-${storeId}-${Date.now()}`,
     url,
   };
@@ -124,7 +127,7 @@ export async function sendMarketingBroadcast(opts: {
         sent: 0,
         ...payload,
         userMessage:
-          "Nenhum telemóvel de cliente com promoções activas. Abra o menu no telemóvel e aceite avisos de promoções — ou use «Enviar teste à equipa» para o painel.",
+          "Nenhum telemóvel de cliente com promoções activas. Abra o menu no telemóvel e aceite avisos de promoções, ou use «Enviar teste à equipa» para o painel.",
       };
     }
     return { ok: true, ...payload };
@@ -209,7 +212,7 @@ export async function fetchCampaignSendLog(storeId: string, limit = 20): Promise
 
   if (error) {
     if (error.message.includes("campaign_send_log")) {
-      log("fetch", "warn", "Tabela campaign_send_log ainda não aplicada — faça Sync + migrations na Lovable");
+      log("fetch", "warn", "Tabela campaign_send_log ainda não aplicada, faça Sync + migrations na Lovable");
       return [];
     }
     log("fetch", "error", error.message);

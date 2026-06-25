@@ -58,7 +58,7 @@ export async function saveCustomerProfileToCloud(
       _delivery: profile.delivery,
     });
   } catch {
-    /* nuvem opcional — local continua a funcionar */
+    /* nuvem opcional, local continua a funcionar */
   }
 }
 

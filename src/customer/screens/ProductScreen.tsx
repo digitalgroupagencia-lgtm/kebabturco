@@ -11,7 +11,7 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { collectMenuCatalogFields, collectModifierConfigFields } from "@/lib/menuLocale";
 
-/** Escolhe ecrã legado vs personalização avançada — sem violar regras de hooks do React. */
+/** Escolhe ecrã legado vs personalização avançada, sem violar regras de hooks do React. */
 const ProductScreen = () => {
   const {
     selectedProductId,

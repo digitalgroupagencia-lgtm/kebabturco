@@ -143,7 +143,7 @@ const AdminDashboard = () => {
     const tenantName = stores?.tenants?.name ?? "Restaurante";
     activityItems.push({
       id: `order-${o.id}`,
-      title: `Pedido #${o.order_number ?? "—"} · ${tenantName}`,
+      title: `Pedido #${o.order_number ?? ", "} · ${tenantName}`,
       detail: fmtMoney(Number(o.total || 0)),
       time: relativeTime(String(o.created_at)),
       icon: ShoppingBag,
@@ -220,13 +220,13 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* KPI strip — premium */}
+      {/* KPI strip, premium */}
       <div className="staff-kpi-grid grid grid-cols-2 sm:grid-cols-4 staff-wide:grid-cols-4 gap-4">
         <PremiumMetricCard
           icon={Building2}
           tone="primary"
           label={SINGLE_TENANT_MODE ? "Estado da loja" : "Restaurantes activos"}
-          value={SINGLE_TENANT_MODE ? (stats?.active_tenants ? "Activa" : "—") : (stats?.active_tenants ?? 0)}
+          value={SINGLE_TENANT_MODE ? (stats?.active_tenants ? "Activa" : ", ") : (stats?.active_tenants ?? 0)}
           sub={SINGLE_TENANT_MODE ? APP_NAME : `${stats?.total_tenants ?? 0} no total`}
         />
         <PremiumMetricCard
@@ -320,7 +320,7 @@ const AdminDashboard = () => {
           subtitle="Por faturamento no mês"
           items={(topTenants ?? []).slice(0, 5).map((t: Record<string, unknown>): RankingItem => ({
             id: String(t.tenant_id),
-            name: String(t.tenant_name ?? "—"),
+            name: String(t.tenant_name ?? ", "),
             primary: fmtMoney(Number(t.total_revenue || 0)),
             secondary: `${Number(t.orders_count ?? 0)} pedidos`,
             value: Number(t.total_revenue || 0),

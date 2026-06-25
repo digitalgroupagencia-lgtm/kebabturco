@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/** Cron entrypoint — processes scheduled_campaign_runs + active auto campaigns. */
+/** Cron entrypoint, processes scheduled_campaign_runs + active auto campaigns. */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 

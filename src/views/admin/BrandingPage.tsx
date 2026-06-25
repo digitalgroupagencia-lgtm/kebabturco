@@ -96,7 +96,7 @@ const BrandingPage = () => {
       if (error) { toast.error("Erro ao subir: " + error.message); return; }
       const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
       update(field, pub.publicUrl);
-      toast.success("Imagem carregada — lembra de salvar");
+      toast.success("Imagem carregada, lembra de salvar");
     } finally {
       setUploadingField(null);
     }

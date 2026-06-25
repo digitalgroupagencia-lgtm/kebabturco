@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import type { CampaignPresetDefinition } from "@/lib/marketing/campaignPresets";
 import type { MarketingCampaignRow } from "@/lib/marketing/marketingService";
+import { pickLocalizedCampaignText } from "@/lib/marketing/campaignTemplateEngine";
 import { cn } from "@/lib/utils";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const ICONS = {
   welcome: Sparkles,
@@ -49,10 +51,12 @@ export default function CampaignPresetCard({
   couponReady,
   mandatory,
 }: Props) {
+  const { t } = useStaffT();
   const Icon = ICONS[preset.icon] ?? Megaphone;
   const active = campaign?.is_active ?? false;
-  const title = preset.title[lang];
-  const body = preset.message[lang];
+  const localized = campaign ? pickLocalizedCampaignText(campaign, lang) : null;
+  const title = localized?.title || preset.title[lang];
+  const body = localized?.body || preset.message[lang];
 
   return (
     <div
@@ -121,7 +125,7 @@ export default function CampaignPresetCard({
             >
               {couponReady ? (
                 <>
-                  Cupão <strong>{preset.suggestCoupon}</strong> activo — validado no checkout.
+                  Cupão <strong>{preset.suggestCoupon}</strong> activo, validado no checkout.
                 </>
               ) : (
                 <>
@@ -135,9 +139,9 @@ export default function CampaignPresetCard({
               )}
             </div>
           )}
-          {onEdit && (
+          {onEdit && campaign && (
             <Button variant="outline" size="sm" className="h-8 w-full text-xs" onClick={onEdit}>
-              Editar mensagem
+              {t("marketing.campaign.edit_button")}
             </Button>
           )}
           {onTestTeam && (

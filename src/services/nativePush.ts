@@ -82,7 +82,7 @@ export async function isNativePushAvailable(): Promise<boolean> {
   return isNative && (platform === "android" || platform === "ios");
 }
 
-/** Versão síncrona — útil em guards de UI antes do import dinâmico do Capacitor. */
+/** Versão síncrona, útil em guards de UI antes do import dinâmico do Capacitor. */
 export function isNativePushAvailableSync(): boolean {
   const sync = getCapacitorAvailabilitySync();
   return Boolean(sync && (sync.platform === "android" || sync.platform === "ios"));
@@ -99,7 +99,7 @@ export function readCachedNativePushToken(): string | null {
   }
 }
 
-/** Limpa token em cache — usar antes de voltar a registar após erro da Apple. */
+/** Limpa token em cache, usar antes de voltar a registar após erro da Apple. */
 export function clearCachedNativePushToken(): void {
   cachedToken = null;
   try {
@@ -410,7 +410,7 @@ async function attachPushListeners(): Promise<void> {
   });
 }
 
-/** Só para casos extremos — no iPhone apagar listeners impede voltar a receber o token. */
+/** Só para casos extremos, no iPhone apagar listeners impede voltar a receber o token. */
 async function resetNativePushBridge(): Promise<void> {
   logNative("warn", "Reinício completo da ligação push (evitar no iPhone)");
   try {
@@ -423,7 +423,7 @@ async function resetNativePushBridge(): Promise<void> {
   bridgeInitPromise = null;
 }
 
-/** Arranca os listeners cedo — evita perder o token no iPhone. */
+/** Arranca os listeners cedo, evita perder o token no iPhone. */
 async function hookNativePushAppResume(): Promise<void> {
   if (appResumeHooked || !(await isNativePushAvailable())) return;
   appResumeHooked = true;
@@ -580,7 +580,7 @@ export async function registerNativeStaffPush(
     if (opts?.forceRefresh) {
       const cachedForRefresh = readCachedNativePushToken();
       if (nativePlatform === "ios") {
-        // No iPhone: nunca apagar listeners nem o token local — só voltar a sincronizar.
+        // No iPhone: nunca apagar listeners nem o token local, só voltar a sincronizar.
         logNative("info", "Actualização suave (iPhone)", {
           hasCachedToken: Boolean(cachedForRefresh),
         });
@@ -603,8 +603,8 @@ export async function registerNativeStaffPush(
         ok: false,
         reason:
           receive === "denied"
-            ? "Permissão de notificações negada no telemóvel — active em Definições → Kebab Turco → Notificações."
-            : "Permissão de notificações não concedida — tente outra vez.",
+            ? "Permissão de notificações negada no telemóvel, active em Definições → Kebab Turco → Notificações."
+            : "Permissão de notificações não concedida, tente outra vez.",
       };
     }
 
@@ -614,7 +614,7 @@ export async function registerNativeStaffPush(
         await persistTokenToBackend(cached, storeId, nativePlatform);
         return { ok: true, token: cached };
       } catch (e) {
-        logNative("warn", "Token em cache não gravou no servidor — a pedir novo", {
+        logNative("warn", "Token em cache não gravou no servidor, a pedir novo", {
           error: e instanceof Error ? e.message : String(e),
         });
       }
@@ -642,7 +642,7 @@ export async function registerNativeStaffPush(
       return { ok: false, reason: "Tem de estar com sessão da equipa iniciada para registar alertas." };
     }
     if (/sem permissão/i.test(message)) {
-      return { ok: false, reason: "Sem permissão para esta loja — escolha a unidade correcta." };
+      return { ok: false, reason: "Sem permissão para esta loja, escolha a unidade correcta." };
     }
     if (lastRegistrationError) {
       return { ok: false, reason: lastRegistrationError };
@@ -708,8 +708,8 @@ export async function registerNativeCustomerPush(
         ok: false,
         reason:
           receive === "denied"
-            ? "Permissão de notificações negada no telemóvel — active em Definições → Kebab Turco → Notificações."
-            : "Permissão de notificações não concedida — tente outra vez.",
+            ? "Permissão de notificações negada no telemóvel, active em Definições → Kebab Turco → Notificações."
+            : "Permissão de notificações não concedida, tente outra vez.",
       };
     }
 
@@ -723,7 +723,7 @@ export async function registerNativeCustomerPush(
         });
         return { ok: true, token: cached };
       } catch (e) {
-        logCustomerNative(logContext, "warn", "Token em cache não gravou no servidor — a pedir novo", {
+        logCustomerNative(logContext, "warn", "Token em cache não gravou no servidor, a pedir novo", {
           error: e instanceof Error ? e.message : String(e),
         });
       }
@@ -766,11 +766,11 @@ export async function unregisterNativeStaffPush(): Promise<void> {
     const endpoint = `fcm://${token.replace(/[<>\s]/g, "").toLowerCase()}`;
     await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   }
-  // Mantém listeners activos — no iPhone apagar a ponte impede voltar a obter token.
+  // Mantém listeners activos, no iPhone apagar a ponte impede voltar a obter token.
   logNative("info", "Registo push desactivado neste telemóvel");
 }
 
-/** Para usar no boot do painel — re-regista se o utilizador já tinha activado. */
+/** Para usar no boot do painel, re-regista se o utilizador já tinha activado. */
 export async function restoreNativeStaffPushIfPossible(storeId: string): Promise<void> {
   if (!(await isNativePushAvailable())) return;
   const { isStaffPushEnabled } = await import("@/lib/staffPush");

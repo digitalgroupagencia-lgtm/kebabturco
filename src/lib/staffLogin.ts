@@ -49,7 +49,7 @@ export function returnToCustomerTotemStart(navigate: NavigateFunction) {
   navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
 }
 
-/** Destino após login da equipa — separado do fluxo do cliente. */
+/** Destino após login da equipa, separado do fluxo do cliente. */
 export function resolveStaffLoginDestination(role: StaffRole | string | null | undefined): string {
   switch (role) {
     case "delivery":

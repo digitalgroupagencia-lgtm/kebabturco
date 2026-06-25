@@ -136,7 +136,7 @@ function CampaignsTenantPanel({
       {isScoped && (
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <h3 className="text-sm font-bold" style={{ color: WINE }}>
-            Acesso marketing — {tenantPlan.toUpperCase()}
+            Acesso marketing, {tenantPlan.toUpperCase()}
           </h3>
           {mktRows.map(({ key, label, icon: Icon }) => (
             <div key={key} className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5">

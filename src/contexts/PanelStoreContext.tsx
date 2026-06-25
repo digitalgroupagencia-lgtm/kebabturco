@@ -170,7 +170,7 @@ export function usePanelStore() {
   return ctx;
 }
 
-/** Usado dentro do painel — respeita a unidade seleccionada pelo dono/gerente. */
+/** Usado dentro do painel, respeita a unidade seleccionada pelo dono/gerente. */
 export function usePanelStoreId(): { storeId: string | null; loading: boolean } {
   const ctx = useContext(PanelStoreContext);
   if (!ctx) {

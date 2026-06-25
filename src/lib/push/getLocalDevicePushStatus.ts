@@ -21,7 +21,7 @@ export async function getLocalDevicePushStatus(): Promise<LocalDevicePushStatus>
         native.permission === "granted"
           ? native.ready
             ? "registado neste telemóvel"
-            : "permissão OK — falta registar"
+            : "permissão OK, falta registar"
           : native.permission === "denied"
             ? "permissão negada no telemóvel"
             : "aguardando permissão",

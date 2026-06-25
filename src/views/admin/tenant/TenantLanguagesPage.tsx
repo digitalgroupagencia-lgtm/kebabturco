@@ -61,7 +61,7 @@ export default function TenantLanguagesPage() {
     if (error) return toast.error("Erro ao subir ícone");
     const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
     setLangIcons((prev) => ({ ...prev, [code]: pub.publicUrl }));
-    toast.success("Ícone carregado — lembre de salvar");
+    toast.success("Ícone carregado, lembre de salvar");
   };
 
   const toggleActive = (code: string) => {

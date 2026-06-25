@@ -1,5 +1,5 @@
 /**
- * Lazy imports das páginas — sem `<Route path>` (scanner Lovable lê App.tsx).
+ * Lazy imports das páginas, sem `<Route path>` (scanner Lovable lê App.tsx).
  */
 import { lazy } from "react";
 

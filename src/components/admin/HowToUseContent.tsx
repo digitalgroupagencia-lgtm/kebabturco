@@ -49,7 +49,7 @@ export default function HowToUseContent({
                   {isObj ? (
                     <>
                       <span className="font-medium">{s.title}</span>
-                      {s.detail && <span className="text-muted-foreground"> — {s.detail}</span>}
+                      {s.detail && <span className="text-muted-foreground">, {s.detail}</span>}
                     </>
                   ) : (
                     s

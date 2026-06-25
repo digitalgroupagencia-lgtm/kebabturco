@@ -4,7 +4,7 @@ type Props = {
   className?: string;
 };
 
-/** Instruções internas para a equipa — mostrar ao escolher cobrar com Tap to Pay. */
+/** Instruções internas para a equipa, mostrar ao escolher cobrar com Tap to Pay. */
 export default function TapToPayChargeEducation({ className }: Props) {
   const { t } = useStaffT();
 

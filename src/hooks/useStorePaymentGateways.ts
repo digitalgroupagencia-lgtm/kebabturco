@@ -30,7 +30,7 @@ export function useStoreActiveGateways(storeId: string | null | undefined) {
  * Devolve um mapa { redsys: visible, bizum: visible } para o checkout do cliente.
  * Por padrão Redsys e Bizum aparecem como métodos disponíveis (em fase de
  * implementação). O admin pode ocultá-los marcando status = "disabled" no
- * painel /panel/payments — quando a linha for `disabled`, deixa de aparecer.
+ * painel /panel/payments, quando a linha for `disabled`, deixa de aparecer.
  */
 export function useCheckoutExtraGatewayVisibility(storeId: string | null | undefined) {
   return useQuery<{ redsys: boolean; bizum: boolean }>({

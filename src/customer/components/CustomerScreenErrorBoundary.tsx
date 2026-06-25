@@ -30,7 +30,7 @@ const DEFAULT_COPY: Record<string, { title: string; description: string }> = {
   },
 };
 
-/** Erro isolado por ecrã do cliente — não derruba a app inteira. */
+/** Erro isolado por ecrã do cliente, não derruba a app inteira. */
 export default class CustomerScreenErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };
 

@@ -196,7 +196,7 @@ export async function downloadTableQrPng(input: TableQrExportInput, filename: st
   triggerDownload(blob, filename);
 }
 
-/** PDF multi-página — uma mesa por folha A4, pronto para gráfica. */
+/** PDF multi-página, uma mesa por folha A4, pronto para gráfica. */
 export async function downloadTableQrPdf(inputs: TableQrExportInput[], filename: string) {
   if (!inputs.length) return;
 
@@ -228,7 +228,7 @@ export async function downloadTableQrPdf(inputs: TableQrExportInput[], filename:
   pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
 }
 
-/** ZIP com um PNG por mesa — mesmo visual do download individual. */
+/** ZIP com um PNG por mesa, mesmo visual do download individual. */
 export async function downloadTableQrZip(inputs: TableQrExportInput[], filename: string) {
   if (!inputs.length) return;
 

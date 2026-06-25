@@ -7,7 +7,7 @@ type StorePublicRow = StoreOption & {
   created_at?: string;
 };
 
-/** Lista lojas activas — mesma lógica do site público (stores_public + fallback). */
+/** Lista lojas activas, mesma lógica do site público (stores_public + fallback). */
 export async function fetchActiveStoresForTenant(tenantId: string): Promise<StoreOption[]> {
   const select =
     "id, name, address, image_url, short_description, sort_order, created_at, tenant_id";

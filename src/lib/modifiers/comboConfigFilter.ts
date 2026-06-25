@@ -88,7 +88,7 @@ function rebuildDrinkOptions(
     optionFromExtra(group.id, extra, index),
   );
 
-  // Ignorar opções cruas da BD — reconstruir só a partir do cardápio + fallback do tamanho certo.
+  // Ignorar opções cruas da BD, reconstruir só a partir do cardápio + fallback do tamanho certo.
   const merged: ModifierOption[] = [...fromMenu];
 
   if (merged.length < 2) {

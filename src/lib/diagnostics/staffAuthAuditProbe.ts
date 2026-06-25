@@ -36,7 +36,7 @@ export async function probeStaffAuthAudit(storeId: string | null): Promise<Audit
       id: "staff-password-rpc-ok",
       category: "team",
       severity: "ok",
-      label: "Guardar senha da equipa — base de dados pronta",
+      label: "Guardar senha da equipa, base de dados pronta",
     });
   }
 

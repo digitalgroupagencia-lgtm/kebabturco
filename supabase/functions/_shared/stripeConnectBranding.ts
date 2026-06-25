@@ -125,11 +125,11 @@ async function uploadBrandingFile(
     if (buffer.byteLength > maxBytes) {
       return {
         fileId: null,
-        warning: `${purpose} excede ${Math.round(maxBytes / 1024)}KB — ignorado`,
+        warning: `${purpose} excede ${Math.round(maxBytes / 1024)}KB, ignorado`,
       };
     }
     const ext = contentType.includes("jpeg") ? "jpg" : contentType.includes("webp") ? "webp" : "png";
-    // Ficheiros na conta plataforma — Connect referencia por file_id no accounts.update.
+    // Ficheiros na conta plataforma, Connect referencia por file_id no accounts.update.
     const file = await stripe.files.create({
       purpose,
       file: {
@@ -218,7 +218,7 @@ export async function configureStoreStripeBranding(
     iconFileId = uploaded.fileId;
     if (uploaded.warning) warnings.push(uploaded.warning);
   } else {
-    warnings.push("Sem URL de ícone — branding sem ícone");
+    warnings.push("Sem URL de ícone, branding sem ícone");
   }
 
   if (input.logoUrl) {

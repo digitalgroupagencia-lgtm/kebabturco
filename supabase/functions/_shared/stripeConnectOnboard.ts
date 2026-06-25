@@ -46,7 +46,7 @@ import {
   RESTAURANT_PAYOUT_WEEKDAY_LABEL_PT,
 } from "./stripePayoutPolicy.ts";
 
-/** Bump when edge deploy changes — visible em GET /stripe-connect-onboard para confirmar versão live. */
+/** Bump when edge deploy changes, visible em GET /stripe-connect-onboard para confirmar versão live. */
 export const CONNECT_HANDLER_VERSION = "2026-06-24-platform-account-guard-v1";
 import type { StripeKeyMode } from "./stripeEnv.ts";
 
@@ -152,7 +152,7 @@ function normalizeIban(iban: string): string {
 }
 
 function intakeTableMissingMessage(): string {
-  return "A base de dados ainda não tem a tabela de dados bancários — peça na Lovable: Sync + Publish (migração store_payout_intake).";
+  return "A base de dados ainda não tem a tabela de dados bancários, peça na Lovable: Sync + Publish (migração store_payout_intake).";
 }
 
 async function loadStorePayoutIntake(
@@ -232,7 +232,7 @@ async function syncIntakeToStripeConnect(
   storeName: string | null,
 ): Promise<{ bankSynced: boolean; profileSynced: boolean; message: string }> {
   // Express accounts: e-mail, company e business_type só na criação ou no formulário
-  // de verificação — a plataforma não pode alterá-los depois via API.
+  // de verificação, a plataforma não pode alterá-los depois via API.
   let profileSynced = false;
   try {
     await stripe.accounts.update(accountId, {
@@ -313,7 +313,7 @@ async function persistConnectAccountId(
   if (updErr) {
     console.error("[connect] store update", updErr);
     throw new ConnectError(
-      "Conta de recebimentos criada mas não foi possível guardar — actualize a base de dados.",
+      "Conta de recebimentos criada mas não foi possível guardar, actualize a base de dados.",
       500,
       "store_update_failed",
     );
@@ -501,7 +501,7 @@ export async function ensureConnectAccount(
 
     if (ctx.environment === "live") {
       throw new ConnectError(
-        "Não foi possível criar conta Custom em produção — verifique os dados do restaurante.",
+        "Não foi possível criar conta Custom em produção, verifique os dados do restaurante.",
         500,
         "custom_create_required",
       );
@@ -591,7 +591,7 @@ export async function createEmbeddedAccountSession(
 export async function resolveAuthUserId(req: Request): Promise<string> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    throw new ConnectError("Sessão expirada — faça login novamente.", 401, "unauthorized");
+    throw new ConnectError("Sessão expirada, faça login novamente.", 401, "unauthorized");
   }
 
   const userClient = createClient(
@@ -602,7 +602,7 @@ export async function resolveAuthUserId(req: Request): Promise<string> {
 
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData.user?.id) {
-    throw new ConnectError("Sessão inválida — faça login novamente.", 401, "unauthorized");
+    throw new ConnectError("Sessão inválida, faça login novamente.", 401, "unauthorized");
   }
 
   return userData.user.id;
@@ -641,7 +641,7 @@ export async function handleStripeConnectRequest(
   ) {
     return json(
       {
-        error: "Recebimentos indisponíveis — configuração do servidor incompleta.",
+        error: "Recebimentos indisponíveis, configuração do servidor incompleta.",
         code: "stripe_secret_missing",
       },
       503,
@@ -863,7 +863,7 @@ export async function handleStripeConnectRequest(
         accountId: linkAccountId,
         accountType: "custom",
         connectEnvironment: linkEnv,
-        message: "Conta Connect já registada — não precisa de novo registo.",
+        message: "Conta Connect já registada, não precisa de novo registo.",
         ...statusPayload(status, linkEnv),
       });
     }
@@ -976,7 +976,7 @@ export async function handleStripeConnectRequest(
         deleted.length > 0
           ? `Conta correcta mantida (${preserveId}). ${deleted.length} duplicada(s) removida(s).`
           : failed.length > 0
-            ? "Não foi possível apagar a(s) duplicada(s) — pode haver saldo pendente na Stripe."
+            ? "Não foi possível apagar a(s) duplicada(s), pode haver saldo pendente na Stripe."
             : "Nenhuma duplicada encontrada para apagar.",
       handlerVersion: CONNECT_HANDLER_VERSION,
     });
@@ -1012,7 +1012,7 @@ export async function handleStripeConnectRequest(
                 productionBlocked: true,
                 testKeysConfigured: false,
                 message: null,
-                adminMessage: "Modo teste — configure chaves de teste para checkout 4242.",
+                adminMessage: "Modo teste, configure chaves de teste para checkout 4242.",
               };
           return json({
             ...platformStatusPayload({ ...testPlatform, productionBlocked: true }, "test"),
@@ -1042,7 +1042,7 @@ export async function handleStripeConnectRequest(
               productionBlocked: true,
               pendingVerification: true,
               connectLiveAllowed: false,
-              adminMessage: "Produção bloqueada até aprovação da Stripe — use modo teste.",
+              adminMessage: "Produção bloqueada até aprovação da Stripe, use modo teste.",
             },
             "test",
           ),
@@ -1078,7 +1078,7 @@ export async function handleStripeConnectRequest(
           productionBlocked: true,
           testKeysConfigured: Boolean(getStripeSecretKeyTest()),
           message: "Produção bloqueada até aprovação da Stripe.",
-          adminMessage: "Produção bloqueada até aprovação da Stripe — use modo teste.",
+          adminMessage: "Produção bloqueada até aprovação da Stripe, use modo teste.",
           hasConnectAccount: false,
         });
       }
@@ -1168,7 +1168,7 @@ export async function handleStripeConnectRequest(
       throw new ConnectError("IBAN inválido.", 400, "validation");
     }
     if (!/^https?:\/\//i.test(businessWebsite)) {
-      throw new ConnectError("Site do negócio inválido — use https://...", 400, "validation");
+      throw new ConnectError("Site do negócio inválido, use https://...", 400, "validation");
     }
 
     const ownerDob = typeof body.ownerDob === "string" ? body.ownerDob.trim() : "";
@@ -1220,7 +1220,7 @@ export async function handleStripeConnectRequest(
       representative_id: representativeId || null,
     });
 
-    // Stripe sync is best-effort — dados do restaurante ficam sempre guardados.
+    // Stripe sync is best-effort, dados do restaurante ficam sempre guardados.
     try {
       let intakeStore = store;
       const liveKeyForSanitize = getStripeSecretKey();
@@ -1267,7 +1267,7 @@ export async function handleStripeConnectRequest(
           return json({
             saved: true,
             synced: false,
-            message: "Dados guardados. Não foi possível preparar modo produção — tente Passo 2.",
+            message: "Dados guardados. Não foi possível preparar modo produção, tente Passo 2.",
           });
         }
         workingStore = {
@@ -1310,8 +1310,8 @@ export async function handleStripeConnectRequest(
       if (ensured.accountType === "custom") {
         message =
           status.chargesEnabled && status.onboardingCompleted
-            ? "Dados guardados — restaurante pronto para receber pagamentos."
-            : "Dados guardados — restaurante registado na plataforma (sem ecrã de novo registo).";
+            ? "Dados guardados, restaurante pronto para receber pagamentos."
+            : "Dados guardados, restaurante registado na plataforma (sem ecrã de novo registo).";
         bankSynced = true;
       } else {
         const syncResult = await syncIntakeToStripeConnect(
@@ -1344,7 +1344,7 @@ export async function handleStripeConnectRequest(
           saved: true,
           synced: false,
           message:
-            "Dados guardados. A Stripe ainda não aprovou a plataforma para contas reais — complete o perfil Connect no painel Stripe.",
+            "Dados guardados. A Stripe ainda não aprovou a plataforma para contas reais, complete o perfil Connect no painel Stripe.",
           stripeError: stripeHint || e.message,
           productionBlocked: true,
           handlerVersion: CONNECT_HANDLER_VERSION,
@@ -1352,10 +1352,10 @@ export async function handleStripeConnectRequest(
         });
       }
       const friendly = stripeHint.includes("not authorized to edit")
-        ? "Dados guardados — a conta antiga será substituída na próxima tentativa."
+        ? "Dados guardados, a conta antiga será substituída na próxima tentativa."
         : stripeHint
           ? `Dados guardados. Erro ao enviar para Stripe: ${stripeHint}`
-          : "Dados guardados mas não foi possível criar a conta na Stripe — tente «Actualizar» ou guarde de novo.";
+          : "Dados guardados mas não foi possível criar a conta na Stripe, tente «Actualizar» ou guarde de novo.";
       return json({
         saved: true,
         synced: false,
@@ -1372,7 +1372,7 @@ export async function handleStripeConnectRequest(
     const intakeRow = await loadStorePayoutIntake(service, storeId);
     if (!intakeRow) {
       throw new ConnectError(
-        "Não há dados do restaurante guardados — preencha o formulário primeiro.",
+        "Não há dados do restaurante guardados, preencha o formulário primeiro.",
         400,
         "intake_missing",
       );
@@ -1459,9 +1459,9 @@ export async function handleStripeConnectRequest(
       message:
         ensured.accountType === "custom"
           ? stillDue.length
-            ? `Conta Custom criada na Stripe (${ensured.accountId}) — faltam: ${stillDue.slice(0, 3).join(", ")}`
+            ? `Conta Custom criada na Stripe (${ensured.accountId}), faltam: ${stillDue.slice(0, 3).join(", ")}`
             : `Conta Custom completa na Stripe (${ensured.accountId}).`
-          : "Conta criada na Stripe — confirme verificação se for pedida.",
+          : "Conta criada na Stripe, confirme verificação se for pedida.",
       handlerVersion: CONNECT_HANDLER_VERSION,
       ...statusPayload(status, ensured.environment),
       ...connectMeta(ctx),
@@ -1717,7 +1717,7 @@ export async function handleStripeConnectRequest(
       accountId,
       accountType: "custom",
       message:
-        "Conta Connect do restaurante já registada pela plataforma — não precisa de formulário externo.",
+        "Conta Connect do restaurante já registada pela plataforma, não precisa de formulário externo.",
       ...statusPayload(status, environment),
       ...meta,
     });
@@ -1801,7 +1801,7 @@ export async function handleStripeConnectRequest(
         return json(
           {
             error:
-              "A conta guardada era inválida (conta da plataforma). Foi removida — use «Recriar conta Stripe».",
+              "A conta guardada era inválida (conta da plataforma). Foi removida, use «Recriar conta Stripe».",
             code: "platform_account_stored",
             cleared: true,
             ...meta,
@@ -1813,7 +1813,7 @@ export async function handleStripeConnectRequest(
         return json(
           {
             error:
-              "Formulário embutido indisponível em modo teste — use «Activar recebimentos de teste» para continuar.",
+              "Formulário embutido indisponível em modo teste, use «Activar recebimentos de teste» para continuar.",
             code: "embedded_unavailable_use_test_provision",
             connectEnvironment: "test",
             useTestProvision: true,
@@ -1826,7 +1826,7 @@ export async function handleStripeConnectRequest(
     }
   }
 
-  return json({ error: "Modo inválido — use embedded_onboarding." }, 400);
+  return json({ error: "Modo inválido, use embedded_onboarding." }, 400);
 }
 
 export function connectErrorResponse(e: unknown): Response {
@@ -1855,7 +1855,7 @@ export function connectErrorResponse(e: unknown): Response {
     return json(
       {
         error:
-          "Plataforma pendente de verificação — pagamentos reais bloqueados até a Stripe aprovar o perfil da plataforma.",
+          "Plataforma pendente de verificação, pagamentos reais bloqueados até a Stripe aprovar o perfil da plataforma.",
         code: "platform_pending_verification",
         productionBlocked: true,
       },
@@ -1876,7 +1876,7 @@ export function connectErrorResponse(e: unknown): Response {
     return json(
       {
         error:
-          "A conta guardada era a conta da plataforma, não do restaurante. Foi removida — clique «Recriar conta Stripe» para criar a conta correcta.",
+          "A conta guardada era a conta da plataforma, não do restaurante. Foi removida, clique «Recriar conta Stripe» para criar a conta correcta.",
         code: "platform_account_stored",
       },
       400,

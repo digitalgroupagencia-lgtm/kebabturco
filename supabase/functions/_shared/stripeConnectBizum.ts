@@ -38,7 +38,7 @@ export async function ensureBizumEnabledOnConnectAccount(
     return {
       enabled: false,
       configId: null,
-      message: "Conta simulada — Bizum não aplicável.",
+      message: "Conta simulada, Bizum não aplicável.",
     };
   }
 
@@ -58,7 +58,7 @@ export async function ensureBizumEnabledOnConnectAccount(
         message:
           preference === "on"
             ? "Bizum activado na conta do restaurante."
-            : "Configuração Bizum actualizada — confirme no painel Stripe.",
+            : "Configuração Bizum actualizada, confirme no painel Stripe.",
       };
     }
 

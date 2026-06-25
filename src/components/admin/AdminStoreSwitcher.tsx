@@ -46,7 +46,7 @@ export default function AdminStoreSwitcher({ hint }: Props) {
               <SelectItem key={s.id} value={s.id}>
                 <span className="font-medium">{s.name}</span>
                 {s.address ? (
-                  <span className="text-muted-foreground text-xs ml-1">— {s.address}</span>
+                  <span className="text-muted-foreground text-xs ml-1">,  {s.address}</span>
                 ) : null}
               </SelectItem>
             ))}

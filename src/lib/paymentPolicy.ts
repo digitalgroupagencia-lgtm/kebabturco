@@ -105,7 +105,7 @@ export function shouldPrintAfterCheckout(
 
 export function stripeConfigIssue(stripeReady: boolean, hasPublishableKey: boolean): string | null {
   if (!hasPublishableKey) {
-    return "Pagamento com cartão indisponível — peça ao administrador para configurar a Stripe no site.";
+    return "Pagamento com cartão indisponível, peça ao administrador para configurar a Stripe no site.";
   }
   return null;
 }

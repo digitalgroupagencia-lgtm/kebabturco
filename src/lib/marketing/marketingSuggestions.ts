@@ -38,9 +38,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
       en: "Free delivery today 🛵",
     },
     pushBody: {
-      pt: "Pedidos a partir de 20€ — use {cupao_codigo} no checkout.",
-      es: "Pedidos desde 20€ — usa {cupao_codigo} al pagar.",
-      en: "Orders over €20 — use {cupao_codigo} at checkout.",
+      pt: "Pedidos a partir de 20€, use {cupao_codigo} no checkout.",
+      es: "Pedidos desde 20€, usa {cupao_codigo} al pagar.",
+      en: "Orders over €20, use {cupao_codigo} at checkout.",
     },
     coupon: COUPON_SUGGESTIONS.find((c) => c.code === "ENTREGA20")!,
     linkedPresetKey: "promo_delivery_free",
@@ -52,9 +52,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
     icon: "gift",
     accent: "from-orange-900/30 to-orange-700/10",
     title: {
-      pt: "3 kebabs — o 3.º à metade",
-      es: "3 kebabs — el 3.º a mitad",
-      en: "3 kebabs — 3rd half price",
+      pt: "3 kebabs, o 3.º à metade",
+      es: "3 kebabs, el 3.º a mitad",
+      en: "3 kebabs, 3rd half price",
     },
     subtitle: {
       pt: "Combo no produto em destaque do cardápio",
@@ -67,9 +67,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
       en: "Special combo 🥙",
     },
     pushBody: {
-      pt: "Peça 3 {produto_destaque} — o 3.º com 50% off. Código {cupao_codigo}.",
-      es: "Pide 3 {produto_destaque} — el 3.º con 50% dto. Código {cupao_codigo}.",
-      en: "Get 3 {produto_destaque} — 3rd 50% off. Code {cupao_codigo}.",
+      pt: "Peça 3 {produto_destaque}, o 3.º com 50% off. Código {cupao_codigo}.",
+      es: "Pide 3 {produto_destaque}, el 3.º con 50% dto. Código {cupao_codigo}.",
+      en: "Get 3 {produto_destaque}, 3rd 50% off. Code {cupao_codigo}.",
     },
     coupon: COUPON_SUGGESTIONS.find((c) => c.code === "KEBAB3X2")!,
     linkedPresetKey: "promo_combo_kebab",
@@ -81,9 +81,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
     icon: "heart",
     accent: "from-rose-900/30 to-rose-700/10",
     title: {
-      pt: "Volta a pedir — 10% off",
-      es: "Vuelve a pedir — 10% dto.",
-      en: "Come back — 10% off",
+      pt: "Volta a pedir, 10% off",
+      es: "Vuelve a pedir, 10% dto.",
+      en: "Come back, 10% off",
     },
     subtitle: {
       pt: "Para quem não pede há 30 dias",
@@ -96,9 +96,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
       en: "We miss you",
     },
     pushBody: {
-      pt: "Use {cupao_codigo} — {desconto} na próxima encomenda.",
-      es: "Usa {cupao_codigo} — {desconto} en tu próximo pedido.",
-      en: "Use {cupao_codigo} — {desconto} on your next order.",
+      pt: "Use {cupao_codigo}, {desconto} na próxima encomenda.",
+      es: "Usa {cupao_codigo}, {desconto} en tu próximo pedido.",
+      en: "Use {cupao_codigo}, {desconto} on your next order.",
     },
     coupon: COUPON_SUGGESTIONS.find((c) => c.code === "VOLTA10")!,
     linkedPresetKey: "winback_30d",
@@ -109,9 +109,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
     icon: "sparkles",
     accent: "from-amber-900/30 to-amber-700/10",
     title: {
-      pt: "Bem-vindo — 15% na 1.ª encomenda",
-      es: "Bienvenido — 15% en el 1.er pedido",
-      en: "Welcome — 15% off first order",
+      pt: "Bem-vindo, 15% na 1.ª encomenda",
+      es: "Bienvenido, 15% en el 1.er pedido",
+      en: "Welcome, 15% off first order",
     },
     subtitle: {
       pt: "Converte novos clientes da app",
@@ -124,9 +124,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
       en: "Welcome offer",
     },
     pushBody: {
-      pt: "Primeira encomenda com {desconto} — código {cupao_codigo}.",
-      es: "Primer pedido con {desconto} — código {cupao_codigo}.",
-      en: "First order {desconto} — code {cupao_codigo}.",
+      pt: "Primeira encomenda com {desconto}, código {cupao_codigo}.",
+      es: "Primer pedido con {desconto}, código {cupao_codigo}.",
+      en: "First order {desconto}, code {cupao_codigo}.",
     },
     coupon: COUPON_SUGGESTIONS.find((c) => c.code === "BEMVINDO15")!,
     linkedPresetKey: "welcome_2d",
@@ -137,9 +137,9 @@ export const MARKETING_SUGGESTIONS: MarketingSuggestionCard[] = [
     icon: "sun",
     accent: "from-lime-900/30 to-lime-700/10",
     title: {
-      pt: "Almoço — 5€ de desconto",
-      es: "Almuerzo — 5€ de descuento",
-      en: "Lunch — €5 off",
+      pt: "Almoço, 5€ de desconto",
+      es: "Almuerzo, 5€ de descuento",
+      en: "Lunch, €5 off",
     },
     subtitle: {
       pt: "Pedido mínimo 18€, dias úteis ao almoço",

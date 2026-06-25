@@ -77,7 +77,7 @@ export default function AdminRoutesMapPage() {
       <div className="rounded-xl border bg-muted/30 p-4 text-sm space-y-2">
         <p className="font-semibold flex items-center gap-2">
           <Map className="h-4 w-4" />
-          Preview Lovable — lista curada
+          Preview Lovable, lista curada
         </p>
         <div className="flex flex-wrap gap-2">
           {LOVABLE_PREVIEW_PATHS.map((p) => (

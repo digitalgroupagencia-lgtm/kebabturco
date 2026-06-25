@@ -158,7 +158,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (valid.includes(p as Screen)) return p as Screen;
 
-    // Sempre começar pelo idioma na entrada do domínio — não pular por causa de cache antigo
+    // Sempre começar pelo idioma na entrada do domínio, não pular por causa de cache antigo
     return "language";
   })();
 

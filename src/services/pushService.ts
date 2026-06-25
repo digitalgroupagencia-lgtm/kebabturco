@@ -21,7 +21,7 @@ export async function notifyOrderStatusChange(
   const body =
     STATUS_MESSAGES[status]?.[lang] ||
     STATUS_MESSAGES[status]?.es ||
-    `Pedido #${orderNumber || ""} — ${status}`;
+    `Pedido #${orderNumber || ""}, ${status}`;
 
   try {
     await supabase.functions.invoke("send-push-notification", {
@@ -49,7 +49,7 @@ export async function notifyStaffNewOrder(
       body: {
         storeId,
         title: `Nuevo pedido #${orderNumber}`,
-        body: "Pedido recibido — abre el panel para ver detalles",
+        body: "Pedido recibido, abre el panel para ver detalles",
         tag: `staff-new-order-${orderId}`,
         url: "/panel/live",
       },

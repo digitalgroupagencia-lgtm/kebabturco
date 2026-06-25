@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeNotificationText } from "../_shared/campaignTemplateEngine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +48,7 @@ type PushSubRow = {
 };
 
 // =============================================================
-// Web Push (VAPID) — navegador / PWA
+// Web Push (VAPID), navegador / PWA
 // =============================================================
 async function sendWebPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
@@ -67,7 +68,7 @@ async function sendWebPush(
 }
 
 // =============================================================
-// FCM HTTP v1 — Android nativo (Capacitor)
+// FCM HTTP v1, Android nativo (Capacitor)
 // =============================================================
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
@@ -205,7 +206,7 @@ function getFcmServiceAccount(): {
 }
 
 // =============================================================
-// APNs HTTP/2 — iPhone nativo (token APNs do Capacitor)
+// APNs HTTP/2, iPhone nativo (token APNs do Capacitor)
 // =============================================================
 type ApnsConfig = {
   keyId: string;
@@ -532,6 +533,9 @@ Deno.serve(async (req) => {
       marketingBroadcast,
     } = body;
 
+    const pushTitle = sanitizeNotificationText(String(title ?? ""));
+    const pushBody = sanitizeNotificationText(String(msgBody ?? ""));
+
     if (!(await authorizeStaffBroadcast(req, { ...body, pushDiagnostic }))) {
       return new Response(
         JSON.stringify({
@@ -626,7 +630,7 @@ Deno.serve(async (req) => {
     }
 
     const subs = [...targetMap.values()];
-    const payloadJson = JSON.stringify({ title, body: msgBody, tag, url, requireInteraction });
+    const payloadJson = JSON.stringify({ title: pushTitle, body: pushBody, tag, url, requireInteraction });
 
     let sent = 0;
     let sentWeb = 0;
@@ -635,7 +639,7 @@ Deno.serve(async (req) => {
     const errors: { endpoint: string; status?: number; message: string; channel: string }[] = [];
 
     let apnsDeliveryNote: string | undefined;
-    // Sempre tentar sandbox + produção no iOS — corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
+    // Sempre tentar sandbox + produção no iOS, corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
     const apnsTryBothHosts = true;
 
     for (const sub of subs) {
@@ -646,7 +650,7 @@ Deno.serve(async (req) => {
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           const apnsResult = await sendApns(
             token,
-            { title, body: msgBody, tag, url, requireInteraction },
+            { title: pushTitle, body: pushBody, tag, url, requireInteraction },
             apns,
             { tryBothHosts: apnsTryBothHosts },
           );
@@ -666,7 +670,7 @@ Deno.serve(async (req) => {
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
-          await sendFcmV1(token, { title, body: msgBody, tag, url, requireInteraction }, fcm);
+          await sendFcmV1(token, { title: pushTitle, body: pushBody, tag, url, requireInteraction }, fcm);
           sent++;
           sentFcm++;
         } else {

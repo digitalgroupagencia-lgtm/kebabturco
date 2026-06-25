@@ -153,7 +153,7 @@ export default function RestaurantFinanceDashboard({
             available > 0
               ? "Na sua conta de recebimentos"
               : paidPayoutsTotal > 0
-                ? "Já enviado — nada pendente"
+                ? "Já enviado, nada pendente"
                 : "Sem saldo pendente"
           }
         />
@@ -256,7 +256,7 @@ export default function RestaurantFinanceDashboard({
           icon={TrendingUp}
           tone="purple"
           label="Ticket médio"
-          value={periodCount > 0 ? fmtPeriod(Math.round(periodTotal / periodCount)) : "—"}
+          value={periodCount > 0 ? fmtPeriod(Math.round(periodTotal / periodCount)) : ", "}
           sub="Valor médio por pedido"
         />
         <PremiumMetricCard
@@ -271,7 +271,7 @@ export default function RestaurantFinanceDashboard({
       <div className="staff-finance-duo gap-4">
         <PremiumChartCard
           title="Pagamentos por método"
-          subtitle="Volume em euros — cartão, Bizum, Apple Pay, Google Pay"
+          subtitle="Volume em euros, cartão, Bizum, Apple Pay, Google Pay"
           className="min-w-0"
         >
           <PremiumDonutChart data={analytics.byMethod} />
@@ -279,7 +279,7 @@ export default function RestaurantFinanceDashboard({
 
         <PremiumChartCard
           title="Evolução diária"
-          subtitle={`${periodLabel} — valor pago pelos clientes`}
+          subtitle={`${periodLabel}, valor pago pelos clientes`}
           className="min-w-0"
         >
           <PremiumDualLineChart data={analytics.dailySeries} />
@@ -330,7 +330,7 @@ export default function RestaurantFinanceDashboard({
                   <div className="mt-2 sm:mt-0 flex sm:block justify-between text-xs sm:text-sm">
                     <span className="sm:hidden text-muted-foreground">Valor pago</span>
                     <span className="font-black tabular-nums sm:text-right text-base">
-                      {m.customerPaidCents > 0 ? `${formatEur(m.customerPaidCents)}€` : "—"}
+                      {m.customerPaidCents > 0 ? `${formatEur(m.customerPaidCents)}€` : ", "}
                     </span>
                   </div>
                   <div className="flex sm:block justify-between text-xs sm:mt-0 mt-1">

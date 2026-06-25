@@ -58,7 +58,7 @@ export default function AdminCentralAiPage() {
   return (
     <AdminCentralLayout
       title="Central IA"
-      description="Plataforma inteligente por restaurante. Pré-visualizações activas — motores automáticos chegam numa fase posterior."
+      description="Plataforma inteligente por restaurante. Pré-visualizações activas, motores automáticos chegam numa fase posterior."
       centralSegment="ai"
       showTenantList
       tenantList={
@@ -102,7 +102,7 @@ function AiTenantPanel({
             { label: "Módulos ligados", value: `${enabledCount}/4`, tone: enabledCount ? "success" : "muted" },
             { label: "Plano", value: tenantPlan.toUpperCase() },
             { label: "Motor IA", value: "Standby", tone: "warning" },
-            { label: "Conversas hoje", value: "—", tone: "muted" },
+            { label: "Conversas hoje", value: ", ", tone: "muted" },
           ]}
         />
       )}
@@ -124,7 +124,7 @@ function AiTenantPanel({
               summary={m.desc}
               icon={Icon}
               status={gated ? "locked" : on ? "active" : "prepared"}
-              meta={preview ? `${preview.metricLabels[0]}: — · ${preview.metricLabels[1]}: —` : undefined}
+              meta={preview ? `${preview.metricLabels[0]}:, · ${preview.metricLabels[1]}: , ` : undefined}
               gated={gated}
               requiredPlan={requiredPlan}
               preview={preview ? <AdminPreviewTabs variants={preview.variants} /> : undefined}

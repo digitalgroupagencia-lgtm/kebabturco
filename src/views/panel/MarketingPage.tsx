@@ -28,6 +28,7 @@ import {
   createCouponFromSuggestion,
   type CouponRow,
 } from "@/lib/marketing/marketingCouponService";
+import CampaignMessageEditDialog from "@/components/marketing/CampaignMessageEditDialog";
 import {
   resolveCampaignMessage,
   pickLocalizedCampaignText,
@@ -93,6 +94,10 @@ const MarketingPage = () => {
   const [broadcastSending, setBroadcastSending] = useState(false);
   const [broadcastTestSending, setBroadcastTestSending] = useState(false);
   const [campaignTestId, setCampaignTestId] = useState<string | null>(null);
+  const [editCampaign, setEditCampaign] = useState<{
+    preset: (typeof CAMPAIGN_PRESETS)[number];
+    campaign: MarketingCampaignRow;
+  } | null>(null);
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "sent" | "failed" | "skipped">("all");
   const [activeTab, setActiveTab] = useState("home");
@@ -556,6 +561,7 @@ const MarketingPage = () => {
                   mandatory={true}
                   onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
                   onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
+                  onEdit={row ? () => setEditCampaign({ preset, campaign: row }) : undefined}
                 />
               );
             })}
@@ -580,6 +586,7 @@ const MarketingPage = () => {
                   mandatory={false}
                   onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
                   onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
+                  onEdit={row ? () => setEditCampaign({ preset, campaign: row }) : undefined}
                 />
               );
             })}
@@ -663,6 +670,18 @@ const MarketingPage = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {editCampaign && (
+        <CampaignMessageEditDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditCampaign(null);
+          }}
+          preset={editCampaign.preset}
+          campaign={editCampaign.campaign}
+          onSaved={() => void refreshQuiet()}
+        />
+      )}
     </div>
   );
 };

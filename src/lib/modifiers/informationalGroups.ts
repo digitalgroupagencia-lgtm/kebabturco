@@ -8,7 +8,7 @@ function optionLabels(group: ModifierGroup): string {
   return group.options.map((o) => `${o.name.es} ${o.name.pt} ${o.name.en}`).join(" ").toLowerCase();
 }
 
-/** Temperatura, gelo e escolhas similares — texto + ícone, sem foto. */
+/** Temperatura, gelo e escolhas similares, texto + ícone, sem foto. */
 export function isInformationalModifierGroup(group: ModifierGroup): boolean {
   const label = groupLabel(group);
   if (/temperatura|temperature|température|hielo|gelo|ice|glaçon/.test(label)) return true;

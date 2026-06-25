@@ -1,4 +1,4 @@
-/** Segmentos reservados — não são slugs de restaurante na URL. */
+/** Segmentos reservados, não são slugs de restaurante na URL. */
 export const RESERVED_APP_PATHS = new Set([
   "admin",
   "panel",

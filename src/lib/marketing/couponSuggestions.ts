@@ -40,9 +40,9 @@ export const COUPON_SUGGESTIONS: CouponSuggestionTemplate[] = [
   {
     code: "KEBAB3X2",
     description: {
-      pt: "Peça 3 kebabs iguais — o 3.º sai à metade do preço",
-      es: "Pide 3 kebabs iguales — el 3.º a mitad de precio",
-      en: "Order 3 same kebabs — 3rd half price",
+      pt: "Peça 3 kebabs iguais, o 3.º sai à metade do preço",
+      es: "Pide 3 kebabs iguales, el 3.º a mitad de precio",
+      en: "Order 3 same kebabs, 3rd half price",
     },
     discountType: "combo_nth",
     discountValue: 50,

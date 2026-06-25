@@ -48,7 +48,7 @@ export default function AdminCentralConversationalPage() {
   return (
     <AdminCentralLayout
       title="Conversar para pedir"
-      description="Pedido por conversa dentro da app — pré-visualização activa, chat funcional numa fase futura."
+      description="Pedido por conversa dentro da app, pré-visualização activa, chat funcional numa fase futura."
       centralSegment="conversational"
       showTenantList
       tenantList={
@@ -92,8 +92,8 @@ function ConversationalPanel({
         <AdminStatStrip
           stats={[
             { label: "Modo chat", value: on ? "Preparado" : "Off", tone: on ? "success" : "muted" },
-            { label: "Conversas", value: "—", tone: "muted" },
-            { label: "Conversão", value: "—", tone: "muted" },
+            { label: "Conversas", value: ", ", tone: "muted" },
+            { label: "Conversão", value: ", ", tone: "muted" },
             { label: "Motor", value: "Standby", tone: "warning" },
           ]}
         />

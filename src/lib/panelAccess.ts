@@ -23,7 +23,7 @@ export const PANEL_OPERATIONAL_SEGMENTS = new Set([
   "diagnostics",
 ]);
 
-/** Configuração do projecto — bloqueada em /panel; redirecciona para /admin. */
+/** Configuração do projecto, bloqueada em /panel; redirecciona para /admin. */
 export const PANEL_CONFIG_SEGMENT_TO_ADMIN: Readonly<Record<string, readonly string[]>> = {
   menu: ["menu"],
   modifiers: ["modifiers"],

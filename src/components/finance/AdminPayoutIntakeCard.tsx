@@ -56,7 +56,7 @@ export default function AdminPayoutIntakeCard({ storeId }: Props) {
       .filter(Boolean)
       .join("\n");
     await navigator.clipboard.writeText(text);
-    toast.success("Dados copiados — cole na Stripe");
+    toast.success("Dados copiados, cole na Stripe");
   };
 
   if (loading) {

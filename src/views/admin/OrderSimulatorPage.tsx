@@ -116,7 +116,7 @@ export default function OrderSimulatorPage() {
 
   const handleFullSimulation = async () => {
     setSimLog([]);
-    const log = (msg: string) => setSimLog((l) => [...l, `${new Date().toLocaleTimeString()} — ${msg}`]);
+    const log = (msg: string) => setSimLog((l) => [...l, `${new Date().toLocaleTimeString()}, ${msg}`]);
     const order = await callSimulator("delivery");
     if (!order) return;
     setBusy("full");
@@ -231,7 +231,7 @@ export default function OrderSimulatorPage() {
       } else {
         const j = jobs[0];
         const statusLabel = j.status === "printed" ? "✅ impresso" : j.status === "failed" ? `❌ falhou: ${j.error_message || "?"}` : `⏳ ${j.status}`;
-        setStep("verify", j.status === "printed" ? "ok" : j.status === "failed" ? "fail" : "ok", `${jobs.length} job(s) — último: ${statusLabel}`);
+        setStep("verify", j.status === "printed" ? "ok" : j.status === "failed" ? "fail" : "ok", `${jobs.length} job(s), último: ${statusLabel}`);
       }
 
       // Step 6: Cleanup
@@ -267,7 +267,7 @@ export default function OrderSimulatorPage() {
       <PremiumPageHeader
         icon={FlaskConical}
         title="Simulador de pedidos"
-        subtitle="Pedidos de teste — não entram em faturação, relatórios, ranking ou estoque."
+        subtitle="Pedidos de teste, não entram em faturação, relatórios, ranking ou estoque."
       />
 
       <Card>
@@ -286,7 +286,7 @@ export default function OrderSimulatorPage() {
 
       <Card className="border-primary/40">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><ListChecks className="h-4 w-4" /> Teste Guiado — Validação Completa</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><ListChecks className="h-4 w-4" /> Teste Guiado, Validação Completa</CardTitle>
           <CardDescription>
             Executa em sequência: diagnóstico → limpar fila → som/vibração/push → pedido teste → verificar impressão → cleanup.
             Mantém o painel operador (/panel/live) aberto noutro separador para ver o pedido chegar.
@@ -319,7 +319,7 @@ export default function OrderSimulatorPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Coffee className="h-4 w-4" /> Pedido Teste — Mesa</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Coffee className="h-4 w-4" /> Pedido Teste, Mesa</CardTitle>
             <CardDescription>Dispara fluxo completo de pedido em mesa (operador, cozinha, impressora).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -337,7 +337,7 @@ export default function OrderSimulatorPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><ShoppingBag className="h-4 w-4" /> Pedido Teste — Balcão</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><ShoppingBag className="h-4 w-4" /> Pedido Teste, Balcão</CardTitle>
             <CardDescription>Cria pedido de balcão (takeaway) e dispara impressão + notificações.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -349,7 +349,7 @@ export default function OrderSimulatorPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Truck className="h-4 w-4" /> Pedido Teste — Delivery</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Truck className="h-4 w-4" /> Pedido Teste, Delivery</CardTitle>
             <CardDescription>Pedido de entrega com endereço fake. Valida fluxo do entregador.</CardDescription>
           </CardHeader>
           <CardContent>

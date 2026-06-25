@@ -7,7 +7,7 @@ import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS, TAB_BAR_VISIBLE_SCRE
 import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
 
 /**
- * Barra inferior do carrinho / pedido activo — dentro da moldura mobile (não fixed ao viewport).
+ * Barra inferior do carrinho / pedido activo, dentro da moldura mobile (não fixed ao viewport).
  */
 const CustomerBottomDock = () => {
   const { screen, setScreen } = useOrder();

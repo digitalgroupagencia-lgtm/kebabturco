@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 
-/** Fallback de Suspense — sem hooks de contexto (renderiza antes de LanguageProvider). */
+/** Fallback de Suspense, sem hooks de contexto (renderiza antes de LanguageProvider). */
 const PageSpinner = () => (
   <div
     className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#3A0205] text-primary-foreground"

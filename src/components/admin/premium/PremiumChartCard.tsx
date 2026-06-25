@@ -11,7 +11,7 @@ type Props = {
 };
 
 /**
- * Premium chart/section container — title, optional subtitle and action,
+ * Premium chart/section container, title, optional subtitle and action,
  * generous radius and surface.
  */
 export default function PremiumChartCard({ title, subtitle, action, children, className, bodyClassName }: Props) {

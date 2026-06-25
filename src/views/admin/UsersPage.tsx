@@ -104,7 +104,7 @@ const UsersPage = () => {
   });
 
   const tenantNameOf = (id: string | null) =>
-    tenants?.find((t) => t.id === id)?.name ?? "—";
+    tenants?.find((t) => t.id === id)?.name ?? ", ";
 
   const saveMutation = useMutation({
     mutationFn: async () => {

@@ -31,7 +31,7 @@ export function useProductModifierConfig(productId: string | undefined) {
       return;
     }
 
-    // Hit cache imediato — sem spinner
+    // Hit cache imediato, sem spinner
     const fromCache = getCachedModifierConfig(productId);
     if (fromCache) {
       setConfig(fromCache);

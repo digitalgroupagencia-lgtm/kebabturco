@@ -87,7 +87,7 @@ const LanguageScreen = () => {
         <ThemeToggle />
       </div>
 
-      {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
+      {/* Logo + títulos, tamanho original, sem flex-1 (evita espaço branco gigante) */}
       <div className="flex flex-col items-center px-6 pt-3 shrink-0">
         <div
           className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
@@ -110,7 +110,7 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      {/* Bandeiras — altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
+      {/* Bandeiras, altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
       <div className="flex min-h-0 items-center justify-center overflow-hidden px-4 py-2 w-full">
         <div
           className="flex flex-row items-center justify-center w-full max-w-md flex-nowrap"

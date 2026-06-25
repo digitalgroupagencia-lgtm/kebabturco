@@ -51,7 +51,7 @@ export default function StaffPendingApprovalScreen({ status, email }: Props) {
         const resolvedStoreId = storeId ?? (await ensureStaffLoginStoreId());
         await registerStaffGoogleLoginWithRetry(resolvedStoreId);
       } catch {
-        /* mantém ecrã de espera — não mostrar erro ao utilizador */
+        /* mantém ecrã de espera, não mostrar erro ao utilizador */
       }
     })();
   }, [status, user?.id, storeId]);

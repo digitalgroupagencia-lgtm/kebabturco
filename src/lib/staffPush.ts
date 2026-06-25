@@ -60,7 +60,7 @@ export function isStaffPushSupported(): boolean {
   return isStaffWebPushSupported();
 }
 
-/** Subscrição push da equipa — app nativa (FCM) ou browser (VAPID). */
+/** Subscrição push da equipa, app nativa (FCM) ou browser (VAPID). */
 export async function subscribeStaffPush(
   storeId: string,
   opts?: { forceRefresh?: boolean },
@@ -92,7 +92,7 @@ export async function subscribeStaffPush(
   if (mode === "unsupported") {
     return {
       ok: false,
-      error: "Push não disponível neste browser — use Chrome no computador ou a app no telemóvel.",
+      error: "Push não disponível neste browser, use Chrome no computador ou a app no telemóvel.",
     };
   }
 

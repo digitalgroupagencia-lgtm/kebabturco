@@ -28,7 +28,7 @@ export default function DeleteAccountPage() {
       <LegalSection title="1. Quem pode solicitar">
         <ul>
           <li><strong>Clientes</strong> com conta ou histórico de pedidos.</li>
-          <li><strong>Equipa</strong> — pelo utilizador ou administrador do restaurante.</li>
+          <li><strong>Equipa</strong>, pelo utilizador ou administrador do restaurante.</li>
           <li><strong>Titulares de dados</strong> que contactaram suporte, mesmo sem conta activa.</li>
         </ul>
       </LegalSection>

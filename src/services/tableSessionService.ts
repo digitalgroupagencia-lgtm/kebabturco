@@ -70,7 +70,7 @@ export async function resolveTableByQrToken(
       return null;
     }
   } catch {
-    /* RPC em falta ou rede — tenta leitura directa */
+    /* RPC em falta ou rede, tenta leitura directa */
   }
 
   const { data, error } = await supabase

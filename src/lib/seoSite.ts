@@ -9,7 +9,7 @@ export type SitemapEntry = {
   priority: number;
 };
 
-/** Páginas públicas indexáveis — fonte de verdade para sitemap.xml. */
+/** Páginas públicas indexáveis, fonte de verdade para sitemap.xml. */
 export const PUBLIC_SITEMAP_ENTRIES: readonly SitemapEntry[] = [
   { path: "/", changefreq: "weekly", priority: 1.0 },
   { path: "/menu", changefreq: "weekly", priority: 0.9 },

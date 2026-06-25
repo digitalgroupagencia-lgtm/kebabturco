@@ -8,7 +8,7 @@ export function joinPath(...segments: string[]): string {
 export const nav = {
   home: () => joinPath(),
   staff: () => joinPath("staff"),
-  /** Único login — alias legado para links antigos /auth. */
+  /** Único login, alias legado para links antigos /auth. */
   auth: () => joinPath("staff"),
   install: () => joinPath("install"),
   cashier: () => joinPath("cashier"),
@@ -22,7 +22,7 @@ export const nav = {
   support: () => joinPath("support"),
 } as const;
 
-/** Lista curada — dropdown preview Lovable (só loja + login). */
+/** Lista curada, dropdown preview Lovable (só loja + login). */
 export const LOVABLE_PREVIEW_PATHS = ["/", "/staff"] as const;
 
 export type AppArea = "panel" | "admin" | "seller" | "delivery";
@@ -34,7 +34,7 @@ export type RouteSegmentDef = {
   loader: () => Promise<{ default: ComponentType<object> }>;
 };
 
-/** Rotas internas — caminhos calculados em runtime via joinPath. */
+/** Rotas internas, caminhos calculados em runtime via joinPath. */
 export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "panel", segments: [], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
   { area: "panel", segments: ["live"], loader: () => import("@/views/panel/LiveOrdersPage.tsx") },
@@ -50,7 +50,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "panel", segments: ["my-profile"], loader: () => import("@/views/panel/MyProfilePage.tsx") },
   { area: "panel", segments: ["guide"], loader: () => import("@/views/panel/GuidePage.tsx") },
   { area: "panel", segments: ["reviews"], loader: () => import("@/views/panel/ReviewsPage.tsx") },
-  // /panel/diagnostics removido — auditoria geral é admin-only
+  // /panel/diagnostics removido, auditoria geral é admin-only
 
   { area: "admin", segments: [], loader: () => import("@/views/admin/AdminDashboard.tsx") },
   { area: "admin", segments: ["menu"], loader: () => import("@/views/panel/MenuPage.tsx") },

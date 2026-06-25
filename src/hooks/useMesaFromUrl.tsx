@@ -59,7 +59,7 @@ async function syncTableSession(storeId: string, token: string, fromUrl: boolean
   }
 }
 
-/** Valida sessão de mesa via token do QR code (?t=...). O número na URL é informativo — o token é obrigatório. */
+/** Valida sessão de mesa via token do QR code (?t=...). O número na URL é informativo, o token é obrigatório. */
 export function useMesaFromUrl(storeId: string | null) {
   const [mesa, setMesa] = useState<MesaFromUrl | null>(null);
   const [loading, setLoading] = useState(true);

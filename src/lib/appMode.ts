@@ -1,5 +1,5 @@
 /**
- * Modo projecto único — Kebab Turco.
+ * Modo projecto único, Kebab Turco.
  * Futuros clientes = remix/duplicar este projecto (não multi-tenant na mesma app).
  */
 export const APP_NAME = "Kebab Turco";

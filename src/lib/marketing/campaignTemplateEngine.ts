@@ -76,7 +76,10 @@ export function pickLocalizedCampaignText(
   const body =
     (locale === "pt" ? campaign.message_pt : locale === "en" ? campaign.message_en : campaign.message_es) ||
     campaign.message_template;
-  return { title: title ?? "", body: body ?? "" };
+  return {
+    title: sanitizeNotificationText(title ?? ""),
+    body: sanitizeNotificationText(body ?? ""),
+  };
 }
 
 function formatTodayHours(schedule: WeeklySchedule, timezone: string): string {
@@ -87,7 +90,7 @@ function formatTodayHours(schedule: WeeklySchedule, timezone: string): string {
   if (status.nextOpenLabel) {
     return status.nextOpenLabel;
   }
-  return "—";
+  return "Fechado";
 }
 
 function formatNextOpen(schedule: WeeklySchedule, timezone: string): string {
@@ -120,11 +123,20 @@ export function applyTemplate(template: string, vars: Record<string, string>): s
   return template.replace(/\{([a-z_]+)\}/gi, (_, key: string) => vars[key] ?? `{${key}}`);
 }
 
+/** Remove traço longo (—) de textos mostrados em notificações. */
+export function sanitizeNotificationText(text: string): string {
+  return text
+    .replace(/\s*—\s*/g, ", ")
+    .replace(/—/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function resolveCampaignMessage(
   template: string,
   ctx: TemplateContext,
 ): string {
-  return applyTemplate(template, buildTemplateVars(ctx));
+  return sanitizeNotificationText(applyTemplate(template, buildTemplateVars(ctx)));
 }
 
 export function productNameForLocale(nameJson: unknown, locale: MessageLocale): string {

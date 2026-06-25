@@ -246,7 +246,7 @@ const PaymentScreen = () => {
   const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
   const stripeIssue =
     stripeConnectEnvironment === "test" && !stripePublishableKey && stripeEnabled
-      ? "Pagamento com cartão de teste indisponível — falta a chave publicável de teste (pk_test) no site publicado."
+      ? "Pagamento com cartão de teste indisponível, falta a chave publicável de teste (pk_test) no site publicado."
       : stripeConfigIssue(stripeEnabled, stripePublishableKey);
 
   useEffect(() => {
@@ -1100,7 +1100,7 @@ const PaymentScreen = () => {
         </div>
         )}
 
-        {/* Resumo subtotal removido — já mostrado na tela de revisão */}
+        {/* Resumo subtotal removido, já mostrado na tela de revisão */}
         {hiddenCheckoutFeature("subtotal-summary") && !stripeClientSecret && (
           <div className={`mt-3 bg-card rounded-2xl border border-border/80 ${compact ? "p-3 space-y-1.5 text-xs" : "p-4 space-y-2 text-sm"}`}>
             <div className="flex justify-between gap-2">
@@ -1149,11 +1149,11 @@ const PaymentScreen = () => {
                 clearStripeCheckoutSession();
               }}
               onSuccess={async () => {
-                console.log("[checkout] Stripe payment succeeded — confirmando pedido…");
+                console.log("[checkout] Stripe payment succeeded, confirmando pedido…");
                 if (!assertStoreReady()) {
                   console.error("[checkout] Loja indisponível após pagamento aprovado");
                   window.alert(
-                    "Pagamento aprovado, mas a loja ficou indisponível. O pedido já foi reservado — contacte o restaurante com o seu telefone.",
+                    "Pagamento aprovado, mas a loja ficou indisponível. O pedido já foi reservado, contacte o restaurante com o seu telefone.",
                   );
                   return;
                 }
@@ -1178,7 +1178,7 @@ const PaymentScreen = () => {
                   const session = loadStripeCheckoutSession();
                   window.alert(
                     `Pagamento aprovado (${paymentIntentId}), pedido ${session?.orderNumber ?? "reservado"}. ` +
-                      `Se não vir a confirmação, não pague de novo — mostre esta mensagem ao restaurante: ${msg}`,
+                      `Se não vir a confirmação, não pague de novo, mostre esta mensagem ao restaurante: ${msg}`,
                   );
                 }
               }}
@@ -1190,7 +1190,7 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
-            {/* "Datos guardados" hint removido a pedido — perfil é usado em background */}
+            {/* "Datos guardados" hint removido a pedido, perfil é usado em background */}
             {hiddenCheckoutFeature("saved-profile-hint") && hasCustomerProfile() && (
               <p className="mt-3 text-[11px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-xl px-3 py-2">
                 {t("savedProfileHint")}
@@ -1395,7 +1395,7 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {/* Cupón oculto — código mantido, será reativado posteriormente */}
+            {/* Cupón oculto, código mantido, será reativado posteriormente */}
             {hiddenCheckoutFeature("coupon") && !isTableOrder && (
               <div className="mt-3 bg-card rounded-2xl border border-border p-3">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Cupón</p>
@@ -1413,7 +1413,7 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {/* Aviso "Pagamentos online não activos" oculto — não bloqueia checkout (fallback automático para dinheiro/balcão) */}
+            {/* Aviso "Pagamentos online não activos" oculto, não bloqueia checkout (fallback automático para dinheiro/balcão) */}
             {hiddenCheckoutFeature("stripe-warning") && stripeIssue && prepaymentRequired && (
               <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -1426,7 +1426,7 @@ const PaymentScreen = () => {
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   {prepaymentRequired
-                    ? "Pagamento online obrigatório — active os recebimentos ou peça ajuda à equipa."
+                    ? "Pagamento online obrigatório, active os recebimentos ou peça ajuda à equipa."
                     : "Nenhum método de pagamento disponível para este tipo de pedido."}
                 </p>
               </div>
@@ -1474,7 +1474,7 @@ const PaymentScreen = () => {
                       Será redireccionado para confirmar o pagamento na app Bizum.
                     </p>
                   )}
-                  {/* Aviso amber abaixo de Efectivo removido — confirmação acontece em tela dedicada após finalizar */}
+                  {/* Aviso amber abaixo de Efectivo removido, confirmação acontece em tela dedicada após finalizar */}
                 </div>
                 {showError === "method" && (
                   <p className="text-xs text-destructive font-bold mt-1.5 px-1">

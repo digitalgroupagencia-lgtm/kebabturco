@@ -12,25 +12,25 @@ export const GROUP_KIND_META: Record<
   choice: {
     labelPt: "Escolha obrigatória",
     labelEs: "Elección obligatoria",
-    adminHintPt: "Carne, bebida do menu, pizza do combo — o cliente escolhe uma opção.",
+    adminHintPt: "Carne, bebida do menu, pizza do combo, o cliente escolhe uma opção.",
     customerBadgePt: "Obrigatório",
   },
   substitution: {
     labelPt: "Substituição",
     labelEs: "Sustitución",
-    adminHintPt: "Patatas fritas / bravas / deluxe — só uma opção, não é extra.",
+    adminHintPt: "Patatas fritas / bravas / deluxe, só uma opção, não é extra.",
     customerBadgePt: "Escolhe 1",
   },
   removal: {
     labelPt: "Remover ingrediente",
     labelEs: "Quitar ingrediente",
-    adminHintPt: "Cebola, tomate, molho — toque para retirar, sem custo.",
+    adminHintPt: "Cebola, tomate, molho, toque para retirar, sem custo.",
     customerBadgePt: "Personalizar",
   },
   extra: {
     labelPt: "Extra adicionável",
     labelEs: "Extra añadible",
-    adminHintPt: "Queijo extra, carne extra — quantidade com + e −.",
+    adminHintPt: "Queijo extra, carne extra, quantidade com + e −.",
     customerBadgePt: "Extra",
   },
 };

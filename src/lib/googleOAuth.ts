@@ -12,7 +12,7 @@ function googleLangParam(lang: StaffUiLang): string {
   return lang === "pt" ? "pt" : lang === "en" ? "en" : "es";
 }
 
-/** Login com Google — área da equipa (/staff). */
+/** Login com Google, área da equipa (/staff). */
 export async function signInWithGoogleOAuth(params: {
   redirectUri: string;
   lang?: StaffUiLang;

@@ -43,6 +43,14 @@ export function applyTemplate(template: string, vars: Record<string, string>): s
   return template.replace(/\{([a-z_]+)\}/gi, (_, key: string) => vars[key] ?? `{${key}}`);
 }
 
+export function sanitizeNotificationText(text: string): string {
+  return text
+    .replace(/\s*—\s*/g, ", ")
+    .replace(/—/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function pickI18n(json: unknown, locale: MessageLocale, fallback = ""): string {
   if (!json || typeof json !== "object") return fallback;
   const o = json as Record<string, string>;
@@ -91,7 +99,7 @@ export function isQuietHours(timezone: string, now = new Date()): boolean {
 }
 
 export function formatTodayHours(scheduleRaw: unknown, timezone: string): string {
-  if (!scheduleRaw || typeof scheduleRaw !== "object") return "—";
+  if (!scheduleRaw || typeof scheduleRaw !== "object") return "Fechado";
   const { dayIdx } = nowInTz(timezone);
   const key = DAY_KEYS[dayIdx];
   const day = (scheduleRaw as Record<string, { open?: boolean; ranges?: [string, string][] }>)[key];

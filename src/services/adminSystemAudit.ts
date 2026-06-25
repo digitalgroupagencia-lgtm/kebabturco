@@ -100,7 +100,7 @@ async function auditMenu(storeId: string | null): Promise<AuditFinding[]> {
         .map((p) => jsonbName(p.name))
         .filter(Boolean)
         .join(", "),
-      action: "Defina o preço — produtos sem preço impedem o checkout.",
+      action: "Defina o preço, produtos sem preço impedem o checkout.",
       link: "/admin/menu",
       linkLabel: "Abrir cardápio",
     });
@@ -197,7 +197,7 @@ async function auditOrders(storeId: string | null): Promise<AuditFinding[]> {
       category: "orders",
       severity: "critical",
       label: `${stuckPreparing.length} pedido(s) em preparação há +45 min`,
-      action: "Reveja na fila — podem estar travados.",
+      action: "Reveja na fila, podem estar travados.",
       link: "/panel/live",
       linkLabel: "Abrir Pedidos ao vivo",
     });
@@ -385,7 +385,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
       body: { mode: "sync_status", storeId },
     });
   } catch {
-    /* ignora — usa perfil já guardado */
+    /* ignora, usa perfil já guardado */
   }
 
   const store = await fetchStoreFinancialProfile(storeId);
@@ -409,7 +409,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
         id: "payments-stripe-incomplete",
         category: "payments",
         severity: "ok",
-        label: "Recebimentos — dados enviados",
+        label: "Recebimentos, dados enviados",
         detail: "Conta ligada à Stripe. Se a aprovação já saiu, o estado actualiza automaticamente.",
         panel: "admin",
         link: "/admin/finance",
@@ -419,7 +419,7 @@ async function auditPayments(storeId: string | null): Promise<AuditFinding[]> {
         id: "payments-stripe-incomplete",
         category: "payments",
         severity: "critical",
-        label: "Recebimentos incompletos — cobranças desactivadas",
+        label: "Recebimentos incompletos, cobranças desactivadas",
         detail: "Falta completar os dados bancários do restaurante.",
         panel: "admin",
         action: "Admin → Recebimentos → preencher dados ou enviar link WhatsApp.",
@@ -480,7 +480,7 @@ async function auditPrinting(storeId: string | null): Promise<AuditFinding[]> {
   const ipConfigured = Boolean(settings?.ip_address?.trim());
 
   if (!ipConfigured) {
-    // Aceita qualquer impressora cadastrada (activa OU inactiva) — só alerta se realmente não houver nada.
+    // Aceita qualquer impressora cadastrada (activa OU inactiva), só alerta se realmente não houver nada.
     const { data: legacyPrinters } = await supabase
       .from("printers")
       .select("id,is_active")

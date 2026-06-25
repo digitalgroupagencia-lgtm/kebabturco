@@ -98,7 +98,7 @@ export async function runGuidedPrintTest(
     return { ok: false, error: result.error ?? "Falha ao criar job" };
   }
 
-  log("test_send", "info", "Job criado — a aguardar impressão", { jobId: result.jobId });
+  log("test_send", "info", "Job criado, a aguardar impressão", { jobId: result.jobId });
 
   const finalStatus = await pollPrintJobStatus(result.jobId, 45000);
   if (finalStatus === "printed") {
@@ -107,14 +107,14 @@ export async function runGuidedPrintTest(
   }
   if (finalStatus === "failed") {
     log("test_send", "error", "Job falhou na impressão", { jobId: result.jobId });
-    return { ok: false, jobId: result.jobId, error: "Impressão falhou — veja fila e bridge" };
+    return { ok: false, jobId: result.jobId, error: "Impressão falhou, veja fila e bridge" };
   }
 
-  log("test_send", "warn", "Timeout — job ainda pendente (bridge offline?)", {
+  log("test_send", "warn", "Timeout, job ainda pendente (bridge offline?)", {
     jobId: result.jobId,
     status: finalStatus,
   });
-  return { ok: false, jobId: result.jobId, error: "Timeout — verifique se o PC da cozinha está ligado" };
+  return { ok: false, jobId: result.jobId, error: "Timeout, verifique se o PC da cozinha está ligado" };
 }
 
 async function pollPrintJobStatus(jobId: string, timeoutMs: number): Promise<string | null> {

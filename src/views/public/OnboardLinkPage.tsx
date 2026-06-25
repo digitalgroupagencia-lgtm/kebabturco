@@ -228,7 +228,7 @@ export default function OnboardLinkPage() {
     return (
       <Shell>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          <span className="font-bold text-foreground">Paso 2 de 2 — Verificación</span>
+          <span className="font-bold text-foreground">Paso 2 de 2, Verificación</span>
           <br />
           Si la ley lo exige, suba aquí el documento de identidad del representante (DNI/NIE o
           pasaporte). Este paso es obligatorio para activar los cobros.
@@ -254,7 +254,7 @@ export default function OnboardLinkPage() {
   return (
     <Shell>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        <span className="font-bold text-foreground">Paso 1 de 2 — Datos del negocio</span>
+        <span className="font-bold text-foreground">Paso 1 de 2, Datos del negocio</span>
         <br />
         Rellena todos los campos. Después pasará al paso de verificación de identidad (documento).
       </p>

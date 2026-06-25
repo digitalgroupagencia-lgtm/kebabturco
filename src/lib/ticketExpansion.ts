@@ -2,11 +2,11 @@
  * Expande combos e modificadores em "TicketItem"s detalhados para impressão.
  *
  * Cada produto-filho de um combo passa a aparecer com seu próprio bloco,
- * mantendo carne, molhos, removidos e observações independentes — para que
+ * mantendo carne, molhos, removidos e observações independentes, para que
  * a cozinha consiga preparar cada item corretamente.
  *
  * O ticket builder já agrupa por unidade quando os labels incluem
- * "pita N" / "pan pita N" — então emitimos extras com esse prefixo.
+ * "pita N" / "pan pita N", então emitimos extras com esse prefixo.
  */
 import type { TicketItem } from "@/services/escPosTicketBuilder";
 import type { CartItem } from "@/customer/contexts/CartContext";
@@ -27,7 +27,7 @@ function extractUnitNumber(unitLabel?: Record<string, string> | null): number | 
 }
 
 function unitTag(unitIndex: number | null | undefined, unitLabel: Record<string, string> | null | undefined, zeroBased: boolean): string {
-  // Usa "Pita N" como prefixo canônico — reconhecido pelo regex do builder.
+  // Usa "Pita N" como prefixo canônico, reconhecido pelo regex do builder.
   const fromLabel = extractUnitNumber(unitLabel);
   if (fromLabel) return `Pita ${fromLabel}`;
   if (typeof unitIndex === "number" && unitIndex >= 0) return `Pita ${zeroBased ? unitIndex + 1 : unitIndex}`;

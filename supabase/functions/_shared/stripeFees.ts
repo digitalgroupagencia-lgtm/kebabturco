@@ -1,13 +1,13 @@
-/** Pedidos abaixo de €10 — taxa reduzida da plataforma. */
+/** Pedidos abaixo de €10, taxa reduzida da plataforma. */
 export const PLATFORM_FEE_THRESHOLD_CENTS = 1000;
 export const PLATFORM_FEE_SMALL_CENTS = 50;
 export const PLATFORM_FEE_STANDARD_CENTS = 100;
 
-/** Compat — taxa máxima da plataforma por pedido (≥ €10). */
+/** Compat, taxa máxima da plataforma por pedido (≥ €10). */
 export const PLATFORM_FEE_CENTS = PLATFORM_FEE_STANDARD_CENTS;
 
 /**
- * Taxa fixa da plataforma por pedido online (só Euro Business Food — não inclui Stripe).
+ * Taxa fixa da plataforma por pedido online (só Euro Business Food, não inclui Stripe).
  * < €10 → €0,50 · ≥ €10 → €1,00
  */
 export function computePlatformFeeCents(restaurantPortionCents: number): number {
@@ -47,7 +47,7 @@ export function computeApplicationFeeCents(restaurantPortionCents: number): numb
   return Math.min(raw, maxFee);
 }
 
-/** Alias interno — taxa descontada do restaurante, não cobrada ao cliente. */
+/** Alias interno, taxa descontada do restaurante, não cobrada ao cliente. */
 export function computeOnlineServiceFeeCents(restaurantPortionCents: number): number {
   return computeApplicationFeeCents(restaurantPortionCents);
 }

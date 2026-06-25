@@ -87,7 +87,7 @@ async function tenantIdForHost(host: string): Promise<string | null> {
   return null;
 }
 
-/** Loja real para login da equipa — várias tentativas, nunca ID de preview. */
+/** Loja real para login da equipa, várias tentativas, nunca ID de preview. */
 export async function resolveStaffLoginStoreId(): Promise<string | null> {
   if (typeof window === "undefined") return null;
 
@@ -136,7 +136,7 @@ export async function resolveStaffLoginStoreId(): Promise<string | null> {
   return readSavedStaffLoginStoreId();
 }
 
-/** Obrigatório antes do login — nunca chama o servidor sem loja real. */
+/** Obrigatório antes do login, nunca chama o servidor sem loja real. */
 export async function ensureStaffLoginStoreId(hint?: string | null): Promise<string> {
   const fromHint = pickStoreId(hint ?? null);
   if (fromHint) {

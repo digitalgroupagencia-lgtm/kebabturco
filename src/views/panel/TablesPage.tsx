@@ -260,7 +260,7 @@ const TablesPage = () => {
     try {
       await downloadTableQrPdf(
         active.map(exportInput),
-        `QR Codes — ${branding.restaurantName}.pdf`,
+        `QR Codes, ${branding.restaurantName}.pdf`,
       );
       toast.success(t("tables.toast.batch_pdf_ready").replace("{n}", String(active.length)));
     } catch {
@@ -277,7 +277,7 @@ const TablesPage = () => {
     try {
       await downloadTableQrZip(
         active.map(exportInput),
-        `QR Codes — ${branding.restaurantName}.zip`,
+        `QR Codes, ${branding.restaurantName}.zip`,
       );
       toast.success(t("tables.toast.batch_zip_ready").replace("{n}", String(active.length)));
     } catch {

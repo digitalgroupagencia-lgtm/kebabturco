@@ -73,7 +73,7 @@ export function auditProductCustomization(
       productName: label,
       severity: "error",
       problem: `Produto já define proteína (${fixed}) mas ainda usa seletor de carne/sabor principal`,
-      suggestion: "Remover escolha de proteína — manter só bebida, batata, molho ou extras coerentes",
+      suggestion: "Remover escolha de proteína, manter só bebida, batata, molho ou extras coerentes",
     });
   }
 
@@ -93,7 +93,7 @@ export function auditProductCustomization(
       productName: label,
       severity: "error",
       problem: "Bebida com grupo de carne ou ingredientes",
-      suggestion: "Remover grupos de carne/ingredientes — usar só tipo, temperatura e gelo",
+      suggestion: "Remover grupos de carne/ingredientes, usar só tipo, temperatura e gelo",
     });
   }
 
@@ -103,7 +103,7 @@ export function auditProductCustomization(
       productName: label,
       severity: "warning",
       problem: "Variantes automáticas incoerentes com proteína fixa no nome",
-      suggestion: "Limpar variantes inferidas — o nome já define o sabor",
+      suggestion: "Limpar variantes inferidas, o nome já define o sabor",
     });
   }
 

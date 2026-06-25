@@ -428,9 +428,9 @@ export function usePanelOrders(storeId: string | undefined) {
     );
 
     if (result.refunded) {
-      toast.success(`Pedido #${order.order_number} cancelado — reembolso automático enviado ao cliente`);
+      toast.success(`Pedido #${order.order_number} cancelado, reembolso automático enviado ao cliente`);
     } else if (order.payment_status === "paid") {
-      toast.success(`Pedido #${order.order_number} cancelado — reembolso em dinheiro é responsabilidade do restaurante`);
+      toast.success(`Pedido #${order.order_number} cancelado, reembolso em dinheiro é responsabilidade do restaurante`);
     } else {
       toast.success("Pedido cancelado");
     }
@@ -472,7 +472,7 @@ export function usePanelOrders(storeId: string | undefined) {
         );
         const items = itemsByOrder[order.id] || [];
         void tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid" }, items);
-        toast.success(`Pagamento registado — #${order.order_number}`);
+        toast.success(`Pagamento registado, #${order.order_number}`);
         return true;
       } catch (e) {
         const raw = e instanceof Error ? e.message : "Erro ao registar pagamento";
@@ -516,7 +516,7 @@ export function usePanelOrders(storeId: string | undefined) {
           .eq("store_id", storeId)
           .maybeSingle();
         await reprintPanelOrder(storeId, order, items, company?.company_name || "Restaurante");
-        toast.success(`Reimpressão enviada — #${order.order_number}`);
+        toast.success(`Reimpressão enviada, #${order.order_number}`);
         return true;
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro ao reimprimir");

@@ -44,7 +44,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { isGeneralAdmin } from "@/lib/projectAccess";
 import { nav } from "@/lib/navPaths.ts";
 
-// ⚠️ Imports raw — Vite carrega o conteúdo no build. Sempre que o app for
+// ⚠️ Imports raw, Vite carrega o conteúdo no build. Sempre que o app for
 // publicado, os arquivos abaixo refletem exatamente a versão do código atual.
 import bootstrapSql from "../../../supabase/scripts/BOOTSTRAP_MASTER_TEMPLATE.sql?raw";
 import docMasterTemplate from "../../../docs/MASTER_TEMPLATE_RESTAURANT.md?raw";
@@ -154,7 +154,7 @@ const TEMPLATE_FILES: { name: string; desc: string; content: string; path: strin
   },
 ];
 
-const PROMPT_NEW_PROJECT = `Este projeto é um restaurante remixado do Master Template (versão ${TEMPLATE_VERSION} — ${TEMPLATE_CODENAME}).
+const PROMPT_NEW_PROJECT = `Este projeto é um restaurante remixado do Master Template (versão ${TEMPLATE_VERSION}, ${TEMPLATE_CODENAME}).
 
 Tarefas obrigatórias na ordem:
 1. Execute o BOOTSTRAP_MASTER_TEMPLATE.sql no Editor SQL da Nuvem para aplicar identidade, layout, catálogo, banners, horários e plano do Master.
@@ -211,7 +211,7 @@ npx cap sync android
 npx cap open android
 # Depois faça o build do APK no Android Studio.`;
 
-const NEW_RESTAURANT_CHECKLIST = `# Checklist — Novo restaurante white-label
+const NEW_RESTAURANT_CHECKLIST = `# Checklist, Novo restaurante white-label
 
 ## 1. Criação
 - [ ] Remix do Master Template
@@ -372,7 +372,7 @@ export default function WhiteLabelCentralPage() {
             <h1 className="text-2xl font-bold">Central White-Label</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Tudo para criar, atualizar e gerir restaurantes a partir do Master Template — sem entrar no código.
+            Tudo para criar, atualizar e gerir restaurantes a partir do Master Template, sem entrar no código.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -422,7 +422,7 @@ export default function WhiteLabelCentralPage() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Database className="h-3.5 w-3.5" /> Banco
             </div>
-            <p className="text-xl font-bold mt-1">{status?.dbVersion ? `v${status.dbVersion}` : "—"}</p>
+            <p className="text-xl font-bold mt-1">{status?.dbVersion ? `v${status.dbVersion}` : ", "}</p>
             <p className="text-[10px] text-muted-foreground">
               {status?.dbAppliedAt ? new Date(status.dbAppliedAt).toLocaleDateString("pt-PT") : "sem registro"}
             </p>
@@ -469,7 +469,7 @@ export default function WhiteLabelCentralPage() {
 
           <StepCard n={1} title="Remixar o projeto Master">
             <p>Clique em <b>Remix</b> no projeto Master Template. O Remix copia código, telas, componentes, edge functions, Android e migrations.</p>
-            <p className="text-xs text-muted-foreground">⚠️ O Remix NÃO copia dados do banco — por isso o passo 3 é obrigatório.</p>
+            <p className="text-xs text-muted-foreground">⚠️ O Remix NÃO copia dados do banco, por isso o passo 3 é obrigatório.</p>
           </StepCard>
 
           <StepCard n={2} title="Abrir o Editor SQL da Nuvem">
@@ -648,12 +648,12 @@ export default function WhiteLabelCentralPage() {
         {/* PROMPTS */}
         <TabsContent value="prompts" className="space-y-3 mt-4">
           {[
-            { title: "Prompt — novo projeto remixado", text: PROMPT_NEW_PROJECT, icon: Rocket },
-            { title: "Prompt — atualizar restaurante clonado", text: PROMPT_UPDATE_PROJECT, icon: RefreshCw },
-            { title: "Prompt — validar paridade com Master", text: PROMPT_VALIDATE, icon: ListChecks },
-            { title: "Checklist — novo restaurante", text: NEW_RESTAURANT_CHECKLIST, icon: ClipboardList },
-            { title: "Guia — propagação de updates", text: docUpdateGuide, icon: GitBranch },
-            { title: "Checklist — atualização de restaurante", text: docRestaurantUpdate, icon: ListChecks },
+            { title: "Prompt, novo projeto remixado", text: PROMPT_NEW_PROJECT, icon: Rocket },
+            { title: "Prompt, atualizar restaurante clonado", text: PROMPT_UPDATE_PROJECT, icon: RefreshCw },
+            { title: "Prompt, validar paridade com Master", text: PROMPT_VALIDATE, icon: ListChecks },
+            { title: "Checklist, novo restaurante", text: NEW_RESTAURANT_CHECKLIST, icon: ClipboardList },
+            { title: "Guia, propagação de updates", text: docUpdateGuide, icon: GitBranch },
+            { title: "Checklist, atualização de restaurante", text: docRestaurantUpdate, icon: ListChecks },
           ].map((p) => {
             const Icon = p.icon;
             return (

@@ -21,7 +21,7 @@ type Props = {
   screen: TenantPreviewScreen;
   productId?: string | null;
   seedCheckout?: boolean;
-  /** Rascunho não guardado — actualiza a prévia em tempo real via postMessage. */
+  /** Rascunho não guardado, actualiza a prévia em tempo real via postMessage. */
   draftSettings?: Partial<CompanySettings> | null;
   className?: string;
 };

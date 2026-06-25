@@ -7,7 +7,7 @@ type State = { error: Error | null };
  * Barreira final do cliente.
  * Qualquer crash em provider, hook ou módulo importado pela área pública
  * (cardápio, carrinho, checkout) é apanhado aqui e mostra um fallback
- * minimalista — em vez de tela branca que mata as vendas.
+ * minimalista, em vez de tela branca que mata as vendas.
  *
  * Deve envolver TUDO o que está dentro do "/" cliente, INCLUSIVE providers
  * partilhados com áreas internas. Isolamento defensivo: erro interno nunca

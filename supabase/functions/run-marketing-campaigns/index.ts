@@ -8,6 +8,7 @@ import {
   pickI18n,
   pickLocalized,
   resolveLocaleFromMode,
+  sanitizeNotificationText,
   type MessageLocale,
 } from "../_shared/campaignTemplateEngine.ts";
 import {
@@ -24,6 +25,17 @@ const corsHeaders = {
 };
 
 const MARKETING_PHONE_TAG = "__marketing__";
+
+function isLifecyclePlaceholderMessage(body: string): boolean {
+  const b = body.toLowerCase();
+  return (
+    b.includes("mensagens variadas") ||
+    b.includes("mensajes variados") ||
+    b.includes("varied welcome") ||
+    b.includes("mantener el vínculo") ||
+    b.includes("manter a ligação")
+  );
+}
 const STAFF_PHONE_TAG = "__staff__";
 const STAMPS_NEEDED = 10;
 
@@ -476,7 +488,15 @@ async function processLifecycleCampaign(
       stampsRemaining: 2,
       menuUrl: campaign.push_url ?? "/",
     });
-    const { title, body } = buildLifecycleMessage(lifecycleStage, day, slot, locale, vars);
+    let { title, body } = buildLifecycleMessage(lifecycleStage, day, slot, locale, vars);
+    const custom = pickLocalized(campaign as unknown as Record<string, unknown>, locale);
+    const extra = custom.body?.trim();
+    if (extra && !isLifecyclePlaceholderMessage(extra)) {
+      body = sanitizeNotificationText(`${body} ${applyTemplate(extra, vars)}`);
+    } else {
+      body = sanitizeNotificationText(body);
+    }
+    title = sanitizeNotificationText(title);
 
     if (dryRun) {
       sent++;
@@ -581,8 +601,8 @@ async function processCampaign(
       stampsRemaining,
       menuUrl: campaign.push_url ?? "/",
     });
-    const title = applyTemplate(rawTitle, vars);
-    const body = applyTemplate(rawBody, vars);
+    const title = sanitizeNotificationText(applyTemplate(rawTitle, vars));
+    const body = sanitizeNotificationText(applyTemplate(rawBody, vars));
     const pushUrl = campaign.push_url ?? "/";
 
     if (dryRun) {

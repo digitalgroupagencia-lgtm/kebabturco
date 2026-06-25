@@ -62,8 +62,8 @@ export function explainStaffPinPaymentError(raw: string, lang: UiLang = "es"): s
     return lang === "pt"
       ? "Sem permissão nesta loja. Entre com Google ou email aprovados em Equipa (acesso de teste pendente não serve)."
       : lang === "en"
-        ? "No permission for this store. Sign in with Google or email approved in Team — pending test access is not enough."
-        : "Sin permiso en esta tienda. Entre con Google o correo aprobado en Equipo — el acceso de prueba pendiente no vale.";
+        ? "No permission for this store. Sign in with Google or email approved in Team, pending test access is not enough."
+        : "Sin permiso en esta tienda. Entre con Google o correo aprobado en Equipo, el acceso de prueba pendiente no vale.";
   }
   if (msg.includes("autenticação") || msg.includes("autenticacao")) {
     return lang === "pt"
