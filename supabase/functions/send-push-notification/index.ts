@@ -246,7 +246,7 @@ async function getApnsJwt(config: ApnsConfig): Promise<string> {
 
 async function sendApns(
   deviceToken: string,
-  payload: { title: string; body: string; tag?: string; url?: string },
+  payload: { title: string; body: string; tag?: string; url?: string; sound?: string },
   config: ApnsConfig,
   opts?: { tryBothHosts?: boolean },
 ): Promise<{ host: string }> {
@@ -256,10 +256,13 @@ async function sendApns(
   }
 
   const jwt = await getApnsJwt(config);
+  const apnsSound =
+    payload.sound ??
+    (payload.tag?.startsWith("staff-new-order-") ? "staff_order_alert.caf" : "default");
   const body = JSON.stringify({
     aps: {
       alert: { title: payload.title, body: payload.body },
-      sound: "default",
+      sound: apnsSound,
       "interruption-level": "time-sensitive",
     },
     url: payload.url ?? "/",
