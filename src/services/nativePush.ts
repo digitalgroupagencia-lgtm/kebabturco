@@ -4,6 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { ApnsTokenBridge } from "@/lib/apnsTokenBridge";
+import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { pushLog, type PushLogContext } from "@/lib/push/pushLogger";
 
 const STORAGE_KEY = "native-push-token";
@@ -251,6 +252,7 @@ async function persistTokenToBackend(
     _platform: platform,
     _customer_phone: customerPhone,
     _order_id: opts?.orderId ?? null,
+    _device_locale: getDeviceLocaleTag(),
   });
   if (error) {
     lastSupabaseSaveOk = false;

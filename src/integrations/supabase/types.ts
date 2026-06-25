@@ -2158,6 +2158,7 @@ export type Database = {
           auth: string | null
           created_at: string
           customer_phone: string | null
+          device_locale: string | null
           endpoint: string
           fcm_token: string | null
           id: string
@@ -2170,6 +2171,7 @@ export type Database = {
           auth?: string | null
           created_at?: string
           customer_phone?: string | null
+          device_locale?: string | null
           endpoint: string
           fcm_token?: string | null
           id?: string
@@ -2182,6 +2184,7 @@ export type Database = {
           auth?: string | null
           created_at?: string
           customer_phone?: string | null
+          device_locale?: string | null
           endpoint?: string
           fcm_token?: string | null
           id?: string
@@ -4096,6 +4099,7 @@ export type Database = {
       register_native_push_subscription: {
         Args: {
           _customer_phone?: string
+          _device_locale?: string
           _fcm_token: string
           _order_id?: string | null
           _platform?: string
@@ -4107,6 +4111,7 @@ export type Database = {
         Args: {
           _auth?: string
           _customer_phone?: string
+          _device_locale?: string
           _endpoint?: string
           _order_id?: string
           _p256dh?: string
