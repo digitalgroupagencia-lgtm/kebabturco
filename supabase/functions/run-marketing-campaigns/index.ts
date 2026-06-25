@@ -17,6 +17,7 @@ const corsHeaders = {
 };
 
 const MARKETING_PHONE_TAG = "__marketing__";
+const STAFF_PHONE_TAG = "__staff__";
 const STAMPS_NEEDED = 10;
 
 type CampaignRow = {
@@ -113,8 +114,29 @@ async function loadStoreContext(
     tenant_id: store.tenant_id,
     timezone: ops?.schedule_timezone ?? "Europe/Madrid",
     weekly_schedule: ops?.weekly_schedule,
-    antiSpamMax: mkt?.anti_spam_max_pushes ?? 2,
-    antiSpamDays: mkt?.anti_spam_window_days ?? 30,
+    antiSpamMax: mkt?.anti_spam_max_pushes ?? 0,
+    antiSpamDays: mkt?.anti_spam_window_days ?? 1,
+  };
+}
+
+async function loadStoreContextForTest(
+  supabase: ReturnType<typeof createClient>,
+  storeId: string,
+): Promise<Omit<StoreContext, "antiSpamMax" | "antiSpamDays"> | null> {
+  const { data: store } = await supabase.from("stores").select("name, tenant_id").eq("id", storeId).maybeSingle();
+  if (!store) return null;
+
+  const { data: ops } = await supabase
+    .from("operations_settings")
+    .select("weekly_schedule, schedule_timezone")
+    .eq("store_id", storeId)
+    .maybeSingle();
+
+  return {
+    name: store.name,
+    tenant_id: store.tenant_id,
+    timezone: ops?.schedule_timezone ?? "Europe/Madrid",
+    weekly_schedule: ops?.weekly_schedule,
   };
 }
 
@@ -125,10 +147,11 @@ async function passesAntiSpam(
   max: number,
   days: number,
 ): Promise<boolean> {
+  if (max <= 0) return true;
   const { data } = await supabase.rpc("marketing_push_count_recent", {
     _store_id: storeId,
     _customer_phone: phone,
-    _window_days: days,
+    _window_days: Math.max(days, 1),
   });
   return (data as number) < max;
 }
@@ -473,6 +496,113 @@ async function processCampaign(
   return { sent, skipped, failed, results };
 }
 
+async function renderCampaignPreview(
+  supabase: ReturnType<typeof createClient>,
+  campaign: CampaignRow,
+  ctx: Omit<StoreContext, "antiSpamMax" | "antiSpamDays">,
+  previewLocale: MessageLocale = "es",
+) {
+  const featured = await resolveFeaturedProduct(supabase, campaign.store_id, campaign.linked_product_id, previewLocale);
+  const coupon = await resolveCoupon(supabase, campaign.store_id, campaign.linked_coupon_id, campaign.audience_config);
+  const locale = resolveLocaleFromMode(campaign.language_mode, previewLocale);
+  const { title: rawTitle, body: rawBody } = pickLocalized(campaign as unknown as Record<string, unknown>, locale);
+  const vars = buildVars({
+    storeName: ctx.name,
+    customerName: "Maria",
+    scheduleRaw: ctx.weekly_schedule,
+    timezone: ctx.timezone,
+    productName: featured.name,
+    productPrice: featured.price,
+    categoryName: featured.category,
+    couponCode: coupon.code,
+    couponDiscount: coupon.discount,
+    stampsRemaining: 2,
+    menuUrl: campaign.push_url ?? "/",
+  });
+  return {
+    title: applyTemplate(rawTitle, vars),
+    body: applyTemplate(rawBody, vars),
+    locale,
+    pushUrl: campaign.push_url ?? "/",
+  };
+}
+
+async function testSendCampaignToTeam(
+  supabase: ReturnType<typeof createClient>,
+  campaignId: string,
+  storeId: string,
+  previewLocale?: MessageLocale,
+) {
+  const { data: campaign } = await supabase
+    .from("marketing_campaigns")
+    .select("*")
+    .eq("id", campaignId)
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (!campaign) {
+    return { ok: false, error: "Campanha não encontrada" };
+  }
+
+  const ctx = await loadStoreContextForTest(supabase, storeId);
+  if (!ctx) {
+    return { ok: false, error: "Loja não encontrada" };
+  }
+
+  const { title, body, locale, pushUrl } = await renderCampaignPreview(
+    supabase,
+    campaign as CampaignRow,
+    ctx,
+    previewLocale ?? "es",
+  );
+
+  const { data: subs } = await supabase
+    .from("push_subscriptions")
+    .select("id, customer_phone, order_id")
+    .eq("store_id", storeId);
+  const hasStaffDevice = (subs ?? []).some(
+    (row) => !row.order_id && (row.customer_phone == null || row.customer_phone === "" || row.customer_phone === STAFF_PHONE_TAG),
+  );
+  if (!hasStaffDevice) {
+    return {
+      ok: false,
+      error: "Nenhum telemóvel da equipa com notificações activas. Abra a app no painel e aceite avisos.",
+      title,
+      body,
+      locale,
+    };
+  }
+
+  const { data, error } = await supabase.functions.invoke("send-push-notification", {
+    body: {
+      storeId,
+      title: `[TESTE] ${title}`,
+      body,
+      url: pushUrl,
+      tag: `campaign-test-${campaignId}`,
+    },
+  });
+  if (error) {
+    return { ok: false, error: error.message, title, body, locale };
+  }
+  const payload = data as { sent?: number; error?: string };
+  if (payload.error) {
+    return { ok: false, error: payload.error, title, body, locale };
+  }
+  const sent = payload.sent ?? 0;
+  if (sent > 0) {
+    await supabase.from("campaign_send_log").insert({
+      store_id: storeId,
+      campaign_id: campaignId,
+      customer_phone: STAFF_PHONE_TAG,
+      status: "test_team",
+      resolved_title: title,
+      resolved_body: body,
+      message_locale: locale,
+    });
+  }
+  return { ok: sent > 0, sent, title, body, locale };
+}
+
 async function processScheduledRuns(supabase: ReturnType<typeof createClient>) {
   const { data: runs } = await supabase
     .from("scheduled_campaign_runs")
@@ -515,11 +645,28 @@ Deno.serve(async (req) => {
     const campaignIdFilter = body.campaignId as string | undefined;
     const dryRun = Boolean(body.dryRun ?? body.simulate);
     const cronRun = Boolean(body.cron);
+    const testSendTeam = Boolean(body.testSendTeam);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    if (testSendTeam) {
+      if (!storeIdFilter || !campaignIdFilter) {
+        return new Response(JSON.stringify({ error: "storeId e campaignId obrigatórios para teste" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const previewLocale = typeof body.previewLocale === "string"
+        ? normalizeLocale(body.previewLocale)
+        : undefined;
+      const out = await testSendCampaignToTeam(supabase, campaignIdFilter, storeIdFilter, previewLocale);
+      return new Response(JSON.stringify({ ok: out.ok, testSendTeam: true, ...out }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (cronRun) {
       await processScheduledRuns(supabase);

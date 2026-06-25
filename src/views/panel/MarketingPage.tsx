@@ -39,11 +39,13 @@ import {
   fetchMarketingCampaigns,
   fetchTenantMarketingSettings,
   installMarketingPresets,
+  sendCampaignTestToTeam,
   toggleMarketingCampaign,
   type MarketingCampaignRow,
   type CampaignSendLogEntry,
 } from "@/lib/marketing/marketingService";
 import { sendMarketingBroadcast } from "@/lib/diagnostics/campaignPushService";
+import { sendBroadcastTestPushNotification } from "@/lib/push/pushTestService";
 import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
 import MarketingSuggestionCard from "@/components/marketing/MarketingSuggestionCard";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
@@ -89,6 +91,8 @@ const MarketingPage = () => {
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastBody, setBroadcastBody] = useState("");
   const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastTestSending, setBroadcastTestSending] = useState(false);
+  const [campaignTestId, setCampaignTestId] = useState<string | null>(null);
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "sent" | "failed" | "skipped">("all");
 
@@ -279,6 +283,46 @@ const MarketingPage = () => {
     }
   };
 
+  const handleBroadcastTestTeam = async () => {
+    if (!storeId) return;
+    setBroadcastTestSending(true);
+    try {
+      const res = await sendBroadcastTestPushNotification({
+        storeId,
+        audience: "staff",
+        title: `[TESTE] ${previewTitle}`,
+        body: previewBody,
+      });
+      if (!res.ok) {
+        toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.test_team_error"));
+        return;
+      }
+      toast.success(t("marketing.broadcast.test_team_sent"));
+    } finally {
+      setBroadcastTestSending(false);
+    }
+  };
+
+  const handleCampaignTestTeam = async (campaignId: string) => {
+    if (!storeId) return;
+    setCampaignTestId(campaignId);
+    try {
+      const res = await sendCampaignTestToTeam({
+        storeId,
+        campaignId,
+        previewLocale: uiLang,
+      });
+      if (!res.ok) {
+        toast.error(res.error ?? t("marketing.broadcast.test_team_error"));
+        return;
+      }
+      toast.success(t("marketing.broadcast.test_team_sent"));
+      void load();
+    } finally {
+      setCampaignTestId(null);
+    }
+  };
+
   if (!storeId) {
     return <div className="p-6 text-sm text-muted-foreground">{t("common.no_store")}</div>;
   }
@@ -391,9 +435,7 @@ const MarketingPage = () => {
           </div>
           <div className="rounded-2xl border bg-muted/20 p-4 text-xs text-muted-foreground">
             <p>{t("marketing.home.hint")}</p>
-            <p className="mt-2">
-              {t("marketing.home.antispam", { max: 2, days: 30 })}
-            </p>
+            <p className="mt-2">{t("marketing.home.antispam")}</p>
           </div>
           {history.length > 0 && (
             <div className="space-y-2">
@@ -446,11 +488,13 @@ const MarketingPage = () => {
                 campaign={row}
                 lang={uiLang}
                 toggling={togglingId === row?.id}
+                testingTeam={campaignTestId === row?.id}
                 showWinbackHint={winbackHintKeys.has(preset.key)}
                 couponsHref={nav.admin("coupons")}
                 couponCode={preset.suggestCoupon}
                 couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
                 onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
+                onTestTeam={row ? () => void handleCampaignTestTeam(row.id) : undefined}
               />
             );
           })}
@@ -471,6 +515,14 @@ const MarketingPage = () => {
               >
                 <Send className="mr-2 h-4 w-4" />
                 {broadcastSending ? t("marketing.broadcast.sending") : t("marketing.broadcast.send")}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full text-xs"
+                disabled={broadcastTestSending}
+                onClick={() => void handleBroadcastTestTeam()}
+              >
+                {broadcastTestSending ? t("marketing.broadcast.test_team_sending") : t("marketing.broadcast.test_team")}
               </Button>
             </div>
             <div className="flex flex-col items-center justify-center rounded-2xl border bg-muted/10 p-4">

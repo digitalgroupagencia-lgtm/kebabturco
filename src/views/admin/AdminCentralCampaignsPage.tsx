@@ -123,7 +123,9 @@ function CampaignsTenantPanel({
             { label: "Preparadas", value: String(activeCampaigns), tone: activeCampaigns ? "success" : "muted" },
             {
               label: "Anti-spam",
-              value: `${mktSettings?.anti_spam_max_pushes ?? 2}/${mktSettings?.anti_spam_window_days ?? 30}d`,
+              value: (mktSettings?.anti_spam_max_pushes ?? 0) <= 0
+                ? "Desligado"
+                : `${mktSettings?.anti_spam_max_pushes}/${mktSettings?.anti_spam_window_days ?? 1}d`,
               tone: "muted",
             },
             { label: "Motor", value: mktSettings?.auto_campaigns_enabled === false ? "Pausado" : "Activo", tone: "success" },
@@ -152,8 +154,11 @@ function CampaignsTenantPanel({
           ))}
           <p className="text-[11px] text-muted-foreground">
             Limite: {mktSettings?.max_active_campaigns ?? 10} campanhas activas ·{" "}
-            {mktSettings?.max_sends_per_month ?? 500} envios/mês · máx.{" "}
-            {mktSettings?.anti_spam_max_pushes ?? 2} push por cliente em {mktSettings?.anti_spam_window_days ?? 30} dias.
+            {mktSettings?.max_sends_per_month ?? 500} envios/mês · anti-spam marketing:{" "}
+            {(mktSettings?.anti_spam_max_pushes ?? 0) <= 0
+              ? "desligado (avisos de pedidos nunca bloqueados)"
+              : `máx. ${mktSettings?.anti_spam_max_pushes} push/cliente em ${mktSettings?.anti_spam_window_days ?? 1} dia(s)`}
+            .
           </p>
         </div>
       )}

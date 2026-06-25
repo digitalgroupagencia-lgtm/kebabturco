@@ -157,12 +157,53 @@ export async function runMarketingCampaigns(opts: {
   storeId?: string;
   campaignId?: string;
   dryRun?: boolean;
+  testSendTeam?: boolean;
+  previewLocale?: string;
 }) {
   const { data, error } = await supabase.functions.invoke("run-marketing-campaigns", {
     body: opts,
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true, data };
+}
+
+export async function sendCampaignTestToTeam(opts: {
+  storeId: string;
+  campaignId: string;
+  previewLocale?: string;
+}): Promise<{
+  ok: boolean;
+  sent?: number;
+  title?: string;
+  body?: string;
+  locale?: string;
+  error?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke("run-marketing-campaigns", {
+    body: {
+      storeId: opts.storeId,
+      campaignId: opts.campaignId,
+      testSendTeam: true,
+      previewLocale: opts.previewLocale,
+    },
+  });
+  if (error) return { ok: false, error: error.message };
+  const payload = data as {
+    ok?: boolean;
+    sent?: number;
+    title?: string;
+    body?: string;
+    locale?: string;
+    error?: string;
+  };
+  return {
+    ok: Boolean(payload.ok),
+    sent: payload.sent,
+    title: payload.title,
+    body: payload.body,
+    locale: payload.locale,
+    error: payload.error,
+  };
 }
 
 export function presetCatalogForUi() {

@@ -1,4 +1,4 @@
-import { Clock, Gift, Heart, Megaphone, Sparkles, Store, Users } from "lucide-react";
+import { Clock, Gift, Heart, Megaphone, Smartphone, Sparkles, Store, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -24,7 +24,9 @@ type Props = {
   lang: "pt" | "es" | "en";
   onToggle?: (active: boolean) => void;
   onEdit?: () => void;
+  onTestTeam?: () => void;
   toggling?: boolean;
+  testingTeam?: boolean;
   showWinbackHint?: boolean;
   couponsHref?: string;
   couponCode?: string;
@@ -37,7 +39,9 @@ export default function CampaignPresetCard({
   lang,
   onToggle,
   onEdit,
+  onTestTeam,
   toggling,
+  testingTeam,
   showWinbackHint,
   couponsHref,
   couponCode,
@@ -127,6 +131,18 @@ export default function CampaignPresetCard({
           {onEdit && (
             <Button variant="outline" size="sm" className="h-8 w-full text-xs" onClick={onEdit}>
               Editar mensagem
+            </Button>
+          )}
+          {onTestTeam && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-full text-xs"
+              disabled={testingTeam}
+              onClick={onTestTeam}
+            >
+              <Smartphone className="mr-1 h-3.5 w-3.5" />
+              {testingTeam ? "A enviar…" : "Testar na equipa"}
             </Button>
           )}
         </div>
