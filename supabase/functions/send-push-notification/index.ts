@@ -368,11 +368,41 @@ async function authorizeStaffBroadcast(
   return false;
 }
 
-function buildHealthPayload() {
+async function buildHealthPayload() {
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
   const fcm = getFcmServiceAccount();
   const apns = getApnsConfig();
+  const staffSecret = (Deno.env.get("STAFF_PUSH_INTERNAL_SECRET") ?? "").trim();
+  let staffSecretMatchesDb: boolean | null = null;
+  let iosStaffDevices: number | null = null;
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && serviceKey) {
+      const service = createClient(supabaseUrl, serviceKey);
+      const { data: cfg } = await service
+        .from("platform_push_config")
+        .select("staff_push_secret")
+        .eq("id", 1)
+        .maybeSingle();
+      const dbSecret = String(cfg?.staff_push_secret ?? "").trim();
+      staffSecretMatchesDb = Boolean(staffSecret) && staffSecret === dbSecret;
+
+      const { count } = await service
+        .from("push_subscriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("platform", "ios")
+        .eq("customer_phone", STAFF_PHONE_TAG);
+      iosStaffDevices = count ?? 0;
+    }
+  } catch (e) {
+    console.warn("[send-push-notification] health db checks skipped", {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+
   return {
     ok: true,
     service: "send-push-notification",
@@ -398,11 +428,14 @@ function buildHealthPayload() {
         ? "api.push.apple.com"
         : "api.sandbox.push.apple.com"
       : null,
+    staffSecretConfigured: Boolean(staffSecret),
+    staffSecretMatchesDb,
+    iosStaffDevices,
   };
 }
 
-function healthProbeResponse() {
-  return new Response(JSON.stringify(buildHealthPayload()), {
+async function healthProbeResponse() {
+  return new Response(JSON.stringify(await buildHealthPayload()), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
@@ -432,12 +465,12 @@ function selectAudienceRows(
 // =============================================================
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method === "GET") return healthProbeResponse();
+  if (req.method === "GET") return await healthProbeResponse();
 
   try {
     const body = await req.json().catch(() => ({}));
     if (body?.probe === true || body?.ping === true || body?.health === true) {
-      return healthProbeResponse();
+      return await healthProbeResponse();
     }
 
     const {
