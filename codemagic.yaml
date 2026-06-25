@@ -21,7 +21,7 @@ workflows:
         BUNDLE_ID: net.kebabturco.app
         DEVELOPMENT_TEAM: 4QW32SBR7H
       node: 22
-      xcode: 16.4
+      xcode: latest
 
     scripts:
       - name: Instalar dependências
@@ -156,7 +156,7 @@ workflows:
         BUNDLE_ID: net.kebabturco.app
         DEVELOPMENT_TEAM: 4QW32SBR7H
       node: 22
-      xcode: 16.2
+      xcode: latest
 
     triggering:
       events:
@@ -166,17 +166,15 @@ workflows:
           include: true
 
     scripts:
-      - name: Confirmar Xcode 16 ou superior
+      - name: Confirmar Xcode 26 (obrigatório para Capacitor 8)
         script: |
           set -euo pipefail
-          echo "=== Versões disponíveis ==="
-          ls /Applications | grep -i Xcode || true
           xcodebuild -version
           SDK=$(xcrun --sdk iphoneos --show-sdk-version)
-          echo "SDK iOS activo: $SDK"
-          SDK_MAJOR="${SDK%%.*}"
-          if [ "${SDK_MAJOR:-0}" -lt 16 ]; then
-            echo "ERRO: SDK iOS $SDK é demasiado antigo. A Apple exige SDK 16+."
+          echo "SDK iOS: $SDK"
+          XCODE_MAJOR=$(xcodebuild -version | head -1 | grep -oE '[0-9]+' | head -1)
+          if [ "${XCODE_MAJOR:-0}" -lt 26 ]; then
+            echo "ERRO: Capacitor 8 exige Xcode 26. Neste yaml use xcode: latest"
             exit 1
           fi
 
