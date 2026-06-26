@@ -655,6 +655,9 @@ const translations: Translations = {
   enterPhone: { pt: "Indique seu telefone", en: "Enter your phone", es: "Indica tu teléfono", fr: "Entrez votre téléphone" },
   // Finalize modal
   finalizeOrder: { pt: "Finalizar pedido", en: "Finalize order", es: "Finalizar pedido", fr: "Finaliser la commande" },
+  couponLabel: { pt: "Cupão", en: "Coupon", es: "Cupón", fr: "Code promo" },
+  couponApply: { pt: "Aplicar", en: "Apply", es: "Aplicar", fr: "Appliquer" },
+  couponApplied: { pt: "desconto aplicado", en: "discount applied", es: "descuento aplicado", fr: "réduction appliquée" },
   send: { pt: "Enviar", en: "Send", es: "Enviar", fr: "Envoyer" },
   finalizeHint: {
     pt: "Informe os dados para concluir o pedido.",

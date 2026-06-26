@@ -290,13 +290,13 @@ export default function ProductCustomizationFlow({
   );
   const unitPrice = computeUnitPrice(basePrice, 0, allSelections) + soloCarne.surcharge;
 
-  const validateCurrentStep = (): boolean => {
+  const checkCurrentStep = (): { valid: boolean; message?: string } => {
     if (
       currentWizardStep?.kind === "intro" ||
       currentWizardStep?.kind === "note" ||
       currentWizardStep?.kind === "summary"
     ) {
-      return true;
+      return { valid: true };
     }
 
     const groups = activeGroups;
@@ -312,29 +312,57 @@ export default function ProductCustomizationFlow({
             : result.error === "required_removal"
               ? t("errRequiredRemoval")
               : t("errVerifyChoices");
-      toast.error(msg);
-      return false;
+      return { valid: false, message: msg };
     }
-    return true;
+    return { valid: true };
   };
 
-  const validateAll = (): boolean => {
+  const checkAllSteps = (): { valid: boolean; message?: string } => {
     if (!validateAllGroups(globalGroups, globalState).valid) {
-      toast.error(isMultiUnit ? t("errRequiredCombo") : t("errRequiredProduct"));
-      setComboStep(useStepWizard ? 1 : 0);
-      return false;
+      return { valid: false, message: isMultiUnit ? t("errRequiredCombo") : t("errRequiredProduct") };
     }
     if (isMultiUnit) {
       for (let i = 0; i < effectiveConfig.comboUnitCount; i++) {
         if (!validateAllGroups(unitGroups, unitStates[i] || new Map(), i).valid) {
-          toast.error(`${t("errRequiredUnit")} ${i + 1}`);
-          const unitStepIndex = wizardSteps.findIndex(
-            (s) => s.kind === "unit" && s.unitIndex === i,
-          );
-          if (unitStepIndex >= 0) setComboStep(unitStepIndex);
-          return false;
+          return { valid: false, message: `${t("errRequiredUnit")} ${i + 1}` };
         }
       }
+    }
+    return { valid: true };
+  };
+
+  const proceedBlock = useMemo(() => {
+    if (useStepWizard && !isLastStep) {
+      const step = checkCurrentStep();
+      return step.valid ? null : step.message ?? t("errRequiredChoice");
+    }
+    const all = checkAllSteps();
+    return all.valid ? null : all.message ?? t("errRequiredProduct");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revalida ao mudar escolhas
+  }, [useStepWizard, isLastStep, comboStep, globalState, unitStates, activeState, currentWizardStep]);
+
+  const validateCurrentStep = (): boolean => {
+    const step = checkCurrentStep();
+    return step.valid;
+  };
+
+  const validateAll = (): boolean => {
+    const all = checkAllSteps();
+    if (!all.valid) {
+      if (!validateAllGroups(globalGroups, globalState).valid) {
+        setComboStep(useStepWizard ? 1 : 0);
+      } else if (isMultiUnit) {
+        for (let i = 0; i < effectiveConfig.comboUnitCount; i++) {
+          if (!validateAllGroups(unitGroups, unitStates[i] || new Map(), i).valid) {
+            const unitStepIndex = wizardSteps.findIndex(
+              (s) => s.kind === "unit" && s.unitIndex === i,
+            );
+            if (unitStepIndex >= 0) setComboStep(unitStepIndex);
+            break;
+          }
+        }
+      }
+      return false;
     }
     return true;
   };
@@ -603,19 +631,28 @@ export default function ProductCustomizationFlow({
           )}
           <button
             type="button"
+            disabled={Boolean(proceedBlock)}
             onClick={handleAdd}
-            className="flex h-14 flex-1 items-center justify-between gap-3 rounded-[18px] bg-gradient-primary px-5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
+            className={`flex h-14 flex-1 items-center justify-between gap-3 rounded-[18px] px-5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98] ${
+              proceedBlock
+                ? "cursor-not-allowed bg-muted text-muted-foreground opacity-100"
+                : "bg-gradient-primary"
+            }`}
           >
-            <span className="text-[13px] font-black uppercase tracking-[0.08em]">
-              {useStepWizard && !isLastStep
-                ? t("continueBtn")
-                : editingItem
-                  ? t("update")
-                  : t("addToCartBtn")}
+            <span className="text-[13px] font-black uppercase tracking-[0.08em] line-clamp-2 text-left">
+              {proceedBlock
+                ? proceedBlock
+                : useStepWizard && !isLastStep
+                  ? t("continueBtn")
+                  : editingItem
+                    ? t("update")
+                    : t("addToCartBtn")}
             </span>
-            <span className="text-lg font-black tabular-nums">
-              {(unitPrice * quantity).toFixed(2)}€
-            </span>
+            {!proceedBlock && (
+              <span className="text-lg font-black tabular-nums shrink-0">
+                {(unitPrice * quantity).toFixed(2)}€
+              </span>
+            )}
           </button>
         </div>
         {!useStepWizard || isLastStep ? (

@@ -368,12 +368,12 @@ const PaymentScreen = () => {
 
   useEffect(() => {
     if (!storeId || !stripeEnabled || !stripePublishableKey) return;
-    if (!isTableOrder && checkoutStep !== "payment") return;
+    if (isTableOrder) return;
+    if (checkoutStep !== "details" && checkoutStep !== "payment") return;
     if (stripeClientSecret || stripeCheckoutPreparing || processing || recoveringCheckout) return;
 
     const method: "card" | "bizum" | null =
-      selected === "bizum" ? "bizum" : selected === "card" ? "card" : null;
-    if (!method) return;
+      selected === "bizum" ? "bizum" : "card";
 
     const key = buildStripePrefetchKey(method);
     if (stripePrefetchRef.current?.key === key) return;
@@ -860,6 +860,15 @@ const PaymentScreen = () => {
       setStripeCheckoutPreparing(false);
     }
   };
+
+  useEffect(() => {
+    if (isTableOrder || checkoutStep !== "payment") return;
+    if (!isOnlineCheckoutMethod(selected)) return;
+    if (!stripePublishableKey || !stripeEnabled) return;
+    if (stripeClientSecret || stripeCheckoutPreparing || processing || recoveringCheckout) return;
+    void startStripePayment(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- preparar ao escolher cartão/Bizum
+  }, [checkoutStep, selected, stripePublishableKey, stripeEnabled, stripeClientSecret]);
 
   const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
     setPaymentMethod(stripeCheckoutMethod);
@@ -1483,24 +1492,39 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {/* Cupón oculto, código mantido, será reativado posteriormente */}
-            {hiddenCheckoutFeature("coupon") && !isTableOrder && (
+            {checkoutStep === "details" && !isTableOrder && (
               <div className="mt-3 bg-card rounded-2xl border border-border p-3">
-                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Cupón</p>
+                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">
+                  {t("couponLabel") || "Cupão / Cupón"}
+                </p>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={couponCode}
-                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError(null);
+                    }}
                     placeholder="CÓDIGO"
-                    className="flex-1 h-9 px-3 rounded-lg border border-border font-bold uppercase text-sm"
+                    className="flex-1 h-10 px-3 rounded-xl border border-border font-bold uppercase text-sm"
                   />
-                  <button type="button" onClick={applyCoupon} className="px-3 h-9 rounded-lg bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary">Aplicar</button>
+                  <button
+                    type="button"
+                    onClick={() => void applyCoupon()}
+                    className="px-4 h-10 rounded-xl bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary"
+                  >
+                    {t("couponApply") || "Aplicar"}
+                  </button>
                 </div>
-                {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
+                {couponError && <p className="text-xs text-destructive mt-1.5 font-medium">{couponError}</p>}
+                {couponDiscount > 0 && (
+                  <p className="text-xs text-success mt-1.5 font-bold">
+                    −{couponDiscount.toFixed(2)}€ {t("couponApplied") || "desconto aplicado"}
+                  </p>
+                )}
                 {isDemoVisitCoupon && (
                   <p className="text-xs text-primary mt-2 font-medium">
-                    Modo demonstração: sem pagamento, impressão no Mac de visita, pedido oculto na cozinha.
+                    Modo demonstração: sem pagamento, impressão no Mac de visita.
                   </p>
                 )}
               </div>

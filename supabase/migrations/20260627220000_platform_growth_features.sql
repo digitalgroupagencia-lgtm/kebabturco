@@ -372,4 +372,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
     ON la.store_id = _store_id AND la.phone = trim(_phone);
 $$;
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.order_support_messages;
+DO $do$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'order_support_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.order_support_messages;
+  END IF;
+END $do$;
