@@ -91,3 +91,13 @@ server.listen(PORT, "127.0.0.1", () => {
   console.log(`[visit-helper] POST /start-bridge → npm run visit-print (projeto: ${PROJECT_DIR})`);
   console.log("[visit-helper] Deixe esta janela aberta enquanto faz demonstrações.\n");
 });
+
+server.on("error", (err) => {
+  if (err && typeof err === "object" && "code" in err && err.code === "EADDRINUSE") {
+    console.log(`[visit-helper] Já existe um helper activo na porta ${PORT}.`);
+    console.log("[visit-helper] Feche esta janela e use a que já estava aberta.\n");
+    process.exit(0);
+  }
+  console.error("[visit-helper] Erro:", err);
+  process.exit(1);
+});

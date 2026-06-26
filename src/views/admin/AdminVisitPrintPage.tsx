@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -56,17 +56,37 @@ export default function AdminVisitPrintPage() {
   const [demoOrders, setDemoOrders] = useState<
     { id: string; order_number: string; created_at: string; store_id: string }[]
   >([]);
+  const formHydrated = useRef(false);
 
-  const load = useCallback(async () => {
+  const refreshStatus = useCallback(async () => {
+    try {
+      const [c, local] = await Promise.all([fetchVisitPrintConfig(), probeLocalMacPrint()]);
+      setLocalMac(local);
+      setCfg(c);
+      const { data } = await supabase
+        .from("orders")
+        .select("id, order_number, created_at, store_id")
+        .eq("is_test", true)
+        .ilike("notes", "%DEMO VISITA%")
+        .order("created_at", { ascending: false })
+        .limit(15);
+      setDemoOrders(data ?? []);
+    } catch {
+      /* silencioso no refresh de fundo */
+    }
+  }, []);
+
+  const loadInitial = useCallback(async () => {
     setLoading(true);
     try {
       const [c, local] = await Promise.all([fetchVisitPrintConfig(), probeLocalMacPrint()]);
       setLocalMac(local);
       setCfg(c);
-      if (c) {
+      if (c && !formHydrated.current) {
         setRestaurantName(c.restaurant_display_name || "");
         setIp(c.printer_ip);
         setPort(c.printer_port || 9100);
+        formHydrated.current = true;
       }
       const { data } = await supabase
         .from("orders")
@@ -82,10 +102,10 @@ export default function AdminVisitPrintPage() {
   }, []);
 
   useEffect(() => {
-    void load();
-    const i = setInterval(() => void load(), 8000);
+    void loadInitial();
+    const i = setInterval(() => void refreshStatus(), 12000);
     return () => clearInterval(i);
-  }, [load]);
+  }, [loadInitial, refreshStatus]);
 
   const persistConfig = async () => {
     await saveVisitPrintConfig({
@@ -99,8 +119,9 @@ export default function AdminVisitPrintPage() {
     setSaving(true);
     try {
       await persistConfig();
+      formHydrated.current = true;
       toast({ title: "Guardado", description: "Dados desta visita actualizados." });
-      await load();
+      await refreshStatus();
     } catch (e) {
       toast({ title: "Erro", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -127,7 +148,7 @@ export default function AdminVisitPrintPage() {
         description: "Pode enviar teste ou usar o cupão na app do cliente.",
       });
       await new Promise((r) => setTimeout(r, 1500));
-      await load();
+      await refreshStatus();
     } finally {
       setConnectingMac(false);
     }
@@ -162,12 +183,20 @@ export default function AdminVisitPrintPage() {
       } else {
         throw new Error(res.error);
       }
-      await load();
+      await refreshStatus();
     } catch (e) {
       toast({ title: "Erro", description: (e as Error).message, variant: "destructive" });
     } finally {
       setTesting(false);
     }
+  };
+
+  const clearVisitForm = () => {
+    setRestaurantName("");
+    setIp("");
+    setPort(9100);
+    formHydrated.current = true;
+    toast({ title: "Campos limpos", description: "Preencha o próximo restaurante e guarde." });
   };
 
   const cloudOnline = isVisitBridgeOnline(cfg?.bridge_last_seen_at ?? null);
@@ -303,6 +332,9 @@ export default function AdminVisitPrintPage() {
               )}
               Imprimir teste
             </Button>
+            <Button type="button" variant="outline" onClick={clearVisitForm}>
+              Limpar para próxima visita
+            </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
             Impressão automática da loja oficial <strong>não é necessária</strong> — basta Mac ligado, IP correcto e «Imprimir teste».
@@ -320,7 +352,7 @@ export default function AdminVisitPrintPage() {
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">
             Também pode dar duplo clique em{" "}
-            <code className="text-xs bg-muted px-1 rounded">scripts/Visit-Print-Helper.command</code> no Finder.
+            <code className="text-xs bg-muted px-1 rounded">Demo Visita - Ligar Mac</code> na Mesa do Mac.
           </p>
           <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{VISIT_BRIDGE_INSTALL}</pre>
           <Button type="button" variant="outline" size="sm" onClick={() => copyText(VISIT_BRIDGE_INSTALL)}>
