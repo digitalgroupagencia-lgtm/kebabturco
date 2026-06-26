@@ -217,6 +217,7 @@ export default function AdminVisitPrintPage() {
       : { icon: WifiOff, className: "text-muted-foreground", label: "Helper offline no Mac" };
 
   const StatusIcon = connectionStatus.icon;
+  const ownerUserId = cfg?.user_id ?? user?.id ?? "";
 
   if (roleLoading || loading) {
     return <div className="p-8 text-muted-foreground">A carregar…</div>;
@@ -292,9 +293,23 @@ export default function AdminVisitPrintPage() {
             Não precisa da chave secreta do Supabase — só da chave pública do site, um código que você
             cria (e põe igual no Lovable → Secrets → VISIT_BRIDGE_TOKEN) e o ID abaixo.
           </p>
-          <p className="text-xs text-muted-foreground font-mono break-all">
-            ID: {cfg?.user_id ?? user?.id ?? "—"}
-          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <p className="text-xs text-muted-foreground shrink-0">O seu ID (para o setup no Mac):</p>
+            <code className="text-xs font-mono bg-muted px-2 py-1.5 rounded break-all select-text flex-1 min-w-0">
+              {ownerUserId || "—"}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              disabled={!ownerUserId}
+              onClick={() => copyText(ownerUserId)}
+            >
+              <Copy className="h-3.5 w-3.5 mr-1.5" />
+              Copiar ID
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
