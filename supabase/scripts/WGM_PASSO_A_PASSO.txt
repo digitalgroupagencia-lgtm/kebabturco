@@ -13,10 +13,15 @@ PASSO 2 — Lovable do Kebab → Secrets
    WGM_INBOUND_WEBHOOK_SECRET = (valor do passo 1)
    Publish no Lovable (Kebab)
 
-PASSO 3 — Supabase do Kebab
+PASSO 3 — Supabase do KEBAB (não do PDV)
    a) Se ainda não correu: APLICAR_WGM_INTEGRACAO.sql (só uma vez)
-   b) Edite KEBAB_ATIVAR_PONTE_WGM.sql — cole os 2 IDs das lojas do passo 1
-   c) Corra KEBAB_ATIVAR_PONTE_WGM.sql
+   b) Corra KEBAB_ATIVAR_PONTE_WGM.sql — activa a ponte (não dá erro)
+   c) Descomente as 2 linhas UPDATE no mesmo script e cole os IDs do passo 1
+   d) Corra só essas 2 linhas UPDATE (ou o script inteiro outra vez)
+
+IMPORTANTE:
+   • WGM_PDV_KEBAB_COMPLETO.sql → só no PDV (Flow Operations)
+   • KEBAB_ATIVAR_PONTE_WGM.sql → só no Kebab (SnapOrder)
 
 PASSO 4 — Admin do Kebab (opcional se o SQL já ligou)
    Menu → Ponte PDV WGM → activar
