@@ -68,7 +68,15 @@ DECLARE
   v_webhook_secret text;
   v_inbound_url text := 'https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/wgm-inbound-webhook';
 BEGIN
-  SELECT id INTO v_company_id FROM public.companies ORDER BY created_at LIMIT 1;
+  SELECT id INTO v_company_id
+  FROM public.companies
+  WHERE slug = 'kebab-turco'
+  ORDER BY created_at
+  LIMIT 1;
+
+  IF v_company_id IS NULL THEN
+    SELECT id INTO v_company_id FROM public.companies ORDER BY created_at LIMIT 1;
+  END IF;
   IF v_company_id IS NULL THEN
     RAISE EXCEPTION 'Nenhuma empresa encontrada no WGM';
   END IF;
