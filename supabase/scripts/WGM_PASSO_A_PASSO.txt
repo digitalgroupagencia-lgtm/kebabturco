@@ -1,0 +1,31 @@
+LIGAÇÃO KEBAB ↔ PDV WGM — ORDEM DOS PASSOS
+==========================================
+
+PASSO 1 — Supabase do PDV (Flow Operations / WGM)
+   Script: WGM_PDV_KEBAB_COMPLETO.sql
+   • Troca demo por Kebab Turco
+   • Cria chaves de ligação
+   • Mostra tabela com IDs das lojas Gandia e Playa
+   • GUARDE: WGM_INTEGRATION_API_KEY e WGM_INBOUND_WEBHOOK_SECRET (aparecem em NOTICE)
+
+PASSO 2 — Lovable do Kebab → Secrets
+   WGM_INTEGRATION_API_KEY = (valor do passo 1)
+   WGM_INBOUND_WEBHOOK_SECRET = (valor do passo 1)
+   Publish no Lovable (Kebab)
+
+PASSO 3 — Supabase do Kebab
+   a) Se ainda não correu: APLICAR_WGM_INTEGRACAO.sql (só uma vez)
+   b) Edite KEBAB_ATIVAR_PONTE_WGM.sql — cole os 2 IDs das lojas do passo 1
+   c) Corra KEBAB_ATIVAR_PONTE_WGM.sql
+
+PASSO 4 — Admin do Kebab (opcional se o SQL já ligou)
+   Menu → Ponte PDV WGM → activar
+   Unidades → confirmar ID de cada loja
+
+PASSO 5 — Teste
+   Faça um pedido de teste pago na app
+   No PDV: Pedidos & Vendas → deve aparecer com origem app
+
+Scripts antigos (substituídos pelo completo no PDV):
+   WGM_SETUP_NEXUSOPS.sql + WGM_TROCAR_DEMO_POR_KEBAB.sql
+   → use só WGM_PDV_KEBAB_COMPLETO.sql no PDV
