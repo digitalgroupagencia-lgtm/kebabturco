@@ -4099,6 +4099,97 @@ export type Database = {
           },
         ]
       }
+      wgm_integration_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: number
+          marketplace_webhook_url: string
+          notes: string | null
+          public_api_url: string
+          tenant_slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: number
+          marketplace_webhook_url?: string
+          notes?: string | null
+          public_api_url?: string
+          tenant_slug?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: number
+          marketplace_webhook_url?: string
+          notes?: string | null
+          public_api_url?: string
+          tenant_slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wgm_order_refs: {
+        Row: {
+          created_at: string
+          last_error: string | null
+          last_status_synced: string | null
+          order_id: string
+          store_id: string | null
+          synced_at: string | null
+          updated_at: string
+          wgm_order_id: string | null
+          wgm_order_numero: number | null
+        }
+        Insert: {
+          created_at?: string
+          last_error?: string | null
+          last_status_synced?: string | null
+          order_id: string
+          store_id?: string | null
+          synced_at?: string | null
+          updated_at?: string
+          wgm_order_id?: string | null
+          wgm_order_numero?: number | null
+        }
+        Update: {
+          created_at?: string
+          last_error?: string | null
+          last_status_synced?: string | null
+          order_id?: string
+          store_id?: string | null
+          synced_at?: string | null
+          updated_at?: string
+          wgm_order_id?: string | null
+          wgm_order_numero?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wgm_order_refs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wgm_order_refs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wgm_order_refs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       customer_first_orders: {
@@ -4433,6 +4524,10 @@ export type Database = {
         Args: { _order_id: string; _order_number: string; _store_id: string }
         Returns: undefined
       }
+      dispatch_wgm_sync: {
+        Args: { _event_type?: string; _order_id: string }
+        Returns: undefined
+      }
       duplicate_tenant: {
         Args: {
           _copy_banners?: boolean
@@ -4457,6 +4552,10 @@ export type Database = {
       enqueue_visit_demo_print: {
         Args: { _order_id?: string; _store_id?: string; _ticket_data: string }
         Returns: string
+      }
+      enqueue_wgm_order_sync: {
+        Args: { _event_type?: string; _order_id: string; _store_id: string }
+        Returns: undefined
       }
       finalize_demo_visit_order: { Args: { _order_id: string }; Returns: Json }
       get_admin_dashboard_stats: {
@@ -5129,6 +5228,15 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }[]
+      }
+      wgm_apply_inbound_status: {
+        Args: {
+          _external_id: string
+          _status: string
+          _wgm_order_id?: string
+          _wgm_order_numero?: number
+        }
+        Returns: Json
       }
     }
     Enums: {
