@@ -1,3 +1,10 @@
+-- =============================================================================
+-- KEBAB TURCO — Funcionalidades novas (chat, GPS, pontos, estatísticas)
+-- Copie TUDO deste ficheiro e cole no SQL Editor do Supabase / Lovable Cloud.
+-- Corra UMA vez. No fim deve aparecer "Success" (sem erro vermelho).
+-- NÃO corra só o pedaço do chat — precisa do script completo.
+-- =============================================================================
+
 -- GPS motoboy, chat de apoio, analytics, fidelização pontos+VIP
 
 -- ─── Localização do entregador ─────────────────────────────────────────────
