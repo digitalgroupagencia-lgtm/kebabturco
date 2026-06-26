@@ -46,6 +46,6 @@ fi
 
 echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
-echo "  · Package SPM: sem Stripe Terminal (App Store)"
+echo "  · Package SPM: Geolocation + push (sem Tap to Pay)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=false"
 echo "  · Site: https://kebabturco.net (como build 10)"
