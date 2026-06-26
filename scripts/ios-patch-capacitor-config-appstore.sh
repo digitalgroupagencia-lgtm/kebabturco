@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Alinha capacitor.config.json com o que entra na build App Store / TestFlight.
+# Alinha capacitor.config.json com a build 10 (funcionava) + site embutido no pacote.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CFG="$ROOT/ios/App/App/capacitor.config.json"
@@ -15,18 +15,16 @@ const path = require("path");
 const cfgPath = path.join(process.cwd(), "ios/App/App/capacitor.config.json");
 const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
 
-// Só plugins nativos incluídos em Package.appstore.swift + ponte APNs no target App.
-cfg.packageClassList = [
-  "KeepAwakePlugin",
-  "AppPlugin",
-  "PushNotificationsPlugin",
-  "ScreenOrientationPlugin",
-  "ApnsTokenBridgePlugin",
-];
+const list = Array.isArray(cfg.packageClassList) ? cfg.packageClassList : [];
+// Build 10: só plugins do Package.appstore.swift (sem Stripe/TcpSocket que não entram no IPA).
+cfg.packageClassList = list.filter(
+  (name) => name !== "StripeTerminalPlugin" && name !== "TcpSocketPlugin",
+);
 
-// Site embutido no pacote — evita crash ao arrancar só com URL remota (iOS 26 / TestFlight).
+// Menu dentro do pacote — não depende do site ao abrir (build 30+ falhava com URL remota).
 delete cfg.server;
 
 fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, "\t") + "\n");
-console.log("✓ capacitor.config.json App Store: plugins alinhados, site embutido no pacote");
+console.log("✓ capacitor.config.json App Store: como build 10 + menu embutido");
+console.log("  packageClassList:", cfg.packageClassList.join(", "));
 NODE
