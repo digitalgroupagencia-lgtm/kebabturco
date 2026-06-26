@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.visit-print-bridge-api]
 verify_jwt = false
+
+[functions.wgm-sync-dispatch]
+verify_jwt = false
+
+[functions.wgm-inbound-webhook]
+verify_jwt = false
