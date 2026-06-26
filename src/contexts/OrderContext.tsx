@@ -187,6 +187,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
     if (params.get("preview") === "1") return params.get("productId");
+    const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
+    if (pushDeepLink?.productId) return pushDeepLink.productId;
     return null;
   });
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);

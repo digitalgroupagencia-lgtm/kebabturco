@@ -48,6 +48,10 @@ import {
 import { sendMarketingBroadcast } from "@/lib/diagnostics/campaignPushService";
 import { sendBroadcastTestPushNotification } from "@/lib/push/pushTestService";
 import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
+import {
+  fetchMarketingProductOptions,
+  presetUsesFeaturedProduct,
+} from "@/lib/marketing/marketingProductPicker";
 import MarketingSuggestionCard from "@/components/marketing/MarketingSuggestionCard";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
@@ -87,6 +91,7 @@ const MarketingPage = () => {
   const [winbackHintKeys, setWinbackHintKeys] = useState<Set<string>>(new Set());
   const [couponByCode, setCouponByCode] = useState<Record<string, CouponRow | null>>({});
   const [couponValidByCode, setCouponValidByCode] = useState<Record<string, boolean>>({});
+  const [productLabelById, setProductLabelById] = useState<Record<string, string>>({});
   const [suggestionBusy, setSuggestionBusy] = useState<string | null>(null);
 
   const [broadcastTitle, setBroadcastTitle] = useState("");
@@ -122,10 +127,12 @@ const MarketingPage = () => {
       setSubscribers(subs);
       setActiveCount(active);
       setHistory(hist);
+      const products = await fetchMarketingProductOptions(storeId, uiLang);
+      setProductLabelById(Object.fromEntries(products.map((p) => [p.id, p.label])));
     } catch {
       /* keep current UI */
     }
-  }, [storeId, tenantId]);
+  }, [storeId, tenantId, uiLang]);
 
   const load = useCallback(async () => {
     if (!storeId || !tenantId) return;
@@ -181,10 +188,13 @@ const MarketingPage = () => {
       );
       setCouponByCode(couponMap);
       setCouponValidByCode(validMap);
+
+      const products = await fetchMarketingProductOptions(storeId, uiLang);
+      setProductLabelById(Object.fromEntries(products.map((p) => [p.id, p.label])));
     } finally {
       setLoading(false);
     }
-  }, [storeId, tenantId]);
+  }, [storeId, tenantId, uiLang]);
 
   useEffect(() => {
     void load();
@@ -559,6 +569,10 @@ const MarketingPage = () => {
                   couponCode={preset.suggestCoupon}
                   couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
                   mandatory={true}
+                  usesFeaturedProduct={presetUsesFeaturedProduct(preset.variables)}
+                  featuredProductLabel={
+                    row?.linked_product_id ? productLabelById[row.linked_product_id] ?? null : null
+                  }
                   onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
                   onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
                   onEdit={row ? () => setEditCampaign({ preset, campaign: row }) : undefined}
@@ -584,6 +598,10 @@ const MarketingPage = () => {
                   couponCode={preset.suggestCoupon}
                   couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
                   mandatory={false}
+                  usesFeaturedProduct={presetUsesFeaturedProduct(preset.variables)}
+                  featuredProductLabel={
+                    row?.linked_product_id ? productLabelById[row.linked_product_id] ?? null : null
+                  }
                   onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
                   onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
                   onEdit={row ? () => setEditCampaign({ preset, campaign: row }) : undefined}
@@ -679,6 +697,7 @@ const MarketingPage = () => {
           }}
           preset={editCampaign.preset}
           campaign={editCampaign.campaign}
+          storeId={storeId ?? ""}
           onSaved={() => void refreshQuiet()}
         />
       )}

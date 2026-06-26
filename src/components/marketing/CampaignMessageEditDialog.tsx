@@ -19,6 +19,8 @@ import {
   updateMarketingCampaign,
   type MarketingCampaignRow,
 } from "@/lib/marketing/marketingService";
+import { presetUsesFeaturedProduct } from "@/lib/marketing/marketingProductPicker";
+import CampaignFeaturedProductPicker from "@/components/marketing/CampaignFeaturedProductPicker";
 import { useStaffT } from "@/hooks/useStaffT";
 import { toast } from "sonner";
 
@@ -63,6 +65,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   preset: CampaignPresetDefinition;
   campaign: MarketingCampaignRow;
+  storeId: string;
   onSaved: () => void;
 };
 
@@ -71,19 +74,25 @@ export default function CampaignMessageEditDialog({
   onOpenChange,
   preset,
   campaign,
+  storeId,
   onSaved,
 }: Props) {
-  const { t } = useStaffT();
+  const { t, lang } = useStaffT();
   const lifecycle = preset.triggerEvent === "lifecycle_welcome" || preset.triggerEvent === "lifecycle_relation";
   const mandatory = isMandatoryPreset(preset.key);
+  const showProductPicker = presetUsesFeaturedProduct(preset.variables);
 
   const [fields, setFields] = useState<Record<MessageLocale, LangFields>>(() =>
     initialFields(campaign, preset),
   );
+  const [linkedProductId, setLinkedProductId] = useState<string | null>(campaign.linked_product_id);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) setFields(initialFields(campaign, preset));
+    if (open) {
+      setFields(initialFields(campaign, preset));
+      setLinkedProductId(campaign.linked_product_id);
+    }
   }, [open, campaign, preset]);
 
   const variablesHint = useMemo(
@@ -107,6 +116,7 @@ export default function CampaignMessageEditDialog({
         message_en: fields.en.message.trim(),
         title: fields.es.title.trim(),
         message_template: fields.es.message.trim(),
+        ...(showProductPicker ? { linked_product_id: linkedProductId } : {}),
       });
       if (!res.ok) {
         toast.error(res.error ?? t("common.error"));
@@ -162,6 +172,15 @@ export default function CampaignMessageEditDialog({
           {lifecycle ? t("marketing.campaign.edit.lifecycle_note") : t("marketing.campaign.edit.variables_note")}
           <span className="mt-1 block font-mono text-[10px]">{variablesHint}</span>
         </p>
+
+        {showProductPicker && (
+          <CampaignFeaturedProductPicker
+            storeId={storeId}
+            locale={lang}
+            value={linkedProductId}
+            onChange={setLinkedProductId}
+          />
+        )}
 
         <Tabs defaultValue="es">
           <TabsList className="grid w-full grid-cols-3">

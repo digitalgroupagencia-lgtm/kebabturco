@@ -830,9 +830,49 @@ export const STAFF_I18N_CATALOG = {
     en: "Customize the push message. Activate the campaign when ready.",
   },
   "marketing.campaign.edit.variables_note": {
-    es: "Variables disponibles en el texto:",
-    pt: "Variáveis disponíveis no texto:",
-    en: "Variables you can use in the text:",
+    es: "No escriba el nombre del producto a mano: use {produto_destaque}, {preco_destaque} y {categoria_destaque}. El sistema los rellena. Si la campaña lleva producto, elíjalo abajo para abrir su página al tocar el aviso.",
+    pt: "Não escreva o nome do produto à mão: use {produto_destaque}, {preco_destaque} e {categoria_destaque}. O sistema preenche sozinho. Se a campanha fala de produto, escolha-o abaixo para o cliente abrir essa página ao tocar no aviso.",
+    en: "Do not type the product name manually: use {produto_destaque}, {preco_destaque}, {categoria_destaque}. The system fills them in. Pick the product below so tapping the alert opens that page.",
+  },
+  "marketing.campaign.featured_product_label": {
+    es: "Producto del aviso",
+    pt: "Produto do aviso",
+    en: "Product in this alert",
+  },
+  "marketing.campaign.featured_product_help": {
+    es: "En el texto use {produto_destaque} (no el código). Aquí elige qué producto del menú se usa y a dónde va el cliente al tocar.",
+    pt: "No texto use {produto_destaque} (não o código). Aqui escolhe qual produto do menu entra no aviso e para onde o cliente vai ao tocar.",
+    en: "In the text use {produto_destaque} (not a product code). Pick which menu item is used and where the customer lands when they tap.",
+  },
+  "marketing.campaign.featured_product_pick": {
+    es: "Elegir producto",
+    pt: "Escolher produto",
+    en: "Choose product",
+  },
+  "marketing.campaign.featured_product_auto": {
+    es: "Automático (producto destacado en el menú)",
+    pt: "Automático (produto em destaque no menu)",
+    en: "Automatic (featured item on menu)",
+  },
+  "marketing.campaign.featured_product_auto_short": {
+    es: "Producto: automático (destacado en menú)",
+    pt: "Produto: automático (destaque no menu)",
+    en: "Product: automatic (menu featured)",
+  },
+  "marketing.campaign.featured_product_linked": {
+    es: "Producto del aviso:",
+    pt: "Produto do aviso:",
+    en: "Alert product:",
+  },
+  "marketing.campaign.featured_product_preview_prefix": {
+    es: "Vista previa:",
+    pt: "Pré-visualização:",
+    en: "Preview:",
+  },
+  "marketing.campaign.featured_product_empty": {
+    es: "No hay productos activos en el menú.",
+    pt: "Não há produtos activos no menu.",
+    en: "No active products on the menu.",
   },
   "marketing.campaign.edit.lifecycle_note": {
     es: "Boas-vindas/Relación: el calendario automático sigue igual. Su texto se añade al final de cada aviso (cupón, promo, etc.).",

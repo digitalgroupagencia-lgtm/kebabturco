@@ -34,6 +34,8 @@ type Props = {
   couponCode?: string;
   couponReady?: boolean;
   mandatory?: boolean;
+  featuredProductLabel?: string | null;
+  usesFeaturedProduct?: boolean;
 };
 
 export default function CampaignPresetCard({
@@ -50,6 +52,8 @@ export default function CampaignPresetCard({
   couponCode,
   couponReady,
   mandatory,
+  featuredProductLabel,
+  usesFeaturedProduct,
 }: Props) {
   const { t } = useStaffT();
   const Icon = ICONS[preset.icon] ?? Megaphone;
@@ -114,6 +118,13 @@ export default function CampaignPresetCard({
               </code>
             ))}
           </div>
+          {usesFeaturedProduct && (
+            <p className="rounded-lg border border-dashed bg-muted/40 p-2 text-[10px] text-muted-foreground leading-snug">
+              {featuredProductLabel
+                ? `${t("marketing.campaign.featured_product_linked")} ${featuredProductLabel}`
+                : t("marketing.campaign.featured_product_auto_short")}
+            </p>
+          )}
           {(showWinbackHint || preset.suggestCoupon) && preset.suggestCoupon && (
             <div
               className={cn(
