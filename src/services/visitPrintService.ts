@@ -66,7 +66,15 @@ export async function startLocalMacPrintBridge(): Promise<{
       already_running?: boolean;
       started?: boolean;
       bridge_running?: boolean;
+      error?: string;
+      message?: string;
     };
+    if (body.error === "missing_env") {
+      return {
+        ok: false,
+        error: body.message || "Configure o Mac com npm run visit-print:setup",
+      };
+    }
     if (body.bridge_running) {
       return { ok: true, already_running: body.already_running, bridge_running: true };
     }

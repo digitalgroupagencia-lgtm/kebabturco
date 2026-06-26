@@ -72,6 +72,18 @@ async function startBridge() {
   if (await isBridgeRunning()) {
     return { started: false, already_running: true, bridge_running: true };
   }
+
+  const envFile = path.join(os.homedir(), ".kebab-visit-print.env");
+  if (!fs.existsSync(envFile)) {
+    return {
+      started: false,
+      bridge_running: false,
+      error: "missing_env",
+      message:
+        "Falta configurar o Mac — no Terminal: npm run visit-print:setup (só uma vez)",
+    };
+  }
+
   const script = path.join(PROJECT_DIR, "scripts", "visit-print-bridge.mjs");
   const child = spawn(process.execPath, [script], {
     cwd: PROJECT_DIR,

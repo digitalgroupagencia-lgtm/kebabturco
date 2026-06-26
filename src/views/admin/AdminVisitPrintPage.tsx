@@ -286,6 +286,11 @@ export default function AdminVisitPrintPage() {
             <code className="bg-muted px-1 rounded">npm run visit-print:helper</code> e deixe aberto.
             Depois «Ligar Mac» no painel inicia a impressão sem mais comandos.
           </p>
+          <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-500/10 rounded-lg px-3 py-2">
+            <strong>Primeira vez no Mac?</strong> Corra{" "}
+            <code className="bg-muted px-1 rounded">npm run visit-print:setup</code> no Terminal (pede a chave
+            do Supabase e o ID que aparece abaixo). Só uma vez.
+          </p>
           <p className="text-xs text-muted-foreground font-mono break-all">
             ID: {cfg?.user_id ?? user?.id ?? "—"}
           </p>
