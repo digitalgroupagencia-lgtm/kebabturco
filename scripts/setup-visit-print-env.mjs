@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
- * Cria ou verifica ~/.kebab-visit-print.env (configuração única no Mac).
- *
- * Uso: npm run visit-print:setup
+ * Configura o Mac para demo visita — SEM service role (compatível com Lovable Cloud).
  */
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import readline from "node:readline/promises";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const ENV_PATH = path.join(os.homedir(), ".kebab-visit-print.env");
@@ -30,9 +29,9 @@ function loadExisting(filePath) {
 
 function tryLoadFromProject() {
   const candidates = [
-    path.join(PROJECT_DIR, "print-bridge", ".env"),
-    path.join(PROJECT_DIR, "visit-print-bridge.env"),
     path.join(PROJECT_DIR, ".env"),
+    path.join(PROJECT_DIR, ".env.local"),
+    path.join(PROJECT_DIR, "print-bridge", ".env"),
   ];
   const merged = {};
   for (const p of candidates) {
@@ -53,59 +52,71 @@ async function prompt(rl, label, current) {
 }
 
 async function main() {
-  console.log("\n=== Demo visita — configurar Mac (uma vez) ===\n");
+  console.log("\n=== Demo visita — configurar Mac (Lovable Cloud) ===\n");
 
   const existing = loadExisting(ENV_PATH);
   const fromProject = tryLoadFromProject();
 
   let url = existing.SUPABASE_URL || fromProject.SUPABASE_URL || fromProject.VITE_SUPABASE_URL || DEFAULT_URL;
-  let serviceKey =
-    existing.SUPABASE_SERVICE_ROLE_KEY ||
-    fromProject.SUPABASE_SERVICE_ROLE_KEY ||
-    fromProject.SUPABASE_SERVICE_KEY ||
+  let anonKey =
+    existing.SUPABASE_ANON_KEY ||
+    fromProject.SUPABASE_ANON_KEY ||
+    fromProject.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    fromProject.VITE_SUPABASE_ANON_KEY ||
     "";
+  let bridgeToken = existing.VISIT_BRIDGE_TOKEN || fromProject.VISIT_BRIDGE_TOKEN || "";
   let ownerId = existing.VISIT_OWNER_USER_ID || fromProject.VISIT_OWNER_USER_ID || "";
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  console.log(`Ficheiro: ${ENV_PATH}\n`);
-  if (fs.existsSync(ENV_PATH)) {
-    console.log("Já existe — pode actualizar os valores (Enter mantém o actual).\n");
-  }
+  console.log(`Guardar em: ${ENV_PATH}\n`);
 
-  console.log("1) URL do Supabase (já vem preenchida se for o projeto Kebab Turco)");
+  console.log("1) URL do projeto (Enter = Kebab Turco)");
   url = await prompt(rl, "   SUPABASE_URL", url);
 
-  console.log("\n2) Service Role Key — no Supabase: Project Settings → API → service_role");
-  console.log("   (ou Lovable → Cloud → Secrets → SUPABASE_SERVICE_ROLE_KEY)\n");
-  if (!serviceKey) {
-    console.log("   ⚠️  Ainda não encontrámos esta chave no Mac. Cole-a abaixo.\n");
-  }
-  serviceKey = await prompt(rl, "   SUPABASE_SERVICE_ROLE_KEY", serviceKey);
+  console.log("\n2) Chave pública do site (anon / publishable)");
+  console.log("   Lovable → Cloud → provavelmente VITE_SUPABASE_PUBLISHABLE_KEY");
+  console.log("   Ou Supabase → Project Settings → API → anon public\n");
+  anonKey = await prompt(rl, "   SUPABASE_ANON_KEY", anonKey);
 
-  console.log("\n3) O seu ID de utilizador — no painel Admin → Demo visita (linha «ID: …»)\n");
+  console.log("\n3) Código secreto do bridge (você inventa — mesma palavra em dois sítios):");
+  if (!bridgeToken) {
+    bridgeToken = crypto.randomBytes(24).toString("hex");
+    console.log(`   Sugestão gerada: ${bridgeToken}`);
+    console.log("   Cole ESTE MESMO valor em Lovable → Cloud → Secrets → VISIT_BRIDGE_TOKEN\n");
+  } else {
+    console.log("   Lovable → Cloud → Secrets → VISIT_BRIDGE_TOKEN\n");
+  }
+  bridgeToken = await prompt(rl, "   VISIT_BRIDGE_TOKEN", bridgeToken);
+
+  console.log("\n4) O seu ID — painel Admin → Demo visita (linha «ID: …»)\n");
   ownerId = await prompt(rl, "   VISIT_OWNER_USER_ID", ownerId);
 
   rl.close();
 
-  if (!url || !serviceKey || !ownerId) {
+  if (!url || !anonKey || !bridgeToken || !ownerId) {
     console.error("\n[ERRO] Faltam dados. Volte a correr: npm run visit-print:setup\n");
     process.exit(1);
   }
 
-  const content = `# Demo visita — impressão no Mac (${new Date().toISOString().slice(0, 10)})
-# Não partilhe este ficheiro (contém chave secreta).
+  const content = `# Demo visita — Mac (${new Date().toISOString().slice(0, 10)})
+# Não partilhe o VISIT_BRIDGE_TOKEN.
 
 SUPABASE_URL=${url}
-SUPABASE_SERVICE_ROLE_KEY=${serviceKey}
+SUPABASE_ANON_KEY=${anonKey}
+VISIT_BRIDGE_TOKEN=${bridgeToken}
 VISIT_OWNER_USER_ID=${ownerId}
 `;
 
   fs.writeFileSync(ENV_PATH, content, { mode: 0o600 });
-  console.log(`\n✓ Guardado em ${ENV_PATH}`);
-  console.log("\nPróximo passo:");
-  console.log("  1. Deixe o helper aberto: npm run visit-print:helper");
-  console.log("  2. No painel: Ligar Mac → Imprimir teste\n");
+
+  console.log(`\n✓ Guardado.\n`);
+  console.log("IMPORTANTE — no Lovable:");
+  console.log("  Cloud → Secrets → adicione VISIT_BRIDGE_TOKEN com o MESMO valor acima.");
+  console.log("  Depois faça Publish para activar a função visit-print-bridge-api.\n");
+  console.log("No Mac:");
+  console.log("  npm run visit-print:helper   (deixar aberto)");
+  console.log("  Painel → Ligar Mac → Imprimir teste\n");
 }
 
 main().catch((e) => {

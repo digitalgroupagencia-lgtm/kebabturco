@@ -288,8 +288,9 @@ export default function AdminVisitPrintPage() {
           </p>
           <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-500/10 rounded-lg px-3 py-2">
             <strong>Primeira vez no Mac?</strong> Corra{" "}
-            <code className="bg-muted px-1 rounded">npm run visit-print:setup</code> no Terminal (pede a chave
-            do Supabase e o ID que aparece abaixo). Só uma vez.
+            <code className="bg-muted px-1 rounded">npm run visit-print:setup</code> no Terminal.
+            Não precisa da chave secreta do Supabase — só da chave pública do site, um código que você
+            cria (e põe igual no Lovable → Secrets → VISIT_BRIDGE_TOKEN) e o ID abaixo.
           </p>
           <p className="text-xs text-muted-foreground font-mono break-all">
             ID: {cfg?.user_id ?? user?.id ?? "—"}

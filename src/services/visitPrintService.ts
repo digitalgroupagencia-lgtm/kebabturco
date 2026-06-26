@@ -83,7 +83,7 @@ export async function startLocalMacPrintBridge(): Promise<{
       ok: confirmed,
       already_running: body.already_running,
       bridge_running: confirmed,
-      error: confirmed ? undefined : "Bridge não respondeu — confira ~/.kebab-visit-print.env no Mac",
+      error: confirmed ? undefined : "Bridge não respondeu — corra npm run visit-print:setup no Mac",
     };
   } catch (e) {
     return {
