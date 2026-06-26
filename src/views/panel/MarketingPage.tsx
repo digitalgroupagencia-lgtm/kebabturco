@@ -47,7 +47,7 @@ import {
 } from "@/lib/marketing/marketingService";
 import { sendMarketingBroadcast } from "@/lib/diagnostics/campaignPushService";
 import { sendBroadcastTestPushNotification } from "@/lib/push/pushTestService";
-import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
+import MarketingFunnelPanel from "@/components/marketing/MarketingFunnelPanel";
 import {
   fetchMarketingProductOptions,
   presetUsesFeaturedProduct,
@@ -486,6 +486,7 @@ const MarketingPage = () => {
         </TabsList>
 
         <TabsContent value="home" className="space-y-3 mt-4">
+          <MarketingFunnelPanel storeId={storeId} />
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: t("marketing.stat.subscribers"), value: subscribers, icon: Radio },

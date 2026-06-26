@@ -24,7 +24,7 @@ function cors(res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-function isBridgeRunning() {
+function isBridgePidAlive() {
   try {
     if (!fs.existsSync(PID_FILE)) return false;
     const pid = Number(fs.readFileSync(PID_FILE, "utf8").trim());
@@ -36,9 +36,41 @@ function isBridgeRunning() {
   }
 }
 
-function startBridge() {
-  if (isBridgeRunning()) {
-    return { started: false, already_running: true };
+function bridgeHealthUp() {
+  return new Promise((resolve) => {
+    const req = http.get(
+      `http://127.0.0.1:${Number(process.env.VISIT_BRIDGE_PORT || 3848)}/health`,
+      { timeout: 900 },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      },
+    );
+    req.on("error", () => resolve(false));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+async function isBridgeRunning() {
+  if (await bridgeHealthUp()) return true;
+  return isBridgePidAlive();
+}
+
+async function waitForBridge(maxMs = 8000) {
+  const started = Date.now();
+  while (Date.now() - started < maxMs) {
+    if (await isBridgeRunning()) return true;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  return false;
+}
+
+async function startBridge() {
+  if (await isBridgeRunning()) {
+    return { started: false, already_running: true, bridge_running: true };
   }
   const script = path.join(PROJECT_DIR, "scripts", "visit-print-bridge.mjs");
   const child = spawn(process.execPath, [script], {
@@ -48,7 +80,8 @@ function startBridge() {
     env: { ...process.env, KEBAB_PROJECT_DIR: PROJECT_DIR },
   });
   child.unref();
-  return { started: true, pid: child.pid };
+  const bridge_running = await waitForBridge(8000);
+  return { started: true, pid: child.pid, bridge_running };
 }
 
 const server = http.createServer((req, res) => {
@@ -62,23 +95,29 @@ const server = http.createServer((req, res) => {
   const url = req.url?.split("?")[0] ?? "";
 
   if (url === "/health" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        ok: true,
-        helper: true,
-        bridge_running: isBridgeRunning(),
-        project_dir: PROJECT_DIR,
-        port: PORT,
-      }),
-    );
+    void (async () => {
+      const bridge_running = await isBridgeRunning();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          helper: true,
+          bridge_running,
+          project_dir: PROJECT_DIR,
+          port: PORT,
+        }),
+      );
+    })();
     return;
   }
 
   if (url === "/start-bridge" && req.method === "POST") {
-    const result = startBridge();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true, ...result }));
+    void (async () => {
+      const result = await startBridge();
+      const bridge_running = result.bridge_running ?? (await isBridgeRunning());
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, ...result, bridge_running }));
+    })();
     return;
   }
 

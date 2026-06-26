@@ -53,16 +53,30 @@ export async function probeLocalMacPrint(): Promise<LocalMacStatus> {
 export async function startLocalMacPrintBridge(): Promise<{
   ok: boolean;
   already_running?: boolean;
+  bridge_running?: boolean;
   error?: string;
 }> {
   try {
     const res = await fetch(`${VISIT_LOCAL_HELPER_URL}/start-bridge`, {
       method: "POST",
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return { ok: false, error: `Helper respondeu ${res.status}` };
-    const body = (await res.json()) as { already_running?: boolean; started?: boolean };
-    return { ok: true, already_running: body.already_running };
+    const body = (await res.json()) as {
+      already_running?: boolean;
+      started?: boolean;
+      bridge_running?: boolean;
+    };
+    if (body.bridge_running) {
+      return { ok: true, already_running: body.already_running, bridge_running: true };
+    }
+    const confirmed = await waitForLocalBridge(10000);
+    return {
+      ok: confirmed,
+      already_running: body.already_running,
+      bridge_running: confirmed,
+      error: confirmed ? undefined : "Bridge não respondeu — confira ~/.kebab-visit-print.env no Mac",
+    };
   } catch (e) {
     return {
       ok: false,
@@ -72,6 +86,17 @@ export async function startLocalMacPrintBridge(): Promise<{
           : "Helper local offline — corra «npm run visit-print:helper» no Mac uma vez.",
     };
   }
+}
+
+/** Aguarda o bridge local ficar online (após Ligar Mac). */
+export async function waitForLocalBridge(maxMs = 10000): Promise<boolean> {
+  const started = Date.now();
+  while (Date.now() - started < maxMs) {
+    const status = await probeLocalMacPrint();
+    if (status.bridge_running) return true;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return false;
 }
 
 export async function fetchVisitPrintConfig(): Promise<VisitPrintConfig | null> {

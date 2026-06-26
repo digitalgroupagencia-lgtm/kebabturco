@@ -6,9 +6,11 @@ import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
+import { initGoogleAnalytics } from "./lib/googleAnalytics";
 
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
+  initGoogleAnalytics();
 }
 
 startStripeDebugOverlayGuard();

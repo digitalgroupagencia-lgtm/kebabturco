@@ -6,6 +6,10 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
+import { useStoreCoords } from "@/hooks/useStoreCoords";
+import { distanceKm } from "@/lib/geolocation";
+import { trackMarketingEvent } from "@/lib/marketingAnalytics";
+import UseMyLocationButton from "@/components/customer/UseMyLocationButton";
 import StripePaymentForm, { type StripeFormCopy } from "@/components/StripePaymentForm";
 import {
   attachStripeOrderToPaymentIntent,
@@ -203,6 +207,8 @@ const PaymentScreen = () => {
     selectedMethodRef.current = selected;
   }, [selected]);
   const [processing, setProcessing] = useState(false);
+  const [customerDistanceKm, setCustomerDistanceKm] = useState<number | null>(null);
+  const storeCoords = useStoreCoords(storeId);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [stripePaymentMeta, setStripePaymentMeta] = useState<{
@@ -264,11 +270,18 @@ const PaymentScreen = () => {
   const fullCustomerPhone = formatFullPhone(phoneDialCode, customerPhone);
   const orderTypeDb = isTableOrder ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
 
+  useEffect(() => {
+    if (storeId) {
+      void trackMarketingEvent("checkout_start", { storeId, customerPhone: fullCustomerPhone });
+    }
+  }, [storeId, fullCustomerPhone]);
+
   const { quote: deliveryQuote } = useDeliveryFee(
     orderType === "delivery" ? storeId : null,
     deliveryPostalCode,
     deliveryCity,
     totalPrice,
+    customerDistanceKm,
   );
   const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
   const restaurantPortionEur = computeRestaurantPortionEur(totalPrice, deliveryFee, couponDiscount);
@@ -694,6 +707,7 @@ const PaymentScreen = () => {
     );
 
     clearCart();
+    void trackMarketingEvent("order_completed", { storeId, customerPhone: fullCustomerPhone });
     if (awaitsCounterPayment) {
       setScreen("cashPending");
     } else {
@@ -1386,6 +1400,13 @@ const PaymentScreen = () => {
                   onClearError={() => setShowError(null)}
                 />
                 <div className="px-3 py-3 border-t border-border space-y-2">
+                  <UseMyLocationButton
+                    onCoords={(coords) => {
+                      if (storeCoords) {
+                        setCustomerDistanceKm(distanceKm(storeCoords, coords));
+                      }
+                    }}
+                  />
                   <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>
                     <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                       <MapPin className="w-3 h-3" />

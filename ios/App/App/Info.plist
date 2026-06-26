@@ -48,10 +48,13 @@
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <true/>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Necessário para processar pagamentos presenciais com Tap to Pay no iPhone.</string>
+    <string>Usamos a localização para calcular a taxa de entrega, acompanhar o motoboy e pagamentos Tap to Pay na loja.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>O entregador partilha a posição em tempo real durante a entrega, mesmo com a app em segundo plano.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>remote-notification</string>
+        <string>location</string>
     </array>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>

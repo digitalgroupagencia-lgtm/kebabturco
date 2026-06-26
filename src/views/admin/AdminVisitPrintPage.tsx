@@ -52,6 +52,7 @@ export default function AdminVisitPrintPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [connectingMac, setConnectingMac] = useState(false);
+  const [bridgeOptimistic, setBridgeOptimistic] = useState(false);
   const [localMac, setLocalMac] = useState<LocalMacStatus | null>(null);
   const [demoOrders, setDemoOrders] = useState<
     { id: string; order_number: string; created_at: string; store_id: string }[]
@@ -63,6 +64,9 @@ export default function AdminVisitPrintPage() {
       const [c, local] = await Promise.all([fetchVisitPrintConfig(), probeLocalMacPrint()]);
       setLocalMac(local);
       setCfg(c);
+      if (local.bridge_running || isVisitBridgeOnline(c?.bridge_last_seen_at ?? null)) {
+        setBridgeOptimistic(true);
+      }
       const { data } = await supabase
         .from("orders")
         .select("id, order_number, created_at, store_id")
@@ -134,20 +138,22 @@ export default function AdminVisitPrintPage() {
     try {
       const result = await startLocalMacPrintBridge();
       if (!result.ok) {
+        setBridgeOptimistic(false);
         toast({
           title: "Helper offline",
           description:
+            result.error ||
             "No Mac: abra o Terminal na pasta do projeto e corra «npm run visit-print:helper» (uma vez por sessão). Depois volte a carregar aqui.",
           variant: "destructive",
         });
         copyText(VISIT_HELPER_ONLY);
         return;
       }
+      setBridgeOptimistic(true);
       toast({
         title: result.already_running ? "Mac já estava ligado" : "Impressão iniciada no Mac",
         description: "Pode enviar teste ou usar o cupão na app do cliente.",
       });
-      await new Promise((r) => setTimeout(r, 1500));
       await refreshStatus();
     } finally {
       setConnectingMac(false);
@@ -200,7 +206,17 @@ export default function AdminVisitPrintPage() {
   };
 
   const cloudOnline = isVisitBridgeOnline(cfg?.bridge_last_seen_at ?? null);
-  const macReady = Boolean(localMac?.bridge_running || cloudOnline);
+  const bridgeActive = Boolean(localMac?.bridge_running || cloudOnline || bridgeOptimistic);
+  const helperOnline = Boolean(localMac?.helper_online);
+  const macReady = bridgeActive;
+
+  const connectionStatus = bridgeActive
+    ? { icon: Wifi, className: "text-green-600", label: "Impressão activa no Mac" }
+    : helperOnline
+      ? { icon: Wifi, className: "text-amber-500", label: "Helper activo — carregue «Ligar Mac»" }
+      : { icon: WifiOff, className: "text-muted-foreground", label: "Helper offline no Mac" };
+
+  const StatusIcon = connectionStatus.icon;
 
   if (roleLoading || loading) {
     return <div className="p-8 text-muted-foreground">A carregar…</div>;
@@ -241,20 +257,13 @@ export default function AdminVisitPrintPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            {macReady ? (
-              <Wifi className="h-5 w-5 text-green-600" />
-            ) : (
-              <WifiOff className="h-5 w-5 text-muted-foreground" />
-            )}
+            <StatusIcon className={`h-5 w-5 ${connectionStatus.className}`} />
             Ligação com o Mac
           </CardTitle>
           <CardDescription>
-            {localMac?.helper_online
-              ? "Helper local detectado no seu Mac."
-              : "Helper local não detectado — inicie com o botão ou no Terminal."}
-            {localMac?.bridge_running || cloudOnline
-              ? " · impressão activa"
-              : " · impressão parada"}
+            {connectionStatus.label}
+            {helperOnline && !bridgeActive ? " · impressão parada" : ""}
+            {bridgeActive ? " · pronto a imprimir" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
