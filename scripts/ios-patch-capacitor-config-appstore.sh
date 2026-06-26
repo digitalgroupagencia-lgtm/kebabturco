@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Alinha capacitor.config.json com a build 10 (funcionava) + site embutido no pacote.
+# Alinha capacitor.config.json com a build 10 (abria pelo site publicado).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CFG="$ROOT/ios/App/App/capacitor.config.json"
@@ -21,10 +21,24 @@ cfg.packageClassList = list.filter(
   (name) => name !== "StripeTerminalPlugin" && name !== "TcpSocketPlugin",
 );
 
-// Menu dentro do pacote — não depende do site ao abrir (build 30+ falhava com URL remota).
-delete cfg.server;
+// Como a build 10: abre kebabturco.net (actualiza com Publish no Lovable).
+cfg.server = {
+  url: "https://kebabturco.net",
+  cleartext: true,
+  androidScheme: "https",
+  allowNavigation: [
+    "192.168.*",
+    "10.*",
+    "172.16.*",
+    "*.lovable.app",
+    "*.lovableproject.com",
+    "kebabturco.net",
+    "*.kebabturco.net",
+    "snaporder.digitalgroupsti.com",
+  ],
+};
 
 fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, "\t") + "\n");
-console.log("✓ capacitor.config.json App Store: como build 10 + menu embutido");
+console.log("✓ capacitor.config.json App Store: site kebabturco.net (como build 10)");
 console.log("  packageClassList:", cfg.packageClassList.join(", "));
 NODE

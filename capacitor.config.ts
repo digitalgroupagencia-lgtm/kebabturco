@@ -11,7 +11,7 @@ const serverAllowNavigation = [
   "snaporder.digitalgroupsti.com",
 ];
 
-/** iOS App Store: site embutido no IPA (arranque fiável). Android/tablet: URL remota. */
+/** Só para testes locais; App Store/TestFlight usa kebabturco.net (como build 10). */
 const bundleWebInNativeApp = process.env.VITE_IOS_BUNDLE_WEB === "true";
 
 const config: CapacitorConfig = {

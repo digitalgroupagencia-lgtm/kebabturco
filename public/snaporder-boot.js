@@ -42,6 +42,15 @@
     }
   }
 
+  function isCapacitorNative() {
+    try {
+      var cap = window.Capacitor;
+      return !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+    } catch (e) {
+      return false;
+    }
+  }
+
   function shouldKeepSw(reg) {
     try {
       var url =
@@ -132,7 +141,7 @@
     scheduleBootTimeout(bootTimeoutMs());
   }
 
-  if (isLovableEditorHost()) {
+  if (isLovableEditorHost() || isCapacitorNative()) {
     loadApp();
   } else {
     loadApp();
