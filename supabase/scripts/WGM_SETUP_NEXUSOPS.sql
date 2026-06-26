@@ -1,19 +1,64 @@
 -- =============================================================================
 -- WGM PDV (NexusOps) — configurar ligação ao Kebab Turco
--- Correr no SQL Editor do Supabase WGM: projeto giqqsqauirokzgraqobh
+-- =============================================================================
+-- ATENÇÃO: corre isto APENAS no Supabase do PDV WGM (projeto giqqsqauirokzgraqobh).
+-- NÃO corras no Supabase do Kebab — lá já correu o outro script com sucesso.
 -- =============================================================================
 -- Depois de correr:
 -- 1. Copie a API key e o webhook secret mostrados no resultado (NOTICE)
 -- 2. No Lovable do Kebab, secrets:
 --    WGM_INTEGRATION_API_KEY = (api key)
 --    WGM_INBOUND_WEBHOOK_SECRET = (webhook secret)
---    WGM_SYNC_INTERNAL_SECRET = (opcional, mesmo valor em ambos se quiser)
 -- 3. No admin Kebab → Ponte PDV WGM → activar
 -- 4. Em Unidades, cole o UUID de cada loja WGM no campo "ID da loja no PDV WGM"
 -- =============================================================================
 
--- Listar lojas WGM (para copiar UUIDs)
-SELECT id, nome, endereco FROM public.stores ORDER BY nome;
+-- Verificar que estamos na base do PDV WGM (não no Kebab)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'companies'
+  ) THEN
+    RAISE EXCEPTION
+      'Base de dados errada: falta a tabela companies. '
+      'Este script é do PDV WGM (giqqsqauirokzgraqobh). '
+      'No Kebab já correu o outro script — abre o Supabase do projeto WGM / Flow Operations.';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'api_keys'
+  ) THEN
+    RAISE EXCEPTION
+      'Base de dados errada: falta a tabela api_keys. '
+      'Confirma que estás no Supabase do PDV WGM, não no Kebab.';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'proprioapp_tenant_mappings'
+  ) THEN
+    RAISE EXCEPTION
+      'Falta a tabela proprioapp_tenant_mappings no PDV. '
+      'Faz Publish no Lovable do projeto WGM e volta a tentar.';
+  END IF;
+END $$;
+
+-- Listar lojas do PDV (funciona com colunas em português ou inglês)
+SELECT
+  s.id,
+  COALESCE(
+    NULLIF(to_jsonb(s) ->> 'nome', ''),
+    NULLIF(to_jsonb(s) ->> 'name', ''),
+    '(sem nome)'
+  ) AS loja,
+  COALESCE(
+    NULLIF(to_jsonb(s) ->> 'endereco', ''),
+    NULLIF(to_jsonb(s) ->> 'address', '')
+  ) AS morada
+FROM public.stores s
+ORDER BY 2;
 
 DO $$
 DECLARE
@@ -93,7 +138,7 @@ BEGIN
   RAISE NOTICE 'Company ID: %', v_company_id;
 END $$;
 
--- Disparar fila de webhooks WGM → Kebab (correr periodicamente ou via cron no WGM)
+-- Disparar fila de webhooks WGM → Kebab (opcional, após mudanças de estado no PDV)
 -- SELECT net.http_post(
 --   url := 'https://giqqsqauirokzgraqobh.supabase.co/functions/v1/proprioapp-webhook-dispatch',
 --   headers := '{"Content-Type": "application/json"}'::jsonb,
