@@ -45,6 +45,10 @@ function mask(s) {
   return `${s.slice(0, 6)}…${s.slice(-4)}`;
 }
 
+function looksLikeAnonKey(s) {
+  return typeof s === "string" && s.startsWith("eyJ") && s.length > 100;
+}
+
 async function prompt(rl, label, current) {
   const hint = current ? ` [${mask(current)}]` : "";
   const answer = (await rl.question(`${label}${hint}: `)).trim();
@@ -75,9 +79,19 @@ async function main() {
   url = await prompt(rl, "   SUPABASE_URL", url);
 
   console.log("\n2) Chave pública do site (anon / publishable)");
-  console.log("   Lovable → Cloud → provavelmente VITE_SUPABASE_PUBLISHABLE_KEY");
-  console.log("   Ou Supabase → Project Settings → API → anon public\n");
+  console.log("   Lovable → Cloud → valor de VITE_SUPABASE_PUBLISHABLE_KEY");
+  console.log("   Ou Supabase → Project Settings → API → anon public");
+  console.log("   (Carregue Enter para usar o valor sugerido — não escreva o nome da variável.)\n");
   anonKey = await prompt(rl, "   SUPABASE_ANON_KEY", anonKey);
+  if (!looksLikeAnonKey(anonKey)) {
+    console.error(
+      "\n[ERRO] Isso não parece uma chave válida (tem de começar por eyJ e ser longa).\n" +
+        "       Provavelmente colou o NOME da variável em vez do VALOR.\n" +
+        "       Volte a correr: npm run visit-print:setup e carregue Enter no passo 2.\n",
+    );
+    rl.close();
+    process.exit(1);
+  }
 
   console.log("\n3) Código secreto do bridge (você inventa — mesma palavra em dois sítios):");
   if (!bridgeToken) {
