@@ -32,7 +32,10 @@ export function isConfirmedPaidOrder(order: { payment_status?: string | null }):
   return order.payment_status === "paid";
 }
 
-export function shouldShowOrderInRestaurantPanel(order: KitchenOrderLike): boolean {
+export function shouldShowOrderInRestaurantPanel(
+  order: KitchenOrderLike & { is_test?: boolean | null },
+): boolean {
+  if (order.is_test) return false;
   if (order.status === "cancelled") return true;
   if (order.payment_status === "paid") return true;
   if (order.order_type === "dine_in") return true;

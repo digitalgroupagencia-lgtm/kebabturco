@@ -17,6 +17,11 @@ import {
   waitForOrderPaymentConfirmed,
 } from "@/services/orderService";
 import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
+import {
+  DEMO_VISIT_COUPON_CODE,
+  finalizeDemoVisitOrder,
+  printVisitDemoOrder,
+} from "@/services/visitPrintService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import {
   loadSavedMesaToken,
@@ -220,6 +225,7 @@ const PaymentScreen = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [isDemoVisitCoupon, setIsDemoVisitCoupon] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [stripeCheckoutMethod, setStripeCheckoutMethod] = useState<"card" | "bizum">("card");
   const [stripePaymentLocked, setStripePaymentLocked] = useState(false);
@@ -281,10 +287,12 @@ const PaymentScreen = () => {
         setCouponError(result.error || "Cupón inválido");
         setCouponDiscount(0);
         setCouponId(null);
+        setIsDemoVisitCoupon(false);
         return;
       }
       setCouponDiscount(result.discount_amount || 0);
       setCouponId(result.coupon_id || null);
+      setIsDemoVisitCoupon(Boolean(result.demo_visit));
       setCouponError(null);
     } catch {
       setCouponError("Erro ao validar cupón");
@@ -425,7 +433,9 @@ const PaymentScreen = () => {
     };
   };
 
-  const payButtonReady = checkoutMethods.length > 0 && !processing && !stripeClientSecret;
+  const payButtonReady =
+    (isDemoVisitCoupon && grandTotal <= 0.01) ||
+    (checkoutMethods.length > 0 && !processing && !stripeClientSecret);
 
   useEffect(() => {
     if (checkoutMethods.length === 0) {
@@ -620,7 +630,7 @@ const PaymentScreen = () => {
       deliveryFee,
       deliveryZoneId: deliveryQuote.zone?.id || null,
       deliveryZoneName: deliveryQuote.zone?.name || null,
-      couponCode: couponId ? couponCode.trim() : null,
+      couponCode: couponId || isDemoVisitCoupon ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
       onlineServiceFeeCents: fin?.onlineServiceFeeCents,
@@ -690,7 +700,35 @@ const PaymentScreen = () => {
       setScreen("confirmation");
     }
 
-    if (printOk) {
+    if (isDemoVisitCoupon) {
+      try {
+        await finalizeDemoVisitOrder(result.order_id);
+        await printVisitDemoOrder({
+          storeId,
+          orderId: result.order_id,
+          orderNumber: result.order_number,
+          orderType: orderTypeDb,
+          tableNumber: mesaValidated ? tableNumber.trim() || null : null,
+          customerName: customerName.trim() || null,
+          customerPhone: fullCustomerPhone || null,
+          customerEmail: normalizeOptionalEmail(customerEmail),
+          paymentMethod: "counter",
+          paymentStatus: "paid",
+          paidViaApp: true,
+          items,
+          total: 0,
+          subtotal: totalPrice,
+          notes,
+          deliveryAddress: deliveryFullAddress,
+          customerOrderType: orderType || "takeaway",
+          mesaValidated,
+          settings,
+          companyName: brandingCtx?.settings?.company_name || "Restaurante",
+        });
+      } catch (printErr) {
+        console.warn("[checkout] demo visita impressão:", printErr);
+      }
+    } else if (printOk) {
       void enqueueCheckoutPrint(result, {
         paymentMethod: opts.paymentMethod,
         paymentStatus: opts.paymentStatus,
@@ -977,6 +1015,18 @@ const PaymentScreen = () => {
 
   const handlePayClick = () => {
     if (processing || stripeClientSecret) return;
+    if (isDemoVisitCoupon && grandTotal <= 0.01) {
+      setProcessing(true);
+      setPaymentError(null);
+      void finishOrder({ paymentMethod: "counter", paymentStatus: "paid" })
+        .catch((e) => {
+          console.error("[checkout] demo visita:", e);
+          setPaymentError(e instanceof Error ? e.message : "Não foi possível enviar a demonstração.");
+          setShowError("method");
+        })
+        .finally(() => setProcessing(false));
+      return;
+    }
     if (!checkoutMethods.length) {
       setShowError("method");
       return;
@@ -1427,6 +1477,11 @@ const PaymentScreen = () => {
                   <button type="button" onClick={applyCoupon} className="px-3 h-9 rounded-lg bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary">Aplicar</button>
                 </div>
                 {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
+                {isDemoVisitCoupon && (
+                  <p className="text-xs text-primary mt-2 font-medium">
+                    Modo demonstração: sem pagamento, impressão no Mac de visita, pedido oculto na cozinha.
+                  </p>
+                )}
               </div>
             )}
 
@@ -1545,9 +1600,15 @@ const PaymentScreen = () => {
               ) : (
                 <>
                   <span className="flex-1 text-left">
-                    {isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
+                    {isDemoVisitCoupon
+                      ? "Confirmar demonstração"
+                      : isTableOrder
+                        ? "Pagar e finalizar"
+                        : t("finalizeOrder")}
                   </span>
-                  <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
+                  <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">
+                    {isDemoVisitCoupon ? "0,00€" : `${grandTotal.toFixed(2)}€`}
+                  </span>
                 </>
               )}
             </button>

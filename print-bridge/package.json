@@ -4,7 +4,8 @@
   "description": "Print Bridge LAN para impressoras ESC/POS",
   "main": "print-bridge.js",
   "scripts": {
-    "start": "node print-bridge.js"
+    "start": "node print-bridge.js",
+    "visit": "node ../scripts/visit-print-bridge.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

@@ -142,6 +142,7 @@ export type ValidateCouponResult = {
   discount_type?: string;
   free_delivery?: boolean;
   combo_applied?: boolean;
+  demo_visit?: boolean;
 };
 
 export type CartItemForCoupon = {

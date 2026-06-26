@@ -91,6 +91,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "admin", segments: ["template-version"], loader: () => import("@/views/admin/TemplateVersionPage.tsx") },
   { area: "admin", segments: ["white-label"], loader: () => import("@/views/admin/WhiteLabelCentralPage.tsx") },
   { area: "admin", segments: ["conexoes"], loader: () => import("@/views/admin/AdminConnectionsPage.tsx") },
+  { area: "admin", segments: ["demo-visita"], loader: () => import("@/views/admin/AdminVisitPrintPage.tsx") },
   { area: "admin", segments: ["payments"], loader: () => import("@/views/admin/AdminPaymentsPage.tsx") },
   { area: "admin", segments: ["fee-simulator"], loader: () => import("@/views/admin/AdminFeeSimulatorPage.tsx") },
   { area: "panel", segments: ["payments"], loader: () => import("@/views/panel/PanelPaymentsPage.tsx") },
