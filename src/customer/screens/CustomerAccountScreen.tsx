@@ -90,6 +90,7 @@ const CustomerAccountScreen = () => {
   const [profileExpanded, setProfileExpanded] = useState(() => !hasCustomerProfile());
   const profileSectionRef = useRef<HTMLElement>(null);
   const ordersSectionRef = useRef<HTMLElement>(null);
+  const loyaltySectionRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef(profile);
   profileRef.current = profile;
   const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
@@ -97,9 +98,14 @@ const CustomerAccountScreen = () => {
 
   useEffect(() => {
     if (screen !== "account") return;
-    const target = accountFocus === "orders" ? ordersSectionRef.current : profileSectionRef.current;
+    const target =
+      accountFocus === "orders"
+        ? ordersSectionRef.current
+        : accountFocus === "loyalty"
+          ? loyaltySectionRef.current
+          : profileSectionRef.current;
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [screen, accountFocus]);
+  }, [screen, accountFocus, loyalty]);
 
   const reloadProfileFromDevice = () => {
     const saved = loadCustomerProfile();
@@ -629,7 +635,10 @@ const CustomerAccountScreen = () => {
         )}
 
         {loyalty && searched && (
-          <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+          <div
+            ref={loyaltySectionRef}
+            className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3"
+          >
             <Gift className="w-8 h-8 text-primary shrink-0" />
             <div>
               <p className="font-black">Fidelidade</p>

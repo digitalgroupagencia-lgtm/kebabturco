@@ -36,11 +36,17 @@ import {
 import { useTableSessionBinding } from "@/hooks/useTableSessionBinding";
 import { customerScreenFromPathname } from "@/lib/routeRedirects";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
+import {
+  applyCustomerPushDeepLink,
+  CUSTOMER_PUSH_NAV_EVENT,
+  parseCustomerPushUrl,
+  stashPushCoupon,
+} from "@/lib/customerPushDeepLink";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "cashPending" | "confirmation" | "tracking" | "account";
 export type { Screen };
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link" | "redsys" | "bizum";
-export type AccountFocus = "orders" | "profile";
+export type AccountFocus = "orders" | "profile" | "loyalty";
 
 interface OrderContextType {
   screen: Screen;
@@ -136,6 +142,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const orderParam = params.get("order");
     const stored = loadAnyStoredActiveOrder();
 
+    const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
+    if (pushDeepLink && !isLovableEditorPreview()) {
+      if (pushDeepLink.coupon) stashPushCoupon(pushDeepLink.coupon);
+      return pushDeepLink.screen;
+    }
+
     const routeScreen = customerScreenFromPathname(window.location.pathname);
     if (routeScreen && valid.includes(routeScreen as Screen)) return routeScreen as Screen;
 
@@ -163,7 +175,14 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   })();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
-  const [accountFocus, setAccountFocus] = useState<AccountFocus>("profile");
+  const [accountFocus, setAccountFocus] = useState<AccountFocus>(() => {
+    if (typeof window === "undefined") return "profile";
+    const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
+    if (pushDeepLink?.focus) return pushDeepLink.focus;
+    const f = new URLSearchParams(window.location.search).get("focus");
+    if (f === "orders" || f === "loyalty") return f;
+    return "profile";
+  });
   const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -435,6 +454,20 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const generateOrderNumber = () => {
     setOrderNumber(String(Math.floor(100 + Math.random() * 900)));
   };
+
+  useEffect(() => {
+    const onPushNav = (event: Event) => {
+      const url = (event as CustomEvent<{ url?: string }>).detail?.url;
+      if (!url) return;
+      applyCustomerPushDeepLink(url, {
+        setScreen,
+        setAccountFocus,
+        setSelectedProductId,
+      });
+    };
+    window.addEventListener(CUSTOMER_PUSH_NAV_EVENT, onPushNav);
+    return () => window.removeEventListener(CUSTOMER_PUSH_NAV_EVENT, onPushNav);
+  }, []);
 
   return (
     <OrderContext.Provider

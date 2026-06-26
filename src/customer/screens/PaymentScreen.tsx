@@ -29,6 +29,7 @@ import {
   formatDeliveryComplement,
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
+import { consumePushCoupon } from "@/lib/customerPushDeepLink";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
@@ -289,6 +290,22 @@ const PaymentScreen = () => {
       setCouponError("Erro ao validar cupón");
     }
   };
+
+  const pushCouponLoaded = useRef(false);
+
+  useEffect(() => {
+    if (pushCouponLoaded.current || isTableOrder) return;
+    const pending = consumePushCoupon();
+    if (!pending) return;
+    pushCouponLoaded.current = true;
+    setCouponCode(pending);
+  }, [isTableOrder]);
+
+  useEffect(() => {
+    if (!pushCouponLoaded.current || !couponCode.trim() || couponDiscount > 0 || isTableOrder || !storeId) return;
+    if (items.length === 0 || totalPrice <= 0) return;
+    void applyCoupon();
+  }, [couponCode, couponDiscount, storeId, items.length, totalPrice, isTableOrder]);
 
   useEffect(() => {
     if (orderType) return;

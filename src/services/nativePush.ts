@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ApnsTokenBridge } from "@/lib/apnsTokenBridge";
 import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { pushLog, type PushLogContext } from "@/lib/push/pushLogger";
+import { navigateCustomerFromPushUrl } from "@/lib/customerPushDeepLink";
 
 const STORAGE_KEY = "native-push-token";
 const REGISTER_TIMEOUT_MS = 45_000;
@@ -403,11 +404,7 @@ async function attachPushListeners(): Promise<void> {
     const data = (a?.notification?.data ?? {}) as Record<string, unknown>;
     const url = typeof data.url === "string" ? data.url : undefined;
     if (url && typeof window !== "undefined") {
-      const path = url.startsWith("/") ? url : `/${url}`;
-      if (window.location.pathname !== path) {
-        window.history.pushState(null, "", path);
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      }
+      navigateCustomerFromPushUrl(url);
     }
   });
 }

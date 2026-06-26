@@ -234,6 +234,8 @@ async function sendFcmV1(
       apns: {
         payload: {
           aps: { sound: apnsSound },
+          url: payload.url ?? "/",
+          tag: payload.tag ?? "",
         },
         headers: { "apns-priority": "10" },
       },

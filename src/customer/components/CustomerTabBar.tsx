@@ -20,7 +20,7 @@ const CustomerTabBar = () => {
     if (screen === "home") return "home";
     if (screen === "review") return "cart";
     if (screen === "tracking") return "orders";
-    if (screen === "account") return accountFocus === "profile" ? "account" : "orders";
+    if (screen === "account") return accountFocus === "orders" ? "orders" : "account";
     return "home";
   })();
 

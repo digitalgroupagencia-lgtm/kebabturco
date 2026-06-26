@@ -61,7 +61,7 @@ export async function sendMarketingBroadcast(opts: {
   url?: string;
   target: "all" | "this_device";
 }): Promise<MarketingBroadcastResult> {
-  const { storeId, title, body, url = "/", target } = opts;
+  const { storeId, title, body, url = "/?screen=home", target } = opts;
   const safeTitle = sanitizeNotificationText(title);
   const safeBody = sanitizeNotificationText(body);
 

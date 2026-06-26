@@ -18,6 +18,7 @@ import {
   resolveLifecycleStage,
   type LifecycleStage,
 } from "../_shared/customerLifecycle.ts";
+import { resolveMarketingPushUrl } from "../_shared/customerPushDeepLink.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,7 +66,22 @@ type CampaignRow = {
   message_pt?: string | null;
   message_es?: string | null;
   message_en?: string | null;
+  campaign_type?: string | null;
 };
+
+function resolveCampaignPushUrl(
+  campaign: CampaignRow,
+  coupon: { code: string; discount: string },
+): string {
+  return resolveMarketingPushUrl({
+    customPushUrl: campaign.push_url,
+    presetKey: campaign.preset_key,
+    campaignType: campaign.campaign_type ?? null,
+    triggerEvent: campaign.trigger_event,
+    couponCode: coupon.code || null,
+    linkedProductId: campaign.linked_product_id,
+  });
+}
 
 type StoreContext = {
   name: string;
@@ -504,7 +520,15 @@ async function processLifecycleCampaign(
       continue;
     }
 
-    const pushRes = await sendMarketingPush(supabase, campaign.store_id, title, body, campaign.push_url ?? "/", campaign.id, phone);
+    const pushRes = await sendMarketingPush(
+      supabase,
+      campaign.store_id,
+      title,
+      body,
+      resolveCampaignPushUrl(campaign, coupon),
+      campaign.id,
+      phone,
+    );
     if (pushRes.ok) {
       sent++;
       await supabase.from("lifecycle_send_log").insert({
@@ -603,7 +627,7 @@ async function processCampaign(
     });
     const title = sanitizeNotificationText(applyTemplate(rawTitle, vars));
     const body = sanitizeNotificationText(applyTemplate(rawBody, vars));
-    const pushUrl = campaign.push_url ?? "/";
+    const pushUrl = resolveCampaignPushUrl(campaign, coupon);
 
     if (dryRun) {
       sent++;
@@ -693,7 +717,7 @@ async function renderCampaignPreview(
     title: applyTemplate(rawTitle, vars),
     body: applyTemplate(rawBody, vars),
     locale,
-    pushUrl: campaign.push_url ?? "/",
+    pushUrl: resolveCampaignPushUrl(campaign, coupon),
   };
 }
 
