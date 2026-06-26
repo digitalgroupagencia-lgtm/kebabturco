@@ -15,14 +15,16 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import net from "node:net";
+import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
-const VERSION = "1.0.0-visit";
+const VERSION = "1.1.0-visit";
 const POLL_MS = 2500;
 const HEARTBEAT_MS = 30000;
 const TCP_TIMEOUT = 8000;
+const LOCAL_PORT = Number(process.env.VISIT_BRIDGE_PORT || 3848);
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -143,3 +145,39 @@ void heartbeat();
 setInterval(() => void heartbeat(), HEARTBEAT_MS);
 setInterval(() => void poll(), POLL_MS);
 void poll();
+
+const PID_FILE = path.join(os.homedir(), ".kebab-visit-bridge.pid");
+fs.writeFileSync(PID_FILE, String(process.pid));
+process.on("exit", () => {
+  try {
+    fs.unlinkSync(PID_FILE);
+  } catch {
+    /* noop */
+  }
+});
+
+function cors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+const localServer = http.createServer((req, res) => {
+  cors(res);
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  if (req.url === "/health" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, bridge: true, version: VERSION, pid: process.pid }));
+    return;
+  }
+  res.writeHead(404);
+  res.end();
+});
+
+localServer.listen(LOCAL_PORT, "127.0.0.1", () => {
+  console.log(`[VISIT-BRIDGE] Painel local: http://127.0.0.1:${LOCAL_PORT}/health`);
+});

@@ -7,10 +7,14 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import {
   DEMO_VISIT_COUPON_CODE,
   VISIT_BRIDGE_INSTALL,
+  VISIT_HELPER_ONLY,
   fetchVisitPrintConfig,
   isVisitBridgeOnline,
   printVisitDemoTest,
+  probeLocalMacPrint,
   saveVisitPrintConfig,
+  startLocalMacPrintBridge,
+  type LocalMacStatus,
   type VisitPrintConfig,
 } from "@/services/visitPrintService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,6 +29,7 @@ import {
   Copy,
   Loader2,
   MapPin,
+  Play,
   Printer,
   Save,
   Terminal,
@@ -43,12 +48,15 @@ export default function AdminVisitPrintPage() {
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const { stores } = useResolvedStore();
   const [cfg, setCfg] = useState<VisitPrintConfig | null>(null);
+  const [restaurantName, setRestaurantName] = useState("");
   const [ip, setIp] = useState("");
   const [port, setPort] = useState(9100);
   const [storeId, setStoreId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [connectingMac, setConnectingMac] = useState(false);
+  const [localMac, setLocalMac] = useState<LocalMacStatus | null>(null);
   const [demoOrders, setDemoOrders] = useState<
     { id: string; order_number: string; created_at: string; store_id: string }[]
   >([]);
@@ -56,9 +64,11 @@ export default function AdminVisitPrintPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const c = await fetchVisitPrintConfig();
+      const [c, local] = await Promise.all([fetchVisitPrintConfig(), probeLocalMacPrint()]);
+      setLocalMac(local);
       setCfg(c);
       if (c) {
+        setRestaurantName(c.restaurant_display_name || "");
         setIp(c.printer_ip);
         setPort(c.printer_port || 9100);
         if (c.target_store_id) setStoreId(c.target_store_id);
@@ -78,19 +88,24 @@ export default function AdminVisitPrintPage() {
 
   useEffect(() => {
     void load();
-    const i = setInterval(() => void load(), 15000);
+    const i = setInterval(() => void load(), 8000);
     return () => clearInterval(i);
   }, [load]);
+
+  const persistConfig = async () => {
+    await saveVisitPrintConfig({
+      printerIp: ip.trim(),
+      printerPort: port || 9100,
+      targetStoreId: storeId || null,
+      restaurantDisplayName: restaurantName.trim(),
+    });
+  };
 
   const save = async () => {
     setSaving(true);
     try {
-      await saveVisitPrintConfig({
-        printerIp: ip.trim(),
-        printerPort: port || 9100,
-        targetStoreId: storeId || null,
-      });
-      toast({ title: "Guardado", description: "Impressora de visita actualizada." });
+      await persistConfig();
+      toast({ title: "Guardado", description: "Dados desta visita actualizados." });
       await load();
     } catch (e) {
       toast({ title: "Erro", description: (e as Error).message, variant: "destructive" });
@@ -99,23 +114,61 @@ export default function AdminVisitPrintPage() {
     }
   };
 
+  const connectMac = async () => {
+    setConnectingMac(true);
+    try {
+      const result = await startLocalMacPrintBridge();
+      if (!result.ok) {
+        toast({
+          title: "Helper offline",
+          description:
+            "No Mac: abra o Terminal na pasta do projeto e corra «npm run visit-print:helper» (uma vez por sessão). Depois volte a carregar aqui.",
+          variant: "destructive",
+        });
+        copyText(VISIT_HELPER_ONLY);
+        return;
+      }
+      toast({
+        title: result.already_running ? "Mac já estava ligado" : "Impressão iniciada no Mac",
+        description: "Pode enviar teste ou usar o cupão na app do cliente.",
+      });
+      await new Promise((r) => setTimeout(r, 1500));
+      await load();
+    } finally {
+      setConnectingMac(false);
+    }
+  };
+
   const runTest = async () => {
+    if (!restaurantName.trim()) {
+      toast({
+        title: "Falta o nome",
+        description: "Escreva o nome do restaurante que está a visitar.",
+        variant: "destructive",
+      });
+      return;
+    }
     setTesting(true);
     try {
-      await saveVisitPrintConfig({
-        printerIp: ip.trim(),
-        printerPort: port || 9100,
-        targetStoreId: storeId || null,
-      });
-      const res = await printVisitDemoTest("Demonstração");
+      await persistConfig();
+      const local = await probeLocalMacPrint();
+      if (!local.bridge_running && !isVisitBridgeOnline(cfg?.bridge_last_seen_at ?? null)) {
+        const started = await startLocalMacPrintBridge();
+        if (!started.ok) {
+          throw new Error("Ligue o Mac primeiro com o botão «Ligar Mac».");
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      const res = await printVisitDemoTest();
       if (res.success) {
         toast({
           title: "Teste enviado",
-          description: "O programa no Mac deve imprimir em segundos (mesma Wi‑Fi).",
+          description: `Ticket de «${restaurantName.trim()}» a imprimir…`,
         });
       } else {
         throw new Error(res.error);
       }
+      await load();
     } catch (e) {
       toast({ title: "Erro", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -123,7 +176,8 @@ export default function AdminVisitPrintPage() {
     }
   };
 
-  const bridgeOnline = isVisitBridgeOnline(cfg?.bridge_last_seen_at ?? null);
+  const cloudOnline = isVisitBridgeOnline(cfg?.bridge_last_seen_at ?? null);
+  const macReady = Boolean(localMac?.bridge_running || cloudOnline);
 
   if (roleLoading || loading) {
     return <div className="p-8 text-muted-foreground">A carregar…</div>;
@@ -143,79 +197,90 @@ export default function AdminVisitPrintPage() {
       <PremiumPageHeader
         icon={MapPin}
         title="Demo visita"
-        subtitle="Demonstrar impressão em restaurantes novos usando o seu Mac na mesma Wi‑Fi."
+        subtitle="Demonstrar impressão em restaurantes novos — Mac na mesma Wi‑Fi."
         badge={
-          <Badge variant={bridgeOnline ? "default" : "secondary"}>
-            {bridgeOnline ? "Mac ligado" : "Mac offline"}
+          <Badge variant={macReady ? "default" : "secondary"}>
+            {macReady ? "Pronto a imprimir" : "Mac por ligar"}
           </Badge>
         }
       />
 
       <Alert>
-        <AlertTitle>Como funciona na visita</AlertTitle>
+        <AlertTitle>Fluxo rápido na visita</AlertTitle>
         <AlertDescription className="space-y-2 text-sm">
-          <p>
-            1. Instale o programa <strong>uma vez</strong> no Mac (instruções abaixo).
-          </p>
-          <p>
-            2. No restaurante: mesma Wi‑Fi, coloque o <strong>IP e porta</strong> da impressora e guarde.
-          </p>
-          <p>
-            3. Faça um pedido na <strong>app do cliente</strong> com o cupão{" "}
-            <code className="bg-muted px-1 rounded">{DEMO_VISIT_COUPON_CODE}</code> (com a sua conta admin)
-            — não paga nada e <strong>não aparece no painel da loja</strong>.
-          </p>
-          <p>4. O ticket imprime na impressora do restaurante através do seu Mac.</p>
+          <p>1. Nome do restaurante + IP + porta → <strong>Guardar</strong></p>
+          <p>2. <strong>Ligar Mac</strong> (só precisa do helper activo uma vez por sessão)</p>
+          <p>3. <strong>Imprimir teste</strong> ou pedido na app com cupão <code className="bg-muted px-1 rounded">{DEMO_VISIT_COUPON_CODE}</code></p>
+          <p>O ticket mostra o <strong>nome que escreveu</strong>. O pedido demo não aparece no painel da loja.</p>
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            {bridgeOnline ? (
+            {macReady ? (
               <Wifi className="h-5 w-5 text-green-600" />
             ) : (
               <WifiOff className="h-5 w-5 text-muted-foreground" />
             )}
-            Estado do Mac
+            Ligação com o Mac
           </CardTitle>
           <CardDescription>
-            {bridgeOnline
-              ? "O programa de visita está activo no seu Mac."
-              : "Abra o programa no terminal do Mac antes de testar."}
-            {cfg?.bridge_last_seen_at
-              ? ` · último sinal ${new Date(cfg.bridge_last_seen_at).toLocaleTimeString("pt-PT")}`
-              : ""}
+            {localMac?.helper_online
+              ? "Helper local detectado no seu Mac."
+              : "Helper local não detectado — inicie com o botão ou no Terminal."}
+            {localMac?.bridge_running || cloudOnline
+              ? " · impressão activa"
+              : " · impressão parada"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground font-mono break-all">
-            VISIT_OWNER_USER_ID: {cfg?.user_id ?? user?.id ?? "—"}
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => void connectMac()} disabled={connectingMac}>
+              {connectingMac ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              Ligar Mac
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => copyText(VISIT_HELPER_ONLY)}>
+              <Copy className="h-3.5 w-3.5 mr-1.5" />
+              Copiar comando helper
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Na primeira vez do dia: no Terminal do Mac, na pasta do projeto,{" "}
+            <code className="bg-muted px-1 rounded">npm run visit-print:helper</code> e deixe aberto.
+            Depois «Ligar Mac» no painel inicia a impressão sem mais comandos.
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => copyText(cfg?.user_id ?? user?.id ?? "")}
-          >
-            <Copy className="h-3.5 w-3.5 mr-1.5" />
-            Copiar ID para o ficheiro de configuração
-          </Button>
+          <p className="text-xs text-muted-foreground font-mono break-all">
+            ID: {cfg?.user_id ?? user?.id ?? "—"}
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Impressora desta visita</CardTitle>
-          <CardDescription>Endereço na rede local do restaurante (muda em cada visita).</CardDescription>
+          <CardTitle className="text-lg">Restaurante desta visita</CardTitle>
+          <CardDescription>
+            O nome aparece no topo do ticket (teste fixo ou pedido real com cupão demo).
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Unidade (nome no ticket)</Label>
+            <Label>Nome do restaurante (manual)</Label>
+            <Input
+              value={restaurantName}
+              onChange={(e) => setRestaurantName(e.target.value)}
+              placeholder="Ex.: Pizzeria Roma Gandia"
+            />
+          </div>
+          <div>
+            <Label>Unidade no sistema (fila interna)</Label>
             <Select value={storeId} onValueChange={setStoreId}>
               <SelectTrigger>
-                <SelectValue placeholder="Escolha a loja" />
+                <SelectValue placeholder="Escolha a loja de referência" />
               </SelectTrigger>
               <SelectContent>
                 {stores.map((s) => (
@@ -225,6 +290,9 @@ export default function AdminVisitPrintPage() {
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Só para encaminhar o job — o nome no papel é o campo acima.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -260,6 +328,9 @@ export default function AdminVisitPrintPage() {
               Imprimir teste
             </Button>
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            O teste imprime um pedido exemplo fixo (pizza, bebidas, etc.) com o nome «{restaurantName.trim() || "…"}».
+          </p>
         </CardContent>
       </Card>
 
@@ -267,20 +338,18 @@ export default function AdminVisitPrintPage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Terminal className="h-5 w-5" />
-            Instalar uma vez no Mac
+            Instalação única no Mac
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
-            <li>Abra o Terminal na pasta do projeto.</li>
-            <li>Corra os comandos abaixo (só na primeira vez).</li>
-            <li>Edite o ficheiro em casa com a chave do Supabase e o ID copiado acima.</li>
-            <li>Em cada visita: ligue o Mac à Wi‑Fi do restaurante e corra o último comando.</li>
-          </ol>
+          <p className="text-muted-foreground">
+            Também pode dar duplo clique em{" "}
+            <code className="text-xs bg-muted px-1 rounded">scripts/Visit-Print-Helper.command</code> no Finder.
+          </p>
           <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{VISIT_BRIDGE_INSTALL}</pre>
           <Button type="button" variant="outline" size="sm" onClick={() => copyText(VISIT_BRIDGE_INSTALL)}>
             <Copy className="h-3.5 w-3.5 mr-1.5" />
-            Copiar comandos
+            Copiar instruções
           </Button>
         </CardContent>
       </Card>
