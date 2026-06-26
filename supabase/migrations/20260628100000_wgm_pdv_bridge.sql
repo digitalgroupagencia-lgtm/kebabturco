@@ -334,11 +334,13 @@ GRANT EXECUTE ON FUNCTION public.enqueue_wgm_order_sync(uuid, uuid, text) TO ser
 GRANT EXECUTE ON FUNCTION public.dispatch_wgm_sync(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.wgm_apply_inbound_status(uuid, text, uuid, integer) TO service_role;
 
+DROP TRIGGER IF EXISTS update_wgm_integration_config_updated_at ON public.wgm_integration_config;
 CREATE TRIGGER update_wgm_integration_config_updated_at
   BEFORE UPDATE ON public.wgm_integration_config
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_wgm_order_refs_updated_at ON public.wgm_order_refs;
 CREATE TRIGGER update_wgm_order_refs_updated_at
   BEFORE UPDATE ON public.wgm_order_refs
   FOR EACH ROW
