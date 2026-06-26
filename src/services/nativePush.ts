@@ -252,7 +252,7 @@ async function persistTokenToBackend(
     _fcm_token: cleanToken,
     _platform: platform,
     _customer_phone: customerPhone,
-    _order_id: opts?.orderId ?? null,
+    _order_id: opts?.orderId ?? undefined,
     _device_locale: getDeviceLocaleTag(),
   });
   if (error) {

@@ -37,10 +37,22 @@ type RefRow = {
 const INBOUND_URL =
   "https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/wgm-inbound-webhook";
 
+const SYNC_DISPATCH_URL =
+  "https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/wgm-sync-dispatch";
+
+function wgmInvokeErrorMessage(error: { message?: string } | null): string {
+  const msg = error?.message ?? "";
+  if (/edge function|not found|404|failed to send/i.test(msg)) {
+    return "O servidor de envio ainda não está publicado. Faça Publish no Lovable (Kebab) e confirme em Cloud → Edge functions que existem wgm-sync-dispatch e wgm-inbound-webhook.";
+  }
+  return msg || "Erro ao contactar o servidor de envio";
+}
+
 export default function AdminWgmBridgePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [serverDeployed, setServerDeployed] = useState<boolean | null>(null);
   const [ping, setPing] = useState<{ api_key_configured?: boolean; enabled?: boolean } | null>(null);
   const [cfg, setCfg] = useState<WgmConfig | null>(null);
   const [pending, setPending] = useState<QueueRow[]>([]);
@@ -70,6 +82,9 @@ export default function AdminWgmBridgePage() {
 
   useEffect(() => {
     load();
+    fetch(SYNC_DISPATCH_URL, { method: "GET" })
+      .then((r) => setServerDeployed(r.ok))
+      .catch(() => setServerDeployed(false));
   }, [load]);
 
   const saveEnabled = async (enabled: boolean) => {
@@ -93,9 +108,11 @@ export default function AdminWgmBridgePage() {
       body: { ping: true },
     });
     if (error) {
-      toast.error(error.message);
+      toast.error(wgmInvokeErrorMessage(error));
+      setServerDeployed(false);
       return;
     }
+    setServerDeployed(true);
     setPing(data as typeof ping);
     if ((data as { api_key_configured?: boolean })?.api_key_configured) {
       toast.success("Chave WGM configurada no servidor");
@@ -111,9 +128,11 @@ export default function AdminWgmBridgePage() {
     });
     setProcessing(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(wgmInvokeErrorMessage(error));
+      setServerDeployed(false);
       return;
     }
+    setServerDeployed(true);
     const processed = (data as { processed?: number })?.processed ?? 0;
     toast.success(`Processados ${processed} item(ns) na fila`);
     load();
@@ -143,6 +162,20 @@ export default function AdminWgmBridgePage() {
           O dono vê resultados no PDV; a equipa continua a aceitar pedidos no app.
         </p>
       </div>
+
+      {serverDeployed === false && (
+        <Card className="p-4 border-destructive/50 bg-destructive/5">
+          <p className="text-sm font-medium text-destructive flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            O servidor de envio ao PDV ainda não está no ar (não foi publicado).
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            No Lovable do Kebab: faça <strong>Publish</strong> e confirme em Cloud → Edge functions as funções
+            {" "}<strong>wgm-sync-dispatch</strong> e <strong>wgm-inbound-webhook</strong>.
+            Sem isso, «Testar servidor» e «Processar fila» falham sempre.
+          </p>
+        </Card>
+      )}
 
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between gap-4">

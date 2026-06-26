@@ -250,10 +250,13 @@ const MenuPage = () => {
       setProdPromo(Boolean(prod.is_promo));
       const mods = Array.isArray(prod.price_modifiers) ? prod.price_modifiers : [];
       setModifierLines(
-        mods.map((m: { name?: Record<string, string>; price?: number }, i: number) => {
-          const label = pickLocalizedText(m.name, primaryLang) || `Extra ${i + 1}`;
-          return `${label}|${m.price ?? 0}`;
-        }).join("\n"),
+        mods
+          .map((m, i) => {
+            const row = m as { name?: Record<string, string>; price?: number };
+            const label = pickLocalizedText(row.name, primaryLang) || `Extra ${i + 1}`;
+            return `${label}|${row.price ?? 0}`;
+          })
+          .join("\n"),
       );
       const p = prod as Product & { product_type?: string; combo_unit_count?: number };
       setProdType(p.product_type === "combo" ? "combo" : "simple");

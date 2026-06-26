@@ -23,7 +23,7 @@ export async function sendSupportMessage(opts: {
     _order_id: opts.orderId,
     _sender_role: opts.senderRole,
     _body: opts.body,
-    _customer_phone: opts.customerPhone ?? null,
+    _customer_phone: opts.customerPhone ?? undefined,
   });
   if (error) throw error;
   return data as string;

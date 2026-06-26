@@ -119,7 +119,7 @@ const OrderTrackingScreen = () => {
               <>
                 <OrderDelaySupportBanner
                   orderId={order.id}
-                  storeId={storeId}
+                  storeId={storeId ?? undefined}
                   status={order.status}
                   createdAt={order.created_at}
                   orderNumber={order.order_number}

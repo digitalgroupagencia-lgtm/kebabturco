@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 const SESSION_KEY = "kt-marketing-session";
 
@@ -48,8 +49,8 @@ export async function trackMarketingEvent(
         _store_id: opts.storeId,
         _event_name: eventName,
         _session_id: sid,
-        _customer_phone: opts?.customerPhone ?? null,
-        _metadata: meta,
+        _customer_phone: opts?.customerPhone ?? undefined,
+        _metadata: meta as Json,
       });
     }
   } catch {

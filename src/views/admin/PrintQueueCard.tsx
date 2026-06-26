@@ -69,9 +69,9 @@ export default function PrintQueueCard({ storeId }: { storeId: string }) {
   ) => {
     const { data, error } = await supabase.rpc("cleanup_print_jobs", {
       _store_id: storeId,
-      _statuses: params._statuses ?? null,
+      _statuses: params._statuses ?? undefined,
       _only_tests: params._only_tests ?? false,
-      _older_than_hours: params._older_than_hours ?? null,
+      _older_than_hours: params._older_than_hours ?? undefined,
     });
     if (error) {
       toast.error("Error: " + error.message);

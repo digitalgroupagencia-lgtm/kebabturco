@@ -32,9 +32,9 @@ export async function saveMyStaffProfile(input: {
   avatar_url: string | null;
 }): Promise<void> {
   const { error } = await supabase.rpc("upsert_my_staff_profile", {
-    _full_name: input.full_name.trim() || null,
-    _birth_date: input.birth_date || null,
-    _avatar_url: input.avatar_url?.trim() || null,
+    _full_name: input.full_name.trim() || undefined,
+    _birth_date: input.birth_date || undefined,
+    _avatar_url: input.avatar_url?.trim() || undefined,
   });
   if (error) throw error;
 }

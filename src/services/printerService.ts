@@ -75,8 +75,8 @@ export async function createPrintJob(
   const { data, error } = await supabase.rpc("enqueue_print_job", {
     _ticket_data: ticketDataBase64,
     _store_id: storeId,
-    _order_id: orderId ?? null,
-    _copies_override: copiesOverride ?? null,
+    _order_id: orderId ?? undefined,
+    _copies_override: copiesOverride ?? undefined,
     _force_reprint: forceReprint,
   });
   if (error) return { success: false, error: error.message };

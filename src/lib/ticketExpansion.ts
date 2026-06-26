@@ -88,7 +88,8 @@ export function cartItemToTicketItem(item: CartItem): TicketItem {
   const size = item.sizeName ? pickLabel(item.sizeName) : undefined;
 
   if (item.configuration?.comboUnits?.length || (item.configuration?.globalSelections?.length ?? 0) > 0) {
-    const { extras, removed } = buildFromConfiguration(item.configuration);
+    const configuration = item.configuration!;
+    const { extras, removed } = buildFromConfiguration(configuration);
     return {
       name,
       price: item.unitPrice,

@@ -79,8 +79,8 @@ export default function CampaignDiagnosticPanel() {
     if (!storeId) return;
     const preset = CAMPAIGN_PRESETS.find((p) => p.key === key);
     if (!preset) return;
-    setTitle(preset.title);
-    setBody(preset.message);
+    setTitle(preset.title.pt);
+    setBody(preset.message.pt);
     const r = await upsertCampaignPreset(storeId, preset);
     if (r.ok) {
       toast.success(`Campanha «${preset.name}» guardada`);

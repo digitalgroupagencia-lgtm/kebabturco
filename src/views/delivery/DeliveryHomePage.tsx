@@ -13,7 +13,7 @@ const DeliveryHomePage = () => {
   const { t } = useStaffT();
 
   const { storeId } = useAdminStoreId();
-  const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId);
+  const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId ?? undefined);
   const activeDeliveryOrder = orders.find((o) => o.status === "out_for_delivery") ?? null;
 
   useDriverLocationShare({

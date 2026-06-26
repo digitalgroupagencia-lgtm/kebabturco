@@ -52,6 +52,7 @@ import {
   fetchMarketingProductOptions,
   presetUsesFeaturedProduct,
 } from "@/lib/marketing/marketingProductPicker";
+import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
 import MarketingSuggestionCard from "@/components/marketing/MarketingSuggestionCard";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";

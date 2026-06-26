@@ -129,7 +129,7 @@ export async function saveVisitPrintConfig(opts: {
   const { error } = await supabase.rpc("save_master_visit_print_config", {
     _printer_ip: opts.printerIp,
     _printer_port: opts.printerPort,
-    _target_store_id: null,
+    _target_store_id: undefined,
     _restaurant_display_name: opts.restaurantDisplayName,
   });
   if (error) throw error;
@@ -148,8 +148,8 @@ export async function enqueueVisitDemoPrint(
 ): Promise<{ success: boolean; jobId?: string; error?: string }> {
   const { data, error } = await supabase.rpc("enqueue_visit_demo_print", {
     _ticket_data: ticketBase64,
-    _store_id: null,
-    _order_id: orderId ?? null,
+    _store_id: undefined,
+    _order_id: orderId ?? undefined,
   });
   if (error) return { success: false, error: error.message };
   return { success: true, jobId: data as string };

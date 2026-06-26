@@ -88,9 +88,12 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
 
     const lockMode = landscapeLock ? "landscape" : "portrait";
     try {
-      const lock = screen.orientation?.lock;
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>;
+    };
+    const lock = orientation.lock;
       if (typeof lock === "function") {
-        lock.call(screen.orientation, lockMode).catch(() => {
+        lock.call(orientation, lockMode).catch(() => {
           /* utilizador deve rodar o aparelho */
         });
       }

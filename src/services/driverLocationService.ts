@@ -6,13 +6,15 @@ export async function publishDriverLocation(opts: {
   activeOrderId: string | null;
   coords: GeoCoords;
 }) {
+  if (!opts.activeOrderId) return;
+
   const { error } = await supabase.rpc("upsert_driver_location", {
     _store_id: opts.storeId,
     _active_order_id: opts.activeOrderId,
     _lat: opts.coords.lat,
     _lng: opts.coords.lng,
-    _accuracy_m: opts.coords.accuracyM ?? null,
-    _heading_deg: opts.coords.headingDeg ?? null,
+    _accuracy_m: opts.coords.accuracyM ?? undefined,
+    _heading_deg: opts.coords.headingDeg ?? undefined,
   });
   if (error) throw error;
 }

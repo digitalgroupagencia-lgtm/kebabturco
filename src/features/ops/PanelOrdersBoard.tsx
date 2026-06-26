@@ -230,7 +230,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     if (!confirm(t("panel.delete_test.confirm").replace("{count}", String(testOrdersCount)))) return;
     setCleaningTests(true);
     try {
-      const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
+      const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: undefined });
       if (error) throw error;
       const removed = (data as { deleted?: number } | null)?.deleted ?? 0;
       toast.success(t("panel.delete_test.success").replace("{count}", String(removed)));

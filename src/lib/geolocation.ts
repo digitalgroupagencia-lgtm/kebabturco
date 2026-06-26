@@ -19,7 +19,7 @@ export async function requestLocationPermission(background = false): Promise<boo
       permissions: background ? ["location", "coarseLocation"] : ["location"],
     });
     const loc = perm.location ?? perm.coarseLocation;
-    return loc === "granted" || loc === "limited";
+    return loc === "granted" || (loc as string) === "limited";
   } catch {
     if (!navigator.geolocation) return false;
     return new Promise((resolve) => {
@@ -55,7 +55,7 @@ export async function getCurrentCoords(): Promise<GeoCoords | null> {
             lat: p.coords.latitude,
             lng: p.coords.longitude,
             accuracyM: p.coords.accuracy,
-            headingDeg: p.heading ?? undefined,
+            headingDeg: (p.coords as { heading?: number | null }).heading ?? undefined,
           }),
         () => resolve(null),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
@@ -104,7 +104,7 @@ export function watchCoords(
         lat: p.coords.latitude,
         lng: p.coords.longitude,
         accuracyM: p.coords.accuracy,
-        headingDeg: p.heading ?? undefined,
+        headingDeg: (p.coords as { heading?: number | null }).heading ?? undefined,
       }),
     (e) => onError?.(e),
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 },

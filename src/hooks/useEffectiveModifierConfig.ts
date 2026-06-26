@@ -24,7 +24,7 @@ export function useEffectiveModifierConfig(
       const rulesApplied = resolveIsComboProduct(product)
         ? applyComboDescriptionRules(product, filtered, allProducts)
         : applySimpleProductRules(product, filtered, allProducts);
-      return sanitizeProductModifierConfig(rulesApplied);
+      return rulesApplied ? sanitizeProductModifierConfig(rulesApplied) : null;
     };
 
     try {

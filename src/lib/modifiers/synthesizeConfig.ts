@@ -112,11 +112,12 @@ function makeGroup(
   key: string,
   partial: Omit<ModifierGroup, "id" | "storeId" | "options"> & { options: ModifierOption[] },
 ): ModifierGroup {
+  const { options, ...rest } = partial;
   return {
     id: `${SYNTH_PREFIX}-${productId}-${key}`,
     storeId: "",
-    options: partial.options,
-    ...partial,
+    options,
+    ...rest,
   };
 }
 

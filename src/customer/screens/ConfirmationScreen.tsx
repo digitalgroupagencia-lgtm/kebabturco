@@ -272,7 +272,7 @@ const ConfirmationScreen = () => {
           {!isCancelled && liveOrder && (
             <div className="mt-6">
               <OrderDelaySupportBanner
-                storeId={storeId}
+                storeId={storeId ?? undefined}
                 status={liveOrder.status}
                 createdAt={liveOrder.created_at}
                 orderNumber={liveOrder.order_number}

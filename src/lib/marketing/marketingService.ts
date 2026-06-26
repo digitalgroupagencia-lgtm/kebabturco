@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { CAMPAIGN_PRESETS } from "@/lib/marketing/campaignPresets";
 
 export type MarketingCampaignRow = {
@@ -16,7 +17,7 @@ export type MarketingCampaignRow = {
   preset_key: string | null;
   send_mode: string;
   audience_type: string;
-  audience_config: Record<string, unknown> | null;
+  audience_config: Json | null;
   schedule_time: string | null;
   schedule_days: number[] | null;
   language_mode: string;
@@ -195,6 +196,7 @@ export async function sendCampaignTestToTeam(opts: {
     body?: string;
     locale?: string;
     error?: string;
+    testSendTeam?: boolean;
   };
   return {
     ok: Boolean(payload.testSendTeam ? (payload.sent ?? 0) > 0 : payload.ok),

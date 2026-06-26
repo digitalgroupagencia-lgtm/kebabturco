@@ -21,6 +21,7 @@ import {
   validateCoupon,
   waitForOrderPaymentConfirmed,
 } from "@/services/orderService";
+import { supabase } from "@/integrations/supabase/client";
 import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
 import {
   DEMO_VISIT_COUPON_CODE,
@@ -671,7 +672,7 @@ const PaymentScreen = () => {
     setTrackingOrderId(result.order_id);
     void supabase
       .from("orders")
-      .update({ order_locale: lang } as Record<string, unknown>)
+      .update({ order_locale: lang })
       .eq("id", result.order_id);
     const awaitsCounterPayment =
       (opts.paymentMethod === "cash" || opts.paymentMethod === "counter") && opts.paymentStatus !== "paid";
@@ -1077,7 +1078,7 @@ const PaymentScreen = () => {
 
   const confirm = async (methodOverride?: PaymentMethodId) => {
     const method = methodOverride ?? selectedMethodRef.current ?? selected;
-    if (processing || !validate(method) || !method) return;
+    if (processing || !method || !validate(method)) return;
 
     if (!openStatus.open) {
       setClosedDialog(true);

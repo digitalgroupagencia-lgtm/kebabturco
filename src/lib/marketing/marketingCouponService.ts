@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import type { CouponSuggestionTemplate } from "@/lib/marketing/couponSuggestions";
 import { validateCoupon } from "@/services/orderService";
 
@@ -47,7 +48,7 @@ export async function createCouponFromSuggestion(
     is_active: true,
     expires_at: expiresAt,
     linked_product_id: productId ?? null,
-    promo_config: template.promoConfig ?? {},
+    promo_config: (template.promoConfig ?? {}) as Json,
   };
 
   if (existing) {
