@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import OpsCompactCard from "@/components/panel/OpsCompactCard";
 import { formatDeliveryZoneSummary } from "@/lib/formatDeliveryZoneSummary";
+import { ensureStoreCoordsFromAddress } from "@/services/storeGeocodeService";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Truck, Copy, Download, MoreVertical } from "lucide-react";
 
@@ -235,6 +236,7 @@ const TenantDeliveryZonesPage = () => {
       toast.error(error.message);
       return;
     }
+    void ensureStoreCoordsFromAddress(z.store_id);
     toast.success("Zona guardada");
     setEditingId(null);
   };
@@ -313,6 +315,7 @@ const TenantDeliveryZonesPage = () => {
     const result = data as { skipped?: boolean; zones_inserted?: number };
     toast.success(result?.skipped ? "Zonas já existiam" : `Plantilla aplicada (${result?.zones_inserted ?? 0})`);
     await loadZones(storeId);
+    void ensureStoreCoordsFromAddress(storeId);
   };
 
   if (loading) {

@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { provisionStripeConnect } from "@/services/orderService";
+import { geocodeAndUpdateStoreCoords } from "@/services/storeGeocodeService";
 import { Loader2, Plus, Trash2, Store as StoreIcon, Upload } from "lucide-react";
 
 interface Store {
@@ -80,9 +81,22 @@ const TenantStoresPage = () => {
       name: s.name, address: s.address, phone: s.phone, image_url: s.image_url,
       short_description: s.short_description, is_active: s.is_active, sort_order: s.sort_order,
     }).eq("id", s.id);
+    if (error) {
+      setSaving(null);
+      toast.error(error.message);
+      return;
+    }
+    if (s.address?.trim()) {
+      const geo = await geocodeAndUpdateStoreCoords(s.id, { address: s.address, storeName: s.name });
+      if (geo.ok) {
+        toast.success("Salvo — posição do restaurante actualizada para entregas");
+      } else {
+        toast.success("Salvo — confirme o endereço completo para calcular a posição automaticamente");
+      }
+    } else {
+      toast.success("Salvo");
+    }
     setSaving(null);
-    if (error) toast.error(error.message);
-    else toast.success("Salvo");
   };
 
   const removeStore = async (id: string) => {

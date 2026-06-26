@@ -7,6 +7,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
 import { useStoreCoords } from "@/hooks/useStoreCoords";
+import { useCustomerDeliveryDistance } from "@/hooks/useCustomerDeliveryDistance";
 import { distanceKm } from "@/lib/geolocation";
 import { trackMarketingEvent } from "@/lib/marketingAnalytics";
 import UseMyLocationButton from "@/components/customer/UseMyLocationButton";
@@ -209,6 +210,16 @@ const PaymentScreen = () => {
   const [processing, setProcessing] = useState(false);
   const [customerDistanceKm, setCustomerDistanceKm] = useState<number | null>(null);
   const storeCoords = useStoreCoords(storeId);
+
+  useCustomerDeliveryDistance({
+    enabled: orderType === "delivery" && Boolean(storeCoords),
+    storeCoords,
+    street: deliveryAddress,
+    number: deliveryNumber,
+    postal: deliveryPostalCode,
+    city: deliveryCity,
+    onDistanceKm: setCustomerDistanceKm,
+  });
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [stripePaymentMeta, setStripePaymentMeta] = useState<{
