@@ -6,9 +6,12 @@ cd "$ROOT"
 
 # App Store: Tap to Pay desligado no JS até a Apple aprovar entitlement de produção.
 export VITE_IOS_TAP_TO_PAY_ENABLED=false
+# iPhone: embute o site no pacote (evita crash ao abrir no TestFlight).
+export VITE_IOS_BUNDLE_WEB=true
 
 npm run build
 npx cap sync ios
+bash "$ROOT/scripts/ios-patch-capacitor-config-appstore.sh"
 
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"
@@ -43,3 +46,4 @@ echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
 echo "  · Package SPM: sem Stripe Terminal (App Store)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=false"
+echo "  · VITE_IOS_BUNDLE_WEB=true (site dentro do IPA)"
