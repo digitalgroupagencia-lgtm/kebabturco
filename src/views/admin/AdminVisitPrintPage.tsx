@@ -3,7 +3,6 @@ import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isGeneralAdmin } from "@/lib/projectAccess";
-import { useResolvedStore } from "@/hooks/useResolvedStore";
 import {
   DEMO_VISIT_COUPON_CODE,
   VISIT_BRIDGE_INSTALL,
@@ -23,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
   Copy,
@@ -46,12 +44,10 @@ function copyText(text: string) {
 export default function AdminVisitPrintPage() {
   const { user } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
-  const { stores } = useResolvedStore();
   const [cfg, setCfg] = useState<VisitPrintConfig | null>(null);
   const [restaurantName, setRestaurantName] = useState("");
   const [ip, setIp] = useState("");
   const [port, setPort] = useState(9100);
-  const [storeId, setStoreId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -71,7 +67,6 @@ export default function AdminVisitPrintPage() {
         setRestaurantName(c.restaurant_display_name || "");
         setIp(c.printer_ip);
         setPort(c.printer_port || 9100);
-        if (c.target_store_id) setStoreId(c.target_store_id);
       }
       const { data } = await supabase
         .from("orders")
@@ -96,7 +91,6 @@ export default function AdminVisitPrintPage() {
     await saveVisitPrintConfig({
       printerIp: ip.trim(),
       printerPort: port || 9100,
-      targetStoreId: storeId || null,
       restaurantDisplayName: restaurantName.trim(),
     });
   };
@@ -211,7 +205,7 @@ export default function AdminVisitPrintPage() {
           <p>1. Nome do restaurante + IP + porta → <strong>Guardar</strong></p>
           <p>2. <strong>Ligar Mac</strong> (só precisa do helper activo uma vez por sessão)</p>
           <p>3. <strong>Imprimir teste</strong> ou pedido na app com cupão <code className="bg-muted px-1 rounded">{DEMO_VISIT_COUPON_CODE}</code></p>
-          <p>O ticket mostra o <strong>nome que escreveu</strong>. O pedido demo não aparece no painel da loja.</p>
+          <p>O ticket mostra o <strong>nome que escreveu</strong>. Não precisa escolher loja nem ligar «impressão automática» na configuração oficial.</p>
         </AlertDescription>
       </Alert>
 
@@ -262,37 +256,19 @@ export default function AdminVisitPrintPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Restaurante desta visita</CardTitle>
+          <CardTitle className="text-lg">Impressora desta visita</CardTitle>
           <CardDescription>
-            O nome aparece no topo do ticket (teste fixo ou pedido real com cupão demo).
+            Só para demonstrações em restaurantes novos — independente da loja oficial do projeto.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Nome do restaurante (manual)</Label>
+            <Label>Nome do restaurante (no ticket)</Label>
             <Input
               value={restaurantName}
               onChange={(e) => setRestaurantName(e.target.value)}
-              placeholder="Ex.: Pizzeria Roma Gandia"
+              placeholder="Ex.: Pizzeria Roma"
             />
-          </div>
-          <div>
-            <Label>Unidade no sistema (fila interna)</Label>
-            <Select value={storeId} onValueChange={setStoreId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Escolha a loja de referência" />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Só para encaminhar o job — o nome no papel é o campo acima.
-            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -329,7 +305,7 @@ export default function AdminVisitPrintPage() {
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            O teste imprime um pedido exemplo fixo (pizza, bebidas, etc.) com o nome «{restaurantName.trim() || "…"}».
+            Impressão automática da loja oficial <strong>não é necessária</strong> — basta Mac ligado, IP correcto e «Imprimir teste».
           </p>
         </CardContent>
       </Card>

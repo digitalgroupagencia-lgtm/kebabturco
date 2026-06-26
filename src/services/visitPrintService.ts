@@ -6,8 +6,6 @@ export type VisitPrintConfig = {
   user_id: string;
   printer_ip: string;
   printer_port: number;
-  target_store_id: string | null;
-  target_store_name?: string | null;
   restaurant_display_name: string;
   bridge_last_seen_at: string | null;
 };
@@ -85,8 +83,6 @@ export async function fetchVisitPrintConfig(): Promise<VisitPrintConfig | null> 
     user_id: String(row.user_id ?? ""),
     printer_ip: String(row.printer_ip ?? ""),
     printer_port: Number(row.printer_port ?? 9100),
-    target_store_id: row.target_store_id ? String(row.target_store_id) : null,
-    target_store_name: row.target_store_name ? String(row.target_store_name) : null,
     restaurant_display_name: String(row.restaurant_display_name ?? ""),
     bridge_last_seen_at: row.bridge_last_seen_at ? String(row.bridge_last_seen_at) : null,
   };
@@ -95,13 +91,12 @@ export async function fetchVisitPrintConfig(): Promise<VisitPrintConfig | null> 
 export async function saveVisitPrintConfig(opts: {
   printerIp: string;
   printerPort: number;
-  targetStoreId: string | null;
   restaurantDisplayName: string;
 }) {
   const { error } = await supabase.rpc("save_master_visit_print_config", {
     _printer_ip: opts.printerIp,
     _printer_port: opts.printerPort,
-    _target_store_id: opts.targetStoreId,
+    _target_store_id: null,
     _restaurant_display_name: opts.restaurantDisplayName,
   });
   if (error) throw error;
@@ -111,18 +106,16 @@ export async function resolveVisitDemoCompanyName(cfg?: VisitPrintConfig | null)
   const c = cfg ?? (await fetchVisitPrintConfig());
   const manual = c?.restaurant_display_name?.trim();
   if (manual) return manual;
-  if (c?.target_store_name?.trim()) return c.target_store_name.trim();
   return "Restaurante Demo";
 }
 
 export async function enqueueVisitDemoPrint(
-  storeId: string,
   ticketBase64: string,
   orderId?: string,
 ): Promise<{ success: boolean; jobId?: string; error?: string }> {
   const { data, error } = await supabase.rpc("enqueue_visit_demo_print", {
     _ticket_data: ticketBase64,
-    _store_id: storeId,
+    _store_id: null,
     _order_id: orderId ?? null,
   });
   if (error) return { success: false, error: error.message };
@@ -139,18 +132,19 @@ export async function finalizeDemoVisitOrder(orderId: string) {
 export async function printVisitDemoTest() {
   const cfg = await fetchVisitPrintConfig();
   if (!cfg?.printer_ip?.trim()) throw new Error("Configure o IP da impressora de visita");
-  const storeId = cfg.target_store_id;
-  if (!storeId) throw new Error("Escolha a unidade de referência para a fila de impressão");
+  if (!cfg.restaurant_display_name?.trim()) {
+    throw new Error("Escreva o nome do restaurante que está a visitar");
+  }
   const companyName = await resolveVisitDemoCompanyName(cfg);
   const ticket = buildEscPosTicket(sampleOrder(companyName));
-  return enqueueVisitDemoPrint(storeId, ticket);
+  return enqueueVisitDemoPrint(ticket);
 }
 
 export async function printVisitDemoOrder(input: CheckoutPrintInput) {
   const companyName = await resolveVisitDemoCompanyName();
   const ticket = checkoutPayloadToTicket({ ...input, companyName });
   const data = buildEscPosTicket(ticket);
-  return enqueueVisitDemoPrint(input.storeId, data, input.orderId);
+  return enqueueVisitDemoPrint(data, input.orderId);
 }
 
 export function isVisitBridgeOnline(lastSeen: string | null): boolean {
@@ -164,6 +158,6 @@ export const VISIT_BRIDGE_INSTALL = `# Uma vez no Mac (deixe esta janela aberta 
 npm run visit-print:helper
 
 # O painel «Ligar Mac» inicia a impressão automaticamente.
-# Se preferir manual: npm run visit-print`;
+# Não precisa configurar impressora na loja oficial do projeto.`;
 
 export const VISIT_HELPER_ONLY = "npm run visit-print:helper";
