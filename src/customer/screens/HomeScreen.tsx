@@ -213,7 +213,7 @@ const HomeScreen = () => {
                   </div>
                   <span
                     className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
-                      isActive ? "text-primary" : "text-foreground"
+                      isActive ? "text-accent-readable" : "text-foreground"
                     }`}
                   >
                     {tProduct(category.name)}

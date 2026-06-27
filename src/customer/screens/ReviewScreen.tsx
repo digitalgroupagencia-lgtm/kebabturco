@@ -258,7 +258,7 @@ const ReviewScreen = () => {
               {items.length > 0 && (
                 <button
                   onClick={handleClearAll}
-                  className="flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-destructive hover:bg-destructive/10 active:scale-95 px-2.5 py-1 rounded-full transition-all"
+                  className="flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-danger-readable hover:bg-destructive/10 active:scale-95 px-2.5 py-1 rounded-full transition-all"
                 >
                   <Trash2 className="w-3 h-3" /> {clearLabel}
                 </button>
@@ -332,13 +332,13 @@ const ReviewScreen = () => {
               <div className="flex items-center gap-1 px-3 py-2 bg-secondary/30 border-t border-border">
                 <button
                   onClick={() => handleEdit(item.productId, item.id)}
-                  className="flex items-center gap-1.5 text-primary text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 text-accent-readable text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
                 >
                   <Pencil className="w-3.5 h-3.5" /> {t("edit2")}
                 </button>
                 <button
                   onClick={() => setRemoveItemId(item.id)}
-                  className="flex items-center gap-1.5 text-destructive text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-destructive/5 active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 text-danger-readable text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-destructive/5 active:scale-95 transition-all"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> {t("remove2")}
                 </button>
@@ -352,7 +352,7 @@ const ReviewScreen = () => {
               <span className="text-base font-semibold">{t("emptyCart")}</span>
               <button
                 onClick={() => setScreen("home")}
-                className="mt-4 text-sm font-black text-primary px-4 py-2 rounded-full bg-primary/10"
+                className="mt-4 text-sm font-black text-accent-readable px-4 py-2 rounded-full bg-primary/10"
               >
                 {t("viewMenu")}
               </button>
@@ -388,7 +388,7 @@ const ReviewScreen = () => {
                   <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                     <ArrowRight className="w-4 h-4" strokeWidth={3} />
                   </span>
-                  <span className="text-[11px] font-black text-primary text-center leading-tight line-clamp-2">
+                  <span className="text-[11px] font-black text-accent-readable text-center leading-tight line-clamp-2">
                     {buttonLabel}
                   </span>
                 </button>
@@ -406,7 +406,7 @@ const ReviewScreen = () => {
           <button
             type="button"
             onClick={() => setScreen("home")}
-            className="mb-1.5 w-full text-center text-[12px] font-bold text-primary underline-offset-2 hover:underline active:opacity-70 touch-action-manipulation"
+            className="mb-1.5 w-full text-center text-[12px] font-bold text-accent-readable underline-offset-2 hover:underline active:opacity-70 touch-action-manipulation"
           >
             {t("addMoreItems")}
           </button>

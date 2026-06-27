@@ -115,7 +115,7 @@ const CustomerTabBar = () => {
               </span>
               <span
                 className={`max-w-[72px] truncate text-[9px] font-bold leading-none ${
-                  active ? "text-primary" : "text-muted-foreground"
+                  active ? "text-accent-readable" : "text-muted-foreground"
                 }`}
               >
                 {label}

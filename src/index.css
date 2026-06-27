@@ -214,6 +214,14 @@
   .shadow-cta { box-shadow: var(--shadow-cta); }
   .shadow-header { box-shadow: var(--shadow-header); }
 
+  /* Labels de acção em cartões — vinho escuro ilegível em fundos escuros */
+  .text-accent-readable {
+    @apply text-primary dark:text-white;
+  }
+  .text-danger-readable {
+    @apply text-destructive dark:text-white;
+  }
+
   /* Admin/painel — grelhas largas em tablet/telemóvel horizontal */
   html.staff-landscape-layout .staff-kpi-grid:not(.staff-kpi-grid--3) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
