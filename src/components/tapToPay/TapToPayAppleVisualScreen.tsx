@@ -9,10 +9,6 @@ type Props = {
   amountEuro: number;
   orderNumber?: string | number;
   onClose: () => void;
-  /** Modo vendedor: botão para confirmar cobrança após ecrã visual */
-  showConfirmButton?: boolean;
-  confirmBusy?: boolean;
-  onConfirm?: () => void;
 };
 
 function ContactlessIcon({ className }: { className?: string }) {
@@ -76,9 +72,6 @@ export default function TapToPayAppleVisualScreen({
   amountEuro,
   orderNumber,
   onClose,
-  showConfirmButton = false,
-  confirmBusy = false,
-  onConfirm,
 }: Props) {
   const { t } = useStaffT();
 
@@ -135,17 +128,7 @@ export default function TapToPayAppleVisualScreen({
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-4 px-6 pb-10">
-        {showConfirmButton ? (
-          <button
-            type="button"
-            disabled={confirmBusy}
-            onClick={() => onConfirm?.()}
-            className="min-w-[220px] rounded-full bg-white px-8 py-3.5 text-[17px] font-semibold text-black active:scale-[0.98] transition-transform disabled:opacity-60"
-          >
-            {confirmBusy ? "…" : t("seller.pay.card_done")}
-          </button>
-        ) : null}
+      <div className="relative z-10 flex justify-center pb-10">
         <button
           type="button"
           onClick={onClose}

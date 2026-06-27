@@ -7,7 +7,6 @@ import { isTapToPayUiAvailable, isTapToPayVisualDemoMode } from "@/lib/tapToPayD
 import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { getTapToPayUnavailableMessage } from "@/lib/stripeTerminalService";
 import { markOrderPaidAtCounter } from "@/services/orderService";
-import { markSellerOrderPaidCard } from "@/services/sellerPaymentService";
 import { explainStaffPinPaymentError } from "@/lib/staffAccessPin";
 import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -31,7 +30,6 @@ export function useSellerPayment({ storeId, onSuccess }: Options) {
   const [cardOrder, setCardOrder] = useState<SellerPaymentOrder | null>(null);
   const [terminalOrder, setTerminalOrder] = useState<SellerPaymentOrder | null>(null);
   const [terminalPin, setTerminalPin] = useState("");
-  const [cardBusy, setCardBusy] = useState(false);
 
   const payCash = useCallback(
     async (order: SellerPaymentOrder) => {
@@ -82,21 +80,6 @@ export function useSellerPayment({ storeId, onSuccess }: Options) {
     [requestStaffPin, t],
   );
 
-  const confirmVisualCard = useCallback(async () => {
-    if (!cardOrder) return;
-    setCardBusy(true);
-    try {
-      await markSellerOrderPaidCard(cardOrder.id);
-      toast.success(t("tapToPay.step.success"));
-      setCardOrder(null);
-      onSuccess?.();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : t("tapToPay.step.error"));
-    } finally {
-      setCardBusy(false);
-    }
-  }, [cardOrder, onSuccess, t]);
-
   const SellerPaymentDialogs = useCallback(
     () => (
       <>
@@ -107,9 +90,6 @@ export function useSellerPayment({ storeId, onSuccess }: Options) {
             amountEuro={Number(cardOrder?.total ?? 0)}
             orderNumber={cardOrder?.order_number}
             onClose={() => setCardOrder(null)}
-            showConfirmButton
-            confirmBusy={cardBusy}
-            onConfirm={() => void confirmVisualCard()}
           />
         ) : (
           <TapToPayCheckoutSurface
@@ -130,7 +110,7 @@ export function useSellerPayment({ storeId, onSuccess }: Options) {
         )}
       </>
     ),
-    [StaffPinDialog, cardBusy, cardOrder, confirmVisualCard, onSuccess, storeId, terminalOrder, terminalPin],
+    [StaffPinDialog, cardOrder, onSuccess, storeId, terminalOrder, terminalPin],
   );
 
   return {
