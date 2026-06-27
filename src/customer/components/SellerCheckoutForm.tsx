@@ -309,7 +309,8 @@ const SellerCheckoutForm = () => {
             <div className="space-y-3 text-left">
               <TapToPayChargeEducation />
               <Button
-                className="w-full h-14 font-black text-base"
+                variant="outline"
+                className="w-full h-12 font-bold text-base"
                 disabled={busy}
                 onClick={() =>
                   void requestTapToPay({
@@ -327,8 +328,7 @@ const SellerCheckoutForm = () => {
           ) : null}
 
           <Button
-            variant="outline"
-            className="w-full h-12 font-bold"
+            className="w-full h-14 font-black text-base"
             disabled={busy}
             onClick={() => void confirmCashPayment()}
           >

@@ -6,6 +6,7 @@ import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
+import SellerOnboardingGate from "@/components/seller/SellerOnboardingGate";
 import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
 import { useStaffT } from "@/hooks/useStaffT";
 import { nav } from "@/lib/navPaths";
@@ -55,6 +56,7 @@ const SellerLayout = ({ page: Page }: Props) => {
   }
 
   return (
+    <SellerOnboardingGate userId={user.id}>
     <div className="min-h-[100dvh] w-full bg-background flex flex-col max-w-full overflow-x-hidden">
       <header className="sticky top-0 z-30 h-12 px-3 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur">
         <div className="flex items-center gap-2 min-w-0">
@@ -91,6 +93,7 @@ const SellerLayout = ({ page: Page }: Props) => {
         ))}
       </nav>
     </div>
+    </SellerOnboardingGate>
   );
 };
 

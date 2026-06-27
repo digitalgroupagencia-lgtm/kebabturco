@@ -982,6 +982,91 @@ export const STAFF_I18N = {
     pt: "Alterar mesa",
     en: "Change table",
   },
+  "seller.setup.title": {
+    es: "Complete su perfil",
+    pt: "Complete o seu perfil",
+    en: "Complete your profile",
+  },
+  "seller.setup.subtitle": {
+    es: "Antes de la primera venta, indique su nombre y cree su código de cobro.",
+    pt: "Antes da primeira venda, indique o seu nome e crie o seu código de cobrança.",
+    en: "Before your first sale, enter your name and create your payment code.",
+  },
+  "seller.setup.pin_title": {
+    es: "Código de cobro",
+    pt: "Código de cobrança",
+    en: "Payment code",
+  },
+  "seller.setup.pin_body": {
+    es: "Lo usará para confirmar pagos en efectivo o con tarjeta. Solo usted debe conocerlo.",
+    pt: "Vai usar este código para confirmar pagamentos em dinheiro ou com cartão. Só você deve conhecê-lo.",
+    en: "You will use this code to confirm cash or card payments. Only you should know it.",
+  },
+  "seller.setup.pin_label": {
+    es: "Crear código (4–8 dígitos)",
+    pt: "Criar código (4–8 dígitos)",
+    en: "Create code (4–8 digits)",
+  },
+  "seller.setup.pin_confirm": {
+    es: "Repetir código",
+    pt: "Repetir código",
+    en: "Repeat code",
+  },
+  "seller.setup.pin_mismatch": {
+    es: "Los códigos no coinciden",
+    pt: "Os códigos não coincidem",
+    en: "Codes do not match",
+  },
+  "seller.setup.save": {
+    es: "Guardar y empezar a vender",
+    pt: "Guardar e começar a vender",
+    en: "Save and start selling",
+  },
+  "seller.setup.done": {
+    es: "Perfil listo. Ya puede vender.",
+    pt: "Perfil pronto. Já pode vender.",
+    en: "Profile ready. You can sell now.",
+  },
+  "seller.orders.title": {
+    es: "Mis pedidos",
+    pt: "Meus pedidos",
+    en: "My orders",
+  },
+  "seller.orders.empty": {
+    es: "Ningún pedido en los últimos 7 días.",
+    pt: "Nenhum pedido nos últimos 7 dias.",
+    en: "No orders in the last 7 days.",
+  },
+  "seller.orders.collect_hint": {
+    es: "Cobre en efectivo o con Tap to Pay. El restaurante verá quién cobró.",
+    pt: "Cobre em dinheiro ou com Tap to Pay. O restaurante vê quem cobrou.",
+    en: "Collect cash or use Tap to Pay. The restaurant will see who collected.",
+  },
+  "seller.orders.pay_cash": {
+    es: "Cobrar en efectivo",
+    pt: "Cobrar em dinheiro",
+    en: "Collect cash",
+  },
+  "seller.orders.paid_cash": {
+    es: "Pagado · efectivo",
+    pt: "Pago · dinheiro",
+    en: "Paid · cash",
+  },
+  "seller.orders.paid_card": {
+    es: "Pagado · tarjeta",
+    pt: "Pago · cartão",
+    en: "Paid · card",
+  },
+  "seller.orders.paid_generic": {
+    es: "Pagado",
+    pt: "Pago",
+    en: "Paid",
+  },
+  "seller.orders.tap_optional": {
+    es: "Tap to Pay (opcional, solo iPhone)",
+    pt: "Tap to Pay (opcional, só iPhone)",
+    en: "Tap to Pay (optional, iPhone only)",
+  },
 
   ...STAFF_I18N_CATALOG,
 } as const satisfies Record<string, Record<StaffUiLang, string>>;
