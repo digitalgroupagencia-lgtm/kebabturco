@@ -7,6 +7,27 @@ export type SellerSetupStatus = {
   ready: boolean;
 };
 
+async function saveSellerPinViaEdge(input: {
+  fullName: string;
+  birthDate?: string | null;
+  pin: string;
+}): Promise<void> {
+  const { data, error } = await supabase.functions.invoke("seller-complete-onboarding", {
+    body: {
+      full_name: input.fullName.trim(),
+      birth_date: input.birthDate ?? null,
+      pin: input.pin.trim(),
+    },
+  });
+  if (error) throw error;
+  if (data && typeof data === "object") {
+    const payload = data as { success?: boolean; error?: string };
+    if (payload.error) throw new Error(payload.error);
+    if (payload.success) return;
+  }
+  throw new Error("Não foi possível guardar o perfil do vendedor");
+}
+
 export async function fetchSellerSetupStatus(userId: string): Promise<SellerSetupStatus> {
   const [profile, pinRes] = await Promise.all([
     fetchMyStaffProfile(userId),
@@ -37,6 +58,20 @@ export async function saveSellerOnboarding(input: {
   birthDate?: string | null;
   pin: string;
 }): Promise<void> {
+  try {
+    await saveSellerPinViaEdge(input);
+    return;
+  } catch (edgeErr) {
+    const edgeMsg = edgeErr instanceof Error ? edgeErr.message : String(edgeErr);
+    const edgeUnavailable =
+      edgeMsg.includes("Failed to send") ||
+      edgeMsg.includes("FunctionsFetchError") ||
+      edgeMsg.includes("not found") ||
+      edgeMsg.toLowerCase().includes("404");
+
+    if (!edgeUnavailable) throw edgeErr;
+  }
+
   await saveMyStaffProfile({
     full_name: input.fullName.trim(),
     birth_date: input.birthDate ?? null,

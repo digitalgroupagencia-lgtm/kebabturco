@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.update-staff-member]
 verify_jwt = true
 
+[functions.seller-complete-onboarding]
+verify_jwt = true
+
 [functions.redsys-webhook]
 verify_jwt = false
 
