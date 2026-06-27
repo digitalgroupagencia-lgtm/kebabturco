@@ -78,6 +78,96 @@ const SellerCheckoutForm = () => {
       notes: it.note ?? null,
     }));
 
+  const isMissingRpc = (message: string) =>
+    /create_seller_counter_order|could not find the function|42883/i.test(message);
+
+  const createCounterOrderFallback = async () => {
+    const { data: orderNumber, error: numError } = await supabase.rpc("next_order_number", {
+      _store_id: storeId!,
+    });
+    if (numError) throw numError;
+
+    const { data: orderRow, error } = await supabase
+      .from("orders")
+      .insert({
+        store_id: storeId,
+        order_number: String(orderNumber),
+        order_type: type,
+        status: "pending",
+        payment_status: "pending",
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim() || null,
+        customer_email: customerEmail.trim() || null,
+        notes: notes.trim() || null,
+        subtotal: totalPrice,
+        total: totalPrice,
+        seller_id: sellerId,
+        source: "counter",
+      })
+      .select("id, order_number, total, customer_email")
+      .single();
+    if (error) throw error;
+
+    const itemsPayload = items.map((it) => ({
+      order_id: orderRow.id,
+      product_id: it.productId,
+      product_name:
+        (it.productName?.pt as string) ||
+        (it.productName?.es as string) ||
+        (it.productName?.en as string) ||
+        "Produto",
+      quantity: it.quantity,
+      unit_price: Number(it.unitPrice ?? it.basePrice ?? 0),
+      total_price: Number(it.totalPrice ?? (it.unitPrice ?? it.basePrice ?? 0) * it.quantity),
+      size_name: it.sizeName
+        ? ((it.sizeName.pt as string) || (it.sizeName.es as string) || null)
+        : null,
+      selections: (it.selections ?? []) as any,
+      extras: (it.extras ?? []) as any,
+      removed: (it.removedIngredients ?? []) as any,
+      notes: it.note ?? null,
+    }));
+    const { error: itemsError } = await supabase.from("order_items").insert(itemsPayload as any);
+    if (itemsError) throw itemsError;
+
+    return {
+      order_id: orderRow.id,
+      order_number: orderRow.order_number,
+      total: Number(orderRow.total ?? totalPrice),
+      customer_email: orderRow.customer_email,
+    };
+  };
+
+  const createCounterOrder = async () => {
+    const { data, error } = await supabase.rpc("create_seller_counter_order", {
+      _store_id: storeId!,
+      _customer_name: customerName.trim(),
+      _items: buildRpcItems(),
+      _notes: notes.trim() || null,
+      _customer_phone: customerPhone.trim() || null,
+      _customer_email: customerEmail.trim() || null,
+      _order_type: type,
+    });
+
+    if (!error && data) {
+      const result = data as {
+        order_id?: string;
+        order_number?: string;
+        total?: number;
+      };
+      if (!result.order_id) throw new Error("Pedido não criado");
+      return {
+        order_id: result.order_id,
+        order_number: String(result.order_number ?? ""),
+        total: Number(result.total ?? totalPrice),
+        customer_email: customerEmail.trim() || null,
+      };
+    }
+
+    if (error && !isMissingRpc(error.message ?? "")) throw error;
+    return createCounterOrderFallback();
+  };
+
   const enqueueSellerPrint = async (order: {
     id: string;
     order_number: string;
@@ -191,66 +281,23 @@ const SellerCheckoutForm = () => {
         return;
       }
 
-      const orderNumber = String(Math.floor(100 + Math.random() * 900));
-      const { data: orderRow, error } = await supabase
-        .from("orders")
-        .insert({
-          store_id: storeId,
-          order_number: orderNumber,
-          order_type: type,
-          status: "pending",
-          payment_status: "pending",
-          customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim() || null,
-          customer_email: customerEmail.trim() || null,
-          table_number: type === "dine_in" ? tableNumber.trim() : null,
-          notes: notes.trim() || null,
-          subtotal: totalPrice,
-          total: totalPrice,
-          seller_id: sellerId,
-          source: "seller" as any,
-        })
-        .select("id, order_number, total, customer_email")
-        .single();
-      if (error) throw error;
-
-      const itemsPayload = items.map((it) => ({
-        order_id: orderRow.id,
-        product_id: it.productId,
-        product_name:
-          (it.productName?.pt as string) ||
-          (it.productName?.es as string) ||
-          (it.productName?.en as string) ||
-          "Produto",
-        quantity: it.quantity,
-        unit_price: Number(it.unitPrice ?? it.basePrice ?? 0),
-        total_price: Number(it.totalPrice ?? (it.unitPrice ?? it.basePrice ?? 0) * it.quantity),
-        size_name: it.sizeName
-          ? ((it.sizeName.pt as string) || (it.sizeName.es as string) || null)
-          : null,
-        selections: (it.selections ?? []) as any,
-        extras: (it.extras ?? []) as any,
-        removed: (it.removedIngredients ?? []) as any,
-        notes: it.note ?? null,
-      }));
-      const { error: itemsError } = await supabase.from("order_items").insert(itemsPayload as any);
-      if (itemsError) throw itemsError;
+      const counter = await createCounterOrder();
 
       await enqueueSellerPrint({
-        id: orderRow.id,
-        order_number: orderRow.order_number,
-        total: Number(orderRow.total ?? totalPrice),
+        id: counter.order_id,
+        order_number: counter.order_number,
+        total: counter.total,
         table_number: displayTable,
         customer_name: customerName.trim(),
       });
-      void notifyKitchen(orderRow.id, orderRow.order_number);
+      void notifyKitchen(counter.order_id, counter.order_number);
 
-      toast.success(`Pedido #${orderRow.order_number} registado`);
+      toast.success(`Pedido #${counter.order_number} registado`);
       setSavedOrder({
-        id: orderRow.id,
-        order_number: orderRow.order_number,
-        total: Number(orderRow.total ?? totalPrice),
-        customer_email: orderRow.customer_email,
+        id: counter.order_id,
+        order_number: counter.order_number,
+        total: counter.total,
+        customer_email: counter.customer_email,
       });
     } catch (e: any) {
       console.error(e);
@@ -300,7 +347,7 @@ const SellerCheckoutForm = () => {
 
   if (savedOrder) {
     return (
-      <div className="flex h-full min-h-0 flex-col bg-secondary/20 overflow-y-auto">
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-secondary/20 pb-20">
         <SellerPaymentDialogs />
         <div className="px-4 py-8 space-y-5 max-w-md mx-auto w-full text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
@@ -346,7 +393,7 @@ const SellerCheckoutForm = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-secondary/20 overflow-y-auto">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-secondary/20 pb-20">
       <div className="px-4 py-4 space-y-4 max-w-md mx-auto w-full">
         <div className="bg-card rounded-2xl border border-border p-4 space-y-1">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Vendedor</p>
@@ -458,11 +505,11 @@ const SellerCheckoutForm = () => {
         <Button
           onClick={() => void submit()}
           disabled={busy}
-          className="w-full h-14 font-black text-base bg-cta hover:bg-cta/90 text-white"
+          className="w-full h-14 font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : (
             <>
-              <Send className="h-5 w-5 mr-2" /> Registar pedido
+              <Send className="h-5 w-5 mr-2" /> Seguir para pagamento
             </>
           )}
         </Button>
