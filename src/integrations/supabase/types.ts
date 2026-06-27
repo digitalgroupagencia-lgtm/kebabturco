@@ -1320,6 +1320,54 @@ export type Database = {
           },
         ]
       }
+      customer_order_feedback: {
+        Row: {
+          id: string
+          order_id: string
+          store_id: string
+          order_number: string | null
+          order_status_at_send: string | null
+          message: string
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          store_id: string
+          order_number?: string | null
+          order_status_at_send?: string | null
+          message: string
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          store_id?: string
+          order_number?: string | null
+          order_status_at_send?: string | null
+          message?: string
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_order_feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_order_feedback_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_reviews: {
         Row: {
           comment: string | null
@@ -5099,6 +5147,10 @@ export type Database = {
         Returns: boolean
       }
       start_delivery: { Args: { _order_id: string }; Returns: Json }
+      submit_customer_order_feedback: {
+        Args: { _message: string; _order_id: string }
+        Returns: Json
+      }
       submit_order_review: {
         Args: { _comment?: string; _order_id: string; _rating: number }
         Returns: Json

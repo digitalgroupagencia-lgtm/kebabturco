@@ -11,6 +11,7 @@ import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { Loader2, CheckCircle2, Circle, Radio, EyeOff } from "lucide-react";
 import OrderReviewForm from "@/customer/components/OrderReviewForm";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
+import OrderWaitFeedbackHost from "@/customer/components/OrderWaitFeedbackHost";
 import DeliveryTrackingMap from "@/components/customer/DeliveryTrackingMap";
 import OrderSupportChat from "@/components/customer/OrderSupportChat";
 import { useDriverLocationForOrder } from "@/hooks/useDriverLocationForOrder";
@@ -72,6 +73,11 @@ const OrderTrackingScreen = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background animate-fade-in">
+      <OrderWaitFeedbackHost
+        orderId={orderId}
+        orderStatus={order?.status}
+        orderNumber={order?.order_number}
+      />
       <ScreenHeader
         eyebrow={t("menu")}
         title={`${t("orderNumber")} #${order?.order_number || orderNumber || "..."}`}

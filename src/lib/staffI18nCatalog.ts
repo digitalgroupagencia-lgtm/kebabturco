@@ -640,6 +640,20 @@ export const STAFF_I18N_CATALOG = {
   "reviews.label.customer": { es: "Cliente", pt: "Cliente", en: "Customer" },
   "reviews.label.type": { es: "Tipo", pt: "Tipo", en: "Type" },
 
+  "nav.reviews": { es: "Valoraciones", pt: "Avaliações", en: "Reviews" },
+  "nav.customer-feedback": { es: "Opiniones de clientes", pt: "Opiniões de clientes", en: "Customer feedback" },
+
+  "customerFeedback.title": { es: "Opiniones de clientes", pt: "Opiniões de clientes", en: "Customer feedback" },
+  "customerFeedback.subtitle": {
+    es: "Sugerencias, ideas y reclamaciones enviadas mientras el cliente esperaba el pedido.",
+    pt: "Sugestões, ideias e reclamações enviadas enquanto o cliente esperava o pedido.",
+    en: "Suggestions, ideas and complaints sent while the customer was waiting for their order.",
+  },
+  "customerFeedback.loading": { es: "Cargando mensajes…", pt: "A carregar mensagens…", en: "Loading messages…" },
+  "customerFeedback.empty": { es: "Aún no hay mensajes.", pt: "Ainda não há mensagens.", en: "No messages yet." },
+  "customerFeedback.markRead": { es: "Marcar leído", pt: "Marcar como lido", en: "Mark as read" },
+  "customerFeedback.anonymous": { es: "Cliente", pt: "Cliente", en: "Customer" },
+
   // --- Menu page ---
   "menu.subtitle": { es: "Edite categorías, productos, precios e imágenes.", pt: "Edite categorias, produtos, preços e imagens.", en: "Edit categories, products, prices and images." },
   "menu.no_store_detail": { es: "Ninguna unidad activa encontrada. Verifique en Administración → Unidades.", pt: "Nenhuma unidade activa encontrada. Verifique em Administração → Unidades.", en: "No active unit found. Check Admin → Units." },

@@ -50,6 +50,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "panel", segments: ["my-profile"], loader: () => import("@/views/panel/MyProfilePage.tsx") },
   { area: "panel", segments: ["guide"], loader: () => import("@/views/panel/GuidePage.tsx") },
   { area: "panel", segments: ["reviews"], loader: () => import("@/views/panel/ReviewsPage.tsx") },
+  { area: "panel", segments: ["customer-feedback"], loader: () => import("@/views/panel/CustomerFeedbackPage.tsx") },
   // /panel/diagnostics removido, auditoria geral é admin-only
 
   { area: "admin", segments: [], loader: () => import("@/views/admin/AdminDashboard.tsx") },
