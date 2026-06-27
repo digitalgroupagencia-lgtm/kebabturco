@@ -95,7 +95,12 @@ const StaffEmailLoginScreen = () => {
   useEffect(() => {
     if (isSignup) return;
     void hydrateLastStaffLogin().then((saved) => {
-      if (saved) setLastLogin(saved);
+      if (saved) {
+        setLastLogin(saved);
+        if (saved.method === "password" && saved.email) {
+          setEmail(saved.email);
+        }
+      }
     });
     setDismissedSuggestion(false);
   }, [isSignup]);
@@ -382,7 +387,13 @@ const StaffEmailLoginScreen = () => {
             </div>
           )}
 
-          <form className="space-y-4" onSubmit={(e) => void handleLogin(e)}>
+          <form
+            id="staff-login-form"
+            className="space-y-4"
+            method="post"
+            action={nav.staff()}
+            onSubmit={(e) => void handleLogin(e)}
+          >
             {isSignup && (
               <div className="space-y-1.5">
                 <Label htmlFor="staff-name">{copy.nameLabel}</Label>
@@ -404,9 +415,13 @@ const StaffEmailLoginScreen = () => {
               <Label htmlFor="staff-email">{copy.emailLabel}</Label>
               <Input
                 id="staff-email"
-                name="email"
+                name="username"
                 type="email"
-                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="username"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -422,7 +437,7 @@ const StaffEmailLoginScreen = () => {
                 ref={passwordRef}
                 id="staff-password"
                 name="password"
-                autoComplete="current-password"
+                autoComplete={isSignup ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);

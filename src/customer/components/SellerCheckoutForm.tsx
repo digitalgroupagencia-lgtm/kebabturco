@@ -1,20 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Send, User, Phone, Hash, Truck, Store, Smartphone, CheckCircle2, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { useSellerMode } from "@/contexts/SellerModeContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { supabase } from "@/integrations/supabase/client";
 import { nav } from "@/lib/navPaths";
 import { useTapToPayCheckout } from "@/hooks/useTapToPayCheckout";
 import { useStaffT } from "@/hooks/useStaffT";
 import TapToPayChargeEducation from "@/components/tapToPay/TapToPayChargeEducation";
 import { markOrderPaidAtCounter } from "@/services/orderService";
+import { tryPrintSellerOrder } from "@/services/checkoutPrintHelper";
 
 type OrderTypeChoice = "dine_in" | "takeaway";
 
@@ -27,10 +29,12 @@ type SavedOrder = {
 
 const SellerCheckoutForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useStaffT();
   const { items, totalPrice, clearCart } = useCart();
   const { storeId, setScreen } = useOrder();
   const { sellerId, sellerName } = useSellerMode();
+  const { settings } = useBranding();
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -40,6 +44,78 @@ const SellerCheckoutForm = () => {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrder | null>(null);
+
+  useEffect(() => {
+    const table = searchParams.get("table")?.trim();
+    const customer = searchParams.get("customer")?.trim();
+    if (table) {
+      setTableNumber(table);
+      setType("dine_in");
+    }
+    if (customer) setCustomerName(customer);
+  }, [searchParams]);
+
+  const buildRpcItems = () =>
+    items.map((it) => ({
+      product_id: it.productId,
+      product_name:
+        (it.productName?.pt as string) ||
+        (it.productName?.es as string) ||
+        (it.productName?.en as string) ||
+        "Produto",
+      quantity: it.quantity,
+      unit_price: Number(it.unitPrice ?? it.basePrice ?? 0),
+      size_name: it.sizeName
+        ? ((it.sizeName.pt as string) || (it.sizeName.es as string) || null)
+        : null,
+      extras: (it.extras ?? []) as unknown[],
+      removed: (it.removedIngredients ?? []) as unknown[],
+      notes: it.note ?? null,
+    }));
+
+  const enqueueSellerPrint = async (order: {
+    id: string;
+    order_number: string;
+    total: number;
+    table_number: string;
+    customer_name: string;
+  }) => {
+    try {
+      await tryPrintSellerOrder({
+        storeId: storeId!,
+        orderId: order.id,
+        orderNumber: order.order_number,
+        tableNumber: order.table_number,
+        customerName: order.customer_name,
+        items: items.map((it) => ({
+          productName:
+            (it.productName?.pt as string) ||
+            (it.productName?.es as string) ||
+            (it.productName?.en as string) ||
+            "Produto",
+          quantity: it.quantity,
+          unitPrice: Number(it.unitPrice ?? it.basePrice ?? 0),
+        })),
+        total: order.total,
+        notes: notes.trim() || null,
+        companyName: settings?.company_name ?? undefined,
+      });
+    } catch (e) {
+      console.warn("[seller] print enqueue failed", e);
+    }
+  };
+
+  const notifyKitchen = async (orderId: string, orderNumber: string) => {
+    try {
+      await supabase.rpc("dispatch_staff_new_order_push", {
+        _order_id: orderId,
+        _order_number: orderNumber,
+        _store_id: storeId!,
+      });
+    } catch {
+      /* optional */
+    }
+  };
 
   const { requestTapToPay, requestStaffPin, TapToPayCheckoutDialog, isTapToPayAvailable } = useTapToPayCheckout({
     storeId: storeId ?? "",
@@ -59,6 +135,56 @@ const SellerCheckoutForm = () => {
 
     setBusy(true);
     try {
+      const displayTable = type === "dine_in" ? tableNumber.trim() : "BALCÃO";
+
+      if (type === "dine_in") {
+        const { data, error } = await supabase.rpc("create_seller_order", {
+          _store_id: storeId,
+          _table_number: tableNumber.trim(),
+          _customer_name: customerName.trim(),
+          _items: buildRpcItems(),
+          _notes: notes.trim() || null,
+        });
+        if (error) throw error;
+
+        const result = data as {
+          order_id?: string;
+          order_number?: string;
+          total?: number;
+        } | null;
+        if (!result?.order_id) throw new Error("Pedido não criado");
+
+        if (customerPhone.trim() || customerEmail.trim()) {
+          await supabase
+            .from("orders")
+            .update({
+              customer_phone: customerPhone.trim() || null,
+              customer_email: customerEmail.trim() || null,
+            })
+            .eq("id", result.order_id);
+        }
+
+        const orderRow = {
+          id: result.order_id,
+          order_number: String(result.order_number ?? ""),
+          total: Number(result.total ?? totalPrice),
+          customer_email: customerEmail.trim() || null,
+        };
+
+        await enqueueSellerPrint({
+          id: orderRow.id,
+          order_number: orderRow.order_number,
+          total: orderRow.total,
+          table_number: displayTable,
+          customer_name: customerName.trim(),
+        });
+        void notifyKitchen(orderRow.id, orderRow.order_number);
+
+        toast.success(`Pedido #${orderRow.order_number} registado · Mesa ${tableNumber.trim()}`);
+        setSavedOrder(orderRow);
+        return;
+      }
+
       const orderNumber = String(Math.floor(100 + Math.random() * 900));
       const { data: orderRow, error } = await supabase
         .from("orders")
@@ -103,6 +229,15 @@ const SellerCheckoutForm = () => {
       }));
       const { error: itemsError } = await supabase.from("order_items").insert(itemsPayload as any);
       if (itemsError) throw itemsError;
+
+      await enqueueSellerPrint({
+        id: orderRow.id,
+        order_number: orderRow.order_number,
+        total: Number(orderRow.total ?? totalPrice),
+        table_number: displayTable,
+        customer_name: customerName.trim(),
+      });
+      void notifyKitchen(orderRow.id, orderRow.order_number);
 
       toast.success(`Pedido #${orderRow.order_number} registado`);
       setSavedOrder({

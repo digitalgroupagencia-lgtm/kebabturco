@@ -5,9 +5,10 @@ const supabase = _supabaseRaw as unknown as any;
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Table as TableIcon, ListOrdered, Loader2 } from "lucide-react";
+import { Plus, Table as TableIcon, ListOrdered, Loader2, CheckCircle2 } from "lucide-react";
 import { fmtMoney } from "@/hooks/useTenantBilling";
 import { nav } from "@/lib/navPaths.ts";
+import { subDays } from "date-fns";
 
 const SellerHome = () => {
   const { userId, fullName, storeId, loading } = useSellerContext();
@@ -31,6 +32,21 @@ const SellerHome = () => {
         revenue: (data ?? []).reduce((s: number, o: any) => s + Number(o.total || 0), 0),
         tables: tables.size,
       };
+    },
+  });
+
+  const { data: monthStats } = useQuery({
+    queryKey: ["seller-month", userId, storeId],
+    enabled: !!userId && !!storeId,
+    queryFn: async () => {
+      const since = subDays(new Date(), 30).toISOString();
+      const { data, error } = await supabase.rpc("get_seller_report", {
+        _store_id: storeId!,
+        _since: since,
+      });
+      if (error) throw error;
+      const row = (data ?? []).find((r: { seller_id: string }) => r.seller_id === userId);
+      return row as { order_count: number; revenue: number; avg_ticket: number } | undefined;
     },
   });
 
@@ -58,6 +74,17 @@ const SellerHome = () => {
         </CardContent></Card>
       </div>
 
+      {monthStats ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3 text-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Últimos 30 dias</p>
+            <p className="font-bold">
+              {monthStats.order_count} pedidos · {fmtMoney(Number(monthStats.revenue || 0))} · ticket médio {fmtMoney(Number(monthStats.avg_ticket || 0))}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="space-y-2">
         <Button size="lg" className="w-full h-14 text-base font-bold" onClick={() => navigate(nav.seller("new"))}>
           <Plus className="w-5 h-5 mr-2" /> Novo pedido
@@ -70,9 +97,16 @@ const SellerHome = () => {
         </Button>
       </div>
 
-      <Card className="bg-muted/40 border-dashed">
-        <CardContent className="p-3 text-xs text-muted-foreground">
-          <b>Em breve:</b> fluxo completo de pedido com mesa+cliente, fechamento individual e fechamento total da mesa (pagamento único ou dividido), impressão automática e relatórios por vendedor.
+      <Card className="border-emerald-500/25 bg-emerald-500/5">
+        <CardContent className="p-3 space-y-2 text-xs text-muted-foreground">
+          <p className="font-bold text-foreground flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Como usar
+          </p>
+          <ul className="space-y-1.5 list-disc pl-4">
+            <li><b>Novo pedido</b> — escolha produtos, mesa e cliente; o pedido vai para a cozinha e imprime automaticamente.</li>
+            <li><b>Mesas abertas</b> — feche cada cliente ou a mesa inteira (pagamento único ou dividido).</li>
+            <li><b>Meus pedidos</b> — cobre com Tap to Pay, dinheiro ou consulte o histórico.</li>
+          </ul>
         </CardContent>
       </Card>
     </div>
