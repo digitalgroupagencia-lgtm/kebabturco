@@ -251,16 +251,11 @@ const HomeScreen = () => {
             seller.active && "md:min-h-min md:overflow-visible",
           )}
         >
-          <div className="z-20 shrink-0 bg-background px-3 pt-2 shadow-[0_8px_16px_-12px_hsla(0,0%,0%,0.35)] md:px-4">
-            <PromoBannerCarousel
-              className={seller.active ? "md:mx-auto md:max-w-3xl" : undefined}
-              frameClassName={
-                seller.active
-                  ? "relative aspect-[16/9] w-full max-h-[42vw] overflow-hidden rounded-[22px] border border-border/70 bg-primary shadow-card md:aspect-[2.4/1] md:max-h-[220px]"
-                  : undefined
-              }
-            />
-          </div>
+          {!seller.active ? (
+            <div className="z-20 shrink-0 bg-background px-3 pt-2 shadow-[0_8px_16px_-12px_hsla(0,0%,0%,0.35)] md:px-4">
+              <PromoBannerCarousel />
+            </div>
+          ) : null}
 
           <div
             ref={scrollRef}

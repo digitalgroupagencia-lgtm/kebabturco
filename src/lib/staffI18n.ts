@@ -1072,6 +1072,16 @@ export const STAFF_I18N = {
     pt: "Cartão",
     en: "Card",
   },
+  "seller.discard_order": {
+    es: "Borrar pedido",
+    pt: "Apagar pedido",
+    en: "Discard order",
+  },
+  "seller.discard_order.done": {
+    es: "Pedido borrado",
+    pt: "Pedido apagado",
+    en: "Order discarded",
+  },
   "seller.pay.cash_desc": {
     es: "Confirme que recibió el efectivo",
     pt: "Confirme que recebeu o dinheiro",

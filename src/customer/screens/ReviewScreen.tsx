@@ -7,6 +7,8 @@ import OrderTypeIcon from "@/components/OrderTypeIcon";
 import UpsellProductCard from "@/customer/customization/UpsellProductCard";
 import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight, UtensilsCrossed } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
+import { useSellerMode } from "@/contexts/SellerModeContext";
+import { clearSellerSession } from "@/lib/sellerSession";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { loadSavedOrderType } from "@/lib/customerSession";
@@ -44,6 +46,7 @@ const ReviewScreen = () => {
     clearMesaLock,
   } = useOrder();
   const { items, addItem, removeItem, totalPrice, orderType, clearCart, setOrderType, clearOrderType } = useCart();
+  const seller = useSellerMode();
 
   const { t, tProduct, lang } = useLanguage();
   const { products, categories } = useMenuData();
@@ -82,6 +85,7 @@ const ReviewScreen = () => {
 
   const confirmClearAll = () => {
     clearCart();
+    if (seller.active) clearSellerSession();
     setClearDialogOpen(false);
   };
 

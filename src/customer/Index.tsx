@@ -25,6 +25,12 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
 import { useSellerMode } from "@/contexts/SellerModeContext";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/customer/contexts/CartContext";
+import {
+  resolveSellerInitialScreen,
+  saveSellerSession,
+  loadSellerSession,
+} from "@/lib/sellerSession";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
@@ -59,18 +65,45 @@ const CustomerBootDismiss = () => {
   return null;
 };
 
-/** Em modo vendedor salta splash/idioma e vai directo ao cardápio. */
+/** Em modo vendedor salta splash/idioma e restaura o ecrã guardado. */
 const SellerCustomerBootstrap = () => {
   const seller = useSellerMode();
-  const { screen, setScreen } = useOrder();
+  const { screen, setScreen, setSelectedProductId, selectedProductId } = useOrder();
   const { storeId, loading } = useResolvedStore();
 
   useEffect(() => {
     if (!seller.active || loading || !storeId) return;
-    if (screen === "splash" || screen === "language" || screen === "storeSelect" || screen === "orderType") {
-      setScreen("home");
+
+    const bootstrapScreens = new Set(["splash", "language", "storeSelect", "orderType"]);
+    if (bootstrapScreens.has(screen)) {
+      const next = resolveSellerInitialScreen(storeId);
+      setScreen(next);
+      const session = loadSellerSession();
+      if (next === "product" && session?.selectedProductId && !selectedProductId) {
+        setSelectedProductId(session.selectedProductId);
+      }
     }
-  }, [seller.active, loading, storeId, screen, setScreen]);
+  }, [seller.active, loading, storeId, screen, setScreen, setSelectedProductId, selectedProductId]);
+
+  return null;
+};
+
+/** Guarda ecrã e contexto do vendedor para recuperar após recarregar. */
+const SellerSessionPersist = () => {
+  const seller = useSellerMode();
+  const { screen, selectedProductId, selectedCategory } = useOrder();
+  const { storeId, loading } = useResolvedStore();
+
+  useEffect(() => {
+    if (!seller.active || loading || !storeId) return;
+    if (!["home", "product", "review", "payment"].includes(screen)) return;
+    saveSellerSession({
+      screen,
+      selectedProductId,
+      selectedCategory,
+      storeId,
+    });
+  }, [seller.active, loading, storeId, screen, selectedProductId, selectedCategory]);
 
   return null;
 };
@@ -182,6 +215,7 @@ const CustomerShell = () => {
       )}
     >
       <SellerCustomerBootstrap />
+      <SellerSessionPersist />
       <CustomerBootDismiss />
       <div
         className={cn(

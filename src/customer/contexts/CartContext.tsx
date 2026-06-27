@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { loadSavedOrderType, saveSavedOrderType } from "@/lib/customerSession";
+import { isSellerNewOrderPath, SELLER_CART_KEY, clearSellerCart } from "@/lib/sellerSession";
 import type { CartConfiguration, ModifierSelection, ProductType } from "@/lib/modifiers/types";
 
 export interface CartItemExtra {
@@ -92,23 +93,32 @@ const splitIntoSingleItems = (item: Omit<CartItem, "id">, firstId?: string): Car
   }));
 };
 
+const CUSTOMER_CART_KEY = "kiosk-cart";
+
+function cartStorageKey() {
+  return isSellerNewOrderPath() ? SELLER_CART_KEY : CUSTOMER_CART_KEY;
+}
+
+function loadCartFromStorage(): CartItem[] {
+  try {
+    const saved = localStorage.getItem(cartStorageKey());
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    const valid = Array.isArray(parsed) && parsed.every(
+      (i) => i && typeof i.productName === "object" && i.productName !== null,
+    );
+    if (!valid) {
+      localStorage.removeItem(cartStorageKey());
+      return [];
+    }
+    return parsed.flatMap((item: CartItem) => splitIntoSingleItems(item, item.id));
+  } catch {
+    return [];
+  }
+}
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("kiosk-cart");
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      // Validate schema: productName must be an object (not a string from old version)
-      const valid = Array.isArray(parsed) && parsed.every(
-        (i) => i && typeof i.productName === "object" && i.productName !== null
-      );
-      if (!valid) {
-        localStorage.removeItem("kiosk-cart");
-        return [];
-      }
-      return parsed.flatMap((item: CartItem) => splitIntoSingleItems(item, item.id));
-    } catch { return []; }
-  });
+  const [items, setItems] = useState<CartItem[]>(() => loadCartFromStorage());
   const [orderType, setOrderTypeState] = useState<"here" | "takeaway" | "delivery" | null>(() => {
     if (shouldForceDeliveryOnly()) return "delivery";
     return loadSavedOrderType();
@@ -131,7 +141,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    localStorage.setItem("kiosk-cart", JSON.stringify(items));
+    localStorage.setItem(cartStorageKey(), JSON.stringify(items));
   }, [items]);
 
   const addItem = (item: Omit<CartItem, "id">) => {
@@ -153,7 +163,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = () => {
     setItems([]);
-    localStorage.removeItem("kiosk-cart");
+    if (isSellerNewOrderPath()) clearSellerCart();
+    else localStorage.removeItem(CUSTOMER_CART_KEY);
   };
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);

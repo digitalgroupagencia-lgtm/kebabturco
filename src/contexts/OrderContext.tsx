@@ -33,6 +33,13 @@ import {
   readLangFromUrl,
   saveSavedLang,
 } from "@/lib/customerSession";
+import {
+  isSellerNewOrderPath,
+  loadSellerCart,
+  loadSellerSession,
+  resolveSellerInitialCategory,
+  resolveSellerInitialProductId,
+} from "@/lib/sellerSession";
 import { useTableSessionBinding } from "@/hooks/useTableSessionBinding";
 import { customerScreenFromPathname } from "@/lib/routeRedirects";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
@@ -124,6 +131,24 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const initialScreen: Screen = (() => {
     if (typeof window === "undefined") return "language";
+    if (isSellerNewOrderPath()) {
+      const session = loadSellerSession();
+      const hasCart = loadSellerCart().length > 0;
+      const checkout = session?.checkout;
+      const hasDraft =
+        Boolean(checkout?.savedOrder) ||
+        Boolean(checkout?.customerName?.trim()) ||
+        Boolean(checkout?.tableNumber?.trim()) ||
+        Boolean(checkout?.notes?.trim());
+      if (hasCart || hasDraft) {
+        if (session?.screen === "home" || session?.screen === "product" || session?.screen === "review" || session?.screen === "payment") {
+          return session.screen;
+        }
+        if (checkout?.savedOrder || checkout?.customerName?.trim()) return "payment";
+        if (hasCart) return "review";
+      }
+      return "home";
+    }
     if (isGandiaFoodSource()) return "home";
     if (isEmbedded()) return "home";
     const embedScreen = getEmbedScreen();
@@ -185,6 +210,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
   const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
+    if (isSellerNewOrderPath()) return resolveSellerInitialProductId();
     const params = new URLSearchParams(window.location.search);
     if (params.get("preview") === "1") return params.get("productId");
     const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
@@ -192,7 +218,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   });
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    if (typeof window === "undefined") return "bestsellers";
+    if (isSellerNewOrderPath()) return resolveSellerInitialCategory() ?? "bestsellers";
+    return "bestsellers";
+  });
   const [orderNumber, setOrderNumber] = useState(() => {
     if (typeof window === "undefined") return "";
     const urlOrder = readOrderIdFromUrl();

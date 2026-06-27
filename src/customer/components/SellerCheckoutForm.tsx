@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Send, User, Phone, Truck, Store, CheckCircle2, Banknote, QrCode, CreditCard } from "lucide-react";
+import { Loader2, Send, User, Phone, Truck, Store, CheckCircle2, Banknote, QrCode, CreditCard, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,11 @@ import { useSellerPayment } from "@/hooks/useSellerPayment";
 import { useStaffT } from "@/hooks/useStaffT";
 import { tryPrintSellerOrder } from "@/services/checkoutPrintHelper";
 import SellerMesaQrDialog from "./SellerMesaQrDialog";
+import {
+  clearSellerSession,
+  loadSellerSession,
+  saveSellerCheckoutDraft,
+} from "@/lib/sellerSession";
 
 type OrderTypeChoice = "dine_in" | "takeaway";
 
@@ -35,15 +40,29 @@ const SellerCheckoutForm = () => {
   const { sellerId, sellerName } = useSellerMode();
   const { settings } = useBranding();
 
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [tableNumber, setTableNumber] = useState("");
-  const [type, setType] = useState<OrderTypeChoice>("dine_in");
-  const [notes, setNotes] = useState("");
+  const savedDraft = loadSellerSession()?.checkout;
+
+  const [customerName, setCustomerName] = useState(savedDraft?.customerName ?? "");
+  const [customerPhone, setCustomerPhone] = useState(savedDraft?.customerPhone ?? "");
+  const [customerEmail, setCustomerEmail] = useState(savedDraft?.customerEmail ?? "");
+  const [tableNumber, setTableNumber] = useState(savedDraft?.tableNumber ?? "");
+  const [type, setType] = useState<OrderTypeChoice>(savedDraft?.type ?? "dine_in");
+  const [notes, setNotes] = useState(savedDraft?.notes ?? "");
   const [busy, setBusy] = useState(false);
-  const [savedOrder, setSavedOrder] = useState<SavedOrder | null>(null);
+  const [savedOrder, setSavedOrder] = useState<SavedOrder | null>(savedDraft?.savedOrder ?? null);
   const [mesaQrOpen, setMesaQrOpen] = useState(false);
+
+  useEffect(() => {
+    saveSellerCheckoutDraft({
+      customerName,
+      customerPhone,
+      customerEmail,
+      tableNumber,
+      type,
+      notes,
+      savedOrder,
+    });
+  }, [customerName, customerPhone, customerEmail, tableNumber, type, notes, savedOrder]);
 
   useEffect(() => {
     const table = searchParams.get("table")?.trim();
@@ -216,12 +235,27 @@ const SellerCheckoutForm = () => {
     storeId: storeId ?? "",
     onSuccess: () => {
       toast.success(t("tapToPay.step.success"));
+      clearSellerSession();
       clearCart();
       setScreen("home");
       setSavedOrder(null);
       navigate(nav.seller());
     },
   });
+
+  const discardDraft = () => {
+    clearSellerSession();
+    clearCart();
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerEmail("");
+    setTableNumber("");
+    setType("dine_in");
+    setNotes("");
+    setSavedOrder(null);
+    setScreen("home");
+    toast.success(t("seller.discard_order.done"));
+  };
 
   const submit = async () => {
     if (!customerName.trim()) return toast.error("Informe o nome do cliente");
@@ -308,6 +342,7 @@ const SellerCheckoutForm = () => {
   };
 
   const finishWithoutCharge = () => {
+    clearSellerSession();
     clearCart();
     setScreen("home");
     setSavedOrder(null);
@@ -386,6 +421,16 @@ const SellerCheckoutForm = () => {
 
           <Button variant="ghost" className="w-full" disabled={busy} onClick={finishWithoutCharge}>
             {t("tapToPay.seller.pay_later")}
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
+            disabled={busy}
+            onClick={discardDraft}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t("seller.discard_order")}
           </Button>
         </div>
       </div>
@@ -515,6 +560,14 @@ const SellerCheckoutForm = () => {
         </Button>
         <Button variant="outline" className="w-full" onClick={() => setScreen("review")}>
           Voltar ao carrinho
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full text-destructive hover:bg-destructive/5"
+          onClick={discardDraft}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {t("seller.discard_order")}
         </Button>
       </div>
 
