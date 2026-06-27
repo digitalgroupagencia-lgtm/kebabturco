@@ -1,4 +1,5 @@
 -- Pedidos de balcão pelo vendedor (corre no SQL Editor do Supabase).
+-- Nota: order_type na tabela orders é TEXT, não enum.
 
 CREATE OR REPLACE FUNCTION public.create_seller_counter_order(
   _store_id uuid,
@@ -22,7 +23,7 @@ DECLARE
   v_qty int;
   v_unit numeric;
   v_line numeric;
-  v_type public.order_type;
+  v_type text;
 BEGIN
   IF NOT (
     public.is_seller(auth.uid())
@@ -33,8 +34,8 @@ BEGIN
   END IF;
 
   v_type := CASE lower(coalesce(_order_type, 'takeaway'))
-    WHEN 'dine_in' THEN 'dine_in'::public.order_type
-    ELSE 'takeaway'::public.order_type
+    WHEN 'dine_in' THEN 'dine_in'
+    ELSE 'takeaway'
   END;
 
   v_order_number := public.next_order_number(_store_id);

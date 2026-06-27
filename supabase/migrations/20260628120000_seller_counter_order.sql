@@ -22,7 +22,7 @@ DECLARE
   v_qty int;
   v_unit numeric;
   v_line numeric;
-  v_type public.order_type;
+  v_type text;
 BEGIN
   IF NOT (
     public.is_seller(auth.uid())
@@ -33,8 +33,8 @@ BEGIN
   END IF;
 
   v_type := CASE lower(coalesce(_order_type, 'takeaway'))
-    WHEN 'dine_in' THEN 'dine_in'::public.order_type
-    ELSE 'takeaway'::public.order_type
+    WHEN 'dine_in' THEN 'dine_in'
+    ELSE 'takeaway'
   END;
 
   v_order_number := public.next_order_number(_store_id);
