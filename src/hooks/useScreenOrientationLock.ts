@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
+import { ScreenOrientation } from "@capacitor/screen-orientation";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import {
   isLandscapeLockedPath,
@@ -39,6 +41,19 @@ function applyRotateMode(mode: RotateMode, w: number, h: number) {
   document.body.classList.add("fp-rotate");
 }
 
+async function lockNativeOrientation(mode: "portrait" | "landscape" | "any") {
+  if (!Capacitor.isNativePlatform() || !Capacitor.isPluginAvailable("ScreenOrientation")) return;
+  try {
+    if (mode === "any") {
+      await ScreenOrientation.unlock();
+      return;
+    }
+    await ScreenOrientation.lock({ orientation: mode });
+  } catch {
+    /* WebView/iPadOS podem recusar o lock; o fallback CSS mantém o layout correcto. */
+  }
+}
+
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
  * Admin/painel: lock landscape nativo quando possível; em telemóvel vertical usa rotate CSS.
@@ -66,6 +81,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     };
 
     if (!portraitLock && !landscapeLock) {
+      void lockNativeOrientation("any");
       try {
         screen.orientation?.unlock?.();
       } catch {
@@ -87,6 +103,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     }
 
     const lockMode = landscapeLock ? "landscape" : "portrait";
+    void lockNativeOrientation(lockMode);
     try {
     const orientation = screen.orientation as ScreenOrientation & {
       lock?: (orientation: string) => Promise<void>;
@@ -106,7 +123,10 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       const h = window.innerHeight;
       const nextMode = resolveRotateMode(portraitLock, landscapeLock, touch, w, h);
 
-      if (nextMode === activeModeRef.current) return;
+      if (nextMode === activeModeRef.current) {
+        if (nextMode !== "none") applyRotateMode(nextMode, w, h);
+        return;
+      }
 
       activeModeRef.current = nextMode;
       applyRotateMode(nextMode, w, h);
@@ -134,6 +154,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       } catch {
         /* noop */
       }
+      void lockNativeOrientation("any");
     };
   }, [pathname, portraitLock, landscapeLock]);
 }
