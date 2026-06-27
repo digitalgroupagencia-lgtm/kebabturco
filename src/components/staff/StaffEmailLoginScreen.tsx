@@ -252,13 +252,10 @@ const StaffEmailLoginScreen = () => {
     markStaffSession();
 
     try {
-      // Use the site origin as redirect_uri to keep it inside the Lovable OAuth broker
-      // allow-list and avoid "State verification failed" in mobile Safari (cookies/cross-site).
-      // The post-login staff destination is resolved from the staff Google login intent flag.
       try {
         if (nextParam) sessionStorage.setItem("kebab-staff-google-next", nextParam);
       } catch { /* ignore */ }
-      const redirectUri = `${window.location.origin}/`;
+      const redirectUri = `${window.location.origin}${nav.staff()}`;
       await signInStaffWithGoogle({ redirectUri, lang });
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);
