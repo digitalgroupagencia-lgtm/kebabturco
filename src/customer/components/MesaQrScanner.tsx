@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Camera, CameraOff, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isNativeApp } from "@/lib/nativeApp";
 
 type MesaQrScannerProps = {
   active: boolean;
@@ -102,6 +103,13 @@ const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
     }
 
     handledRef.current = false;
+    if (needsTap && !isNativeApp()) {
+      setStatus("awaiting_tap");
+      return () => {
+        void stopScanner();
+      };
+    }
+
     void startScanner();
     return () => {
       void stopScanner();
