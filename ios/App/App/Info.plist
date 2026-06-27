@@ -51,6 +51,8 @@
     <string>Usamos a localização para calcular a taxa de entrega, acompanhar o motoboy e pagamentos Tap to Pay na loja.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>O entregador partilha a posição em tempo real durante a entrega, mesmo com a app em segundo plano.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>A câmara é usada para ler o código QR da mesa quando pedes no local.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>remote-notification</string>
