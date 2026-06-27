@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ShoppingBasket, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
@@ -106,13 +106,15 @@ export default function TapToPayAppleVisualScreen({
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-8">
         <div className="w-full max-w-[320px] rounded-[28px] bg-[#2c2c2e] px-6 py-8 text-center shadow-2xl">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ff9500]">
-            <ShoppingBasket className="h-7 w-7 text-white" strokeWidth={2.2} />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ff9500] overflow-hidden ring-1 ring-white/10">
+            <img
+              src="/apple-touch-icon.png"
+              alt=""
+              className="h-full w-full object-cover"
+              draggable={false}
+            />
           </div>
           <p className="text-[15px] font-medium text-white/90">{payLabel}</p>
-          {orderNumber != null ? (
-            <p className="mt-1 text-xs text-white/50">#{orderNumber}</p>
-          ) : null}
           <p className="mt-3 text-[42px] font-semibold tabular-nums tracking-tight leading-none">
             {formatted}
           </p>
