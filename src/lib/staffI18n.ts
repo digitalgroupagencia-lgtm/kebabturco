@@ -1062,10 +1062,30 @@ export const STAFF_I18N = {
     pt: "Pago",
     en: "Paid",
   },
-  "seller.orders.tap_optional": {
-    es: "Tap to Pay (opcional, solo iPhone)",
-    pt: "Tap to Pay (opcional, só iPhone)",
-    en: "Tap to Pay (optional, iPhone only)",
+  "seller.pay.cash": {
+    es: "Efectivo",
+    pt: "Dinheiro",
+    en: "Cash",
+  },
+  "seller.pay.card": {
+    es: "Tarjeta",
+    pt: "Cartão",
+    en: "Card",
+  },
+  "seller.pay.cash_desc": {
+    es: "Confirme que recibió el efectivo",
+    pt: "Confirme que recebeu o dinheiro",
+    en: "Confirm you received cash",
+  },
+  "seller.pay.card_title": {
+    es: "Cobrar con tarjeta",
+    pt: "Cobrar com cartão",
+    en: "Charge by card",
+  },
+  "seller.pay.card_done": {
+    es: "Pago recibido",
+    pt: "Pagamento recebido",
+    en: "Payment received",
   },
 
   ...STAFF_I18N_CATALOG,

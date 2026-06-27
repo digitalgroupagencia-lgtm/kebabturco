@@ -1,14 +1,11 @@
 import { useEffect, type ComponentType } from "react";
-import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
-import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut, Smartphone } from "lucide-react";
+import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
 import SellerOnboardingGate from "@/components/seller/SellerOnboardingGate";
-import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
-import { useStaffT } from "@/hooks/useStaffT";
 import { nav } from "@/lib/navPaths";
 
 type Props = {
@@ -20,9 +17,6 @@ const SellerLayout = ({ page: Page }: Props) => {
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const { enabled: sellerEnabled, isLoading: flagLoading } = useSellerModuleEnabled(roleData?.tenant_id);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { t } = useStaffT();
-  const showTapGuide = isTapToPayUiAvailable();
 
   useEffect(() => {
     if (!loading && !user) navigate(nav.staff(), { replace: true });
@@ -68,7 +62,6 @@ const SellerLayout = ({ page: Page }: Props) => {
       </header>
 
       <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
-        <TapToPayStaffBootstrap storeId={roleData?.store_id ?? undefined} />
         {Page ? <Page /> : <Outlet />}
       </main>
 
@@ -77,9 +70,6 @@ const SellerLayout = ({ page: Page }: Props) => {
           { to: nav.seller(), label: "Início", icon: Home, end: true },
           { to: nav.seller("tables"), label: "Mesas", icon: TableIcon },
           { to: nav.seller("my-orders"), label: "Pedidos", icon: ListOrdered },
-          ...(showTapGuide
-            ? [{ to: nav.seller("tap-to-pay"), label: t("seller.nav.tap_guide"), icon: Smartphone, end: false as const }]
-            : []),
         ].map((it) => (
           <NavLink
             key={it.to}
