@@ -9,18 +9,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { useSellerMode } from "@/contexts/SellerModeContext";
-import { useBranding } from "@/contexts/BrandingContext";
 import { supabase } from "@/integrations/supabase/client";
 import { nav } from "@/lib/navPaths";
 import { useSellerPayment } from "@/hooks/useSellerPayment";
 import { useStaffT } from "@/hooks/useStaffT";
-import { tryPrintSellerOrder } from "@/services/checkoutPrintHelper";
 import SellerMesaQrDialog from "./SellerMesaQrDialog";
 import {
   clearSellerSession,
   loadSellerSession,
   saveSellerCheckoutDraft,
 } from "@/lib/sellerSession";
+import { cancelSellerPendingOrder } from "@/services/sellerOrderService";
 
 type OrderTypeChoice = "dine_in" | "takeaway";
 
@@ -38,7 +37,6 @@ const SellerCheckoutForm = () => {
   const { items, totalPrice, clearCart } = useCart();
   const { storeId, setScreen } = useOrder();
   const { sellerId, sellerName } = useSellerMode();
-  const { settings } = useBranding();
 
   const savedDraft = loadSellerSession()?.checkout;
 
@@ -187,50 +185,6 @@ const SellerCheckoutForm = () => {
     return createCounterOrderFallback();
   };
 
-  const enqueueSellerPrint = async (order: {
-    id: string;
-    order_number: string;
-    total: number;
-    table_number: string;
-    customer_name: string;
-  }) => {
-    try {
-      await tryPrintSellerOrder({
-        storeId: storeId!,
-        orderId: order.id,
-        orderNumber: order.order_number,
-        tableNumber: order.table_number,
-        customerName: order.customer_name,
-        items: items.map((it) => ({
-          productName:
-            (it.productName?.pt as string) ||
-            (it.productName?.es as string) ||
-            (it.productName?.en as string) ||
-            "Produto",
-          quantity: it.quantity,
-          unitPrice: Number(it.unitPrice ?? it.basePrice ?? 0),
-        })),
-        total: order.total,
-        notes: notes.trim() || null,
-        companyName: settings?.company_name ?? undefined,
-      });
-    } catch (e) {
-      console.warn("[seller] print enqueue failed", e);
-    }
-  };
-
-  const notifyKitchen = async (orderId: string, orderNumber: string) => {
-    try {
-      await supabase.rpc("dispatch_staff_new_order_push", {
-        _order_id: orderId,
-        _order_number: orderNumber,
-        _store_id: storeId!,
-      });
-    } catch {
-      /* optional */
-    }
-  };
-
   const { payCash, payCard, SellerPaymentDialogs, canPayCard } = useSellerPayment({
     storeId: storeId ?? "",
     onSuccess: () => {
@@ -241,9 +195,33 @@ const SellerCheckoutForm = () => {
       setSavedOrder(null);
       navigate(nav.seller());
     },
+    onDemoDismissed: async (order) => {
+      try {
+        await cancelSellerPendingOrder(order.id);
+      } catch (e) {
+        console.warn("[seller] cancel demo order failed", e);
+      }
+      setSavedOrder(null);
+      saveSellerCheckoutDraft({
+        customerName,
+        customerPhone,
+        customerEmail,
+        tableNumber,
+        type,
+        notes,
+        savedOrder: null,
+      });
+    },
   });
 
-  const discardDraft = () => {
+  const discardDraft = async () => {
+    if (savedOrder?.id) {
+      try {
+        await cancelSellerPendingOrder(savedOrder.id);
+      } catch (e) {
+        console.warn("[seller] cancel pending order failed", e);
+      }
+    }
     clearSellerSession();
     clearCart();
     setCustomerName("");
@@ -265,8 +243,6 @@ const SellerCheckoutForm = () => {
 
     setBusy(true);
     try {
-      const displayTable = type === "dine_in" ? tableNumber.trim() : "BALCÃO";
-
       if (type === "dine_in") {
         const { data, error } = await supabase.rpc("create_seller_order", {
           _store_id: storeId,
@@ -301,30 +277,12 @@ const SellerCheckoutForm = () => {
           customer_email: customerEmail.trim() || null,
         };
 
-        await enqueueSellerPrint({
-          id: orderRow.id,
-          order_number: orderRow.order_number,
-          total: orderRow.total,
-          table_number: displayTable,
-          customer_name: customerName.trim(),
-        });
-        void notifyKitchen(orderRow.id, orderRow.order_number);
-
         toast.success(`Pedido #${orderRow.order_number} registado · Mesa ${tableNumber.trim()}`);
         setSavedOrder(orderRow);
         return;
       }
 
       const counter = await createCounterOrder();
-
-      await enqueueSellerPrint({
-        id: counter.order_id,
-        order_number: counter.order_number,
-        total: counter.total,
-        table_number: displayTable,
-        customer_name: customerName.trim(),
-      });
-      void notifyKitchen(counter.order_id, counter.order_number);
 
       toast.success(`Pedido #${counter.order_number} registado`);
       setSavedOrder({
@@ -427,7 +385,7 @@ const SellerCheckoutForm = () => {
             variant="outline"
             className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
             disabled={busy}
-            onClick={discardDraft}
+            onClick={() => void discardDraft()}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             {t("seller.discard_order")}
@@ -564,7 +522,7 @@ const SellerCheckoutForm = () => {
         <Button
           variant="ghost"
           className="w-full text-destructive hover:bg-destructive/5"
-          onClick={discardDraft}
+          onClick={() => void discardDraft()}
         >
           <Trash2 className="h-4 w-4 mr-2" />
           {t("seller.discard_order")}

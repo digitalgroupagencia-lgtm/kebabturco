@@ -21,9 +21,10 @@ export type SellerPaymentOrder = {
 type Options = {
   storeId: string;
   onSuccess?: () => void;
+  onDemoDismissed?: (order: SellerPaymentOrder) => void;
 };
 
-export function useSellerPayment({ storeId, onSuccess }: Options) {
+export function useSellerPayment({ storeId, onSuccess, onDemoDismissed }: Options) {
   const { t, lang } = useStaffT();
   const uiLang = lang === "en" ? "es" : lang;
   const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
@@ -89,7 +90,11 @@ export function useSellerPayment({ storeId, onSuccess }: Options) {
             open={!!cardOrder}
             amountEuro={Number(cardOrder?.total ?? 0)}
             orderNumber={cardOrder?.order_number}
-            onClose={() => setCardOrder(null)}
+            onClose={() => {
+              const order = cardOrder;
+              setCardOrder(null);
+              if (order) onDemoDismissed?.(order);
+            }}
           />
         ) : (
           <TapToPayCheckoutSurface
@@ -110,7 +115,7 @@ export function useSellerPayment({ storeId, onSuccess }: Options) {
         )}
       </>
     ),
-    [StaffPinDialog, cardOrder, onSuccess, storeId, terminalOrder, terminalPin],
+    [StaffPinDialog, cardOrder, onDemoDismissed, onSuccess, storeId, terminalOrder, terminalPin],
   );
 
   return {
