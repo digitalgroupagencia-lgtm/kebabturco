@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StripeElementLocale } from "@stripe/stripe-js";
 import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
 import { useCart } from "@/customer/contexts/CartContext";
@@ -378,15 +378,28 @@ const PaymentScreen = () => {
   const buildStripePrefetchKey = (method: "card" | "bizum") =>
     `${method}:${storeId}:${Math.round(totalPrice * 100)}:${Math.round(deliveryFee * 100)}:${Math.round(couponDiscount * 100)}:${orderTypeDb}`;
 
+  const resetStripeCheckoutState = useCallback(() => {
+    setStripeClientSecret(null);
+    setStripePaymentIntentId(null);
+    setStripePaymentMeta(null);
+    setStripePreparedOrder(null);
+    setStripeCheckoutPreparing(false);
+    setStripePaymentLocked(false);
+    clearStripeCheckoutSession();
+    stripePrefetchRef.current = null;
+  }, []);
+
   useEffect(() => {
     if (!storeId || !stripeEnabled || !stripePublishableKey) return;
     if (isTableOrder) return;
     if (checkoutStep !== "details" && checkoutStep !== "payment") return;
     if (stripeClientSecret || stripeCheckoutPreparing || processing || recoveringCheckout) return;
+    if (!selected || !isOnlineCheckoutMethod(selected)) {
+      stripePrefetchRef.current = null;
+      return;
+    }
 
-    const method: "card" | "bizum" | null =
-      selected === "bizum" ? "bizum" : "card";
-
+    const method: "card" | "bizum" = selected === "bizum" ? "bizum" : "card";
     const key = buildStripePrefetchKey(method);
     if (stripePrefetchRef.current?.key === key) return;
 
@@ -873,15 +886,6 @@ const PaymentScreen = () => {
     }
   };
 
-  useEffect(() => {
-    if (isTableOrder || checkoutStep !== "payment") return;
-    if (!isOnlineCheckoutMethod(selected)) return;
-    if (!stripePublishableKey || !stripeEnabled) return;
-    if (stripeClientSecret || stripeCheckoutPreparing || processing || recoveringCheckout) return;
-    void startStripePayment(selected);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- preparar ao escolher cartão/Bizum
-  }, [checkoutStep, selected, stripePublishableKey, stripeEnabled, stripeClientSecret]);
-
   const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
     setPaymentMethod(stripeCheckoutMethod);
     setOrderNumber(result.order_number);
@@ -1166,7 +1170,10 @@ const PaymentScreen = () => {
         title={isTableOrder ? "Pagamento na mesa" : checkoutStep === "details" ? "Os teus dados" : t("pay")}
         onBack={() => {
           if (stripePaymentLocked || processing || recoveringCheckout) return;
-          if (stripeClientSecret) return;
+          if (stripeClientSecret) {
+            resetStripeCheckoutState();
+            return;
+          }
           if (checkoutStep === "payment" && !isTableOrder) {
             setCheckoutStep("details");
           } else {
@@ -1244,11 +1251,7 @@ const PaymentScreen = () => {
               onBusyChange={setStripePaymentLocked}
               onCancel={() => {
                 if (stripePaymentLocked || processing) return;
-                setStripeClientSecret(null);
-                setStripePaymentIntentId(null);
-                setStripePaymentMeta(null);
-                setStripePreparedOrder(null);
-                clearStripeCheckoutSession();
+                resetStripeCheckoutState();
               }}
               onSuccess={async () => {
                 console.log("[checkout] Stripe payment succeeded, confirmando pedido…");
