@@ -114,11 +114,26 @@ export const STAFF_I18N = {
   "profile.name.required": { es: "Escribe tu nombre", pt: "Escreva o seu nome", en: "Enter your name" },
   "profile.banner.title": { es: "Completa tu perfil", pt: "Complete o seu perfil", en: "Complete your profile" },
   "profile.banner.body": {
-    es: "Pon tu nombre y foto para que el restaurante sepa quién eres en cada pedido.",
-    pt: "Coloque o seu nome e foto para o restaurante saber quem é em cada pedido.",
-    en: "Add your name and photo so the restaurant knows who you are on each order.",
+    es: "Pon tu nombre, foto y código para aceptar pedidos en el restaurante.",
+    pt: "Coloque o seu nome, foto e código para aceitar pedidos no restaurante.",
+    en: "Add your name, photo and code to accept orders at the restaurant.",
   },
   "profile.banner.action": { es: "Completar ahora", pt: "Completar agora", en: "Complete now" },
+  "profile.pin.title": {
+    es: "Código para pedidos",
+    pt: "Código para pedidos",
+    en: "Order code",
+  },
+  "profile.pin.body": {
+    es: "Lo pedirá al aceptar pedidos o confirmar pagos. Solo usted debe conocerlo.",
+    pt: "Vai pedir este código ao aceitar pedidos ou confirmar pagamentos. Só você deve conhecê-lo.",
+    en: "You'll need it when accepting orders or confirming payments. Only you should know it.",
+  },
+  "profile.pin.required": {
+    es: "Cree su código para poder aceptar pedidos",
+    pt: "Crie o seu código para poder aceitar pedidos",
+    en: "Create your code to accept orders",
+  },
   "team.field.password.google_hint": {
     es: "Esta persona entró con Google, no necesita contraseña aquí.",
     pt: "Esta pessoa entrou com Google, não precisa de senha aqui.",
@@ -991,6 +1006,11 @@ export const STAFF_I18N = {
     es: "Antes de la primera venta, indique su nombre y cree su código de cobro.",
     pt: "Antes da primeira venda, indique o seu nome e crie o seu código de cobrança.",
     en: "Before your first sale, enter your name and create your payment code.",
+  },
+  "seller.setup.pin_only_subtitle": {
+    es: "Cree su código para confirmar pedidos y pagos.",
+    pt: "Crie o seu código para confirmar pedidos e pagamentos.",
+    en: "Create your code to confirm orders and payments.",
   },
   "seller.setup.pin_title": {
     es: "Código de cobro",

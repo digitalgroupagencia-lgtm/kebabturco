@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, User } from "lucide-react";
+import { Camera, KeyRound, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,13 @@ import { usePanelStore } from "@/contexts/PanelStoreContext";
 import { useStaffT } from "@/hooks/useStaffT";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
+import { staffAccessPinHint, validateStaffAccessPin } from "@/lib/staffAccessPin";
 import {
   fetchMyStaffProfile,
   saveMyStaffProfile,
   uploadStaffAvatar,
 } from "@/services/staffProfile";
+import { fetchSellerSetupStatus, saveMyStaffAccessPin } from "@/services/sellerSetupService";
 
 export default function MyProfilePage() {
   const { user } = useAuth();
@@ -30,6 +32,9 @@ export default function MyProfilePage() {
   const [birthDate, setBirthDate] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [hasPin, setHasPin] = useState(true);
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
 
   useEffect(() => {
     if (!user?.id) return;
@@ -37,10 +42,14 @@ export default function MyProfilePage() {
     void (async () => {
       setLoading(true);
       try {
-        const profile = await fetchMyStaffProfile(user.id);
+        const [profile, setup] = await Promise.all([
+          fetchMyStaffProfile(user.id),
+          fetchSellerSetupStatus(user.id),
+        ]);
         setFullName(profile?.full_name?.trim() || "");
         setBirthDate(profile?.birth_date || "");
         setAvatarUrl(profile?.avatar_url || null);
+        setHasPin(setup.hasPin);
       } catch (e) {
         toast.error(translateAppErrorFromException(e, uiLang));
       } finally {
@@ -68,6 +77,19 @@ export default function MyProfilePage() {
       toast.error(t("profile.name.required"));
       return;
     }
+
+    if (!hasPin) {
+      const pinError = validateStaffAccessPin(pin, uiLang);
+      if (pinError) {
+        toast.error(pinError);
+        return;
+      }
+      if (pin !== pinConfirm) {
+        toast.error(t("seller.setup.pin_mismatch"));
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       await saveMyStaffProfile({
@@ -75,6 +97,12 @@ export default function MyProfilePage() {
         birth_date: birthDate || null,
         avatar_url: avatarUrl,
       });
+      if (!hasPin) {
+        await saveMyStaffAccessPin(pin.trim());
+        setHasPin(true);
+        setPin("");
+        setPinConfirm("");
+      }
       toast.success(t("profile.saved"));
     } catch (e) {
       toast.error(translateAppErrorFromException(e, uiLang));
@@ -160,6 +188,40 @@ export default function MyProfilePage() {
             <Input value={email} readOnly disabled className="bg-muted/40" />
             <p className="text-xs text-muted-foreground">{t("profile.field.email.hint")}</p>
           </div>
+
+          {!hasPin ? (
+            <div className="space-y-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-primary" />
+                <p className="font-bold">{t("profile.pin.title")}</p>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("profile.pin.body")}</p>
+              <p className="text-[11px] text-muted-foreground">{staffAccessPinHint(uiLang)}</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-pin">{t("seller.setup.pin_label")}</Label>
+                <Input
+                  id="profile-pin"
+                  inputMode="numeric"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  className="text-center text-lg tracking-widest font-mono"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-pin2">{t("seller.setup.pin_confirm")}</Label>
+                <Input
+                  id="profile-pin2"
+                  inputMode="numeric"
+                  value={pinConfirm}
+                  onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  className="text-center text-lg tracking-widest font-mono"
+                  autoComplete="new-password"
+                />
+              </div>
+              <p className="text-xs font-medium text-primary">{t("profile.pin.required")}</p>
+            </div>
+          ) : null}
 
           <Button className="w-full" onClick={() => void handleSave()} disabled={saving || uploading}>
             {saving ? (

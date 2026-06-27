@@ -78,6 +78,10 @@ export async function saveSellerOnboarding(input: {
     avatar_url: null,
   });
 
-  const { error } = await supabase.rpc("upsert_my_staff_access_pin", { _pin: input.pin.trim() });
+  await saveMyStaffAccessPin(input.pin);
+}
+
+export async function saveMyStaffAccessPin(pin: string): Promise<void> {
+  const { error } = await supabase.rpc("upsert_my_staff_access_pin", { _pin: pin.trim() });
   if (error) throw error;
 }
