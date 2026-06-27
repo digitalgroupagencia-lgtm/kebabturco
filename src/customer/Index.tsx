@@ -23,6 +23,8 @@ import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
+import { useSellerMode } from "@/contexts/SellerModeContext";
+import { cn } from "@/lib/utils";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
@@ -53,6 +55,22 @@ const CustomerBootDismiss = () => {
     if (!storeId && screen !== "splash") return;
     dismissBootShell();
   }, [screen, storeLoading, brandingLoading, storeId]);
+
+  return null;
+};
+
+/** Em modo vendedor salta splash/idioma e vai directo ao cardápio. */
+const SellerCustomerBootstrap = () => {
+  const seller = useSellerMode();
+  const { screen, setScreen } = useOrder();
+  const { storeId, loading } = useResolvedStore();
+
+  useEffect(() => {
+    if (!seller.active || loading || !storeId) return;
+    if (screen === "splash" || screen === "language" || screen === "storeSelect" || screen === "orderType") {
+      setScreen("home");
+    }
+  }, [seller.active, loading, storeId, screen, setScreen]);
 
   return null;
 };
@@ -151,19 +169,29 @@ const ScreenRouter = () => {
   }
 };
 
-const CustomerShell = () => (
-    <div className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background">
+const CustomerShell = () => {
+  const seller = useSellerMode();
+
+  return (
+    <div
+      className={cn(
+        "customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background md:max-w-none",
+        seller.active && "seller-menu-shell",
+      )}
+    >
+      <SellerCustomerBootstrap />
       <CustomerBootDismiss />
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <ScreenRouter />
       </div>
       <CustomerScreenErrorBoundary scope="bootstrap">
         <CustomerBottomDock />
-        <CustomerTabBar />
-        <CustomerPushPromptHost />
+        {!seller.active && <CustomerTabBar />}
+        {!seller.active && <CustomerPushPromptHost />}
       </CustomerScreenErrorBoundary>
     </div>
-);
+  );
+};
 
 // Kiosk Self-Service App
 const Index = () => {

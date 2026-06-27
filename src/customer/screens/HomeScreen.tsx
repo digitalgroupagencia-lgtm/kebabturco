@@ -15,6 +15,8 @@ import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
 import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import SmartImage from "@/components/SmartImage";
+import { useSellerMode } from "@/contexts/SellerModeContext";
+import { cn } from "@/lib/utils";
 
 
 const HomeScreen = () => {
@@ -24,6 +26,7 @@ const HomeScreen = () => {
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
   const navigate = useNavigate();
+  const seller = useSellerMode();
   const [logoTaps, setLogoTaps] = useState(0);
   const tapResetRef = useRef<number | null>(null);
   const handleLogoTap = () => {
@@ -187,7 +190,7 @@ const HomeScreen = () => {
       )}
 
       <div className="flex flex-1 overflow-hidden min-h-0">
-        <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
+        <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto overscroll-y-contain border-r border-border/40 bg-secondary/30 md:w-[120px] md:min-w-[120px] lg:w-[140px] lg:min-w-[140px] md:[&::-webkit-scrollbar]:w-1.5 md:[&::-webkit-scrollbar-thumb]:rounded-full md:[&::-webkit-scrollbar-thumb]:bg-border">
           <div className="flex flex-col gap-2 px-2 py-2">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
@@ -253,7 +256,12 @@ const HomeScreen = () => {
               </div>
             </div>
 
-            <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-2.5 px-3 md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5",
+                seller.active ? "pb-28" : "pb-16",
+              )}
+            >
             {filteredProducts.map((product, index) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
