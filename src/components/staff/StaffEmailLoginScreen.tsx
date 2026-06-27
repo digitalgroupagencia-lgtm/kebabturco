@@ -411,19 +411,23 @@ const StaffEmailLoginScreen = () => {
             </Button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            {isSignup ? copy.loginToggle : copy.signupToggle}{" "}
-            <button
+          <div className="mt-4 rounded-lg border border-dashed bg-muted/40 p-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isSignup ? copy.loginToggle : copy.signupToggle}
+            </p>
+            <Button
               type="button"
-              className="font-semibold text-primary hover:underline"
+              variant="secondary"
+              className="mt-2 h-11 w-full text-base font-bold"
               onClick={() => {
                 setIsSignup((v) => !v);
                 setError(null);
               }}
             >
               {isSignup ? copy.loginLink : copy.signupLink}
-            </button>
-          </p>
+            </Button>
+          </div>
+
 
           {!isSignup && (
             <>
