@@ -386,7 +386,8 @@ export function usePanelOrders(storeId: string | undefined) {
 
       if (error || !updated) {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-        toast.error("Erro ao actualizar");
+        console.error("[panel] update order failed", error);
+        toast.error(`Erro ao actualizar: ${error?.message || "sem resposta"}`);
         return false;
       }
 
