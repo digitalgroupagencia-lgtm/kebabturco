@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 export VITE_IOS_TAP_TO_PAY_ENABLED=true
+export VITE_TAP_TO_PAY_VISUAL_DEMO=true
 
 npm run build
 npx cap sync ios
@@ -22,3 +23,4 @@ echo "✓ iOS Development: net.kebabturco.app"
 echo "  · Push: AppDelegate com handlers APNs (obrigatório Capacitor)"
 echo "  · Debug → App.entitlements (aps-environment=development + Tap to Pay)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=true"
+echo "  · VITE_TAP_TO_PAY_VISUAL_DEMO=true (ecrã Apple para vídeos / TestFlight)"

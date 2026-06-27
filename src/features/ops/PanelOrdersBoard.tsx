@@ -23,9 +23,9 @@ import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } f
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
-import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
+import TapToPayCheckoutSurface from "@/components/tapToPay/TapToPayCheckoutSurface";
 import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
-import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
+import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
 import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
@@ -244,7 +244,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
 
   const confirmMarkPaid = useCallback(
     async (order: PanelOrder, method: "cash" | "card" = "cash") => {
-      const isTapPay = method === "card" && isTapToPayPlatform();
+      const isTapPay = method === "card" && isTapToPayUiAvailable();
       if (isTapPay) {
         setDetailOrderId(null);
         await waitForStaffPinUiDismiss();
@@ -282,7 +282,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
     onMarkPaid: confirmMarkPaid,
-    showTapToPayButton: isTapToPayPlatform(),
+    showTapToPayButton: isTapToPayUiAvailable(),
   });
 
   const mobileOrders = getOrdersByStatus(mobileTab);
@@ -443,7 +443,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
       />
       <StaffPinDialog />
 
-      <TapToPayDialog
+      <TapToPayCheckoutSurface
         open={!!tapPayOrder}
         order={tapPayOrder}
         storeId={storeId}

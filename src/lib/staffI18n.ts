@@ -837,6 +837,96 @@ export const STAFF_I18N = {
     en: "Charge later",
   },
   "ops.card.tap_to_pay": { es: "Tap to Pay", pt: "Tap to Pay", en: "Tap to Pay" },
+  "tapToPay.visual.hold_here": {
+    es: "Acerque aquí para pagar",
+    pt: "Aproxime aqui para pagar",
+    en: "Hold Here to Pay",
+  },
+  "tapToPay.visual.pay_merchant": {
+    es: "Pagar {merchant}",
+    pt: "Pagar {merchant}",
+    en: "Pay {merchant}",
+  },
+  "tapToPay.visual.demo_badge": {
+    es: "Pantalla de prueba",
+    pt: "Ecrã de teste",
+    en: "Test screen",
+  },
+  "tapToPay.visual.demo_body": {
+    es: "Esta función aún no está activa. Solo se muestra el diseño para pruebas internas y vídeos de Apple.",
+    pt: "Esta função ainda não está activa. Só mostra o visual para testes internos e vídeos da Apple.",
+    en: "This feature is not active yet. Visual only for internal testing and Apple review videos.",
+  },
+  "tapToPay.guide.title": {
+    es: "Instrucciones Tap to Pay",
+    pt: "Instruções Tap to Pay",
+    en: "Tap to Pay instructions",
+  },
+  "tapToPay.guide.intro": {
+    es: "Cobra con tarjeta o móvil sin terminal extra: el iPhone de la tienda recibe el pago por aproximación.",
+    pt: "Cobre com cartão ou telemóvel sem terminal extra: o iPhone da loja recebe o pagamento por aproximação.",
+    en: "Charge card or phone without an extra terminal: the store iPhone accepts contactless payment.",
+  },
+  "tapToPay.guide.how_title": {
+    es: "Cómo cobrar",
+    pt: "Como cobrar",
+    en: "How to charge",
+  },
+  "tapToPay.guide.step1": {
+    es: "Al finalizar el pedido, elija Tap to Pay como forma de pago del cliente.",
+    pt: "No final do pedido, escolha Tap to Pay como forma de pagamento do cliente.",
+    en: "At checkout, choose Tap to Pay as the customer's payment method.",
+  },
+  "tapToPay.guide.step2": {
+    es: "Use su iPhone para recibir el pago con tarjeta de las principales redes (Visa, Mastercard, etc.) y carteras como Apple Pay.",
+    pt: "Use o seu iPhone para receber pagamento com cartão das principais bandeiras (Visa, Mastercard, etc.) e carteiras como Apple Pay.",
+    en: "Use your iPhone to accept card payments from major networks (Visa, Mastercard, etc.) and wallets like Apple Pay.",
+  },
+  "tapToPay.guide.step3": {
+    es: "El cliente solo tiene que acercar la tarjeta en horizontal a la parte superior de la pantalla del iPhone.",
+    pt: "O cliente só precisa de aproximar o cartão na horizontal à parte superior do ecrã do iPhone.",
+    en: "The customer only needs to hold their card horizontally near the top of the iPhone screen.",
+  },
+  "tapToPay.guide.step4": {
+    es: "Cuando el pago se confirme, verá la aprobación en pantalla y el pedido quedará marcado como pagado.",
+    pt: "Quando o pagamento for confirmado, verá a aprovação no ecrã e o pedido ficará marcado como pago.",
+    en: "Once payment is confirmed, you'll see approval on screen and the order will be marked as paid.",
+  },
+  "tapToPay.guide.caption_phones": {
+    es: "El iPhone de la tienda muestra el importe; el cliente acerca su tarjeta o móvil.",
+    pt: "O iPhone da loja mostra o valor; o cliente aproxima o cartão ou telemóvel.",
+    en: "The store iPhone shows the amount; the customer taps their card or phone.",
+  },
+  "tapToPay.guide.caption_card": {
+    es: "Sostenga la tarjeta en horizontal cerca del borde superior del iPhone.",
+    pt: "Segure o cartão na horizontal perto da borda superior do iPhone.",
+    en: "Hold the card horizontally near the top edge of the iPhone.",
+  },
+  "tapToPay.guide.brands_title": {
+    es: "Tarjetas aceptadas",
+    pt: "Cartões aceites",
+    en: "Accepted cards",
+  },
+  "tapToPay.guide.brands_desc": {
+    es: "Visa, Mastercard, American Express, Discover, Maestro, V Pay y carteras digitales compatibles.",
+    pt: "Visa, Mastercard, American Express, Discover, Maestro, V Pay e carteiras digitais compatíveis.",
+    en: "Visa, Mastercard, American Express, Discover, Maestro, V Pay and compatible digital wallets.",
+  },
+  "tapToPay.guide.confirm": {
+    es: "Tras la aprobación, el cobro queda registrado en el pedido. Si se pide PIN, el cliente lo introduce en pantalla.",
+    pt: "Após a aprovação, o cobro fica registado no pedido. Se pedir PIN, o cliente introduz no ecrã.",
+    en: "After approval, the charge is recorded on the order. If PIN is required, the customer enters it on screen.",
+  },
+  "tapToPay.guide.demo_note": {
+    es: "En la versión de prueba actual, Tap to Pay puede mostrarse solo como demostración visual hasta que Apple active la función.",
+    pt: "Na versão de teste actual, o Tap to Pay pode aparecer só como demonstração visual até a Apple activar a função.",
+    en: "In the current test build, Tap to Pay may appear as a visual demo only until Apple enables the feature.",
+  },
+  "seller.nav.tap_guide": {
+    es: "Tap to Pay",
+    pt: "Tap to Pay",
+    en: "Tap to Pay",
+  },
 
   ...STAFF_I18N_CATALOG,
 } as const satisfies Record<string, Record<StaffUiLang, string>>;

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import TapToPayAwarenessModal from "@/components/tapToPay/TapToPayAwarenessModal";
 import { hasSeenTapToPayAwareness, isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { isPanelAlertsEnabled } from "@/lib/panelAlerts";
-import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
+import { isTapToPayRealTerminalMode } from "@/lib/tapToPayDemo";
 
 type Props = {
   storeId: string | null | undefined;
@@ -11,7 +11,7 @@ type Props = {
 /** Apresenta activação Tap to Pay só depois dos alertas de pedidos, evita empilhar modais com a Apple. */
 export default function TapToPayStaffBootstrap({ storeId }: Props) {
   const [awarenessOpen, setAwarenessOpen] = useState(false);
-  const enabled = isTapToPayPlatform() && !!storeId;
+  const enabled = isTapToPayRealTerminalMode() && !!storeId;
 
   useEffect(() => {
     if (!enabled || !storeId) return;

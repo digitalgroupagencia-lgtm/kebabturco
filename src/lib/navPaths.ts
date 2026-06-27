@@ -102,6 +102,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "seller", segments: ["tables"], loader: () => import("@/views/seller/SellerTables.tsx") },
   { area: "seller", segments: ["tables", ":sessionId"], loader: () => import("@/views/seller/SellerTableDetail.tsx") },
   { area: "seller", segments: ["my-orders"], loader: () => import("@/views/seller/SellerMyOrders.tsx") },
+  { area: "seller", segments: ["tap-to-pay"], loader: () => import("@/views/seller/SellerTapToPayGuide.tsx") },
   { area: "seller", segments: ["new"], loader: () => import("@/views/seller/SellerNewOrder.tsx") },
 
   { area: "delivery", segments: [], loader: () => import("@/views/delivery/DeliveryHomePage.tsx") },

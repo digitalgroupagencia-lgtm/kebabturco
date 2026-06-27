@@ -22,7 +22,7 @@ import {
   orderItemCount,
   requiresEtaBeforeAccept,
 } from "./opsOrderUi";
-import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
+import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
 
 type OrderItem = Tables<"order_items">;
 
@@ -322,7 +322,7 @@ const OpsOrderDetailSheet = ({
                   className="flex-1 h-10 font-bold"
                   disabled={markingPaid}
                   onClick={() => {
-                    if (isTapToPayPlatform()) {
+                    if (isTapToPayUiAvailable()) {
                       void onMarkPaid(order, "card");
                       return;
                     }
@@ -336,7 +336,7 @@ const OpsOrderDetailSheet = ({
                     })();
                   }}
                 >
-                  {isTapToPayPlatform() ? t("order.detail.tap_to_pay") : t("order.detail.mark_card")}
+                  {isTapToPayUiAvailable() ? t("order.detail.tap_to_pay") : t("order.detail.mark_card")}
                 </Button>
               </div>
             </div>
