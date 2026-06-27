@@ -58,6 +58,11 @@
         <string>remote-notification</string>
         <string>location</string>
     </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Usamos a câmara para ler o QR Code da mesa e identificar o teu pedido.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>O microfone não é gravado; apenas necessário para acesso à câmara em alguns cenários.</string>
+
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>NSAppTransportSecurity</key>

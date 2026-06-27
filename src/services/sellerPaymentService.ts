@@ -4,7 +4,7 @@ export async function markSellerOrderPaidCard(
   orderId: string,
   stripePaymentIntentId?: string | null,
 ) {
-  const { data, error } = await supabase.rpc("mark_seller_order_paid", {
+  const { data, error } = await (supabase as any).rpc("mark_seller_order_paid", {
     _order_id: orderId,
     _payment_method: "card",
     _stripe_payment_intent_id: stripePaymentIntentId || undefined,

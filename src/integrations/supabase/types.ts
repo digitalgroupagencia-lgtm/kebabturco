@@ -561,6 +561,61 @@ export type Database = {
           },
         ]
       }
+      customer_order_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          order_id: string
+          order_number: string | null
+          order_status_at_send: string | null
+          read_at: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          order_id: string
+          order_number?: string | null
+          order_status_at_send?: string | null
+          read_at?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string
+          order_number?: string | null
+          order_status_at_send?: string | null
+          read_at?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_order_feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_order_feedback_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_order_feedback_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_saved_profiles: {
         Row: {
           delivery: Json
@@ -1316,54 +1371,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      customer_order_feedback: {
-        Row: {
-          id: string
-          order_id: string
-          store_id: string
-          order_number: string | null
-          order_status_at_send: string | null
-          message: string
-          read_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          order_id: string
-          store_id: string
-          order_number?: string | null
-          order_status_at_send?: string | null
-          message: string
-          read_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          order_id?: string
-          store_id?: string
-          order_number?: string | null
-          order_status_at_send?: string | null
-          message?: string
-          read_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customer_order_feedback_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customer_order_feedback_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -4394,20 +4401,15 @@ export type Database = {
     }
     Functions: {
       acquire_tenant_edit_lock: { Args: { _tenant_id: string }; Returns: Json }
-      add_loyalty_stamp:
-        | {
-            Args: { _customer_id?: string; _phone: string; _store_id: string }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _customer_id?: string
-              _order_total?: number
-              _phone: string
-              _store_id: string
-            }
-            Returns: Json
-          }
+      add_loyalty_stamp: {
+        Args: {
+          _customer_id?: string
+          _order_total?: number
+          _phone: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       add_or_get_table_customer: {
         Args: { _name: string; _session_id: string }
         Returns: string
@@ -4544,6 +4546,18 @@ export type Database = {
           _table_id?: string
           _table_number?: string
           _total: number
+        }
+        Returns: Json
+      }
+      create_seller_counter_order: {
+        Args: {
+          _customer_email?: string
+          _customer_name: string
+          _customer_phone?: string
+          _items: Json
+          _notes?: string
+          _order_type?: string
+          _store_id: string
         }
         Returns: Json
       }
@@ -4885,6 +4899,7 @@ export type Database = {
       }
       get_user_store_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      has_my_staff_access_pin: { Args: never; Returns: boolean }
       has_order_review: { Args: { _order_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -5205,6 +5220,7 @@ export type Database = {
         }
         Returns: Json
       }
+      upsert_my_staff_access_pin: { Args: { _pin: string }; Returns: undefined }
       upsert_my_staff_profile: {
         Args: {
           _avatar_url?: string
