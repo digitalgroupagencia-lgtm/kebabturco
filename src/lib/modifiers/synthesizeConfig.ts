@@ -20,6 +20,7 @@ import {
   perUnitChoiceGroupName,
   perUnitChoiceVariants,
   productDescriptionText,
+  productText,
   resolveUnitLabel,
 } from "./comboProductRules";
 import {
@@ -53,10 +54,32 @@ function prettifyIngredientLabel(label: string): string {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }
 
+/** Rótulos genéricos (ex.: "verduras") não substituem a lista detalhada de ingredientes. */
+function isVagueRemovalLabel(key: string): boolean {
+  return /^(verduras?|vegetales?|ensalada|salad|legumes?|gemuse|verdure)$/.test(key);
+}
+
+function shouldExpandDefaultRemovals(removalMap: Map<string, string>, product: MenuProduct): boolean {
+  if (!allowsIngredientRemoval(product)) return false;
+  const kind = inferComboUnitKind(product);
+  if (kind !== "pita" && kind !== "rollo" && kind !== "kebab" && kind !== "sandwich") return false;
+  if (removalMap.size === 0) return true;
+
+  const productKey = normalizeIngredientKey(productText(product));
+  const keys = Array.from(removalMap.keys());
+  const onlyVague = keys.every((key) => isVagueRemovalLabel(key) || (productKey.length > 4 && key.includes(productKey)));
+  const hasVague = keys.some(isVagueRemovalLabel);
+  return onlyVague || hasVague;
+}
+
 /** Rótulos que NÃO devem aparecer em "quitar ingredientes" (carne base, escolhas, etc). */
 function isExcludedRemovalLabel(label: string, product: MenuProduct): boolean {
   const key = normalizeIngredientKey(label);
   if (!key) return true;
+  const productKey = normalizeIngredientKey(productText(product));
+  if (productKey.length > 4 && (key === productKey || key.includes(productKey) || productKey.includes(key))) {
+    return true;
+  }
   if (/^carne(\s+de\s+\w+)?$/.test(key)) return true;
   if (/^(pollo|ternera|mixto|frango|vaca|crispy)$/.test(key)) return true;
   if ((hasFixedProtein(product) || isVariableProteinProduct(product)) && /^carne\b/.test(key)) {
@@ -421,6 +444,12 @@ function buildModifierConfigFromProduct(
     allowsIngredientRemoval(product) &&
     removalMap.size === 0
   ) {
+    for (const label of defaultRemovableIngredients(product)) {
+      addRemoval(label);
+    }
+  }
+
+  if (!isDrink && allowsIngredientRemoval(product) && shouldExpandDefaultRemovals(removalMap, product)) {
     for (const label of defaultRemovableIngredients(product)) {
       addRemoval(label);
     }

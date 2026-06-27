@@ -148,9 +148,9 @@ const OrderTypeScreen = () => {
   };
 
   const handleManualMesa = (number: string, tableId: string) => {
-    confirmManualMesa(number, tableId);
     setMesaDialogOpen(false);
-    setScreen("home");
+    confirmManualMesa(number, tableId);
+    window.requestAnimationFrame(() => setScreen("home"));
   };
 
   const handleQrMesa = (number: string, tableId: string, qrToken: string) => {

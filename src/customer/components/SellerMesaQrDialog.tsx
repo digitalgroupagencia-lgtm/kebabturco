@@ -1,7 +1,8 @@
-import { lazy, Suspense, useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Hash, Loader2, QrCode } from "lucide-react";
 import { parseMesaQrToken } from "@/lib/mesaQrScan";
 import { openTableSessionOnScan, resolveTableByNumber } from "@/services/tableSessionService";
+import MesaQrScanner from "@/customer/components/MesaQrScanner";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStaffT } from "@/hooks/useStaffT";
-
-const MesaQrScanner = lazy(() => import("./MesaQrScanner"));
 
 export type SellerMesaQrResult = {
   tableNumber: string;
@@ -128,15 +127,7 @@ export default function SellerMesaQrDialog({
           <DialogDescription>{t("seller.mesa.qr_desc")}</DialogDescription>
         </DialogHeader>
 
-        <Suspense
-          fallback={
-            <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          }
-        >
-          <MesaQrScanner active={open} onDetected={(raw) => void handleQrDetected(raw)} />
-        </Suspense>
+        <MesaQrScanner active={open} onDetected={(raw) => void handleQrDetected(raw)} />
 
         {qrLoading ? (
           <p className="text-center text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">

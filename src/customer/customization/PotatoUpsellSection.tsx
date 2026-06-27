@@ -96,6 +96,7 @@ export default function PotatoUpsellSection({ group, state, unitIndex, onChange,
                     onClick={() => pick(opt.id)}
                     layout="vertical"
                     compact={upgrades.length >= 3}
+                    priority={stepMode}
                   />
                 );
               })}

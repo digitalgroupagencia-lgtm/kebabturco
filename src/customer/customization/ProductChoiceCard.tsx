@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Heart } from "lucide-react";
+import { menuImageUrl } from "@/lib/menuImageUrl";
 
 type Props = {
   title: string;
@@ -10,6 +11,7 @@ type Props = {
   onClick: () => void;
   layout?: "horizontal" | "vertical";
   compact?: boolean;
+  priority?: boolean;
 };
 
 export default function ProductChoiceCard({
@@ -21,9 +23,18 @@ export default function ProductChoiceCard({
   onClick,
   layout = "vertical",
   compact = false,
+  priority = false,
 }: Props) {
   const [broken, setBroken] = useState(false);
-  const src = broken || !imageUrl ? "/placeholder.svg" : imageUrl;
+  const [loaded, setLoaded] = useState(false);
+  const targetWidth = layout === "horizontal" ? 160 : compact ? 200 : 280;
+  const raw = broken || !imageUrl ? "/product-placeholder.svg" : imageUrl;
+  const src = menuImageUrl(raw, targetWidth);
+
+  useEffect(() => {
+    setBroken(false);
+    setLoaded(false);
+  }, [src]);
 
   const imageBlock = (
     <div
@@ -32,16 +43,26 @@ export default function ProductChoiceCard({
           ? "h-20 w-20 rounded-[14px]"
           : compact
             ? "aspect-square w-full rounded-t-[14px]"
-            : "aspect-[5/4] w-full rounded-t-[16px]"
+            : "aspect-square w-full rounded-t-[16px]"
       }`}
     >
+      {!loaded && <div aria-hidden className="absolute inset-0 bg-secondary/40" />}
       <img
         src={src}
         alt=""
-        className="h-full w-full object-cover"
-        loading="lazy"
+        className={`h-full w-full object-contain object-center transition-opacity duration-150 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+        loading={priority ? "eager" : "lazy"}
+        // @ts-expect-error fetchpriority válido em HTML
+        fetchpriority={priority ? "high" : "auto"}
+        decoding={priority ? "sync" : "async"}
         draggable={false}
-        onError={() => setBroken(true)}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setBroken(true);
+          setLoaded(true);
+        }}
       />
       {selected && compact && (
         <span className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">

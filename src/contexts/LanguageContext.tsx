@@ -986,6 +986,18 @@ const translations: Translations = {
     es: "Abriendo la cámara…",
     fr: "Ouverture de la caméra…",
   },
+  mesaQrTapToStart: {
+    pt: "Toque para activar a câmara",
+    en: "Tap to enable the camera",
+    es: "Toca para activar la cámara",
+    fr: "Touchez pour activer la caméra",
+  },
+  mesaQrRetryCamera: {
+    pt: "Tentar câmara de novo",
+    en: "Try camera again",
+    es: "Reintentar cámara",
+    fr: "Réessayer la caméra",
+  },
   mesaQrScanning: {
     pt: "Aponte para o código na mesa",
     en: "Point at the code on your table",

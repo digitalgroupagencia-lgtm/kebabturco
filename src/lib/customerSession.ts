@@ -127,14 +127,68 @@ export function clearSavedMesaSessionId() {
   }
 }
 
-export function clearMesaBindingStorage() {
+/** Remove só vínculo QR/sessão — mantém número de mesa manual. */
+export function clearMesaQrBinding() {
   clearSavedMesaToken();
   clearSavedMesaSessionId();
+}
+
+export function clearMesaBindingStorage() {
+  clearMesaQrBinding();
+  clearSavedMesaManual();
+  clearSavedMesaTableId();
   try {
     localStorage.removeItem(KIOSK_TABLE_KEY);
   } catch {
     /* ignore */
   }
+}
+
+const KIOSK_MESA_MANUAL_KEY = "kiosk-mesa-manual";
+const KIOSK_MESA_TABLE_ID_KEY = "kiosk-mesa-table-id";
+
+export function loadSavedMesaManual(): boolean {
+  try {
+    return localStorage.getItem(KIOSK_MESA_MANUAL_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveSavedMesaManual(manual: boolean) {
+  try {
+    if (manual) localStorage.setItem(KIOSK_MESA_MANUAL_KEY, "1");
+    else localStorage.removeItem(KIOSK_MESA_MANUAL_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearSavedMesaManual() {
+  saveSavedMesaManual(false);
+}
+
+export function loadSavedMesaTableId(): string | null {
+  try {
+    const raw = localStorage.getItem(KIOSK_MESA_TABLE_ID_KEY);
+    return raw?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSavedMesaTableId(tableId: string | null) {
+  try {
+    const trimmed = tableId?.trim();
+    if (trimmed) localStorage.setItem(KIOSK_MESA_TABLE_ID_KEY, trimmed);
+    else localStorage.removeItem(KIOSK_MESA_TABLE_ID_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearSavedMesaTableId() {
+  saveSavedMesaTableId(null);
 }
 
 export function loadSavedMesaToken(): string | null {

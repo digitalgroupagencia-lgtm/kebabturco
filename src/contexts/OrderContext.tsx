@@ -13,8 +13,13 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearMesaBindingStorage,
+  clearMesaQrBinding,
   loadSavedLang,
+  loadSavedMesaManual,
+  loadSavedMesaTableId,
   loadSavedMesaToken,
+  saveSavedMesaManual,
+  saveSavedMesaTableId,
   loadSavedOrderType,
   loadSavedCustomerName,
   loadSavedCustomerEmail,
@@ -291,8 +296,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     saveSavedTableNumber(value);
   };
   const [mesaLocked, setMesaLocked] = useState(() => Boolean(loadSavedMesaToken()));
-  const [mesaManual, setMesaManual] = useState(false);
-  const [mesaTableId, setMesaTableId] = useState<string | null>(null);
+  const [mesaManual, setMesaManual] = useState(() =>
+    typeof window === "undefined" ? false : loadSavedMesaManual(),
+  );
+  const [mesaTableId, setMesaTableId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : loadSavedMesaTableId(),
+  );
   const [mesaQrToken, setMesaQrToken] = useState<string | null>(() => loadSavedMesaToken());
   const [customerName, setCustomerNameState] = useState(() =>
     typeof window === "undefined" ? "" : loadSavedCustomerName(),
@@ -431,17 +440,23 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     if (!loadSavedMesaToken()) {
       setMesaLocked(false);
-      setMesaTableId(null);
       setMesaQrToken(null);
+      if (!loadSavedMesaManual()) {
+        setMesaTableId(null);
+        setMesaManual(false);
+      }
     }
   }, [mesa, mesaLoading, setOrderType, setScreen]);
 
   const handleMesaSessionClosed = useCallback(() => {
     setMesaLocked(false);
     setMesaManual(false);
+    saveSavedMesaManual(false);
     setMesaTableId(null);
+    saveSavedMesaTableId(null);
     setMesaQrToken(null);
     setTableNumber("");
+    clearMesaBindingStorage();
     if (orderType === "here") clearOrderType();
   }, [orderType, clearOrderType]);
 
@@ -455,10 +470,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const confirmManualMesa = useCallback((tableNumber: string, tableId: string) => {
     setTableNumber(tableNumber);
     setMesaTableId(tableId);
+    saveSavedMesaTableId(tableId);
     setMesaManual(true);
+    saveSavedMesaManual(true);
     setMesaLocked(false);
     setMesaQrToken(null);
-    clearMesaBindingStorage();
+    clearMesaQrBinding();
     setOrderType("here");
   }, [setOrderType]);
 
@@ -466,7 +483,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTableNumber(tableNumber);
     saveSavedTableNumber(tableNumber);
     setMesaTableId(tableId);
+    saveSavedMesaTableId(tableId);
     setMesaManual(false);
+    saveSavedMesaManual(false);
     setMesaLocked(true);
     setMesaQrToken(qrToken);
     saveSavedMesaToken(qrToken);
@@ -476,7 +495,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const clearMesaLock = useCallback(() => {
     setMesaLocked(false);
     setMesaManual(false);
+    saveSavedMesaManual(false);
     setMesaTableId(null);
+    saveSavedMesaTableId(null);
     setMesaQrToken(null);
     setTableNumber("");
     clearMesaBindingStorage();
