@@ -77,7 +77,7 @@ const SellerCheckoutForm = () => {
     setType("dine_in");
   };
 
-  const buildRpcItems = () =>
+  const buildRpcItems = (): any =>
     items.map((it) => ({
       product_id: it.productId,
       product_name:
@@ -94,6 +94,7 @@ const SellerCheckoutForm = () => {
       removed: (it.removedIngredients ?? []) as unknown[],
       notes: it.note ?? null,
     }));
+
 
   const isMissingRpc = (message: string) =>
     /create_seller_counter_order|could not find the function|42883/i.test(message);
