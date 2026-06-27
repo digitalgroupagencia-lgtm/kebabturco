@@ -5,19 +5,23 @@ import { useSellerContext } from "@/hooks/useSellerContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, QrCode } from "lucide-react";
 import { fmtMoney } from "@/hooks/useTenantBilling";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { nav } from "@/lib/navPaths.ts";
+import SellerMesaQrDialog from "@/customer/components/SellerMesaQrDialog";
+import { useStaffT } from "@/hooks/useStaffT";
 
 const SellerTables = () => {
   const { storeId } = useSellerContext();
+  const { t } = useStaffT();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [newTable, setNewTable] = useState("");
   const [opening, setOpening] = useState(false);
+  const [mesaQrOpen, setMesaQrOpen] = useState(false);
 
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["open-tables", storeId],
@@ -38,15 +42,8 @@ const SellerTables = () => {
     if (!num || !storeId) return;
     setOpening(true);
     try {
-      const { data, error } = await supabase.rpc("open_or_get_table_session", {
-        _store_id: storeId,
-        _table_number: num,
-      });
-      if (error) throw error;
-      const sessionId = data as string;
+      await openTableByNumber(num);
       setNewTable("");
-      await qc.invalidateQueries({ queryKey: ["open-tables", storeId] });
-      navigate(nav.seller("tables", sessionId));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível abrir a mesa");
     } finally {
@@ -54,9 +51,44 @@ const SellerTables = () => {
     }
   };
 
+  const openTableByNumber = async (num: string) => {
+    if (!storeId) return;
+    const { data, error } = await supabase.rpc("open_or_get_table_session", {
+      _store_id: storeId,
+      _table_number: num,
+    });
+    if (error) throw error;
+    const sessionId = data as string;
+    await qc.invalidateQueries({ queryKey: ["open-tables", storeId] });
+    navigate(nav.seller("tables", sessionId));
+  };
+
   return (
     <div className="p-4 space-y-3">
       <h1 className="text-xl font-black">Mesas abertas</h1>
+
+      {storeId ? (
+        <>
+          <Button className="w-full h-12 font-bold" onClick={() => setMesaQrOpen(true)}>
+            <QrCode className="w-5 h-5 mr-2" />
+            {t("seller.mesa.scan_button")}
+          </Button>
+          <SellerMesaQrDialog
+            open={mesaQrOpen}
+            onOpenChange={setMesaQrOpen}
+            storeId={storeId}
+            allowManualFallback={false}
+            onResolved={(result) => {
+              void qc.invalidateQueries({ queryKey: ["open-tables", storeId] });
+              if (result.sessionId) {
+                navigate(nav.seller("tables", result.sessionId));
+                return;
+              }
+              void openTableByNumber(result.tableNumber);
+            }}
+          />
+        </>
+      ) : null}
 
       <Card>
         <CardContent className="p-3 flex gap-2">

@@ -927,6 +927,61 @@ export const STAFF_I18N = {
     pt: "Tap to Pay",
     en: "Tap to Pay",
   },
+  "seller.mesa.qr_title": {
+    es: "Leer QR de la mesa",
+    pt: "Ler QR da mesa",
+    en: "Scan table QR",
+  },
+  "seller.mesa.qr_desc": {
+    es: "Apunte la cámara al código QR de la mesa. El número se rellena solo.",
+    pt: "Aponte a câmara para o QR code da mesa. O número é preenchido automaticamente.",
+    en: "Point the camera at the table QR code. The table number fills in automatically.",
+  },
+  "seller.mesa.qr_validating": {
+    es: "Confirmando mesa…",
+    pt: "A confirmar a mesa…",
+    en: "Confirming table…",
+  },
+  "seller.mesa.qr_invalid": {
+    es: "QR no válido. Use el código de la mesa del restaurante.",
+    pt: "QR inválido. Use o código da mesa do restaurante.",
+    en: "Invalid QR. Use the restaurant table code.",
+  },
+  "seller.mesa.manual_fallback": {
+    es: "O escriba el número manualmente",
+    pt: "Ou escreva o número manualmente",
+    en: "Or enter the number manually",
+  },
+  "seller.mesa.manual_required": {
+    es: "Introduzca el número de mesa.",
+    pt: "Indique o número da mesa.",
+    en: "Enter the table number.",
+  },
+  "seller.mesa.manual_ok": {
+    es: "Usar",
+    pt: "Usar",
+    en: "Use",
+  },
+  "seller.mesa.not_found": {
+    es: "Mesa no encontrada.",
+    pt: "Mesa não encontrada.",
+    en: "Table not found.",
+  },
+  "seller.mesa.scan_button": {
+    es: "Leer QR de la mesa",
+    pt: "Ler QR da mesa",
+    en: "Scan table QR",
+  },
+  "seller.mesa.confirmed": {
+    es: "Mesa {n} confirmada",
+    pt: "Mesa {n} confirmada",
+    en: "Table {n} confirmed",
+  },
+  "seller.mesa.change": {
+    es: "Cambiar mesa",
+    pt: "Alterar mesa",
+    en: "Change table",
+  },
 
   ...STAFF_I18N_CATALOG,
 } as const satisfies Record<string, Record<StaffUiLang, string>>;

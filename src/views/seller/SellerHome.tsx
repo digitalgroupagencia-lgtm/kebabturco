@@ -103,7 +103,7 @@ const SellerHome = () => {
             <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Como usar
           </p>
           <ul className="space-y-1.5 list-disc pl-4">
-            <li><b>Novo pedido</b> — escolha produtos, mesa e cliente; o pedido vai para a cozinha e imprime automaticamente.</li>
+            <li><b>Novo pedido</b> — leia o QR da mesa (ou escolha balcão); o pedido vai para a cozinha e imprime automaticamente.</li>
             <li><b>Mesas abertas</b> — feche cada cliente ou a mesa inteira (pagamento único ou dividido).</li>
             <li><b>Meus pedidos</b> — cobre com Tap to Pay, dinheiro ou consulte o histórico.</li>
           </ul>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Send, User, Phone, Hash, Truck, Store, Smartphone, CheckCircle2, Banknote } from "lucide-react";
+import { Loader2, Send, User, Phone, Truck, Store, Smartphone, CheckCircle2, Banknote, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,7 @@ import { useStaffT } from "@/hooks/useStaffT";
 import TapToPayChargeEducation from "@/components/tapToPay/TapToPayChargeEducation";
 import { markOrderPaidAtCounter } from "@/services/orderService";
 import { tryPrintSellerOrder } from "@/services/checkoutPrintHelper";
+import SellerMesaQrDialog from "./SellerMesaQrDialog";
 
 type OrderTypeChoice = "dine_in" | "takeaway";
 
@@ -44,6 +45,7 @@ const SellerCheckoutForm = () => {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrder | null>(null);
+  const [mesaQrOpen, setMesaQrOpen] = useState(false);
 
   useEffect(() => {
     const table = searchParams.get("table")?.trim();
@@ -54,6 +56,11 @@ const SellerCheckoutForm = () => {
     }
     if (customer) setCustomerName(customer);
   }, [searchParams]);
+
+  const applyMesa = (tableNum: string) => {
+    setTableNumber(tableNum);
+    setType("dine_in");
+  };
 
   const buildRpcItems = () =>
     items.map((it) => ({
@@ -129,7 +136,7 @@ const SellerCheckoutForm = () => {
 
   const submit = async () => {
     if (!customerName.trim()) return toast.error("Informe o nome do cliente");
-    if (type === "dine_in" && !tableNumber.trim()) return toast.error("Informe a mesa");
+    if (type === "dine_in" && !tableNumber.trim()) return toast.error(t("seller.mesa.manual_required"));
     if (items.length === 0) return toast.error("Carrinho vazio");
     if (!storeId) return toast.error("Loja não identificada");
 
@@ -353,7 +360,10 @@ const SellerCheckoutForm = () => {
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => setType("dine_in")}
+            onClick={() => {
+              setType("dine_in");
+              if (!tableNumber.trim()) setMesaQrOpen(true);
+            }}
             className={`rounded-2xl border-2 p-3 flex flex-col items-center gap-1 ${
               type === "dine_in" ? "border-primary bg-primary/5" : "border-border bg-card"
             }`}
@@ -410,17 +420,26 @@ const SellerCheckoutForm = () => {
             />
           </div>
           {type === "dine_in" && (
-            <div>
-              <Label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                <Hash className="h-3 w-3" /> Mesa *
-              </Label>
-              <Input
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                inputMode="numeric"
-                placeholder="1"
-                className="mt-1 h-11"
-              />
+            <div className="space-y-2">
+              {tableNumber.trim() ? (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Mesa</p>
+                    <p className="text-xl font-black tabular-nums">{tableNumber}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {t("seller.mesa.confirmed").replace("{n}", tableNumber)}
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" className="shrink-0 font-bold" onClick={() => setMesaQrOpen(true)}>
+                    {t("seller.mesa.change")}
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" className="w-full h-12 font-bold" onClick={() => setMesaQrOpen(true)}>
+                  <QrCode className="h-5 w-5 mr-2" />
+                  {t("seller.mesa.scan_button")}
+                </Button>
+              )}
             </div>
           )}
           <div>
@@ -450,6 +469,15 @@ const SellerCheckoutForm = () => {
           Voltar ao carrinho
         </Button>
       </div>
+
+      {storeId ? (
+        <SellerMesaQrDialog
+          open={mesaQrOpen}
+          onOpenChange={setMesaQrOpen}
+          storeId={storeId}
+          onResolved={(result) => applyMesa(result.tableNumber)}
+        />
+      ) : null}
     </div>
   );
 };
