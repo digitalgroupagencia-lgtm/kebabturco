@@ -257,6 +257,12 @@ const OrderTrackingScreen = () => {
               </>
             )}
 
+            {order.status !== "cancelled" &&
+              order.status !== "delivered" &&
+              (order.status === "ready" || order.status === "out_for_delivery") && (
+                <OrderReviewForm orderId={order.id} />
+              )}
+
             {order.delivery_street && (
               <div className="rounded-2xl border border-border bg-card p-4 text-sm">
                 <p className="font-bold text-muted-foreground text-xs uppercase mb-1">{t("trackingDeliveryTo")}</p>

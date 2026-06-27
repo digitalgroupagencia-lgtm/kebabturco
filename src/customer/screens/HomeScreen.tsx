@@ -283,7 +283,7 @@ const HomeScreen = () => {
 
             <div
               className={cn(
-                "grid grid-cols-2 gap-2.5 px-3 md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5",
+                "grid grid-cols-2 gap-2.5 px-3",
                 seller.active ? "pb-28" : "pb-16",
               )}
             >
