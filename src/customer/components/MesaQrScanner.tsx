@@ -102,16 +102,12 @@ const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
     }
 
     handledRef.current = false;
-    if (needsTap) {
-      setStatus("awaiting_tap");
-      return;
-    }
-
     void startScanner();
     return () => {
       void stopScanner();
     };
-  }, [active, needsTap, startScanner, stopScanner]);
+  }, [active, startScanner, stopScanner]);
+
 
   return (
     <div className="relative overflow-hidden rounded-[24px] border-2 border-primary/25 bg-black shadow-[0_20px_50px_-20px_rgba(0,0,0,0.45)]">
