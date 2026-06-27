@@ -1,0 +1,2 @@
+UPDATE public.categories SET image_url='https://kvpssbhclafoymhecmuk.supabase.co/storage/v1/object/public/products/22222222-2222-2222-2222-222222222222/categories/a595c4f5-3cc1-4876-bef6-f59d49cfae0c-durum.jpg' WHERE id='a595c4f5-3cc1-4876-bef6-f59d49cfae0c';
+UPDATE public.categories SET image_url='https://kvpssbhclafoymhecmuk.supabase.co/storage/v1/object/public/products/22222222-2222-2222-2222-222222222222/categories/53f14571-ec6b-4772-a54d-c58005d2d40d-kapsalon.jpg' WHERE id='53f14571-ec6b-4772-a54d-c58005d2d40d';
