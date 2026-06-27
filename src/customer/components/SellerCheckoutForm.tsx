@@ -77,7 +77,7 @@ const SellerCheckoutForm = () => {
     setType("dine_in");
   };
 
-  const buildRpcItems = () =>
+  const buildRpcItems = (): any =>
     items.map((it) => ({
       product_id: it.productId,
       product_name:
@@ -94,6 +94,7 @@ const SellerCheckoutForm = () => {
       removed: (it.removedIngredients ?? []) as unknown[],
       notes: it.note ?? null,
     }));
+
 
   const isMissingRpc = (message: string) =>
     /create_seller_counter_order|could not find the function|42883/i.test(message);
@@ -160,10 +161,11 @@ const SellerCheckoutForm = () => {
       _store_id: storeId!,
       _customer_name: customerName.trim(),
       _items: buildRpcItems(),
-      _notes: notes.trim() || null,
-      _customer_phone: customerPhone.trim() || null,
-      _customer_email: customerEmail.trim() || null,
+      _notes: notes.trim() || undefined,
+      _customer_phone: customerPhone.trim() || undefined,
+      _customer_email: customerEmail.trim() || undefined,
       _order_type: type,
+
     });
 
     if (!error && data) {
@@ -249,7 +251,8 @@ const SellerCheckoutForm = () => {
           _table_number: tableNumber.trim(),
           _customer_name: customerName.trim(),
           _items: buildRpcItems(),
-          _notes: notes.trim() || null,
+          _notes: notes.trim() || undefined,
+
         });
         if (error) throw error;
 
