@@ -222,18 +222,36 @@ export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean
   return accountNeedsEmbeddedCompletionStep(acct);
 }
 
-/** Para SL espanhola: marca diretores/executivos/proprietários como fornecidos. */
+/** Para SL espanhola: regista dono+diretor na Stripe e marca papéis como fornecidos. */
 async function markCompanyRolesProvided(stripe: Stripe, accountId: string): Promise<void> {
-  try {
-    await stripe.accounts.update(accountId, {
-      company: {
-        directors_provided: true,
-        executives_provided: true,
-        owners_provided: true,
-      },
-    });
-  } catch (err) {
-    console.warn("[connect] markCompanyRolesProvided failed", err);
+  await stripe.accounts.update(accountId, {
+    company: {
+      directors_provided: true,
+      executives_provided: true,
+      owners_provided: true,
+    },
+  });
+}
+
+/** Cria/atualiza a pessoa (dono + director + representante) e confirma na Stripe. */
+export async function syncCompanyLeadershipForStripe(
+  stripe: Stripe,
+  accountId: string,
+  intake: CustomIntakeRow,
+  address: Stripe.AddressParam | undefined,
+): Promise<void> {
+  await ensureCompanyRepresentative(stripe, accountId, intake, address);
+  await markCompanyRolesProvided(stripe, accountId);
+  const acct = await stripe.accounts.retrieve(accountId);
+  const company = acct.company;
+  if (
+    !company?.directors_provided ||
+    !company?.executives_provided ||
+    !company?.owners_provided
+  ) {
+    throw new Error(
+      "A Stripe ainda não registou o dono/director. Verifique NIF, DNI/NIE e data de nascimento.",
+    );
   }
 }
 
@@ -341,8 +359,7 @@ export async function syncLiveCustomAccountFromIntake(
   }
 
   if (isCompany) {
-    await ensureCompanyRepresentative(stripe, accountId, intake, address);
-    await markCompanyRolesProvided(stripe, accountId);
+    await syncCompanyLeadershipForStripe(stripe, accountId, intake, address);
   }
 
   await attachIbanToAccount(stripe, accountId, intake, isCompany);
@@ -398,8 +415,7 @@ export async function createLiveCustomAccountFromIntake(
   }
 
   if (isCompany) {
-    await ensureCompanyRepresentative(stripe, account.id, intake, address);
-    await markCompanyRolesProvided(stripe, account.id);
+    await syncCompanyLeadershipForStripe(stripe, account.id, intake, address);
   }
 
   await attachIbanToAccount(stripe, account.id, intake, isCompany);
