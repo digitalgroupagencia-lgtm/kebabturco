@@ -34,8 +34,11 @@ const CustomerHomeSkeleton = () => (
         ))}
       </aside>
 
-      <main className="flex-1 min-h-0 overflow-hidden px-3 pt-2 space-y-3">
-        <Skeleton className="h-[88px] w-full rounded-2xl" />
+      <main className="flex flex-1 min-h-0 flex-col overflow-hidden">
+        <div className="shrink-0 px-3 pt-2">
+          <Skeleton className="aspect-[16/9] w-full rounded-[22px]" />
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden px-3 pt-2 space-y-3">
         <div className="space-y-2 px-1">
           <Skeleton className="h-2.5 w-14 rounded" />
           <Skeleton className="h-5 w-36 rounded" />
@@ -54,6 +57,7 @@ const CustomerHomeSkeleton = () => (
               </div>
             </div>
           ))}
+        </div>
         </div>
       </main>
     </div>

@@ -54,7 +54,7 @@ const HomeScreen = () => {
     }
   }, [categories, loading, products, selectedCategory, setSelectedCategory]);
 
-  const scrollRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
   }, [selectedCategory]);
@@ -227,27 +227,33 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
-          {/* Banner e título rolam com os produtos, liberta espaço vertical com a barra inferior */}
-          <div className="px-3 pt-2">
+        <main className="flex flex-1 min-h-0 flex-col overflow-hidden bg-background">
+          <div className="shrink-0 z-20 bg-background px-3 pt-2 shadow-[0_8px_16px_-12px_hsla(0,0%,0%,0.35)]">
             <PromoBannerCarousel />
-            <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                  {t("menu")}
-                </span>
-                <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
-                  {activeCategoryName}
-                </h2>
-                <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
-              </div>
-              <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
-                {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
-              </span>
-            </div>
           </div>
 
-          <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain md:scrollbar-thin"
+          >
+            <div className="px-3">
+              <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                    {t("menu")}
+                  </span>
+                  <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
+                    {activeCategoryName}
+                  </h2>
+                  <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product, index) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
@@ -302,6 +308,7 @@ const HomeScreen = () => {
               );
             })}
 
+            </div>
           </div>
         </main>
       </div>
