@@ -183,6 +183,7 @@ async function ensureCompanyRepresentative(
   const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
   const existing = persons.data.find((p) => p.relationship?.representative);
   const repId = intake.representative_id?.trim().toUpperCase().replace(/\s/g, "");
+  // owner_full_name = representante legal; a Stripe regista a mesma pessoa como dono e director.
   const personPayload = {
     first_name,
     last_name,

@@ -256,7 +256,8 @@ export default function OnboardLinkPage() {
       <p className="text-sm text-muted-foreground leading-relaxed">
         <span className="font-bold text-foreground">Paso 1 de 2, Datos del negocio</span>
         <br />
-        Rellena todos los campos. Después pasará al paso de verificación de identidad (documento).
+        Rellena todos los campos. El representante legal se registra también como dueño y director de la
+        empresa (misma persona, mismos datos). Después pasará al paso de verificación de identidad.
       </p>
       {storeName && <p className="text-sm font-semibold text-primary">{storeName}</p>}
       {loadError && (
@@ -298,6 +299,20 @@ export default function OnboardLinkPage() {
         <div>
           <Label>Nombre completo del representante legal</Label>
           <Input className="mt-1" value={ownerFullName} onChange={(e) => setOwnerFullName(e.target.value)} />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Este nombre se repite automáticamente como dueño y director de la empresa.
+          </p>
+          {businessType === "company" && ownerFullName.trim().length > 1 && (
+            <div className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
+              <p className="text-muted-foreground">Registro en la entidad de pagos:</p>
+              <p>
+                <span className="font-semibold text-foreground">Dueño:</span> {ownerFullName.trim()}
+              </p>
+              <p>
+                <span className="font-semibold text-foreground">Director:</span> {ownerFullName.trim()}
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <Label>Web del negocio</Label>
@@ -312,7 +327,7 @@ export default function OnboardLinkPage() {
           <Input className="mt-1" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
         </div>
         <div>
-          <Label>Fecha de nacimiento del representante (AAAA-MM-DD)</Label>
+          <Label>Fecha de nacimiento del representante legal (AAAA-MM-DD)</Label>
           <Input
             className="mt-1"
             placeholder="1980-05-15"
@@ -326,7 +341,7 @@ export default function OnboardLinkPage() {
           <Input className="mt-1" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
         </div>
         <div>
-          <Label>DNI / NIE del representante</Label>
+          <Label>DNI / NIE del representante legal</Label>
           <Input
             className="mt-1"
             placeholder="12345678A"

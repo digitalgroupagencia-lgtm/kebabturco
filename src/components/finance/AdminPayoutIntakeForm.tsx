@@ -222,13 +222,27 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           />
         </div>
         <div>
-          <Label>Nome completo do titular</Label>
+          <Label>Nome completo do representante legal</Label>
           <Input
             value={ownerFullName}
             onChange={(e) => setOwnerFullName(e.target.value)}
-            placeholder="Como no banco"
+            placeholder="Como no documento de identidade"
             className="mt-1"
           />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            O mesmo nome é enviado automaticamente como dono e director da empresa.
+          </p>
+          {businessType === "company" && ownerFullName.trim().length > 1 && (
+            <div className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
+              <p className="text-muted-foreground">Registo nos pagamentos online:</p>
+              <p>
+                <span className="font-semibold text-foreground">Dono:</span> {ownerFullName.trim()}
+              </p>
+              <p>
+                <span className="font-semibold text-foreground">Director:</span> {ownerFullName.trim()}
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <Label>E-mail do dono do restaurante</Label>
@@ -281,7 +295,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           </div>
         </div>
         <div>
-          <Label>Data de nascimento do representante (AAAA-MM-DD)</Label>
+          <Label>Data de nascimento do representante legal (AAAA-MM-DD)</Label>
           <Input
             value={ownerDob}
             onChange={(e) => setOwnerDob(e.target.value)}
@@ -323,7 +337,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
           />
         </div>
         <div>
-          <Label>DNI / NIE do representante</Label>
+          <Label>DNI / NIE do representante legal</Label>
           <Input
             value={representativeId}
             onChange={(e) => setRepresentativeId(e.target.value.toUpperCase())}
