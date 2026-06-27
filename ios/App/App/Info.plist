@@ -52,16 +52,14 @@
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>O entregador partilha a posição em tempo real durante a entrega, mesmo com a app em segundo plano.</string>
     <key>NSCameraUsageDescription</key>
-    <string>A câmara é usada para ler o código QR da mesa quando pedes no local.</string>
+    <string>Usamos a câmara para ler o QR Code da mesa e identificar o teu pedido.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>O microfone não é gravado; apenas necessário para acesso à câmara em alguns cenários.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>remote-notification</string>
         <string>location</string>
     </array>
-    <key>NSCameraUsageDescription</key>
-    <string>Usamos a câmara para ler o QR Code da mesa e identificar o teu pedido.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>O microfone não é gravado; apenas necessário para acesso à câmara em alguns cenários.</string>
 
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
