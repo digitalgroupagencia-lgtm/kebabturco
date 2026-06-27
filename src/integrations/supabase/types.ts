@@ -4401,20 +4401,15 @@ export type Database = {
     }
     Functions: {
       acquire_tenant_edit_lock: { Args: { _tenant_id: string }; Returns: Json }
-      add_loyalty_stamp:
-        | {
-            Args: { _customer_id?: string; _phone: string; _store_id: string }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _customer_id?: string
-              _order_total?: number
-              _phone: string
-              _store_id: string
-            }
-            Returns: Json
-          }
+      add_loyalty_stamp: {
+        Args: {
+          _customer_id?: string
+          _order_total?: number
+          _phone: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       add_or_get_table_customer: {
         Args: { _name: string; _session_id: string }
         Returns: string
