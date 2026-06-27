@@ -69,7 +69,7 @@ const SellerLayout = ({ page: Page }: Props) => {
       <main
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-x-hidden",
-          isMenuRoute ? "overflow-hidden" : "overflow-y-auto pb-20",
+          isMenuRoute ? "h-full overflow-hidden" : "overflow-y-auto pb-20",
         )}
       >
         {Page ? <Page /> : <Outlet />}

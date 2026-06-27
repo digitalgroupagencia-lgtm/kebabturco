@@ -145,7 +145,12 @@ const HomeScreen = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
+        seller.active && "md:h-auto md:min-h-min md:overflow-visible",
+      )}
+    >
       {!shouldHideHeader() && (
       <header
         className="sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
@@ -189,8 +194,18 @@ const HomeScreen = () => {
       </header>
       )}
 
-      <div className="flex flex-1 overflow-hidden min-h-0">
-        <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto overscroll-y-contain border-r border-border/40 bg-secondary/30 md:w-[120px] md:min-w-[120px] lg:w-[140px] lg:min-w-[140px] md:[&::-webkit-scrollbar]:w-1.5 md:[&::-webkit-scrollbar-thumb]:rounded-full md:[&::-webkit-scrollbar-thumb]:bg-border">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 overflow-hidden",
+          seller.active && "md:min-h-min md:flex-none md:overflow-visible",
+        )}
+      >
+        <aside
+          className={cn(
+            "h-full min-h-0 w-[98px] min-w-[98px] shrink-0 overflow-y-auto overscroll-y-contain border-r border-border/40 bg-secondary/30 md:w-[120px] md:min-w-[120px] lg:w-[140px] lg:min-w-[140px] md:[&::-webkit-scrollbar]:w-1.5 md:[&::-webkit-scrollbar-thumb]:rounded-full md:[&::-webkit-scrollbar-thumb]:bg-border",
+            seller.active && "md:h-auto md:overflow-visible md:sticky md:top-0 md:self-start",
+          )}
+        >
           <div className="flex flex-col gap-2 px-2 py-2">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
@@ -230,14 +245,29 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main className="flex flex-1 min-h-0 flex-col overflow-hidden bg-background">
-          <div className="shrink-0 z-20 bg-background px-3 pt-2 shadow-[0_8px_16px_-12px_hsla(0,0%,0%,0.35)]">
-            <PromoBannerCarousel />
+        <main
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-hidden bg-background",
+            seller.active && "md:min-h-min md:overflow-visible",
+          )}
+        >
+          <div className="z-20 shrink-0 bg-background px-3 pt-2 shadow-[0_8px_16px_-12px_hsla(0,0%,0%,0.35)] md:px-4">
+            <PromoBannerCarousel
+              className={seller.active ? "md:mx-auto md:max-w-3xl" : undefined}
+              frameClassName={
+                seller.active
+                  ? "relative aspect-[16/9] w-full max-h-[42vw] overflow-hidden rounded-[22px] border border-border/70 bg-primary shadow-card md:aspect-[2.4/1] md:max-h-[220px]"
+                  : undefined
+              }
+            />
           </div>
 
           <div
             ref={scrollRef}
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain md:scrollbar-thin"
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto overscroll-contain md:scrollbar-thin",
+              seller.active && "md:overflow-visible md:flex-none",
+            )}
           >
             <div className="px-3">
               <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">

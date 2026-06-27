@@ -175,13 +175,20 @@ const CustomerShell = () => {
   return (
     <div
       className={cn(
-        "customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background md:max-w-none",
-        seller.active && "seller-menu-shell",
+        "customer-shell relative mx-auto h-full min-h-0 w-full max-w-md overflow-hidden bg-background md:max-w-none",
+        seller.active
+          ? "seller-menu-shell grid grid-rows-[minmax(0,1fr)_auto] md:flex md:flex-col md:overflow-y-auto md:overscroll-y-contain md:pb-16"
+          : "grid grid-rows-[minmax(0,1fr)_auto]",
       )}
     >
       <SellerCustomerBootstrap />
       <CustomerBootDismiss />
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div
+        className={cn(
+          "flex h-full min-h-0 flex-col overflow-hidden",
+          seller.active && "md:h-auto md:min-h-min md:overflow-visible",
+        )}
+      >
         <ScreenRouter />
       </div>
       <CustomerScreenErrorBoundary scope="bootstrap">
@@ -199,8 +206,10 @@ const Index = () => {
     <LanguageProvider>
       <CartProvider>
         <OrderProvider>
-          <PreviewBootstrap />
-          <CustomerShell />
+          <div className="flex h-full min-h-0 flex-col">
+            <PreviewBootstrap />
+            <CustomerShell />
+          </div>
         </OrderProvider>
       </CartProvider>
     </LanguageProvider>

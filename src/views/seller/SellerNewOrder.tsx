@@ -14,9 +14,11 @@ const SellerNewOrder = () => {
   const { userId, fullName } = useSellerContext();
   return (
     <SellerModeProvider sellerId={userId ?? null} sellerName={fullName ?? "Vendedor"}>
-      <Suspense fallback={<PageSpinner />}>
-        <CustomerIndex />
-      </Suspense>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <Suspense fallback={<PageSpinner />}>
+          <CustomerIndex />
+        </Suspense>
+      </div>
     </SellerModeProvider>
   );
 };
