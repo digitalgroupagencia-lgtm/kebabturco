@@ -63,5 +63,9 @@
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
+    <key>WKAppBoundDomains</key>
+    <array>
+        <string>kebabturco.net</string>
+    </array>
 </dict>
 </plist>
