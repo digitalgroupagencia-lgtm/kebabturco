@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { ScreenOrientation } from "@capacitor/screen-orientation";
+import { ScreenOrientation, type OrientationLockType } from "@capacitor/screen-orientation";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import {
   isLandscapeLockedPath,
@@ -48,7 +48,8 @@ async function lockNativeOrientation(mode: "portrait" | "landscape" | "any") {
       await ScreenOrientation.unlock();
       return;
     }
-    await ScreenOrientation.lock({ orientation: mode });
+    const orientation: OrientationLockType = mode === "landscape" ? "landscape" : "portrait-primary";
+    await ScreenOrientation.lock({ orientation });
   } catch {
     /* WebView/iPadOS podem recusar o lock; o fallback CSS mantém o layout correcto. */
   }
@@ -64,7 +65,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
   const landscapeLock = isLandscapeLockedPath(pathname);
   const activeModeRef = useRef<RotateMode>("none");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const html = document.documentElement;
     const inEditor = isLovableEditorPreview();
     const touch = isCoarseTouchDevice();
@@ -105,12 +106,13 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     const lockMode = landscapeLock ? "landscape" : "portrait";
     void lockNativeOrientation(lockMode);
     try {
-    const orientation = screen.orientation as ScreenOrientation & {
-      lock?: (orientation: string) => Promise<void>;
-    };
-    const lock = orientation.lock;
+      const orientation = screen.orientation as globalThis.ScreenOrientation & {
+        lock?: (orientation: OrientationLockType) => Promise<void>;
+      };
+      const lock = orientation.lock;
       if (typeof lock === "function") {
-        lock.call(orientation, lockMode).catch(() => {
+        const browserMode: OrientationLockType = landscapeLock ? "landscape" : "portrait-primary";
+        lock.call(orientation, browserMode).catch(() => {
           /* utilizador deve rodar o aparelho */
         });
       }
@@ -139,14 +141,22 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(apply);
     };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void lockNativeOrientation(lockMode);
+        onResize();
+      }
+    };
 
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
       html.classList.remove("staff-landscape-layout");
       cleanupRotate();
       try {
