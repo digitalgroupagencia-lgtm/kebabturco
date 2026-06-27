@@ -251,7 +251,8 @@ const SellerCheckoutForm = () => {
           _table_number: tableNumber.trim(),
           _customer_name: customerName.trim(),
           _items: buildRpcItems(),
-          _notes: notes.trim() || null,
+          _notes: notes.trim() || undefined,
+
         });
         if (error) throw error;
 
