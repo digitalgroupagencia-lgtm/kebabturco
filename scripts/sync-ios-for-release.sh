@@ -29,6 +29,11 @@ cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:kebabturco.net</string>
+		<string>webcredentials:kebabturco.net</string>
+	</array>
 	<key>aps-environment</key>
 	<string>production</string>
 </dict>
