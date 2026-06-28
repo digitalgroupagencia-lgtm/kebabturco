@@ -14,13 +14,14 @@ const nativeAuthStorage = {
   getItem: async (key: string) => {
     if (!Capacitor.isNativePlatform()) return localStorage.getItem(key);
     const { value } = await Preferences.get({ key });
-    return value;
+    return value ?? localStorage.getItem(key);
   },
   setItem: async (key: string, value: string) => {
     if (!Capacitor.isNativePlatform()) {
       localStorage.setItem(key, value);
       return;
     }
+    localStorage.setItem(key, value);
     await Preferences.set({ key, value });
   },
   removeItem: async (key: string) => {
