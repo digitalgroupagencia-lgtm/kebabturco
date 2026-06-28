@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Tables, Database } from "@/integrations/supabase/types";
+import type { Tables, Database, Json } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import {
   isPanelAlertsEnabled,
@@ -377,10 +377,10 @@ export function usePanelOrders(storeId: string | undefined) {
     );
 
     try {
-      const { data: updated, error } = await supabase.rpc("update_order_status_v2" as never, {
+      const { data: updated, error } = await supabase.rpc("update_order_status_v2", {
         _order_id: order.id,
-        _patch: patch,
-      } as never);
+        _patch: patch as Json,
+      });
 
       if (error || !updated) {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
