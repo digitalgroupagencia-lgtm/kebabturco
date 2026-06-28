@@ -5200,6 +5200,71 @@ export type Database = {
         }
         Returns: string
       }
+      update_order_status_v2: {
+        Args: { _order_id: string; _patch: Json }
+        Returns: {
+          accepted_at: string | null
+          accepted_by_name: string | null
+          accepted_by_user_id: string | null
+          application_fee_cents: number
+          assigned_driver_id: string | null
+          coupon_code: string | null
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_city: string | null
+          delivery_complement: string | null
+          delivery_confirmation_code: string | null
+          delivery_fee: number
+          delivery_notes: string | null
+          delivery_number: string | null
+          delivery_postal_code: string | null
+          delivery_started_at: string | null
+          delivery_street: string | null
+          delivery_zone_id: string | null
+          delivery_zone_name: string | null
+          discount_amount: number
+          estimated_ready_at: string | null
+          id: string
+          is_test: boolean
+          kitchen_printed_at: string | null
+          net_to_store_cents: number | null
+          notes: string | null
+          online_service_fee_cents: number
+          order_locale: string | null
+          order_number: string
+          order_type: string | null
+          payment_confirmed_at: string | null
+          payment_confirmed_by_name: string | null
+          payment_confirmed_by_user_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          platform_fee_cents: number
+          processing_fee_cents: number
+          seller_id: string | null
+          source: Database["public"]["Enums"]["order_source"]
+          status: Database["public"]["Enums"]["order_status"]
+          store_id: string
+          stripe_connect_account_id: string | null
+          stripe_fee_cents: number
+          stripe_payment_intent_id: string | null
+          subtotal: number
+          table_customer_id: string | null
+          table_number: string | null
+          table_session_id: string | null
+          table_validated: boolean
+          total: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       upsert_customer_saved_profile: {
         Args: {
           _delivery?: Json
