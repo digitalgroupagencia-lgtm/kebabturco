@@ -11,9 +11,14 @@ import PageSpinner from "@/components/PageSpinner";
 const CustomerIndex = lazy(() => import("@/customer/Index"));
 
 const SellerNewOrder = () => {
-  const { userId, fullName } = useSellerContext();
+  const { userId, fullName, storeId, loading } = useSellerContext();
+
+  if (loading || !userId || !storeId) {
+    return <PageSpinner />;
+  }
+
   return (
-    <SellerModeProvider sellerId={userId ?? null} sellerName={fullName ?? "Vendedor"}>
+    <SellerModeProvider sellerId={userId} sellerName={fullName ?? "Vendedor"}>
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <Suspense fallback={<PageSpinner />}>
           <CustomerIndex />

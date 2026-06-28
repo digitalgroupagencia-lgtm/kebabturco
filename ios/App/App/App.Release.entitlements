@@ -7,6 +7,8 @@
 		<string>applinks:kebabturco.net</string>
 		<string>webcredentials:kebabturco.net</string>
 	</array>
+	<key>com.apple.developer.proximity-reader.payment.acceptance</key>
+	<true/>
 	<key>aps-environment</key>
 	<string>production</string>
 </dict>
