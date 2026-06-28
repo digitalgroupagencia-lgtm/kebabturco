@@ -22,14 +22,16 @@ function clearRotateClasses() {
 
 /** Totem em landscape físico → CSS vertical; painel admin em portrait → CSS horizontal. */
 function resolveRotateMode(
-  portraitLock: boolean,
+  _portraitLock: boolean,
   landscapeLock: boolean,
   touch: boolean,
   w: number,
   h: number,
 ): RotateMode {
+  // Apenas o painel/admin (landscape-lock) usa rotate CSS como fallback
+  // quando o telemóvel está em vertical. O /staff e /auth ficam verticais
+  // sem rotação forçada — mesmo que o aparelho esteja em landscape.
   if (landscapeLock && touch && h > w) return "fp";
-  if (portraitLock && touch && w > h && w >= 600) return "fp";
   return "none";
 }
 
