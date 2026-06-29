@@ -12,6 +12,7 @@ npx cap sync ios
 cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
 bash "$ROOT/scripts/ios-patch-capacitor-config-appstore.sh"
 bash "$ROOT/scripts/ios-verify-appstore-capacitor-config.sh"
+bash "$ROOT/scripts/ios-verify-uiscene.sh"
 
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"

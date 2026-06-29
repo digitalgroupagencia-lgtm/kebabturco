@@ -18,6 +18,7 @@ xcode-project use-profiles \
 
 bash "$ROOT/scripts/ios-verify-appstore-profile-push.sh"
 bash "$ROOT/scripts/ios-verify-appstore-capacitor-config.sh"
+bash "$ROOT/scripts/ios-verify-uiscene.sh"
 bash "$ROOT/scripts/ios-verify-embedded-web-before-archive.sh"
 
 echo "=== Criar IPA ==="
