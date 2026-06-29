@@ -3,6 +3,19 @@
   var appSrc = bootScript && bootScript.getAttribute("data-app-src");
   if (!appSrc) return;
 
+  function buildTag() {
+    try {
+      var meta = document.querySelector('meta[name="app-build-id"]');
+      if (meta && meta.content) return meta.content;
+    } catch (e) {}
+    return String(Date.now());
+  }
+
+  function withCacheBust(src) {
+    var sep = src.indexOf("?") === -1 ? "?" : "&";
+    return src + sep + "v=" + encodeURIComponent(buildTag());
+  }
+
   function showBootLoading() {
     var el = document.getElementById("boot-fallback");
     if (!el || el.dataset.loading === "1") return;
@@ -62,27 +75,26 @@
     }
   }
 
-  function shouldKeepSw(reg) {
-    try {
-      var url =
-        (reg.active && reg.active.scriptURL) ||
-        (reg.installing && reg.installing.scriptURL) ||
-        (reg.waiting && reg.waiting.scriptURL) ||
-        "";
-      return url.indexOf("push-handler") !== -1;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function purgeCaches() {
+  function purgeCaches(opts) {
+    var options = opts || {};
+    var keepPushHandler = options.keepPushHandler === true;
     var tasks = [];
     if ("serviceWorker" in navigator) {
       tasks.push(
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           return Promise.all(
             regs.map(function (r) {
-              return shouldKeepSw(r) ? Promise.resolve() : r.unregister();
+              if (keepPushHandler) {
+                try {
+                  var url =
+                    (r.active && r.active.scriptURL) ||
+                    (r.installing && r.installing.scriptURL) ||
+                    (r.waiting && r.waiting.scriptURL) ||
+                    "";
+                  if (url.indexOf("push-handler") !== -1) return Promise.resolve();
+                } catch (e) {}
+              }
+              return r.unregister();
             }),
           );
         }),
@@ -145,7 +157,7 @@
 
     var script = document.createElement("script");
     script.type = "module";
-    script.src = appSrc;
+    script.src = withCacheBust(appSrc);
     script.onerror = function () {
       if (window.__SNAPORDER_BOOT_TIMEOUT__) {
         window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
@@ -166,10 +178,13 @@
     scheduleBootTimeout(bootTimeoutMs());
   }
 
-  if (isLovableEditorHost() || isCapacitorNative()) {
+  if (isCapacitorNative()) {
+    // iOS TestFlight: limpa TODOS os SW/cache antigos antes de boot.
+    purgeCaches({ keepPushHandler: false }).finally(loadApp);
+  } else if (isLovableEditorHost()) {
     loadApp();
   } else {
     loadApp();
-    purgeCaches();
+    purgeCaches({ keepPushHandler: true });
   }
 })();
