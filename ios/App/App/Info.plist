@@ -66,6 +66,8 @@
     <true/>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Necessário para processar pagamentos presenciais com Tap to Pay no iPhone.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Necessário para ler o QR code da mesa e iniciar o pedido automaticamente.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>remote-notification</string>

@@ -316,7 +316,20 @@ export async function createCustomerOrder(params: CreateCustomerOrderParams) {
     ({ data, error } = await supabase.rpc("create_customer_order", argsWithoutEmail));
   }
 
-  if (error) throw new Error(error.message || "Não foi possível criar o pedido");
+  if (error) {
+    const raw = error.message || "Não foi possível criar o pedido";
+    const normalized = raw.toLowerCase();
+    if (
+      normalized.includes("add_loyalty_stamp") &&
+      (normalized.includes("is not unique") || normalized.includes("function"))
+    ) {
+      throw new Error(
+        "O pagamento foi bloqueado por uma configuração antiga da fidelização. " +
+          "A equipa precisa correr o script de correção da fidelização no Supabase e tentar novamente.",
+      );
+    }
+    throw new Error(raw);
+  }
   const result = data as CreateCustomerOrderResult;
   return result;
 }
