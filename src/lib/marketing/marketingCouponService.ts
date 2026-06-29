@@ -56,7 +56,7 @@ export async function createCouponFromSuggestion(
     return { ok: true, couponId: existing.id };
   }
 
-  const { data, error } = await supabase.from("coupons").insert(row).select("id").single();
+  const { data, error } = await supabase.from("coupons").insert(row as never).select("id").single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, couponId: data.id as string };
 }
