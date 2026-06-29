@@ -42,14 +42,13 @@ const withSuspense = (node: ReactNode) => (
 const tenantStore = (
   <CustomerAreaBoundary>
     {withSuspense(
-      <StaffSessionRootRedirect>
-        <MobileFrame>
-          <Index />
-        </MobileFrame>
-      </StaffSessionRootRedirect>,
+      <MobileFrame>
+        <Index />
+      </MobileFrame>,
     )}
   </CustomerAreaBoundary>
 );
+
 
 
 // Interno, falhas em admin/painel/equipa/etc. não escapam deste boundary
