@@ -3,7 +3,7 @@ import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { subscribePushWithLogging } from "@/lib/push/pushSubscriptionCore";
 import { pushLog } from "@/lib/push/pushLogger";
 import { isNativePushAvailable, registerNativeStaffPush, unregisterNativeStaffPush, isNativePushAvailableSync } from "@/services/nativePush";
-import { isCapacitorNativeSync, waitForCapacitorNative } from "@/lib/capacitorRuntime";
+import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
 
 export const STAFF_PUSH_TAG = "__staff__";
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
@@ -45,10 +45,7 @@ export type StaffPushClientMode = "native" | "web" | "needs-native-app" | "unsup
 
 /** Onde o utilizador está a tentar activar push da equipa. */
 export async function getStaffPushClientMode(): Promise<StaffPushClientMode> {
-  if (isCapacitorNativeSync() || (await isNativePushAvailable())) return "native";
-  if (await waitForCapacitorNative(5000)) {
-    if (isCapacitorNativeSync() || (await isNativePushAvailable())) return "native";
-  }
+  if (await isNativePushAvailable()) return "native";
   if (typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
     return "needs-native-app";
   }

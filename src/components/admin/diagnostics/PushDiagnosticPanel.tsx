@@ -37,10 +37,10 @@ import {
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
+import { Capacitor } from "@capacitor/core";
 import { isNativePushAvailable, getNativePushRuntimeDiagnostics, isNativePushAvailableSync } from "@/services/nativePush";
 import type { NativePushRuntimeDiagnostics } from "@/services/nativePush";
 import { getStaffPushClientMode } from "@/lib/staffPush";
-import { isCapacitorNativeSync, waitForCapacitorNative } from "@/lib/capacitorRuntime";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 import type { DiagnosticLogEntry } from "@/lib/diagnostics/createDiagnosticLogger";
@@ -81,14 +81,16 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
 
   const refreshProbe = useCallback(async () => {
     setRefreshing(true);
-    await waitForCapacitorNative(5000);
-    try {
-      const { initNativePushBridge } = await import("@/services/nativePush");
-      void initNativePushBridge();
-    } catch {
-      /* ignore */
+    const native =
+      Capacitor.isNativePlatform() || isNativePushAvailableSync() || (await isNativePushAvailable());
+    if (native) {
+      try {
+        const { initNativePushBridge } = await import("@/services/nativePush");
+        void initNativePushBridge();
+      } catch {
+        /* ignore */
+      }
     }
-    const native = isCapacitorNativeSync() || isNativePushAvailableSync() || (await isNativePushAvailable());
     setIsNativeApp(native);
     setClientMode(await getStaffPushClientMode());
     if (native) {
@@ -510,7 +512,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Em ambiente web, «Enviar para todos» só chega a telemóveis já registados na app. Registe primeiro no iPhone (passos acima).
+              «Enviar para todos» envia para cada telemóvel já registado nesta loja — não só o seu. Para receber no
+              seu iPhone, abra a app Kebab Turco no telemóvel, vá a Definições e toque em «Registar push».
             </p>
           )}
         </CardContent>

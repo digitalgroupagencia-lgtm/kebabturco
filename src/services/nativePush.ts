@@ -484,8 +484,7 @@ async function refreshNativePushTokenIfNeeded(): Promise<void> {
 export async function initNativePushBridge(): Promise<void> {
   hookApnsTokenInjectionEvent();
 
-  const { waitForCapacitorNative } = await import("@/lib/capacitorRuntime");
-  if (!(await isNativePushAvailable()) && !(await waitForCapacitorNative(4000))) return;
+  if (!(await isNativePushAvailable())) return;
   if (bridgeInitPromise) return bridgeInitPromise;
 
   bridgeInitPromise = (async () => {

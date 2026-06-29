@@ -6,13 +6,18 @@ const NATIVE_UA_TOKEN = "KebabTurcoCapacitor";
 
 let bootstrapStarted = false;
 
-/** Marca o runtime como app nativa (chamado no boot quando Capacitor está activo). */
+/** Marca o runtime quando o Capacitor confirma app nativa (como build 10). */
 export function markCapacitorNativeRuntime(): void {
   if (typeof window === "undefined") return;
-  (window as unknown as Record<string, boolean>)[NATIVE_FLAG_KEY] = true;
   if (Capacitor.isNativePlatform()) {
     (window as unknown as Record<string, boolean>)[NATIVE_FLAG_KEY] = true;
   }
+}
+
+/** Só o iOS injecta isto dentro do IPA — nunca no Chrome do computador. */
+export function markNativeRuntimeFromInject(): void {
+  if (typeof window === "undefined") return;
+  (window as unknown as Record<string, boolean>)[NATIVE_FLAG_KEY] = true;
 }
 
 function readNativeFlag(): boolean {
@@ -26,24 +31,9 @@ function hasInjectedApnsToken(): boolean {
   return typeof token === "string" && token.length > 0;
 }
 
-function hasCapacitorUserAgent(): boolean {
+function hasKebabCapacitorUserAgent(): boolean {
   if (typeof navigator === "undefined") return false;
-  return new RegExp(NATIVE_UA_TOKEN, "i").test(navigator.userAgent) || /Capacitor/i.test(navigator.userAgent);
-}
-
-function hasCapacitorWebkitBridge(): boolean {
-  if (typeof window === "undefined") return false;
-  const handlers = (window as unknown as { webkit?: { messageHandlers?: Record<string, unknown> } }).webkit
-    ?.messageHandlers;
-  if (!handlers) return false;
-  return Object.keys(handlers).some((key) => /capacitor|bridge|ionic/i.test(key));
-}
-
-function readCapacitorPlatform(): string | null {
-  if (typeof window === "undefined") return null;
-  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
-  const platform = cap?.getPlatform?.();
-  return platform ?? null;
+  return new RegExp(NATIVE_UA_TOKEN, "i").test(navigator.userAgent);
 }
 
 function readCapacitorIsNative(): boolean {
@@ -52,30 +42,32 @@ function readCapacitorIsNative(): boolean {
   return Boolean(cap?.isNativePlatform?.());
 }
 
-/** Detecção síncrona fiável — TestFlight, tablet Capacitor, site remoto kebabturco.net. */
+/**
+ * App nativa real — igual build 10, com sinais extra só possíveis dentro do IPA.
+ * Nunca marca o Chrome/Safari do computador como telemóvel.
+ */
 export function isCapacitorNativeSync(): boolean {
-  if (typeof window === "undefined") return false;
-  if (readNativeFlag()) return true;
   if (readCapacitorIsNative()) return true;
-  if (hasCapacitorUserAgent()) return true;
-  if (hasCapacitorWebkitBridge()) return true;
   if (hasInjectedApnsToken()) return true;
-  const platform = readCapacitorPlatform();
-  return platform === "ios" || platform === "android";
+  if (hasKebabCapacitorUserAgent()) return true;
+  if (readNativeFlag()) return true;
+  return false;
 }
 
 export function getCapacitorPlatformSync(): "ios" | "android" | "web" {
+  if (!isCapacitorNativeSync()) return "web";
   if (typeof window === "undefined") return "web";
-  const platform = readCapacitorPlatform();
+  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+  const platform = cap?.getPlatform?.();
   if (platform === "ios" || platform === "android") return platform;
-  if (isCapacitorNativeSync() && typeof navigator !== "undefined") {
+  if (typeof navigator !== "undefined") {
     if (/Android/i.test(navigator.userAgent)) return "android";
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return "ios";
   }
   return "web";
 }
 
-/** Espera a bridge nativa (site remoto no TestFlight pode injectar tarde). */
+/** Espera a bridge nativa no TestFlight (site remoto pode injectar tarde). */
 export async function waitForCapacitorNative(timeoutMs = 8000): Promise<boolean> {
   if (isCapacitorNativeSync()) return true;
   const started = Date.now();
@@ -96,15 +88,17 @@ export async function waitForCapacitorNative(timeoutMs = 8000): Promise<boolean>
   return isCapacitorNativeSync();
 }
 
-/** Arranque: escuta inject nativo e faz polling até a bridge responder. */
+/** Arranque: escuta inject do iOS e polling da bridge Capacitor. */
 export function startCapacitorNativeBootstrap(): void {
   if (typeof window === "undefined" || bootstrapStarted) return;
   bootstrapStarted = true;
 
-  const onNativeSignal = () => markCapacitorNativeRuntime();
+  const onNativeSignal = () => markNativeRuntimeFromInject();
   window.addEventListener(NATIVE_RUNTIME_EVENT, onNativeSignal);
   window.addEventListener("kebabturco-apns-token", onNativeSignal);
 
   markCapacitorNativeRuntime();
-  void waitForCapacitorNative(12_000);
+  if (readCapacitorIsNative() || hasInjectedApnsToken() || hasKebabCapacitorUserAgent()) {
+    void waitForCapacitorNative(12_000);
+  }
 }

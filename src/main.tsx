@@ -80,9 +80,8 @@ if (!rootEl) {
     .catch(() => undefined)
     .then(async () => {
       try {
-        const { initNativePushBridge } = await import("./services/nativePush");
-        const { waitForCapacitorNative } = await import("./lib/capacitorRuntime");
-        if (await waitForCapacitorNative(6000)) {
+        const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
+        if (await isNativePushAvailable()) {
           void initNativePushBridge();
         }
       } catch {
