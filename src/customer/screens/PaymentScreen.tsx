@@ -18,6 +18,7 @@ import {
 } from "@/services/orderService";
 import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
+import { supabase } from "@/integrations/supabase/client";
 import {
   loadSavedMesaToken,
   loadSavedOrderType,
