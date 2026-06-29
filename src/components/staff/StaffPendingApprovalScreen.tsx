@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Loader2, LogOut, ShieldX, Smartphone, Users } from "lucide-react";
+import { Clock, Loader2, LogOut, ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,69 +93,36 @@ export default function StaffPendingApprovalScreen({ status, email }: Props) {
   }, [status, user?.id, navigate]);
 
   const isRejected = status === "rejected";
-  const pendingText =
-    lang === "pt"
-      ? {
-          title: "Cadastro recebido",
-          body: "A sua conta foi criada com sucesso. Agora volte para o app Kebab Turco e aguarde o administrador do restaurante aprovar o seu acesso na aba Equipe.",
-          step1: "Volte para o aplicativo Kebab Turco",
-          step2: "O administrador aprova na aba Equipe",
-          step3: "Quando for liberado, o painel abre automaticamente",
-        }
-      : lang === "en"
-        ? {
-            title: "Registration received",
-            body: "Your account was created successfully. Return to the Kebab Turco app and wait for the restaurant administrator to approve your access in Team.",
-            step1: "Return to the Kebab Turco app",
-            step2: "The administrator approves it in Team",
-            step3: "When approved, the panel opens automatically",
-          }
-        : {
-            title: "Registro recibido",
-            body: "Su cuenta se creó correctamente. Vuelva a la app Kebab Turco y espere a que el administrador del restaurante apruebe su acceso en Equipo.",
-            step1: "Vuelva a la app Kebab Turco",
-            step2: "El administrador aprueba en Equipo",
-            step3: "Al aprobarse, el panel se abre automáticamente",
-          };
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-gradient-to-b from-[#3A0205] via-[#5C1419] to-background">
-      <main className="flex flex-1 items-center justify-center overflow-y-auto px-5 py-8">
-        <div className="w-full max-w-md rounded-[2rem] border border-white/15 bg-background/95 p-6 text-center shadow-2xl backdrop-blur">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
+      <main className="flex flex-1 items-center justify-center overflow-y-auto px-6 py-8">
+        <div className="w-full max-w-md text-center">
           {brandLogo ? (
-            <img src={brandLogo} alt={brandName} className="mx-auto mb-4 h-24 w-24 object-contain drop-shadow-xl" />
-          ) : (
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-xl">
-              <span className="text-2xl font-black">KT</span>
-            </div>
-          )}
+            <img
+              src={brandLogo}
+              alt={brandName}
+              className="mx-auto mb-5 h-20 w-20 object-contain drop-shadow-lg"
+            />
+          ) : null}
 
-          <div className="mb-4 inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-primary">
-            Kebab Turco · Área da equipa
+          <div
+            className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${
+              isRejected ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+            }`}
+          >
+            {isRejected ? <ShieldX className="h-8 w-8" /> : <Clock className="h-8 w-8" />}
           </div>
 
-          <h1 className="text-2xl font-black text-foreground">
-            {isRejected ? copy.googleRejectedTitle : pendingText.title}
+          <h1 className="text-2xl font-bold text-foreground">
+            {isRejected ? copy.googleRejectedTitle : copy.googlePendingTitle}
           </h1>
           {isRejected ? (
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{copy.googleRejectedBody}</p>
           ) : (
             <>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{pendingText.body}</p>
-              <div className="mt-5 space-y-3 text-left">
-                <div className="flex items-center gap-3 rounded-2xl border bg-card p-3">
-                  <Smartphone className="h-5 w-5 shrink-0 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">{pendingText.step1}</span>
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl border bg-card p-3">
-                  <Users className="h-5 w-5 shrink-0 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">{pendingText.step2}</span>
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl border bg-card p-3">
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">{pendingText.step3}</span>
-                </div>
-              </div>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{copy.googleReturnSuccess}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{copy.googlePendingBody}</p>
             </>
           )}
 

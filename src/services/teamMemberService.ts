@@ -47,9 +47,9 @@ export async function saveTeamMemberByManager(input: {
     _user_id: input.userId,
     _full_name: input.fullName.trim(),
     _preferred_language: input.preferredLanguage || "es",
-    _birth_date: input.birthDate || undefined,
-    _role: input.role ?? undefined,
-    _access_pin: input.accessPin?.trim() || undefined,
+    _birth_date: input.birthDate || null,
+    _role: input.role ?? null,
+    _access_pin: input.accessPin?.trim() || null,
   });
   if (error) throw error;
   const row = data as SaveTeamMemberResult | null;

@@ -13,13 +13,8 @@ import {
 import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
 import {
   clearMesaBindingStorage,
-  clearMesaQrBinding,
   loadSavedLang,
-  loadSavedMesaManual,
-  loadSavedMesaTableId,
   loadSavedMesaToken,
-  saveSavedMesaManual,
-  saveSavedMesaTableId,
   loadSavedOrderType,
   loadSavedCustomerName,
   loadSavedCustomerEmail,
@@ -38,27 +33,14 @@ import {
   readLangFromUrl,
   saveSavedLang,
 } from "@/lib/customerSession";
-import {
-  isSellerNewOrderPath,
-  loadSellerCart,
-  loadSellerSession,
-  resolveSellerInitialCategory,
-  resolveSellerInitialProductId,
-} from "@/lib/sellerSession";
 import { useTableSessionBinding } from "@/hooks/useTableSessionBinding";
 import { customerScreenFromPathname } from "@/lib/routeRedirects";
 import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
-import {
-  applyCustomerPushDeepLink,
-  CUSTOMER_PUSH_NAV_EVENT,
-  parseCustomerPushUrl,
-  stashPushCoupon,
-} from "@/lib/customerPushDeepLink";
 
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "cashPending" | "confirmation" | "tracking" | "account";
 export type { Screen };
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link" | "redsys" | "bizum";
-export type AccountFocus = "orders" | "profile";
+export type AccountFocus = "orders" | "profile" | "loyalty";
 
 interface OrderContextType {
   screen: Screen;
@@ -136,24 +118,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const initialScreen: Screen = (() => {
     if (typeof window === "undefined") return "language";
-    if (isSellerNewOrderPath()) {
-      const session = loadSellerSession();
-      const hasCart = loadSellerCart().length > 0;
-      const checkout = session?.checkout;
-      const hasDraft =
-        Boolean(checkout?.savedOrder) ||
-        Boolean(checkout?.customerName?.trim()) ||
-        Boolean(checkout?.tableNumber?.trim()) ||
-        Boolean(checkout?.notes?.trim());
-      if (hasCart || hasDraft) {
-        if (session?.screen === "home" || session?.screen === "product" || session?.screen === "review" || session?.screen === "payment") {
-          return session.screen;
-        }
-        if (checkout?.savedOrder || checkout?.customerName?.trim()) return "payment";
-        if (hasCart) return "review";
-      }
-      return "home";
-    }
     if (isGandiaFoodSource()) return "home";
     if (isEmbedded()) return "home";
     const embedScreen = getEmbedScreen();
@@ -171,12 +135,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const orderParam = params.get("order");
     const stored = loadAnyStoredActiveOrder();
-
-    const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
-    if (pushDeepLink && !isLovableEditorPreview()) {
-      if (pushDeepLink.coupon) stashPushCoupon(pushDeepLink.coupon);
-      return pushDeepLink.screen;
-    }
 
     const routeScreen = customerScreenFromPathname(window.location.pathname);
     if (routeScreen && valid.includes(routeScreen as Screen)) return routeScreen as Screen;
@@ -205,29 +163,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   })();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
-  const [accountFocus, setAccountFocus] = useState<AccountFocus>(() => {
-    if (typeof window === "undefined") return "profile";
-    const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
-    if (pushDeepLink?.focus) return pushDeepLink.focus;
-    const f = new URLSearchParams(window.location.search).get("focus");
-    if (f === "orders" || f === "loyalty") return f;
-    return "profile";
-  });
+  const [accountFocus, setAccountFocus] = useState<AccountFocus>("profile");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
-    if (isSellerNewOrderPath()) return resolveSellerInitialProductId();
     const params = new URLSearchParams(window.location.search);
     if (params.get("preview") === "1") return params.get("productId");
-    const pushDeepLink = parseCustomerPushUrl(`${window.location.pathname}${window.location.search}`);
-    if (pushDeepLink?.productId) return pushDeepLink.productId;
     return null;
   });
   const [editingCartItemId, setEditingCartItemId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
-    if (typeof window === "undefined") return "bestsellers";
-    if (isSellerNewOrderPath()) return resolveSellerInitialCategory() ?? "bestsellers";
-    return "bestsellers";
-  });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>("bestsellers");
   const [orderNumber, setOrderNumber] = useState(() => {
     if (typeof window === "undefined") return "";
     const urlOrder = readOrderIdFromUrl();
@@ -296,12 +240,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     saveSavedTableNumber(value);
   };
   const [mesaLocked, setMesaLocked] = useState(() => Boolean(loadSavedMesaToken()));
-  const [mesaManual, setMesaManual] = useState(() =>
-    typeof window === "undefined" ? false : loadSavedMesaManual(),
-  );
-  const [mesaTableId, setMesaTableId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : loadSavedMesaTableId(),
-  );
+  const [mesaManual, setMesaManual] = useState(false);
+  const [mesaTableId, setMesaTableId] = useState<string | null>(null);
   const [mesaQrToken, setMesaQrToken] = useState<string | null>(() => loadSavedMesaToken());
   const [customerName, setCustomerNameState] = useState(() =>
     typeof window === "undefined" ? "" : loadSavedCustomerName(),
@@ -440,23 +380,17 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     if (!loadSavedMesaToken()) {
       setMesaLocked(false);
+      setMesaTableId(null);
       setMesaQrToken(null);
-      if (!loadSavedMesaManual()) {
-        setMesaTableId(null);
-        setMesaManual(false);
-      }
     }
   }, [mesa, mesaLoading, setOrderType, setScreen]);
 
   const handleMesaSessionClosed = useCallback(() => {
     setMesaLocked(false);
     setMesaManual(false);
-    saveSavedMesaManual(false);
     setMesaTableId(null);
-    saveSavedMesaTableId(null);
     setMesaQrToken(null);
     setTableNumber("");
-    clearMesaBindingStorage();
     if (orderType === "here") clearOrderType();
   }, [orderType, clearOrderType]);
 
@@ -470,12 +404,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const confirmManualMesa = useCallback((tableNumber: string, tableId: string) => {
     setTableNumber(tableNumber);
     setMesaTableId(tableId);
-    saveSavedMesaTableId(tableId);
     setMesaManual(true);
-    saveSavedMesaManual(true);
     setMesaLocked(false);
     setMesaQrToken(null);
-    clearMesaQrBinding();
+    clearMesaBindingStorage();
     setOrderType("here");
   }, [setOrderType]);
 
@@ -483,9 +415,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTableNumber(tableNumber);
     saveSavedTableNumber(tableNumber);
     setMesaTableId(tableId);
-    saveSavedMesaTableId(tableId);
     setMesaManual(false);
-    saveSavedMesaManual(false);
     setMesaLocked(true);
     setMesaQrToken(qrToken);
     saveSavedMesaToken(qrToken);
@@ -495,9 +425,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const clearMesaLock = useCallback(() => {
     setMesaLocked(false);
     setMesaManual(false);
-    saveSavedMesaManual(false);
     setMesaTableId(null);
-    saveSavedMesaTableId(null);
     setMesaQrToken(null);
     setTableNumber("");
     clearMesaBindingStorage();
@@ -507,20 +435,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const generateOrderNumber = () => {
     setOrderNumber(String(Math.floor(100 + Math.random() * 900)));
   };
-
-  useEffect(() => {
-    const onPushNav = (event: Event) => {
-      const url = (event as CustomEvent<{ url?: string }>).detail?.url;
-      if (!url) return;
-      applyCustomerPushDeepLink(url, {
-        setScreen,
-        setAccountFocus,
-        setSelectedProductId,
-      });
-    };
-    window.addEventListener(CUSTOMER_PUSH_NAV_EVENT, onPushNav);
-    return () => window.removeEventListener(CUSTOMER_PUSH_NAV_EVENT, onPushNav);
-  }, []);
 
   return (
     <OrderContext.Provider

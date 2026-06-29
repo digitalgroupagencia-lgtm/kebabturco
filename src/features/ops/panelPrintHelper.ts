@@ -22,7 +22,7 @@ export function panelOrderToTicket(
     id: order.id,
     order_number: order.order_number,
     customer_name: order.customer_name ?? undefined,
-    order_type: order.order_type ?? "takeaway",
+    order_type: order.order_type,
     table_number: order.table_number,
     address,
     contact_phone: order.customer_phone,

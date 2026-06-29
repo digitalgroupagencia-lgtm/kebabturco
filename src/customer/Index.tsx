@@ -23,14 +23,6 @@ import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
-import { useSellerMode } from "@/contexts/SellerModeContext";
-import { cn } from "@/lib/utils";
-import { useCart } from "@/customer/contexts/CartContext";
-import {
-  resolveSellerInitialScreen,
-  saveSellerSession,
-  loadSellerSession,
-} from "@/lib/sellerSession";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
@@ -61,49 +53,6 @@ const CustomerBootDismiss = () => {
     if (!storeId && screen !== "splash") return;
     dismissBootShell();
   }, [screen, storeLoading, brandingLoading, storeId]);
-
-  return null;
-};
-
-/** Em modo vendedor salta splash/idioma e restaura o ecrã guardado. */
-const SellerCustomerBootstrap = () => {
-  const seller = useSellerMode();
-  const { screen, setScreen, setSelectedProductId, selectedProductId } = useOrder();
-  const { storeId, loading } = useResolvedStore();
-
-  useEffect(() => {
-    if (!seller.active || loading || !storeId) return;
-
-    const bootstrapScreens = new Set(["splash", "language", "storeSelect", "orderType"]);
-    if (bootstrapScreens.has(screen)) {
-      const next = resolveSellerInitialScreen(storeId);
-      setScreen(next);
-      const session = loadSellerSession();
-      if (next === "product" && session?.selectedProductId && !selectedProductId) {
-        setSelectedProductId(session.selectedProductId);
-      }
-    }
-  }, [seller.active, loading, storeId, screen, setScreen, setSelectedProductId, selectedProductId]);
-
-  return null;
-};
-
-/** Guarda ecrã e contexto do vendedor para recuperar após recarregar. */
-const SellerSessionPersist = () => {
-  const seller = useSellerMode();
-  const { screen, selectedProductId, selectedCategory } = useOrder();
-  const { storeId, loading } = useResolvedStore();
-
-  useEffect(() => {
-    if (!seller.active || loading || !storeId) return;
-    if (!["home", "product", "review", "payment"].includes(screen)) return;
-    saveSellerSession({
-      screen,
-      selectedProductId,
-      selectedCategory,
-      storeId,
-    });
-  }, [seller.active, loading, storeId, screen, selectedProductId, selectedCategory]);
 
   return null;
 };
@@ -202,37 +151,19 @@ const ScreenRouter = () => {
   }
 };
 
-const CustomerShell = () => {
-  const seller = useSellerMode();
-
-  return (
-    <div
-      className={cn(
-        "customer-shell relative mx-auto h-full min-h-0 w-full max-w-md overflow-hidden bg-background md:max-w-none",
-        seller.active
-          ? "seller-menu-shell grid grid-rows-[minmax(0,1fr)_auto] md:flex md:flex-col md:overflow-y-auto md:overscroll-y-contain md:pb-16"
-          : "grid grid-rows-[minmax(0,1fr)_auto]",
-      )}
-    >
-      <SellerCustomerBootstrap />
-      <SellerSessionPersist />
+const CustomerShell = () => (
+    <div className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background">
       <CustomerBootDismiss />
-      <div
-        className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden",
-          seller.active && "md:h-auto md:min-h-min md:overflow-visible",
-        )}
-      >
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <ScreenRouter />
       </div>
       <CustomerScreenErrorBoundary scope="bootstrap">
         <CustomerBottomDock />
-        {!seller.active && <CustomerTabBar />}
-        {!seller.active && <CustomerPushPromptHost />}
+        <CustomerTabBar />
+        <CustomerPushPromptHost />
       </CustomerScreenErrorBoundary>
     </div>
-  );
-};
+);
 
 // Kiosk Self-Service App
 const Index = () => {
@@ -240,10 +171,8 @@ const Index = () => {
     <LanguageProvider>
       <CartProvider>
         <OrderProvider>
-          <div className="flex h-full min-h-0 flex-col">
-            <PreviewBootstrap />
-            <CustomerShell />
-          </div>
+          <PreviewBootstrap />
+          <CustomerShell />
         </OrderProvider>
       </CartProvider>
     </LanguageProvider>

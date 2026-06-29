@@ -15,8 +15,6 @@ import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
 import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import SmartImage from "@/components/SmartImage";
-import { useSellerMode } from "@/contexts/SellerModeContext";
-import { cn } from "@/lib/utils";
 
 
 const HomeScreen = () => {
@@ -26,7 +24,6 @@ const HomeScreen = () => {
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
   const navigate = useNavigate();
-  const seller = useSellerMode();
   const [logoTaps, setLogoTaps] = useState(0);
   const tapResetRef = useRef<number | null>(null);
   const handleLogoTap = () => {
@@ -57,7 +54,7 @@ const HomeScreen = () => {
     }
   }, [categories, loading, products, selectedCategory, setSelectedCategory]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: "auto" });
   }, [selectedCategory]);
@@ -145,12 +142,7 @@ const HomeScreen = () => {
   }
 
   return (
-    <div
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
-        seller.active && "md:h-auto md:min-h-min md:overflow-visible",
-      )}
-    >
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {!shouldHideHeader() && (
       <header
         className="sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
@@ -194,18 +186,8 @@ const HomeScreen = () => {
       </header>
       )}
 
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 overflow-hidden",
-          seller.active && "md:min-h-min md:flex-none md:overflow-visible",
-        )}
-      >
-        <aside
-          className={cn(
-            "h-full min-h-0 w-[98px] min-w-[98px] shrink-0 overflow-y-auto overscroll-y-contain border-r border-border/40 bg-secondary/30 md:w-[120px] md:min-w-[120px] lg:w-[140px] lg:min-w-[140px] md:[&::-webkit-scrollbar]:w-1.5 md:[&::-webkit-scrollbar-thumb]:rounded-full md:[&::-webkit-scrollbar-thumb]:bg-border",
-            seller.active && "md:h-auto md:overflow-visible md:sticky md:top-0 md:self-start",
-          )}
-        >
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
           <div className="flex flex-col gap-2 px-2 py-2">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
@@ -231,7 +213,7 @@ const HomeScreen = () => {
                   </div>
                   <span
                     className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
-                      isActive ? "text-accent-readable" : "text-foreground"
+                      isActive ? "text-primary" : "text-foreground"
                     }`}
                   >
                     {tProduct(category.name)}
@@ -245,48 +227,27 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main
-          className={cn(
-            "flex min-h-0 flex-1 flex-col overflow-hidden bg-background",
-            seller.active && "md:min-h-min md:overflow-visible",
-          )}
-        >
-          {!seller.active ? (
-            <div className="z-20 shrink-0 bg-background px-3 pt-2 shadow-[0_8px_16px_-12px_hsla(0,0%,0%,0.35)] md:px-4">
-              <PromoBannerCarousel />
-            </div>
-          ) : null}
-
-          <div
-            ref={scrollRef}
-            className={cn(
-              "min-h-0 flex-1 overflow-y-auto overscroll-contain md:scrollbar-thin",
-              seller.active && "md:overflow-visible md:flex-none",
-            )}
-          >
-            <div className="px-3">
-              <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                    {t("menu")}
-                  </span>
-                  <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
-                    {activeCategoryName}
-                  </h2>
-                  <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
-                </div>
-                <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
-                  {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
+        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
+          {/* Banner e título rolam com os produtos, liberta espaço vertical com a barra inferior */}
+          <div className="px-3 pt-2">
+            <PromoBannerCarousel />
+            <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                  {t("menu")}
                 </span>
+                <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
+                  {activeCategoryName}
+                </h2>
+                <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
               </div>
+              <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
+                {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
+              </span>
             </div>
+          </div>
 
-            <div
-              className={cn(
-                "grid grid-cols-2 gap-2.5 px-3",
-                seller.active ? "pb-28" : "pb-16",
-              )}
-            >
+          <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product, index) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
@@ -341,7 +302,6 @@ const HomeScreen = () => {
               );
             })}
 
-            </div>
           </div>
         </main>
       </div>

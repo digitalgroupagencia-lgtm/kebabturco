@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
 import AppChromeEffect from "@/components/AppChromeEffect.tsx";
-import NativeDeepLinkEffect from "@/components/NativeDeepLinkEffect.tsx";
 import ScreenOrientationEffect from "@/components/ScreenOrientationEffect.tsx";
 import MobileFrame from "@/components/MobileFrame.tsx";
 import PageSpinner from "@/components/PageSpinner.tsx";
@@ -105,7 +104,6 @@ const App = () => {
           <ThemeProvider>
             <BrowserRouter>
               <AppChromeEffect />
-              <NativeDeepLinkEffect />
               <ScreenOrientationEffect />
               <AppCacheBustRouter>
                 <LovablePreviewGate />

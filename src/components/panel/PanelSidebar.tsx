@@ -14,7 +14,6 @@ import {
   Wallet,
   Radio,
   Star,
-  MessageSquarePlus,
   UserRound,
 } from "lucide-react";
 
@@ -56,7 +55,6 @@ const ICONS: Record<string, typeof ShoppingBag> = {
   team: Users,
   sellers: UserCog,
   reviews: Star,
-  "customer-feedback": MessageSquarePlus,
   guide: BookOpen,
   diagnostics: Activity,
 };

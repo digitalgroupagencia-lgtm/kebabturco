@@ -32,13 +32,6 @@ export default function ScreenOrientationEffect() {
           max-width: 100vw;
           min-height: 100dvh;
         }
-        html.staff-landscape-layout body.fp-rotate .min-h-screen,
-        html.staff-landscape-layout body.fp-rotate .min-h-svh {
-          min-height: var(--fp-w) !important;
-        }
-        html.staff-landscape-layout body.fp-rotate .h-svh {
-          height: var(--fp-w) !important;
-        }
       `}</style>
   );
 }

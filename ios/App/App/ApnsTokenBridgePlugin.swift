@@ -10,6 +10,8 @@ public class ApnsTokenBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getBridgeDiagnostics", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "markJsReceived", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "redeliverToJavaScript", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestPushAuthorization", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getNotificationAuthorizationStatus", returnType: CAPPluginReturnPromise),
     ]
 
     @objc func getSavedApnsToken(_ call: CAPPluginCall) {

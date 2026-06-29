@@ -10,7 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { provisionStripeConnect } from "@/services/orderService";
-import { geocodeAndUpdateStoreCoords } from "@/services/storeGeocodeService";
 import { Loader2, Plus, Trash2, Store as StoreIcon, Upload } from "lucide-react";
 
 interface Store {
@@ -22,7 +21,6 @@ interface Store {
   short_description: string | null;
   is_active: boolean;
   sort_order: number;
-  flow_store_id: string | null;
 }
 
 const TenantStoresPage = () => {
@@ -81,24 +79,10 @@ const TenantStoresPage = () => {
     const { error } = await supabase.from("stores").update({
       name: s.name, address: s.address, phone: s.phone, image_url: s.image_url,
       short_description: s.short_description, is_active: s.is_active, sort_order: s.sort_order,
-      flow_store_id: s.flow_store_id?.trim() || null,
     }).eq("id", s.id);
-    if (error) {
-      setSaving(null);
-      toast.error(error.message);
-      return;
-    }
-    if (s.address?.trim()) {
-      const geo = await geocodeAndUpdateStoreCoords(s.id, { address: s.address, storeName: s.name });
-      if (geo.ok) {
-        toast.success("Salvo — posição do restaurante actualizada para entregas");
-      } else {
-        toast.success("Salvo — confirme o endereço completo para calcular a posição automaticamente");
-      }
-    } else {
-      toast.success("Salvo");
-    }
     setSaving(null);
+    if (error) toast.error(error.message);
+    else toast.success("Salvo");
   };
 
   const removeStore = async (id: string) => {
@@ -198,18 +182,6 @@ const TenantStoresPage = () => {
                     onChange={(e) => updateStore(s.id, { short_description: e.target.value })}
                     placeholder="Ex.: Centro da cidade · Aberto até 23h"
                   />
-                </div>
-                <div className="md:col-span-2">
-                  <Label>ID da loja no PDV WGM</Label>
-                  <Input
-                    value={s.flow_store_id || ""}
-                    onChange={(e) => updateStore(s.id, { flow_store_id: e.target.value || null })}
-                    placeholder="UUID da unidade no sistema WGM (copiar do PDV)"
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Liga esta unidade ao PDV. Sem este ID os pedidos não aparecem no backoffice WGM.
-                  </p>
                 </div>
               </div>
             </div>

@@ -53,7 +53,7 @@ export function useSetFeatureOverride() {
       _tenant_id: tenantId,
       _feature_key: featureKey,
       _enabled: enabled,
-      _notes: undefined,
+      _notes: null,
     });
     if (error) throw error;
     await qc.invalidateQueries({ queryKey: ["tenant-feature-flags", tenantId] });

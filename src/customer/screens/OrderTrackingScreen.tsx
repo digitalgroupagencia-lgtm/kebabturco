@@ -11,10 +11,6 @@ import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { Loader2, CheckCircle2, Circle, Radio, EyeOff } from "lucide-react";
 import OrderReviewForm from "@/customer/components/OrderReviewForm";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
-import OrderWaitFeedbackHost from "@/customer/components/OrderWaitFeedbackHost";
-import DeliveryTrackingMap from "@/components/customer/DeliveryTrackingMap";
-import OrderSupportChat from "@/components/customer/OrderSupportChat";
-import { useDriverLocationForOrder } from "@/hooks/useDriverLocationForOrder";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 import { Button } from "@/components/ui/button";
@@ -44,11 +40,6 @@ const OrderTrackingScreen = () => {
   useOrderTracking(orderId, handleOrder, handleLoading);
   useCustomerOrderNotifications(order);
 
-  const driverLocation = useDriverLocationForOrder(
-    orderId,
-    order?.status === "out_for_delivery" && order?.order_type === "delivery",
-  );
-
   const steps = useMemo(() => getCustomerTrackingSteps(order?.order_type, t), [order?.order_type, t]);
 
   const currentIdx = useMemo(() => {
@@ -73,11 +64,6 @@ const OrderTrackingScreen = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background animate-fade-in">
-      <OrderWaitFeedbackHost
-        orderId={orderId}
-        orderStatus={order?.status}
-        orderNumber={order?.order_number}
-      />
       <ScreenHeader
         eyebrow={t("menu")}
         title={`${t("orderNumber")} #${order?.order_number || orderNumber || "..."}`}
@@ -124,12 +110,10 @@ const OrderTrackingScreen = () => {
             ) : (
               <>
                 <OrderDelaySupportBanner
-                  orderId={order.id}
-                  storeId={storeId ?? undefined}
+                  storeId={storeId}
                   status={order.status}
                   createdAt={order.created_at}
                   orderNumber={order.order_number}
-                  customerPhone={undefined}
                 />
 
                 {(() => {
@@ -181,13 +165,6 @@ const OrderTrackingScreen = () => {
                     )}
                   </p>
                 </div>
-
-                {order.status === "out_for_delivery" && order.order_type === "delivery" && (
-                  <DeliveryTrackingMap
-                    driverLocation={driverLocation}
-                    addressLabel={[order.delivery_street, order.delivery_city].filter(Boolean).join(", ")}
-                  />
-                )}
 
                 {order.status === "out_for_delivery" && order.assigned_driver_name && (
                   <div className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-4 text-center">
@@ -256,12 +233,6 @@ const OrderTrackingScreen = () => {
                 </ol>
               </>
             )}
-
-            {order.status !== "cancelled" &&
-              order.status !== "delivered" &&
-              (order.status === "ready" || order.status === "out_for_delivery") && (
-                <OrderReviewForm orderId={order.id} />
-              )}
 
             {order.delivery_street && (
               <div className="rounded-2xl border border-border bg-card p-4 text-sm">

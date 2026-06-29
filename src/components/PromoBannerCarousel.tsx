@@ -20,7 +20,7 @@ function getYoutubeId(url: string): string | null {
   } catch { return null; }
 }
 
-const PromoBannerCarousel = ({ className, frameClassName }: { className?: string; frameClassName?: string }) => {
+const PromoBannerCarousel = () => {
   const { banners } = usePromoBanners();
   const { settings } = useOperationsSettings();
   const [index, setIndex] = useState(0);
@@ -68,13 +68,8 @@ const PromoBannerCarousel = ({ className, frameClassName }: { className?: string
   if (items.length === 0 || !currentItem) return null;
 
   return (
-    <div className={className ?? "w-full"}>
-      <div
-        className={
-          frameClassName ??
-          "relative aspect-[16/9] w-full overflow-hidden rounded-[22px] border border-border/70 bg-primary shadow-card"
-        }
-      >
+    <div className="w-full">
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[22px] border border-border/70 bg-primary shadow-card">
         {currentIsVideo && ytId ? (
           <iframe
             key={currentItem.id}

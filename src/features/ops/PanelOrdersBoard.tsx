@@ -23,9 +23,9 @@ import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } f
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
-import TapToPayCheckoutSurface from "@/components/tapToPay/TapToPayCheckoutSurface";
+import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
-import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
 import { columnHeaderAccentClass } from "@/features/ops/opsOrderUi";
 import { shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
@@ -230,7 +230,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     if (!confirm(t("panel.delete_test.confirm").replace("{count}", String(testOrdersCount)))) return;
     setCleaningTests(true);
     try {
-      const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: undefined });
+      const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
       if (error) throw error;
       const removed = (data as { deleted?: number } | null)?.deleted ?? 0;
       toast.success(t("panel.delete_test.success").replace("{count}", String(removed)));
@@ -244,7 +244,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
 
   const confirmMarkPaid = useCallback(
     async (order: PanelOrder, method: "cash" | "card" = "cash") => {
-      const isTapPay = method === "card" && isTapToPayUiAvailable();
+      const isTapPay = method === "card" && isTapToPayPlatform();
       if (isTapPay) {
         setDetailOrderId(null);
         await waitForStaffPinUiDismiss();
@@ -282,7 +282,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
     onMarkPaid: confirmMarkPaid,
-    showTapToPayButton: isTapToPayUiAvailable(),
+    showTapToPayButton: isTapToPayPlatform(),
   });
 
   const mobileOrders = getOrdersByStatus(mobileTab);
@@ -443,7 +443,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
       />
       <StaffPinDialog />
 
-      <TapToPayCheckoutSurface
+      <TapToPayDialog
         open={!!tapPayOrder}
         order={tapPayOrder}
         storeId={storeId}

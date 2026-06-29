@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -36,10 +37,11 @@ import {
   hasStaffGoogleLoginIntent,
 } from "@/lib/staffGoogleLoginIntent";
 import {
-  markIosPasswordLoginSubmitted,
-  staffLoginFormAction,
-  waitForIosPasswordSaveGrace,
-} from "@/lib/iosPasswordAutofill";
+  loadLastStaffLogin,
+  saveLastStaffLogin,
+  hydrateLastStaffLogin,
+  type StaffLastLogin,
+} from "@/lib/staffLoginMemory";
 
 /** Login da equipa, e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
@@ -69,6 +71,8 @@ const StaffEmailLoginScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [staffAccessStatus, setStaffAccessStatus] = useState<StaffGoogleLoginStatus | null>(null);
   const [staffAccessLoading, setStaffAccessLoading] = useState(false);
+  const [lastLogin, setLastLogin] = useState<StaffLastLogin | null>(() => loadLastStaffLogin());
+  const [dismissedSuggestion, setDismissedSuggestion] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const googleOAuthReturn =
@@ -89,6 +93,14 @@ const StaffEmailLoginScreen = () => {
     (staffAccessStatus === "pending" || staffAccessLoading || (googleOAuthReturn && staffAccessStatus !== "active"));
 
   useEffect(() => {
+    if (isSignup) return;
+    void hydrateLastStaffLogin().then((saved) => {
+      if (saved) setLastLogin(saved);
+    });
+    setDismissedSuggestion(false);
+  }, [isSignup]);
+
+  useEffect(() => {
     if (!roleData?.role) return;
     if (hasStaffGoogleLoginIntent()) consumeStaffGoogleLoginIntent();
     setStaffAccessLoading(false);
@@ -100,8 +112,6 @@ const StaffEmailLoginScreen = () => {
     if (!roleData?.role) return;
 
     void (async () => {
-      await waitForIosPasswordSaveGrace();
-
       if (nextParam) {
         const dest = await resolvePostLoginDestination(user.id, nextParam);
         navigate(dest.path, { replace: true });
@@ -167,10 +177,7 @@ const StaffEmailLoginScreen = () => {
     if (!user || staffAccessLoading || staffAccessStatus !== "active") return;
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
-    void (async () => {
-      await waitForIosPasswordSaveGrace();
-      navigate(resolveStaffLoginDestination(role), { replace: true });
-    })();
+    navigate(resolveStaffLoginDestination(role), { replace: true });
   }, [user, staffAccessLoading, staffAccessStatus, roleData?.role, navigate]);
 
   const handleLogin = async (event?: React.FormEvent) => {
@@ -225,7 +232,7 @@ const StaffEmailLoginScreen = () => {
       });
       if (signInError) throw signInError;
       markStaffSession();
-      markIosPasswordLoginSubmitted();
+      saveLastStaffLogin({ email: email.trim().toLowerCase(), method: "password" });
       if (!roleData?.role) {
         await registerPendingAccess();
       }
@@ -252,10 +259,8 @@ const StaffEmailLoginScreen = () => {
     markStaffSession();
 
     try {
-      try {
-        if (nextParam) sessionStorage.setItem("kebab-staff-google-next", nextParam);
-      } catch { /* ignore */ }
-      const redirectUri = `${window.location.origin}${nav.staff()}`;
+      const nextQuery = nextParam ? `?next=${encodeURIComponent(nextParam)}` : "";
+      const redirectUri = `${window.location.origin}${nav.staff()}${nextQuery}`;
       await signInStaffWithGoogle({ redirectUri, lang });
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);
@@ -263,6 +268,29 @@ const StaffEmailLoginScreen = () => {
       clearStaffGoogleLoginIntent();
     }
   };
+
+  useEffect(() => {
+    if (!user?.email) return;
+    saveLastStaffLogin({
+      email: user.email,
+      method: userSignedInWithGoogle(user) ? "google" : "password",
+      name: typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : undefined,
+    });
+    setLastLogin(loadLastStaffLogin());
+  }, [user]);
+
+  const applyLastLoginSuggestion = () => {
+    if (!lastLogin) return;
+    if (lastLogin.method === "google") {
+      void handleGoogleLogin();
+      return;
+    }
+    setEmail(lastLogin.email);
+    setError(null);
+    passwordRef.current?.focus();
+  };
+
+  const showLastLoginSuggestion = !isSignup && lastLogin && !dismissedSuggestion;
 
   if (authLoading || (user && roleLoading) || (user && accessFlowActive && staffAccessLoading && !staffAccessStatus)) {
     return (
@@ -321,14 +349,40 @@ const StaffEmailLoginScreen = () => {
             </p>
           </div>
 
-          <form
-            id="staff-login-form"
-            className="space-y-4"
-            method="post"
-            action={staffLoginFormAction()}
-            autoComplete="on"
-            onSubmit={(e) => void handleLogin(e)}
-          >
+          {showLastLoginSuggestion && (
+            <div className="mb-5 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {copy.lastLoginLabel}
+              </p>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded-xl border-2 border-primary/35 bg-primary/5 p-3 text-left transition-colors hover:border-primary hover:bg-primary/10"
+                onClick={applyLastLoginSuggestion}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <User className="h-5 w-5" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{lastLogin.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {lastLogin.method === "google" ? copy.lastLoginContinueGoogle : copy.lastLoginContinue}
+                  </p>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="w-full py-1 text-center text-xs font-medium text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setDismissedSuggestion(true);
+                  if (email === lastLogin.email) setEmail("");
+                }}
+              >
+                {copy.lastLoginOther}
+              </button>
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={(e) => void handleLogin(e)}>
             {isSignup && (
               <div className="space-y-1.5">
                 <Label htmlFor="staff-name">{copy.nameLabel}</Label>
@@ -350,13 +404,9 @@ const StaffEmailLoginScreen = () => {
               <Label htmlFor="staff-email">{copy.emailLabel}</Label>
               <Input
                 id="staff-email"
-                name="username"
+                name="email"
                 type="email"
-                inputMode="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                autoComplete="username email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -364,27 +414,21 @@ const StaffEmailLoginScreen = () => {
                 }}
                 placeholder="entregador@gmail.com"
                 className="h-12 w-full"
-                required
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="staff-password">{copy.passwordLabel}</Label>
-              <Input
+              <SecretInput
                 ref={passwordRef}
                 id="staff-password"
                 name="password"
-                type="password"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                autoComplete={isSignup ? "new-password" : "current-password"}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setError(null);
                 }}
                 className="h-12 w-full"
-                required
               />
             </div>
 
@@ -408,23 +452,19 @@ const StaffEmailLoginScreen = () => {
             </Button>
           </form>
 
-          <div className="mt-4 rounded-lg border border-dashed bg-muted/40 p-3 text-center">
-            <p className="text-sm text-muted-foreground">
-              {isSignup ? copy.loginToggle : copy.signupToggle}
-            </p>
-            <Button
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {isSignup ? copy.loginToggle : copy.signupToggle}{" "}
+            <button
               type="button"
-              variant="secondary"
-              className="mt-2 h-11 w-full text-base font-bold"
+              className="font-semibold text-primary hover:underline"
               onClick={() => {
                 setIsSignup((v) => !v);
                 setError(null);
               }}
             >
               {isSignup ? copy.loginLink : copy.signupLink}
-            </Button>
-          </div>
-
+            </button>
+          </p>
 
           {!isSignup && (
             <>

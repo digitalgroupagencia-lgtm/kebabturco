@@ -36,7 +36,7 @@ export function preloadMenuImages(
   for (const cat of categories) {
     if (cat.image) urls.add(menuImageUrl(cat.image, 160));
   }
-  for (const prod of products.slice(0, 40)) {
+  for (const prod of products.slice(0, 14)) {
     if (prod.image) urls.add(menuImageUrl(prod.image, 360));
   }
   for (const href of urls) {

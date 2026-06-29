@@ -5,9 +5,6 @@ import Capacitor
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            ApnsTokenStore.shared.injectNativeRuntimeMarker()
-        }
         return true
     }
 

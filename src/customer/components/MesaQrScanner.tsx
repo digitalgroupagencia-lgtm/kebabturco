@@ -1,125 +1,102 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Camera, CameraOff, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { isNativeApp } from "@/lib/nativeApp";
 
 type MesaQrScannerProps = {
   active: boolean;
   onDetected: (raw: string) => void;
 };
 
-type ScannerStatus = "idle" | "awaiting_tap" | "starting" | "live" | "denied" | "unsupported";
-
-function isMobileSafari(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const safari = /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/i.test(ua);
-  return ios || (safari && /Mobi|Android/i.test(ua));
-}
-
 const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
   const { t } = useLanguage();
   const elementId = useId().replace(/:/g, "");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const handledRef = useRef(false);
-  const [status, setStatus] = useState<ScannerStatus>("idle");
-  const needsTap = isMobileSafari();
-
-  const stopScanner = useCallback(async () => {
-    const existing = scannerRef.current;
-    scannerRef.current = null;
-    if (!existing) return;
-    try {
-      await existing.stop();
-    } catch {
-      /* ignore */
-    }
-    try {
-      existing.clear();
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const startScanner = useCallback(async () => {
-    if (!active || handledRef.current) return;
-
-    setStatus("starting");
-    handledRef.current = false;
-
-    try {
-      await stopScanner();
-      const scanner = new Html5Qrcode(elementId, { verbose: false });
-      scannerRef.current = scanner;
-
-      const config = {
-        fps: 12,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.72;
-          return { width: size, height: size };
-        },
-        aspectRatio: 1,
-      };
-
-      const onScan = (decoded: string) => {
-        if (handledRef.current) return;
-        handledRef.current = true;
-        onDetected(decoded);
-        void stopScanner();
-      };
-
-      try {
-        await scanner.start({ facingMode: "environment" }, config, onScan, () => {});
-        setStatus("live");
-        return;
-      } catch {
-        /* fallback: lista de câmaras */
-      }
-
-      const cameras = await Html5Qrcode.getCameras();
-      if (!cameras.length) {
-        setStatus("unsupported");
-        return;
-      }
-
-      const backCamera =
-        cameras.find((c) => /back|rear|environment|trás|trasera/i.test(c.label)) ?? cameras[cameras.length - 1];
-
-      await scanner.start(backCamera.id, config, onScan, () => {});
-      setStatus("live");
-    } catch {
-      setStatus("denied");
-    }
-  }, [active, elementId, onDetected, stopScanner]);
+  const [status, setStatus] = useState<"idle" | "starting" | "live" | "denied" | "unsupported">("idle");
 
   useEffect(() => {
     if (!active) {
       handledRef.current = false;
       setStatus("idle");
-      void stopScanner();
+      const existing = scannerRef.current;
+      scannerRef.current = null;
+      if (existing) {
+        void existing.stop().catch(() => {});
+        try {
+          existing.clear();
+        } catch {
+          /* ignore */
+        }
+      }
       return;
     }
 
+    let cancelled = false;
     handledRef.current = false;
-    if (needsTap && !isNativeApp()) {
-      setStatus("awaiting_tap");
-      return () => {
-        void stopScanner();
-      };
-    }
+    setStatus("starting");
 
-    void startScanner();
-    return () => {
-      void stopScanner();
+    const start = async () => {
+      try {
+        const scanner = new Html5Qrcode(elementId, { verbose: false });
+        scannerRef.current = scanner;
+
+        const cameras = await Html5Qrcode.getCameras();
+        if (!cameras.length) {
+          if (!cancelled) setStatus("unsupported");
+          return;
+        }
+
+        const backCamera =
+          cameras.find((c) => /back|rear|environment|trás|trasera/i.test(c.label)) ?? cameras[cameras.length - 1];
+
+        await scanner.start(
+          backCamera.id,
+          {
+            fps: 12,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.72;
+              return { width: size, height: size };
+            },
+            aspectRatio: 1,
+          },
+          (decoded) => {
+            if (handledRef.current) return;
+            handledRef.current = true;
+            onDetected(decoded);
+            void scanner.stop().catch(() => {});
+          },
+          () => {
+            /* scan frame, sem leitura ainda */
+          },
+        );
+
+        if (!cancelled) setStatus("live");
+      } catch {
+        if (!cancelled) setStatus("denied");
+      }
     };
-  }, [active, startScanner, stopScanner]);
 
+    void start();
+
+    return () => {
+      cancelled = true;
+      const existing = scannerRef.current;
+      scannerRef.current = null;
+      if (existing) {
+        void existing.stop().catch(() => {});
+        try {
+          existing.clear();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+  }, [active, elementId, onDetected]);
 
   return (
     <div className="relative overflow-hidden rounded-[24px] border-2 border-primary/25 bg-black shadow-[0_20px_50px_-20px_rgba(0,0,0,0.45)]">
-      <div id={elementId} className="min-h-[220px] w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
+      <div id={elementId} className="min-h-[220px] w-full [&_video]:object-cover" />
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div className="relative h-[58%] w-[58%] min-h-[140px] min-w-[140px] max-h-[220px] max-w-[220px]">
@@ -127,22 +104,9 @@ const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
           <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-[3px] border-t-[3px] border-white/90" />
           <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-[3px] border-l-[3px] border-white/90" />
           <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-[3px] border-r-[3px] border-white/90" />
-          {status === "live" && (
-            <span className="absolute inset-x-4 top-1/2 h-0.5 -translate-y-1/2 animate-pulse bg-primary/80 shadow-[0_0_12px_rgba(58,2,5,0.8)]" />
-          )}
+          <span className="absolute inset-x-4 top-1/2 h-0.5 -translate-y-1/2 animate-pulse bg-primary/80 shadow-[0_0_12px_rgba(58,2,5,0.8)]" />
         </div>
       </div>
-
-      {status === "awaiting_tap" && (
-        <button
-          type="button"
-          onClick={() => void startScanner()}
-          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/75 px-6 text-center text-white"
-        >
-          <Camera className="h-10 w-10 text-primary" />
-          <p className="text-sm font-bold leading-relaxed">{t("mesaQrTapToStart")}</p>
-        </button>
-      )}
 
       {status === "starting" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 text-white">
@@ -155,13 +119,6 @@ const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center text-white">
           <CameraOff className="h-8 w-8 text-primary" />
           <p className="text-xs font-semibold leading-relaxed">{t("mesaQrCameraDenied")}</p>
-          <button
-            type="button"
-            onClick={() => void startScanner()}
-            className="mt-2 rounded-full bg-primary px-4 py-2 text-[11px] font-bold text-primary-foreground"
-          >
-            {t("mesaQrRetryCamera")}
-          </button>
         </div>
       )}
 

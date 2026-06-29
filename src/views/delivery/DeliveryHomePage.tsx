@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useDriverOrders } from "@/features/delivery/useDriverOrders";
-import { useDriverLocationShare } from "@/hooks/useDriverLocationShare";
 import { validateDeliveryCode } from "@/features/ops/opsOrderUi";
 import { useStaffT } from "@/hooks/useStaffT";
 
@@ -13,14 +12,7 @@ const DeliveryHomePage = () => {
   const { t } = useStaffT();
 
   const { storeId } = useAdminStoreId();
-  const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId ?? undefined);
-  const activeDeliveryOrder = orders.find((o) => o.status === "out_for_delivery") ?? null;
-
-  useDriverLocationShare({
-    storeId,
-    activeOrderId: activeDeliveryOrder?.id ?? null,
-    enabled: Boolean(storeId && activeDeliveryOrder),
-  });
+  const { orders, loading, startDelivery, confirmDelivery, refresh } = useDriverOrders(storeId);
   const [codeByOrder, setCodeByOrder] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
 

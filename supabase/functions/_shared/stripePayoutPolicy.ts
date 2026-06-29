@@ -1,6 +1,5 @@
 import type Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { isSimulatedConnectAccountId } from "./stripeConnectSync.ts";
-import { isPlatformConnectAccountId, isStripeOwnAccountError } from "./stripePlatform.ts";
 
 /**
  * Repasses automáticos nas contas Connect (quintas-feiras).
@@ -27,19 +26,23 @@ async function ensurePlatformManualPayouts(
 ): Promise<{ interval: string; updated: boolean }> {
   const account = await stripe.accounts.retrieve();
   const interval = account.settings?.payouts?.schedule?.interval ?? "unknown";
-  // Stripe não permite alterar repasses da conta plataforma via API Connect.
-  return { interval, updated: false };
+  if (interval === "manual") {
+    return { interval, updated: false };
+  }
+  await stripe.accounts.update(account.id, {
+    settings: {
+      payouts: {
+        schedule: { interval: "manual" },
+      },
+    },
+  });
+  return { interval: "manual", updated: true };
 }
 
 async function ensureRestaurantWeeklyPayouts(
   stripe: Stripe,
   connectedAccountId: string,
 ): Promise<{ interval: string; updated: boolean }> {
-  if (await isPlatformConnectAccountId(stripe, connectedAccountId)) {
-    console.warn("[payout] ignorado: id da conta plataforma, não de restaurante", connectedAccountId);
-    return { interval: "unknown", updated: false };
-  }
-
   const account = await stripe.accounts.retrieve(connectedAccountId);
   const schedule = account.settings?.payouts?.schedule;
   const interval = schedule?.interval ?? "unknown";
@@ -47,22 +50,14 @@ async function ensureRestaurantWeeklyPayouts(
   if (interval === "weekly" && anchor === RESTAURANT_PAYOUT_WEEKLY_ANCHOR) {
     return { interval, updated: false };
   }
-  try {
-    await stripe.accounts.update(connectedAccountId, {
-      settings: {
-        payouts: {
-          schedule: RESTAURANT_PAYOUT_SCHEDULE,
-          debit_negative_balances: true,
-        },
+  await stripe.accounts.update(connectedAccountId, {
+    settings: {
+      payouts: {
+        schedule: RESTAURANT_PAYOUT_SCHEDULE,
+        debit_negative_balances: true,
       },
-    });
-  } catch (e) {
-    if (isStripeOwnAccountError(e)) {
-      console.warn("[payout] update recusado (conta plataforma)", connectedAccountId);
-      return { interval, updated: false };
-    }
-    throw e;
-  }
+    },
+  });
   return { interval: "weekly", updated: true };
 }
 

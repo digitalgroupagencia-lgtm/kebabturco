@@ -3,7 +3,6 @@ import { Phone, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useStoreCustomerContact } from "@/hooks/useStoreCustomerContact";
-import OrderSupportChat from "@/components/customer/OrderSupportChat";
 import {
   formatDisplayPhone,
   isOrderDelayedPending,
@@ -12,26 +11,16 @@ import {
 } from "@/lib/storeCustomerContact";
 
 type Props = {
-  orderId?: string;
   storeId: string | undefined;
   status: string;
   createdAt: string;
   orderNumber?: string | number;
-  customerPhone?: string;
 };
 
-const OrderDelaySupportBanner = ({
-  orderId,
-  storeId,
-  status,
-  createdAt,
-  orderNumber,
-  customerPhone,
-}: Props) => {
+const OrderDelaySupportBanner = ({ storeId, status, createdAt, orderNumber }: Props) => {
   const { t } = useLanguage();
   const { contact } = useStoreCustomerContact(storeId);
   const [now, setNow] = useState(() => Date.now());
-  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -51,18 +40,6 @@ const OrderDelaySupportBanner = ({
       <p className="text-sm font-bold text-amber-900 dark:text-amber-100">{t("orderDelayTitle")}</p>
       <p className="text-xs text-muted-foreground">{t("orderDelayBody")}</p>
       <div className="flex flex-wrap gap-2">
-        {orderId && (
-          <Button
-            type="button"
-            size="sm"
-            variant={chatOpen ? "default" : "secondary"}
-            className="h-9 gap-1.5 font-bold"
-            onClick={() => setChatOpen((v) => !v)}
-          >
-            <MessageCircle className="h-4 w-4" />
-            Chat com o restaurante
-          </Button>
-        )}
         {phones.map((phone) => (
           <Button key={phone} asChild variant="outline" size="sm" className="h-9 gap-1.5 font-bold">
             <a href={telHref(phone)}>
@@ -80,15 +57,6 @@ const OrderDelaySupportBanner = ({
           </Button>
         )}
       </div>
-      {chatOpen && orderId && (
-        <OrderSupportChat
-          orderId={orderId}
-          customerPhone={customerPhone}
-          senderRole="customer"
-          title="Mensagens com o restaurante"
-          placeholder="Explique o atraso — o restaurante responde aqui."
-        />
-      )}
     </div>
   );
 };

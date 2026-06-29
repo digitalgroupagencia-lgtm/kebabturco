@@ -20,7 +20,7 @@ import PremiumMetricCard from "@/components/admin/premium/PremiumMetricCard";
 import { isAwaitingCounterPaymentConfirmation, isConfirmedPaidOrder } from "@/lib/orderKitchenRules";
 import { useTapToPayCheckout } from "@/hooks/useTapToPayCheckout";
 import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
-import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 
 type CashRegister = Tables<"cash_registers">;
 type PendingOrder = Tables<"orders">;
@@ -86,7 +86,7 @@ const CashierPage = () => {
   }, [storeId, fetchPendingOrders]);
 
   const confirmCashPayment = async (order: PendingOrder, method: "cash" | "card" = "cash") => {
-    if (method === "card" && isTapToPayUiAvailable()) {
+    if (method === "card" && isTapToPayPlatform()) {
       await requestTapToPay({
         id: order.id,
         order_number: order.order_number,
@@ -341,7 +341,7 @@ const CashierPage = () => {
                       onClick={() => void confirmCashPayment(o, "card")}
                     >
                       <CreditCard className="h-4 w-4 mr-1" />
-                      {isTapToPayUiAvailable() ? t("ops.card.tap_to_pay") : t("cashier.method.card")}
+                      {isTapToPayPlatform() ? t("ops.card.tap_to_pay") : t("cashier.method.card")}
                     </Button>
                   </li>
                 );

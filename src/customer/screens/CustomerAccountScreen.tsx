@@ -23,7 +23,6 @@ import {
   mergeCustomerProfiles,
   saveCustomerProfileToCloud,
 } from "@/lib/customerProfileCloud";
-import { signInCustomerWithApple } from "@/lib/customerAppleOAuth";
 import {
   isCustomerMarketingPushOpted,
   isCustomerMarketingPushSupported,
@@ -82,15 +81,7 @@ const CustomerAccountScreen = () => {
     effectiveStoreId ? loadLocalOrderHistory(effectiveStoreId) : loadLocalOrderHistory(),
   );
   const [orders, setOrders] = useState<PastOrder[]>([]);
-  const [loyalty, setLoyalty] = useState<{
-    stamps: number;
-    stamps_needed: number;
-    points?: number;
-    points_redeem_threshold?: number;
-    vip_tier?: string;
-    reward_ready: boolean;
-  } | null>(null);
-  const [appleSigningIn, setAppleSigningIn] = useState(false);
+  const [loyalty, setLoyalty] = useState<{ stamps: number; stamps_needed: number; reward_ready: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -99,7 +90,6 @@ const CustomerAccountScreen = () => {
   const [profileExpanded, setProfileExpanded] = useState(() => !hasCustomerProfile());
   const profileSectionRef = useRef<HTMLElement>(null);
   const ordersSectionRef = useRef<HTMLElement>(null);
-  const loyaltySectionRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef(profile);
   profileRef.current = profile;
   const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
@@ -107,14 +97,9 @@ const CustomerAccountScreen = () => {
 
   useEffect(() => {
     if (screen !== "account") return;
-    const target =
-      accountFocus === "orders"
-        ? ordersSectionRef.current
-        : accountFocus === "loyalty"
-          ? loyaltySectionRef.current
-          : profileSectionRef.current;
+    const target = accountFocus === "orders" ? ordersSectionRef.current : profileSectionRef.current;
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [screen, accountFocus, loyalty]);
+  }, [screen, accountFocus]);
 
   const reloadProfileFromDevice = () => {
     const saved = loadCustomerProfile();
@@ -644,53 +629,17 @@ const CustomerAccountScreen = () => {
         )}
 
         {loyalty && searched && (
-          <div
-            ref={loyaltySectionRef}
-            className="rounded-2xl border border-border bg-card p-4 space-y-2"
-          >
-            <div className="flex items-center gap-3">
-              <Gift className="w-8 h-8 text-primary shrink-0" />
-              <div>
-                <p className="font-black">Fidelidade</p>
-                <p className="text-sm text-muted-foreground">
-                  {loyalty.stamps} / {loyalty.stamps_needed} carimbos
-                  {loyalty.reward_ready && " · 🎁 Recompensa disponível!"}
-                </p>
-              </div>
+          <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+            <Gift className="w-8 h-8 text-primary shrink-0" />
+            <div>
+              <p className="font-black">Fidelidade</p>
+              <p className="text-sm text-muted-foreground">
+                {loyalty.stamps} / {loyalty.stamps_needed} carimbos
+                {loyalty.reward_ready && " · 🎁 Recompensa disponível!"}
+              </p>
             </div>
-            {loyalty.points != null && (
-              <p className="text-sm text-muted-foreground pl-11">
-                {loyalty.points} pontos · troque {loyalty.points_redeem_threshold ?? 500} por 5€ de desconto
-              </p>
-            )}
-            {loyalty.vip_tier && loyalty.vip_tier !== "standard" && (
-              <p className="text-xs font-bold text-primary pl-11 uppercase">
-                Cliente VIP {loyalty.vip_tier === "gold" ? "Ouro" : "Prata"}
-              </p>
-            )}
           </div>
         )}
-
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-sm font-bold mb-2">Entrar com Apple</p>
-          <p className="text-xs text-muted-foreground mb-3">
-            Guarde o histórico de pedidos na sua conta Apple (opcional).
-          </p>
-          <button
-            type="button"
-            disabled={appleSigningIn}
-            onClick={() => {
-              setAppleSigningIn(true);
-              void signInCustomerWithApple(`${window.location.origin}/?screen=account`)
-                .catch((e) => appToastError(e instanceof Error ? e.message : "Erro ao entrar"))
-                .finally(() => setAppleSigningIn(false));
-            }}
-            className="w-full h-11 rounded-xl bg-black text-white font-bold flex items-center justify-center gap-2"
-          >
-            {appleSigningIn ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Continuar com Apple
-          </button>
-        </div>
 
         {searched && orders.length === 0 && !loading && (
           <p className="text-center text-muted-foreground py-4">Nenhum pedido encontrado para este número</p>

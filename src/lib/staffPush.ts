@@ -2,10 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { subscribePushWithLogging } from "@/lib/push/pushSubscriptionCore";
 import { pushLog } from "@/lib/push/pushLogger";
-import { isNativePushAvailable, registerNativeStaffPush, unregisterNativeStaffPush } from "@/services/nativePush";
+import { isNativePushAvailable, registerNativeStaffPush, unregisterNativeStaffPush, isNativePushAvailableSync } from "@/services/nativePush";
+import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
 
 export const STAFF_PUSH_TAG = "__staff__";
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
+export const STAFF_PUSH_PROMPT_SESSION_KEY = "staff-push-prompt-shown";
 
 export {
   PUSH_HANDLER_SW_PATH,
@@ -28,6 +30,24 @@ export function setStaffPushEnabled(enabled: boolean) {
   } catch {
     /* ignore */
   }
+}
+
+export function markStaffPushPromptShown() {
+  try {
+    sessionStorage.setItem(STAFF_PUSH_PROMPT_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function shouldPromptStaffPush(): boolean {
+  try {
+    if (sessionStorage.getItem(STAFF_PUSH_PROMPT_SESSION_KEY)) return false;
+  } catch {
+    /* ignore */
+  }
+  if (isStaffPushEnabled()) return false;
+  return isStaffPushSupported();
 }
 
 export function isStaffWebPushSupported(): boolean {
@@ -53,6 +73,7 @@ export async function getStaffPushClientMode(): Promise<StaffPushClientMode> {
 }
 
 export function isStaffPushSupported(): boolean {
+  if (isCapacitorNativeSync() || isNativePushAvailableSync()) return true;
   if (typeof window !== "undefined") {
     const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
     if (cap?.isNativePlatform?.()) return true;

@@ -5,8 +5,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveOrder } from "@/customer/active-order/useActiveOrder";
 import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS, TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
-import { useSellerMode } from "@/contexts/SellerModeContext";
-import { cn } from "@/lib/utils";
 
 /**
  * Barra inferior do carrinho / pedido activo, dentro da moldura mobile (não fixed ao viewport).
@@ -16,7 +14,6 @@ const CustomerBottomDock = () => {
   const { totalItems, totalPrice } = useCart();
   const { t } = useLanguage();
   const { hasActiveOrder, displayNumber, statusLabel, trackOrder, isLoadingOrder } = useActiveOrder();
-  const seller = useSellerMode();
 
   if (TAB_BAR_VISIBLE_SCREENS.has(screen)) return null;
 
@@ -27,11 +24,7 @@ const CustomerBottomDock = () => {
 
   return (
     <div
-      className={cn(
-        "customer-bottom-dock z-50 shrink-0 border-t border-border/50 bg-background/95 px-3 pt-2 backdrop-blur-md",
-        CUSTOMER_ACTION_FOOTER_PAD_CLASS,
-        seller.active && "pb-16",
-      )}
+      className={`customer-bottom-dock shrink-0 z-50 border-t border-border/50 bg-background/95 px-3 pt-2 backdrop-blur-md ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-2">
         {showActiveOrder && (

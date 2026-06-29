@@ -11,7 +11,6 @@ import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTrackin
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
-import OrderWaitFeedbackHost from "@/customer/components/OrderWaitFeedbackHost";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
 import { updateLocalOrderHistoryStatus } from "@/lib/customerOrderHistory";
@@ -173,11 +172,6 @@ const ConfirmationScreen = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
-      <OrderWaitFeedbackHost
-        orderId={activeOrderId}
-        orderStatus={isCancelled ? "cancelled" : liveStatus}
-        orderNumber={displayNumber}
-      />
       <div
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
         style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}
@@ -278,7 +272,7 @@ const ConfirmationScreen = () => {
           {!isCancelled && liveOrder && (
             <div className="mt-6">
               <OrderDelaySupportBanner
-                storeId={storeId ?? undefined}
+                storeId={storeId}
                 status={liveOrder.status}
                 createdAt={liveOrder.created_at}
                 orderNumber={liveOrder.order_number}

@@ -4,15 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# App Store / TestFlight: cobrança real desligada; ecrã visual activo para vídeos Apple.
+# App Store: Tap to Pay desligado no JS até a Apple aprovar entitlement de produção.
 export VITE_IOS_TAP_TO_PAY_ENABLED=false
-export VITE_TAP_TO_PAY_VISUAL_DEMO=true
 
 npm run build
 npx cap sync ios
-cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
-
-bash "$ROOT/scripts/ios-patch-capacitor-config-appstore.sh"
 
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"
@@ -40,12 +36,10 @@ cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/P
 SOUND_SRC="$ROOT/public/sounds/new-order-notification.mp3"
 SOUND_DST="$ROOT/ios/App/App/staff_order_alert.caf"
 if command -v afconvert >/dev/null 2>&1 && [ -f "$SOUND_SRC" ]; then
-  afconvert "$SOUND_SRC" "$SOUND_DST" -d ima4 -f caff -v 2>/dev/null || true
+  afconvert "$SOUND_SRC" "$SOUND_DST" -d ima4 -f caff -c 1 -v 2>/dev/null || true
 fi
 
 echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
-echo "  · Package SPM: Geolocation + push (sem Tap to Pay)"
+echo "  · Package SPM: sem Stripe Terminal (App Store)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=false"
-echo "  · VITE_TAP_TO_PAY_VISUAL_DEMO=true (ecrã Apple no TestFlight até aprovação)"
-echo "  · Site: https://kebabturco.net (como build 10)"

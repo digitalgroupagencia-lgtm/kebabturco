@@ -116,10 +116,8 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, total, created_at, payment_status, store_id, stores(tenant_id, tenants(name, slug))")
+        .select("id, order_number, total, created_at, store_id, stores(tenant_id, tenants(name, slug))")
         .eq("is_test", false)
-        .eq("payment_status", "paid")
-        .neq("status", "cancelled")
         .order("created_at", { ascending: false })
         .limit(8);
       if (error) throw error;
@@ -146,7 +144,7 @@ const AdminDashboard = () => {
     activityItems.push({
       id: `order-${o.id}`,
       title: `Pedido #${o.order_number ?? ", "} · ${tenantName}`,
-      detail: `${fmtMoney(Number(o.total || 0))} · Pago`,
+      detail: fmtMoney(Number(o.total || 0)),
       time: relativeTime(String(o.created_at)),
       icon: ShoppingBag,
       tone: "success",

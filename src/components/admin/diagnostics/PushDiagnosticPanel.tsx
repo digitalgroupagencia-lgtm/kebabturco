@@ -37,7 +37,8 @@ import {
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
-import { isNativePushAvailable, getNativePushRuntimeDiagnostics } from "@/services/nativePush";
+import { Capacitor } from "@capacitor/core";
+import { isNativePushAvailable, getNativePushRuntimeDiagnostics, isNativePushAvailableSync } from "@/services/nativePush";
 import type { NativePushRuntimeDiagnostics } from "@/services/nativePush";
 import { getStaffPushClientMode } from "@/lib/staffPush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
@@ -80,7 +81,16 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
 
   const refreshProbe = useCallback(async () => {
     setRefreshing(true);
-    const native = await isNativePushAvailable();
+    const native =
+      Capacitor.isNativePlatform() || isNativePushAvailableSync() || (await isNativePushAvailable());
+    if (native) {
+      try {
+        const { initNativePushBridge } = await import("@/services/nativePush");
+        void initNativePushBridge();
+      } catch {
+        /* ignore */
+      }
+    }
     setIsNativeApp(native);
     setClientMode(await getStaffPushClientMode());
     if (native) {
@@ -236,6 +246,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
   const canSendBroadcast = Boolean(storeId) && (serverVapidOk || serverFcmOk || serverApnsOk);
   const canSendNativeSelfTest =
     isNativeApp && Boolean(storeId) && localDeviceReady && (serverApnsOk || serverFcmOk);
+  const isMobileWebRuntime =
+    !isNativeApp && typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const testStatusLabel =
     testStatus === "sending"
       ? "A enviar agora…"
@@ -299,12 +311,15 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm flex gap-2">
           <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
           <div>
-            <p className="font-semibold">Está no browser, não no app instalado</p>
+            <p className="font-semibold">
+              {isMobileWebRuntime ? "iPhone detectado, mas a ponte nativa não respondeu" : "Ambiente web detectado"}
+            </p>
             <p className="text-xs mt-1 opacity-90">
-              Para registar o iPhone da equipa, abra a <strong>app Kebab Turco</strong> instalada (App Store ou .ipa).
-              O browser do computador só regista este Chrome, não o telemóvel.
+              {isMobileWebRuntime
+                ? "Isto pode acontecer no app se a bridge do Capacitor ainda não carregou. Feche e abra a app, toque em actualizar diagnóstico e registe push outra vez."
+                : "Se está no computador, isto só regista este navegador. Para registar o iPhone da equipa, abra a app Kebab Turco instalada."}
               {clientMode === "needs-native-app"
-                ? " Detetámos telemóvel no browser, use a app instalada."
+                ? " Se abriu pelo Safari/Chrome do telemóvel, use a app instalada."
                 : ""}
             </p>
           </div>
@@ -452,11 +467,24 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
         <CardContent className="pt-4 text-sm space-y-2">
           {!isNativeApp ? (
             <div className="rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs space-y-1">
-              <p className="font-semibold text-amber-900">Está no computador, isto não regista o iPhone</p>
+              <p className="font-semibold text-amber-900">
+                {isMobileWebRuntime
+                  ? "O iPhone foi detectado, mas o app ainda não confirmou a ponte nativa"
+                  : "Ambiente web: isto não regista automaticamente o iPhone"}
+              </p>
               <p>
-                «Registar push» aqui só pede permissão ao browser do PC. Para o telemóvel: abra a <strong>app Kebab Turco</strong> no
-                iPhone → <strong>Painel → Definições</strong> → ligue <strong>Notificações push</strong> e aceite quando o iPhone
-                pedir.
+                {isMobileWebRuntime ? (
+                  <>
+                    Se esta tela está dentro do app, use <strong>Registar push</strong> para regravar o token deste iPhone na equipa.
+                    Se continuar assim, feche a app por completo e abra novamente.
+                  </>
+                ) : (
+                  <>
+                    «Registar push» aqui só pede permissão ao navegador actual. Para o telemóvel: abra a <strong>app Kebab Turco</strong> no
+                    iPhone → <strong>Painel → Definições</strong> → ligue <strong>Notificações push</strong> e aceite quando o iPhone
+                    pedir.
+                  </>
+                )}
               </p>
               {storeStaffDevices ? (
                 <p>
@@ -484,8 +512,8 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No computador, «Enviar para todos» só chega a telemóveis já registados na app. Registe primeiro no iPhone (passos
-              acima).
+              «Enviar para todos» envia para cada telemóvel já registado nesta loja — não só o seu. Para receber no
+              seu iPhone, abra a app Kebab Turco no telemóvel, vá a Definições e toque em «Registar push».
             </p>
           )}
         </CardContent>

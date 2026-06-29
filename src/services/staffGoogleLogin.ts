@@ -107,7 +107,7 @@ export async function approveStaffGooglePending(params: {
   const { data, error } = await supabase.rpc("approve_staff_google_pending", {
     _pending_id: params.pendingId,
     _role: params.role,
-    _full_name: params.fullName?.trim() || undefined,
+    _full_name: params.fullName?.trim() || null,
     _preferred_language: params.preferredLanguage || "es",
   });
   if (error) throw new Error(error.message || "Não foi possível aprovar o pedido");

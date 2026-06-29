@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Tables, Database } from "@/integrations/supabase/types";
+import type { Tables, Database, Json } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import {
   isPanelAlertsEnabled,
@@ -377,20 +377,46 @@ export function usePanelOrders(storeId: string | undefined) {
     );
 
     try {
-      const { data: updated, error } = await supabase
-        .from("orders")
-        .update(patch as never)
-        .eq("id", order.id)
-        .select()
-        .single();
+      let updated: PanelOrder | null = null;
+      let lastError: { message?: string } | null = null;
 
-      if (error || !updated) {
+      const v2Res = await supabase.rpc("update_order_status_v2", {
+        _order_id: order.id,
+        _patch: patch as Json,
+      });
+      if (!v2Res.error && v2Res.data) {
+        updated = v2Res.data as unknown as PanelOrder;
+      } else {
+        lastError = v2Res.error;
+        const rpcRes = await supabase.rpc("panel_advance_order_status" as never, {
+          _order_id: order.id,
+          _new_status: newStatus as Database["public"]["Enums"]["order_status"],
+          _estimated_ready_at: (patch.estimated_ready_at as string) ?? undefined,
+          _delivery_confirmation_code: (patch.delivery_confirmation_code as string) ?? undefined,
+        } as never);
+        if (!rpcRes.error && (rpcRes as { data?: unknown }).data) {
+          updated = (rpcRes as { data: unknown }).data as PanelOrder;
+        } else {
+          lastError = rpcRes.error ?? lastError;
+          const directRes = await supabase
+            .from("orders")
+            .update(patch as never)
+            .eq("id", order.id)
+            .select()
+            .single();
+          updated = (directRes.data as PanelOrder) ?? null;
+          lastError = directRes.error ?? lastError;
+        }
+      }
+
+      if (!updated) {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-        toast.error("Erro ao actualizar");
+        console.error("[panel] update order failed", lastError);
+        toast.error(`Erro ao actualizar: ${lastError?.message || "sem resposta"}`);
         return false;
       }
 
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...(updated as PanelOrder) } : o)));
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...updated } : o)));
       toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
       if (prevStatus === "pending") {
         acknowledgePendingOrderAlert(order.id);

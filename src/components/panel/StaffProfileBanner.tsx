@@ -5,9 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStaffT } from "@/hooks/useStaffT";
 import { nav } from "@/lib/navPaths";
 import { fetchMyStaffProfile, isStaffProfileIncomplete } from "@/services/staffProfile";
-import { fetchSellerSetupStatus } from "@/services/sellerSetupService";
 
-/** Lembra a equipa de completar nome, foto e código PIN. */
+/** Lembra a equipa de completar nome e foto, usado nos pedidos aceites. */
 export default function StaffProfileBanner() {
   const { user } = useAuth();
   const { t } = useStaffT();
@@ -20,13 +19,8 @@ export default function StaffProfileBanner() {
     }
     void (async () => {
       try {
-        const [profile, setup] = await Promise.all([
-          fetchMyStaffProfile(user.id),
-          fetchSellerSetupStatus(user.id),
-        ]);
-        setShow(
-          isStaffProfileIncomplete(profile) || !profile?.avatar_url || !setup.hasPin,
-        );
+        const profile = await fetchMyStaffProfile(user.id);
+        setShow(isStaffProfileIncomplete(profile) || !profile?.avatar_url);
       } catch {
         setShow(false);
       }

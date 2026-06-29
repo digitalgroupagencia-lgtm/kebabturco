@@ -29,7 +29,7 @@ import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import TapToPaySettingsSection from "@/components/tapToPay/TapToPaySettingsSection";
-import { isTapToPayUiAvailable } from "@/lib/tapToPayDemo";
+import { isTapToPayPlatform } from "@/lib/stripeTerminalService";
 
 const PanelSettingsPage = () => {
   const { user } = useAuth();
@@ -190,7 +190,7 @@ const PanelSettingsPage = () => {
   const [closedToday, setClosedToday] = useState(false);
   const [settingsTab, setSettingsTab] = useState("store");
 
-  const tapToPayAvailable = isTapToPayUiAvailable();
+  const tapToPayAvailable = isTapToPayPlatform();
 
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "").toLowerCase();

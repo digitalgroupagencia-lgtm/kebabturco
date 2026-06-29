@@ -33,8 +33,6 @@ import {
   GitBranch,
   Sparkles,
   Calculator,
-  Link2,
-  MapPin,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -105,9 +103,6 @@ const systemItems = [
   { title: "Guia", url: nav.admin("guide"), icon: BookOpen },
   { title: "Conversas IA", url: nav.admin("conversations"), icon: MessageSquare },
   { title: "Central White-Label", url: nav.admin("white-label"), icon: Sparkles },
-  { title: "Conexões", url: nav.admin("conexoes"), icon: Link2 },
-  { title: "Ponte PDV WGM", url: nav.admin("wgm-bridge"), icon: Link2 },
-  { title: "Demo visita", url: nav.admin("demo-visita"), icon: MapPin },
   { title: "Versão do Template", url: nav.admin("template-version"), icon: GitBranch },
   { title: "Definições", url: nav.admin("settings"), icon: Settings },
 ];

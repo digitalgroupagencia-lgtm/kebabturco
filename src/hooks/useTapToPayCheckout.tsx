@@ -1,9 +1,8 @@
 import { useCallback, useState } from "react";
-import TapToPayCheckoutSurface from "@/components/tapToPay/TapToPayCheckoutSurface";
+import TapToPayDialog from "@/components/tapToPay/TapToPayDialog";
 import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import { waitForStaffPinUiDismiss } from "@/lib/prepareTapToPayCheckout";
-import { getTapToPayUnavailableMessage } from "@/lib/stripeTerminalService";
-import { isTapToPayUiAvailable, isTapToPayVisualDemoMode } from "@/lib/tapToPayDemo";
+import { isTapToPayPlatform, getTapToPayUnavailableMessage } from "@/lib/stripeTerminalService";
 import { isTapToPayUserEnabled } from "@/lib/tapToPayPrefs";
 import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -28,11 +27,11 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
 
   const requestTapToPay = useCallback(
     async (order: TapToPayOrder) => {
-      if (!isTapToPayUiAvailable()) {
+      if (!isTapToPayPlatform()) {
         toast.error(getTapToPayUnavailableMessage());
         return false;
       }
-      if (!isTapToPayVisualDemoMode() && !isTapToPayUserEnabled()) {
+      if (!isTapToPayUserEnabled()) {
         toast.error(t("tapToPay.checkout.enable_first"));
         return false;
       }
@@ -56,7 +55,7 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
     () => (
       <>
         <StaffPinDialog />
-        <TapToPayCheckoutSurface
+        <TapToPayDialog
           open={!!tapPayOrder}
           order={tapPayOrder}
           storeId={storeId}
@@ -85,6 +84,6 @@ export function useTapToPayCheckout({ storeId, onSuccess }: Options) {
     requestTapToPay,
     requestStaffPin,
     TapToPayCheckoutDialog,
-    isTapToPayAvailable: isTapToPayUiAvailable(),
+    isTapToPayAvailable: isTapToPayPlatform(),
   };
 }

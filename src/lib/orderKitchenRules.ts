@@ -7,14 +7,9 @@ export type KitchenOrderLike = {
   status?: string | null;
   table_validated?: boolean | null;
   kitchen_printed_at?: string | null;
-  seller_id?: string | null;
 };
 
 const ONLINE_PAYMENT_METHODS = new Set(["card", "bizum", "apple_pay", "google_pay", "pix"]);
-
-function isUnpaidSellerOrder(order: KitchenOrderLike): boolean {
-  return Boolean(order.seller_id) && order.payment_status !== "paid";
-}
 
 /** Cliente abriu cartão/Bizum na app mas o Stripe ainda não confirmou o pagamento. */
 export function isAwaitingOnlinePaymentConfirmation(order: KitchenOrderLike): boolean {
@@ -27,7 +22,6 @@ export function isAwaitingOnlinePaymentConfirmation(order: KitchenOrderLike): bo
 /** Dinheiro ou balcão, deve aparecer no painel para o staff confirmar o pagamento. */
 export function isAwaitingCounterPaymentConfirmation(order: KitchenOrderLike): boolean {
   if (order.payment_status === "paid") return false;
-  if (isUnpaidSellerOrder(order)) return false;
   if (isAwaitingOnlinePaymentConfirmation(order)) return false;
   if (order.order_type === "dine_in") return false;
   return order.order_type === "takeaway" || order.order_type === "delivery";
@@ -38,15 +32,8 @@ export function isConfirmedPaidOrder(order: { payment_status?: string | null }):
   return order.payment_status === "paid";
 }
 
-export function shouldShowOrderInRestaurantPanel(
-  order: KitchenOrderLike & { is_test?: boolean | null },
-): boolean {
-  if (order.is_test) return false;
-  if (isUnpaidSellerOrder(order)) return false;
-  if (order.status === "cancelled") {
-    if (order.seller_id && order.payment_status !== "paid") return false;
-    return true;
-  }
+export function shouldShowOrderInRestaurantPanel(order: KitchenOrderLike): boolean {
+  if (order.status === "cancelled") return true;
   if (order.payment_status === "paid") return true;
   if (order.order_type === "dine_in") return true;
   if (isAwaitingOnlinePaymentConfirmation(order)) return false;
@@ -54,7 +41,6 @@ export function shouldShowOrderInRestaurantPanel(
 }
 
 export function orderReadyForKitchen(order: KitchenOrderLike): boolean {
-  if (isUnpaidSellerOrder(order)) return false;
   if (order.payment_status === "paid") return true;
   if (order.order_type === "dine_in" && order.table_validated) return true;
   return false;

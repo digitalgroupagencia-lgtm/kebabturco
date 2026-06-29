@@ -1,8 +1,5 @@
 {
-  "rewrites": [
-    { "source": "/.well-known/:path*", "destination": "/.well-known/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/index.html",

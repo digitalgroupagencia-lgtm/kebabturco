@@ -183,7 +183,6 @@ async function ensureCompanyRepresentative(
   const persons = await stripe.accounts.listPersons(accountId, { limit: 5 });
   const existing = persons.data.find((p) => p.relationship?.representative);
   const repId = intake.representative_id?.trim().toUpperCase().replace(/\s/g, "");
-  // owner_full_name = representante legal; a Stripe regista a mesma pessoa como dono e director.
   const personPayload = {
     first_name,
     last_name,
@@ -223,36 +222,18 @@ export function accountNeedsOwnerVerificationStep(acct: Stripe.Account): boolean
   return accountNeedsEmbeddedCompletionStep(acct);
 }
 
-/** Para SL espanhola: regista dono+diretor na Stripe e marca papéis como fornecidos. */
+/** Para SL espanhola: marca diretores/executivos/proprietários como fornecidos. */
 async function markCompanyRolesProvided(stripe: Stripe, accountId: string): Promise<void> {
-  await stripe.accounts.update(accountId, {
-    company: {
-      directors_provided: true,
-      executives_provided: true,
-      owners_provided: true,
-    },
-  });
-}
-
-/** Cria/atualiza a pessoa (dono + director + representante) e confirma na Stripe. */
-export async function syncCompanyLeadershipForStripe(
-  stripe: Stripe,
-  accountId: string,
-  intake: CustomIntakeRow,
-  address: Stripe.AddressParam | undefined,
-): Promise<void> {
-  await ensureCompanyRepresentative(stripe, accountId, intake, address);
-  await markCompanyRolesProvided(stripe, accountId);
-  const acct = await stripe.accounts.retrieve(accountId);
-  const company = acct.company;
-  if (
-    !company?.directors_provided ||
-    !company?.executives_provided ||
-    !company?.owners_provided
-  ) {
-    throw new Error(
-      "A Stripe ainda não registou o dono/director. Verifique NIF, DNI/NIE e data de nascimento.",
-    );
+  try {
+    await stripe.accounts.update(accountId, {
+      company: {
+        directors_provided: true,
+        executives_provided: true,
+        owners_provided: true,
+      },
+    });
+  } catch (err) {
+    console.warn("[connect] markCompanyRolesProvided failed", err);
   }
 }
 
@@ -360,7 +341,8 @@ export async function syncLiveCustomAccountFromIntake(
   }
 
   if (isCompany) {
-    await syncCompanyLeadershipForStripe(stripe, accountId, intake, address);
+    await ensureCompanyRepresentative(stripe, accountId, intake, address);
+    await markCompanyRolesProvided(stripe, accountId);
   }
 
   await attachIbanToAccount(stripe, accountId, intake, isCompany);
@@ -416,7 +398,8 @@ export async function createLiveCustomAccountFromIntake(
   }
 
   if (isCompany) {
-    await syncCompanyLeadershipForStripe(stripe, account.id, intake, address);
+    await ensureCompanyRepresentative(stripe, account.id, intake, address);
+    await markCompanyRolesProvided(stripe, account.id);
   }
 
   await attachIbanToAccount(stripe, account.id, intake, isCompany);

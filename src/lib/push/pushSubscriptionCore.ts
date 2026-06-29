@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { urlBase64ToUint8Array } from "@/lib/vapidPublicKey";
 import { probePushServiceWorker, getBrowserPushSupport } from "@/lib/push/pushServiceWorkerProbe";
@@ -154,11 +155,12 @@ export async function subscribePushWithLogging(
 
     const { error: dbErr } = await supabase.rpc("register_push_subscription", {
       _store_id: storeId,
-      _order_id: orderId ?? undefined,
-      _customer_phone: customerPhone ?? undefined,
+      _order_id: orderId,
+      _customer_phone: customerPhone,
       _endpoint: json.endpoint,
       _p256dh: json.keys.p256dh,
       _auth: json.keys.auth,
+      _device_locale: getDeviceLocaleTag(),
     });
 
     if (dbErr) {

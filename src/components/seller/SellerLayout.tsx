@@ -1,12 +1,11 @@
 import { useEffect, type ComponentType } from "react";
 import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { Loader2, Home, Table as TableIcon, ListOrdered, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import SellerOnboardingGate from "@/components/seller/SellerOnboardingGate";
+import TapToPayStaffBootstrap from "@/components/tapToPay/TapToPayStaffBootstrap";
 import { nav } from "@/lib/navPaths";
 
 type Props = {
@@ -19,7 +18,6 @@ const SellerLayout = ({ page: Page }: Props) => {
   const { enabled: sellerEnabled, isLoading: flagLoading } = useSellerModuleEnabled(roleData?.tenant_id);
   const navigate = useNavigate();
   const location = useLocation();
-  const isMenuRoute = location.pathname.replace(/\/+$/, "").endsWith("/seller/new");
 
   useEffect(() => {
     if (!loading && !user) navigate(nav.staff(), { replace: true });
@@ -53,25 +51,18 @@ const SellerLayout = ({ page: Page }: Props) => {
   }
 
   return (
-    <SellerOnboardingGate userId={user.id}>
-    <div className="flex h-[100dvh] w-full max-w-full flex-col overflow-hidden bg-background">
-      {!isMenuRoute && (
-        <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between border-b border-border bg-card/95 px-3 backdrop-blur">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="text-sm font-black text-primary">Kebab Turco · Vendedor</span>
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => void signOut("/staff")} aria-label="Sair">
-            <LogOut className="w-4 h-4" />
-          </Button>
-        </header>
-      )}
+    <div className="min-h-[100dvh] w-full bg-background flex flex-col max-w-full overflow-x-hidden">
+      <header className="sticky top-0 z-30 h-12 px-3 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-black text-primary text-sm">Kebab Turco · Vendedor</span>
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => void signOut("/staff")} aria-label="Sair">
+          <LogOut className="w-4 h-4" />
+        </Button>
+      </header>
 
-      <main
-        className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-x-hidden",
-          isMenuRoute ? "h-full overflow-hidden" : "overflow-y-auto pb-20",
-        )}
-      >
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
+        <TapToPayStaffBootstrap storeId={roleData?.store_id ?? undefined} />
         {Page ? <Page /> : <Outlet />}
       </main>
 
@@ -93,7 +84,6 @@ const SellerLayout = ({ page: Page }: Props) => {
         ))}
       </nav>
     </div>
-    </SellerOnboardingGate>
   );
 };
 

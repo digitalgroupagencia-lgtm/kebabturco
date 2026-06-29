@@ -193,35 +193,16 @@ workflows:
       - name: Criar pacote para a App Store
         script: bash scripts/codemagic-ios-appstore-build.sh
 
-      - name: Enviar para Apple automaticamente (sem Transporter no Mac)
-        script: bash scripts/codemagic-upload-appstore.sh
-
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild-build-ipa.log
 
-    # Upload feito no passo acima (logs claros). Não usar post-processing do TestFlight
-    # (submit_to_testflight) — isso gerava «finished with post-processing failed» mesmo com
-    # o .ipa válido. A build chega ao TestFlight e à loja assim que a Apple processar.
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
 
     # Alternativa sem Transporter no Mac: o Codemagic envia directo para a Apple.
-
-  kebabturco-ios-submit-review:
-    name: Kebab Turco — Enviar 1.1.2 para revisão Apple
-    max_build_duration: 30
-    instance_type: mac_mini_m2
-
-    integrations:
-      app_store_connect: kebabturco
-
-    environment:
-      vars:
-        IOS_APP_STORE_VERSION: "1.1.2"
-      node: 22
-
-    scripts:
-      - name: Enviar versão 1.1.2 para revisão da App Store
-        script: bash scripts/codemagic-submit-appstore-review.sh
 
   kebabturco-android-playstore:
     name: Kebab Turco — Android Google Play 1.2

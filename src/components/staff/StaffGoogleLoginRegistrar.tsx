@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
 import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
@@ -23,11 +23,11 @@ export default function StaffGoogleLoginRegistrar() {
   const { user, loading } = useAuth();
   const { storeId, loading: storeLoading } = useStaffLoginStore();
   const location = useLocation();
-  const navigate = useNavigate();
   const inflightRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (loading || storeLoading || !user) return;
+    if (!location.pathname.startsWith(nav.staff())) return;
     if (!userSignedInWithGoogle(user) && !hasStaffGoogleLoginIntent()) return;
 
     const dedupeKey = `${user.id}:${storeId ?? "pending-store"}`;
@@ -40,26 +40,19 @@ export default function StaffGoogleLoginRegistrar() {
         const alreadyAtStore =
           (await userHasRoleAtStore(user.id, resolvedStoreId)) ||
           (await userHasAnyStaffRole(user.id));
-        if (!alreadyAtStore) {
-          await registerStaffGoogleLoginWithRetry(resolvedStoreId);
+        if (alreadyAtStore) {
+          consumeStaffGoogleLoginIntent();
+          return;
         }
+        await registerStaffGoogleLoginWithRetry(resolvedStoreId);
         consumeStaffGoogleLoginIntent();
-        // After Google OAuth lands on "/", bounce the staff member to /staff so the
-        // approval/pending screen mounts and the manager sees the pending request.
-        if (!location.pathname.startsWith(nav.staff())) {
-          let next: string | null = null;
-          try { next = sessionStorage.getItem("kebab-staff-google-next"); } catch { /* ignore */ }
-          try { sessionStorage.removeItem("kebab-staff-google-next"); } catch { /* ignore */ }
-          const target = next && next.startsWith("/") ? next : nav.staff();
-          navigate(target, { replace: true });
-        }
       } catch (err) {
         console.error("[staff-google] register failed", err);
       } finally {
         if (inflightRef.current === dedupeKey) inflightRef.current = null;
       }
     })();
-  }, [loading, storeLoading, user, storeId, location.pathname, navigate]);
+  }, [loading, storeLoading, user, storeId, location.pathname]);
 
   return null;
 }

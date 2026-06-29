@@ -343,44 +343,6 @@ const translations: Translations = {
     es: "Hola, mi pedido lleva mucho tiempo en espera. ¿Pueden ayudar?",
     fr: "Bonjour, ma commande attend depuis longtemps. Pouvez-vous aider?",
   },
-  waitFeedbackTitle: {
-    pt: "Quer dizer-nos algo?",
-    en: "Anything to tell us?",
-    es: "¿Algo que quieras decirnos?",
-    fr: "Quelque chose à nous dire ?",
-  },
-  waitFeedbackBody: {
-    pt: "Enquanto espera o pedido, pode enviar sugestões, ideias de melhoria ou uma reclamação. Só a equipa do restaurante vê.",
-    en: "While you wait, you can send suggestions, improvement ideas or a complaint. Only the restaurant team will see it.",
-    es: "Mientras esperas, puedes enviar sugerencias, ideas de mejora o una reclamación. Solo lo verá el equipo del restaurante.",
-    fr: "En attendant, vous pouvez envoyer des suggestions, idées ou une réclamation. Seule l'équipe du restaurant verra.",
-  },
-  waitFeedbackPlaceholder: {
-    pt: "Ex.: mais molho, demorou a confirmar, ideia para o menu…",
-    en: "E.g. more sauce, slow to confirm, menu idea…",
-    es: "Ej.: más salsa, tardó en confirmar, idea para el menú…",
-    fr: "Ex. : plus de sauce, confirmation lente, idée menu…",
-  },
-  waitFeedbackNotNow: { pt: "Agora não", en: "Not now", es: "Ahora no", fr: "Pas maintenant" },
-  waitFeedbackSend: { pt: "Enviar", en: "Send", es: "Enviar", fr: "Envoyer" },
-  waitFeedbackThanks: {
-    pt: "Obrigado! A nossa equipa vai ler.",
-    en: "Thanks! Our team will read it.",
-    es: "¡Gracias! Lo leerá nuestro equipo.",
-    fr: "Merci ! Notre équipe lira votre message.",
-  },
-  waitFeedbackError: {
-    pt: "Não foi possível enviar. Tente outra vez.",
-    en: "Could not send. Please try again.",
-    es: "No se pudo enviar. Inténtalo de nuevo.",
-    fr: "Envoi impossible. Réessayez.",
-  },
-  waitFeedbackTooShort: {
-    pt: "Escreva pelo menos algumas palavras",
-    en: "Write at least a few words",
-    es: "Escribe al menos unas palabras",
-    fr: "Écrivez au moins quelques mots",
-  },
   orderNumber: { pt: "Número do pedido", en: "Order number", es: "Número de pedido", fr: "Numéro de commande" },
   estimatedTime: { pt: "Tempo estimado", en: "Estimated time", es: "Tiempo estimado", fr: "Temps estimé" },
   minutes: { pt: "minutos", en: "minutes", es: "minutos", fr: "minutes" },
@@ -693,9 +655,6 @@ const translations: Translations = {
   enterPhone: { pt: "Indique seu telefone", en: "Enter your phone", es: "Indica tu teléfono", fr: "Entrez votre téléphone" },
   // Finalize modal
   finalizeOrder: { pt: "Finalizar pedido", en: "Finalize order", es: "Finalizar pedido", fr: "Finaliser la commande" },
-  couponLabel: { pt: "Cupão", en: "Coupon", es: "Cupón", fr: "Code promo" },
-  couponApply: { pt: "Aplicar", en: "Apply", es: "Aplicar", fr: "Appliquer" },
-  couponApplied: { pt: "desconto aplicado", en: "discount applied", es: "descuento aplicado", fr: "réduction appliquée" },
   send: { pt: "Enviar", en: "Send", es: "Enviar", fr: "Envoyer" },
   finalizeHint: {
     pt: "Informe os dados para concluir o pedido.",
@@ -985,18 +944,6 @@ const translations: Translations = {
     en: "Opening camera…",
     es: "Abriendo la cámara…",
     fr: "Ouverture de la caméra…",
-  },
-  mesaQrTapToStart: {
-    pt: "Toque para activar a câmara",
-    en: "Tap to enable the camera",
-    es: "Toca para activar la cámara",
-    fr: "Touchez pour activer la caméra",
-  },
-  mesaQrRetryCamera: {
-    pt: "Tentar câmara de novo",
-    en: "Try camera again",
-    es: "Reintentar cámara",
-    fr: "Réessayer la caméra",
   },
   mesaQrScanning: {
     pt: "Aponte para o código na mesa",

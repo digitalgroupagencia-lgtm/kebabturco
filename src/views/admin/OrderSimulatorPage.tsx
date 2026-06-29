@@ -137,7 +137,7 @@ export default function OrderSimulatorPage() {
   const handleCleanup = async () => {
     if (!confirm("Apagar TODOS os pedidos de teste? Esta acção não pode ser desfeita.")) return;
     setBusy("cleanup");
-    const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId || undefined, _older_than: undefined });
+    const { data, error } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId || null, _older_than: null });
     setBusy(null);
     if (error) {
       toast.error(error.message);
@@ -148,7 +148,7 @@ export default function OrderSimulatorPage() {
 
   const refreshDiag = async () => {
     setBusy("diag");
-    const { data, error } = await supabase.rpc("admin_print_jobs_diagnostic", { _store_id: storeId || undefined });
+    const { data, error } = await supabase.rpc("admin_print_jobs_diagnostic", { _store_id: storeId || null });
     setBusy(null);
     if (error) { toast.error(error.message); return; }
     setDiag(data);
@@ -157,7 +157,7 @@ export default function OrderSimulatorPage() {
   const clearJobs = async (statuses: string[], label: string) => {
     if (!confirm(`Apagar todos os print_jobs com status: ${statuses.join(", ")}?`)) return;
     setBusy("clear");
-    const { data, error } = await supabase.rpc("admin_clear_print_jobs", { _store_id: storeId || undefined, _statuses: statuses });
+    const { data, error } = await supabase.rpc("admin_clear_print_jobs", { _store_id: storeId || null, _statuses: statuses });
     setBusy(null);
     if (error) { toast.error(error.message); return; }
     toast.success(`${(data as any)?.deleted ?? 0} jobs (${label}) removidos`);
@@ -166,7 +166,7 @@ export default function OrderSimulatorPage() {
 
   const requeueJobs = async () => {
     setBusy("requeue");
-    const { data, error } = await supabase.rpc("admin_requeue_print_jobs", { _store_id: storeId || undefined });
+    const { data, error } = await supabase.rpc("admin_requeue_print_jobs", { _store_id: storeId || null });
     setBusy(null);
     if (error) { toast.error(error.message); return; }
     toast.success(`${(data as any)?.requeued ?? 0} jobs reenfileirados`);
@@ -236,7 +236,7 @@ export default function OrderSimulatorPage() {
 
       // Step 6: Cleanup
       setStep("cleanup", "running");
-      const { data: d6, error: e6 } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: undefined });
+      const { data: d6, error: e6 } = await supabase.rpc("cleanup_test_orders", { _store_id: storeId, _older_than: null });
       if (e6) { setStep("cleanup", "fail", e6.message); return; }
       setStep("cleanup", "ok", `${(d6 as any)?.deleted ?? 0} pedidos teste removidos`);
 

@@ -41,16 +41,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Permite "ping" anónimo para sondas de saúde (rpcProbeUtils/backendReadinessProbe)
-    // sem disparar 401 ruidoso quando o utilizador está deslogado.
-    const earlyBody = req.method === "POST" ? await req.clone().json().catch(() => ({})) : {};
-    if (earlyBody && (earlyBody.ping === true || earlyBody.probe === true)) {
-      return new Response(
-        JSON.stringify({ ok: true, service: "operational-diagnostics" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Autenticação necessária" }), {

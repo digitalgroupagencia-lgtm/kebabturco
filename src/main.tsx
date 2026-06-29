@@ -6,12 +6,6 @@ import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
-import { initGoogleAnalytics } from "./lib/googleAnalytics";
-import { markCapacitorNativeRuntime, startCapacitorNativeBootstrap } from "./lib/capacitorRuntime";
-import { hydrateAuthStorageBeforeBoot } from "./integrations/supabase/client";
-
-markCapacitorNativeRuntime();
-startCapacitorNativeBootstrap();
 
 function renderFatalBootError(message: string): void {
   const root = document.getElementById("root");
@@ -87,40 +81,13 @@ const rootEl = document.getElementById("root");
 if (!rootEl) {
   showBootError("Página incompleta. Tente novamente.");
 } else {
-  let started = false;
-  const bootApp = () => {
-    if (started) return;
-    started = true;
-    window.clearTimeout(bootTimeout);
+  try {
+    createRoot(rootEl).render(<App />);
     if (isStaffAppPath()) {
-      applyStaffAppChrome();
-    } else {
-      applyBrowserChromeColor();
+      dismissBootShell();
     }
-    try {
-      createRoot(rootEl).render(<App />);
-      if (isStaffAppPath()) {
-        dismissBootShell();
-      }
-    } catch (error) {
-      console.error("[boot]", error);
-      showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
-    }
-  };
-
-  const bootTimeout = window.setTimeout(bootApp, 2500);
-
-  void hydrateAuthStorageBeforeBoot()
-    .catch(() => undefined)
-    .then(async () => {
-      try {
-        const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
-        if (await isNativePushAvailable()) {
-          void initNativePushBridge();
-        }
-      } catch {
-        /* ignore */
-      }
-      bootApp();
-    });
+  } catch (error) {
+    console.error("[boot]", error);
+    showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
+  }
 }

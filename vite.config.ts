@@ -163,7 +163,11 @@ export default defineConfig(({ mode }) => {
         manualChunks(id: string) {
           if (!id.includes("/src/")) return undefined;
 
-          // Área interna
+          if (id.includes("/src/lib/internalRoutes")) {
+            return "internal";
+          }
+
+          // Área interna (painel, admin, equipa…)
           if (
             id.includes("/src/views/admin/") ||
             id.includes("/src/views/panel/") ||

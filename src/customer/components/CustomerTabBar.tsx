@@ -20,7 +20,7 @@ const CustomerTabBar = () => {
     if (screen === "home") return "home";
     if (screen === "review") return "cart";
     if (screen === "tracking") return "orders";
-    if (screen === "account") return accountFocus === "orders" ? "orders" : "account";
+    if (screen === "account") return accountFocus === "profile" ? "account" : "orders";
     return "home";
   })();
 
@@ -115,7 +115,7 @@ const CustomerTabBar = () => {
               </span>
               <span
                 className={`max-w-[72px] truncate text-[9px] font-bold leading-none ${
-                  active ? "text-accent-readable" : "text-muted-foreground"
+                  active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 {label}

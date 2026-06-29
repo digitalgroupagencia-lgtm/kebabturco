@@ -4,7 +4,7 @@ import { applyBrowserChromeColor, applyStaffAppChrome } from "@/lib/brandTokens"
 import { isStaffAppPath } from "@/lib/appRouteKind";
 import { dismissBootShell } from "@/lib/bootShell";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
-import { setNativeOrientation } from "@/services/nativeOrientation";
+import { setAndroidOrientation } from "@/services/androidOrientation";
 
 /** Mantém a cor do topo correcta ao navegar entre site do cliente e admin/painel. */
 export default function AppChromeEffect() {
@@ -22,10 +22,10 @@ export default function AppChromeEffect() {
         pathname.startsWith("/panel") ||
         pathname.startsWith("/admin") ||
         pathname.startsWith("/kds");
-      void setNativeOrientation(isWideStaff ? "landscape" : "portrait");
+      void setAndroidOrientation(isWideStaff ? "landscape" : "portrait");
     } else {
       applyBrowserChromeColor();
-      void setNativeOrientation("portrait");
+      void setAndroidOrientation("portrait");
     }
   }, [pathname]);
 

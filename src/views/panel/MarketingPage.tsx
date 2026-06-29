@@ -47,11 +47,6 @@ import {
 } from "@/lib/marketing/marketingService";
 import { sendMarketingBroadcast } from "@/lib/diagnostics/campaignPushService";
 import { sendBroadcastTestPushNotification } from "@/lib/push/pushTestService";
-import MarketingFunnelPanel from "@/components/marketing/MarketingFunnelPanel";
-import {
-  fetchMarketingProductOptions,
-  presetUsesFeaturedProduct,
-} from "@/lib/marketing/marketingProductPicker";
 import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
 import MarketingSuggestionCard from "@/components/marketing/MarketingSuggestionCard";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
@@ -92,7 +87,6 @@ const MarketingPage = () => {
   const [winbackHintKeys, setWinbackHintKeys] = useState<Set<string>>(new Set());
   const [couponByCode, setCouponByCode] = useState<Record<string, CouponRow | null>>({});
   const [couponValidByCode, setCouponValidByCode] = useState<Record<string, boolean>>({});
-  const [productLabelById, setProductLabelById] = useState<Record<string, string>>({});
   const [suggestionBusy, setSuggestionBusy] = useState<string | null>(null);
 
   const [broadcastTitle, setBroadcastTitle] = useState("");
@@ -128,12 +122,10 @@ const MarketingPage = () => {
       setSubscribers(subs);
       setActiveCount(active);
       setHistory(hist);
-      const products = await fetchMarketingProductOptions(storeId, uiLang);
-      setProductLabelById(Object.fromEntries(products.map((p) => [p.id, p.label])));
     } catch {
       /* keep current UI */
     }
-  }, [storeId, tenantId, uiLang]);
+  }, [storeId, tenantId]);
 
   const load = useCallback(async () => {
     if (!storeId || !tenantId) return;
@@ -189,13 +181,10 @@ const MarketingPage = () => {
       );
       setCouponByCode(couponMap);
       setCouponValidByCode(validMap);
-
-      const products = await fetchMarketingProductOptions(storeId, uiLang);
-      setProductLabelById(Object.fromEntries(products.map((p) => [p.id, p.label])));
     } finally {
       setLoading(false);
     }
-  }, [storeId, tenantId, uiLang]);
+  }, [storeId, tenantId]);
 
   useEffect(() => {
     void load();
@@ -487,7 +476,6 @@ const MarketingPage = () => {
         </TabsList>
 
         <TabsContent value="home" className="space-y-3 mt-4">
-          <MarketingFunnelPanel storeId={storeId} />
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: t("marketing.stat.subscribers"), value: subscribers, icon: Radio },
@@ -571,10 +559,6 @@ const MarketingPage = () => {
                   couponCode={preset.suggestCoupon}
                   couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
                   mandatory={true}
-                  usesFeaturedProduct={presetUsesFeaturedProduct(preset.variables)}
-                  featuredProductLabel={
-                    row?.linked_product_id ? productLabelById[row.linked_product_id] ?? null : null
-                  }
                   onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
                   onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
                   onEdit={row ? () => setEditCampaign({ preset, campaign: row }) : undefined}
@@ -600,10 +584,6 @@ const MarketingPage = () => {
                   couponCode={preset.suggestCoupon}
                   couponReady={preset.suggestCoupon ? couponValidByCode[preset.suggestCoupon] : undefined}
                   mandatory={false}
-                  usesFeaturedProduct={presetUsesFeaturedProduct(preset.variables)}
-                  featuredProductLabel={
-                    row?.linked_product_id ? productLabelById[row.linked_product_id] ?? null : null
-                  }
                   onToggle={row ? (v) => void handleToggle(preset.key, row, v) : undefined}
                   onTestTeam={row ? () => void handleCampaignTestTeam(preset.key, row) : undefined}
                   onEdit={row ? () => setEditCampaign({ preset, campaign: row }) : undefined}
@@ -699,7 +679,6 @@ const MarketingPage = () => {
           }}
           preset={editCampaign.preset}
           campaign={editCampaign.campaign}
-          storeId={storeId ?? ""}
           onSaved={() => void refreshQuiet()}
         />
       )}

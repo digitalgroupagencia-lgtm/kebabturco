@@ -5,16 +5,13 @@ const MOBILE_BREAKPOINT = 768;
 function readIsMobile(): boolean {
   if (typeof window === "undefined") return false;
   const staffWide = document.documentElement.classList.contains("staff-landscape-layout");
-  const cssRotated = document.body.classList.contains("fp-rotate");
-  const effectiveWidth = cssRotated ? window.innerHeight : window.innerWidth;
-  const effectiveHeight = cssRotated ? window.innerWidth : window.innerHeight;
-  const landscape = effectiveWidth > effectiveHeight;
+  const landscape = window.innerWidth > window.innerHeight;
   if (staffWide && landscape) return false;
-  return effectiveWidth < MOBILE_BREAKPOINT;
+  return window.innerWidth < MOBILE_BREAKPOINT;
 }
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean>(() => readIsMobile());
+  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
 
   React.useEffect(() => {
     const onChange = () => setIsMobile(readIsMobile());
@@ -27,5 +24,5 @@ export function useIsMobile() {
     };
   }, []);
 
-  return isMobile;
+  return !!isMobile;
 }

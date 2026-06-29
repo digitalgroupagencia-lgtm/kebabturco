@@ -4,7 +4,6 @@ import {
   isAwaitingCounterPaymentConfirmation,
   isAwaitingOnlinePaymentConfirmation,
   isConfirmedPaidOrder,
-  orderReadyForKitchen,
   shouldShowOrderInRestaurantPanel,
 } from "./orderKitchenRules";
 
@@ -50,28 +49,5 @@ describe("orderKitchenRules", () => {
     };
     expect(shouldShowOrderInRestaurantPanel(paidBizum)).toBe(true);
     expect(isAwaitingOnlinePaymentConfirmation(paidBizum)).toBe(false);
-  });
-
-  it("hides unpaid seller orders until payment is confirmed", () => {
-    const sellerPending = {
-      order_type: "takeaway",
-      payment_status: "pending",
-      seller_id: "seller-uuid",
-      status: "pending",
-    };
-    expect(shouldShowOrderInRestaurantPanel(sellerPending)).toBe(false);
-    expect(orderReadyForKitchen(sellerPending)).toBe(false);
-    expect(isAwaitingCounterPaymentConfirmation(sellerPending)).toBe(false);
-  });
-
-  it("shows seller orders after payment confirmed", () => {
-    const sellerPaid = {
-      order_type: "takeaway",
-      payment_status: "paid",
-      seller_id: "seller-uuid",
-      status: "pending",
-    };
-    expect(shouldShowOrderInRestaurantPanel(sellerPaid)).toBe(true);
-    expect(orderReadyForKitchen(sellerPaid)).toBe(true);
   });
 });

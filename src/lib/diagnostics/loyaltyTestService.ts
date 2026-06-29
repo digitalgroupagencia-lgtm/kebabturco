@@ -83,7 +83,7 @@ export async function addTestLoyaltyStamp(storeId: string, phone: string) {
   const { data, error } = await supabase.rpc("add_loyalty_stamp", {
     _store_id: storeId,
     _phone: phone.trim(),
-    _customer_id: undefined,
+    _customer_id: null,
   });
   if (error) {
     log("stamp", "error", error.message);

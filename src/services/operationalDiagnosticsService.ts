@@ -102,9 +102,6 @@ export async function fetchServerOperationalDiagnostics(storeId: string | null):
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;
-    // Revalida que a sessão é aceite pelo servidor (evita 401 ruidoso após logout/refresh).
-    const { data: userCheck, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userCheck?.user) return null;
     const { data, error } = await supabase.functions.invoke("operational-diagnostics", {
       body: { storeId },
     });
