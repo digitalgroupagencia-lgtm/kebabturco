@@ -39,7 +39,7 @@ function pushField(bucket: LocalizedField[], value: LocalizedField) {
 }
 
 export function collectMenuCatalogFields(
-  categories: Pick<Category, "name">[],
+  categories: Pick<Category, "name">[] | Array<{ name: Category["name"] } & Record<string, unknown>>,
   products: MenuProduct[],
 ): LocalizedField[] {
   const fields: LocalizedField[] = [];
