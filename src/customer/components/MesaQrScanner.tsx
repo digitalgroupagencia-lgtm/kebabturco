@@ -41,35 +41,43 @@ const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
         const scanner = new Html5Qrcode(elementId, { verbose: false });
         scannerRef.current = scanner;
 
-        const cameras = await Html5Qrcode.getCameras();
-        if (!cameras.length) {
-          if (!cancelled) setStatus("unsupported");
-          return;
+        const scanConfig = {
+          fps: 12,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.72;
+            return { width: size, height: size };
+          },
+          aspectRatio: 1,
+        };
+        const onSuccess = (decoded: string) => {
+          if (handledRef.current) return;
+          handledRef.current = true;
+          onDetected(decoded);
+          void scanner.stop().catch(() => {});
+        };
+        const onFrame = () => {
+          /* scan frame, sem leitura ainda */
+        };
+
+        let started = false;
+        try {
+          // iPhone/Safari costuma responder melhor com facingMode direto.
+          await scanner.start({ facingMode: "environment" }, scanConfig, onSuccess, onFrame);
+          started = true;
+        } catch {
+          started = false;
         }
 
-        const backCamera =
-          cameras.find((c) => /back|rear|environment|trás|trasera/i.test(c.label)) ?? cameras[cameras.length - 1];
-
-        await scanner.start(
-          backCamera.id,
-          {
-            fps: 12,
-            qrbox: (viewfinderWidth, viewfinderHeight) => {
-              const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.72;
-              return { width: size, height: size };
-            },
-            aspectRatio: 1,
-          },
-          (decoded) => {
-            if (handledRef.current) return;
-            handledRef.current = true;
-            onDetected(decoded);
-            void scanner.stop().catch(() => {});
-          },
-          () => {
-            /* scan frame, sem leitura ainda */
-          },
-        );
+        if (!started) {
+          const cameras = await Html5Qrcode.getCameras();
+          if (!cameras.length) {
+            if (!cancelled) setStatus("unsupported");
+            return;
+          }
+          const backCamera =
+            cameras.find((c) => /back|rear|environment|trás|trasera/i.test(c.label)) ?? cameras[cameras.length - 1];
+          await scanner.start(backCamera.id, scanConfig, onSuccess, onFrame);
+        }
 
         if (!cancelled) setStatus("live");
       } catch {
