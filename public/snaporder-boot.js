@@ -3,6 +3,17 @@
   var appSrc = bootScript && bootScript.getAttribute("data-app-src");
   if (!appSrc) return;
 
+  function showBootLoading() {
+    var el = document.getElementById("boot-fallback");
+    if (!el || el.dataset.loading === "1") return;
+    el.dataset.loading = "1";
+    el.innerHTML =
+      '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#fff;background:#5F0504">' +
+      '<p style="font-size:18px;font-weight:700;margin:0 0 12px">Kebab Turco</p>' +
+      '<p style="font-size:14px;opacity:0.85;margin:0">A abrir…</p>' +
+      "</div>";
+  }
+
   function showBootError(message) {
     var el = document.getElementById("boot-fallback");
     if (!el) return;
@@ -91,19 +102,32 @@
     return Promise.all(tasks).catch(function () {});
   }
 
+  function bootShellVisible() {
+    var el = document.getElementById("boot-fallback");
+    return !!(el && el.dataset.dismissed !== "1" && el.parentNode);
+  }
+
   function scheduleBootTimeout(ms) {
     if (window.__SNAPORDER_BOOT_TIMEOUT__) {
       window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
     }
     window.__SNAPORDER_BOOT_TIMEOUT__ = window.setTimeout(function () {
-      if (!window.__SNAPORDER_APP_READY__) {
+      if (bootShellVisible()) {
         showBootError("A app está a demorar a abrir. Toque em Actualizar.");
       }
     }, ms);
   }
 
   function bootTimeoutMs() {
-    return isLovableEditorHost() ? 120000 : 30000;
+    if (isLovableEditorHost()) return 120000;
+    if (isCapacitorNative()) return 120000;
+    return 45000;
+  }
+
+  function renderTimeoutMs() {
+    if (isCapacitorNative()) return 90000;
+    if (isLovableEditorHost()) return 90000;
+    return 25000;
   }
 
   function loadApp() {
@@ -113,6 +137,7 @@
     }
 
     window.__SNAPORDER_MAIN__ = appSrc;
+    showBootLoading();
 
     if (isStandalone()) {
       document.documentElement.classList.add("pwa-standalone");
@@ -128,13 +153,13 @@
       showBootError("Não foi possível abrir o menu. Toque em Actualizar.");
     };
     script.onload = function () {
-      if (window.__SNAPORDER_APP_READY__) {
+      if (!bootShellVisible()) {
         if (window.__SNAPORDER_BOOT_TIMEOUT__) {
           window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
         }
         return;
       }
-      scheduleBootTimeout(isLovableEditorHost() ? 90000 : 20000);
+      scheduleBootTimeout(renderTimeoutMs());
     };
     document.body.appendChild(script);
 
