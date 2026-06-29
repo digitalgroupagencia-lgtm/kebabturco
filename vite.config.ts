@@ -178,6 +178,8 @@ export default defineConfig(({ mode }) => {
          * cacheado, e o fluxo de venda fica protegido.
          */
         manualChunks(id: string) {
+          // iPhone/TestFlight: keep default chunking to avoid circular preload traps.
+          if (iosBundleWeb) return undefined;
           if (!id.includes("/src/")) return undefined;
 
           if (id.includes("/src/lib/internalRoutes")) {

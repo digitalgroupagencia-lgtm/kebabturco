@@ -36,7 +36,13 @@ if (typeof window !== "undefined") {
     }
   };
   markStandalone();
-  window.matchMedia("(display-mode: standalone)").addEventListener("change", markStandalone);
+  const mql = window.matchMedia("(display-mode: standalone)");
+  // iOS WebView can expose only addListener/removeListener.
+  if (typeof mql.addEventListener === "function") {
+    mql.addEventListener("change", markStandalone);
+  } else if (typeof mql.addListener === "function") {
+    mql.addListener(markStandalone);
+  }
 }
 
 function showBootError(message: string) {
