@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import CustomerNotificationOptInDialog from "@/customer/components/CustomerNotificationOptInDialog";
+import StaffPushOptInDialog from "@/components/staff/StaffPushOptInDialog";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { shouldPromptStaffPush } from "@/lib/staffPush";
 
@@ -20,10 +20,9 @@ const StaffPushPromptHost = () => {
   if (!storeId) return null;
 
   return (
-    <CustomerNotificationOptInDialog
+    <StaffPushOptInDialog
       open={open}
       storeId={storeId}
-      audience="staff"
       onOpenChange={setOpen}
     />
   );
