@@ -143,6 +143,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return p as Screen;
     }
 
+    const isRootCustomerEntry = window.location.pathname === "/" && !orderParam;
+    if (isRootCustomerEntry) {
+      return "language";
+    }
+
     if (orderParam || stored?.orderId) {
       const urlScreen = readCustomerScreenFromUrl();
       if (urlScreen === "cashPending" || p === "cashPending") return "cashPending";

@@ -45,13 +45,15 @@
   function isCapacitorNative() {
     try {
       var cap = window.Capacitor;
-      return !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+      if (cap && cap.isNativePlatform && cap.isNativePlatform()) return true;
+      return /KebabTurcoCapacitor/i.test(window.navigator && window.navigator.userAgent || "");
     } catch (e) {
       return false;
     }
   }
 
-  function shouldKeepSw(reg) {
+  function shouldKeepSw(reg, preservePush) {
+    if (!preservePush) return false;
     try {
       var url =
         (reg.active && reg.active.scriptURL) ||
@@ -64,14 +66,14 @@
     }
   }
 
-  function purgeCaches() {
+  function purgeCaches(preservePush) {
     var tasks = [];
     if ("serviceWorker" in navigator) {
       tasks.push(
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           return Promise.all(
             regs.map(function (r) {
-              return shouldKeepSw(r) ? Promise.resolve() : r.unregister();
+              return shouldKeepSw(r, preservePush) ? Promise.resolve() : r.unregister();
             }),
           );
         }),
@@ -89,6 +91,16 @@
       );
     }
     return Promise.all(tasks).catch(function () {});
+  }
+
+  function withBootCacheBust(src) {
+    try {
+      var build = document.querySelector('meta[name="app-build-id"]');
+      var token = build && build.getAttribute("content") || String(Date.now());
+      return src + (src.indexOf("?") === -1 ? "?" : "&") + "boot=" + encodeURIComponent(token);
+    } catch (e) {
+      return src;
+    }
   }
 
   function scheduleBootTimeout(ms) {
@@ -120,7 +132,7 @@
 
     var script = document.createElement("script");
     script.type = "module";
-    script.src = appSrc;
+    script.src = withBootCacheBust(appSrc);
     script.onerror = function () {
       if (window.__SNAPORDER_BOOT_TIMEOUT__) {
         window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
@@ -141,10 +153,23 @@
     scheduleBootTimeout(bootTimeoutMs());
   }
 
-  if (isLovableEditorHost() || isCapacitorNative()) {
+  function loadAfterPurge(preservePush, timeoutMs) {
+    var loaded = false;
+    function once() {
+      if (loaded) return;
+      loaded = true;
+      loadApp();
+    }
+    window.setTimeout(once, timeoutMs || 2500);
+    purgeCaches(preservePush).then(once).catch(once);
+  }
+
+  if (isLovableEditorHost()) {
     loadApp();
+  } else if (isCapacitorNative()) {
+    // No IPA/TestFlight não pode existir Service Worker antigo do PWA a servir bundles/cache antigos.
+    loadAfterPurge(false, 2000);
   } else {
-    loadApp();
-    purgeCaches();
+    loadAfterPurge(true, 1200);
   }
 })();

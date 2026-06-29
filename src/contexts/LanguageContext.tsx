@@ -1022,7 +1022,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const resolved = useResolvedStore();
   const storeId = storeIdProp ?? resolved.storeId ?? "";
   const [primaryLang, setPrimaryLang] = useState<Lang>("es");
-  const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
+  const [activeLangs, setActiveLangs] = useState<Lang[]>(["es", "pt", "en", "fr"]);
   const [langsReady, setLangsReady] = useState(false);
   const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
   const [lang, setLangState] = useState<Lang>(() => getEmbedLang() ?? loadSavedLang() ?? "es");
@@ -1042,11 +1042,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
 
   useEffect(() => {
     if (!storeId) {
-      setLangsReady(false);
+      setLangsReady(true);
       return;
     }
     let alive = true;
     setLangsReady(false);
+    const emergencyReady = window.setTimeout(() => {
+      if (alive) setLangsReady(true);
+    }, 2200);
     (async () => {
       try {
         const { data } = await supabase
@@ -1068,12 +1071,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
           const remembered = loadSavedLang();
           setLang(fromEmbed ?? fromQr ?? remembered ?? primary);
         }
+      } catch (err) {
+        console.warn("[LanguageProvider] language config fallback", err);
       } finally {
+        window.clearTimeout(emergencyReady);
         if (alive) setLangsReady(true);
       }
     })();
     return () => {
       alive = false;
+      window.clearTimeout(emergencyReady);
     };
   }, [storeId]);
 

@@ -127,16 +127,21 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
 
   const load = useCallback(async () => {
     if (!storeId) { setLoading(false); return; }
-    const { data } = await supabase
-      .from("company_settings")
-      .select("*")
-      .eq("store_id", storeId)
-      .maybeSingle();
-    if (data) {
-      setSettings(data);
-      setDraftOverride(null);
+    try {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("*")
+        .eq("store_id", storeId)
+        .maybeSingle();
+      if (data) {
+        setSettings(data);
+        setDraftOverride(null);
+      }
+    } catch (err) {
+      console.warn("[BrandingContext] settings fallback", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [storeId]);
 
   useEffect(() => {
@@ -145,6 +150,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
       return;
     }
     setLoading(true);
+    const emergencyReady = window.setTimeout(() => setLoading(false), 2200);
     load();
     let bumpTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
@@ -161,6 +167,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
       )
       .subscribe();
     return () => {
+      window.clearTimeout(emergencyReady);
       if (bumpTimer) clearTimeout(bumpTimer);
       supabase.removeChannel(channel);
     };
