@@ -21,6 +21,11 @@ type PrintParams = {
   total: number;
   subtotal: number;
   notes?: string;
+  deliveryAddress?: string | null;
+  customerOrderType?: string;
+  mesaValidated?: boolean;
+  settings?: unknown;
+  companyName?: string;
 };
 
 export async function printVisitDemoOrder(_params: PrintParams): Promise<void> {
