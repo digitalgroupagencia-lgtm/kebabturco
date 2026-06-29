@@ -30,11 +30,7 @@ const FORBIDDEN_PLUGINS = [
   "PreferencesPlugin",
 ];
 
-if (Array.isArray(cfg.packageClassList)) {
-  cfg.packageClassList = cfg.packageClassList.filter((name) => SAFE_PLUGINS.has(name));
-} else {
-  cfg.packageClassList = [...SAFE_PLUGINS];
-}
+cfg.packageClassList = [...SAFE_PLUGINS];
 
 for (const bad of FORBIDDEN_PLUGINS) {
   if (cfg.packageClassList.includes(bad)) {
