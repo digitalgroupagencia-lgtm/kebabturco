@@ -92,6 +92,7 @@ if (!rootEl) {
 } else {
   try {
     createRoot(rootEl).render(<App />);
+    appMounted = true;
     if (isStaffAppPath()) {
       dismissBootShell();
     }
