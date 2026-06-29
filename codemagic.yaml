@@ -164,6 +164,8 @@ workflows:
       branch_patterns:
         - pattern: main
           include: true
+        - pattern: restore-build-10
+          include: true
 
     scripts:
       - name: Confirmar Xcode 26 (obrigatório para Capacitor 8)
@@ -180,6 +182,9 @@ workflows:
 
       - name: Instalar dependências
         script: npm ci
+
+      - name: Número de build único (Apple)
+        script: bash scripts/codemagic-bump-ios-build.sh
 
       - name: Compilar site + sincronizar iPhone
         script: bash scripts/sync-ios-for-release.sh
