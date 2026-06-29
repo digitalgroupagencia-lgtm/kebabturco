@@ -21,13 +21,14 @@ function clearRotateClasses() {
   document.body.style.removeProperty("--fl-h");
 }
 
-/** Painel/admin em telemóvel vertical → rotação CSS horizontal. Staff/login ficam verticais. */
+/** Painel/admin em telemóvel vertical → rotação CSS horizontal (só no browser; no app nativo usa lock nativo). */
 function resolveRotateMode(
   _portraitLock: boolean,
   landscapeLock: boolean,
   w: number,
   h: number,
 ): RotateMode {
+  if (isCapacitorNativeSync()) return "none";
   if (landscapeLock && h > w) return "fp";
   return "none";
 }

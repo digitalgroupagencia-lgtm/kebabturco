@@ -7,10 +7,11 @@ import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 import { initGoogleAnalytics } from "./lib/googleAnalytics";
-import { markCapacitorNativeRuntime } from "./lib/capacitorRuntime";
+import { markCapacitorNativeRuntime, startCapacitorNativeBootstrap } from "./lib/capacitorRuntime";
 import { hydrateAuthStorageBeforeBoot } from "./integrations/supabase/client";
 
 markCapacitorNativeRuntime();
+startCapacitorNativeBootstrap();
 
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
@@ -79,8 +80,9 @@ if (!rootEl) {
     .catch(() => undefined)
     .then(async () => {
       try {
-        const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
-        if (await isNativePushAvailable()) {
+        const { initNativePushBridge } = await import("./services/nativePush");
+        const { waitForCapacitorNative } = await import("./lib/capacitorRuntime");
+        if (await waitForCapacitorNative(6000)) {
           void initNativePushBridge();
         }
       } catch {

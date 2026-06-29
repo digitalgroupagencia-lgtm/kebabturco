@@ -1,7 +1,8 @@
 import { Capacitor } from "@capacitor/core";
-import { isCapacitorNativeSync, markCapacitorNativeRuntime } from "@/lib/capacitorRuntime";
+import { isCapacitorNativeSync, markCapacitorNativeRuntime, startCapacitorNativeBootstrap } from "@/lib/capacitorRuntime";
 
 markCapacitorNativeRuntime();
+startCapacitorNativeBootstrap();
 
 /** App instalada da loja (iPhone/Android), não mostrar botões de download. */
 export function isNativeApp(): boolean {

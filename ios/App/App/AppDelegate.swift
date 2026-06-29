@@ -7,6 +7,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            ApnsTokenStore.shared.injectNativeRuntimeMarker()
+        }
         return true
     }
 
@@ -25,10 +28,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
+        ApnsTokenStore.shared.injectNativeRuntimeMarker()
         ApnsTokenStore.shared.redeliverToJavaScript()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        ApnsTokenStore.shared.injectNativeRuntimeMarker()
         ApnsTokenStore.shared.redeliverToJavaScript()
     }
 

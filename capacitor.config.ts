@@ -29,6 +29,11 @@ const config: CapacitorConfig = {
           allowNavigation: serverAllowNavigation,
         },
       }),
+  ios: {
+    contentInset: "automatic",
+    allowsLinkPreview: false,
+    appendUserAgent: "KebabTurcoCapacitor",
+  },
   android: {
     allowMixedContent: true,
   },
