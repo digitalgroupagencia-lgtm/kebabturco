@@ -195,7 +195,7 @@
     loadApp();
   } else if (isCapacitorNative()) {
     // No IPA/TestFlight não pode existir Service Worker antigo do PWA a servir bundles/cache antigos.
-    loadAfterPurge(false, 3500, true);
+    loadAfterPurge(false, 8000, true);
   } else {
     loadAfterPurge(true, 1200, false);
   }
