@@ -98,6 +98,7 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				W001CP011FED79650016851F /* Copy Capacitor Web Assets */,
 			);
 			buildRules = (
 			);
@@ -154,7 +155,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
-				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
@@ -165,6 +165,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		W001CP011FED79650016851F /* Copy Capacitor Web Assets */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Capacitor Web Assets";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/public/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nWEB_SRC=\"${PROJECT_DIR}/App/public\"\nWEB_DST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/public\"\nif [ ! -f \"${WEB_SRC}/index.html\" ]; then\n  echo \"ERRO: falta ${WEB_SRC}/index.html\"\n  exit 1\nfi\nrm -rf \"${WEB_DST}\"\nditto \"${WEB_SRC}\" \"${WEB_DST}\"\necho \"✓ Menu embutido copiado para o pacote ($(du -sk \"${WEB_DST}\" | awk '{print $1}')KB)\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		504EC3001FED79650016851F /* Sources */ = {
