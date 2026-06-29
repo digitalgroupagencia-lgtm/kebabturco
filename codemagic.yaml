@@ -166,6 +166,8 @@ workflows:
           include: true
         - pattern: restore-build-10
           include: true
+        - pattern: ios/diag-build-*
+          include: true
 
     scripts:
       - name: Confirmar Xcode 26 (obrigatório para Capacitor 8)

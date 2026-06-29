@@ -15,14 +15,14 @@ if ! grep -q 'kebabturco.net' "$CFG"; then
   exit 1
 fi
 
-for bad in StripeTerminalPlugin TcpSocketPlugin GeolocationPlugin; do
+for bad in StripeTerminalPlugin TcpSocketPlugin GeolocationPlugin ApnsTokenBridgePlugin; do
   if grep -q "$bad" "$CFG"; then
     echo "ERRO: plugin proibido no IPA: $bad"
     exit 1
   fi
 done
 
-for required in KeepAwakePlugin AppPlugin PushNotificationsPlugin ScreenOrientationPlugin ApnsTokenBridgePlugin; do
+for required in KeepAwakePlugin AppPlugin PushNotificationsPlugin ScreenOrientationPlugin; do
   if ! grep -q "$required" "$CFG"; then
     echo "ERRO: falta plugin obrigatório: $required"
     exit 1

@@ -15,19 +15,19 @@ const path = require("path");
 const cfgPath = path.join(process.cwd(), "ios/App/App/capacitor.config.json");
 const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
 
-const SAFE_PLUGINS = new Set([
+const SAFE_PLUGINS = [
   "KeepAwakePlugin",
   "AppPlugin",
   "PushNotificationsPlugin",
   "ScreenOrientationPlugin",
-  "ApnsTokenBridgePlugin",
-]);
+];
 
 const FORBIDDEN_PLUGINS = [
   "StripeTerminalPlugin",
   "TcpSocketPlugin",
   "GeolocationPlugin",
   "PreferencesPlugin",
+  "ApnsTokenBridgePlugin",
 ];
 
 cfg.packageClassList = [...SAFE_PLUGINS];
@@ -55,8 +55,16 @@ cfg.server = {
   ],
 };
 
+// Build diagnóstico (TestFlight): B/C/D marcados no IPA.
+const diagBuild = process.env.IOS_DIAG_BUILD || "";
+if (diagBuild) {
+  cfg.ios = cfg.ios || {};
+  cfg.ios.diagnosticBuild = diagBuild;
+}
+
 fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, "\t") + "\n");
 console.log("✓ capacitor.config.json App Store: site remoto (build 10)");
+if (diagBuild) console.log("  diagnosticBuild:", diagBuild);
 console.log("  server.url:", cfg.server.url);
 console.log("  packageClassList:", cfg.packageClassList.join(", "));
 NODE
