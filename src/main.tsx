@@ -52,22 +52,16 @@ const rootEl = document.getElementById("root");
 if (!rootEl) {
   showBootError("Página incompleta. Tente novamente.");
 } else {
-  void hydrateAuthStorageBeforeBoot().then(async () => {
-    try {
-      const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
-      if (await isNativePushAvailable()) {
-        void initNativePushBridge();
-      }
-    } catch {
-      /* ignore */
-    }
-
+  let started = false;
+  const bootApp = () => {
+    if (started) return;
+    started = true;
+    window.clearTimeout(bootTimeout);
     if (isStaffAppPath()) {
       applyStaffAppChrome();
     } else {
       applyBrowserChromeColor();
     }
-
     try {
       createRoot(rootEl).render(<App />);
       if (isStaffAppPath()) {
@@ -77,5 +71,21 @@ if (!rootEl) {
       console.error("[boot]", error);
       showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
     }
-  });
+  };
+
+  const bootTimeout = window.setTimeout(bootApp, 2500);
+
+  void hydrateAuthStorageBeforeBoot()
+    .catch(() => undefined)
+    .then(async () => {
+      try {
+        const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
+        if (await isNativePushAvailable()) {
+          void initNativePushBridge();
+        }
+      } catch {
+        /* ignore */
+      }
+      bootApp();
+    });
 }
