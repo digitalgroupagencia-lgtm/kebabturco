@@ -97,6 +97,8 @@ final class ApnsTokenStore {
             completion(status)
         }
     }
+
+    func requestPushAuthorization(completion: @escaping (String) -> Void) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .authorized, .provisional, .ephemeral:
@@ -123,7 +125,7 @@ final class ApnsTokenStore {
         }
     }
 
-    func requestPushAuthorization(completion: @escaping (String) -> Void) {
+    private func deliverToJavaScript(token: String) {
         retryWorkItem?.cancel()
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
