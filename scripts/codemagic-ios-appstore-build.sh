@@ -16,6 +16,7 @@ xcode-project use-profiles \
   --archive-method app-store
 
 bash "$ROOT/scripts/ios-verify-appstore-profile-push.sh"
+bash "$ROOT/scripts/ios-verify-appstore-capacitor-config.sh"
 
 echo "=== Criar IPA ==="
 xcode-project build-ipa \

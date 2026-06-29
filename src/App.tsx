@@ -92,7 +92,10 @@ const App = () => {
   useEffect(() => {
     void startAndroidPrintListener();
     void enableTabletKeepAwake();
-    void initNativePushBridge();
+    const t = window.setTimeout(() => {
+      void initNativePushBridge();
+    }, 3000);
+    return () => window.clearTimeout(t);
   }, []);
 
   return (
