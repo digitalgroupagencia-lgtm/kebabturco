@@ -142,7 +142,10 @@ const HomeScreen = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+    <div
+      className="flex h-full min-h-0 flex-col overflow-hidden"
+      style={{ backgroundColor: "var(--browser-chrome-hex, #3A0205)" }}
+    >
       {!shouldHideHeader() && (
       <header
         className="sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
@@ -186,7 +189,7 @@ const HomeScreen = () => {
       </header>
       )}
 
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-1 overflow-hidden min-h-0 bg-background">
         <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
           <div className="flex flex-col gap-2 px-2 py-2">
             {allCategories.map((category) => {
@@ -213,7 +216,7 @@ const HomeScreen = () => {
                   </div>
                   <span
                     className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-0.5 ${
-                      isActive ? "text-primary" : "text-foreground"
+                      isActive ? "text-primary dark:text-white" : "text-foreground"
                     }`}
                   >
                     {tProduct(category.name)}
@@ -227,7 +230,7 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
+        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-none bg-background md:scrollbar-thin">
           {/* Banner e título rolam com os produtos, liberta espaço vertical com a barra inferior */}
           <div className="px-3 pt-2">
             <PromoBannerCarousel />

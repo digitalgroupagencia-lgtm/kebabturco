@@ -58,7 +58,7 @@ const CustomerTabBar = () => {
 
   return (
     <nav
-      className={`customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
+      className={`customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)] overscroll-none ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
       aria-label={t("navHome")}
     >
       {showActiveOrderBanner && (
@@ -115,7 +115,7 @@ const CustomerTabBar = () => {
               </span>
               <span
                 className={`max-w-[72px] truncate text-[9px] font-bold leading-none ${
-                  active ? "text-primary" : "text-muted-foreground"
+                  active ? "text-primary dark:text-white" : "text-muted-foreground"
                 }`}
               >
                 {label}
