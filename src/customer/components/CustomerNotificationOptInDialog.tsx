@@ -10,10 +10,6 @@ import {
   markCustomerMarketingPromptShown,
   subscribeCustomerMarketingPush,
 } from "@/lib/customerMarketingPush";
-import {
-  markStaffPushPromptShown,
-  subscribeStaffPush,
-} from "@/lib/staffPush";
 import { initNativePushBridge } from "@/services/nativePush";
 
 type Props = {
@@ -135,8 +131,11 @@ const CustomerNotificationOptInDialog = ({
   ];
 
   const handleLater = () => {
-    if (audience === "staff") markStaffPushPromptShown();
-    else markCustomerMarketingPromptShown();
+    if (audience === "staff") {
+      void import("@/lib/staffPush").then(({ markStaffPushPromptShown }) => markStaffPushPromptShown());
+    } else {
+      markCustomerMarketingPromptShown();
+    }
     onOpenChange(false);
   };
 
@@ -150,6 +149,7 @@ const CustomerNotificationOptInDialog = ({
       await initNativePushBridge();
 
       if (audience === "staff") {
+        const { subscribeStaffPush, markStaffPushPromptShown } = await import("@/lib/staffPush");
         const result = await subscribeStaffPush(storeId);
         markStaffPushPromptShown();
         if (result.ok) {
