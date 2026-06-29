@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
+import { ScreenOrientation, type OrientationLockType } from "@capacitor/screen-orientation";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import {
   isLandscapeLockedPath,
@@ -19,15 +21,14 @@ function clearRotateClasses() {
   document.body.style.removeProperty("--fl-h");
 }
 
-/** Totem em landscape físico → CSS vertical; painel admin em portrait → CSS horizontal. */
+/** Painel/admin em telemóvel vertical → rotação CSS horizontal. Staff/login ficam verticais. */
 function resolveRotateMode(
-  portraitLock: boolean,
+  _portraitLock: boolean,
   landscapeLock: boolean,
   w: number,
   h: number,
 ): RotateMode {
   if (landscapeLock && h > w) return "fp";
-  if (portraitLock && w > h && w >= 600) return "fp";
   return "none";
 }
 
@@ -37,6 +38,26 @@ function applyRotateMode(mode: RotateMode, w: number, h: number) {
   document.body.style.setProperty("--fp-w", `${w}px`);
   document.body.style.setProperty("--fp-h", `${h}px`);
   document.body.classList.add("fp-rotate");
+}
+
+async function lockNativeOrientation(mode: "portrait" | "landscape" | "any") {
+  if (!Capacitor.isNativePlatform() && !isCapacitorNativeSync()) return;
+  if (Capacitor.isPluginAvailable("ScreenOrientation")) {
+    try {
+      if (mode === "any") {
+        await ScreenOrientation.unlock();
+      } else {
+        const orientation: OrientationLockType = mode === "landscape" ? "landscape-primary" : "portrait-primary";
+        await ScreenOrientation.lock({ orientation });
+      }
+      return;
+    } catch {
+      /* fallback abaixo */
+    }
+  }
+  if (mode !== "any") {
+    await setNativeOrientation(mode);
+  }
 }
 
 /**
@@ -49,7 +70,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
   const landscapeLock = isLandscapeLockedPath(pathname);
   const activeModeRef = useRef<RotateMode>("none");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const html = document.documentElement;
     const inEditor = isLovableEditorPreview();
 
@@ -65,12 +86,12 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     };
 
     if (!portraitLock && !landscapeLock) {
+      void lockNativeOrientation("any");
       try {
         screen.orientation?.unlock?.();
       } catch {
         /* noop */
       }
-      void setNativeOrientation("unspecified");
       cleanupRotate();
       return () => {
         html.classList.remove("staff-landscape-layout");
@@ -87,16 +108,18 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     }
 
     const lockMode = landscapeLock ? "landscape" : "portrait";
-    if (isCapacitorNativeSync()) {
-      void setNativeOrientation(lockMode);
-    }
+    const requestNativeLock = () => void lockNativeOrientation(lockMode);
+    requestNativeLock();
+    const relockTimers = [120, 450, 1000].map((ms) => window.setTimeout(requestNativeLock, ms));
+
     try {
-    const orientation = screen.orientation as ScreenOrientation & {
-      lock?: (orientation: string) => Promise<void>;
-    };
-    const lock = orientation.lock;
+      const orientation = screen.orientation as globalThis.ScreenOrientation & {
+        lock?: (orientation: OrientationLockType) => Promise<void>;
+      };
+      const lock = orientation.lock;
       if (typeof lock === "function") {
-        lock.call(orientation, lockMode).catch(() => {
+        const browserMode: OrientationLockType = landscapeLock ? "landscape-primary" : "portrait-primary";
+        lock.call(orientation, browserMode).catch(() => {
           /* utilizador deve rodar o aparelho */
         });
       }
@@ -109,7 +132,10 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       const h = window.innerHeight;
       const nextMode = resolveRotateMode(portraitLock, landscapeLock, w, h);
 
-      if (nextMode === activeModeRef.current) return;
+      if (nextMode === activeModeRef.current) {
+        if (nextMode !== "none") applyRotateMode(nextMode, w, h);
+        return;
+      }
 
       activeModeRef.current = nextMode;
       applyRotateMode(nextMode, w, h);
@@ -122,14 +148,23 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(apply);
     };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        requestNativeLock();
+        onResize();
+      }
+    };
 
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelAnimationFrame(raf);
+      relockTimers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
       html.classList.remove("staff-landscape-layout");
       cleanupRotate();
       try {
@@ -137,6 +172,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       } catch {
         /* noop */
       }
+      void lockNativeOrientation("any");
     };
   }, [pathname, portraitLock, landscapeLock]);
 }

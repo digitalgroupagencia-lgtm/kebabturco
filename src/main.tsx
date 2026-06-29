@@ -8,7 +8,7 @@ import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 import { initGoogleAnalytics } from "./lib/googleAnalytics";
 import { markCapacitorNativeRuntime } from "./lib/capacitorRuntime";
-import { hydrateAuthStorageBeforeBoot } from "./integrations/supabase/authStorage";
+import { hydrateAuthStorageBeforeBoot } from "./integrations/supabase/client";
 
 markCapacitorNativeRuntime();
 

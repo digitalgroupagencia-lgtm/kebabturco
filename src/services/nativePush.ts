@@ -16,6 +16,7 @@ const REGISTER_POLL_MS = 400;
 type NativeAvailability = {
   isNative: boolean;
   platform: "android" | "ios" | "web";
+  source?: "capacitor" | "apns-token" | "cached-token";
 };
 
 type NativePushPermission = "granted" | "denied" | "prompt" | "unknown";
@@ -58,7 +59,7 @@ function logNative(
   pushLog("staff", "native_register", level, message, details);
 }
 
-function getCapacitorAvailabilitySync(): NativeAvailability | null {
+function getCapacitorBridgeAvailabilitySync(): NativeAvailability | null {
   if (typeof window === "undefined") return null;
   if (isCapacitorNativeSync()) {
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -70,19 +71,39 @@ function getCapacitorAvailabilitySync(): NativeAvailability | null {
   }).Capacitor;
   if (!cap?.isNativePlatform?.()) return null;
   const platform = (cap.getPlatform?.() ?? "web") as "android" | "ios" | "web";
-  return { isNative: true, platform };
+  return { isNative: true, platform, source: "capacitor" };
+}
+
+async function getCapacitorBridgeAvailability(): Promise<NativeAvailability | null> {
+  const sync = getCapacitorBridgeAvailabilitySync();
+  if (sync) return sync;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) return null;
+    const platform = Capacitor.getPlatform() as "android" | "ios" | "web";
+    return { isNative: true, platform, source: "capacitor" };
+  } catch {
+    return null;
+  }
+}
+
+function getNativeTokenSignalAvailability(): NativeAvailability | null {
+  if (typeof window === "undefined") return null;
+  if (readWindowInjectedApnsToken()) return { isNative: true, platform: "ios", source: "apns-token" };
+  if (readCachedNativePushToken()) return { isNative: true, platform: "ios", source: "cached-token" };
+  return null;
+}
+
+function getCapacitorAvailabilitySync(): NativeAvailability | null {
+  return getCapacitorBridgeAvailabilitySync() ?? getNativeTokenSignalAvailability();
 }
 
 async function getCapacitorAvailability(): Promise<NativeAvailability> {
   const sync = getCapacitorAvailabilitySync();
   if (sync) return sync;
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    const platform = Capacitor.getPlatform() as "android" | "ios" | "web";
-    return { isNative: Capacitor.isNativePlatform(), platform };
-  } catch {
-    return { isNative: false, platform: "web" };
-  }
+  const bridge = await getCapacitorBridgeAvailability();
+  if (bridge) return bridge;
+  return getNativeTokenSignalAvailability() ?? { isNative: false, platform: "web" };
 }
 
 export async function isNativePushAvailable(): Promise<boolean> {
@@ -120,6 +141,9 @@ export function clearCachedNativePushToken(): void {
 
 export async function getNativePushPermission(): Promise<NativePushPermission> {
   if (!(await isNativePushAvailable())) return "unknown";
+  if (!(await getCapacitorBridgeAvailability())) {
+    return readCachedNativePushToken() || readWindowInjectedApnsToken() ? "granted" : "unknown";
+  }
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
     const perm = await PushNotifications.checkPermissions();
@@ -458,18 +482,29 @@ async function refreshNativePushTokenIfNeeded(): Promise<void> {
 }
 
 export async function initNativePushBridge(): Promise<void> {
+  hookApnsTokenInjectionEvent();
+
   if (!(await isNativePushAvailable())) return;
   if (bridgeInitPromise) return bridgeInitPromise;
 
   bridgeInitPromise = (async () => {
     if (bridgeReady) return;
-    const { platform } = await getCapacitorAvailability();
-    logNative("info", "A iniciar bridge push nativo", { platform });
+    const { platform, source } = await getCapacitorAvailability();
+    const capacitorBridge = await getCapacitorBridgeAvailability();
+    logNative("info", "A iniciar bridge push nativo", { platform, source, capacitorBridge: Boolean(capacitorBridge) });
 
-    hookApnsTokenInjectionEvent();
     const bridgeToken = await fetchTokenFromNativeBridge();
     if (bridgeToken) {
       rememberNativeToken(bridgeToken);
+    }
+
+    if (!capacitorBridge) {
+      // Em alguns builds iOS com site remoto, a WebView mantém o token APNs injectado pelo AppDelegate,
+      // mas o runtime JS do Capacitor pode chegar tarde ou não expor a bridge. Nessa situação ainda é
+      // seguro registar o token já autorizado no backend, em vez de mostrar falsamente "computador/browser".
+      bridgeReady = true;
+      await hookNativePushAppResume();
+      return;
     }
 
     const { PushNotifications } = await import("@capacitor/push-notifications");
@@ -514,6 +549,14 @@ async function requestNativePermission(): Promise<{
   granted: boolean;
   receive: string;
 }> {
+  if (!(await getCapacitorBridgeAvailability())) {
+    const token = readCachedNativePushToken() ?? readWindowInjectedApnsToken();
+    if (token) {
+      rememberNativeToken(token);
+      return { granted: true, receive: "granted" };
+    }
+    return { granted: false, receive: "native-bridge-unavailable" };
+  }
   const { PushNotifications } = await import("@capacitor/push-notifications");
   const perm = await PushNotifications.checkPermissions();
   logNative("info", "checkPermissions", { receive: perm.receive });
@@ -545,6 +588,14 @@ export async function requestNativePushPermissionOnly(): Promise<{
 }
 
 async function triggerRegisterWithRetries(platform: "ios" | "android"): Promise<void> {
+  if (!(await getCapacitorBridgeAvailability())) {
+    const token = readCachedNativePushToken() ?? readWindowInjectedApnsToken();
+    if (token) {
+      rememberNativeToken(token);
+      return;
+    }
+    throw new Error("A ponte nativa do iPhone não ficou disponível para pedir um novo token.");
+  }
   const { PushNotifications } = await import("@capacitor/push-notifications");
   if (platform === "ios") {
     await sleep(600);

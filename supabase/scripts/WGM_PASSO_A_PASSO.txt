@@ -6,12 +6,33 @@ PASSO 1 — Supabase do PDV (Flow Operations / WGM)
    • Troca demo por Kebab Turco
    • Cria chaves de ligação
    • Mostra tabela com IDs das lojas Gandia e Playa
-   • GUARDE: WGM_INTEGRATION_API_KEY e WGM_INBOUND_WEBHOOK_SECRET (aparecem em NOTICE)
+   • Moeda Euro (se a base tiver coluna moeda/currency)
 
-PASSO 2 — Lovable do Kebab → Secrets
-   WGM_INTEGRATION_API_KEY = (valor do passo 1)
-   WGM_INBOUND_WEBHOOK_SECRET = (valor do passo 1)
-   Publish no Lovable (Kebab)
+Se o painel ainda mostrar R$ em vez de €:
+   Corra no PDV: WGM_PDV_MOEDA_EUR.sql
+   Actualize a página (F5)
+   Nota: o ecrã «Clientes / Faturamento» ainda pode mostrar R$ — é um bug visual
+   desse ecrã no projeto Flow Operations (falta corrigir no Lovable do WGM).
+
+Se aparecerem «Cliente Demo», valores estranhos ou MODO DEMO:
+   Corra no PDV: WGM_PDV_LIMPAR_DEMO.sql
+   Ou no painel: Configurações → Dados de Teste → Limpar dados de teste
+   Pedidos reais só entram quando alguém paga na app Kebab.
+
+Se a chave wg_ NÃO aparecer após o passo 1:
+   Corra no PDV: WGM_PDV_CRIAR_API_KEY.sql
+   Copie o valor wg_... que aparece nos resultados
+
+PASSO 2 — Lovable do KEBAB (Secrets + Publish)
+   WGM_INTEGRATION_API_KEY = chave wg_... (do passo 1 ou CRIAR_API_KEY)
+   WGM_INBOUND_WEBHOOK_SECRET = webhook_secret (consulta no PDV abaixo)
+   Publish no Lovable (Kebab) — OBRIGATÓRIO para publicar os servidores:
+     wgm-sync-dispatch e wgm-inbound-webhook (Cloud → Edge functions)
+
+   Consulta webhook no PDV (SQL Editor):
+   SELECT webhook_secret FROM proprioapp_webhook_config c
+   JOIN companies co ON co.id = c.company_id
+   WHERE co.slug = 'kebab-turco' LIMIT 1;
 
 PASSO 3 — Supabase do KEBAB (não do PDV)
    a) Se ainda não correu: APLICAR_WGM_INTEGRACAO.sql (só uma vez)
@@ -30,6 +51,12 @@ PASSO 4 — Admin do Kebab (opcional se o SQL já ligou)
 PASSO 5 — Teste
    Faça um pedido de teste pago na app
    No PDV: Pedidos & Vendas → deve aparecer com origem app
+
+Se o PDV mostrar 0 € / sem pedidos reais:
+   A ponte NÃO envia histórico sozinha — só pedidos novos quando ficam pagos.
+   No KEBAB: KEBAB_DIAGNOSTICO_PONTE_WGM.sql (ver fila e erros)
+   No KEBAB: KEBAB_REENVIAR_PEDIDOS_PDV.sql (reenviar pedidos pagos antigos)
+   Admin Kebab → Ponte PDV WGM → Processar fila pendente
 
 Scripts antigos (substituídos pelo completo no PDV):
    WGM_SETUP_NEXUSOPS.sql + WGM_TROCAR_DEMO_POR_KEBAB.sql

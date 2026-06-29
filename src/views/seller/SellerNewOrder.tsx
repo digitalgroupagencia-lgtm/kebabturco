@@ -8,9 +8,14 @@ import { SellerModeProvider } from "@/contexts/SellerModeContext";
 import CustomerIndex from "@/customer/Index";
 
 const SellerNewOrder = () => {
-  const { userId, fullName } = useSellerContext();
+  const { userId, fullName, storeId, loading } = useSellerContext();
+
+  if (loading || !userId || !storeId) {
+    return <PageSpinner />;
+  }
+
   return (
-    <SellerModeProvider sellerId={userId ?? null} sellerName={fullName ?? "Vendedor"}>
+    <SellerModeProvider sellerId={userId} sellerName={fullName ?? "Vendedor"}>
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <CustomerIndex />
       </div>

@@ -1,0 +1,31 @@
+=============================================================================
+COLAR NO CHAT DO LOVABLE — projeto KEBAB TURCO SNAPORDER
+=============================================================================
+
+As edge functions wgm-sync-dispatch e wgm-inbound-webhook existem no código
+(supabase/functions/) mas NÃO aparecem em Cloud → Edge functions e o teste
+na página /admin/wgm-bridge dá "Failed to send a request to the Edge Function".
+
+Por favor:
+
+1. Faz deploy / publica no Supabase deste projeto as edge functions:
+   - wgm-sync-dispatch  (com dependências _shared/wgmOrderPayload.ts e wgmStatusMap.ts)
+   - wgm-inbound-webhook
+
+2. Confirma em config.toml:
+   [functions.wgm-sync-dispatch]
+   verify_jwt = false
+   [functions.wgm-inbound-webhook]
+   verify_jwt = false
+
+3. Garante que os secrets já configurados estão activos após deploy:
+   - WGM_INTEGRATION_API_KEY
+   - WGM_INBOUND_WEBHOOK_SECRET
+
+4. Depois do deploy, a URL deve responder:
+   GET https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/wgm-sync-dispatch
+   → {"ok":true,"service":"wgm-sync-dispatch"}
+
+Não alteres a lógica de pedidos nem pagamentos — só publica estas duas funções.
+
+=============================================================================

@@ -61,6 +61,30 @@ BEGIN
     updated_at = now()
   WHERE id = v_company_id;
 
+  -- Localização Espanha / Euro
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'company_localization'
+  ) THEN
+    INSERT INTO public.company_localization (
+      company_id, country_code, currency_code, language_code, timezone,
+      fiscal_profile_code, formato_data, formato_numero
+    )
+    VALUES (
+      v_company_id, 'ES', 'EUR', 'es-ES', 'Europe/Madrid',
+      'ES_VERIFACTU', 'DD/MM/YYYY', 'es-ES'
+    )
+    ON CONFLICT (company_id) DO UPDATE SET
+      country_code = 'ES',
+      currency_code = 'EUR',
+      language_code = 'es-ES',
+      timezone = 'Europe/Madrid',
+      fiscal_profile_code = 'ES_VERIFACTU',
+      formato_data = 'DD/MM/YYYY',
+      formato_numero = 'es-ES',
+      updated_at = now();
+  END IF;
+
   SELECT array_agg(id ORDER BY created_at)
   INTO v_stores
   FROM public.stores

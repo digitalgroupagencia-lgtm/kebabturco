@@ -1,0 +1,26 @@
+=============================================================================
+COPIAR E COLAR NO CHAT DO LOVABLE — projeto FLOW OPERATIONS (não o Kebab)
+=============================================================================
+
+O ecrã «Clientes e Faturamento» mostra sempre R$ mesmo quando a empresa
+está configurada em euro (company_localization.currency_code = EUR).
+
+Corrigir:
+
+1) Na página AdminClientes.tsx
+   - Deixar de usar «R$» fixo em todos os sítios.
+   - Quando abro um cliente, carregar company_localization (currency_code,
+     formato_numero) dessa empresa.
+   - Formatar valores com Intl.NumberFormat usando a moeda da empresa
+     (EUR → €, es-ES para Kebab Turco).
+
+2) Na página FinanceiroGeral.tsx
+   - Substituir fmtBRL fixo por formatação que lê a moeda da empresa logada
+     em company_localization.
+
+3) No cabeçalho do painel (receita do dia) se também usar R$ fixo, usar a
+   mesma lógica.
+
+Depois de alterar: Publish no Lovable do Flow Operations.
+
+=============================================================================
