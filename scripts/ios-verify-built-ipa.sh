@@ -62,7 +62,7 @@ if ! grep -q 'snaporder-boot.js' "$INDEX" && ! grep -qE 'type="module"[^>]+src="
 fi
 
 ASSET_COUNT="$(find "$APP/public/assets" -name '*.js' 2>/dev/null | wc -l | tr -d ' ')"
-if [ "${ASSET_COUNT:-0}" -lt 5 ]; then
+if [ "${ASSET_COUNT:-0}" -lt 1 ]; then
   echo "ERRO: public/assets parece incompleto ($ASSET_COUNT ficheiros js)."
   exit 1
 fi

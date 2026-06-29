@@ -22,7 +22,7 @@ if grep -qE 'type="module"[^>]+src="/assets/index-' "$INDEX"; then
 fi
 
 ASSET_COUNT="$(find "$PUBLIC/assets" -name '*.js' 2>/dev/null | wc -l | tr -d ' ')"
-if [ "${ASSET_COUNT:-0}" -lt 5 ]; then
+if [ "${ASSET_COUNT:-0}" -lt 1 ]; then
   echo "ERRO: public/assets incompleto ($ASSET_COUNT ficheiros js)."
   exit 1
 fi

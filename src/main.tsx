@@ -7,8 +7,35 @@ import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 
+function renderFatalBootError(message: string): void {
+  const root = document.getElementById("root");
+  if (!root) return;
+  root.innerHTML = `
+    <div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;background:#3A0205;color:#fff">
+      <p style="font-size:18px;font-weight:700;margin:0 0 12px">Não foi possível abrir o menu</p>
+      <p style="font-size:14px;color:rgba(255,255,255,0.75);margin:0 0 20px;max-width:360px">${message}</p>
+      <button type="button" onclick="location.reload()" style="background:#5A0808;color:#fff;border:none;border-radius:999px;padding:12px 24px;font-weight:700;font-size:14px">
+        Actualizar página
+      </button>
+    </div>
+  `;
+}
+
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
+  window.addEventListener("error", (event) => {
+    const reason = event?.error?.message || event?.message || "erro desconhecido";
+    console.error("[boot:error]", event?.error || event);
+    renderFatalBootError(`Erro ao iniciar: ${reason}`);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason =
+      typeof event.reason === "string"
+        ? event.reason
+        : event.reason?.message || "promessa rejeitada";
+    console.error("[boot:promise]", event.reason);
+    renderFatalBootError(`Erro ao carregar: ${reason}`);
+  });
 }
 
 startStripeDebugOverlayGuard();
@@ -47,17 +74,7 @@ if (typeof window !== "undefined") {
 
 function showBootError(message: string) {
   dismissBootShell();
-  const root = document.getElementById("root");
-  if (!root) return;
-  root.innerHTML = `
-    <div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;background:#3A0205;color:#fff">
-      <p style="font-size:18px;font-weight:700;margin:0 0 12px">Não foi possível abrir o menu</p>
-      <p style="font-size:14px;color:rgba(255,255,255,0.75);margin:0 0 20px;max-width:320px">${message}</p>
-      <button type="button" onclick="location.reload()" style="background:#5A0808;color:#fff;border:none;border-radius:999px;padding:12px 24px;font-weight:700;font-size:14px">
-        Actualizar página
-      </button>
-    </div>
-  `;
+  renderFatalBootError(message);
 }
 
 const rootEl = document.getElementById("root");
