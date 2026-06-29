@@ -10,10 +10,8 @@ import {
   markCustomerMarketingPromptShown,
   subscribeCustomerMarketingPush,
 } from "@/lib/customerMarketingPush";
-import {
-  markStaffPushPromptShown,
-  subscribeStaffPush,
-} from "@/lib/staffPush";
+// Staff push é carregado dinamicamente (apenas quando audience === "staff")
+// para não puxar módulos internos no bundle do cliente.
 import { initNativePushBridge } from "@/services/nativePush";
 
 type Props = {
