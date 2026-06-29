@@ -5,7 +5,6 @@ import { applyBrowserChromeColor, applyStaffAppChrome } from "./lib/brandTokens"
 import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
-import { initNativePushBridge } from "./services/nativePush";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 
 if (typeof window !== "undefined") {
@@ -14,7 +13,12 @@ if (typeof window !== "undefined") {
 
 startStripeDebugOverlayGuard();
 dismissNativeIOSMediaPlayer();
-void initNativePushBridge();
+// Push inicializado sob demanda (evita crash no arranque do TestFlight).
+if (typeof window !== "undefined") {
+  window.setTimeout(() => {
+    void import("./services/nativePush").then((m) => m.initNativePushBridge());
+  }, 2500);
+}
 
 if (isStaffAppPath()) {
   applyStaffAppChrome();

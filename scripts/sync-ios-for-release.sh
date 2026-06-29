@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Sincroniza Capacitor iOS para App Store — igual build 10 (site remoto no iPhone).
+# Sincroniza Capacitor iOS para App Store — menu embutido (build 33/34) + push produção.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 export VITE_IOS_TAP_TO_PAY_ENABLED=false
+export VITE_IOS_BUNDLE_WEB=true
 
 npm run build
 npx cap sync ios
@@ -46,4 +47,4 @@ echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
 echo "  · Package SPM: sem Stripe Terminal (App Store)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=false"
-echo "  · iPhone abre https://kebabturco.net (como build 10)"
+echo "  · Menu embutido no pacote iPhone (arranque TestFlight, como build 33)"
