@@ -1013,7 +1013,7 @@ interface LanguageContextType {
   ensureMenuLocalizedReady: (items: LocalizedField[]) => Promise<void>;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: string }> = ({
   children,
