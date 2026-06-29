@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { urlBase64ToUint8Array } from "@/lib/vapidPublicKey";
 import { probePushServiceWorker, getBrowserPushSupport } from "@/lib/push/pushServiceWorkerProbe";
@@ -160,7 +159,6 @@ export async function subscribePushWithLogging(
       _endpoint: json.endpoint,
       _p256dh: json.keys.p256dh,
       _auth: json.keys.auth,
-      _device_locale: getDeviceLocaleTag(),
     });
 
     if (dbErr) {

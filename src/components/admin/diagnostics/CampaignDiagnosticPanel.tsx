@@ -79,10 +79,8 @@ export default function CampaignDiagnosticPanel() {
     if (!storeId) return;
     const preset = CAMPAIGN_PRESETS.find((p) => p.key === key);
     if (!preset) return;
-    const pickLocalized = (v: unknown): string =>
-      typeof v === "string" ? v : (v as any)?.pt ?? (v as any)?.es ?? (v as any)?.en ?? "";
-    setTitle(pickLocalized(preset.title));
-    setBody(pickLocalized(preset.message));
+    setTitle(preset.title.pt);
+    setBody(preset.message.pt);
     const r = await upsertCampaignPreset(storeId, preset);
     if (r.ok) {
       toast.success(`Campanha «${preset.name}» guardada`);

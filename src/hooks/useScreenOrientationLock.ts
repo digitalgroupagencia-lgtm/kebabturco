@@ -41,7 +41,7 @@ function applyRotateMode(mode: RotateMode, w: number, h: number) {
 
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
- * Admin/painel: em telemóvel vertical força layout horizontal (como build 10).
+ * Admin/painel: lock landscape nativo quando possível; em telemóvel vertical usa rotate CSS.
  */
 export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();
@@ -103,10 +103,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       const h = window.innerHeight;
       const nextMode = resolveRotateMode(portraitLock, landscapeLock, touch, w, h);
 
-      if (nextMode === activeModeRef.current) {
-        if (nextMode !== "none") applyRotateMode(nextMode, w, h);
-        return;
-      }
+      if (nextMode === activeModeRef.current) return;
 
       activeModeRef.current = nextMode;
       applyRotateMode(nextMode, w, h);

@@ -6,7 +6,7 @@ import PanelLayout from "@/components/panel/PanelLayout.tsx";
 import AdminLayout from "@/components/admin/AdminLayout.tsx";
 import SellerLayout from "@/components/seller/SellerLayout.tsx";
 import DeliveryLayout from "@/components/delivery/DeliveryLayout.tsx";
-import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/internalRoutes.ts";
+import { resolveRoute, type AppArea, type RouteSegmentDef } from "@/lib/navPaths.ts";
 import { legalPageLoader } from "@/lib/legalRoutes.ts";
 import { resolveAdminRestaurantPanelAlias, resolveCustomerRouteRedirect, resolveLegacyRouteRedirect } from "@/lib/routeRedirects.ts";
 

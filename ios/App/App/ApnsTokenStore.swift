@@ -2,7 +2,6 @@ import Capacitor
 import Foundation
 import UIKit
 import WebKit
-import UserNotifications
 
 final class ApnsTokenStore {
     static let shared = ApnsTokenStore()
@@ -46,26 +45,9 @@ final class ApnsTokenStore {
     }
 
     func redeliverToJavaScript() {
-        injectNativeRuntimeMarker()
         guard let token = getSavedToken() else { return }
         retryCount = 0
         deliverToJavaScript(token: token)
-    }
-
-    func injectNativeRuntimeMarker() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            guard let webView = self.findWebView() else { return }
-            let js = """
-            (function(){
-              try {
-                window.__KEBABTURCO_CAPACITOR_NATIVE__ = true;
-                window.dispatchEvent(new CustomEvent('kebabturco-native-runtime',{detail:{source:'ios'}}));
-              } catch(e) {}
-            })();
-            """
-            webView.evaluateJavaScript(js, completionHandler: nil)
-        }
     }
 
     func getDiagnostics() -> [String: Any] {
@@ -137,9 +119,7 @@ final class ApnsTokenStore {
             let js = """
             (function(t){
               try {
-                window.__KEBABTURCO_CAPACITOR_NATIVE__ = true;
                 window.__kebabturcoNativeApnsToken = t;
-                window.dispatchEvent(new CustomEvent('kebabturco-native-runtime',{detail:{source:'apns'}}));
                 window.dispatchEvent(new CustomEvent('kebabturco-apns-token',{detail:{token:t,source:'appdelegate'}}));
               } catch(e) {}
             })('\(token)');

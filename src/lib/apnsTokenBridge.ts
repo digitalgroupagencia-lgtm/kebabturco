@@ -7,18 +7,13 @@ export type ApnsBridgeDiagnostics = {
   lastError?: string | null;
   tokenPreview?: string | null;
   hasToken: boolean;
-  authorizationStatus?: string | null;
 };
-
-export type ApnsAuthorizationStatus = "granted" | "denied" | "prompt" | "unknown";
 
 export interface ApnsTokenBridgePlugin {
   getSavedApnsToken(): Promise<{ token: string | null; hasToken: boolean }>;
   getBridgeDiagnostics(): Promise<ApnsBridgeDiagnostics>;
   markJsReceived(): Promise<void>;
   redeliverToJavaScript(): Promise<void>;
-  requestPushAuthorization(): Promise<{ status: ApnsAuthorizationStatus }>;
-  getNotificationAuthorizationStatus(): Promise<{ status: ApnsAuthorizationStatus }>;
 }
 
 class ApnsTokenBridgeWeb extends WebPlugin implements ApnsTokenBridgePlugin {
@@ -41,14 +36,6 @@ class ApnsTokenBridgeWeb extends WebPlugin implements ApnsTokenBridgePlugin {
 
   async redeliverToJavaScript() {
     /* browser */
-  }
-
-  async requestPushAuthorization() {
-    return { status: "unknown" as ApnsAuthorizationStatus };
-  }
-
-  async getNotificationAuthorizationStatus() {
-    return { status: "unknown" as ApnsAuthorizationStatus };
   }
 }
 
