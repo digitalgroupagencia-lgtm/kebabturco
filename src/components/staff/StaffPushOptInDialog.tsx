@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageContext } from "@/contexts/LanguageContext";
 import PushOptInDialogFrame, { type PushOptInCopy } from "@/components/push/PushOptInDialogFrame";
 import {
   markStaffPushPromptShown,
@@ -54,7 +54,9 @@ const STAFF_COPY: Record<string, PushOptInCopy> = {
 };
 
 const StaffPushOptInDialog = ({ open, storeId, onOpenChange }: Props) => {
-  const { lang } = useLanguage();
+  // LanguageProvider may not exist em rotas admin/painel; fallback seguro para 'es'.
+  const ctx = useContext(LanguageContext);
+  const lang = ctx?.lang ?? (typeof window !== "undefined" ? (window.localStorage.getItem("lang") ?? "es") : "es");
   const copy = STAFF_COPY[lang] ?? STAFF_COPY.es;
   const [busy, setBusy] = useState(false);
 
