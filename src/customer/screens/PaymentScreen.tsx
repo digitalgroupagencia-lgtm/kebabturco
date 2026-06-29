@@ -621,7 +621,7 @@ const PaymentScreen = () => {
     setTrackingOrderId(result.order_id);
     void supabase
       .from("orders")
-      .update({ order_locale: lang } as Record<string, unknown>)
+      .update({ order_locale: lang } as never)
       .eq("id", result.order_id);
     const awaitsCounterPayment =
       (opts.paymentMethod === "cash" || opts.paymentMethod === "counter") && opts.paymentStatus !== "paid";
