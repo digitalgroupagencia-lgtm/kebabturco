@@ -7,9 +7,16 @@ import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 
+let appMounted = false;
+
 function renderFatalBootError(message: string): void {
+  if (appMounted) return; // não destruir a app já montada por erros assíncronos
   const root = document.getElementById("root");
   if (!root) return;
+  // se a app já renderizou algo no root, não substituir
+  if (root.childElementCount > 0 && root.querySelector("[data-app-root], main, #app, .app, [data-reactroot]")) {
+    return;
+  }
   root.innerHTML = `
     <div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;background:#3A0205;color:#fff">
       <p style="font-size:18px;font-weight:700;margin:0 0 12px">Não foi possível abrir o menu</p>
@@ -24,16 +31,18 @@ function renderFatalBootError(message: string): void {
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
   window.addEventListener("error", (event) => {
-    const reason = event?.error?.message || event?.message || "erro desconhecido";
     console.error("[boot:error]", event?.error || event);
+    if (appMounted) return;
+    const reason = event?.error?.message || event?.message || "erro desconhecido";
     renderFatalBootError(`Erro ao iniciar: ${reason}`);
   });
   window.addEventListener("unhandledrejection", (event) => {
+    console.error("[boot:promise]", event.reason);
+    if (appMounted) return;
     const reason =
       typeof event.reason === "string"
         ? event.reason
         : event.reason?.message || "promessa rejeitada";
-    console.error("[boot:promise]", event.reason);
     renderFatalBootError(`Erro ao carregar: ${reason}`);
   });
 }
@@ -83,6 +92,7 @@ if (!rootEl) {
 } else {
   try {
     createRoot(rootEl).render(<App />);
+    appMounted = true;
     if (isStaffAppPath()) {
       dismissBootShell();
     }
