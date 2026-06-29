@@ -10,26 +10,41 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Storage híbrido para iOS/Android:
+ * - Preferences (Keychain/SharedPrefs) é a fonte de verdade, sobrevive a updates e cold-start.
+ * - localStorage é cache em memória para leitura síncrona pelo supabase-js.
+ * - Em cold-start, se localStorage estiver vazio mas Preferences tiver, hidrata localStorage.
+ */
 const nativeAuthStorage = {
   getItem: async (key: string) => {
     if (!Capacitor.isNativePlatform()) return localStorage.getItem(key);
-    const { value } = await Preferences.get({ key });
-    return value ?? localStorage.getItem(key);
+    try {
+      const { value } = await Preferences.get({ key });
+      if (value) {
+        // Mantém o localStorage espelhado para o resto da app que lê síncrono.
+        try { localStorage.setItem(key, value); } catch { /* noop */ }
+        return value;
+      }
+    } catch { /* noop */ }
+    // Fallback: localStorage tinha algo de uma versão anterior — promove para Preferences.
+    const ls = localStorage.getItem(key);
+    if (ls) {
+      try { await Preferences.set({ key, value: ls }); } catch { /* noop */ }
+    }
+    return ls;
   },
   setItem: async (key: string, value: string) => {
-    if (!Capacitor.isNativePlatform()) {
-      localStorage.setItem(key, value);
-      return;
+    try { localStorage.setItem(key, value); } catch { /* noop */ }
+    if (Capacitor.isNativePlatform()) {
+      try { await Preferences.set({ key, value }); } catch { /* noop */ }
     }
-    localStorage.setItem(key, value);
-    await Preferences.set({ key, value });
   },
   removeItem: async (key: string) => {
-    if (!Capacitor.isNativePlatform()) {
-      localStorage.removeItem(key);
-      return;
+    try { localStorage.removeItem(key); } catch { /* noop */ }
+    if (Capacitor.isNativePlatform()) {
+      try { await Preferences.remove({ key }); } catch { /* noop */ }
     }
-    await Preferences.remove({ key });
   },
 };
 
