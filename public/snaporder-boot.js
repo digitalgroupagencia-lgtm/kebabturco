@@ -42,6 +42,21 @@
     if (btn) btn.addEventListener("click", function () { window.location.reload(); });
   }
 
+  function dismissBootFallback() {
+    var el = document.getElementById("boot-fallback");
+    if (!el || el.dataset.dismissed === "1") return;
+    el.dataset.dismissed = "1";
+    try {
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+      });
+    } catch (e) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+  }
+
   function isLovableEditorHost() {
     try {
       var host = (location.hostname || "").replace(/^www\./i, "").toLowerCase();
@@ -130,6 +145,25 @@
     }, ms);
   }
 
+  function watchAppReady() {
+    var tries = 0;
+    var maxTries = 240; // ~120s
+    function tick() {
+      if (window.__SNAPORDER_APP_READY__) {
+        if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+          window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+        }
+        dismissBootFallback();
+        return;
+      }
+      tries += 1;
+      if (tries < maxTries) {
+        window.setTimeout(tick, 500);
+      }
+    }
+    tick();
+  }
+
   function bootTimeoutMs() {
     if (isLovableEditorHost()) return 120000;
     if (isCapacitorNative()) return 120000;
@@ -165,6 +199,13 @@
       showBootError("Não foi possível abrir o menu. Toque em Actualizar.");
     };
     script.onload = function () {
+      if (window.__SNAPORDER_APP_READY__) {
+        if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+          window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+        }
+        dismissBootFallback();
+        return;
+      }
       if (!bootShellVisible()) {
         if (window.__SNAPORDER_BOOT_TIMEOUT__) {
           window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
@@ -176,6 +217,7 @@
     document.body.appendChild(script);
 
     scheduleBootTimeout(bootTimeoutMs());
+    watchAppReady();
   }
 
   if (isCapacitorNative()) {
