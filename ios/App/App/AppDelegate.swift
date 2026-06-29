@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WebKit
 
 private func kebabStartupLog(_ message: String) {
     NSLog("[KebabTurcoStartup] \(message)")
@@ -16,6 +17,23 @@ private func kebabInstallCrashLogger() {
     }
 }
 
+private func kebabClearWebViewDataOncePerBuild() {
+    let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+    let key = "KebabTurcoWebViewDataClearedBuild"
+    if UserDefaults.standard.string(forKey: key) == build {
+        kebabStartupLog("WKWebView data already cleared for build=\(build)")
+        return
+    }
+
+    let types = WKWebsiteDataStore.allWebsiteDataTypes()
+    kebabStartupLog("clearing WKWebView website data for build=\(build) types=\(types.count)")
+    WKWebsiteDataStore.default().removeData(ofTypes: types, modifiedSince: Date(timeIntervalSince1970: 0)) {
+        UserDefaults.standard.set(build, forKey: key)
+        UserDefaults.standard.synchronize()
+        kebabStartupLog("WKWebView website data cleared for build=\(build)")
+    }
+}
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
@@ -26,6 +44,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let commit = Bundle.main.object(forInfoDictionaryKey: "KebabTurcoGitCommit") as? String ?? "unknown"
         let branch = Bundle.main.object(forInfoDictionaryKey: "KebabTurcoGitBranch") as? String ?? "unknown"
         kebabStartupLog("didFinishLaunching begin commit=\(commit) branch=\(branch) diagnostic=\(kebabStartupDiagnosticEnabled())")
+        kebabClearWebViewDataOncePerBuild()
         if let configUrl = Bundle.main.url(forResource: "capacitor.config", withExtension: "json"),
            let data = try? Data(contentsOf: configUrl),
            let raw = String(data: data, encoding: .utf8) {
