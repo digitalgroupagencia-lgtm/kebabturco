@@ -37,8 +37,10 @@ export function shouldRedirectRootToStaffPanel(opts: {
   pathname: string;
   staffSessionFlag: boolean;
   hasUser: boolean;
+  role?: StaffRole | string | null;
 }): boolean {
   const root = opts.pathname.replace(/\/+$/, "") || "/";
+  if (opts.role === "admin_master") return false;
   return root === "/" && opts.staffSessionFlag && opts.hasUser;
 }
 
