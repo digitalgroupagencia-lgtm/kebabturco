@@ -153,7 +153,7 @@ const ScreenRouter = () => {
 
 const CustomerShell = () => (
     <div
-      className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden overscroll-none bg-background"
+      className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden overscroll-none touch-pan-y bg-background"
       style={{ backgroundColor: "var(--browser-chrome-hex, #3A0205)" }}
     >
       <CustomerBootDismiss />
