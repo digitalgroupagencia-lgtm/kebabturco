@@ -4,7 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { ApnsTokenBridge } from "@/lib/apnsTokenBridge";
-import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
+import { isCapacitorNativeSync, getCapacitorPlatformSync } from "@/lib/capacitorRuntime";
 import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { pushLog, type PushLogContext } from "@/lib/push/pushLogger";
 import { navigateCustomerFromPushUrl } from "@/lib/customerPushDeepLink";
@@ -61,11 +61,6 @@ function logNative(
 
 function getCapacitorBridgeAvailabilitySync(): NativeAvailability | null {
   if (typeof window === "undefined") return null;
-  if (isCapacitorNativeSync()) {
-    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    const platform = (/Android/i.test(ua) ? "android" : "ios") as "android" | "ios";
-    return { isNative: true, platform };
-  }
   const cap = (window as unknown as {
     Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
   }).Capacitor;
@@ -94,6 +89,17 @@ function getNativeTokenSignalAvailability(): NativeAvailability | null {
   return null;
 }
 
+function isLikelyDesktopBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /Macintosh|Windows NT|CrOS|Linux x86_64/i.test(ua) && !/iPhone|iPad|iPod|Android/i.test(ua);
+}
+
+function isIosInjectedApp(): boolean {
+  if (isLikelyDesktopBrowser()) return false;
+  return isCapacitorNativeSync() && getCapacitorPlatformSync() === "ios";
+}
+
 function getCapacitorAvailabilitySync(): NativeAvailability | null {
   return getCapacitorBridgeAvailabilitySync() ?? getNativeTokenSignalAvailability();
 }
@@ -108,13 +114,16 @@ async function getCapacitorAvailability(): Promise<NativeAvailability> {
 
 export async function isNativePushAvailable(): Promise<boolean> {
   const { isNative, platform } = await getCapacitorAvailability();
-  return isNative && (platform === "android" || platform === "ios");
+  if (isNative && (platform === "android" || platform === "ios")) return true;
+  if (isIosInjectedApp()) return true;
+  return false;
 }
 
 /** Versão síncrona, útil em guards de UI antes do import dinâmico do Capacitor. */
 export function isNativePushAvailableSync(): boolean {
   const sync = getCapacitorAvailabilitySync();
-  return Boolean(sync && (sync.platform === "android" || sync.platform === "ios"));
+  if (sync && (sync.platform === "android" || sync.platform === "ios")) return true;
+  return isIosInjectedApp();
 }
 
 export function readCachedNativePushToken(): string | null {
@@ -141,18 +150,28 @@ export function clearCachedNativePushToken(): void {
 
 export async function getNativePushPermission(): Promise<NativePushPermission> {
   if (!(await isNativePushAvailable())) return "unknown";
-  if (!(await getCapacitorBridgeAvailability())) {
-    return readCachedNativePushToken() || readWindowInjectedApnsToken() ? "granted" : "unknown";
+  const capBridge = await getCapacitorBridgeAvailability();
+  if (capBridge) {
+    try {
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const perm = await PushNotifications.checkPermissions();
+      if (perm.receive === "granted") return "granted";
+      if (perm.receive === "denied") return "denied";
+      return "prompt";
+    } catch {
+      /* fallback iOS abaixo */
+    }
   }
-  try {
-    const { PushNotifications } = await import("@capacitor/push-notifications");
-    const perm = await PushNotifications.checkPermissions();
-    if (perm.receive === "granted") return "granted";
-    if (perm.receive === "denied") return "denied";
-    return "prompt";
-  } catch {
-    return "unknown";
+  if (isIosInjectedApp()) {
+    try {
+      const result = await ApnsTokenBridge.getNotificationAuthorizationStatus();
+      const status = result.status;
+      if (status === "granted" || status === "denied" || status === "prompt") return status;
+    } catch {
+      /* ignore */
+    }
   }
+  return readCachedNativePushToken() || readWindowInjectedApnsToken() ? "granted" : "unknown";
 }
 
 export async function getNativePushRuntimeDiagnostics(): Promise<NativePushRuntimeDiagnostics> {
@@ -489,40 +508,33 @@ export async function initNativePushBridge(): Promise<void> {
 
   bridgeInitPromise = (async () => {
     if (bridgeReady) return;
-    const { platform, source } = await getCapacitorAvailability();
-    const capacitorBridge = await getCapacitorBridgeAvailability();
-    logNative("info", "A iniciar bridge push nativo", { platform, source, capacitorBridge: Boolean(capacitorBridge) });
+    const { platform } = await getCapacitorAvailability();
+    logNative("info", "A iniciar bridge push nativo", { platform });
 
     const bridgeToken = await fetchTokenFromNativeBridge();
     if (bridgeToken) {
       rememberNativeToken(bridgeToken);
     }
 
-    if (!capacitorBridge) {
-      // Em alguns builds iOS com site remoto, a WebView mantém o token APNs injectado pelo AppDelegate,
-      // mas o runtime JS do Capacitor pode chegar tarde ou não expor a bridge. Nessa situação ainda é
-      // seguro registar o token já autorizado no backend, em vez de mostrar falsamente "computador/browser".
-      bridgeReady = true;
-      await hookNativePushAppResume();
-      return;
-    }
-
-    const { PushNotifications } = await import("@capacitor/push-notifications");
-    await ensureAndroidNotificationChannel();
-    await attachPushListeners();
-    bridgeReady = true;
-    await hookNativePushAppResume();
-
-    const perm = await PushNotifications.checkPermissions();
-    logNative("info", "Permissão actual", { receive: perm.receive });
-    if (perm.receive === "granted") {
-      try {
-        logNative("info", "register() no arranque (permissão já concedida)");
-        await PushNotifications.register();
-      } catch (e) {
-        logNative("warn", "register() no arranque falhou", { error: String(e) });
+    const capacitorBridge = await getCapacitorBridgeAvailability();
+    if (capacitorBridge) {
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      await ensureAndroidNotificationChannel();
+      await attachPushListeners();
+      const perm = await PushNotifications.checkPermissions();
+      logNative("info", "Permissão actual", { receive: perm.receive });
+      if (perm.receive === "granted") {
+        try {
+          logNative("info", "register() no arranque (permissão já concedida)");
+          await PushNotifications.register();
+        } catch (e) {
+          logNative("warn", "register() no arranque falhou", { error: String(e) });
+        }
       }
     }
+
+    bridgeReady = true;
+    await hookNativePushAppResume();
   })();
 
   return bridgeInitPromise;
@@ -545,34 +557,63 @@ export async function getNativeDevicePushStatus(): Promise<{
   };
 }
 
+async function requestIosPushViaNativeBridge(): Promise<{
+  granted: boolean;
+  receive: string;
+}> {
+  try {
+    const result = await ApnsTokenBridge.requestPushAuthorization();
+    logNative("info", "requestPushAuthorization (iOS nativo)", { status: result.status });
+    if (result.status === "granted") {
+      await ApnsTokenBridge.redeliverToJavaScript();
+      await sleep(800);
+      const injected = readWindowInjectedApnsToken();
+      if (injected) rememberNativeToken(injected);
+      return { granted: true, receive: "granted" };
+    }
+    if (result.status === "denied") {
+      return { granted: false, receive: "denied" };
+    }
+    return { granted: false, receive: result.status };
+  } catch (e) {
+    logNative("warn", "requestPushAuthorization falhou", { error: String(e) });
+    return { granted: false, receive: "native-bridge-unavailable" };
+  }
+}
+
 async function requestNativePermission(): Promise<{
   granted: boolean;
   receive: string;
 }> {
-  if (!(await getCapacitorBridgeAvailability())) {
-    const token = readCachedNativePushToken() ?? readWindowInjectedApnsToken();
-    if (token) {
-      rememberNativeToken(token);
-      return { granted: true, receive: "granted" };
-    }
-    return { granted: false, receive: "native-bridge-unavailable" };
-  }
-  const { PushNotifications } = await import("@capacitor/push-notifications");
-  const perm = await PushNotifications.checkPermissions();
-  logNative("info", "checkPermissions", { receive: perm.receive });
-  if (perm.receive === "granted") return { granted: true, receive: perm.receive };
+  if (await getCapacitorBridgeAvailability()) {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    const perm = await PushNotifications.checkPermissions();
+    logNative("info", "checkPermissions", { receive: perm.receive });
+    if (perm.receive === "granted") return { granted: true, receive: perm.receive };
 
-  const req = await PushNotifications.requestPermissions();
-  logNative("info", "requestPermissions", { receive: req.receive });
-  if (req.receive === "granted") {
-    try {
-      logNative("info", "register() após permissão concedida");
-      await PushNotifications.register();
-    } catch (e) {
-      logNative("warn", "register() após permissão falhou", { error: String(e) });
+    const req = await PushNotifications.requestPermissions();
+    logNative("info", "requestPermissions", { receive: req.receive });
+    if (req.receive === "granted") {
+      try {
+        logNative("info", "register() após permissão concedida");
+        await PushNotifications.register();
+      } catch (e) {
+        logNative("warn", "register() após permissão falhou", { error: String(e) });
+      }
     }
+    return { granted: req.receive === "granted", receive: req.receive };
   }
-  return { granted: req.receive === "granted", receive: req.receive };
+
+  if (isIosInjectedApp()) {
+    return requestIosPushViaNativeBridge();
+  }
+
+  const token = readCachedNativePushToken() ?? readWindowInjectedApnsToken();
+  if (token) {
+    rememberNativeToken(token);
+    return { granted: true, receive: "granted" };
+  }
+  return { granted: false, receive: "native-bridge-unavailable" };
 }
 
 /** Pedir só permissão (para ligar o interruptor logo após o utilizador aceitar). */
@@ -589,6 +630,21 @@ export async function requestNativePushPermissionOnly(): Promise<{
 
 async function triggerRegisterWithRetries(platform: "ios" | "android"): Promise<void> {
   if (!(await getCapacitorBridgeAvailability())) {
+    if (isIosInjectedApp()) {
+      await ApnsTokenBridge.requestPushAuthorization();
+      await ApnsTokenBridge.redeliverToJavaScript();
+      await sleep(1200);
+      const injected = readWindowInjectedApnsToken();
+      if (injected) {
+        rememberNativeToken(injected);
+        return;
+      }
+      const saved = await fetchTokenFromNativeBridge();
+      if (saved) {
+        rememberNativeToken(saved);
+        return;
+      }
+    }
     const token = readCachedNativePushToken() ?? readWindowInjectedApnsToken();
     if (token) {
       rememberNativeToken(token);
@@ -826,12 +882,22 @@ export async function unregisterNativeStaffPush(): Promise<void> {
   logNative("info", "Registo push desactivado neste telemóvel");
 }
 
-/** Para usar no boot do painel, re-regista se o utilizador já tinha activado. */
+/** Para usar no boot do painel, pede permissão e re-regista (como build 10). */
 export async function restoreNativeStaffPushIfPossible(storeId: string): Promise<void> {
   if (!(await isNativePushAvailable())) return;
-  const { isStaffPushEnabled } = await import("@/lib/staffPush");
-  if (!isStaffPushEnabled()) return;
-  await registerNativeStaffPush(storeId);
+  await initNativePushBridge();
+  const perm = await getNativePushPermission();
+  if (perm === "prompt" || perm === "unknown") {
+    const req = await requestNativePermission();
+    if (!req.granted) return;
+  }
+  if (perm === "denied") return;
+
+  const { isStaffPushEnabled, setStaffPushEnabled } = await import("@/lib/staffPush");
+  if (!isStaffPushEnabled()) {
+    setStaffPushEnabled(true);
+  }
+  await registerNativeStaffPush(storeId, { skipPermissionRequest: true });
 }
 
 /** Mantém ecrã do tablet ligado enquanto painel operacional está aberto. */
