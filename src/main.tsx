@@ -6,6 +6,11 @@ import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
+import { markCapacitorNativeRuntime, startCapacitorNativeBootstrap } from "./lib/capacitorRuntime";
+import { hydrateAuthStorageBeforeBoot } from "./integrations/supabase/client";
+
+markCapacitorNativeRuntime();
+startCapacitorNativeBootstrap();
 
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
@@ -13,18 +18,6 @@ if (typeof window !== "undefined") {
 
 startStripeDebugOverlayGuard();
 dismissNativeIOSMediaPlayer();
-// Push inicializado sob demanda (evita crash no arranque do TestFlight).
-if (typeof window !== "undefined") {
-  window.setTimeout(() => {
-    void import("./services/nativePush").then((m) => m.initNativePushBridge());
-  }, 2500);
-}
-
-if (isStaffAppPath()) {
-  applyStaffAppChrome();
-} else {
-  applyBrowserChromeColor();
-}
 
 if (typeof window !== "undefined") {
   const markStandalone = () => {
@@ -58,13 +51,40 @@ const rootEl = document.getElementById("root");
 if (!rootEl) {
   showBootError("Página incompleta. Tente novamente.");
 } else {
-  try {
-    createRoot(rootEl).render(<App />);
+  let started = false;
+  const bootApp = () => {
+    if (started) return;
+    started = true;
+    window.clearTimeout(bootTimeout);
     if (isStaffAppPath()) {
-      dismissBootShell();
+      applyStaffAppChrome();
+    } else {
+      applyBrowserChromeColor();
     }
-  } catch (error) {
-    console.error("[boot]", error);
-    showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
-  }
+    try {
+      createRoot(rootEl).render(<App />);
+      if (isStaffAppPath()) {
+        dismissBootShell();
+      }
+    } catch (error) {
+      console.error("[boot]", error);
+      showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
+    }
+  };
+
+  const bootTimeout = window.setTimeout(bootApp, 2500);
+
+  void hydrateAuthStorageBeforeBoot()
+    .catch(() => undefined)
+    .then(async () => {
+      try {
+        const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
+        if (await isNativePushAvailable()) {
+          void initNativePushBridge();
+        }
+      } catch {
+        /* ignore */
+      }
+      bootApp();
+    });
 }

@@ -2,6 +2,7 @@ import Capacitor
 import Foundation
 import UIKit
 import WebKit
+import UserNotifications
 
 final class ApnsTokenStore {
     static let shared = ApnsTokenStore()
@@ -45,9 +46,26 @@ final class ApnsTokenStore {
     }
 
     func redeliverToJavaScript() {
+        injectNativeRuntimeMarker()
         guard let token = getSavedToken() else { return }
         retryCount = 0
         deliverToJavaScript(token: token)
+    }
+
+    func injectNativeRuntimeMarker() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard let webView = self.findWebView() else { return }
+            let js = """
+            (function(){
+              try {
+                window.__KEBABTURCO_CAPACITOR_NATIVE__ = true;
+                window.dispatchEvent(new CustomEvent('kebabturco-native-runtime',{detail:{source:'ios'}}));
+              } catch(e) {}
+            })();
+            """
+            webView.evaluateJavaScript(js, completionHandler: nil)
+        }
     }
 
     func getDiagnostics() -> [String: Any] {
@@ -59,7 +77,59 @@ final class ApnsTokenStore {
             "lastError": UserDefaults.standard.string(forKey: Self.lastErrorKey) as Any,
             "tokenPreview": (token.map { Self.preview($0) }) as Any,
             "hasToken": token != nil,
+            "authorizationStatus": Self.authorizationStatusString(),
         ]
+    }
+
+    func authorizationStatusString() -> String {
+        Self.authorizationStatusString()
+    }
+
+    func requestPushAuthorization(completion: @escaping (String) -> Void) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+                completion("granted")
+            case .denied:
+                completion("denied")
+            case .notDetermined:
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+                    if granted {
+                        DispatchQueue.main.async {
+                            UIApplication.shared.registerForRemoteNotifications()
+                        }
+                        completion("granted")
+                    } else {
+                        completion("denied")
+                    }
+                }
+            @unknown default:
+                completion("unknown")
+            }
+        }
+    }
+
+    private static func authorizationStatusString() -> String {
+        var status = "unknown"
+        let semaphore = DispatchSemaphore(value: 0)
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                status = "granted"
+            case .denied:
+                status = "denied"
+            case .notDetermined:
+                status = "prompt"
+            @unknown default:
+                status = "unknown"
+            }
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + 1.0)
+        return status
     }
 
     private func deliverToJavaScript(token: String) {
@@ -74,7 +144,9 @@ final class ApnsTokenStore {
             let js = """
             (function(t){
               try {
+                window.__KEBABTURCO_CAPACITOR_NATIVE__ = true;
                 window.__kebabturcoNativeApnsToken = t;
+                window.dispatchEvent(new CustomEvent('kebabturco-native-runtime',{detail:{source:'apns'}}));
                 window.dispatchEvent(new CustomEvent('kebabturco-apns-token',{detail:{token:t,source:'appdelegate'}}));
               } catch(e) {}
             })('\(token)');
