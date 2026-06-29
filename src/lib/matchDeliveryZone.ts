@@ -37,7 +37,7 @@ function pickBestMatch(candidates: DeliveryZoneLike[]): DeliveryZoneLike | null 
  * Resolve delivery zone (priority):
  * 1. postal_codes (non-default zones first)
  * 2. city_names (non-default zones first)
- * 3. distance bands, only when max_distance_km is set on the zone
+ * 3. distance bands — only when max_distance_km is set on the zone
  * 4. is_default fallback
  */
 export function matchDeliveryZone(

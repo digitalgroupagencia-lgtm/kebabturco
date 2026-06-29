@@ -38,7 +38,7 @@ type GatewayCfg = {
 };
 
 const GATEWAYS = [
-  { code: "stripe", label: "Stripe", icon: CreditCard, note: "Gestão completa via Connect, usar Admin > Stripe Connect." },
+  { code: "stripe", label: "Stripe", icon: CreditCard, note: "Gestão completa via Connect — usar Admin > Stripe Connect." },
   { code: "redsys", label: "Redsys (TPV)", icon: ShieldCheck, note: "TPV Virtual para Espanha. Configure FUC, Terminal e Clave secreta." },
   { code: "bizum", label: "Bizum", icon: Smartphone, note: "Reaproveita arquitetura Redsys (paymethod \"z\")." },
 ] as const;
@@ -191,7 +191,7 @@ function GatewayEditor({ storeId, gatewayCode, note, onSaved }: { storeId: strin
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Configuração, {gatewayCode}</span>
+          <span>Configuração — {gatewayCode}</span>
           <Badge variant={cfg.status === "production" ? "default" : cfg.status === "sandbox" ? "secondary" : "outline"}>
             {cfg.status}
           </Badge>

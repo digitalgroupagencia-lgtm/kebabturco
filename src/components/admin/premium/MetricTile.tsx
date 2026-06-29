@@ -9,7 +9,7 @@ type Props = {
   deltaUp?: boolean;
   icon?: LucideIcon;
   className?: string;
-  /** KPI derivado / simulado, não usar para decisões comerciais */
+  /** KPI derivado / simulado — não usar para decisões comerciais */
   estimated?: boolean;
 };
 

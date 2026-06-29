@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Tables, Database, Json } from "@/integrations/supabase/types";
+import type { Tables, Database } from "@/integrations/supabase/types";
 import { getStatusLabel } from "@/lib/orderStatusLabels";
 import {
   isPanelAlertsEnabled,
@@ -19,8 +19,6 @@ import { markOrderPaidAtCounter, assignDeliveryDriver } from "@/services/orderSe
 import { cancelOrderWithRefund } from "@/services/orderRefund";
 import { tryPrintPanelOrder, reprintPanelOrder } from "@/features/ops/panelPrintHelper";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
-import { explainStaffPinPaymentError } from "@/lib/staffAccessPin";
-import { useStaffT } from "@/hooks/useStaffT";
 import {
   generateDeliveryConfirmationCode,
   isDeliveryOrder,
@@ -63,7 +61,6 @@ const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
 
 export function usePanelOrders(storeId: string | undefined) {
-  const { lang } = useStaffT();
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
@@ -377,46 +374,20 @@ export function usePanelOrders(storeId: string | undefined) {
     );
 
     try {
-      let updated: PanelOrder | null = null;
-      let lastError: { message?: string } | null = null;
+      const { data: updated, error } = await supabase
+        .from("orders")
+        .update(patch as never)
+        .eq("id", order.id)
+        .select()
+        .single();
 
-      const v2Res = await supabase.rpc("update_order_status_v2", {
-        _order_id: order.id,
-        _patch: patch as Json,
-      });
-      if (!v2Res.error && v2Res.data) {
-        updated = v2Res.data as unknown as PanelOrder;
-      } else {
-        lastError = v2Res.error;
-        const rpcRes = await supabase.rpc("panel_advance_order_status" as never, {
-          _order_id: order.id,
-          _new_status: newStatus as Database["public"]["Enums"]["order_status"],
-          _estimated_ready_at: (patch.estimated_ready_at as string) ?? undefined,
-          _delivery_confirmation_code: (patch.delivery_confirmation_code as string) ?? undefined,
-        } as never);
-        if (!rpcRes.error && (rpcRes as { data?: unknown }).data) {
-          updated = (rpcRes as { data: unknown }).data as PanelOrder;
-        } else {
-          lastError = rpcRes.error ?? lastError;
-          const directRes = await supabase
-            .from("orders")
-            .update(patch as never)
-            .eq("id", order.id)
-            .select()
-            .single();
-          updated = (directRes.data as PanelOrder) ?? null;
-          lastError = directRes.error ?? lastError;
-        }
-      }
-
-      if (!updated) {
+      if (error || !updated) {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-        console.error("[panel] update order failed", lastError);
-        toast.error(`Erro ao actualizar: ${lastError?.message || "sem resposta"}`);
+        toast.error("Erro ao actualizar");
         return false;
       }
 
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...updated } : o)));
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...(updated as PanelOrder) } : o)));
       toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
       if (prevStatus === "pending") {
         acknowledgePendingOrderAlert(order.id);
@@ -454,9 +425,9 @@ export function usePanelOrders(storeId: string | undefined) {
     );
 
     if (result.refunded) {
-      toast.success(`Pedido #${order.order_number} cancelado, reembolso automático enviado ao cliente`);
+      toast.success(`Pedido #${order.order_number} cancelado — reembolso automático enviado ao cliente`);
     } else if (order.payment_status === "paid") {
-      toast.success(`Pedido #${order.order_number} cancelado, reembolso em dinheiro é responsabilidade do restaurante`);
+      toast.success(`Pedido #${order.order_number} cancelado — reembolso em dinheiro é responsabilidade do restaurante`);
     } else {
       toast.success("Pedido cancelado");
     }
@@ -498,17 +469,16 @@ export function usePanelOrders(storeId: string | undefined) {
         );
         const items = itemsByOrder[order.id] || [];
         void tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid" }, items);
-        toast.success(`Pagamento registado, #${order.order_number}`);
+        toast.success(`Pagamento registado — #${order.order_number}`);
         return true;
       } catch (e) {
-        const raw = e instanceof Error ? e.message : "Erro ao registar pagamento";
-        toast.error(explainStaffPinPaymentError(raw, lang));
+        toast.error(e instanceof Error ? e.message : "Erro ao registar pagamento");
         return false;
       } finally {
         updatingRef.current.delete(order.id);
       }
     },
-    [storeId, itemsByOrder, lang],
+    [storeId, itemsByOrder],
   );
 
   const assignDriver = useCallback(async (order: PanelOrder, driverUserId: string): Promise<boolean> => {
@@ -542,7 +512,7 @@ export function usePanelOrders(storeId: string | undefined) {
           .eq("store_id", storeId)
           .maybeSingle();
         await reprintPanelOrder(storeId, order, items, company?.company_name || "Restaurante");
-        toast.success(`Reimpressão enviada, #${order.order_number}`);
+        toast.success(`Reimpressão enviada — #${order.order_number}`);
         return true;
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro ao reimprimir");

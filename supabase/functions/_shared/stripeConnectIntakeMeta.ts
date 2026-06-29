@@ -42,7 +42,7 @@ export function buildIntakeNotes(parts: {
   return segments.length > 0 ? segments.join("|") : undefined;
 }
 
-/** Dados completos para API Stripe, sempre aceita termos em operações do servidor. */
+/** Dados completos para API Stripe — sempre aceita termos em operações do servidor. */
 export function buildServerStripeIntake(
   row: CustomIntakeRow & { notes?: string | null },
   extras?: {

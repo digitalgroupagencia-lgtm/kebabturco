@@ -25,7 +25,7 @@ export function isDrinkProduct(product: MenuProduct | undefined): boolean {
 export function isWaterProduct(product: MenuProduct | undefined): boolean {
   if (!product) return false;
   const text = `${product.name?.es || ""} ${product.name?.pt || ""} ${product.name?.en || ""} ${product.name?.fr || ""}`.toLowerCase();
-  // "agua", "água", "water", "eau", evita "aguardiente" etc.
+  // "agua", "água", "water", "eau" — evita "aguardiente" etc.
   return /\b(agua|[áa]gua|water|eau)\b/.test(text);
 }
 

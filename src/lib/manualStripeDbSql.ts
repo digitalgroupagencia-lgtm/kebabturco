@@ -1,5 +1,5 @@
 export const MANUAL_STRIPE_DB_SQL = `
--- Kebab Turco, actualização base de dados (idempotente, pode correr várias vezes)
+-- Kebab Turco — actualização base de dados (idempotente, pode correr várias vezes)
 
 -- Colunas Stripe na loja
 ALTER TABLE public.stores
@@ -15,8 +15,8 @@ ALTER TABLE public.stores
   ADD COLUMN IF NOT EXISTS stripe_connect_environment text NOT NULL DEFAULT 'live',
   ADD COLUMN IF NOT EXISTS stripe_connect_test_simulated boolean NOT NULL DEFAULT false;
 
-COMMENT ON COLUMN public.stores.stripe_connect_environment IS 'live ou test, ambiente da conta Connect do restaurante';
-COMMENT ON COLUMN public.stores.stripe_connect_test_simulated IS 'Recebimentos de teste simulados, sem dinheiro real';
+COMMENT ON COLUMN public.stores.stripe_connect_environment IS 'live ou test — ambiente da conta Connect do restaurante';
+COMMENT ON COLUMN public.stores.stripe_connect_test_simulated IS 'Recebimentos de teste simulados — sem dinheiro real';
 
 -- Colunas de pagamento nos pedidos
 ALTER TABLE public.orders
@@ -437,7 +437,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_operational_diagnostics(uuid) TO authenticated;
 
--- Activar recebimentos de teste (um clique no painel, não depende do servidor)
+-- Activar recebimentos de teste (um clique no painel — não depende do servidor)
 CREATE OR REPLACE FUNCTION public.activate_test_receivables(_store_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql

@@ -1,5 +1,5 @@
 // Edge function: cria sessão de pagamento Redsys (cartão).
-// SKELETON pronto, devolve formulário/URL Redsys quando as credenciais estiverem configuradas em store_payment_gateways.
+// SKELETON pronto — devolve formulário/URL Redsys quando as credenciais estiverem configuradas em store_payment_gateways.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { signRedsysParams, redsysEnvironmentUrl } from "../_shared/redsysCore.ts";

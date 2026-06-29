@@ -49,7 +49,7 @@ export function segmentLabel(segment: CentralSegment): string {
   return SEGMENT_LABELS[segment];
 }
 
-/** Métricas agregadas por central, derivadas dos dados reais + estimativas coerentes */
+/** Métricas agregadas por central — derivadas dos dados reais + estimativas coerentes */
 export function aggregateCentralMetrics(
   snapshot: PlatformOperationalSnapshot,
   segment: CentralSegment,
@@ -77,7 +77,7 @@ export function aggregateCentralMetrics(
       return {
         ...base,
         kpi1: { label: "Programas activos", value: String(withLoyalty) },
-        kpi2: { label: "Retenção", value: withLoyalty > 0 ? "+14%" : ", ", estimated: true },
+        kpi2: { label: "Retenção", value: withLoyalty > 0 ? "+14%" : "—", estimated: true },
         kpi3: { label: "Clientes VIP", value: String(Math.round(totalOrders7d * 0.08)), estimated: true },
         kpi4: { label: "Carimbos 7d", value: String(Math.round(totalOrders7d * 0.35)), estimated: true },
       };
@@ -180,7 +180,7 @@ export function buildCentralTimeline(
   if (events.length === 0) {
     events.push({
       id: "empty",
-      time: ", ",
+      time: "—",
       title: "Nenhum evento operacional ainda",
       detail: "Activa módulos num restaurante para ver actividade estimada",
       tone: "muted",

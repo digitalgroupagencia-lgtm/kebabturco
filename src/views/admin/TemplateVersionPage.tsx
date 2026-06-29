@@ -146,7 +146,7 @@ export default function TemplateVersionPage() {
       title: result.already_up_to_date ? "Banco já estava atualizado" : "Banco atualizado com sucesso",
       description: result.already_up_to_date
         ? `Versão ${result.new_version ?? TEMPLATE_VERSION}`
-        : `${result.previous_version ?? ", "} → ${result.new_version}`,
+        : `${result.previous_version ?? "—"} → ${result.new_version}`,
     });
     void load();
   };
@@ -205,14 +205,14 @@ export default function TemplateVersionPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Banco</p>
-              <p className="font-bold">{status?.dbVersion ?? ", "}</p>
+              <p className="font-bold">{status?.dbVersion ?? "—"}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Última aplicação</p>
               <p className="font-bold">
                 {status?.dbAppliedAt
                   ? new Date(status.dbAppliedAt).toLocaleString("pt-PT")
-                  : ", "}
+                  : "—"}
               </p>
             </div>
             <div>
@@ -230,7 +230,7 @@ export default function TemplateVersionPage() {
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Aplica a versão do código no banco e registra no histórico.
-                  Operação segura e idempotente, pode rodar quantas vezes precisar.
+                  Operação segura e idempotente — pode rodar quantas vezes precisar.
                 </p>
               </div>
               <Button

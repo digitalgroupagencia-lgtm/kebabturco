@@ -10,7 +10,8 @@ export const KEBAB_FALLBACK_STORE_ID = "22222222-2222-2222-2222-222222222222";
 
 /**
  * IMPORTANTE: este ID colide com a loja real "Gandia" do Kebab Turco em
- * produção. Por isso NÃO podemos usar o ID como sinal de "modo preview",  * isso bloqueava pedidos reais e exibia "vista previa" no checkout.
+ * produção. Por isso NÃO podemos usar o ID como sinal de "modo preview" —
+ * isso bloqueava pedidos reais e exibia "vista previa" no checkout.
  * Mantemos a constante para o seed inicial do contexto, mas a checagem
  * retorna sempre false.
  */

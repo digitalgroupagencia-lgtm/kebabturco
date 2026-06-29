@@ -98,7 +98,7 @@ export function getOrderModalityBanner(
   }
   return {
     label: panelT(lang, "order.modality.unknown"),
-    detail: order.order_type || ", ",
+    detail: order.order_type || "—",
     tone: "unknown" as const,
   };
 }

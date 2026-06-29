@@ -211,7 +211,7 @@ export default function AdminAssistant() {
       // Injecta snapshot de telemetria local como contexto adicional do utilizador
       const usageMsg: Msg = {
         role: "user",
-        content: `[Contexto automático, não responder directamente]\nRota actual: ${window.location.pathname}\n${getUsageSnapshotForPrompt()}`,
+        content: `[Contexto automático — não responder directamente]\nRota actual: ${window.location.pathname}\n${getUsageSnapshotForPrompt()}`,
       };
       const payloadMessages = [usageMsg, ...next];
 
@@ -344,7 +344,7 @@ export default function AdminAssistant() {
                 }
               }}
               className="h-8 px-2.5 rounded-full hover:bg-white/15 flex items-center gap-1.5 shrink-0 text-xs font-medium"
-              aria-label="Pedir ajuda humana, copia a sua dúvida para enviar ao gerente"
+              aria-label="Pedir ajuda humana — copia a sua dúvida para enviar ao gerente"
               title="Copia a sua dúvida para enviar ao gerente do projeto por WhatsApp ou e-mail"
             >
               <LifeBuoy className="w-4 h-4" />

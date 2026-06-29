@@ -5,58 +5,15 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-/**
- * Storage de autenticação.
- *
- * IMPORTANTE: não usamos @capacitor/preferences porque o Pod nativo
- * (CapacitorPreferences) não está incluído no IPA actual da App Store /
- * TestFlight. Quando o bridge tenta chamar Preferences.get/set,
- * lança "Preferences plugin is not implemented on ios" e isso
- * partia a tela inicial. localStorage é persistente no WKWebView e
- * sobrevive entre execuções do app, por isso é seguro como único
- * backend de sessão.
- */
-const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      if (typeof localStorage === "undefined") return null;
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem: (key: string, value: string) => {
-    try {
-      if (typeof localStorage === "undefined") return;
-      localStorage.setItem(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  removeItem: (key: string) => {
-    try {
-      if (typeof localStorage === "undefined") return;
-      localStorage.removeItem(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
+// Import the supabase client like this:
+// import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: safeLocalStorage,
+    storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: "kebabturco-auth",
   }
 });
-
-/**
- * Compat: chamada existente no arranque. Mantida como no-op para não
- * partir imports antigos.
- */
-export async function hydrateAuthStorageBeforeBoot(): Promise<void> {
-  return;
-}

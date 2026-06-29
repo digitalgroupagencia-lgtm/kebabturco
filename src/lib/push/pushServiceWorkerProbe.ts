@@ -96,7 +96,7 @@ export async function probePushServiceWorker(
         pushHandlerState: "none",
         pushHandlerScope: null,
         totalRegistrations: all.length,
-        registrationError: "Registo falhou, ver consola do browser",
+        registrationError: "Registo falhou — ver consola do browser",
       };
     }
 

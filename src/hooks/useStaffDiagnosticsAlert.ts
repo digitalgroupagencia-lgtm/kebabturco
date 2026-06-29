@@ -56,9 +56,9 @@ export function useStaffDiagnosticsAlert(area: Area = "panel") {
 
   const message = useMemo(() => {
     if (totalFail > 0) {
-      return `${totalFail} problema(s) crítico(s), convém resolver antes de abrir`;
+      return `${totalFail} problema(s) crítico(s) — convém resolver antes de abrir`;
     }
-    if (totalWarn > 0) return `${totalWarn} aviso(s), convém rever antes de abrir`;
+    if (totalWarn > 0) return `${totalWarn} aviso(s) — convém rever antes de abrir`;
     return null;
   }, [totalFail, totalWarn]);
 

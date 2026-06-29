@@ -75,7 +75,7 @@ export default function TestCheckoutReadiness({
       <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-3 space-y-1">
         <div className="flex items-center gap-2 text-sm font-black text-green-800 dark:text-green-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Checkout teste pronto, pode pagar com cartão 4242
+          Checkout teste pronto — pode pagar com cartão 4242
         </div>
         <p className="text-xs text-muted-foreground pl-6">
           Modo teste activo · Produção bloqueada até aprovação da Stripe · Sem dinheiro real
@@ -89,7 +89,7 @@ export default function TestCheckoutReadiness({
       <div className="flex items-start gap-2">
         <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-black text-amber-900 dark:text-amber-200">Checkout teste, falta configurar</p>
+          <p className="text-sm font-black text-amber-900 dark:text-amber-200">Checkout teste — falta configurar</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Corrija os itens abaixo para testar pedido completo com cartão 4242.
           </p>
@@ -100,7 +100,7 @@ export default function TestCheckoutReadiness({
           <li key={item.label} className="text-xs">
             <span className="font-bold text-destructive">✗</span>{" "}
             <span className="font-semibold">{item.label}</span>
-            {item.fix && <span className="text-muted-foreground">, {item.fix}</span>}
+            {item.fix && <span className="text-muted-foreground"> — {item.fix}</span>}
           </li>
         ))}
       </ul>

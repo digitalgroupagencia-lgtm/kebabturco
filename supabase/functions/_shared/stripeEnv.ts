@@ -1,6 +1,6 @@
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
-/** Resolve chaves Stripe, produção e teste (Lovable Cloud pode usar nomes diferentes). */
+/** Resolve chaves Stripe — produção e teste (Lovable Cloud pode usar nomes diferentes). */
 
 export type StripeKeyMode = "live" | "test";
 

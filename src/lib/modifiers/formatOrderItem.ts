@@ -36,7 +36,7 @@ export interface OrderItemUnitGroup {
 }
 
 /**
- * Devolve grupos de detalhes por unidade do combo, facilita render
+ * Devolve grupos de detalhes por unidade do combo — facilita render
  * em "cards por unidade" no painel/KDS, igual ao mockup.
  */
 export function groupOrderItemDetails(item: OrderItem): OrderItemUnitGroup[] {
@@ -64,7 +64,7 @@ export function groupOrderItemDetails(item: OrderItem): OrderItemUnitGroup[] {
     }
   }
 
-  // Extras planos (compat), só se não duplicam selections.
+  // Extras planos (compat) — só se não duplicam selections.
   const extras = item.extras;
   if (Array.isArray(extras)) {
     const g = getOrCreate(globalKey, () => ({ lines: [] }));
@@ -110,7 +110,7 @@ export function formatOrderItemDetailLines(item: OrderItem): string[] {
   const groups = groupOrderItemDetails(item);
   const out: string[] = [];
   for (const g of groups) {
-    if (g.unitLabel) out.push(`,  ${g.unitLabel} , `);
+    if (g.unitLabel) out.push(`— ${g.unitLabel} —`);
     for (const l of g.lines) out.push(l);
   }
   return out;

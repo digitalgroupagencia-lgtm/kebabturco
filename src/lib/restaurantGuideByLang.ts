@@ -41,7 +41,7 @@ const GUIDE_PT: FaqSection[] = [
     items: [
       {
         q: "Fluxo do entregador",
-        a: "1. Recebe notificação de pedido novo.\n2. Vê entregas atribuídas na área Entregas.\n3. Marca «A caminho» ao sair.\n4. Antes de entregar, pede ao cliente o código de 4 dígitos do pedido.\n5. Introduz o código na app para confirmar, o restaurante valida no painel.",
+        a: "1. Recebe notificação de pedido novo.\n2. Vê entregas atribuídas na área Entregas.\n3. Marca «A caminho» ao sair.\n4. Antes de entregar, pede ao cliente o código de 4 dígitos do pedido.\n5. Introduz o código na app para confirmar — o restaurante valida no painel.",
       },
     ],
   },
@@ -57,7 +57,7 @@ const GUIDE_PT: FaqSection[] = [
     items: [
       {
         q: "Alterar produtos ou preços",
-        a: "Feito na administração geral → Cardápio. Cada loja tem cardápio independente, mudar preço numa não altera a outra.",
+        a: "Feito na administração geral → Cardápio. Cada loja tem cardápio independente — mudar preço numa não altera a outra.",
       },
       {
         q: "Personalização (extras, carne, ingredientes)",
@@ -74,7 +74,7 @@ const GUIDE_PT: FaqSection[] = [
     items: [
       {
         q: "Quando o tablet toca, imprime e mostra notificação?",
-        a: "**App aberto, tela ligada:** som, alerta visual e impressão automática.\n\n**App aberto, tela bloqueada:** som e push; impressão ao desbloquear.\n\n**Outra app em primeiro plano:** push + som; ao tocar na notificação abre o painel e imprime.\n\n**App fechado:** push chega mas a impressão só ao reabrir o painel, deixe o app aberto durante o serviço.",
+        a: "**App aberto, tela ligada:** som, alerta visual e impressão automática.\n\n**App aberto, tela bloqueada:** som e push; impressão ao desbloquear.\n\n**Outra app em primeiro plano:** push + som; ao tocar na notificação abre o painel e imprime.\n\n**App fechado:** push chega mas a impressão só ao reabrir o painel — deixe o app aberto durante o serviço.",
       },
       {
         q: "O som não está a tocar, o que verifico?",
@@ -124,7 +124,7 @@ const GUIDE_ES: FaqSection[] = [
     items: [
       {
         q: "Flujo del repartidor",
-        a: "1. Recibe notificación de pedido nuevo.\n2. Ve entregas asignadas en el área Entregas.\n3. Marca «En camino» al salir.\n4. Antes de entregar, pide al cliente el código de 4 dígitos.\n5. Introduce el código en la app para confirmar, el restaurante valida en el panel.",
+        a: "1. Recibe notificación de pedido nuevo.\n2. Ve entregas asignadas en el área Entregas.\n3. Marca «En camino» al salir.\n4. Antes de entregar, pide al cliente el código de 4 dígitos.\n5. Introduce el código en la app para confirmar — el restaurante valida en el panel.",
       },
     ],
   },
@@ -140,7 +140,7 @@ const GUIDE_ES: FaqSection[] = [
     items: [
       {
         q: "Cambiar productos o precios",
-        a: "Se hace en la administración general → Carta. Cada tienda tiene carta independiente, cambiar precio en una no altera la otra.",
+        a: "Se hace en la administración general → Carta. Cada tienda tiene carta independiente — cambiar precio en una no altera la otra.",
       },
       {
         q: "Personalización (extras, carne, ingredientes)",
@@ -157,7 +157,7 @@ const GUIDE_ES: FaqSection[] = [
     items: [
       {
         q: "¿Cuándo suena, imprime y muestra notificación?",
-        a: "**App abierta, pantalla encendida:** sonido, alerta visual e impresión automática.\n\n**App abierta, pantalla bloqueada:** sonido y push; impresión al desbloquear.\n\n**Otra app en primer plano:** push + sonido; al tocar la notificación abre el panel e imprime.\n\n**App cerrada:** llega el push pero la impresión solo al reabrir el panel, deje la app abierta durante el servicio.",
+        a: "**App abierta, pantalla encendida:** sonido, alerta visual e impresión automática.\n\n**App abierta, pantalla bloqueada:** sonido y push; impresión al desbloquear.\n\n**Otra app en primer plano:** push + sonido; al tocar la notificación abre el panel e imprime.\n\n**App cerrada:** llega el push pero la impresión solo al reabrir el panel — deje la app abierta durante el servicio.",
       },
       {
         q: "El sonido no suena, ¿qué compruebo?",
@@ -207,7 +207,7 @@ const GUIDE_EN: FaqSection[] = [
     items: [
       {
         q: "Driver flow",
-        a: "1. Receives new order notification.\n2. Sees assigned deliveries in Deliveries.\n3. Marks Out for delivery when leaving.\n4. Before delivering, asks the customer for the 4-digit code.\n5. Enters the code in the app to confirm, the restaurant validates in the panel.",
+        a: "1. Receives new order notification.\n2. Sees assigned deliveries in Deliveries.\n3. Marks Out for delivery when leaving.\n4. Before delivering, asks the customer for the 4-digit code.\n5. Enters the code in the app to confirm — the restaurant validates in the panel.",
       },
     ],
   },
@@ -223,7 +223,7 @@ const GUIDE_EN: FaqSection[] = [
     items: [
       {
         q: "Change products or prices",
-        a: "Done in general admin → Menu. Each store has an independent menu, changing price in one store does not affect another.",
+        a: "Done in general admin → Menu. Each store has an independent menu — changing price in one store does not affect another.",
       },
       {
         q: "Customization (extras, protein, ingredients)",
@@ -240,10 +240,10 @@ const GUIDE_EN: FaqSection[] = [
     items: [
       {
         q: "When does the tablet sound, print and notify?",
-        a: "**App open, screen on:** sound, visual alert and automatic printing.\n\n**App open, screen locked:** sound and push; print when unlocked.\n\n**Another app in foreground:** push + sound; tapping the notification opens the panel and prints.\n\n**App closed:** push arrives but printing only when reopening the panel, keep the app open during service.",
+        a: "**App open, screen on:** sound, visual alert and automatic printing.\n\n**App open, screen locked:** sound and push; print when unlocked.\n\n**Another app in foreground:** push + sound; tapping the notification opens the panel and prints.\n\n**App closed:** push arrives but printing only when reopening the panel — keep the app open during service.",
       },
       {
-        q: "Sound not working, what should I check?",
+        q: "Sound not working — what should I check?",
         a: "1. Is «Enable alerts» green in Live orders?\n2. Volume at maximum?\n3. Do Not Disturb off?\n4. Notification permissions enabled?\n5. Battery unrestricted for the app?",
       },
     ],

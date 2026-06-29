@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import type { ComponentPropsWithoutRef } from "react";
 import type * as DialogPrimitive from "@radix-ui/react-dialog";
 
-/** Evita teclado ao abrir, Radix foca o primeiro input (email) e o iOS abre o teclado. */
+/** Evita teclado ao abrir — Radix foca o primeiro input (email) e o iOS abre o teclado. */
 export const tapToPayDialogOpenFocusHandlers = {
   onOpenAutoFocus: (e: Event) => e.preventDefault(),
 } satisfies Partial<ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>;
@@ -21,7 +21,7 @@ export function tapToPayDialogContentClass(...extra: (string | undefined)[]) {
   );
 }
 
-/** Bottom sheet no telemóvel, melhor para teclado numérico. */
+/** Bottom sheet no telemóvel — melhor para teclado numérico. */
 export function staffMobileSheetClass(...extra: (string | undefined)[]) {
   return cn(
     "max-h-[min(92dvh,640px)]",

@@ -12,12 +12,12 @@ export function isGeneralAdmin(role: string | null | undefined): boolean {
   return role === GENERAL_ADMIN_ROLE;
 }
 
-/** Acesso à área /admin, só administrador geral. */
+/** Acesso à área /admin — só administrador geral. */
 export function canAccessGeneralAdmin(role: string | null | undefined): boolean {
   return isGeneralAdmin(role);
 }
 
-/** Recebimentos / IBAN / Stripe, admin geral ou dono/gerente do restaurante. */
+/** Recebimentos / IBAN / Stripe — admin geral ou dono/gerente do restaurante. */
 export function canAccessAdminFinance(role: string | null | undefined): boolean {
   return (
     isGeneralAdmin(role) ||

@@ -84,7 +84,6 @@ const storeItems = [
   { title: "Zonas de entrega", url: nav.admin("delivery-zones"), icon: Truck },
   { title: "Cupões", url: nav.admin("coupons"), icon: Wallet },
   { title: "Fidelidade", url: nav.admin("loyalty"), icon: Heart },
-  { title: "Marketing", url: nav.admin("marketing"), icon: Megaphone },
   { title: "Unidades", url: nav.admin("stores"), icon: Store },
   { title: "Mesas & QR", url: nav.admin("tables"), icon: LayoutGrid },
   { title: "Telas do totem", url: nav.admin("screens"), icon: Monitor },

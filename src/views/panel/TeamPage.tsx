@@ -868,7 +868,7 @@ const TeamPage = () => {
           <DialogHeader>
             <DialogTitle>
               {t("team.dialog.edit")}
-              {editMember?.full_name ? `, ${editMember.full_name}` : ""}
+              {editMember?.full_name ? ` — ${editMember.full_name}` : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -886,7 +886,7 @@ const TeamPage = () => {
             </div>
             <div>
               <Label>Email</Label>
-              <Input value={editMember?.email || ", "} readOnly disabled className="bg-muted/40" />
+              <Input value={editMember?.email || "—"} readOnly disabled className="bg-muted/40" />
               <p className="text-xs text-muted-foreground mt-1">
                 {t("team.field.email.readonly")}
               </p>

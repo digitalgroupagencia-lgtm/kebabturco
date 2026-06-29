@@ -43,8 +43,8 @@ function isEdgeReachableResponse(functionName: string, data: unknown, error: unk
     // Auth-required functions still prove deploy (e.g. operational-diagnostics).
     if (
       row.error === "Autenticação necessária" ||
-      row.error === "Sessão expirada, faça login novamente." ||
-      row.error === "Sessão inválida, faça login novamente."
+      row.error === "Sessão expirada — faça login novamente." ||
+      row.error === "Sessão inválida — faça login novamente."
     ) {
       return true;
     }

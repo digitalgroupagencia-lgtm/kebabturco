@@ -18,10 +18,10 @@ export default function CheckoutActivationPanel({ syncing, checkoutRpcReady, onS
     try {
       await navigator.clipboard.writeText(CHECKOUT_ACTIVATION_SQL);
       setCopied(true);
-      toast.success("SQL copiado, cole no editor da base de dados e execute");
+      toast.success("SQL copiado — cole no editor da base de dados e execute");
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Não foi possível copiar, seleccione o texto manualmente");
+      toast.error("Não foi possível copiar — seleccione o texto manualmente");
     }
   };
 
@@ -39,7 +39,7 @@ export default function CheckoutActivationPanel({ syncing, checkoutRpcReady, onS
           </p>
           {!checkoutRpcReady && (
             <p className="text-xs font-semibold text-destructive pt-1">
-              Falta uma actualização na base de dados, copie o SQL e execute no editor.
+              Falta uma actualização na base de dados — copie o SQL e execute no editor.
             </p>
           )}
         </div>

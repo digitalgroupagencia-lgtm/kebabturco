@@ -26,9 +26,8 @@ export const OperationsSettingsProvider: React.FC<{ children: React.ReactNode; s
       return;
     }
     load();
-    const topic = `ops:${storeId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     const ch = supabase
-      .channel(topic)
+      .channel(`ops:${storeId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "operations_settings", filter: `store_id=eq.${storeId}` }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };

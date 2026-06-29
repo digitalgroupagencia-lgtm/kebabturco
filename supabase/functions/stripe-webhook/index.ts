@@ -137,7 +137,7 @@ async function recordDisputeLedgerForStore(
       stripe_fee_cents: 0,
       processing_fee_cents: 0,
       net_cents: -reversedCents,
-      description: `${marker}: contestação, valor do pedido`,
+      description: `${marker}: contestação — valor do pedido`,
     });
   }
 

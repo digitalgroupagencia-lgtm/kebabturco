@@ -435,7 +435,7 @@ export async function startAndroidPrintListener() {
 
   const stores = await fetchAndroidStores();
   if (stores.length === 0) {
-    log("nenhuma loja em modo android_direct, listener inativo");
+    log("nenhuma loja em modo android_direct — listener inativo");
     started = false;
     return;
   }
@@ -454,7 +454,7 @@ export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 }
 
-/** Teste manual a partir da UI, só funciona dentro do APK. */
+/** Teste manual a partir da UI — só funciona dentro do APK. */
 export async function androidDirectTestPrint(opts: { ip: string; port: number; ticketBase64: string }) {
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Teste Android direto só funciona dentro do APK instalado no tablet.");

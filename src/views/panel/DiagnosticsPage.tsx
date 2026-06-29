@@ -293,7 +293,7 @@ function SummaryTile({
 
 function buildFindingClipboard(f: AuditFinding): string {
   const lines = [
-    `[Auditoria, ${f.severity.toUpperCase()}] ${f.label}`,
+    `[Auditoria — ${f.severity.toUpperCase()}] ${f.label}`,
     f.detail ? `Detalhe: ${f.detail}` : null,
     f.action ? `Acção sugerida: ${f.action}` : null,
     f.link ? `Tela: ${f.link}` : null,

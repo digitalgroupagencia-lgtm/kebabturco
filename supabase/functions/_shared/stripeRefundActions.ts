@@ -146,7 +146,7 @@ export async function handleRefundOrder(
     } else {
       const stripeKey = pickStripeSecretForEnvironment(connectEnv);
       if (!stripeKey) {
-        return json({ error: "Reembolso indisponível, Stripe não configurado" }, 503);
+        return json({ error: "Reembolso indisponível — Stripe não configurado" }, 503);
       }
 
       const { pi } = await retrievePaymentIntentWithFallback(

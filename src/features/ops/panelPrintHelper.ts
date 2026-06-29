@@ -52,11 +52,11 @@ export async function tryPrintPanelOrder(
     if (!cfg.enabled) return;
     await printOrder(storeId, panelOrderToTicket(order, items, companyName), order.id);
   } catch {
-    // silencioso, pedido continua
+    // silencioso — pedido continua
   }
 }
 
-/** Reimpressão manual, ignora dedup automática. */
+/** Reimpressão manual — ignora dedup automática. */
 export async function reprintPanelOrder(
   storeId: string,
   order: PanelOrder,

@@ -6,7 +6,7 @@
  */
 export function parseProductCode(fullName: string): { code: string | null; name: string } {
   if (!fullName) return { code: null, name: "" };
-  const match = fullName.trim().match(/^(\d{1,3}[A-Za-z]?)\s*[.\-–, :)]\s*(.+)$/);
+  const match = fullName.trim().match(/^(\d{1,3}[A-Za-z]?)\s*[.\-–—:)]\s*(.+)$/);
   if (match) {
     return { code: match[1], name: match[2].trim() };
   }

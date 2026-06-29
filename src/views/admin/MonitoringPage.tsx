@@ -139,7 +139,7 @@ const MonitoringPage = () => {
         purpose="Estado do sistema em tempo real: restaurantes ativos, lojas, pedidos da última hora e saúde geral da plataforma."
         whenToUse="Abra quando suspeitar que algo está parado (sem pedidos, impressão falhando, plataforma lenta)."
         steps={[
-          "Confira o cartão Restaurantes Ativos, deve mostrar todos os clientes em produção.",
+          "Confira o cartão Restaurantes Ativos — deve mostrar todos os clientes em produção.",
           "Pedidos da última hora atualiza a cada 30 segundos.",
           "Se ver muitos vermelhos ou nada chegando, abra Centro de Testes e Diagnóstico.",
         ]}
@@ -165,7 +165,7 @@ const MonitoringPage = () => {
 
       <PremiumChartCard
         title="Pagamentos online do mês"
-        subtitle="Divisão por método, dados reais em euros"
+        subtitle="Divisão por método — dados reais em euros"
       >
         <PremiumDonutChart data={financial?.byPaymentMethod ?? []} />
       </PremiumChartCard>

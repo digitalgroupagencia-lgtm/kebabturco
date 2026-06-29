@@ -1,11 +1,11 @@
 /**
- * Central brand color tokens, defaults for Kebab Turco premium wine identity.
+ * Central brand color tokens — defaults for Kebab Turco premium wine identity.
  * White-label: BrandingContext overrides --brand-wine* CSS vars from company_settings.header_color.
  */
 
 import { isCustomerStorefrontPath, isStaffAppPath } from "@/lib/appRouteKind";
 
-/** Cor oficial Kebab Turco, substitui todos os vermelhos/vinhos anteriores. */
+/** Cor oficial Kebab Turco — substitui todos os vermelhos/vinhos anteriores. */
 export const KEBAB_OFFICIAL_WINE_HEX = "#3A0205";
 export const BRAND_WINE_HEX = KEBAB_OFFICIAL_WINE_HEX;
 export const BRAND_WINE_DARK_HEX = KEBAB_OFFICIAL_WINE_HEX;
@@ -16,7 +16,7 @@ export const BRAND_WINE_LIGHT_HEX = "#5A0808";
  */
 export const BRAND_CHROME_HEX = KEBAB_OFFICIAL_WINE_HEX;
 
-/** Cores antigas (vermelho fast-food ou vinhos anteriores), migrar para oficial. */
+/** Cores antigas (vermelho fast-food ou vinhos anteriores) — migrar para oficial. */
 export const LEGACY_BRAND_RED_HEXES = new Set([
   "#8B1A1A",
   "#5C1419",
@@ -122,7 +122,7 @@ export function shadowHeaderFromPalette(p: ReturnType<typeof winePaletteFromHex>
   return `0 4px 18px -8px hsl(${p.wine} / 0.38)`;
 }
 
-/** Converte HSL (parts) para hex, usado na cor da barra do sistema. */
+/** Converte HSL (parts) para hex — usado na cor da barra do sistema. */
 export function hslPartsToHex(parts: HslParts): string {
   const h = parts.h / 360;
   const s = parts.s / 100;
@@ -155,7 +155,7 @@ export function hslPartsToHex(parts: HslParts): string {
   return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
 }
 
-/** Vinho escuro do header, cor exacta para Safari / Android / PWA / TWA. */
+/** Vinho escuro do header — cor exacta para Safari / Android / PWA / TWA. */
 export function chromeHexFromHeader(headerHex?: string): string {
   const base = headerHex || BRAND_WINE_HEX;
   const palette = winePaletteFromHex(base);
@@ -181,7 +181,7 @@ function setOrCreateMeta(name: string, content: string, extra?: Record<string, s
   el.content = content;
 }
 
-/** Actualiza theme-color, safe-area e meta iOS, só no site do cliente (não admin/painel). */
+/** Actualiza theme-color, safe-area e meta iOS — só no site do cliente (não admin/painel). */
 export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "dark" = "light"): void {
   if (typeof document === "undefined") return;
 
@@ -226,7 +226,7 @@ export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "d
   }
 }
 
-/** Chrome neutro para administração / painel, evita flash vinho e barra errada. */
+/** Chrome neutro para administração / painel — evita flash vinho e barra errada. */
 export function applyStaffAppChrome(): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;

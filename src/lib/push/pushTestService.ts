@@ -224,7 +224,7 @@ function broadcastDeliveryMessage(payload: ReturnType<typeof parseSendPayload>):
   const sentFcm = payload.sentFcm ?? 0;
 
   if (sentApns === 0 && sentFcm === 0 && sentWeb > 0) {
-    return `A mensagem foi para ${sentWeb} computador/browser, nenhum telemóvel recebeu. No iPhone: abra a app Kebab Turco → Painel → Definições → ligue «Notificações push» e aceite quando o iPhone pedir.`;
+    return `A mensagem foi para ${sentWeb} computador/browser — nenhum telemóvel recebeu. No iPhone: abra a app Kebab Turco → Painel → Definições → ligue «Notificações push» e aceite quando o iPhone pedir.`;
   }
   if (sentApns > 0 && sentWeb === 0 && sentFcm === 0) {
     return `Enviado para ${sentApns} iPhone(s). Feche a app ou bloqueie o ecrã para ver o aviso.`;
@@ -263,7 +263,7 @@ function finalizeBroadcastResult(
       userMessage:
         iosFailed > 0
           ? iosHint ??
-            `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam, no telemóvel: Definições → Kebab Turco → Notificações (ligar) e registe outra vez na app.`
+            `Enviado para ${base.sent} dispositivo(s), mas ${iosFailed} iPhone(s) falharam — no telemóvel: Definições → Kebab Turco → Notificações (ligar) e registe outra vez na app.`
           : channelMessage ?? `Enviado para ${base.sent} dispositivo(s), ${failed} falharam.`,
     };
   }
@@ -421,7 +421,7 @@ export async function fetchServerVapidDiagnostics(): Promise<ServerPushDiagnosti
       result.configured ? "info" : "warn",
       result.configured
         ? "Servidor com chaves VAPID para envio"
-        : "Servidor sem chaves VAPID, só a subscrição no site funciona",
+        : "Servidor sem chaves VAPID — só a subscrição no site funciona",
       result,
     );
 
@@ -444,11 +444,11 @@ async function invokeStoreBroadcast(opts: {
 
   const { data, error } = await invokePushFunction({
     storeId,
+    audience,
     title,
     body: msgBody,
-    tag: `staff-new-order-test-${Date.now()}`,
+    tag: `push-test-${Date.now()}-${audience ?? "staff"}`,
     url,
-    requireInteraction: true,
     pushDiagnostic: true,
   });
 
@@ -585,7 +585,7 @@ export async function sendTestPushNotification(opts: {
   });
 
   if (!directSubscription) {
-    const userMessage = "Este browser ainda não está registado, carregue em «Registar push neste dispositivo» primeiro.";
+    const userMessage = "Este browser ainda não está registado — carregue em «Registar push neste dispositivo» primeiro.";
     pushLog("test", "test_send", "warn", userMessage);
     return { ok: false, userMessage };
   }
@@ -629,7 +629,7 @@ export async function sendTestPushNotification(opts: {
   }
 }
 
-/** Teste directo no iPhone/Android, envia só para o token deste telemóvel (sem broadcast). */
+/** Teste directo no iPhone/Android — envia só para o token deste telemóvel (sem broadcast). */
 export async function sendNativeDeviceTestPush(opts: {
   storeId: string;
   title: string;
@@ -646,7 +646,7 @@ export async function sendNativeDeviceTestPush(opts: {
   });
 
   if (!token || device.mode !== "native") {
-    const userMessage = "Este telemóvel ainda não tem token, toque em «Registar push» primeiro.";
+    const userMessage = "Este telemóvel ainda não tem token — toque em «Registar push» primeiro.";
     pushLog("test", "test_send", "warn", userMessage);
     return { ok: false, userMessage };
   }

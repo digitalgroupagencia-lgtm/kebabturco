@@ -41,7 +41,7 @@ type Props = {
   onChanged?: () => void;
 };
 
-/** Pedidos de acesso com Google, aprovar ou recusar antes de abrir o painel. */
+/** Pedidos de acesso com Google — aprovar ou recusar antes de abrir o painel. */
 export default function StaffGooglePendingSection({ storeId, defaultLang = "es", onChanged }: Props) {
   const { t, lang: staffLang } = useStaffT();
   const uiLang = staffLang === "en" ? "es" : staffLang;

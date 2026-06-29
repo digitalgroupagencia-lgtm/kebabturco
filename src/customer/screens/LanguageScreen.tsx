@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -39,7 +39,6 @@ const LanguageScreen = () => {
   const { theme } = useTheme();
   const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
-  const [forceVisible, setForceVisible] = useState(false);
 
   const logo =
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
@@ -48,19 +47,10 @@ const LanguageScreen = () => {
     "/apple-touch-icon.png";
   const brandName = settings?.company_name || "EL REY";
 
-  const langs = langsReady && activeLangs.length > 0 ? activeLangs : ["es", "pt", "en", "fr"] as const;
+  const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
   const titles = Array.from(new Set(langs.map((l) => TITLE_BY_LANG[l] || TITLE_BY_LANG.es)));
 
-  const screenReady = forceVisible || (!storeLoading && langsReady && !brandingLoading);
-
-  useEffect(() => {
-    // O ecrã cliente nunca pode ficar preso atrás do boot branco do iOS.
-    const timer = window.setTimeout(() => {
-      setForceVisible(true);
-      dismissBootShell();
-    }, 700);
-    return () => window.clearTimeout(timer);
-  }, []);
+  const screenReady = !storeLoading && langsReady && !brandingLoading;
 
   useEffect(() => {
     if (screenReady) dismissBootShell();
@@ -97,7 +87,7 @@ const LanguageScreen = () => {
         <ThemeToggle />
       </div>
 
-      {/* Logo + títulos, tamanho original, sem flex-1 (evita espaço branco gigante) */}
+      {/* Logo + títulos — tamanho original, sem flex-1 (evita espaço branco gigante) */}
       <div className="flex flex-col items-center px-6 pt-3 shrink-0">
         <div
           className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
@@ -120,7 +110,7 @@ const LanguageScreen = () => {
         </div>
       </div>
 
-      {/* Bandeiras, altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
+      {/* Bandeiras — altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
       <div className="flex min-h-0 items-center justify-center overflow-hidden px-4 py-2 w-full">
         <div
           className="flex flex-row items-center justify-center w-full max-w-md flex-nowrap"

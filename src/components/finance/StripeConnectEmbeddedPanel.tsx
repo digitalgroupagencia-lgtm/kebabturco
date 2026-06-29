@@ -69,7 +69,7 @@ export default function StripeConnectEmbeddedPanel({
         }
         if (session.skipEmbedded || session.accountType === "custom") {
           setAlreadyConnected(
-            session.message || "Restaurante já registado na plataforma, não precisa de formulário extra.",
+            session.message || "Restaurante já registado na plataforma — não precisa de formulário extra.",
           );
           return;
         }
@@ -174,11 +174,11 @@ export default function StripeConnectEmbeddedPanel({
           <AlertCircle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
           <div className="space-y-1 text-sm">
             <p className="font-black text-amber-900 dark:text-amber-200">
-              Modo teste activo, conta simulada para validação do checkout
+              Modo teste activo — conta simulada para validação do checkout
             </p>
             <p className="text-muted-foreground leading-relaxed">
               O formulário de verificação não está disponível neste momento. Pode activar recebimentos de validação
-              com um clique, sem dinheiro real.
+              com um clique — sem dinheiro real.
             </p>
             {loadError && (
               <p className="text-xs text-muted-foreground pt-1">{loadError}</p>
@@ -203,7 +203,7 @@ export default function StripeConnectEmbeddedPanel({
       <div className="rounded-xl border border-dashed p-4 space-y-3">
         <p className="text-sm text-muted-foreground">
           {connectEnvironment === "test"
-            ? "Modo teste indisponível, falta a chave publicável de teste no site. Pode ainda activar recebimentos de teste pelo botão abaixo."
+            ? "Modo teste indisponível — falta a chave publicável de teste no site. Pode ainda activar recebimentos de teste pelo botão abaixo."
             : "Recebimentos online indisponíveis neste momento."}
         </p>
         {preferTest && (
@@ -256,7 +256,7 @@ export default function StripeConnectEmbeddedPanel({
     <div className="relative space-y-3">
       {sessionEnvironment === "test" && (
         <p className="text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2">
-          Modo teste, dados simulados, sem dinheiro real.
+          Modo teste — dados simulados, sem dinheiro real.
         </p>
       )}
       {loadError && (

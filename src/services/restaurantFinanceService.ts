@@ -31,7 +31,7 @@ export type RestaurantFinanceSnapshot = {
   nextPayoutAmountCents: number | null;
   ibanLast4: string | null;
   simulated: boolean;
-  /** Saldo real da Stripe indisponível, não usar totais do extrato como saldo. */
+  /** Saldo real da Stripe indisponível — não usar totais do extrato como saldo. */
   liveDataUnavailable?: boolean;
 };
 

@@ -73,11 +73,11 @@ const PanelSettingsPage = () => {
       if (!(await isNativePushAvailable())) return;
       const diag = await getNativePushRuntimeDiagnostics();
       if (diag.permission === "denied") {
-        setPushNativeHint("Notificações bloqueadas no iPhone, Definições → Kebab Turco → Notificações → Permitir.");
+        setPushNativeHint("Notificações bloqueadas no iPhone — Definições → Kebab Turco → Notificações → Permitir.");
       } else if (diag.permission === "granted" && diag.hasCachedToken) {
         setPushNativeHint("Telemóvel pronto para alertas.");
       } else if (diag.permission === "granted") {
-        setPushNativeHint("Permissão OK, ao ligar o interruptor, o telemóvel pode demorar até 1 minuto.");
+        setPushNativeHint("Permissão OK — ao ligar o interruptor, o telemóvel pode demorar até 1 minuto.");
       }
     });
   }, []);
@@ -104,7 +104,7 @@ const PanelSettingsPage = () => {
     }
 
     if (storeLoading) {
-      const msg = "A carregar a loja, espere um momento e tente outra vez.";
+      const msg = "A carregar a loja — espere um momento e tente outra vez.";
       setPushLastError(msg);
       toast.error(msg);
       return;
@@ -136,8 +136,8 @@ const PanelSettingsPage = () => {
           setPushNotifications(false);
           const err =
             perm.receive === "denied"
-              ? "Notificações bloqueadas, vá a Definições do iPhone → Kebab Turco → Notificações e permita."
-              : "Permissão não concedida, tente outra vez.";
+              ? "Notificações bloqueadas — vá a Definições do iPhone → Kebab Turco → Notificações e permita."
+              : "Permissão não concedida — tente outra vez.";
           setPushLastError(err);
           toast.error(err);
           return;
@@ -145,7 +145,7 @@ const PanelSettingsPage = () => {
 
         setPushNotifications(true);
         setStaffPushEnabled(true);
-        toast.info("A registar este telemóvel, pode demorar até 1 minuto.");
+        toast.info("A registar este telemóvel — pode demorar até 1 minuto.");
 
         const res = await registerNativeStaffPush(effectiveStoreId, { skipPermissionRequest: true });
         if (res.ok) {
@@ -353,7 +353,7 @@ const PanelSettingsPage = () => {
               {!storeLoading && !effectiveStoreId ? (
                 <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
                   <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-                  <p>Loja não identificada, saia e entre outra vez no painel, ou escolha a unidade no menu.</p>
+                  <p>Loja não identificada — saia e entre outra vez no painel, ou escolha a unidade no menu.</p>
                 </div>
               ) : null}
               {pushClientMode === "needs-native-app" ? (

@@ -19,7 +19,7 @@ export async function testCouponValidation(storeId: string, code: string, subtot
   try {
     const result = await validateCoupon(storeId, code.trim(), subtotal);
     if (result.valid) {
-      log("validate", "info", `Cupão válido, desconto ${result.discount_amount}€`, {
+      log("validate", "info", `Cupão válido — desconto ${result.discount_amount}€`, {
         coupon_id: result.coupon_id,
         code: result.code,
       });

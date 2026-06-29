@@ -29,7 +29,7 @@ function buildEnvTemplate(
   port: number,
   supabaseUrl: string,
 ) {
-  return `# Kebab Print Bridge, ${activeStoreName}
+  return `# Kebab Print Bridge — ${activeStoreName}
 # Uma instância por loja. Cole no PC: C:\\kebab-print-bridge\\.env
 
 SUPABASE_URL=${supabaseUrl}
@@ -131,7 +131,7 @@ const PrinterPage = () => {
     setCopyingEnv(true);
     try {
       await navigator.clipboard.writeText(envTemplate);
-      toast.success(".env copiado, cole no Bloco de notas em C:\\kebab-print-bridge\\.env");
+      toast.success(".env copiado — cole no Bloco de notas em C:\\kebab-print-bridge\\.env");
     } catch {
       toast.error("Não foi possível copiar. Use Descarregar .env.");
     } finally {
@@ -150,7 +150,7 @@ const PrinterPage = () => {
       const target = cfg.print_mode === "android_direct"
         ? "tablet Android desta loja"
         : "PC da loja";
-      toast.success(`Teste enviado, aguarde impressão no ${target}`);
+      toast.success(`Teste enviado — aguarde impressão no ${target}`);
     } else {
       toast.error("Erro: " + (result.error || "Falha ao criar job"));
     }
@@ -198,7 +198,7 @@ const PrinterPage = () => {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto w-full">
-      <AdminStoreSwitcher hint="Cada unidade tem a sua impressora. Escolha a loja, configure e guarde, depois repita para a outra unidade." />
+      <AdminStoreSwitcher hint="Cada unidade tem a sua impressora. Escolha a loja, configure e guarde — depois repita para a outra unidade." />
 
       <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
         <p className="text-sm font-bold text-foreground">A configurar: {activeStoreName}</p>
@@ -238,7 +238,7 @@ const PrinterPage = () => {
 
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
             <Network className="w-3.5 h-3.5" />
-            <span>{cfg.printer_name}, <span className="text-foreground font-mono">{cfg.ip_address}:{cfg.port}</span></span>
+            <span>{cfg.printer_name} — <span className="text-foreground font-mono">{cfg.ip_address}:{cfg.port}</span></span>
           </div>
 
           {(bridge === "inactive" || bridge === "unknown") && (
@@ -260,7 +260,7 @@ const PrinterPage = () => {
                     <li>Verifique se o <strong>tablet Android da loja está ligado</strong> e com Wi-Fi.</li>
                     <li>Abra a <strong>app do painel</strong> no tablet (ou recarregue se já estiver aberta).</li>
                     <li>Confirme que o tablet está na <strong>mesma rede Wi-Fi</strong> da impressora ({cfg.ip_address}).</li>
-                    <li>Toque em <strong>Verificar</strong> aqui em cima, deve mudar para <strong>Bridge activo</strong> em segundos.</li>
+                    <li>Toque em <strong>Verificar</strong> aqui em cima — deve mudar para <strong>Bridge activo</strong> em segundos.</li>
                   </ol>
                 ) : (
                   <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
@@ -269,7 +269,7 @@ const PrinterPage = () => {
                     <li>Verifique se o ícone do <strong>Kebab Print Bridge</strong> está na barra de tarefas (ao lado do relógio). Se não estiver, abra o programa pelo menu Iniciar.</li>
                     <li>Se aparecer fechado, abra <strong>C:\kebab-print-bridge\</strong> e execute <strong>start.bat</strong>.</li>
                     <li>Confirme que a impressora está <strong>ligada</strong> e a responder no IP <strong className="font-mono">{cfg.ip_address}:{cfg.port}</strong>.</li>
-                    <li>Toque em <strong>Verificar</strong> aqui em cima, deve mudar para <strong>Bridge activo</strong> em segundos.</li>
+                    <li>Toque em <strong>Verificar</strong> aqui em cima — deve mudar para <strong>Bridge activo</strong> em segundos.</li>
                   </ol>
                 )}
                 <p className="text-[11px] text-muted-foreground pt-1 border-t border-border">
@@ -307,7 +307,7 @@ const PrinterPage = () => {
                 className={`rounded-lg border p-3 text-left transition ${cfg.print_mode === "android_direct" ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
               >
                 <div className="font-medium text-sm">Android direto</div>
-                <div className="text-xs text-muted-foreground">App Android no tablet imprime direto via TCP/IP, sem PC.</div>
+                <div className="text-xs text-muted-foreground">App Android no tablet imprime direto via TCP/IP — sem PC.</div>
               </button>
             </div>
           </div>
@@ -362,7 +362,7 @@ const PrinterPage = () => {
             <li>Descarregue o pacote ZIP e extraia em <span className="font-mono">C:\kebab-print-bridge</span>.</li>
             <li>Copie o <span className="font-mono">.env</span> e cole a chave <strong>service_role</strong> do Supabase.</li>
             <li>No PC: duplo clique em <span className="font-mono">install-windows.bat</span>, depois <span className="font-mono">start-bridge.bat</span>.</li>
-            <li>Aqui no painel: clique <strong>Imprimir teste</strong>, deve sair papel na cozinha.</li>
+            <li>Aqui no painel: clique <strong>Imprimir teste</strong> — deve sair papel na cozinha.</li>
             <li>Se OK: no PC corra <span className="font-mono">install-service-windows.bat</span> (arranca com Windows).</li>
             <li>Confirme abaixo: <strong>Bridge activo</strong> e hora do último sinal.</li>
             <li>Repita tudo na <strong>outra loja</strong> com outro <span className="font-mono">STORE_ID</span> e outra impressora.</li>
@@ -426,7 +426,7 @@ const PrinterPage = () => {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             As impressoras térmicas usam moradas internas da rede (ex. <span className="font-mono">192.168.x.x</span>).
-            O site na nuvem não alcança a impressora directamente, por isso um PC na loja corre o
+            O site na nuvem não alcança a impressora directamente — por isso um PC na loja corre o
             <b> Print Bridge</b>, consulta a fila na nuvem e envia o ticket por cabo/rede local.
           </p>
           <ol className="list-decimal pl-5 space-y-1">

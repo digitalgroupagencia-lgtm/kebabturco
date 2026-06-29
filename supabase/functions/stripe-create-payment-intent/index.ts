@@ -224,8 +224,8 @@ Deno.serve(async (req) => {
         stripeConfigured,
         platformFeeCents: PLATFORM_FEE_CENTS,
         message: stripeConfigured
-          ? "Serviço activo, envie storeId e valores do pedido para criar pagamento."
-          : "Stripe não configurada, adicione STRIPE_SECRET_KEY nos segredos Lovable Cloud.",
+          ? "Serviço activo — envie storeId e valores do pedido para criar pagamento."
+          : "Stripe não configurada — adicione STRIPE_SECRET_KEY nos segredos Lovable Cloud.",
       });
     }
 
@@ -328,8 +328,8 @@ Deno.serve(async (req) => {
         {
           error:
             connectEnv === "test"
-              ? "Pagamentos de teste indisponíveis, falta chave secreta de teste no servidor."
-              : "Pagamentos online indisponíveis, falta chave secreta no servidor.",
+              ? "Pagamentos de teste indisponíveis — falta chave secreta de teste no servidor."
+              : "Pagamentos online indisponíveis — falta chave secreta no servidor.",
           code: "stripe_secret_missing",
         },
         503,
@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
         return json(
           {
             error:
-              "Produção bloqueada, plataforma pendente de verificação. Use modo teste ou aguarde aprovação.",
+              "Produção bloqueada — plataforma pendente de verificação. Use modo teste ou aguarde aprovação.",
             code: "platform_pending_verification",
             productionBlocked: true,
           },

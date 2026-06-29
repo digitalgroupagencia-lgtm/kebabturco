@@ -6,7 +6,7 @@ import type { TicketOrder } from "@/services/escPosTicketBuilder";
 import { fetchPrinterConfig, printOrder } from "@/services/printerService";
 import { cartItemToTicketItem } from "@/lib/ticketExpansion";
 
-export type CheckoutPrintInput = {
+type CheckoutPrintInput = {
   storeId: string;
   orderId: string;
   orderNumber: string;

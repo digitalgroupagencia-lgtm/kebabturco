@@ -53,7 +53,7 @@ export function useDriverOrders(storeId?: string) {
         if (error) throw error;
         const result = data as { success?: boolean; delivery_confirmation_code?: string };
         if (!result?.success) throw new Error("Não foi possível iniciar a entrega");
-        toast.success("Entrega iniciada, cliente notificado");
+        toast.success("Entrega iniciada — cliente notificado");
         await fetchOrders();
         return true;
       } catch (e) {
@@ -78,7 +78,7 @@ export function useDriverOrders(storeId?: string) {
         if (error) throw error;
         const result = data as { success?: boolean; error?: string };
         if (!result?.success) throw new Error(result?.error || "Código incorrecto");
-        toast.success(`Entrega concluída, #${order.order_number}`);
+        toast.success(`Entrega concluída — #${order.order_number}`);
         await fetchOrders();
         return true;
       } catch (e) {

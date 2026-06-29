@@ -7,7 +7,7 @@ import { nav } from "@/lib/navPaths";
 import { canAccessGeneralAdmin } from "@/lib/staffPermissions";
 import { Button } from "@/components/ui/button";
 
-/** Atalho só para admin_master no cardápio público, equipa do restaurante não vê. */
+/** Atalho só para admin_master no cardápio público — equipa do restaurante não vê. */
 export default function AdminMasterStorefrontBack() {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);

@@ -15,7 +15,7 @@
  */
 
 export type InternalFeatureKey =
-  // exemplo, adicionar novas aqui
+  // exemplo — adicionar novas aqui
   | "experimental_admin_metrics"
   | "experimental_kitchen_v2";
 

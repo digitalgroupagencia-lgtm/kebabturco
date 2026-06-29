@@ -16,7 +16,7 @@ export async function probeHubModules(storeId: string | null): Promise<AuditFind
           id: "hub-printer-disabled",
           category: "printing",
           severity: "warning",
-          label: "Impressora, desactivada nas configurações",
+          label: "Impressora — desactivada nas configurações",
           panel: "admin",
           link: "/admin/printer",
         });
@@ -25,7 +25,7 @@ export async function probeHubModules(storeId: string | null): Promise<AuditFind
           id: "hub-printer-bridge",
           category: "printing",
           severity: "warning",
-          label: "Impressora, bridge inactivo ou offline",
+          label: "Impressora — bridge inactivo ou offline",
           panel: "admin",
           link: "/admin/printer",
         });
@@ -34,7 +34,7 @@ export async function probeHubModules(storeId: string | null): Promise<AuditFind
           id: "hub-printer-ok",
           category: "printing",
           severity: "ok",
-          label: "Impressora, configurada e bridge activo",
+          label: "Impressora — configurada e bridge activo",
           panel: "admin",
         });
       }
@@ -82,7 +82,7 @@ export async function probeHubModules(storeId: string | null): Promise<AuditFind
       id: "hub-loyalty",
       category: "menu",
       severity: "ok",
-      label: `Fidelidade, ${loyalty.accountCount} conta(s), ${loyalty.readyRewards} prémio(s) prontos`,
+      label: `Fidelidade — ${loyalty.accountCount} conta(s), ${loyalty.readyRewards} prémio(s) prontos`,
       panel: "admin",
       link: "/admin/loyalty",
     });
@@ -120,7 +120,7 @@ export async function probeHubModules(storeId: string | null): Promise<AuditFind
         id: "hub-plan-ok",
         category: "payments",
         severity: "ok",
-        label: `Plano ${plan.tenantPlan}, funcionalidades verificadas`,
+        label: `Plano ${plan.tenantPlan} — funcionalidades verificadas`,
         panel: "admin",
       });
     }

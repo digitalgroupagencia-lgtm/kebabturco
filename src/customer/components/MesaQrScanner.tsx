@@ -67,7 +67,7 @@ const MesaQrScanner = ({ active, onDetected }: MesaQrScannerProps) => {
             void scanner.stop().catch(() => {});
           },
           () => {
-            /* scan frame, sem leitura ainda */
+            /* scan frame — sem leitura ainda */
           },
         );
 

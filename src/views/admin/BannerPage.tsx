@@ -190,9 +190,9 @@ const BannerPage = () => {
           "Clique 'Adicionar banner'.",
           "Suba imagem (JPG/PNG), vídeo (MP4/MOV/WEBM) ou áudio (MP3). Limite 100 MB.",
           "Use as setas ↑/↓ para reordenar.",
-          "Ative o switch, o banner aparece imediatamente no cliente.",
+          "Ative o switch — o banner aparece imediatamente no cliente.",
         ]}
-        howToConfirm="Abra a loja em outra aba, o banner aparece no topo do cardápio."
+        howToConfirm="Abra a loja em outra aba — o banner aparece no topo do cardápio."
         assistantQuestion="Qual formato e duração de banner converte melhor no totem?"
       />
       <PremiumPageHeader

@@ -183,28 +183,28 @@ const Dashboard = () => {
           icon={ShoppingBag}
           tone="primary"
           label={t("dashboard.orders_today")}
-          value={loadingDashboard ? ", " : String(data?.ordersToday ?? 0)}
+          value={loadingDashboard ? "—" : String(data?.ordersToday ?? 0)}
           sub={panelT(lang, "dashboard.metric.orders_sub", { count: String(data?.ordersMonth ?? 0) })}
         />
         <PremiumMetricCard
           icon={DollarSign}
           tone="success"
           label={t("dashboard.revenue_today")}
-          value={loadingDashboard ? ", " : fmt(data?.totalToday ?? 0)}
+          value={loadingDashboard ? "—" : fmt(data?.totalToday ?? 0)}
           sub={t("dashboard.metric.revenue_sub")}
         />
         <PremiumMetricCard
           icon={TrendingUp}
           tone="info"
           label={t("dashboard.avg_ticket")}
-          value={loadingDashboard ? ", " : fmt(data?.avgTicket ?? 0)}
+          value={loadingDashboard ? "—" : fmt(data?.avgTicket ?? 0)}
           sub={t("dashboard.metric.avg_sub")}
         />
         <PremiumMetricCard
           icon={Calendar}
           tone="purple"
           label={t("dashboard.revenue_month")}
-          value={loadingDashboard ? ", " : fmt(data?.totalMonth ?? 0)}
+          value={loadingDashboard ? "—" : fmt(data?.totalMonth ?? 0)}
           sub={panelT(lang, "dashboard.metric.month_sub", { count: String(data?.ordersMonth ?? 0) })}
         />
       </div>
@@ -240,7 +240,7 @@ const Dashboard = () => {
                 icon={item.icon}
                 tone={tone as "warning" | "orange" | "success" | "danger"}
                 label={item.label}
-                value={loadingDashboard ? ", " : item.value}
+                value={loadingDashboard ? "—" : item.value}
               />
             );
           })}

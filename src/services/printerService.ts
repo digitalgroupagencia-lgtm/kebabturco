@@ -1,4 +1,4 @@
-// Printer Service, fila de impressão via Supabase + Print Bridge local.
+// Printer Service — fila de impressão via Supabase + Print Bridge local.
 import { supabase } from "@/integrations/supabase/client";
 import { processAndroidDirectPrintJob } from "@/services/androidPrintListener";
 import { buildEscPosTicket, buildTestTicket, sampleOrder, TicketOrder } from "@/services/escPosTicketBuilder";

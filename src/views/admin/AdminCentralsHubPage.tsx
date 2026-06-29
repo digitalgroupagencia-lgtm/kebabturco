@@ -47,7 +47,7 @@ export default function AdminCentralsHubPage() {
         description={
           SINGLE_TENANT_MODE
             ? "Visão operacional das centrais do Kebab Turco."
-            : "Visão global com métricas, timelines e actividade, escolhe uma central ou entra num restaurante."
+            : "Visão global com métricas, timelines e actividade — escolhe uma central ou entra num restaurante."
         }
         breadcrumbs={[
           { label: APP_NAME, to: nav.admin() },

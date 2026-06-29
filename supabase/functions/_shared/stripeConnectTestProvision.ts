@@ -157,7 +157,7 @@ export type TestProvisionResult = {
 };
 
 /**
- * Cria ou completa conta Connect em modo TESTE, sem formulário embutido.
+ * Cria ou completa conta Connect em modo TESTE — sem formulário embutido.
  * Usa apenas STRIPE_SECRET_KEY_TEST. Não movimenta dinheiro real.
  */
 export async function provisionTestConnectAccount(
@@ -213,7 +213,7 @@ export async function provisionTestConnectAccount(
   let accountId = store.stripe_connect_account_id;
   const storedEnv = store.stripe_connect_environment;
 
-  // Conta live ou ambiente errado, criar conta teste nova
+  // Conta live ou ambiente errado — criar conta teste nova
   if (accountId && storedEnv === "live") {
     accountId = null;
   }
@@ -279,8 +279,8 @@ export async function provisionTestConnectAccount(
   }
 
   const message = simulated
-    ? "Modo teste activo. Conta de recebimentos simulada para validação do checkout, sem dinheiro real."
-    : "Modo teste activo. Conta Connect de teste pronta, pode pagar com cartão 4242.";
+    ? "Modo teste activo. Conta de recebimentos simulada para validação do checkout — sem dinheiro real."
+    : "Modo teste activo. Conta Connect de teste pronta — pode pagar com cartão 4242.";
 
   return {
     accountId,

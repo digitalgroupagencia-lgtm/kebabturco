@@ -17,14 +17,14 @@ export const AI_MODULE_PREVIEWS: Record<
   seller: {
     variants: [
       { id: "a", label: "Sugestão", content: "Mesa 4: sugerir combo + bebida (+18% ticket)." },
-      { id: "b", label: "Upsell", content: "Cliente pediu 1 kebab, oferecer batatas deluxe." },
+      { id: "b", label: "Upsell", content: "Cliente pediu 1 kebab — oferecer batatas deluxe." },
     ],
     metricLabels: ["Sugestões", "Aceites"],
   },
   recovery: {
     variants: [
-      { id: "a", label: "Winback", content: "Há 21 dias sem pedir, 10% só hoje." },
-      { id: "b", label: "Carrinho", content: "Deixaste o carrinho, completa em 1 clique." },
+      { id: "a", label: "Winback", content: "Há 21 dias sem pedir — 10% só hoje." },
+      { id: "b", label: "Carrinho", content: "Deixaste o carrinho — completa em 1 clique." },
     ],
     metricLabels: ["Reactivados", "Taxa resposta"],
   },
@@ -56,7 +56,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     accent: "from-amber-500/20 to-orange-500/10",
     icon: "clock",
     previews: [
-      { id: "a", label: "Push", content: "🌯 20% off entre 15h e 17h, só hoje!" },
+      { id: "a", label: "Push", content: "🌯 20% off entre 15h e 17h — só hoje!" },
       { id: "b", label: "Banner", content: "Happy hour kebab · Entrega grátis 15h–17h" },
     ],
   },
@@ -69,7 +69,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     icon: "heart",
     previews: [
       { id: "a", label: "30 dias", content: "Sentimos a tua falta! 10% no próximo pedido." },
-      { id: "b", label: "60 dias", content: "Volta connosco, sobremesa grátis hoje." },
+      { id: "b", label: "60 dias", content: "Volta connosco — sobremesa grátis hoje." },
     ],
   },
   {
@@ -81,7 +81,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     icon: "gift",
     previews: [
       { id: "a", label: "SMS", content: "Parabéns! 🎂 Batatas deluxe grátis no teu pedido." },
-      { id: "b", label: "Push", content: "É o teu dia, -15% em tudo até meia-noite." },
+      { id: "b", label: "Push", content: "É o teu dia — -15% em tudo até meia-noite." },
     ],
   },
   {
@@ -92,7 +92,7 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     accent: "from-emerald-500/20 to-teal-500/10",
     icon: "trending",
     previews: [
-      { id: "a", label: "Bebida", content: "Adiciona Coca-Cola por +1€, poupa 0,50€" },
+      { id: "a", label: "Bebida", content: "Adiciona Coca-Cola por +1€ — poupa 0,50€" },
       { id: "b", label: "Combo", content: "Faz combo: kebab + batatas por 11,90€" },
     ],
   },
@@ -115,15 +115,15 @@ export const LOYALTY_PREVIEWS: Record<
   { tagline: string; variants: PreviewVariant[]; perks: string[] }
 > = {
   stamps: {
-    tagline: "Carimbos digitais, recompensa ao completar",
+    tagline: "Carimbos digitais — recompensa ao completar",
     variants: [
-      { id: "a", label: "Cartão", content: "●●●●●●●●○○, faltam 2 para recompensa!" },
+      { id: "a", label: "Cartão", content: "●●●●●●●●○○ — faltam 2 para recompensa!" },
       { id: "b", label: "Recompensa", content: "🎉 10 carimbos! Kebab médio grátis." },
     ],
     perks: ["Simples de entender", "Ideal para takeaway", "Já activo no painel"],
   },
   points: {
-    tagline: "Pontos por euro gasto, troca flexível",
+    tagline: "Pontos por euro gasto — troca flexível",
     variants: [
       { id: "a", label: "Saldo", content: "1.240 pts · equivale a 6,20€ de desconto" },
       { id: "b", label: "Ganho", content: "+48 pts no último pedido de 24€" },
@@ -141,7 +141,7 @@ export const LOYALTY_PREVIEWS: Record<
   vip: {
     tagline: "Níveis Bronze · Prata · Ouro com benefícios",
     variants: [
-      { id: "a", label: "Nível", content: "⭐ VIP Ouro, entrega prioritária + surpresas mensais" },
+      { id: "a", label: "Nível", content: "⭐ VIP Ouro — entrega prioritária + surpresas mensais" },
       { id: "b", label: "Progresso", content: "Prata → Ouro: 3 pedidos ou +80€ este mês" },
     ],
     perks: ["Sensação exclusiva", "Retenção alta", "Preparado"],
@@ -150,6 +150,6 @@ export const LOYALTY_PREVIEWS: Record<
 
 export const CONVERSATIONAL_PREVIEWS: PreviewVariant[] = [
   { id: "a", label: "Pedido", content: "«Quero 2 kebabs mixtos sem cebola e uma Coca»" },
-  { id: "b", label: "Confirmação", content: "«Perfeito! Total 19,80€, confirmar entrega?»" },
+  { id: "b", label: "Confirmação", content: "«Perfeito! Total 19,80€ — confirmar entrega?»" },
   { id: "c", label: "Alteração", content: "«Troca uma bebida por Água com gás, por favor»" },
 ];

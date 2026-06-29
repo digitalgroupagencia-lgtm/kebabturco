@@ -169,7 +169,7 @@ export async function probeBackendReadiness(storeId?: string | null): Promise<Au
         id: `rpc-missing-${spec.name}`,
         category: "system",
         severity: spec.critical ? "critical" : "warning",
-        label: `${spec.label}, não activa na base de dados`,
+        label: `${spec.label} — não activa na base de dados`,
         detail: result.detail,
         action: "Faça Sync + Publish na Lovable para aplicar as actualizações da base de dados.",
         link: "/admin/diagnostics",
@@ -180,7 +180,7 @@ export async function probeBackendReadiness(storeId?: string | null): Promise<Au
         id: `rpc-ok-${spec.name}`,
         category: "system",
         severity: "ok",
-        label: `${spec.label}, activa`,
+        label: `${spec.label} — activa`,
       });
     }
   }
@@ -206,7 +206,7 @@ export async function probeBackendReadiness(storeId?: string | null): Promise<Au
               ? "warning"
               : "critical"
             : "warning",
-        label: `${fn.label}, servidor não publicado (HTTP ${status || "?"})`,
+        label: `${fn.label} — servidor não publicado (HTTP ${status || "?"})`,
         detail: isStaffDedicated
           ? "A app usa stripe-create-payment-intent como alternativa se estiver actualizado."
           : undefined,
@@ -218,7 +218,7 @@ export async function probeBackendReadiness(storeId?: string | null): Promise<Au
         id: `edge-ok-${fn.name}`,
         category: "system",
         severity: "ok",
-        label: `${fn.label}, servidor activo`,
+        label: `${fn.label} — servidor activo`,
       });
     }
   }
@@ -234,7 +234,7 @@ async function probeStaffEdgeAction(findings: AuditFinding[], storeId?: string |
       id: "edge-staff-action-skip",
       category: "team",
       severity: "suggestion",
-      label: "Servidor de equipa, seleccione uma loja para testar",
+      label: "Servidor de equipa — seleccione uma loja para testar",
     });
     return;
   }
@@ -250,7 +250,7 @@ async function probeStaffEdgeAction(findings: AuditFinding[], storeId?: string |
           category: "team",
           severity: "critical",
           label: "Servidor de senha da equipa desactualizado",
-          action: "Sync + Publish na Lovable, precisa da versão mais recente do servidor.",
+          action: "Sync + Publish na Lovable — precisa da versão mais recente do servidor.",
           link: "/panel/team",
         });
       }
@@ -261,7 +261,7 @@ async function probeStaffEdgeAction(findings: AuditFinding[], storeId?: string |
         id: "edge-staff-action-ok",
         category: "team",
         severity: "ok",
-        label: "Servidor de senha da equipa, pronto",
+        label: "Servidor de senha da equipa — pronto",
       });
     } else if ((data as { ok?: boolean })?.ok && !(data as { audit_ready?: boolean })?.audit_ready) {
       findings.push({

@@ -1,5 +1,4 @@
 import React, { type ReactNode } from "react";
-import { dismissBootShell } from "@/lib/bootShell";
 
 type Props = { children: ReactNode };
 type State = { error: Error | null };
@@ -8,7 +7,7 @@ type State = { error: Error | null };
  * Barreira final do cliente.
  * Qualquer crash em provider, hook ou módulo importado pela área pública
  * (cardápio, carrinho, checkout) é apanhado aqui e mostra um fallback
- * minimalista, em vez de tela branca que mata as vendas.
+ * minimalista — em vez de tela branca que mata as vendas.
  *
  * Deve envolver TUDO o que está dentro do "/" cliente, INCLUSIVE providers
  * partilhados com áreas internas. Isolamento defensivo: erro interno nunca
@@ -23,7 +22,6 @@ export default class CustomerAreaBoundary extends React.Component<Props, State> 
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[CustomerAreaBoundary]", error.message, error.stack, info.componentStack);
-    dismissBootShell();
     try {
       // Marca no localStorage para podermos auditar depois
       window.localStorage.setItem(

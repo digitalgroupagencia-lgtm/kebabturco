@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { startAndroidPrintListener } from "@/services/androidPrintListener";
+import { initNativePushBridge } from "@/services/nativePush";
 import { enableTabletKeepAwake } from "@/services/tabletKeepAwake";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -25,7 +26,7 @@ import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { StaffAuthRedirect, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
-
+import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
 
@@ -37,20 +38,21 @@ const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
 
-// Cliente, qualquer crash em providers/módulos internos é contido aqui
+// Cliente — qualquer crash em providers/módulos internos é contido aqui
 const tenantStore = (
   <CustomerAreaBoundary>
     {withSuspense(
-      <MobileFrame>
-        <Index />
-      </MobileFrame>,
+      <StaffSessionRootRedirect>
+        <MobileFrame>
+          <Index />
+        </MobileFrame>
+      </StaffSessionRootRedirect>,
     )}
   </CustomerAreaBoundary>
 );
 
 
-
-// Interno, falhas em admin/painel/equipa/etc. não escapam deste boundary
+// Interno — falhas em admin/painel/equipa/etc. não escapam deste boundary
 const internal = (
   <AdminErrorBoundary area="admin">
     {withSuspense(<CatchAllResolver notFound={<NotFound />} />)}
@@ -58,7 +60,7 @@ const internal = (
 );
 
 /**
- * Rotas do dropdown Lovable, APENAS 2 entradas literais + catch-all.
+ * Rotas do dropdown Lovable — APENAS 2 entradas literais + catch-all.
  * O scanner do preview lê App.tsx directamente: não adicionar /panel, /admin, etc.
  * Painel, admin, entregador e vendedor funcionam via CatchAllResolver + nav interno.
  */
@@ -90,6 +92,7 @@ const App = () => {
   useEffect(() => {
     void startAndroidPrintListener();
     void enableTabletKeepAwake();
+    void initNativePushBridge();
   }, []);
 
   return (

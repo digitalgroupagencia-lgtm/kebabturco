@@ -1,5 +1,5 @@
 /**
- * Push, Núcleo partilhado.
+ * Push — Núcleo partilhado.
  *
  * Subscrição, service worker, logger e diagnóstico VAPID que ambos cliente e
  * staff podem usar. NÃO importar nada daqui que seja específico do cliente

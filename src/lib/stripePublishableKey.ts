@@ -1,7 +1,7 @@
 import { SINGLE_TENANT_MODE } from "@/lib/appMode";
 
 /**
- * Chaves publicáveis Stripe, Kebab Turco.
+ * Chaves publicáveis Stripe — Kebab Turco.
  * Seguras no browser (pk_*). Versionadas no projecto, NÃO em Segredos Lovable.
  *
  * Ordem de leitura:
@@ -12,7 +12,7 @@ export const KEBAB_TURCO_STRIPE_PUBLISHABLE_LIVE = SINGLE_TENANT_MODE
   ? "pk_live_51Tf14qCbdC0WQ0opjJ5sC2whL8TGC5FEyxMEkPI3h2oi6YofKQsPtHWzCijBEWuNeG9wQEwtr486sERx7iYQsxl000sVK6yd0g"
   : "";
 
-/** pk_test da Stripe, Kebab Turco / Euro Business Food (modo Test). Segura no browser. */
+/** pk_test da Stripe — Kebab Turco / Euro Business Food (modo Test). Segura no browser. */
 export const KEBAB_TURCO_STRIPE_PUBLISHABLE_TEST = SINGLE_TENANT_MODE
   ? "pk_test_51Tf14qCbdC0WQ0opxNuHTvCWOtk4PI2zMt1Gm44w3BUhDwJfhFHs8lvEgLKpPFRYqA49FroS8hFPTgLjhELFYEyq006ocaeqUm"
   : "";

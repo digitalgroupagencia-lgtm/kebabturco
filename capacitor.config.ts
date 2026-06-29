@@ -5,9 +5,12 @@ const config: CapacitorConfig = {
   appName: "Kebab Turco",
   webDir: "dist",
   server: {
+    // Aponta para o app publicado — atualizações no Lovable chegam ao tablet
+    // automaticamente ao reabrir o app, sem precisar rebuildar o APK.
     url: "https://kebabturco.net",
     cleartext: true,
     androidScheme: "https",
+    // Permite acesso à LAN (impressora ESC/POS) e domínios do app
     allowNavigation: [
       "192.168.*",
       "10.*",
@@ -18,11 +21,6 @@ const config: CapacitorConfig = {
       "*.kebabturco.net",
       "snaporder.digitalgroupsti.com",
     ],
-  },
-  ios: {
-    contentInset: "automatic",
-    allowsLinkPreview: false,
-    appendUserAgent: "KebabTurcoCapacitor",
   },
   android: {
     allowMixedContent: true,

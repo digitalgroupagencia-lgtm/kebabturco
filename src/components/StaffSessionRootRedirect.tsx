@@ -11,7 +11,7 @@ import {
 /**
  * Em `/`, se houver sessão de staff activa, redirecciona para o painel
  * correspondente em vez de mostrar o fluxo do cliente. Mantém o tablet do
- * restaurante sempre no painel, só sai com logout explícito.
+ * restaurante sempre no painel — só sai com logout explícito.
  */
 export default function StaffSessionRootRedirect({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();

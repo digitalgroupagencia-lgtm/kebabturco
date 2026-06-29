@@ -45,7 +45,7 @@ export default function CouponDiagnosticPanel() {
     setTesting(true);
     try {
       const result = await testCouponValidation(storeId, code, parseFloat(subtotal) || 0);
-      if (result.valid) toast.success(`Válido, desconto ${result.discount_amount}€`);
+      if (result.valid) toast.success(`Válido — desconto ${result.discount_amount}€`);
       else toast.error(result.error ?? "Cupão inválido");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
@@ -120,7 +120,7 @@ export default function CouponDiagnosticPanel() {
                 <ul className="text-xs space-y-1">
                   {(stats.recentRedemptions as Array<{ customer_phone: string | null; discount_amount: number; created_at: string }>).map((r, i) => (
                     <li key={i} className="flex justify-between border-b py-1">
-                      <span>{r.customer_phone ?? ", "}</span>
+                      <span>{r.customer_phone ?? "—"}</span>
                       <span>-{r.discount_amount}€ · {new Date(r.created_at).toLocaleDateString("pt-PT")}</span>
                     </li>
                   ))}

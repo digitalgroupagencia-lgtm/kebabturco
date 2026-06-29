@@ -13,7 +13,7 @@ import { isNetworkOrEdgeUnavailable } from "@/lib/networkErrors";
 
 function humanizeEdgeInvokeError(message: string): string {
   if (isNetworkOrEdgeUnavailable(message)) {
-    return "O servidor de pagamentos ainda não respondeu. Aguarde alguns minutos e tente outra vez, se continuar, peça para publicar a app no Lovable.";
+    return "O servidor de pagamentos ainda não respondeu. Aguarde alguns minutos e tente outra vez — se continuar, peça para publicar a app no Lovable.";
   }
   return message;
 }
@@ -313,7 +313,7 @@ export async function createStoreTerminalLocation(
       msg.toLowerCase().includes("permission")
     ) {
       throw new Error(
-        "Não foi possível criar a morada no servidor. Use «Verificar ubicación Stripe», se já estiver confirmada, pode ignorar este botão.",
+        "Não foi possível criar a morada no servidor. Use «Verificar ubicación Stripe» — se já estiver confirmada, pode ignorar este botão.",
       );
     }
     throw e;
@@ -427,7 +427,7 @@ export async function checkAppleTapToPayTerms(storeId: string): Promise<{
   const reader = await safeGetTapToPayReaderStatus();
 
   if (reader.ready) {
-    return { linked: true, message: "Leitor pronto, termos da Apple aceites." };
+    return { linked: true, message: "Leitor pronto — termos da Apple aceites." };
   }
 
   if (
@@ -446,7 +446,7 @@ export async function checkAppleTapToPayTerms(storeId: string): Promise<{
 
   return {
     linked: false,
-    message: `Leitor ainda não preparado.${locationNote} Toque em Preparar leitor, quando a Apple pedir, leia até ao fim e toque Concordo uma vez.`,
+    message: `Leitor ainda não preparado.${locationNote} Toque em Preparar leitor — quando a Apple pedir, leia até ao fim e toque Concordo uma vez.`,
   };
 }
 

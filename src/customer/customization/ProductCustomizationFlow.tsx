@@ -348,7 +348,7 @@ export default function ProductCustomizationFlow({
 
   // Quando o usuário escolhe quantidade > 1 num produto personalizável,
   // repetimos todo o passo a passo (ingredientes, extras, etc) uma vez
-  // por unidade, cada unidade vira um item separado no carrinho.
+  // por unidade — cada unidade vira um item separado no carrinho.
   const perUnitWizardEligible = useStepWizard && !editingItem;
   const totalRounds = perUnitWizardEligible ? (lockedTotalRounds ?? quantity) : 1;
   const isLastRound = unitRound >= totalRounds - 1;

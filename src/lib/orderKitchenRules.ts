@@ -19,7 +19,7 @@ export function isAwaitingOnlinePaymentConfirmation(order: KitchenOrderLike): bo
   return false;
 }
 
-/** Dinheiro ou balcão, deve aparecer no painel para o staff confirmar o pagamento. */
+/** Dinheiro ou balcão — deve aparecer no painel para o staff confirmar o pagamento. */
 export function isAwaitingCounterPaymentConfirmation(order: KitchenOrderLike): boolean {
   if (order.payment_status === "paid") return false;
   if (isAwaitingOnlinePaymentConfirmation(order)) return false;

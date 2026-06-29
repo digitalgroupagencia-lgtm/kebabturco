@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { getVapidPublicKey } from "@/lib/vapidPublicKey";
 import { urlBase64ToUint8Array } from "@/lib/vapidPublicKey";
 import { probePushServiceWorker, getBrowserPushSupport } from "@/lib/push/pushServiceWorkerProbe";
@@ -58,7 +57,7 @@ export async function subscribePushWithLogging(
     pushLog(context, "vapid_check", "error", "Formato da chave VAPID inválido", vapidDiag);
     return {
       ok: false,
-      error: "Chave VAPID inválida, verifique VITE_VAPID_PUBLIC_KEY",
+      error: "Chave VAPID inválida — verifique VITE_VAPID_PUBLIC_KEY",
       errorCode: "vapid_invalid_format",
     };
   }
@@ -71,7 +70,7 @@ export async function subscribePushWithLogging(
   }
 
   if (!browser.secureContext) {
-    pushLog(context, "browser_support", "error", "Contexto inseguro, push requer HTTPS", browser);
+    pushLog(context, "browser_support", "error", "Contexto inseguro — push requer HTTPS", browser);
     return { ok: false, error: "Push requer ligação segura (HTTPS)", errorCode: "insecure_context" };
   }
 
@@ -110,7 +109,7 @@ export async function subscribePushWithLogging(
 
     if (existingSub) {
       const endpoint = existingSub.endpoint;
-      pushLog(context, "subscribe", "info", "Subscrição antiga encontrada, removendo antes de recriar", {
+      pushLog(context, "subscribe", "info", "Subscrição antiga encontrada — removendo antes de recriar", {
         endpointPreview: endpoint.slice(0, 48) + "…",
       });
       await existingSub.unsubscribe();
@@ -160,7 +159,6 @@ export async function subscribePushWithLogging(
       _endpoint: json.endpoint,
       _p256dh: json.keys.p256dh,
       _auth: json.keys.auth,
-      _device_locale: getDeviceLocaleTag(),
     });
 
     if (dbErr) {

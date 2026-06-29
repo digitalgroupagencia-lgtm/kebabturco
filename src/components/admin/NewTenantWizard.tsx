@@ -23,18 +23,18 @@ export default function NewTenantWizard({ trigger, defaultImageStyle = "realisti
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
 
-  // Step 1, tenant
+  // Step 1 — tenant
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [plan, setPlan] = useState("free");
   const [customDomain, setCustomDomain] = useState("");
 
-  // Step 2, store
+  // Step 2 — store
   const [storeName, setStoreName] = useState("");
   const [storePhone, setStorePhone] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
 
-  // Step 3, IA
+  // Step 3 — IA
   const [menuText, setMenuText] = useState("");
   const [generateImages, setGenerateImages] = useState(true);
   const [imageStyle, setImageStyle] = useState(defaultImageStyle);

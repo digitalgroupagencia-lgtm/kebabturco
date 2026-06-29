@@ -25,7 +25,7 @@ export default function PlanGateOverlay({ requiredPlan, compact, className }: Pr
         </div>
         {!compact && (
           <p className="text-[10px] text-muted-foreground mb-2 leading-snug">
-            Funcionalidade preparada, activa com upgrade de plano.
+            Funcionalidade preparada — activa com upgrade de plano.
           </p>
         )}
         <Button size="sm" className="h-8 text-xs w-full gap-1.5" asChild>

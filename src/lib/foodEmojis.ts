@@ -1,11 +1,11 @@
 /**
  * Mapa de emojis para ingredientes, extras e variantes.
- * Match por substring (case-insensitive), funciona com nomes em es/en/pt/fr.
+ * Match por substring (case-insensitive) — funciona com nomes em es/en/pt/fr.
  * "Mixto" retorna dois emojis combinados (frango + carne).
  */
 
 const RAW: Record<string, string> = {
-  // Variante MIXTA, dois emojis combinados (frango + carne)
+  // Variante MIXTA — dois emojis combinados (frango + carne)
   mixto: "🍗🥩", mixed: "🍗🥩", misto: "🍗🥩", mixte: "🍗🥩",
 
   // Proteínas
@@ -17,7 +17,7 @@ const RAW: Record<string, string> = {
   pescado: "🐟", fish: "🐟", peixe: "🐟",
   gamba: "🦐", langostino: "🦐", shrimp: "🦐", camarao: "🦐",
 
-  // Vegetais, cada um com emoji ÚNICO
+  // Vegetais — cada um com emoji ÚNICO
   lechuga: "🥬", lettuce: "🥬", alface: "🥬", laitue: "🥬",
   col: "🥗", cabbage: "🥗", repolho: "🥗", chou: "🥗", couve: "🥗",
   tomate: "🍅", tomato: "🍅",
@@ -30,7 +30,7 @@ const RAW: Record<string, string> = {
   pimiento: "🫑", pepper: "🫑", pimento: "🫑", poivron: "🫑",
   jalapeno: "🌶️", "jalapeño": "🌶️", picante: "🌶️", spicy: "🌶️",
 
-  // Queijos / lácteos, TODOS com 🧀
+  // Queijos / lácteos — TODOS com 🧀
   mozzarella: "🧀", muzzarella: "🧀", mozarela: "🧀", "muçarela": "🧀", mucarela: "🧀",
   feta: "🧀",
   parmesano: "🧀", parmesan: "🧀",

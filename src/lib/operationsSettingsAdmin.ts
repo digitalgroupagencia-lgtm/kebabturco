@@ -27,7 +27,7 @@ export async function loadOperationsSettingsForStore(
     .maybeSingle();
 
   if (insertError) {
-    console.warn("[operations_settings] insert failed, using UI without row", insertError);
+    console.warn("[operations_settings] insert failed — using UI without row", insertError);
     return null;
   }
 

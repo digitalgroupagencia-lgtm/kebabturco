@@ -23,7 +23,6 @@ import StaffProfileBanner from "@/components/panel/StaffProfileBanner";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
-import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
 import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
@@ -90,7 +89,6 @@ const PanelLayout = ({ page: Page }: Props) => {
               roleData?.role === "restaurant_admin" ||
               roleData?.role === "manager") && <AdminAssistant />}
           </div>
-          <StaffPushPromptHost />
         </SidebarProvider>
         </StaffScreenHelpProvider>
       </PanelStoreProvider>

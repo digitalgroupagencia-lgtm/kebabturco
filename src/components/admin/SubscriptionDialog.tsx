@@ -132,7 +132,7 @@ const SubscriptionDialog = ({ open, onOpenChange, tenantId, tenantName }: Props)
           <div className="flex items-center justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div>
         ) : (
           <div className="space-y-5">
-            {/* Plano comercial, vendedores */}
+            {/* Plano comercial — vendedores */}
             <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">Plano comercial</h3>

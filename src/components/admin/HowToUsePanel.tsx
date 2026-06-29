@@ -12,7 +12,7 @@ type Props = {
   howToConfirm?: string;
   assistantQuestion?: string;
   children?: ReactNode;
-  /** @deprecated Mantido por compatibilidade, o conteúdo abre no ícone da barra superior. */
+  /** @deprecated Mantido por compatibilidade — o conteúdo abre no ícone da barra superior. */
   defaultOpen?: boolean;
 };
 

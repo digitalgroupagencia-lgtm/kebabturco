@@ -3,7 +3,7 @@
  * Mantém a tela acesa enquanto o app estiver aberto, para que o
  * listener de impressão direta nunca seja interrompido por sleep.
  *
- * No-op em web/PWA, não afeta o navegador.
+ * No-op em web/PWA — não afeta o navegador.
  */
 import { Capacitor } from "@capacitor/core";
 

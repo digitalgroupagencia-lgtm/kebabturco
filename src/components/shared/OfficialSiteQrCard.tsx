@@ -60,7 +60,7 @@ function QrBody({
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         QR fixo do site oficial de <strong>{restaurantName}</strong>. Use em panfletos, cartazes ou redes
-        sociais, o link não muda.
+        sociais — o link não muda.
       </p>
 
       <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed bg-white p-4">

@@ -1,6 +1,6 @@
 import { useOrder } from "@/contexts/OrderContext";
 
-/** Só em ecrãs iniciais, nunca sobre o cardápio, carrinho ou personalização. */
+/** Só em ecrãs iniciais — nunca sobre o cardápio, carrinho ou personalização. */
 const FOOTER_SCREENS = new Set(["language", "orderType", "splash", "storeSelect"]);
 
 const AppFooter = () => {

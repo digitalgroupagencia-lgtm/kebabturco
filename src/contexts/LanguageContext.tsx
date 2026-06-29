@@ -360,10 +360,10 @@ const translations: Translations = {
   addressBlock: { pt: "Bloco", en: "Block", es: "Bloque", fr: "Bâtiment" },
   addressBlockPh: { pt: "Ex: A", en: "Ex: A", es: "Ej: A", fr: "Ex : A" },
   addressFloorDoorHint: {
-    pt: "Opcional, andar, porta e bloco (importante em prédios)",
-    en: "Optional, floor, door and block (important for buildings)",
-    es: "Opcional, piso, puerta y bloque (importante en edificios)",
-    fr: "Facultatif, étage, porte et bâtiment (important en immeuble)",
+    pt: "Opcional — andar, porta e bloco (importante em prédios)",
+    en: "Optional — floor, door and block (important for buildings)",
+    es: "Opcional — piso, puerta y bloque (importante en edificios)",
+    fr: "Facultatif — étage, porte et bâtiment (important en immeuble)",
   },
   addressPostal: { pt: "CEP", en: "ZIP", es: "CP", fr: "CP" },
   addressCity: { pt: "Cidade", en: "City", es: "Ciudad", fr: "Ville" },
@@ -489,10 +489,10 @@ const translations: Translations = {
   },
   unit: { pt: "Unidade", en: "Unit", es: "Unidad", fr: "Unité" },
   substitutionHint: {
-    pt: "Substitui o acompanhamento, escolhe apenas uma opção",
-    en: "Replaces the side, pick one option only",
-    es: "Sustituye el acompañamiento, elige solo una opción",
-    fr: "Remplace l'accompagnement, un seul choix",
+    pt: "Substitui o acompanhamento — escolhe apenas uma opção",
+    en: "Replaces the side — pick one option only",
+    es: "Sustituye el acompañamiento — elige solo una opción",
+    fr: "Remplace l'accompagnement — un seul choix",
   },
   potatoUpsellTitle: {
     pt: "Quer melhorar as batatas?",
@@ -507,10 +507,10 @@ const translations: Translations = {
     fr: "Ajouter pour +0,50€",
   },
   potatoStepHint: {
-    pt: "Patatas incluídas, ou melhore por +0,50€",
-    en: "Fries included, or upgrade for +€0.50",
-    es: "Patatas incluidas, o mejora por +0,50€",
-    fr: "Frites incluses, ou améliorez pour +0,50€",
+    pt: "Patatas incluídas — ou melhore por +0,50€",
+    en: "Fries included — or upgrade for +€0.50",
+    es: "Patatas incluidas — o mejora por +0,50€",
+    fr: "Frites incluses — ou améliorez pour +0,50€",
   },
   // Review screen
   yourOrder: { pt: "Seu pedido", en: "Your order", es: "Tu pedido", fr: "Votre commande" },
@@ -566,16 +566,16 @@ const translations: Translations = {
     fr: "Mes données sur ce téléphone",
   },
   myProfileHint: {
-    pt: "Guardamos nome, telemóvel e morada só neste aparelho, no próximo pedido os campos aparecem preenchidos. Podes alterar quando quiseres.",
-    en: "We save name, phone and address only on this device, next time fields are prefilled. You can change them anytime.",
-    es: "Guardamos nombre, móvil y dirección solo en este dispositivo, en el próximo pedido los campos aparecen rellenados. Puedes cambiarlos cuando quieras.",
+    pt: "Guardamos nome, telemóvel e morada só neste aparelho — no próximo pedido os campos aparecem preenchidos. Podes alterar quando quiseres.",
+    en: "We save name, phone and address only on this device — next time fields are prefilled. You can change them anytime.",
+    es: "Guardamos nombre, móvil y dirección solo en este dispositivo — en el próximo pedido los campos aparecen rellenados. Puedes cambiarlos cuando quieras.",
     fr: "Nom, mobile et adresse enregistrés sur cet appareil uniquement.",
   },
   savedProfileHint: {
-    pt: "Dados guardados neste telemóvel, podes editar abaixo.",
-    en: "Saved on this phone, you can edit below.",
-    es: "Datos guardados en este móvil, puedes editarlos abajo.",
-    fr: "Enregistré sur ce téléphone, modifiable ci-dessous.",
+    pt: "Dados guardados neste telemóvel — podes editar abaixo.",
+    en: "Saved on this phone — you can edit below.",
+    es: "Datos guardados en este móvil — puedes editarlos abajo.",
+    fr: "Enregistré sur ce téléphone — modifiable ci-dessous.",
   },
   saveMyData: {
     pt: "Guardar os meus dados",
@@ -799,10 +799,10 @@ const translations: Translations = {
     fr: "Ouverture du paiement sécurisé…",
   },
   stripePreparingPaymentSub: {
-    pt: "Só um momento, estamos a ligar ao banco.",
-    en: "One moment, connecting to the bank.",
-    es: "Un momento, conectando con el banco.",
-    fr: "Un instant, connexion à la banque.",
+    pt: "Só um momento — estamos a ligar ao banco.",
+    en: "One moment — connecting to the bank.",
+    es: "Un momento — conectando con el banco.",
+    fr: "Un instant — connexion à la banque.",
   },
   cashSubmittingOrder: {
     pt: "A enviar o pedido…",
@@ -823,10 +823,10 @@ const translations: Translations = {
     fr: "Confirmation de votre paiement…",
   },
   stripeRecoveringPaymentSub: {
-    pt: "O banco já recebeu o pagamento. Aguarde, não volte ao carrinho nem pague outra vez.",
-    en: "The bank already received the payment. Wait, do not return to the cart or pay again.",
-    es: "El banco ya recibió el pago. Espera, no vuelvas al carrito ni pagues otra vez.",
-    fr: "La banque a déjà reçu le paiement. Attendez, ne retournez pas au panier.",
+    pt: "O banco já recebeu o pagamento. Aguarde — não volte ao carrinho nem pague outra vez.",
+    en: "The bank already received the payment. Wait — do not return to the cart or pay again.",
+    es: "El banco ya recibió el pago. Espera — no vuelvas al carrito ni pagues otra vez.",
+    fr: "La banque a déjà reçu le paiement. Attendez — ne retournez pas au panier.",
   },
   stripeBizumMismatchTitle: {
     pt: "Bizum ainda não está activo no servidor de pagamentos.",
@@ -898,10 +898,10 @@ const translations: Translations = {
     fr: "Ouvrez l'appareil photo et scannez le QR code de votre table.",
   },
   mesaScanCameraHint: {
-    pt: "Aponte a câmara para o código na mesa, o pedido abre automaticamente.",
-    en: "Point your camera at the code on the table, your order opens automatically.",
-    es: "Apunta la cámara al código de la mesa, el pedido se abre solo.",
-    fr: "Pointez la caméra vers le code sur la table, la commande s'ouvre automatiquement.",
+    pt: "Aponte a câmara para o código na mesa — o pedido abre automaticamente.",
+    en: "Point your camera at the code on the table — your order opens automatically.",
+    es: "Apunta la cámara al código de la mesa — el pedido se abre solo.",
+    fr: "Pointez la caméra vers le code sur la table — la commande s'ouvre automatiquement.",
   },
   mesaOrManual: {
     pt: "ou",
@@ -1013,7 +1013,7 @@ interface LanguageContextType {
   ensureMenuLocalizedReady: (items: LocalizedField[]) => Promise<void>;
 }
 
-export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: string }> = ({
   children,
@@ -1022,7 +1022,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   const resolved = useResolvedStore();
   const storeId = storeIdProp ?? resolved.storeId ?? "";
   const [primaryLang, setPrimaryLang] = useState<Lang>("es");
-  const [activeLangs, setActiveLangs] = useState<Lang[]>(["es", "pt", "en", "fr"]);
+  const [activeLangs, setActiveLangs] = useState<Lang[]>(["es"]);
   const [langsReady, setLangsReady] = useState(false);
   const [langIcons, setLangIcons] = useState<Partial<Record<Lang, string>>>({});
   const [lang, setLangState] = useState<Lang>(() => getEmbedLang() ?? loadSavedLang() ?? "es");
@@ -1042,14 +1042,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
 
   useEffect(() => {
     if (!storeId) {
-      setLangsReady(true);
+      setLangsReady(false);
       return;
     }
     let alive = true;
     setLangsReady(false);
-    const emergencyReady = window.setTimeout(() => {
-      if (alive) setLangsReady(true);
-    }, 2200);
     (async () => {
       try {
         const { data } = await supabase
@@ -1071,16 +1068,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
           const remembered = loadSavedLang();
           setLang(fromEmbed ?? fromQr ?? remembered ?? primary);
         }
-      } catch (err) {
-        console.warn("[LanguageProvider] language config fallback", err);
       } finally {
-        window.clearTimeout(emergencyReady);
         if (alive) setLangsReady(true);
       }
     })();
     return () => {
       alive = false;
-      window.clearTimeout(emergencyReady);
     };
   }, [storeId]);
 

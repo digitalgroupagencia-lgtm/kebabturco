@@ -40,7 +40,7 @@ import { DEFAULT_DIAL_CODE } from "@/lib/phoneNumber";
 type Screen = "splash" | "language" | "storeSelect" | "orderType" | "home" | "product" | "review" | "payment" | "cashPending" | "confirmation" | "tracking" | "account";
 export type { Screen };
 export type PaymentMethodId = "card" | "cash" | "pix" | "apple" | "google" | "counter" | "link" | "redsys" | "bizum";
-export type AccountFocus = "orders" | "profile" | "loyalty";
+export type AccountFocus = "orders" | "profile";
 
 interface OrderContextType {
   screen: Screen;
@@ -143,11 +143,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return p as Screen;
     }
 
-    const isRootCustomerEntry = window.location.pathname === "/" && !orderParam;
-    if (isRootCustomerEntry) {
-      return "language";
-    }
-
     if (orderParam || stored?.orderId) {
       const urlScreen = readCustomerScreenFromUrl();
       if (urlScreen === "cashPending" || p === "cashPending") return "cashPending";
@@ -163,7 +158,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (valid.includes(p as Screen)) return p as Screen;
 
-    // Sempre começar pelo idioma na entrada do domínio, não pular por causa de cache antigo
+    // Sempre começar pelo idioma na entrada do domínio — não pular por causa de cache antigo
     return "language";
   })();
 

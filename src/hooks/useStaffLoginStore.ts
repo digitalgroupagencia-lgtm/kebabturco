@@ -3,7 +3,7 @@ import { resolveStaffLoginStoreId, persistStaffLoginStoreId } from "@/lib/resolv
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 
-/** Loja real na entrada da equipa, resolve logo ao abrir, sem bloquear no fallback global. */
+/** Loja real na entrada da equipa — resolve logo ao abrir, sem bloquear no fallback global. */
 export function useStaffLoginStore() {
   const { storeId, selectedStoreId } = useResolvedStore();
   const [storeIdResolved, setStoreIdResolved] = useState<string | null>(null);

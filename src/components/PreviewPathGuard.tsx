@@ -3,8 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
 import { LOVABLE_WILDCARD_HINT } from "@/lib/routeMap";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
-import { nav } from "@/lib/navPaths.ts";
-import { resolveRoute } from "@/lib/internalRoutes.ts";
+import { nav, resolveRoute } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 import {
   isLovableEditorPreview,

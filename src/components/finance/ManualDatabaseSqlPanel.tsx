@@ -30,10 +30,10 @@ export default function ManualDatabaseSqlPanel({ schemaStripeEnv, schemaTestSimu
     try {
       await navigator.clipboard.writeText(MANUAL_STRIPE_DB_SQL.trim());
       setCopied(true);
-      toast.success("SQL copiado, cole no editor da base de dados e execute");
+      toast.success("SQL copiado — cole no editor da base de dados e execute");
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Não foi possível copiar, seleccione o texto manualmente");
+      toast.error("Não foi possível copiar — seleccione o texto manualmente");
     }
   };
 
@@ -59,7 +59,7 @@ export default function ManualDatabaseSqlPanel({ schemaStripeEnv, schemaTestSimu
       </pre>
       {hasMore && (
         <p className="text-[10px] text-muted-foreground text-center">
-          Pré-visualização, o botão abaixo copia o script completo ({lines.length} linhas)
+          Pré-visualização — o botão abaixo copia o script completo ({lines.length} linhas)
         </p>
       )}
       <Button type="button" variant="outline" size="sm" className="w-full font-bold" onClick={() => void copy()}>

@@ -62,7 +62,7 @@ async function setPasswordWithRpc(input: UpdateStaffMemberInput, password: strin
   return false;
 }
 
-/** Actualiza membro da equipa, perfil, papel e senha, com teste de login. */
+/** Actualiza membro da equipa — perfil, papel e senha, com teste de login. */
 export async function updateStaffMember(input: UpdateStaffMemberInput): Promise<void> {
   const password = input.password?.trim();
   if (!password) {

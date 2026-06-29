@@ -70,7 +70,7 @@ const Install = () => {
         </Card>
       )}
 
-      {/* iOS, tutorial visual */}
+      {/* iOS — tutorial visual */}
       {isIOS && (
         <Card className="w-full max-w-sm p-6 shadow-lg">
           <p className="text-center text-foreground font-medium mb-6">

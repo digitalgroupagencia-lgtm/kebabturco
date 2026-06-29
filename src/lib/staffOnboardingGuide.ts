@@ -86,7 +86,7 @@ function cashPaymentCodeBlock(input: StaffOnboardingInput): string[] {
       "Cuando un cliente paga en efectivo en la tablet, el sistema le pedirá ESTE código.",
       "Así queda registrado quién confirmó el cobro (no vale la sesión de quien esté logueado).",
       "",
-      "Es solo suyo, no lo comparta. Si lo olvida, el gerente define uno nuevo en Equipo.",
+      "Es solo suyo — no lo comparta. Si lo olvida, el gerente define uno nuevo en Equipo.",
       "Solo el gerente puede cambiarlo; usted no puede cambiarlo solo.",
     ];
   }
@@ -98,7 +98,7 @@ function cashPaymentCodeBlock(input: StaffOnboardingInput): string[] {
     "Quando um cliente paga em dinheiro no tablet, o sistema pede ESTE código.",
     "Assim fica registado quem confirmou o pagamento (não vale a sessão de quem estiver ligado).",
     "",
-    "É só seu, não partilhe. Se esquecer, o gerente define um novo em Equipa.",
+    "É só seu — não partilhe. Se esquecer, o gerente define um novo em Equipa.",
     "Só o gerente pode alterá-lo; não pode mudá-lo sozinho/a.",
   ];
 }
@@ -106,7 +106,7 @@ function cashPaymentCodeBlock(input: StaffOnboardingInput): string[] {
 function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
   const es: Partial<Record<StaffRole, string[]>> = {
     delivery: [
-      "══ ENTREGADOR, QUÉ HACER ══",
+      "══ ENTREGADOR — QUÉ HACER ══",
       "1. Active notificaciones cuando el panel lo pida (nuevos pedidos).",
       "2. En «Entregas» vea pedidos asignados y listos para salir.",
       "3. Al recoger: cambie el estado a «En camino».",
@@ -115,8 +115,8 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
       "6. El restaurante valida la entrega en el panel.",
     ],
     operator: [
-      "══ OPERADOR, QUÉ HACER ══",
-      "1. Abra «Pedidos ao vivo», el sonido repite hasta cambiar el estado.",
+      "══ OPERADOR — QUÉ HACER ══",
+      "1. Abra «Pedidos ao vivo» — el sonido repite hasta cambiar el estado.",
       "2. Active alertas (sonido + notificaciones) la primera vez.",
       "3. Pedido nuevo: confirme, ponga tiempo de preparación.",
       "4. Si es en efectivo: registre el pago en caja ANTES de producir.",
@@ -124,33 +124,33 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
       "6. Imprima o envíe a cocina según el flujo de la tienda.",
     ],
     kitchen: [
-      "══ COCINA, QUÉ HACER ══",
+      "══ COCINA — QUÉ HACER ══",
       "1. Entre en «Cocina» o «Pedidos ao vivo» según su acceso.",
       "2. El aviso sonoro suena hasta que marque «En preparación» o «Listo».",
-      "3. Prepare según el ticket, revise modificadores y notas.",
+      "3. Prepare según el ticket — revise modificadores y notas.",
       "4. Marque «Listo» cuando termine para avisar al mostrador/entrega.",
     ],
     cashier: [
-      "══ CAJA, QUÉ HACER ══",
+      "══ CAJA — QUÉ HACER ══",
       "1. Use «Pedidos ao vivo» para ver pedidos nuevos y «Caixa» para cobros.",
       "2. Pedidos en efectivo: confirme el pago en el sistema antes de cocinar.",
       "3. Imprima ticket si el cliente lo necesita.",
     ],
     attendant: [
-      "══ ATENDENTE, QUÉ HACER ══",
+      "══ ATENDENTE — QUÉ HACER ══",
       "1. «Pedidos ao vivo» y mapa de mesas.",
       "2. Atienda pedidos nuevos y cambie estados.",
       "3. Efectivo: registre pago en caja antes de producción.",
     ],
     manager: [
-      "══ GERENTE, QUÉ HACER ══",
+      "══ GERENTE — QUÉ HACER ══",
       "1. Acceso casi completo al panel del restaurante.",
       "2. Equipo: crear miembros con correo y contraseña.",
       "3. Supervise pedidos, caja, entregas y configuración operativa.",
       "4. Guía completa en el menú «Guia» del panel.",
     ],
     restaurant_admin: [
-      "══ DONO DO RESTAURANTE, QUÉ HACER ══",
+      "══ DONO DO RESTAURANTE — QUÉ HACER ══",
       "1. Control total del panel: pedidos, equipo, caja, mesas.",
       "2. Configure alertas y notificaciones en «Pedidos ao vivo».",
       "3. Revise finanzas y operación diaria.",
@@ -160,7 +160,7 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
 
   const pt: Partial<Record<StaffRole, string[]>> = {
     delivery: [
-      "══ ENTREGADOR, O QUE FAZER ══",
+      "══ ENTREGADOR — O QUE FAZER ══",
       "1. Active notificações quando o painel pedir (novos pedidos).",
       "2. Em «Entregas» veja pedidos atribuídos e prontos a sair.",
       "3. Ao recolher: mude o estado para «A caminho».",
@@ -169,8 +169,8 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
       "6. O restaurante valida a entrega no painel.",
     ],
     operator: [
-      "══ OPERADOR, O QUE FAZER ══",
-      "1. Abra «Pedidos ao vivo», o som repete até mudar o estado.",
+      "══ OPERADOR — O QUE FAZER ══",
+      "1. Abra «Pedidos ao vivo» — o som repete até mudar o estado.",
       "2. Active alertas (som + notificações) na primeira vez.",
       "3. Pedido novo: confirme, indique tempo de preparação.",
       "4. Se for dinheiro: registe o pagamento na caixa ANTES de produzir.",
@@ -178,33 +178,33 @@ function roleSteps(role: StaffRole, lang: "pt" | "es"): string[] {
       "6. Imprima ou envie para cozinha conforme o fluxo da loja.",
     ],
     kitchen: [
-      "══ COZINHA, O QUE FAZER ══",
+      "══ COZINHA — O QUE FAZER ══",
       "1. Entre em «Cozinha» ou «Pedidos ao vivo» conforme o acesso.",
       "2. O aviso sonoro toca até marcar «Em preparação» ou «Pronto».",
-      "3. Prepare conforme o ticket, reveja modificadores e notas.",
+      "3. Prepare conforme o ticket — reveja modificadores e notas.",
       "4. Marque «Pronto» quando terminar para avisar balcão/entrega.",
     ],
     cashier: [
-      "══ CAIXA, O QUE FAZER ══",
+      "══ CAIXA — O QUE FAZER ══",
       "1. Use «Pedidos ao vivo» para ver pedidos novos e «Caixa» para cobranças.",
       "2. Pedidos em dinheiro: confirme pagamento no sistema antes de cozinhar.",
       "3. Imprima talão se o cliente precisar.",
     ],
     attendant: [
-      "══ ATENDENTE, O QUE FAZER ══",
+      "══ ATENDENTE — O QUE FAZER ══",
       "1. «Pedidos ao vivo» e mapa de mesas.",
       "2. Atenda pedidos novos e mude estados.",
       "3. Dinheiro: registe pagamento na caixa antes da produção.",
     ],
     manager: [
-      "══ GERENTE, O QUE FAZER ══",
+      "══ GERENTE — O QUE FAZER ══",
       "1. Acesso quase completo ao painel do restaurante.",
       "2. Equipa: criar membros com e-mail e senha.",
       "3. Supervise pedidos, caixa, entregas e configuração operativa.",
       "4. Guia completa no menu «Guia» do painel.",
     ],
     restaurant_admin: [
-      "══ DONO DO RESTAURANTE, O QUE FAZER ══",
+      "══ DONO DO RESTAURANTE — O QUE FAZER ══",
       "1. Controlo total do painel: pedidos, equipa, caixa, mesas.",
       "2. Configure alertas e notificações em «Pedidos ao vivo».",
       "3. Revise finanças e operação diária.",

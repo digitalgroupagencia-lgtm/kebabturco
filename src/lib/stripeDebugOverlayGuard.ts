@@ -2,7 +2,7 @@
  * Bloqueia overlays de debug/inspector do Stripe injetados por extensões
  * de browser ("Stripe Shell", "Stripe Elements Inspector").
  *
- * IMPORTANTE: o nosso código nunca carrega essas UIs, elas vêm de
+ * IMPORTANTE: o nosso código nunca carrega essas UIs — elas vêm de
  * extensões instaladas pelo utilizador. Mas em produção (cliente final
  * no checkout) escondemos qualquer vestígio por segurança.
  *
@@ -48,7 +48,7 @@ export function startStripeDebugOverlayGuard() {
   // Limpeza inicial
   purge(document);
 
-  // Observer leve no body, purga overlays injetados depois.
+  // Observer leve no body — purga overlays injetados depois.
   try {
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {

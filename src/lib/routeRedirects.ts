@@ -128,7 +128,7 @@ export function resolveCustomerRouteRedirect(pathname: string, search = ""): { p
   return { pathname: nav.home(), search: qs ? `?${qs}` : "" };
 }
 
-/** Rotas públicas do cliente (ecrãs internos, não URLs do router). */
+/** Rotas públicas do cliente (ecrãs internos — não URLs do router). */
 export const PUBLIC_CUSTOMER_SCREENS = [
   "splash",
   "language",

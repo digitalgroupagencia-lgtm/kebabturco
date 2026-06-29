@@ -81,7 +81,7 @@ export default function TenantQrDialog({
       </DialogTrigger>
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>QR Code, {tenantName}</DialogTitle>
+          <DialogTitle>QR Code — {tenantName}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground">

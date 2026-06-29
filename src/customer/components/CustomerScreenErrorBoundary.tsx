@@ -1,5 +1,4 @@
 import React, { type ReactNode } from "react";
-import { dismissBootShell } from "@/lib/bootShell";
 
 type Props = {
   children: ReactNode;
@@ -31,7 +30,7 @@ const DEFAULT_COPY: Record<string, { title: string; description: string }> = {
   },
 };
 
-/** Erro isolado por ecrã do cliente, não derruba a app inteira. */
+/** Erro isolado por ecrã do cliente — não derruba a app inteira. */
 export default class CustomerScreenErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };
 
@@ -41,7 +40,6 @@ export default class CustomerScreenErrorBoundary extends React.Component<Props, 
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(`[CustomerScreenErrorBoundary:${this.props.scope}]`, error.message, error.stack, info.componentStack);
-    dismissBootShell();
   }
 
   componentDidUpdate(prevProps: Props) {

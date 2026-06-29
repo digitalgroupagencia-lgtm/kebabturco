@@ -34,7 +34,7 @@ export function useTableSessionBinding(
           saveSavedMesaSessionId(binding.session_id);
         }
       } catch {
-        /* rede temporária, mantém vínculo local */
+        /* rede temporária — mantém vínculo local */
       }
     };
 

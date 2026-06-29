@@ -120,7 +120,7 @@ function ZoneEditor({
 
       <details className="rounded-xl border border-border/60 text-xs">
         <summary className="cursor-pointer px-3 py-2.5 font-medium text-muted-foreground">
-          Avançado, distância (km)
+          Avançado — distância (km)
         </summary>
         <div className="grid grid-cols-2 gap-2 p-3 pt-0">
           <div>
@@ -128,7 +128,7 @@ function ZoneEditor({
             <Input
               type="number"
               step="0.5"
-              placeholder=", "
+              placeholder="—"
               value={zone.min_distance_km ?? ""}
               onChange={(e) =>
                 onChange({ min_distance_km: e.target.value === "" ? null : Number(e.target.value) })
@@ -141,7 +141,7 @@ function ZoneEditor({
             <Input
               type="number"
               step="0.5"
-              placeholder=", "
+              placeholder="—"
               value={zone.max_distance_km ?? ""}
               onChange={(e) =>
                 onChange({ max_distance_km: e.target.value === "" ? null : Number(e.target.value) })
@@ -287,7 +287,7 @@ const TenantDeliveryZonesPage = () => {
     const row = data as Zone;
     setZones([...zones, row]);
     setEditingId(row.id);
-    toast.success("Zona duplicada, edite e guarde");
+    toast.success("Zona duplicada — edite e guarde");
   };
 
   const remove = async (id: string) => {

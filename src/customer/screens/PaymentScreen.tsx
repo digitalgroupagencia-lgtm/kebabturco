@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { StripeElementLocale } from "@stripe/stripe-js";
 import { useOrder, type PaymentMethodId } from "@/contexts/OrderContext";
 import { useCart } from "@/customer/contexts/CartContext";
@@ -6,11 +6,6 @@ import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeliveryFee } from "@/hooks/useDeliveryFee";
-import { useStoreCoords } from "@/hooks/useStoreCoords";
-import { useCustomerDeliveryDistance } from "@/hooks/useCustomerDeliveryDistance";
-import { distanceKm } from "@/lib/geolocation";
-import { trackMarketingEvent } from "@/lib/marketingAnalytics";
-import UseMyLocationButton from "@/components/customer/UseMyLocationButton";
 import StripePaymentForm, { type StripeFormCopy } from "@/components/StripePaymentForm";
 import {
   attachStripeOrderToPaymentIntent,
@@ -21,13 +16,7 @@ import {
   validateCoupon,
   waitForOrderPaymentConfirmed,
 } from "@/services/orderService";
-import { supabase } from "@/integrations/supabase/client";
 import { tryPrintCheckoutOrder } from "@/services/checkoutPrintHelper";
-import {
-  DEMO_VISIT_COUPON_CODE,
-  finalizeDemoVisitOrder,
-  printVisitDemoOrder,
-} from "@/services/visitPrintService";
 import { inferStripePlatformStatus } from "@/lib/inferStripePlatformStatus";
 import {
   loadSavedMesaToken,
@@ -40,7 +29,6 @@ import {
   formatDeliveryComplement,
 } from "@/lib/customerSession";
 import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
-import { consumePushCoupon } from "@/lib/customerPushDeepLink";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
@@ -209,18 +197,6 @@ const PaymentScreen = () => {
     selectedMethodRef.current = selected;
   }, [selected]);
   const [processing, setProcessing] = useState(false);
-  const [customerDistanceKm, setCustomerDistanceKm] = useState<number | null>(null);
-  const storeCoords = useStoreCoords(storeId);
-
-  useCustomerDeliveryDistance({
-    enabled: orderType === "delivery" && Boolean(storeCoords),
-    storeCoords,
-    street: deliveryAddress,
-    number: deliveryNumber,
-    postal: deliveryPostalCode,
-    city: deliveryCity,
-    onDistanceKm: setCustomerDistanceKm,
-  });
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [stripePaymentMeta, setStripePaymentMeta] = useState<{
@@ -243,7 +219,6 @@ const PaymentScreen = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
-  const [isDemoVisitCoupon, setIsDemoVisitCoupon] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [stripeCheckoutMethod, setStripeCheckoutMethod] = useState<"card" | "bizum">("card");
   const [stripePaymentLocked, setStripePaymentLocked] = useState(false);
@@ -271,7 +246,7 @@ const PaymentScreen = () => {
   const prepaymentRequired = orderType ? requiresPrepayment(orderType, settings) : false;
   const stripeIssue =
     stripeConnectEnvironment === "test" && !stripePublishableKey && stripeEnabled
-      ? "Pagamento com cartão de teste indisponível, falta a chave publicável de teste (pk_test) no site publicado."
+      ? "Pagamento com cartão de teste indisponível — falta a chave publicável de teste (pk_test) no site publicado."
       : stripeConfigIssue(stripeEnabled, stripePublishableKey);
 
   useEffect(() => {
@@ -282,18 +257,11 @@ const PaymentScreen = () => {
   const fullCustomerPhone = formatFullPhone(phoneDialCode, customerPhone);
   const orderTypeDb = isTableOrder ? "dine_in" : orderType === "delivery" ? "delivery" : "takeaway";
 
-  useEffect(() => {
-    if (storeId) {
-      void trackMarketingEvent("checkout_start", { storeId, customerPhone: fullCustomerPhone });
-    }
-  }, [storeId, fullCustomerPhone]);
-
   const { quote: deliveryQuote } = useDeliveryFee(
     orderType === "delivery" ? storeId : null,
     deliveryPostalCode,
     deliveryCity,
     totalPrice,
-    customerDistanceKm,
   );
   const deliveryFee = orderType === "delivery" ? deliveryQuote.fee : 0;
   const restaurantPortionEur = computeRestaurantPortionEur(totalPrice, deliveryFee, couponDiscount);
@@ -301,44 +269,20 @@ const PaymentScreen = () => {
   const applyCoupon = async () => {
     if (!couponCode.trim() || !storeId || isTableOrder) return;
     try {
-      const cartPayload = items.map((it) => ({
-        product_id: it.productId,
-        quantity: it.quantity,
-        unit_price: Number(it.unitPrice ?? it.basePrice ?? 0),
-        total_price: Number(it.totalPrice ?? 0),
-      }));
-      const result = await validateCoupon(storeId, couponCode.trim(), totalPrice, deliveryFee, cartPayload);
+      const result = await validateCoupon(storeId, couponCode.trim(), totalPrice);
       if (!result.valid) {
         setCouponError(result.error || "Cupón inválido");
         setCouponDiscount(0);
         setCouponId(null);
-        setIsDemoVisitCoupon(false);
         return;
       }
       setCouponDiscount(result.discount_amount || 0);
       setCouponId(result.coupon_id || null);
-      setIsDemoVisitCoupon(Boolean(result.demo_visit));
       setCouponError(null);
     } catch {
       setCouponError("Erro ao validar cupón");
     }
   };
-
-  const pushCouponLoaded = useRef(false);
-
-  useEffect(() => {
-    if (pushCouponLoaded.current || isTableOrder) return;
-    const pending = consumePushCoupon();
-    if (!pending) return;
-    pushCouponLoaded.current = true;
-    setCouponCode(pending);
-  }, [isTableOrder]);
-
-  useEffect(() => {
-    if (!pushCouponLoaded.current || !couponCode.trim() || couponDiscount > 0 || isTableOrder || !storeId) return;
-    if (items.length === 0 || totalPrice <= 0) return;
-    void applyCoupon();
-  }, [couponCode, couponDiscount, storeId, items.length, totalPrice, isTableOrder]);
 
   useEffect(() => {
     if (orderType) return;
@@ -378,28 +322,15 @@ const PaymentScreen = () => {
   const buildStripePrefetchKey = (method: "card" | "bizum") =>
     `${method}:${storeId}:${Math.round(totalPrice * 100)}:${Math.round(deliveryFee * 100)}:${Math.round(couponDiscount * 100)}:${orderTypeDb}`;
 
-  const resetStripeCheckoutState = useCallback(() => {
-    setStripeClientSecret(null);
-    setStripePaymentIntentId(null);
-    setStripePaymentMeta(null);
-    setStripePreparedOrder(null);
-    setStripeCheckoutPreparing(false);
-    setStripePaymentLocked(false);
-    clearStripeCheckoutSession();
-    stripePrefetchRef.current = null;
-  }, []);
-
   useEffect(() => {
     if (!storeId || !stripeEnabled || !stripePublishableKey) return;
-    if (isTableOrder) return;
-    if (checkoutStep !== "details" && checkoutStep !== "payment") return;
+    if (!isTableOrder && checkoutStep !== "payment") return;
     if (stripeClientSecret || stripeCheckoutPreparing || processing || recoveringCheckout) return;
-    if (!selected || !isOnlineCheckoutMethod(selected)) {
-      stripePrefetchRef.current = null;
-      return;
-    }
 
-    const method: "card" | "bizum" = selected === "bizum" ? "bizum" : "card";
+    const method: "card" | "bizum" | null =
+      selected === "bizum" ? "bizum" : selected === "card" ? "card" : null;
+    if (!method) return;
+
     const key = buildStripePrefetchKey(method);
     if (stripePrefetchRef.current?.key === key) return;
 
@@ -471,9 +402,7 @@ const PaymentScreen = () => {
     };
   };
 
-  const payButtonReady =
-    (isDemoVisitCoupon && grandTotal <= 0.01) ||
-    (checkoutMethods.length > 0 && !processing && !stripeClientSecret);
+  const payButtonReady = checkoutMethods.length > 0 && !processing && !stripeClientSecret;
 
   useEffect(() => {
     if (checkoutMethods.length === 0) {
@@ -668,7 +597,7 @@ const PaymentScreen = () => {
       deliveryFee,
       deliveryZoneId: deliveryQuote.zone?.id || null,
       deliveryZoneName: deliveryQuote.zone?.name || null,
-      couponCode: couponId || isDemoVisitCoupon ? couponCode.trim() : null,
+      couponCode: couponId ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
       onlineServiceFeeCents: fin?.onlineServiceFeeCents,
@@ -683,10 +612,6 @@ const PaymentScreen = () => {
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
-    void supabase
-      .from("orders")
-      .update({ order_locale: lang })
-      .eq("id", result.order_id);
     const awaitsCounterPayment =
       (opts.paymentMethod === "cash" || opts.paymentMethod === "counter") && opts.paymentStatus !== "paid";
     syncActiveOrderUrl(result.order_id, awaitsCounterPayment ? "cashPending" : "confirmation");
@@ -718,11 +643,11 @@ const PaymentScreen = () => {
     });
 
     await enableCustomerOrderAlerts();
-    void subscribePush({
+    await subscribePush({
       storeId,
       orderId: result.order_id,
       customerPhone: fullCustomerPhone || undefined,
-    }).catch(() => undefined);
+    });
 
     const printOk = shouldPrintAfterCheckout(
       orderType || "takeaway",
@@ -732,42 +657,13 @@ const PaymentScreen = () => {
     );
 
     clearCart();
-    void trackMarketingEvent("order_completed", { storeId, customerPhone: fullCustomerPhone });
     if (awaitsCounterPayment) {
       setScreen("cashPending");
     } else {
       setScreen("confirmation");
     }
 
-    if (isDemoVisitCoupon) {
-      try {
-        await finalizeDemoVisitOrder(result.order_id);
-        await printVisitDemoOrder({
-          storeId,
-          orderId: result.order_id,
-          orderNumber: result.order_number,
-          orderType: orderTypeDb,
-          tableNumber: mesaValidated ? tableNumber.trim() || null : null,
-          customerName: customerName.trim() || null,
-          customerPhone: fullCustomerPhone || null,
-          customerEmail: normalizeOptionalEmail(customerEmail),
-          paymentMethod: "counter",
-          paymentStatus: "paid",
-          paidViaApp: true,
-          items,
-          total: 0,
-          subtotal: totalPrice,
-          notes,
-          deliveryAddress: deliveryFullAddress,
-          customerOrderType: orderType || "takeaway",
-          mesaValidated,
-          settings,
-          companyName: brandingCtx?.settings?.company_name || "Restaurante",
-        });
-      } catch (printErr) {
-        console.warn("[checkout] demo visita impressão:", printErr);
-      }
-    } else if (printOk) {
+    if (printOk) {
       void enqueueCheckoutPrint(result, {
         paymentMethod: opts.paymentMethod,
         paymentStatus: opts.paymentStatus,
@@ -909,11 +805,11 @@ const PaymentScreen = () => {
     });
 
     await enableCustomerOrderAlerts();
-    void subscribePush({
+    await subscribePush({
       storeId,
       orderId: result.order_id,
       customerPhone: fullCustomerPhone || undefined,
-    }).catch(() => undefined);
+    });
 
     clearCart();
     clearStripeCheckoutSession();
@@ -1054,18 +950,6 @@ const PaymentScreen = () => {
 
   const handlePayClick = () => {
     if (processing || stripeClientSecret) return;
-    if (isDemoVisitCoupon && grandTotal <= 0.01) {
-      setProcessing(true);
-      setPaymentError(null);
-      void finishOrder({ paymentMethod: "counter", paymentStatus: "paid" })
-        .catch((e) => {
-          console.error("[checkout] demo visita:", e);
-          setPaymentError(e instanceof Error ? e.message : "Não foi possível enviar a demonstração.");
-          setShowError("method");
-        })
-        .finally(() => setProcessing(false));
-      return;
-    }
     if (!checkoutMethods.length) {
       setShowError("method");
       return;
@@ -1082,7 +966,7 @@ const PaymentScreen = () => {
 
   const confirm = async (methodOverride?: PaymentMethodId) => {
     const method = methodOverride ?? selectedMethodRef.current ?? selected;
-    if (processing || !method || !validate(method)) return;
+    if (processing || !validate(method) || !method) return;
 
     if (!openStatus.open) {
       setClosedDialog(true);
@@ -1170,10 +1054,7 @@ const PaymentScreen = () => {
         title={isTableOrder ? "Pagamento na mesa" : checkoutStep === "details" ? "Os teus dados" : t("pay")}
         onBack={() => {
           if (stripePaymentLocked || processing || recoveringCheckout) return;
-          if (stripeClientSecret) {
-            resetStripeCheckoutState();
-            return;
-          }
+          if (stripeClientSecret) return;
           if (checkoutStep === "payment" && !isTableOrder) {
             setCheckoutStep("details");
           } else {
@@ -1209,7 +1090,7 @@ const PaymentScreen = () => {
         </div>
         )}
 
-        {/* Resumo subtotal removido, já mostrado na tela de revisão */}
+        {/* Resumo subtotal removido — já mostrado na tela de revisão */}
         {hiddenCheckoutFeature("subtotal-summary") && !stripeClientSecret && (
           <div className={`mt-3 bg-card rounded-2xl border border-border/80 ${compact ? "p-3 space-y-1.5 text-xs" : "p-4 space-y-2 text-sm"}`}>
             <div className="flex justify-between gap-2">
@@ -1251,14 +1132,18 @@ const PaymentScreen = () => {
               onBusyChange={setStripePaymentLocked}
               onCancel={() => {
                 if (stripePaymentLocked || processing) return;
-                resetStripeCheckoutState();
+                setStripeClientSecret(null);
+                setStripePaymentIntentId(null);
+                setStripePaymentMeta(null);
+                setStripePreparedOrder(null);
+                clearStripeCheckoutSession();
               }}
               onSuccess={async () => {
-                console.log("[checkout] Stripe payment succeeded, confirmando pedido…");
+                console.log("[checkout] Stripe payment succeeded — confirmando pedido…");
                 if (!assertStoreReady()) {
                   console.error("[checkout] Loja indisponível após pagamento aprovado");
                   window.alert(
-                    "Pagamento aprovado, mas a loja ficou indisponível. O pedido já foi reservado, contacte o restaurante com o seu telefone.",
+                    "Pagamento aprovado, mas a loja ficou indisponível. O pedido já foi reservado — contacte o restaurante com o seu telefone.",
                   );
                   return;
                 }
@@ -1283,7 +1168,7 @@ const PaymentScreen = () => {
                   const session = loadStripeCheckoutSession();
                   window.alert(
                     `Pagamento aprovado (${paymentIntentId}), pedido ${session?.orderNumber ?? "reservado"}. ` +
-                      `Se não vir a confirmação, não pague de novo, mostre esta mensagem ao restaurante: ${msg}`,
+                      `Se não vir a confirmação, não pague de novo — mostre esta mensagem ao restaurante: ${msg}`,
                   );
                 }
               }}
@@ -1295,7 +1180,7 @@ const PaymentScreen = () => {
           </div>
         ) : (
           <>
-            {/* "Datos guardados" hint removido a pedido, perfil é usado em background */}
+            {/* "Datos guardados" hint removido a pedido — perfil é usado em background */}
             {hiddenCheckoutFeature("saved-profile-hint") && hasCustomerProfile() && (
               <p className="mt-3 text-[11px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-xl px-3 py-2">
                 {t("savedProfileHint")}
@@ -1424,13 +1309,6 @@ const PaymentScreen = () => {
                   onClearError={() => setShowError(null)}
                 />
                 <div className="px-3 py-3 border-t border-border space-y-2">
-                  <UseMyLocationButton
-                    onCoords={(coords) => {
-                      if (storeCoords) {
-                        setCustomerDistanceKm(distanceKm(storeCoords, coords));
-                      }
-                    }}
-                  />
                   <div className={showError === "address" ? "ring-2 ring-destructive/40 rounded-xl p-1" : ""}>
                     <label className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground mb-1">
                       <MapPin className="w-3 h-3" />
@@ -1507,45 +1385,25 @@ const PaymentScreen = () => {
               </div>
             )}
 
-            {checkoutStep === "details" && !isTableOrder && (
+            {/* Cupón oculto — código mantido, será reativado posteriormente */}
+            {hiddenCheckoutFeature("coupon") && !isTableOrder && (
               <div className="mt-3 bg-card rounded-2xl border border-border p-3">
-                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">
-                  {t("couponLabel") || "Cupão / Cupón"}
-                </p>
+                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Cupón</p>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={couponCode}
-                    onChange={(e) => {
-                      setCouponCode(e.target.value.toUpperCase());
-                      setCouponError(null);
-                    }}
+                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
                     placeholder="CÓDIGO"
-                    className="flex-1 h-10 px-3 rounded-xl border border-border font-bold uppercase text-sm"
+                    className="flex-1 h-9 px-3 rounded-lg border border-border font-bold uppercase text-sm"
                   />
-                  <button
-                    type="button"
-                    onClick={() => void applyCoupon()}
-                    className="px-4 h-10 rounded-xl bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary"
-                  >
-                    {t("couponApply") || "Aplicar"}
-                  </button>
+                  <button type="button" onClick={applyCoupon} className="px-3 h-9 rounded-lg bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary">Aplicar</button>
                 </div>
-                {couponError && <p className="text-xs text-destructive mt-1.5 font-medium">{couponError}</p>}
-                {couponDiscount > 0 && (
-                  <p className="text-xs text-success mt-1.5 font-bold">
-                    −{couponDiscount.toFixed(2)}€ {t("couponApplied") || "desconto aplicado"}
-                  </p>
-                )}
-                {isDemoVisitCoupon && (
-                  <p className="text-xs text-primary mt-2 font-medium">
-                    Modo demonstração: sem pagamento, impressão no Mac de visita.
-                  </p>
-                )}
+                {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
               </div>
             )}
 
-            {/* Aviso "Pagamentos online não activos" oculto, não bloqueia checkout (fallback automático para dinheiro/balcão) */}
+            {/* Aviso "Pagamentos online não activos" oculto — não bloqueia checkout (fallback automático para dinheiro/balcão) */}
             {hiddenCheckoutFeature("stripe-warning") && stripeIssue && prepaymentRequired && (
               <div className="mt-3 flex gap-2 items-start rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-3">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -1558,7 +1416,7 @@ const PaymentScreen = () => {
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   {prepaymentRequired
-                    ? "Pagamento online obrigatório, active os recebimentos ou peça ajuda à equipa."
+                    ? "Pagamento online obrigatório — active os recebimentos ou peça ajuda à equipa."
                     : "Nenhum método de pagamento disponível para este tipo de pedido."}
                 </p>
               </div>
@@ -1606,7 +1464,7 @@ const PaymentScreen = () => {
                       Será redireccionado para confirmar o pagamento na app Bizum.
                     </p>
                   )}
-                  {/* Aviso amber abaixo de Efectivo removido, confirmação acontece em tela dedicada após finalizar */}
+                  {/* Aviso amber abaixo de Efectivo removido — confirmação acontece em tela dedicada após finalizar */}
                 </div>
                 {showError === "method" && (
                   <p className="text-xs text-destructive font-bold mt-1.5 px-1">
@@ -1660,15 +1518,9 @@ const PaymentScreen = () => {
               ) : (
                 <>
                   <span className="flex-1 text-left">
-                    {isDemoVisitCoupon
-                      ? "Confirmar demonstração"
-                      : isTableOrder
-                        ? "Pagar e finalizar"
-                        : t("finalizeOrder")}
+                    {isTableOrder ? "Pagar e finalizar" : t("finalizeOrder")}
                   </span>
-                  <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">
-                    {isDemoVisitCoupon ? "0,00€" : `${grandTotal.toFixed(2)}€`}
-                  </span>
+                  <span className="bg-white/20 rounded-full px-3 py-0.5 tabular-nums text-sm">{grandTotal.toFixed(2)}€</span>
                 </>
               )}
             </button>

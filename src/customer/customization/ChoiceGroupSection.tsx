@@ -331,7 +331,7 @@ export default function ChoiceGroupSection({
       );
     }
 
-    // Grupo de carne (Pollo / Ternera / etc), só texto, sem imagens
+    // Grupo de carne (Pollo / Ternera / etc) — só texto, sem imagens
     const isMeatChoice =
       /elige la carne|escolhe a carne|choose meat|choisir viande|carne|meat/i.test(tName(group.name)) ||
       group.id.includes("choice-main");

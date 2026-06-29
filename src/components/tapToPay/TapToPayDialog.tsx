@@ -120,7 +120,7 @@ export default function TapToPayDialog({ open, order, storeId, staffPin, onClose
     void prepareReader();
   }, [open, order, prepareReader, tapEnabled, t]);
 
-  /** iOS pode focar o email após fechar o PIN, blur sem abrir teclado ao mostrar instruções. */
+  /** iOS pode focar o email após fechar o PIN — blur sem abrir teclado ao mostrar instruções. */
   useEffect(() => {
     if (!open) return;
     const id = window.setTimeout(() => {

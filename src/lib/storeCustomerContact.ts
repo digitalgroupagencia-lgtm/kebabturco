@@ -6,7 +6,7 @@ export type StoreCustomerContact = {
   whatsapp_phone: string | null;
 };
 
-/** Só dígitos, para links tel: e wa.me */
+/** Só dígitos — para links tel: e wa.me */
 export function digitsOnly(phone: string): string {
   return phone.replace(/\D/g, "");
 }

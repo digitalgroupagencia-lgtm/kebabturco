@@ -53,7 +53,7 @@ const BillingPage = () => {
       <PremiumPageHeader
         icon={CreditCard}
         title="Planos & Cobrança"
-        subtitle="MRR e preços por plano são valores de referência interna, não usar para facturação real."
+        subtitle="MRR e preços por plano são valores de referência interna — não usar para facturação real."
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -1,5 +1,5 @@
 const CUSTOMER_ALERTS_KEY = "customer-order-alerts-enabled";
-// Som específico do cliente, DIFERENTE do beep operacional do tablet (staff).
+// Som específico do cliente — DIFERENTE do beep operacional do tablet (staff).
 // Usa um beep curto e suave gerado via data-URI (~0.15s, 880Hz) para nunca
 // confundir o cliente com o alerta de "novo pedido" do restaurante.
 const CHIME_URL =

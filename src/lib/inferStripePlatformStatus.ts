@@ -1,7 +1,7 @@
 import type { StoreFinancialProfile, StripePlatformStatus } from "@/services/orderService";
 import { hasStripePublishableKey } from "@/lib/stripePublishableKey";
 
-/** Estado Stripe inferido só com dados da loja, sem chamar o servidor. */
+/** Estado Stripe inferido só com dados da loja — sem chamar o servidor. */
 export function inferStripePlatformStatus(
   profile: StoreFinancialProfile | null | undefined,
 ): StripePlatformStatus {
@@ -53,7 +53,7 @@ export function inferStripePlatformStatus(
     productionBlocked: true,
     testKeysConfigured: hasTestPk,
     message: "Produção bloqueada até aprovação da Stripe.",
-    adminMessage: "Produção bloqueada até aprovação da Stripe, use modo teste.",
+    adminMessage: "Produção bloqueada até aprovação da Stripe — use modo teste.",
     canUseEmbeddedTest: hasTestPk,
     canUseEmbeddedLive: false,
   };

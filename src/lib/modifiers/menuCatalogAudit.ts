@@ -160,7 +160,7 @@ function buildReviewIssue(
     matchedProductId: base.match.id,
     matchedCategoryId: base.match.category,
     matchedProductName: displayName,
-    problem: `Produto «${displayName}» já está no cardápio, convém rever ${base.reviewParts.join(" e ")}`,
+    problem: `Produto «${displayName}» já está no cardápio — convém rever ${base.reviewParts.join(" e ")}`,
     suggestion: "Abrir no cardápio para confirmar foto, nome e preço",
   };
 }

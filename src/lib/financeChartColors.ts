@@ -17,7 +17,7 @@ export const PAYMENT_METHOD_LABELS: Record<FinancePaymentMethodKey, string> = {
   other: "Outro",
 };
 
-/** Cores fixas por método, legíveis em claro e escuro. */
+/** Cores fixas por método — legíveis em claro e escuro. */
 export const PAYMENT_METHOD_CHART_COLORS: Record<FinancePaymentMethodKey, string> = {
   card: "hsl(210 72% 48%)",
   bizum: "hsl(25 92% 50%)",

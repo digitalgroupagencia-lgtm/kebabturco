@@ -51,7 +51,7 @@ export function isEmbeddedTenantPreview(): boolean {
   return getPreviewTenantSlug() != null;
 }
 
-/** Caminho de prévia no editor Lovable, loja única usa `/` (legado /preview/slug redirecciona). */
+/** Caminho de prévia no editor Lovable — loja única usa `/` (legado /preview/slug redirecciona). */
 export function buildLovableTenantPreviewPath(_tenantSlug: string, subpath = ""): string {
   if (SINGLE_TENANT_MODE) {
     if (!subpath) return "/";
@@ -108,7 +108,7 @@ export function buildTenantEmbedPreviewUrl(options: {
   return withCacheBust(base, options.cacheToken);
 }
 
-/** URL pública real do tenant (domínio próprio), nova aba / produção. */
+/** URL pública real do tenant (domínio próprio) — nova aba / produção. */
 export function buildTenantPublicPreviewUrl(options: {
   tenant: TenantUrlConfig & { slug: string };
   screen: TenantPreviewScreen;

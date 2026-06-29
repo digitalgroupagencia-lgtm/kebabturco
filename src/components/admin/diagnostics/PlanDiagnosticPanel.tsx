@@ -79,7 +79,7 @@ export default function PlanDiagnosticPanel() {
               ))}
             </ul>
             {!rows.length && !refreshing ? (
-              <p className="text-sm text-muted-foreground">Nenhum resultado, verifique tenant.</p>
+              <p className="text-sm text-muted-foreground">Nenhum resultado — verifique tenant.</p>
             ) : null}
           </CardContent>
         </Card>

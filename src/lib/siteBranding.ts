@@ -1,5 +1,5 @@
 /**
- * Branding visual por domínio, Fase 1 (client) + preparação Fase 2 (manifest edge).
+ * Branding visual por domínio — Fase 1 (client) + preparação Fase 2 (manifest edge).
  */
 
 import type { Tables } from "@/integrations/supabase/types";

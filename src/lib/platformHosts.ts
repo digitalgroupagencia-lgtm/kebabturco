@@ -33,7 +33,7 @@ export function isLovableEditorHost(hostname?: string | null): boolean {
   );
 }
 
-/** Domínio plataforma SnapOrder, desactivado: projecto = Kebab Turco em qualquer host. */
+/** Domínio plataforma SnapOrder — desactivado: projecto = Kebab Turco em qualquer host. */
 export function isPlatformHost(hostname?: string | null): boolean {
   if (SINGLE_TENANT_MODE) return false;
   return isAdminMasterHost(hostname) || isLovableEditorHost(hostname);
@@ -45,7 +45,7 @@ export function isDevPreviewHost(hostname?: string | null): boolean {
   return host === "localhost" || host.startsWith("127.0.0.1");
 }
 
-/** Desenvolvimento / Lovable, usar tenant Kebab por defeito. */
+/** Desenvolvimento / Lovable — usar tenant Kebab por defeito. */
 export function isDefaultKebabContextHost(hostname?: string | null): boolean {
   if (!hostname) return true;
   const host = normalizeHostname(hostname);

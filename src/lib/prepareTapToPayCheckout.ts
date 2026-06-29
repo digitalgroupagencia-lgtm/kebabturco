@@ -23,7 +23,7 @@ export async function waitForStaffPinUiDismiss(): Promise<void> {
   });
 }
 
-/** Prepara o leitor com ecrãs da app fechados, a Apple pode pedir termos por cima. */
+/** Prepara o leitor com ecrãs da app fechados — a Apple pode pedir termos por cima. */
 export async function ensureTapToPayReaderReady(storeId: string): Promise<TapToPayPrepareResult> {
   if (!isTapToPayPlatform()) {
     return { ok: false, message: getTapToPayUnavailableMessage() };

@@ -58,7 +58,7 @@ function formatSelectionLine(
   return opt;
 }
 
-/** Opções incluídas por defeito, não poluir o resumo do carrinho. */
+/** Opções incluídas por defeito — não poluir o resumo do carrinho. */
 function isIncludedDefaultSelection(s: ModifierSelection): boolean {
   if (s.groupKind !== "substitution" || s.priceDelta > 0) return false;
   const label = pickLabel(s.optionName).toLowerCase();

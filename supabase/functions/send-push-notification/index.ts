@@ -1,6 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sanitizeNotificationText } from "../_shared/campaignTemplateEngine.ts";
-import { buildStaffNewOrderPush, type StaffOrderPushItem } from "../_shared/staffOrderPushMessages.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,17 +9,6 @@ const corsHeaders = {
 
 const STAFF_PHONE_TAG = "__staff__";
 const MARKETING_PHONE_TAG = "__marketing__";
-/** Nome exacto do ficheiro no bundle iOS (mono .caf). */
-const STAFF_ORDER_IOS_SOUND = "staff_order_alert.caf";
-const STAFF_ORDER_ANDROID_SOUND = "staff_order_alert";
-
-function isStaffOrderPushTag(tag?: string | null): boolean {
-  return Boolean(tag && String(tag).startsWith("staff-new-order"));
-}
-
-function resolveStaffOrderSound(tag?: string | null): string | undefined {
-  return isStaffOrderPushTag(tag) ? STAFF_ORDER_IOS_SOUND : undefined;
-}
 
 function normalizeNativeToken(raw: string): string {
   return String(raw).replace(/[<>\s]/g, "").toLowerCase();
@@ -57,68 +44,10 @@ type PushSubRow = {
   customer_phone?: string | null;
   platform?: string | null;
   fcm_token?: string | null;
-  device_locale?: string | null;
 };
-
-type StaffOrderPushContext = {
-  orderNumber: string;
-  total: number;
-  orderType: string | null;
-  tableNumber: string | null;
-  items: StaffOrderPushItem[];
-};
-
-async function loadStaffOrderPushContext(
-  supabase: ReturnType<typeof createClient>,
-  staffOrderId: string,
-): Promise<StaffOrderPushContext | null> {
-  const { data: order, error: orderErr } = await supabase
-    .from("orders")
-    .select("order_number, total, order_type, table_number")
-    .eq("id", staffOrderId)
-    .maybeSingle();
-  if (orderErr || !order) return null;
-
-  const { data: items } = await supabase
-    .from("order_items")
-    .select("quantity, product_name")
-    .eq("order_id", staffOrderId)
-    .order("id", { ascending: true });
-
-  return {
-    orderNumber: String(order.order_number ?? ""),
-    total: Number(order.total) || 0,
-    orderType: order.order_type ?? null,
-    tableNumber: order.table_number ?? null,
-    items: (items ?? []).map((row) => ({
-      quantity: Number(row.quantity) || 1,
-      product_name: String(row.product_name ?? ""),
-    })),
-  };
-}
-
-function resolveStaffOrderPushText(
-  context: StaffOrderPushContext,
-  deviceLocale: string | null | undefined,
-  fallbackTitle: string,
-  fallbackBody: string,
-): { title: string; body: string } {
-  const built = buildStaffNewOrderPush({
-    locale: deviceLocale,
-    orderNumber: context.orderNumber,
-    total: context.total,
-    orderType: context.orderType,
-    tableNumber: context.tableNumber,
-    items: context.items,
-  });
-  return {
-    title: built.title || fallbackTitle,
-    body: built.body || fallbackBody,
-  };
-}
 
 // =============================================================
-// Web Push (VAPID), navegador / PWA
+// Web Push (VAPID) — navegador / PWA
 // =============================================================
 async function sendWebPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
@@ -138,7 +67,7 @@ async function sendWebPush(
 }
 
 // =============================================================
-// FCM HTTP v1, Android nativo (Capacitor)
+// FCM HTTP v1 — Android nativo (Capacitor)
 // =============================================================
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
@@ -210,8 +139,6 @@ async function sendFcmV1(
   serviceAccount: { project_id: string; client_email: string; private_key: string; token_uri?: string },
 ): Promise<void> {
   const access = await getFcmAccessToken(serviceAccount);
-  const androidSound = isStaffOrderPushTag(payload.tag) ? STAFF_ORDER_ANDROID_SOUND : "default";
-  const apnsSound = resolveStaffOrderSound(payload.tag) ?? "default";
   const body = {
     message: {
       token,
@@ -224,7 +151,7 @@ async function sendFcmV1(
         priority: "HIGH",
         notification: {
           channel_id: "staff_orders",
-          sound: androidSound,
+          sound: "default",
           default_vibrate_timings: true,
           visibility: "PUBLIC",
           notification_priority: "PRIORITY_MAX",
@@ -233,7 +160,7 @@ async function sendFcmV1(
       },
       apns: {
         payload: {
-          aps: { sound: apnsSound },
+          aps: { sound: "default", "interruption-level": "time-sensitive" },
         },
         headers: { "apns-priority": "10" },
       },
@@ -277,7 +204,7 @@ function getFcmServiceAccount(): {
 }
 
 // =============================================================
-// APNs HTTP/2, iPhone nativo (token APNs do Capacitor)
+// APNs HTTP/2 — iPhone nativo (token APNs do Capacitor)
 // =============================================================
 type ApnsConfig = {
   keyId: string;
@@ -330,11 +257,13 @@ async function sendApns(
 
   const jwt = await getApnsJwt(config);
   const apnsSound =
-    payload.sound ?? resolveStaffOrderSound(payload.tag) ?? "default";
+    payload.sound ??
+    (payload.tag?.startsWith("staff-new-order-") ? "staff_order_alert.caf" : "default");
   const body = JSON.stringify({
     aps: {
       alert: { title: payload.title, body: payload.body },
       sound: apnsSound,
+      "interruption-level": "time-sensitive",
     },
     url: payload.url ?? "/",
     tag: payload.tag ?? "",
@@ -545,28 +474,10 @@ function isMarketingAudienceRow(row: PushSubRow): boolean {
 
 function selectAudienceRows(
   rows: PushSubRow[],
-  opts: { orderId?: string; storeId?: string; audience?: string; customerPhone?: string; marketingBroadcast?: boolean },
+  opts: { orderId?: string; storeId?: string; audience?: string },
 ): PushSubRow[] {
   if (opts.orderId) return rows.filter((r) => r.order_id === opts.orderId);
-  if (opts.audience === "marketing") {
-    if (opts.marketingBroadcast) {
-      return rows.filter(
-        (r) =>
-          r.customer_phone === MARKETING_PHONE_TAG ||
-          (r.customer_phone != null &&
-            r.customer_phone !== STAFF_PHONE_TAG &&
-            r.customer_phone !== MARKETING_PHONE_TAG &&
-            !r.customer_phone.startsWith("__")),
-      );
-    }
-    if (opts.customerPhone) {
-      const phone = opts.customerPhone.trim();
-      const direct = rows.filter((r) => r.customer_phone === phone);
-      if (direct.length) return direct;
-      return rows.filter((r) => r.customer_phone === MARKETING_PHONE_TAG);
-    }
-    return rows.filter(isMarketingAudienceRow);
-  }
+  if (opts.audience === "marketing") return rows.filter(isMarketingAudienceRow);
   if (opts.storeId) return rows.filter(isStaffAudienceRow);
   return [];
 }
@@ -598,14 +509,7 @@ Deno.serve(async (req) => {
       nativePlatform,
       requireInteraction,
       pushDiagnostic,
-      customerPhone,
-      marketingBroadcast,
-      staffOrderId,
     } = body;
-
-    const pushTitle = sanitizeNotificationText(String(title ?? ""));
-    const pushBody = sanitizeNotificationText(String(msgBody ?? ""));
-    const staffOrderAlertId = typeof staffOrderId === "string" ? staffOrderId : undefined;
 
     if (!(await authorizeStaffBroadcast(req, { ...body, pushDiagnostic }))) {
       return new Response(
@@ -654,25 +558,14 @@ Deno.serve(async (req) => {
     );
     const directOnly = nativeDirectOnly || webDirectOnly;
 
-    let staffOrderContext: StaffOrderPushContext | null = null;
-    if (staffOrderAlertId && storeId) {
-      staffOrderContext = await loadStaffOrderPushContext(supabase, staffOrderAlertId);
-    }
-
     if (!directOnly && (storeId || orderId)) {
       let query = supabase
         .from("push_subscriptions")
-        .select("endpoint, p256dh, auth, order_id, customer_phone, platform, fcm_token, device_locale");
+        .select("endpoint, p256dh, auth, order_id, customer_phone, platform, fcm_token");
       if (orderId) query = query.eq("order_id", orderId);
       else if (storeId) query = query.eq("store_id", storeId);
       const { data: rows } = await query;
-      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], {
-        orderId,
-        storeId,
-        audience,
-        customerPhone: customerPhone as string | undefined,
-        marketingBroadcast: Boolean(marketingBroadcast),
-      });
+      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], { orderId, storeId, audience });
       matchedInDb = matched.length;
       for (const sub of matched) targetMap.set(sub.endpoint, sub);
     }
@@ -706,6 +599,7 @@ Deno.serve(async (req) => {
     }
 
     const subs = [...targetMap.values()];
+    const payloadJson = JSON.stringify({ title, body: msgBody, tag, url, requireInteraction });
 
     let sent = 0;
     let sentWeb = 0;
@@ -714,24 +608,18 @@ Deno.serve(async (req) => {
     const errors: { endpoint: string; status?: number; message: string; channel: string }[] = [];
 
     let apnsDeliveryNote: string | undefined;
-    // Sempre tentar sandbox + produção no iOS, corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
+    // Sempre tentar sandbox + produção no iOS — corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
     const apnsTryBothHosts = true;
 
     for (const sub of subs) {
       const platform = (sub.platform ?? "web").toLowerCase();
-      const localized = staffOrderContext
-        ? resolveStaffOrderPushText(staffOrderContext, sub.device_locale, pushTitle, pushBody)
-        : { title: pushTitle, body: pushBody };
-      const subTitle = localized.title;
-      const subBody = localized.body;
-      const payloadJson = JSON.stringify({ title: subTitle, body: subBody, tag, url, requireInteraction });
       try {
         if (platform === "ios") {
           if (!apns) throw new Error("APNs not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           const apnsResult = await sendApns(
             token,
-            { title: subTitle, body: subBody, tag, url, sound: resolveStaffOrderSound(tag) },
+            { title, body: msgBody, tag, url, requireInteraction },
             apns,
             { tryBothHosts: apnsTryBothHosts },
           );
@@ -751,7 +639,7 @@ Deno.serve(async (req) => {
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
-          await sendFcmV1(token, { title: subTitle, body: subBody, tag, url, requireInteraction }, fcm);
+          await sendFcmV1(token, { title, body: msgBody, tag, url, requireInteraction }, fcm);
           sent++;
           sentFcm++;
         } else {

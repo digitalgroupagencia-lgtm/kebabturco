@@ -62,14 +62,14 @@ export function getModifierConfigWarnings(groups: ModifierGroup[]): ModifierConf
       warnings.push({
         groupId: group.id,
         groupName: label,
-        message: "Grupo obrigatório sem opções, clientes não conseguem concluir o pedido.",
+        message: "Grupo obrigatório sem opções — clientes não conseguem concluir o pedido.",
       });
     }
     if (group.isRequired && group.options.length === 1 && group.groupKind === "substitution") {
       warnings.push({
         groupId: group.id,
         groupName: label,
-        message: "Substituição com uma só opção, considere tornar opcional ou adicionar opção incluída.",
+        message: "Substituição com uma só opção — considere tornar opcional ou adicionar opção incluída.",
       });
     }
   }

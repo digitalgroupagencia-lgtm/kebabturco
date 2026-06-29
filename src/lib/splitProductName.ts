@@ -12,7 +12,7 @@ export function splitProductName(name: string): [string, string] {
 
 
   // 1) Tenta quebrar em separador comum
-  const sepMatch = trimmed.match(/^(.+?)\s*[-–, |/·]\s*(.+)$/);
+  const sepMatch = trimmed.match(/^(.+?)\s*[-–—|/·]\s*(.+)$/);
   if (sepMatch) {
     return [sepMatch[1].trim(), sepMatch[2].trim()];
   }

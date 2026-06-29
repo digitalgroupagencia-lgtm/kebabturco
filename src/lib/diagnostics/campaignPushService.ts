@@ -3,7 +3,6 @@ import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
 import { translateServerVapidReason } from "@/lib/push/pushTestService";
 import { campaignDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
-import { sanitizeNotificationText } from "@/lib/marketing/campaignTemplateEngine";
 
 export type MarketingBroadcastResult = {
   ok: boolean;
@@ -16,8 +15,41 @@ export type MarketingBroadcastResult = {
   userMessage?: string;
 };
 
-export { CAMPAIGN_PRESETS, WINBACK_SUGGESTED_COUPON } from "@/lib/marketing/campaignPresets";
-export type { CampaignPresetDefinition as CampaignPreset } from "@/lib/marketing/campaignPresets";
+export type CampaignPreset = {
+  key: string;
+  name: string;
+  triggerDays: number;
+  title: string;
+  message: string;
+  triggerEvent: "first_order" | "inactive" | "promo_manual";
+};
+
+export const CAMPAIGN_PRESETS: CampaignPreset[] = [
+  {
+    key: "welcome-2d",
+    name: "Boas-vindas +2 dias",
+    triggerDays: 2,
+    title: "Obrigado pela primeira encomenda!",
+    message: "Volte em breve — temos novidades na carta.",
+    triggerEvent: "first_order",
+  },
+  {
+    key: "followup-5d",
+    name: "Reforço +5 dias",
+    triggerDays: 5,
+    title: "Como foi a experiência?",
+    message: "Peça de novo hoje com entrega rápida.",
+    triggerEvent: "first_order",
+  },
+  {
+    key: "winback-30d",
+    name: "Winback +30 dias",
+    triggerDays: 30,
+    title: "Sentimos a sua falta",
+    message: "Há tempo que não pede — volte hoje!",
+    triggerEvent: "first_order",
+  },
+];
 
 export type CampaignRow = {
   id: string;
@@ -62,8 +94,6 @@ export async function sendMarketingBroadcast(opts: {
   target: "all" | "this_device";
 }): Promise<MarketingBroadcastResult> {
   const { storeId, title, body, url = "/", target } = opts;
-  const safeTitle = sanitizeNotificationText(title);
-  const safeBody = sanitizeNotificationText(body);
 
   log("broadcast", "info", target === "all" ? "Envio a todos os clientes" : "Envio a este dispositivo", {
     storeId,
@@ -72,15 +102,14 @@ export async function sendMarketingBroadcast(opts: {
 
   const bodyPayload: Record<string, unknown> = {
     storeId,
-    title: safeTitle,
-    body: safeBody,
+    title,
+    body,
     tag: `marketing-${storeId}-${Date.now()}`,
     url,
   };
 
   if (target === "all") {
     bodyPayload.audience = "marketing";
-    bodyPayload.marketingBroadcast = true;
   } else {
     const directSubscription = await getLocalPushSubscription();
     if (!directSubscription) {
@@ -121,16 +150,7 @@ export async function sendMarketingBroadcast(opts: {
 
     const sent = payload.sent ?? 0;
     log("broadcast", sent > 0 ? "info" : "warn", `Enviado para ${sent} dispositivo(s)`, payload);
-    if (sent === 0) {
-      return {
-        ok: false,
-        sent: 0,
-        ...payload,
-        userMessage:
-          "Nenhum telemóvel de cliente com promoções activas. Abra o menu no telemóvel e aceite avisos de promoções, ou use «Enviar teste à equipa» para o painel.",
-      };
-    }
-    return { ok: true, ...payload };
+    return { ok: sent > 0, ...payload };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     log("broadcast", "error", message);
@@ -152,42 +172,24 @@ export async function fetchStoreCampaigns(storeId: string): Promise<CampaignRow[
   return (data ?? []) as CampaignRow[];
 }
 
-export async function upsertCampaignPreset(
-  storeId: string,
-  preset: import("@/lib/marketing/campaignPresets").CampaignPresetDefinition,
-): Promise<{ ok: boolean; error?: string }> {
+export async function upsertCampaignPreset(storeId: string, preset: CampaignPreset): Promise<{ ok: boolean; error?: string }> {
   const { data: existing } = await supabase
     .from("marketing_campaigns")
     .select("id")
     .eq("store_id", storeId)
-    .eq("preset_key", preset.key)
+    .eq("name", preset.name)
     .maybeSingle();
 
   const row = {
     store_id: storeId,
     name: preset.name,
-    campaign_type: preset.campaignType,
-    message_template: preset.message.pt,
-    trigger_days: preset.triggerDays ?? null,
+    campaign_type: "winback",
+    message_template: preset.message,
+    trigger_days: preset.triggerDays,
     trigger_event: preset.triggerEvent,
-    title: preset.title.pt,
+    title: preset.title,
     push_url: "/",
-    is_active: false,
-    preset_key: preset.key,
-    send_mode: preset.sendMode,
-    audience_type: preset.audienceType,
-    audience_config: preset.audienceConfig ?? {},
-    origin: "preset",
-    language_mode: "customer_last",
-    title_pt: preset.title.pt,
-    title_es: preset.title.es,
-    title_en: preset.title.en,
-    message_pt: preset.message.pt,
-    message_es: preset.message.es,
-    message_en: preset.message.en,
-    only_when_open: preset.onlyWhenOpen ?? false,
-    schedule_time: preset.scheduleTime ?? null,
-    schedule_days: preset.scheduleDays ?? null,
+    is_active: true,
   };
 
   if (existing?.id) {
@@ -212,7 +214,7 @@ export async function fetchCampaignSendLog(storeId: string, limit = 20): Promise
 
   if (error) {
     if (error.message.includes("campaign_send_log")) {
-      log("fetch", "warn", "Tabela campaign_send_log ainda não aplicada, faça Sync + migrations na Lovable");
+      log("fetch", "warn", "Tabela campaign_send_log ainda não aplicada — faça Sync + migrations na Lovable");
       return [];
     }
     log("fetch", "error", error.message);

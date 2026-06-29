@@ -16,7 +16,7 @@ export function isWeakProductImage(url: string | null | undefined): boolean {
 function nameSimilarity(target: string, candidate: string): number {
   if (target === candidate) return 100;
   let score = 0;
-  const tokens = target.split(/[\s\-–, ]+/).filter((t) => t.length > 2);
+  const tokens = target.split(/[\s\-–—]+/).filter((t) => t.length > 2);
   for (const token of tokens) {
     if (candidate.includes(token)) score += token.length;
   }
@@ -78,7 +78,7 @@ function resolveDrinkDisplayImage(product: MenuProduct, menuProducts: MenuProduc
   return null;
 }
 
-/** Foto coerente com o cardápio, evita repetir a mesma imagem errada em bebidas diferentes. */
+/** Foto coerente com o cardápio — evita repetir a mesma imagem errada em bebidas diferentes. */
 export function resolveMenuProductDisplayImage(
   product: MenuProduct,
   menuProducts: MenuProduct[] = [],

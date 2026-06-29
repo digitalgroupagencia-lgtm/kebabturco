@@ -92,7 +92,7 @@ const DeliveryHomePage = () => {
                 <a
                   href={`geo:0,0?q=${encodeURIComponent(mapsUrl)}`}
                   onClick={(e) => {
-                    // iOS não suporta geo:, fallback p/ Apple/Google Maps
+                    // iOS não suporta geo: — fallback p/ Apple/Google Maps
                     const ua = navigator.userAgent || "";
                     if (/iPhone|iPad|iPod/i.test(ua)) {
                       e.preventDefault();

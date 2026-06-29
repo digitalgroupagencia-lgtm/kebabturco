@@ -228,7 +228,7 @@ const HomeScreen = () => {
         </aside>
 
         <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-background md:scrollbar-thin">
-          {/* Banner e título rolam com os produtos, liberta espaço vertical com a barra inferior */}
+          {/* Banner e título rolam com os produtos — liberta espaço vertical com a barra inferior */}
           <div className="px-3 pt-2">
             <PromoBannerCarousel />
             <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">

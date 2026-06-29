@@ -69,7 +69,7 @@ function applyInstallMeta(s: CompanySettings, theme: "light" | "dark" = "light")
       (s as { header_color?: string }).header_color || s.primary_color,
     );
 
-    // Mantém manifest.json estático em /public, necessário para PWA Builder, TWA e Play Store.
+    // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.
     // Só actualiza meta tags dinâmicas (título e cor da barra).
     const appleTitle = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.content = name;
@@ -127,21 +127,16 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
 
   const load = useCallback(async () => {
     if (!storeId) { setLoading(false); return; }
-    try {
-      const { data } = await supabase
-        .from("company_settings")
-        .select("*")
-        .eq("store_id", storeId)
-        .maybeSingle();
-      if (data) {
-        setSettings(data);
-        setDraftOverride(null);
-      }
-    } catch (err) {
-      console.warn("[BrandingContext] settings fallback", err);
-    } finally {
-      setLoading(false);
+    const { data } = await supabase
+      .from("company_settings")
+      .select("*")
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (data) {
+      setSettings(data);
+      setDraftOverride(null);
     }
+    setLoading(false);
   }, [storeId]);
 
   useEffect(() => {
@@ -150,12 +145,10 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
       return;
     }
     setLoading(true);
-    const emergencyReady = window.setTimeout(() => setLoading(false), 2200);
     load();
     let bumpTimer: ReturnType<typeof setTimeout> | null = null;
-    const topic = `company_settings:${storeId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(topic)
+      .channel(`company_settings:${storeId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "company_settings", filter: `store_id=eq.${storeId}` },
@@ -168,7 +161,6 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
       )
       .subscribe();
     return () => {
-      window.clearTimeout(emergencyReady);
       if (bumpTimer) clearTimeout(bumpTimer);
       supabase.removeChannel(channel);
     };

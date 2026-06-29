@@ -6,7 +6,7 @@ import { nav } from "@/lib/navPaths";
 import { canAccessGeneralAdmin } from "@/lib/staffPermissions";
 import { Button } from "@/components/ui/button";
 
-/** Atalho no painel do restaurante, só admin geral vê. */
+/** Atalho no painel do restaurante — só admin geral vê. */
 export default function AdminMasterPanelBack() {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);

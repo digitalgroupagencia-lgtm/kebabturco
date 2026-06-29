@@ -162,11 +162,7 @@ export default defineConfig(({ mode }) => {
         manualChunks(id: string) {
           if (!id.includes("/src/")) return undefined;
 
-          if (id.includes("/src/lib/internalRoutes")) {
-            return "internal";
-          }
-
-          // Área interna (painel, admin, equipa…)
+          // Área interna
           if (
             id.includes("/src/views/admin/") ||
             id.includes("/src/views/panel/") ||
@@ -181,6 +177,11 @@ export default defineConfig(({ mode }) => {
             id.includes("/src/routes/internalRouteOutlet")
           ) {
             return "internal";
+          }
+
+          // Área cliente (só módulos do totem — contextos partilhados ficam no chunk principal)
+          if (id.includes("/src/customer/")) {
+            return "customer";
           }
 
           return undefined;

@@ -87,7 +87,7 @@ export async function applyConnectPayoutPolicy(
   };
 }
 
-/** Próxima quinta-feira (ISO date), estimativa quando a Stripe não devolve payout pendente. */
+/** Próxima quinta-feira (ISO date) — estimativa quando a Stripe não devolve payout pendente. */
 export function nextThursdayIso(from = new Date()): string {
   const d = new Date(from);
   const day = d.getDay();

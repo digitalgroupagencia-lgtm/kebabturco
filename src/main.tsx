@@ -5,6 +5,7 @@ import { applyBrowserChromeColor, applyStaffAppChrome } from "./lib/brandTokens"
 import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
+import { initNativePushBridge } from "./services/nativePush";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 
 if (typeof window !== "undefined") {
@@ -13,6 +14,7 @@ if (typeof window !== "undefined") {
 
 startStripeDebugOverlayGuard();
 dismissNativeIOSMediaPlayer();
+void initNativePushBridge();
 
 if (isStaffAppPath()) {
   applyStaffAppChrome();

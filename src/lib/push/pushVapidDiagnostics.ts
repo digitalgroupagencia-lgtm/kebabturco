@@ -23,7 +23,7 @@ export function getVapidKeyDiagnostics(): VapidKeyDiagnostics {
     return {
       loaded: false,
       source: "none",
-      keyPreview: ", ",
+      keyPreview: "—",
       keyLength: 0,
       validFormat: false,
       decodable: false,

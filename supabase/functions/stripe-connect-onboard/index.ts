@@ -8,7 +8,7 @@ import { getStripeSecretKey, getStripeSecretKeyTest } from "../_shared/stripeEnv
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { runStoreConnectStatusSync } from "../_shared/stripeConnectPublicSync.ts";
 
-/** Loja Gandia, fallback quando sync não envia storeId (ex.: botão Lovable). */
+/** Loja Gandia — fallback quando sync não envia storeId (ex.: botão Lovable). */
 const DEFAULT_SYNC_STORE_ID = "22222222-2222-2222-2222-222222222222";
 
 function json(data: unknown, status = 200) {

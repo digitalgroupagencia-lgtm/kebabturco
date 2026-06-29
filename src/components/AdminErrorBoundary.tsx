@@ -5,7 +5,7 @@ type Props = { children: ReactNode; area?: string; resetKey?: string };
 
 type State = { error: Error | null };
 
-/** Erro isolado no painel/admin, não afecta a loja pública. */
+/** Erro isolado no painel/admin — não afecta a loja pública. */
 export default class AdminErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };
 

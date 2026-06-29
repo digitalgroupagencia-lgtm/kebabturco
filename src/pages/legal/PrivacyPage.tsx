@@ -57,10 +57,10 @@ export default function PrivacyPage() {
 
       <LegalSection title="6. Serviços de terceiros">
         <ul>
-          <li><strong>Stripe</strong>, pagamentos.</li>
-          <li><strong>Supabase</strong>, base de dados e autenticação.</li>
-          <li><strong>Push notifications</strong>, alertas de pedidos.</li>
-          <li><strong>Alojamento/CDN</strong>, entrega do site e app.</li>
+          <li><strong>Stripe</strong> — pagamentos.</li>
+          <li><strong>Supabase</strong> — base de dados e autenticação.</li>
+          <li><strong>Push notifications</strong> — alertas de pedidos.</li>
+          <li><strong>Alojamento/CDN</strong> — entrega do site e app.</li>
         </ul>
       </LegalSection>
 

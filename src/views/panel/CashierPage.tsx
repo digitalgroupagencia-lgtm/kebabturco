@@ -106,7 +106,7 @@ const CashierPage = () => {
       await markOrderPaidAtCounter(order.id, method, pin);
       const { data: items } = await supabase.from("order_items").select("*").eq("order_id", order.id);
       await tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid", payment_method: method } as any, (items ?? []) as any);
-      toast.success(`${t("toast.payment_registered")}, #${order.order_number}`);
+      toast.success(`${t("toast.payment_registered")} — #${order.order_number}`);
       await Promise.all([fetchPendingOrders(), fetchTodaySales()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("toast.payment_error"));

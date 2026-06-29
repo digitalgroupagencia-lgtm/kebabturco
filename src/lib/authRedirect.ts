@@ -15,7 +15,7 @@ function sanitizeNextPath(next: string | null | undefined): string | null {
   return next;
 }
 
-/** Destino após login, respeita `next` quando válido; senão usa papel do utilizador. */
+/** Destino após login — respeita `next` quando válido; senão usa papel do utilizador. */
 export async function resolvePostLoginDestination(
   userId: string,
   next?: string | null,

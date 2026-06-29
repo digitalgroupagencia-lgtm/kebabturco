@@ -43,7 +43,7 @@ import {
   type StaffLastLogin,
 } from "@/lib/staffLoginMemory";
 
-/** Login da equipa, e-mail + senha ou Google (pedido pendente até aprovação). */
+/** Login da equipa — e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

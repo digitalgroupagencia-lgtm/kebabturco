@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { Bell } from "lucide-react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import PushOptInDialogFrame, { type PushOptInCopy } from "@/components/push/PushOptInDialogFrame";
+import { cn } from "@/lib/utils";
 import {
-  isCustomerMarketingPushSupportedAsync,
+  isCustomerMarketingPushSupported,
   markCustomerMarketingPromptShown,
   subscribeCustomerMarketingPush,
 } from "@/lib/customerMarketingPush";
-import { initNativePushBridge } from "@/services/nativePush";
 
 type Props = {
   open: boolean;
@@ -15,48 +17,36 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
-const CUSTOMER_COPY: Record<string, PushOptInCopy & { success: string; denied: string }> = {
+const COPY = {
   pt: {
-    title: "Fique a par dos seus pedidos",
-    subtitle: "Active as notificações e não perca nada importante.",
-    benefitOrder: "Estado do pedido em tempo real",
-    benefitPromo: "Promoções e ofertas exclusivas",
-    benefitReady: "Aviso quando estiver pronto para recolher",
+    title: "Quer receber notificações?",
+    desc: "Active as notificações para acompanhar o seu pedido em tempo real e receber avisos importantes sobre a entrega.",
     activate: "Activar notificações",
-    later: "Não, obrigado",
+    later: "Agora não",
     success: "Notificações activadas!",
     denied: "Pode activar depois nas definições do telemóvel.",
   },
   es: {
-    title: "No te pierdas tu pedido",
-    subtitle: "Activa las notificaciones y entérate al momento.",
-    benefitOrder: "Estado del pedido en tiempo real",
-    benefitPromo: "Promociones y ofertas exclusivas",
-    benefitReady: "Aviso cuando esté listo para recoger",
+    title: "¿Quieres recibir notificaciones?",
+    desc: "Activa las notificaciones para seguir tu pedido en tiempo real y recibir avisos importantes sobre tu entrega.",
     activate: "Activar notificaciones",
-    later: "No, gracias",
+    later: "Ahora no",
     success: "¡Notificaciones activadas!",
     denied: "Puedes activarlas más tarde en los ajustes del móvil.",
   },
   en: {
-    title: "Stay on top of your order",
-    subtitle: "Turn on notifications so you never miss an update.",
-    benefitOrder: "Real-time order status",
-    benefitPromo: "Exclusive deals and promotions",
-    benefitReady: "Alert when ready for pickup",
+    title: "Want to receive notifications?",
+    desc: "Turn on notifications to track your order in real time and get important delivery updates.",
     activate: "Enable notifications",
-    later: "No thanks",
+    later: "Not now",
     success: "Notifications enabled!",
     denied: "You can enable them later in your phone settings.",
   },
   fr: {
-    title: "Suivez votre commande",
-    subtitle: "Activez les notifications pour ne rien manquer.",
-    benefitOrder: "Statut de commande en temps réel",
-    benefitPromo: "Promotions et offres exclusives",
-    benefitReady: "Alerte quand c'est prêt à récupérer",
+    title: "Voulez-vous recevoir des notifications ?",
+    desc: "Activez les notifications pour suivre votre commande en temps réel et recevoir des alertes importantes sur la livraison.",
     activate: "Activer les notifications",
-    later: "Non merci",
+    later: "Pas maintenant",
     success: "Notifications activées !",
     denied: "Vous pourrez les activer plus tard dans les réglages du téléphone.",
   },
@@ -64,7 +54,7 @@ const CUSTOMER_COPY: Record<string, PushOptInCopy & { success: string; denied: s
 
 const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props) => {
   const { lang } = useLanguage();
-  const copy = CUSTOMER_COPY[lang] ?? CUSTOMER_COPY.es;
+  const copy = COPY[lang as keyof typeof COPY] ?? COPY.es;
   const [busy, setBusy] = useState(false);
 
   const handleLater = () => {
@@ -73,22 +63,14 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
   };
 
   const handleActivate = async () => {
-    if (!storeId) {
-      appToastError(copy.denied);
+    if (!isCustomerMarketingPushSupported()) {
+      appToastInfo(copy.denied);
+      onOpenChange(false);
       return;
     }
     setBusy(true);
     try {
-      await initNativePushBridge();
-
-      const supported = await isCustomerMarketingPushSupportedAsync();
-      if (!supported) {
-        appToastInfo(copy.denied);
-        return;
-      }
-
       const result = await subscribeCustomerMarketingPush(storeId);
-      markCustomerMarketingPromptShown();
       if (result.ok) {
         appToastSuccess(copy.success);
         onOpenChange(false);
@@ -104,15 +86,68 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
   };
 
   return (
-    <PushOptInDialogFrame
-      open={open}
-      storeId={storeId}
-      busy={busy}
-      copy={copy}
-      onOpenChange={onOpenChange}
-      onActivate={() => void handleActivate()}
-      onLater={handleLater}
-    />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogPortal>
+        <DialogOverlay className="bg-black/70 backdrop-blur-sm" />
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2",
+            "rounded-3xl border border-primary/30 p-6 pt-8 shadow-2xl outline-none",
+            "bg-gradient-to-b from-[#1a0204] to-[#0d0102] text-white",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          )}
+        >
+          <DialogPrimitive.Close
+            className="absolute right-4 top-4 rounded-full p-1 text-white/70 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            onClick={handleLater}
+          >
+            <span className="text-xl leading-none" aria-hidden>
+              ×
+            </span>
+            <span className="sr-only">{copy.later}</span>
+          </DialogPrimitive.Close>
+
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-primary/40 bg-primary/20">
+              <Bell className="h-8 w-8 text-primary-foreground stroke-[1.5]" />
+            </div>
+
+            <DialogPrimitive.Title className="text-xl font-bold leading-snug text-white">
+              {copy.title}
+            </DialogPrimitive.Title>
+
+            <DialogPrimitive.Description className="mt-3 text-sm leading-relaxed text-white/85">
+              {copy.desc}
+            </DialogPrimitive.Description>
+
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleActivate()}
+              className={cn(
+                "mt-6 flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5",
+                "border border-primary/35 bg-gradient-to-r from-[#3A0205] to-[#2a0104]",
+                "text-base font-bold text-white shadow-lg transition",
+                "hover:from-[#4a0307] hover:to-[#350206] disabled:opacity-60",
+              )}
+            >
+              <Bell className="h-4 w-4 shrink-0" />
+              {busy ? "…" : copy.activate}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLater}
+              className="mt-4 text-sm font-medium text-white/55 transition hover:text-white/80"
+            >
+              {copy.later}
+            </button>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
   );
 };
 

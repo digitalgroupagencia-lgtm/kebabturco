@@ -9,19 +9,19 @@ type PanelSection = {
 };
 
 export const PANEL_SECTIONS: PanelSection[] = [
-  { panel: "customer", label: "Cliente, cardápio e checkout", link: "/" },
-  { panel: "customer", label: "Cliente, acompanhar pedido", link: "/?screen=tracking" },
-  { panel: "restaurant", label: "Painel, Pedidos ao vivo", segment: "live", link: "/panel/live" },
-  { panel: "restaurant", label: "Painel, Cozinha", segment: "kitchen", link: "/panel/kitchen" },
-  { panel: "restaurant", label: "Painel, Caixa", segment: "cashier", link: "/panel/cashier" },
-  { panel: "restaurant", label: "Painel, Mesas & QR", segment: "tables", link: "/panel/tables" },
-  { panel: "restaurant", label: "Painel, Equipe", segment: "team", link: "/panel/team" },
-  { panel: "restaurant", label: "Painel, Vendedores", segment: "sellers", link: "/panel/sellers" },
-  { panel: "delivery", label: "Entregador, painel de entregas", link: "/delivery" },
-  { panel: "seller", label: "Vendedor, mesas e pedidos", link: "/seller" },
-  { panel: "admin", label: "Admin, cardápio e configuração", link: "/admin/menu" },
-  { panel: "admin", label: "Admin, recebimentos Stripe", link: "/admin/finance" },
-  { panel: "admin", label: "Admin, diagnósticos", link: "/admin/diagnostics" },
+  { panel: "customer", label: "Cliente — cardápio e checkout", link: "/" },
+  { panel: "customer", label: "Cliente — acompanhar pedido", link: "/?screen=tracking" },
+  { panel: "restaurant", label: "Painel — Pedidos ao vivo", segment: "live", link: "/panel/live" },
+  { panel: "restaurant", label: "Painel — Cozinha", segment: "kitchen", link: "/panel/kitchen" },
+  { panel: "restaurant", label: "Painel — Caixa", segment: "cashier", link: "/panel/cashier" },
+  { panel: "restaurant", label: "Painel — Mesas & QR", segment: "tables", link: "/panel/tables" },
+  { panel: "restaurant", label: "Painel — Equipe", segment: "team", link: "/panel/team" },
+  { panel: "restaurant", label: "Painel — Vendedores", segment: "sellers", link: "/panel/sellers" },
+  { panel: "delivery", label: "Entregador — painel de entregas", link: "/delivery" },
+  { panel: "seller", label: "Vendedor — mesas e pedidos", link: "/seller" },
+  { panel: "admin", label: "Admin — cardápio e configuração", link: "/admin/menu" },
+  { panel: "admin", label: "Admin — recebimentos Stripe", link: "/admin/finance" },
+  { panel: "admin", label: "Admin — diagnósticos", link: "/admin/diagnostics" },
 ];
 
 export async function probeCustomerPanel(storeId: string | null): Promise<AuditFinding[]> {
@@ -39,7 +39,7 @@ export async function probeCustomerPanel(storeId: string | null): Promise<AuditF
       id: "customer-store-inactive",
       category: "system",
       severity: "critical",
-      label: "Loja inactiva, clientes não conseguem pedir",
+      label: "Loja inactiva — clientes não conseguem pedir",
       panel: "customer",
       link: "/admin/stores",
     });
@@ -64,7 +64,7 @@ export async function probeCustomerPanel(storeId: string | null): Promise<AuditF
       id: "customer-no-products",
       category: "menu",
       severity: "critical",
-      label: "Cliente, cardápio sem produtos activos",
+      label: "Cliente — cardápio sem produtos activos",
       panel: "customer",
       link: "/admin/menu",
     });
@@ -81,7 +81,7 @@ export async function probeCustomerPanel(storeId: string | null): Promise<AuditF
       id: "customer-no-delivery-zones",
       category: "delivery",
       severity: "warning",
-      label: "Cliente, delivery sem zonas activas",
+      label: "Cliente — delivery sem zonas activas",
       panel: "customer",
       action: "Configure zonas de entrega se aceita pedidos delivery.",
       link: "/admin/delivery-zones",
@@ -106,7 +106,7 @@ export async function probeRestaurantPanel(storeId: string | null): Promise<Audi
       id: "restaurant-no-tables",
       category: "tables",
       severity: "suggestion",
-      label: "Painel, sem mesas activas (modo mesa/QR)",
+      label: "Painel — sem mesas activas (modo mesa/QR)",
       panel: "restaurant",
       link: "/panel/tables",
     });
@@ -115,7 +115,7 @@ export async function probeRestaurantPanel(storeId: string | null): Promise<Audi
       id: "restaurant-tables-ok",
       category: "tables",
       severity: "ok",
-      label: `Painel, ${tableCount} mesa(s) activa(s)`,
+      label: `Painel — ${tableCount} mesa(s) activa(s)`,
       panel: "restaurant",
     });
   }
@@ -132,7 +132,7 @@ export async function probeRestaurantPanel(storeId: string | null): Promise<Audi
       id: "restaurant-cash-closed",
       category: "orders",
       severity: "suggestion",
-      label: "Painel, caixa fechada",
+      label: "Painel — caixa fechada",
       panel: "restaurant",
       action: "Abra a caixa se estiver a operar pagamentos em dinheiro.",
       link: "/panel/cashier",
@@ -186,7 +186,7 @@ export async function probeSellerPanel(tenantId: string | null): Promise<AuditFi
       id: "seller-none",
       category: "team",
       severity: "suggestion",
-      label: "Vendedor, nenhum vendedor cadastrado",
+      label: "Vendedor — nenhum vendedor cadastrado",
       panel: "seller",
       link: "/panel/sellers",
     });

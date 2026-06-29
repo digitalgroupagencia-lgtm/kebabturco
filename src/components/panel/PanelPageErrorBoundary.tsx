@@ -31,7 +31,7 @@ function PanelPageErrorFallback({
 }
 
 /**
- * Erro isolado na área de conteúdo do painel, mantém menu e cabeçalho visíveis.
+ * Erro isolado na área de conteúdo do painel — mantém menu e cabeçalho visíveis.
  */
 class PanelPageErrorBoundaryInner extends React.Component<Props & { resetKey: string }, State> {
   state: State = { error: null };

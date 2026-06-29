@@ -248,7 +248,7 @@ export default function AdminFeeSimulatorPage() {
           </div>
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
             A Glovo e a Uber cobram uma percentagem do faturamento (cerca de 30%). O seu modelo
-            cobra €0,50 em pedidos abaixo de €10 e €1 a partir de €10, por isso em pedidos maiores a sua percentagem real
+            cobra €0,50 em pedidos abaixo de €10 e €1 a partir de €10 — por isso em pedidos maiores a sua percentagem real
             cai, enquanto a das outras se mantém alta. Nota: a Glovo e a Uber incluem estafetas e
             publicidade próprios; a comparação acima é sobre a comissão que retêm das vendas.
           </p>

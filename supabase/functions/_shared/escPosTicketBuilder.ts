@@ -1,4 +1,4 @@
-// ESC/POS Ticket Builder, adaptado do projeto Toni's Digital Kitchen.
+// ESC/POS Ticket Builder — adaptado do projeto Toni's Digital Kitchen.
 // Gera bytes ESC/POS em base64 prontos para a fila print_jobs ser
 // consumida por um Print Bridge local que envia via TCP à impressora.
 const CP1252_EXTRA: Record<number, number> = {
@@ -44,7 +44,7 @@ const LINE_WIDTH = 42;
 
 function sanitize(t: string): string {
   return t.replace(/\r\n/g, "\n").replace(/[“”]/g, '"').replace(/[‘’]/g, "'")
-    .replace(/[–, ]/g, "-").replace(/…/g, "...").replace(/\u00A0/g, " ");
+    .replace(/[–—]/g, "-").replace(/…/g, "...").replace(/\u00A0/g, " ");
 }
 function enc(t: string) { return encodeCP1252(sanitize(t)); }
 function concat(chunks: Uint8Array[]): Uint8Array {
