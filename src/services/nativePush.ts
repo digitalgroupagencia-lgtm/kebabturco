@@ -62,19 +62,33 @@ function logNative(
 function getCapacitorBridgeAvailabilitySync(): NativeAvailability | null {
   if (typeof window === "undefined") return null;
   const cap = (window as unknown as {
-    Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      getPlatform?: () => string;
+      isPluginAvailable?: (name: string) => boolean;
+    };
   }).Capacitor;
   if (!cap?.isNativePlatform?.()) return null;
+  if (cap.isPluginAvailable && !cap.isPluginAvailable("PushNotifications")) return null;
   const platform = (cap.getPlatform?.() ?? "web") as "android" | "ios" | "web";
   return { isNative: true, platform, source: "capacitor" };
 }
 
+async function canUseCapacitorPushNotifications(): Promise<boolean> {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("PushNotifications");
+  } catch {
+    return false;
+  }
+}
+
 async function getCapacitorBridgeAvailability(): Promise<NativeAvailability | null> {
+  if (!(await canUseCapacitorPushNotifications())) return null;
   const sync = getCapacitorBridgeAvailabilitySync();
   if (sync) return sync;
   try {
     const { Capacitor } = await import("@capacitor/core");
-    if (!Capacitor.isNativePlatform()) return null;
     const platform = Capacitor.getPlatform() as "android" | "ios" | "web";
     return { isNative: true, platform, source: "capacitor" };
   } catch {
@@ -491,6 +505,7 @@ async function refreshNativePushTokenIfNeeded(): Promise<void> {
   await initNativePushBridge();
   if ((await getNativePushPermission()) !== "granted") return;
   if (readCachedNativePushToken()) return;
+  if (!(await canUseCapacitorPushNotifications())) return;
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
     logNative("info", "register() ao reabrir a app (ainda sem token)");
@@ -518,18 +533,22 @@ export async function initNativePushBridge(): Promise<void> {
 
     const capacitorBridge = await getCapacitorBridgeAvailability();
     if (capacitorBridge) {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
-      await ensureAndroidNotificationChannel();
-      await attachPushListeners();
-      const perm = await PushNotifications.checkPermissions();
-      logNative("info", "Permissão actual", { receive: perm.receive });
-      if (perm.receive === "granted") {
-        try {
-          logNative("info", "register() no arranque (permissão já concedida)");
-          await PushNotifications.register();
-        } catch (e) {
-          logNative("warn", "register() no arranque falhou", { error: String(e) });
+      try {
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+        await ensureAndroidNotificationChannel();
+        await attachPushListeners();
+        const perm = await PushNotifications.checkPermissions();
+        logNative("info", "Permissão actual", { receive: perm.receive });
+        if (perm.receive === "granted") {
+          try {
+            logNative("info", "register() no arranque (permissão já concedida)");
+            await PushNotifications.register();
+          } catch (e) {
+            logNative("warn", "register() no arranque falhou", { error: String(e) });
+          }
         }
+      } catch (e) {
+        logNative("warn", "Capacitor PushNotifications indisponível no arranque", { error: String(e) });
       }
     }
 
@@ -586,22 +605,26 @@ async function requestNativePermission(): Promise<{
   receive: string;
 }> {
   if (await getCapacitorBridgeAvailability()) {
-    const { PushNotifications } = await import("@capacitor/push-notifications");
-    const perm = await PushNotifications.checkPermissions();
-    logNative("info", "checkPermissions", { receive: perm.receive });
-    if (perm.receive === "granted") return { granted: true, receive: perm.receive };
+    try {
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const perm = await PushNotifications.checkPermissions();
+      logNative("info", "checkPermissions", { receive: perm.receive });
+      if (perm.receive === "granted") return { granted: true, receive: perm.receive };
 
-    const req = await PushNotifications.requestPermissions();
-    logNative("info", "requestPermissions", { receive: req.receive });
-    if (req.receive === "granted") {
-      try {
-        logNative("info", "register() após permissão concedida");
-        await PushNotifications.register();
-      } catch (e) {
-        logNative("warn", "register() após permissão falhou", { error: String(e) });
+      const req = await PushNotifications.requestPermissions();
+      logNative("info", "requestPermissions", { receive: req.receive });
+      if (req.receive === "granted") {
+        try {
+          logNative("info", "register() após permissão concedida");
+          await PushNotifications.register();
+        } catch (e) {
+          logNative("warn", "register() após permissão falhou", { error: String(e) });
+        }
       }
+      return { granted: req.receive === "granted", receive: req.receive };
+    } catch (e) {
+      logNative("warn", "Capacitor PushNotifications indisponível ao pedir permissão", { error: String(e) });
     }
-    return { granted: req.receive === "granted", receive: req.receive };
   }
 
   if (isIosInjectedApp()) {

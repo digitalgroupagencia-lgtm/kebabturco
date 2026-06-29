@@ -718,11 +718,11 @@ const PaymentScreen = () => {
     });
 
     await enableCustomerOrderAlerts();
-    await subscribePush({
+    void subscribePush({
       storeId,
       orderId: result.order_id,
       customerPhone: fullCustomerPhone || undefined,
-    });
+    }).catch(() => undefined);
 
     const printOk = shouldPrintAfterCheckout(
       orderType || "takeaway",
@@ -909,11 +909,11 @@ const PaymentScreen = () => {
     });
 
     await enableCustomerOrderAlerts();
-    await subscribePush({
+    void subscribePush({
       storeId,
       orderId: result.order_id,
       customerPhone: fullCustomerPhone || undefined,
-    });
+    }).catch(() => undefined);
 
     clearCart();
     clearStripeCheckoutSession();
