@@ -26,6 +26,7 @@ export default function StaffSessionRootRedirect({ children }: { children: React
         pathname,
         staffSessionFlag: isStaffSessionFlagSet(),
         hasUser: Boolean(user),
+        role: roleData?.role ?? null,
       })
     ) {
       return;

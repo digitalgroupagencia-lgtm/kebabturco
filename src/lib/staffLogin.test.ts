@@ -20,6 +20,17 @@ describe("shouldRedirectRootToStaffPanel", () => {
       shouldRedirectRootToStaffPanel({ pathname: "/admin", staffSessionFlag: true, hasUser: true }),
     ).toBe(false);
   });
+
+  it("keeps admin master on the customer storefront at root", () => {
+    expect(
+      shouldRedirectRootToStaffPanel({
+        pathname: "/",
+        staffSessionFlag: true,
+        hasUser: true,
+        role: "admin_master",
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("resolveStaffLoginDestination", () => {
