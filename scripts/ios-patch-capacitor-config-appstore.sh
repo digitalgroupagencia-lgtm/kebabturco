@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# App Store / TestFlight: igual build 10 — site remoto + só plugins que existem no IPA.
+# App Store / TestFlight: site remoto + plugins controlados para diagnosticar crash de arranque.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CFG="$ROOT/ios/App/App/capacitor.config.json"
@@ -9,28 +9,34 @@ if [ ! -f "$CFG" ]; then
   exit 1
 fi
 
-node <<'NODE'
+CFG_PATH="$CFG" KEBAB_IOS_STARTUP_DIAGNOSTIC="${KEBAB_IOS_STARTUP_DIAGNOSTIC:-1}" node <<'NODE'
 const fs = require("fs");
-const path = require("path");
-const cfgPath = path.join(process.cwd(), "ios/App/App/capacitor.config.json");
+const cfgPath = process.env.CFG_PATH;
 const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
+const startupDiagnostic = process.env.KEBAB_IOS_STARTUP_DIAGNOSTIC !== "0";
 
-const SAFE_PLUGINS = new Set([
-  "KeepAwakePlugin",
-  "AppPlugin",
-  "PushNotificationsPlugin",
-  "ScreenOrientationPlugin",
-  "ApnsTokenBridgePlugin",
-]);
+const SAFE_PLUGINS = startupDiagnostic
+  ? new Set(["AppPlugin"])
+  : new Set([
+      "KeepAwakePlugin",
+      "AppPlugin",
+      "PushNotificationsPlugin",
+      "ScreenOrientationPlugin",
+      "ApnsTokenBridgePlugin",
+    ]);
 
 const FORBIDDEN_PLUGINS = [
   "StripeTerminalPlugin",
   "TcpSocketPlugin",
   "GeolocationPlugin",
   "PreferencesPlugin",
+  ...(startupDiagnostic ? ["PushNotificationsPlugin", "ApnsTokenBridgePlugin"] : []),
 ];
 
 cfg.packageClassList = [...SAFE_PLUGINS];
+if (startupDiagnostic && cfg.plugins) {
+  delete cfg.plugins.PushNotifications;
+}
 
 for (const bad of FORBIDDEN_PLUGINS) {
   if (cfg.packageClassList.includes(bad)) {
@@ -56,7 +62,8 @@ cfg.server = {
 };
 
 fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, "\t") + "\n");
-console.log("✓ capacitor.config.json App Store: site remoto (build 10)");
+console.log("✓ capacitor.config.json App Store: site remoto");
+console.log("  startup diagnostic:", startupDiagnostic ? "ON" : "OFF");
 console.log("  server.url:", cfg.server.url);
 console.log("  packageClassList:", cfg.packageClassList.join(", "));
 NODE
