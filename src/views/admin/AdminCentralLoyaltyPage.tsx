@@ -89,8 +89,8 @@ function LoyaltyTenantPanel({
           stats={[
             { label: "Programa", value: loyaltyOn ? "Activo" : "Off", tone: loyaltyOn ? "success" : "muted" },
             { label: "Modelo", value: program?.model_type ?? "carimbos" },
-            { label: "Clientes VIP", value: "—", tone: "muted" },
-            { label: "Recompensas", value: "—", tone: "muted" },
+            { label: "Clientes VIP", value: ", ", tone: "muted" },
+            { label: "Recompensas", value: ", ", tone: "muted" },
           ]}
         />
       )}
@@ -155,12 +155,12 @@ function LoyaltyTenantPanel({
         })}
       </div>
 
-      <AdminCollapsibleSection title="Níveis e recompensas" summary="Placeholder — configuração avançada na fase 2">
+      <AdminCollapsibleSection title="Níveis e recompensas" summary="Placeholder, configuração avançada na fase 2">
         <div className="grid grid-cols-3 gap-2 px-1 pb-2">
           {["Bronze", "Prata", "Ouro"].map((lvl, i) => (
             <div key={lvl} className="rounded-xl border bg-muted/30 p-2.5 text-center">
               <p className="text-[10px] font-bold text-muted-foreground uppercase">{lvl}</p>
-              <p className="text-lg font-black mt-1">{i === 0 ? "—" : i === 1 ? "—" : "—"}</p>
+              <p className="text-lg font-black mt-1">{i === 0 ? ", " : i === 1 ? ", " : ", "}</p>
               <p className="text-[9px] text-muted-foreground">clientes</p>
             </div>
           ))}

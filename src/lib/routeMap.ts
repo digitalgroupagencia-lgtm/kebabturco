@@ -8,7 +8,7 @@ export type RouteMapEntry = {
   description: string;
   role: string;
   kind: RouteKind;
-  /** Caminho calculado em runtime — não string literal longa no fonte. */
+  /** Caminho calculado em runtime, não string literal longa no fonte. */
   href: () => string;
   note?: string;
 };
@@ -26,7 +26,7 @@ export const ROUTE_MAP_SECTIONS: RouteMapSection[] = [
   {
     id: "store",
     title: "Loja pública Kebab Turco",
-    description: "Totem / pedidos online — visitantes sem login.",
+    description: "Totem / pedidos online, visitantes sem login.",
     routes: [
       {
         id: "store-home",
@@ -56,7 +56,7 @@ export const ROUTE_MAP_SECTIONS: RouteMapSection[] = [
   {
     id: "panel",
     title: "Painel operacional",
-    description: "Operação diária do restaurante — sem configuração da loja.",
+    description: "Operação diária do restaurante, sem configuração da loja.",
     routes: [
       {
         id: "panel-home",
@@ -111,7 +111,7 @@ export const ROUTE_MAP_SECTIONS: RouteMapSection[] = [
   {
     id: "admin",
     title: "Administração do projecto",
-    description: "Configuração completa — só administrador geral (admin_master).",
+    description: "Configuração completa, só administrador geral (admin_master).",
     routes: [
       {
         id: "admin-home",

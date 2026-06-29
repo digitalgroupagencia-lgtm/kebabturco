@@ -20,11 +20,11 @@ const ALERT_VOLUME = KACHING_ALERT_VOLUME;
 const ALERT_VOLUME_URGENT = KACHING_ALERT_VOLUME_URGENT;
 /** Intervalo entre bips enquanto houver pedidos em «Recebido» sem mudança de estado. */
 const PENDING_ALERT_REPEAT_MS = 4_000;
-/** Após 5 min sem aceitar — som mais rápido e alto + ecrã vermelho. */
+/** Após 5 min sem aceitar, som mais rápido e alto + ecrã vermelho. */
 const PENDING_URGENT_REPEAT_MS = 2_000;
 export const PANEL_URGENT_PENDING_MS = 5 * 60 * 1000;
 
-/** Pedidos recebidos ainda não aceites — som repete até mudar o estado. */
+/** Pedidos recebidos ainda não aceites, som repete até mudar o estado. */
 const unacknowledgedPending = new Set<string>();
 const pendingRegisteredAt = new Map<string, number>();
 
@@ -74,7 +74,7 @@ function clearLockScreenMediaControls() {
   }
 }
 
-/** No iPhone instalado o som vem da notificação push do sistema — nunca do player web. */
+/** No iPhone instalado o som vem da notificação push do sistema, nunca do player web. */
 function shouldUseInAppAudio(): boolean {
   return !isNativeIOSAppSync();
 }
@@ -176,7 +176,7 @@ function ensurePendingAlertLoop() {
   restartPendingAlertLoop();
 }
 
-/** Regista pedido em «Recebido» — som repete até mudar o estado. */
+/** Regista pedido em «Recebido», som repete até mudar o estado. */
 export function registerNewPendingOrderAlert(orderId: string): boolean {
   const isNew = !unacknowledgedPending.has(orderId);
   unacknowledgedPending.add(orderId);
@@ -260,7 +260,7 @@ function beepSources(): string[] {
   return [STATIC_BEEP_URL];
 }
 
-/** Safari/iPhone exige toque antes de som — chamar num botão. */
+/** Safari/iPhone exige toque antes de som, chamar num botão. */
 export async function enablePanelAlerts(): Promise<boolean> {
   installVisibilityHook();
   try {
@@ -407,7 +407,7 @@ function waitForPlaying(audio: HTMLAudioElement, ms = 800): Promise<boolean> {
   });
 }
 
-/** iPhone/Safari — ficheiro estático no servidor (mais fiável que blob). */
+/** iPhone/Safari, ficheiro estático no servidor (mais fiável que blob). */
 async function playHtmlBeep(isUnlock = false, urgent = false): Promise<boolean> {
   if (!shouldUseInAppAudio()) {
     clearLockScreenMediaControls();
@@ -429,7 +429,7 @@ async function playHtmlBeep(isUnlock = false, urgent = false): Promise<boolean> 
       await audio.play();
       const playing = await waitForPlaying(audio, isIOSLike() ? 1200 : 800);
 
-      // Safari/iPhone: play() sem erro conta como sucesso — o evento "playing" falha muitas vezes.
+      // Safari/iPhone: play() sem erro conta como sucesso, o evento "playing" falha muitas vezes.
       if (playing || (isIOSLike() && !audio.paused)) {
         if (isUnlock && isIOSLike()) iosAudioUnlocked = true;
         window.setTimeout(() => clearLockScreenMediaControls(), urgent ? 700 : 450);
@@ -491,7 +491,7 @@ function playWebBeep(urgent = false): boolean {
   return true;
 }
 
-/** Som curto — usado no loop persistente e no teste. */
+/** Som curto, usado no loop persistente e no teste. */
 async function playAlertSoundOnce(): Promise<boolean> {
   if (!isPanelAlertsEnabled()) return false;
 
@@ -509,7 +509,7 @@ async function playAlertSoundOnce(): Promise<boolean> {
     deployDebugLog({
       hypothesisId: "H-iOS-C",
       location: "panelAlerts.ts:playAlertSoundOnce",
-      message: "native ios — som só via notificação push do sistema",
+      message: "native ios, som só via notificação push do sistema",
       data: { pending: unacknowledgedPending.size, urgent },
       runId: "alert-native-ios-v1",
     });

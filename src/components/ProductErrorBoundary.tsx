@@ -10,7 +10,7 @@ type Props = {
 
 type State = { error: Error | null };
 
-/** Erro isolado na tela do produto — não derruba o cardápio. */
+/** Erro isolado na tela do produto, não derruba o cardápio. */
 export default class ProductErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };
 

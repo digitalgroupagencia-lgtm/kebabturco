@@ -6,7 +6,7 @@ import { useStaffT } from "@/hooks/useStaffT";
 import { nav } from "@/lib/navPaths";
 import { fetchMyStaffProfile, isStaffProfileIncomplete } from "@/services/staffProfile";
 
-/** Lembra a equipa de completar nome e foto — usado nos pedidos aceites. */
+/** Lembra a equipa de completar nome e foto, usado nos pedidos aceites. */
 export default function StaffProfileBanner() {
   const { user } = useAuth();
   const { t } = useStaffT();

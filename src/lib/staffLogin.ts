@@ -37,10 +37,8 @@ export function shouldRedirectRootToStaffPanel(opts: {
   pathname: string;
   staffSessionFlag: boolean;
   hasUser: boolean;
-  role?: StaffRole | string | null;
 }): boolean {
   const root = opts.pathname.replace(/\/+$/, "") || "/";
-  if (opts.role === "admin_master") return false;
   return root === "/" && opts.staffSessionFlag && opts.hasUser;
 }
 
@@ -51,7 +49,7 @@ export function returnToCustomerTotemStart(navigate: NavigateFunction) {
   navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
 }
 
-/** Destino após login da equipa — separado do fluxo do cliente. */
+/** Destino após login da equipa, separado do fluxo do cliente. */
 export function resolveStaffLoginDestination(role: StaffRole | string | null | undefined): string {
   switch (role) {
     case "delivery":

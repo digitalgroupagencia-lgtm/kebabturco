@@ -71,7 +71,7 @@ export default function TenantLanguagesDialog({ tenantId, tenantName }: Props) {
     if (error) return toast.error("Erro ao subir ícone");
     const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
     setLangIcons((prev) => ({ ...prev, [code]: pub.publicUrl }));
-    toast.success("Ícone carregado — lembre de salvar");
+    toast.success("Ícone carregado, lembre de salvar");
   };
 
   const toggleActive = (code: string) => {
@@ -115,7 +115,7 @@ export default function TenantLanguagesDialog({ tenantId, tenantName }: Props) {
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5" /> Idiomas — {tenantName}
+            <Globe className="w-5 h-5" /> Idiomas, {tenantName}
           </DialogTitle>
         </DialogHeader>
 

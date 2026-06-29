@@ -31,7 +31,7 @@ function normalizeIban(iban: string): string {
   return iban.replace(/\s/g, "").toUpperCase();
 }
 
-/** CIF/NIF espanhol sem prefixo país — Stripe Connect ES espera só o identificador. */
+/** CIF/NIF espanhol sem prefixo país, Stripe Connect ES espera só o identificador. */
 export function formatSpanishTaxId(taxId: string): string {
   const t = taxId.trim().toUpperCase().replace(/\s/g, "");
   if (t.startsWith("ES-")) return t.slice(3);
@@ -57,7 +57,7 @@ function statementDescriptorFromName(name: string): string {
 function splitOwnerName(fullName: string): { first_name: string; last_name: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length <= 1) {
-    return { first_name: parts[0] || "Titular", last_name: "—" };
+    return { first_name: parts[0] || "Titular", last_name: ", " };
   }
   return { first_name: parts[0], last_name: parts.slice(1).join(" ") };
 }
@@ -119,7 +119,7 @@ function intakeComplete(intake: CustomIntakeRow | null | undefined): intake is C
   );
 }
 
-/** Conta Stripe incompleta — precisa recriar ou reparar (ex.: Gandia restrita sem IBAN/e-mail). */
+/** Conta Stripe incompleta, precisa recriar ou reparar (ex.: Gandia restrita sem IBAN/e-mail). */
 export function isStripeAccountCriticallyIncomplete(acct: Stripe.Account): boolean {
   if (acct.type === "express" || acct.type === "standard") return true;
   if (!acct.email) return true;
@@ -208,7 +208,7 @@ async function ensureCompanyRepresentative(
   await stripe.accounts.createPerson(accountId, personPayload);
 }
 
-/** Qualquer requisito Stripe ainda em falta — abre onboarding embutido no nosso site. */
+/** Qualquer requisito Stripe ainda em falta, abre onboarding embutido no nosso site. */
 export function accountNeedsEmbeddedCompletionStep(acct: Stripe.Account): boolean {
   const due = [
     ...(acct.requirements?.currently_due ?? []),

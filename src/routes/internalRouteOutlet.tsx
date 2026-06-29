@@ -34,7 +34,7 @@ const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
 
-/** Páginas internas — render directo, sem `<Route path={...}>` dinâmico (evita scanner Lovable). */
+/** Páginas internas, render directo, sem `<Route path={...}>` dinâmico (evita scanner Lovable). */
 export function CatchAllResolver({ notFound }: { notFound: ReactNode }) {
   const location = useLocation();
   const pathname = location.pathname.replace(/\/+$/, "") || "/";

@@ -46,12 +46,12 @@ export function centralAdminPath(segment?: string) {
   return segment ? nav.admin("centrals", segment) : nav.admin("centrals");
 }
 
-/** @deprecated Legado multi-tenant — redirecciona via PreviewPathGuard */
+/** @deprecated Legado multi-tenant, redirecciona via PreviewPathGuard */
 export function tenantCentralsPath(slug: string) {
   return nav.admin("tenants", slug, "centrals");
 }
 
-/** @deprecated Legado multi-tenant — redirecciona via PreviewPathGuard */
+/** @deprecated Legado multi-tenant, redirecciona via PreviewPathGuard */
 export function tenantCentralPath(slug: string, segment: string) {
   return nav.admin("tenants", slug, "centrals", segment);
 }

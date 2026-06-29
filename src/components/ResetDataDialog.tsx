@@ -16,7 +16,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   tenantId: string;
   tenantName?: string;
-  /** Quando true, esconde opções destrutivas (produtos/categorias/banners) — usado no painel do restaurante */
+  /** Quando true, esconde opções destrutivas (produtos/categorias/banners), usado no painel do restaurante */
   restrictDestructive?: boolean;
   onSuccess?: () => void;
 }
@@ -131,7 +131,7 @@ const ResetDataDialog = ({ open, onOpenChange, tenantId, tenantName, restrictDes
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-destructive">Apagar também vendas reais (perigoso)</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                Inclui pagamentos Bizum e cartão já cobrados. O dinheiro no banco não volta — só some do painel.
+                Inclui pagamentos Bizum e cartão já cobrados. O dinheiro no banco não volta, só some do painel.
               </div>
             </div>
           </label>

@@ -64,12 +64,12 @@ export function mergeOnboardingInput(
     password:
       loginMethod === "google"
         ? isEs
-          ? "(no necesaria — use Google con el correo de arriba)"
-          : "(não é necessária — use Google com o e-mail acima)"
+          ? "(no necesaria, use Google con el correo de arriba)"
+          : "(não é necessária, use Google com o e-mail acima)"
         : cache?.password ||
           (isEs
-            ? "(la define el gerente — pida una nueva si la olvidó)"
-            : "(definida pelo gerente — peça uma nova se esqueceu)"),
+            ? "(la define el gerente, pida una nueva si la olvidó)"
+            : "(definida pelo gerente, peça uma nova se esqueceu)"),
     role: member.role,
     lang,
     siteUrl,

@@ -96,7 +96,7 @@ export async function inspectPlatformConnectStatus(
       productionBlocked: false,
       testKeysConfigured: true,
       message: null,
-      adminMessage: "Modo teste — pagamentos simulados, sem dinheiro real.",
+      adminMessage: "Modo teste, pagamentos simulados, sem dinheiro real.",
     };
   }
 
@@ -119,7 +119,7 @@ export async function inspectPlatformConnectStatus(
       testKeysConfigured,
       message: null,
       adminMessage: pendingVerification
-        ? "Plataforma pode estar pendente de verificação — confirme no Estado do sistema."
+        ? "Plataforma pode estar pendente de verificação, confirme no Estado do sistema."
         : null,
     };
   }
@@ -129,7 +129,7 @@ export async function inspectPlatformConnectStatus(
 
   const productionBlocked = !connectLiveAllowed;
   const adminMessage = productionBlocked
-    ? "Plataforma pendente de verificação — pagamentos reais e contas live bloqueados até a Stripe aprovar o perfil da plataforma."
+    ? "Plataforma pendente de verificação, pagamentos reais e contas live bloqueados até a Stripe aprovar o perfil da plataforma."
     : null;
 
   return {
@@ -165,7 +165,7 @@ export async function resolveStripeConnectContext(
   const testKey = getStripeSecretKeyTest();
   const liveKey = getStripeSecretKey();
 
-  // Conta já existente — usar o ambiente guardado
+  // Conta já existente, usar o ambiente guardado
   if (existingAccountId && storeEnvironment) {
     const secret = pickStripeSecretForEnvironment(storeEnvironment);
     if (!secret) {
@@ -180,7 +180,7 @@ export async function resolveStripeConnectContext(
     return { stripe, environment: storeEnvironment, platform };
   }
 
-  // Nova conta — tentar live com verificação real
+  // Nova conta, tentar live com verificação real
   if (liveKey && stripeKeyMode(liveKey) === "live") {
     const liveStripe = new Stripe(liveKey, { apiVersion: "2023-10-16" });
     const livePlatform = await inspectPlatformConnectStatus(liveStripe, "live", { probe: true });
@@ -204,7 +204,7 @@ export async function resolveStripeConnectContext(
           pendingVerification: true,
           connectLiveAllowed: false,
           adminMessage:
-            "Plataforma pendente de verificação — a usar modo TESTE. Pagamentos reais bloqueados até aprovação.",
+            "Plataforma pendente de verificação, a usar modo TESTE. Pagamentos reais bloqueados até aprovação.",
           message:
             "Modo teste activo. Produção bloqueada até a Stripe aprovar o perfil da plataforma.",
         },
@@ -230,7 +230,7 @@ export class PlatformPendingError extends Error {
   constructor(platform: StripePlatformStatus) {
     super(
       platform.adminMessage ??
-        "Plataforma pendente de verificação — configure chaves de teste para experimentar o fluxo.",
+        "Plataforma pendente de verificação, configure chaves de teste para experimentar o fluxo.",
     );
     this.platform = platform;
   }

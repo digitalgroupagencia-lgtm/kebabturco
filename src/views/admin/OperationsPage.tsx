@@ -67,7 +67,7 @@ const OperationsPage = () => {
     setCopyingSql(true);
     try {
       await navigator.clipboard.writeText(BIZUM_COLUMN_ACTIVATION_SQL);
-      toast.success("Comando copiado — cole na base de dados da Lovable e execute.");
+      toast.success("Comando copiado, cole na base de dados da Lovable e execute.");
     } catch {
       toast.error("Não foi possível copiar. Abra Cloud → Base de dados na Lovable.");
     } finally {

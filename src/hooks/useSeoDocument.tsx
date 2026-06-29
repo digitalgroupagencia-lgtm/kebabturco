@@ -49,7 +49,7 @@ function upsertJsonLd(payload: Record<string, unknown> | null) {
 }
 
 /**
- * Canonical, robots e dados estruturados por rota — Google Search Console / SEO.
+ * Canonical, robots e dados estruturados por rota, Google Search Console / SEO.
  */
 export function SeoDocumentEffect() {
   const location = useLocation();

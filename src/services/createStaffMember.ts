@@ -165,7 +165,7 @@ async function ensureAuthUserWithPassword(
   return { userId, createdNewUser };
 }
 
-/** Cria membro da equipa — utilizador + permissões + login testado. */
+/** Cria membro da equipa, utilizador + permissões + login testado. */
 export async function createStaffMember(
   input: CreateStaffMemberInput,
 ): Promise<CreateStaffMemberResult> {

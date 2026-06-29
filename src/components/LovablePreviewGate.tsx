@@ -7,7 +7,7 @@ import {
   shouldOpenStorefrontInLovablePreview,
 } from "@/lib/lovablePreview";
 
-/** Redireccionamento síncrono no editor Lovable — evita 1º frame em branco no painel. */
+/** Redireccionamento síncrono no editor Lovable, evita 1º frame em branco no painel. */
 export default function LovablePreviewGate() {
   const { pathname, search } = useLocation();
 

@@ -1,4 +1,4 @@
-// Chave pública VAPID — segura no frontend (apenas pública).
+// Chave pública VAPID, segura no frontend (apenas pública).
 // Deve coincidir exactamente com VAPID_PUBLIC_KEY configurada no servidor de envio.
 export const VAPID_PUBLIC_KEY =
   "BGxtrIj6XFsYvJykwBtZHzw6EPNhUYOycKOPi9xwMLfNaf6nl05gjChe1cgUjdY8PI05UwuJ5UPdiyPqag74eK4";

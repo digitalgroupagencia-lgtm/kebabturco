@@ -1,4 +1,4 @@
-/** Histórico local de pedidos — separado da sessão admin (localStorage do dispositivo). */
+/** Histórico local de pedidos, separado da sessão admin (localStorage do dispositivo). */
 
 const HISTORY_KEY = "kiosk-order-history";
 const MAX_ENTRIES = 25;

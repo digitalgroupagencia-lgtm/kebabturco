@@ -24,7 +24,7 @@ export type DiagnosticItem = {
   label: string;
   status: DiagnosticStatus;
   detail: string;
-  /** O que fazer — linguagem simples para o dono do restaurante */
+  /** O que fazer, linguagem simples para o dono do restaurante */
   action?: string;
   critical?: boolean;
   link?: string;
@@ -55,7 +55,7 @@ export function useOperationalDiagnostics() {
         body: { mode: "sync_status", storeId: auditStoreId },
       });
     } catch {
-      /* ignora — não bloqueia a auditoria */
+      /* ignora, não bloqueia a auditoria */
     }
 
     const [dbDiag, serverDiag, schemaProbe, storeProfile, payoutIntake, checkoutRpc] = await Promise.all([
@@ -104,7 +104,7 @@ export function useOperationalDiagnostics() {
         label: "Base de dados",
         status: "fail",
         critical: true,
-        detail: "Faltam actualizações na base de dados — mesas QR, impressão única e caixa podem falhar.",
+        detail: "Faltam actualizações na base de dados, mesas QR, impressão única e caixa podem falhar.",
         action: "Lovable → Database → SQL editor → cole o SQL completo (Admin → Recebimentos → Copiar SQL). Depois actualize esta página.",
       });
     } else if (!schemaQr || !schemaPrint || !schemaValidated || !rpcReady) {
@@ -138,7 +138,7 @@ export function useOperationalDiagnostics() {
         status: "fail",
         critical: true,
         detail:
-          "Falta actualização que guarda se a conta do restaurante está em teste ou produção — pagamentos podem usar a chave errada.",
+          "Falta actualização que guarda se a conta do restaurante está em teste ou produção, pagamentos podem usar a chave errada.",
         action:
           "Lovable → Database → SQL editor → cole o SQL completo de Admin → Recebimentos.",
       });
@@ -179,7 +179,7 @@ export function useOperationalDiagnostics() {
           label: "QR das mesas",
           status: "warn",
           critical: true,
-          detail: "Nenhuma mesa activa — clientes não conseguem pedir na mesa.",
+          detail: "Nenhuma mesa activa, clientes não conseguem pedir na mesa.",
           action: "Vá a Mesas no painel, crie as mesas e imprima o QR de cada uma.",
         });
       } else if (missing > 0) {
@@ -201,7 +201,7 @@ export function useOperationalDiagnostics() {
       }
     }
 
-    // STRIPE — chave pública no site (Lovable / config pública do projecto)
+    // STRIPE, chave pública no site (Lovable / config pública do projecto)
     const hasLivePk = hasStripePublishableKey("live");
     const hasTestPk = hasStripePublishableKey("test");
     if (!hasLivePk && !hasTestPk) {
@@ -210,7 +210,7 @@ export function useOperationalDiagnostics() {
         label: "Pagamentos online (site)",
         status: "fail",
         critical: true,
-        detail: "Chaves publicáveis da Stripe em falta no site — o cliente não vê cartão.",
+        detail: "Chaves publicáveis da Stripe em falta no site, o cliente não vê cartão.",
         action:
           "Sync + Publish na Lovable. A chave live já está no projecto; para testes, cole pk_test_... em config/stripe.public.env.",
       });
@@ -219,7 +219,7 @@ export function useOperationalDiagnostics() {
         id: "stripe-site-key",
         label: "Pagamentos online (site)",
         status: "warn",
-        detail: "Chave de teste activa — checkout simulado. Produção usa pk_live quando a plataforma for aprovada.",
+        detail: "Chave de teste activa, checkout simulado. Produção usa pk_live quando a plataforma for aprovada.",
         action:
           stripePublishableTestKeySource() === "env"
             ? undefined
@@ -231,12 +231,12 @@ export function useOperationalDiagnostics() {
         label: "Pagamentos online (site)",
         status: "ok",
         detail: hasTestPk
-          ? "Chaves live e teste activas — checkout usa teste ou produção conforme o modo."
-          : "Chave publicável live activa — cartão e Apple/Google Pay podem aparecer no checkout.",
+          ? "Chaves live e teste activas, checkout usa teste ou produção conforme o modo."
+          : "Chave publicável live activa, cartão e Apple/Google Pay podem aparecer no checkout.",
       });
     }
 
-    // STRIPE — chave secreta (servidor)
+    // STRIPE, chave secreta (servidor)
     if (serverDiag == null) {
       if (stripeConnectReady && checkoutRpc) {
         results.push({
@@ -251,7 +251,7 @@ export function useOperationalDiagnostics() {
           label: "Pagamentos online (servidor)",
           status: "warn",
           critical: false,
-          detail: "Não foi possível verificar o servidor — a função de diagnóstico pode não estar activa.",
+          detail: "Não foi possível verificar o servidor, a função de diagnóstico pode não estar activa.",
           action: "Na Lovable: «Deploy all edge functions» (ou «Deploy stripe-create-payment-intent»). Depois Sync + Publish.",
         });
       }
@@ -288,7 +288,7 @@ export function useOperationalDiagnostics() {
         label: "Plataforma live",
         status: "warn",
         critical: false,
-        detail: "Pendente de validação de identidade na Stripe — pagamentos reais bloqueados.",
+        detail: "Pendente de validação de identidade na Stripe, pagamentos reais bloqueados.",
         action: testKeysOnServer
           ? "Use «Activar recebimentos de teste» em Recebimentos para validar o checkout."
           : "Configure chaves de teste no servidor e a chave publicável de teste no site.",
@@ -299,8 +299,8 @@ export function useOperationalDiagnostics() {
         status: testKeysOnServer && hasTestPk ? "ok" : "warn",
         detail: testKeysOnServer
           ? hasTestPk
-            ? "Modo teste activo — chaves de teste configuradas."
-            : "Servidor pronto para teste — falta chave publicável de teste no site."
+            ? "Modo teste activo, chaves de teste configuradas."
+            : "Servidor pronto para teste, falta chave publicável de teste no site."
           : "Chaves de teste em falta no servidor.",
         action: !hasTestPk
           ? "Cole pk_test_... em config/stripe.public.env e faça Sync + Publish."
@@ -311,7 +311,7 @@ export function useOperationalDiagnostics() {
         id: "stripe-platform-verification",
         label: "Plataforma Stripe (verificação)",
         status: "ok",
-        detail: "Plataforma aprovada — contas live e pagamentos reais permitidos.",
+        detail: "Plataforma aprovada, contas live e pagamentos reais permitidos.",
       });
     }
 
@@ -321,7 +321,7 @@ export function useOperationalDiagnostics() {
           id: "stripe-connect-mode",
           label: "Modo Stripe Connect",
           status: "warn",
-          detail: "Modo teste — checkout e split simulados, sem dinheiro real.",
+          detail: "Modo teste, checkout e split simulados, sem dinheiro real.",
           action: productionBlocked
             ? "Produção bloqueada até a Stripe aprovar a plataforma."
             : undefined,
@@ -331,7 +331,7 @@ export function useOperationalDiagnostics() {
           id: "stripe-connect-mode",
           label: "Modo Stripe Connect",
           status: "warn",
-          detail: "Produção bloqueada — testes disponíveis com chaves de teste.",
+          detail: "Produção bloqueada, testes disponíveis com chaves de teste.",
           action: "Admin → Recebimentos → Conectar recebimentos (modo teste).",
         });
       } else if (!productionBlocked) {
@@ -339,7 +339,7 @@ export function useOperationalDiagnostics() {
           id: "stripe-connect-mode",
           label: "Modo Stripe Connect",
           status: "ok",
-          detail: "Modo produção — pagamentos reais activos.",
+          detail: "Modo produção, pagamentos reais activos.",
         });
       }
     }
@@ -360,7 +360,7 @@ export function useOperationalDiagnostics() {
         status: "fail",
         critical: true,
         detail:
-          "Falta actualização que liga o totem à conta Stripe — o cliente vê «pagamentos não activos» mesmo com Stripe correcta.",
+          "Falta actualização que liga o totem à conta Stripe, o cliente vê «pagamentos não activos» mesmo com Stripe correcta.",
         action: "Admin → Recebimentos → Copiar SQL de activação → executar no editor da base de dados → Sync + Publish.",
       });
     } else {
@@ -372,7 +372,7 @@ export function useOperationalDiagnostics() {
       });
     }
 
-    // STRIPE Connect — conta restaurante (mesma regra que Finanças / totem)
+    // STRIPE Connect, conta restaurante (mesma regra que Finanças / totem)
     const mergedProfile = mergedStripeProfile;
     const connectReady = stripeConnectReady;
     const hasConnect = Boolean(mergedProfile?.stripe_connect_account_id);
@@ -389,12 +389,12 @@ export function useOperationalDiagnostics() {
         label: "Conta bancária (recebimentos)",
         status: "ok",
         detail: testSimulated
-          ? "Conta Connect de teste simulada — checkout disponível, sem dinheiro real."
+          ? "Conta Connect de teste simulada, checkout disponível, sem dinheiro real."
           : storeConnectEnv === "test"
-            ? "Conta Connect de teste criada — recebimentos simulados activos."
+            ? "Conta Connect de teste criada, recebimentos simulados activos."
             : payoutsOk
               ? "Recebimentos online e repasse bancário activos."
-              : "Pagamentos online activos — repasse bancário em validação.",
+              : "Pagamentos online activos, repasse bancário em validação.",
         action: payoutsOk ? undefined : "Admin → Recebimentos → Gerir conta bancária se necessário.",
       });
     } else if (awaitingReview) {
@@ -404,7 +404,7 @@ export function useOperationalDiagnostics() {
         status: "warn",
         critical: false,
         detail:
-          "Dados já enviados — conta em análise. Pagamentos online ficam activos quando a aprovação terminar.",
+          "Dados já enviados, conta em análise. Pagamentos online ficam activos quando a aprovação terminar.",
         action: "Admin → Recebimentos → acompanhar estado ou reenviar link por WhatsApp.",
       });
     } else {
@@ -415,11 +415,11 @@ export function useOperationalDiagnostics() {
         critical: !(productionBlocked && testKeysOnServer),
         detail: !hasConnect
           ? productionBlocked && testKeysOnServer
-            ? "Conta do restaurante ainda não criada — pode activar em modo teste."
+            ? "Conta do restaurante ainda não criada, pode activar em modo teste."
             : productionBlocked
-              ? "Conta do restaurante não criada — produção bloqueada até aprovação da plataforma."
+              ? "Conta do restaurante não criada, produção bloqueada até aprovação da plataforma."
               : "Recebimentos online ainda não foram activados."
-          : "Dados bancários ou documentos incompletos — pagamentos online bloqueados.",
+          : "Dados bancários ou documentos incompletos, pagamentos online bloqueados.",
         action:
           productionBlocked && testKeysOnServer
             ? "Admin → Recebimentos → Activar recebimentos de teste."
@@ -436,8 +436,8 @@ export function useOperationalDiagnostics() {
         label: "Checkout teste",
         status: checkoutTestReady ? "ok" : "warn",
         detail: checkoutTestReady
-          ? "Disponível — pode pagar com cartão 4242 4242 4242 4242."
-          : "Indisponível — active recebimentos de teste e configure pk_test no site.",
+          ? "Disponível, pode pagar com cartão 4242 4242 4242 4242."
+          : "Indisponível, active recebimentos de teste e configure pk_test no site.",
         action: checkoutTestReady
           ? undefined
           : "Recebimentos → Activar recebimentos de teste + pk_test no site.",
@@ -446,7 +446,7 @@ export function useOperationalDiagnostics() {
         id: "stripe-production-blocked",
         label: "Produção",
         status: "warn",
-        detail: "Bloqueada até a Stripe aprovar a identidade da plataforma — dinheiro real não movimentado.",
+        detail: "Bloqueada até a Stripe aprovar a identidade da plataforma, dinheiro real não movimentado.",
       });
     }
 
@@ -459,7 +459,7 @@ export function useOperationalDiagnostics() {
           label: "Webhook Stripe (servidor)",
           status: "fail",
           critical: true,
-          detail: "Segredo do webhook live em falta — pagamentos reais podem não confirmar automaticamente.",
+          detail: "Segredo do webhook live em falta, pagamentos reais podem não confirmar automaticamente.",
           action: "No Supabase → Secrets → adicione STRIPE_WEBHOOK_SECRET (valor da Stripe, modo live).",
         });
       } else {
@@ -476,7 +476,7 @@ export function useOperationalDiagnostics() {
           id: "stripe-webhook-secret-test",
           label: "Webhook Stripe (teste)",
           status: "warn",
-          detail: "Segredo do webhook de teste em falta — pagamentos simulados podem não confirmar sozinhos.",
+          detail: "Segredo do webhook de teste em falta, pagamentos simulados podem não confirmar sozinhos.",
           action:
             "Na Stripe (modo teste) → Webhooks → mesma URL → copie o segredo para STRIPE_WEBHOOK_SECRET_TEST nos Segredos Lovable.",
         });
@@ -505,7 +505,7 @@ export function useOperationalDiagnostics() {
           id: "stripe-webhook-active",
           label: "Webhook Stripe (ligação)",
           status: "ok",
-          detail: "Webhook activo na Stripe — confirmação automática de pagamentos.",
+          detail: "Webhook activo na Stripe, confirmação automática de pagamentos.",
         });
       }
     }
@@ -641,7 +641,7 @@ export function useOperationalDiagnostics() {
         status: realtimeOk ? "ok" : "warn",
         detail: realtimeOk
           ? "Pedidos actualizam na hora em todos os ecrãs."
-          : "Modo reserva — actualização a cada poucos segundos.",
+          : "Modo reserva, actualização a cada poucos segundos.",
       });
     }
 
@@ -695,10 +695,10 @@ export function useOperationalDiagnostics() {
           label: "Impressão",
           status: "fail",
           critical: true,
-          detail: `${pending.count} ticket(s) na fila — computador da cozinha offline.`,
+          detail: `${pending.count} ticket(s) na fila, computador da cozinha offline.`,
           action: "Ligue o PC da cozinha com a app de impressão aberta.",
           link: `${nav.admin("diagnostics-hub")}?tab=printer`,
-          linkLabel: "Centro de testes — Impressora",
+          linkLabel: "Centro de testes, Impressora",
         });
       } else if (bridge === "active") {
         results.push({
@@ -712,12 +712,12 @@ export function useOperationalDiagnostics() {
           id: "print",
           label: "Impressão",
           status: "warn",
-          detail: "Impressora activa — aguardando ligação do PC da cozinha.",
+          detail: "Impressora activa, aguardando ligação do PC da cozinha.",
         });
       }
     }
 
-    // LOVABLE — Google Maps (informativo)
+    // LOVABLE, Google Maps (informativo)
     results.push({
       id: "lovable-maps",
       label: "Aviso Google Maps (Lovable)",
@@ -726,7 +726,7 @@ export function useOperationalDiagnostics() {
       action: "Lovable → Definições → Integrações → Google Maps → Remover. O site não usa mapas.",
     });
 
-    // PUSH — marketing e campanhas
+    // PUSH, marketing e campanhas
     if (storeId) {
       const { count: marketingSubs } = await supabase
         .from("push_subscriptions")
@@ -743,7 +743,7 @@ export function useOperationalDiagnostics() {
           detail: "Nenhum cliente subscrito a promoções push ainda.",
           action: "Clientes devem aceitar notificações no site. Teste em Centro de testes → Push.",
           link: `${nav.admin("diagnostics-hub")}?tab=push`,
-          linkLabel: "Centro de testes — Push",
+          linkLabel: "Centro de testes, Push",
         });
       } else {
         results.push({
@@ -772,7 +772,7 @@ export function useOperationalDiagnostics() {
           detail: `Último envio falhou: ${(failedSends[0] as any).error_message ?? "erro desconhecido"}`,
           action: "Verifique VAPID e subscritores no Centro de testes.",
           link: `${nav.admin("diagnostics-hub")}?tab=campaigns`,
-          linkLabel: "Centro de testes — Campanhas",
+          linkLabel: "Centro de testes, Campanhas",
         });
       }
     } else {
@@ -780,7 +780,7 @@ export function useOperationalDiagnostics() {
         id: "push",
         label: "Notificações push",
         status: "warn",
-        detail: "Opcional — escolha uma loja para ver subscritores.",
+        detail: "Opcional, escolha uma loja para ver subscritores.",
         link: `${nav.admin("diagnostics-hub")}?tab=push`,
         linkLabel: "Centro de testes",
       });

@@ -24,7 +24,7 @@ export default function FeatureToggleList({ features, savingKey, onToggle, prepa
         <OpsCompactCard
           key={f.feature_key}
           title={f.name}
-          summary={preparedOnly ? "Preparado — motor automático em breve" : f.source === "override" ? "Ajuste manual" : "Incluído no plano"}
+          summary={preparedOnly ? "Preparado, motor automático em breve" : f.source === "override" ? "Ajuste manual" : "Incluído no plano"}
           badges={f.enabled ? ["Activo"] : ["Inactivo"]}
           inactive={!f.enabled}
           editable={false}

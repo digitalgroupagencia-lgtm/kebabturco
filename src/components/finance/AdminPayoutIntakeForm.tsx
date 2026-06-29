@@ -121,21 +121,21 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
       if (result.synced === false) {
         toast.error(
           result.message ||
-            "Dados guardados na base de dados mas NÃO enviados para a Stripe — clique Actualizar em Recebimentos.",
+            "Dados guardados na base de dados mas NÃO enviados para a Stripe, clique Actualizar em Recebimentos.",
         );
       } else {
         toast.success(
           result.message ||
             (result.bankSynced
               ? "Dados guardados e enviados para a conta de recebimentos (incluindo IBAN)."
-              : "Dados guardados e enviados — confirme a verificação se for pedida."),
+              : "Dados guardados e enviados, confirme a verificação se for pedida."),
         );
       }
     } catch (e) {
       const msg = extractErrorMessage(e);
       toast.error(
         msg.includes("store_payout_intake") || msg.includes("migração")
-          ? "Falta actualizar a base de dados na Lovable — peça Sync + Publish."
+          ? "Falta actualizar a base de dados na Lovable, peça Sync + Publish."
           : msg || "Erro ao guardar",
       );
     } finally {
@@ -193,7 +193,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
     return (
       <Card className="border-amber-500/40">
         <CardContent className="py-4 text-sm text-amber-800 dark:text-amber-200">
-          Falta activar a base de dados dos dados bancários — peça Sync + Publish na Lovable.
+          Falta activar a base de dados dos dados bancários, peça Sync + Publish na Lovable.
         </CardContent>
       </Card>
     );
@@ -204,10 +204,10 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Building2 className="h-4 w-4 text-primary" />
-          Passo 1 — Dados do restaurante
+          Passo 1, Dados do restaurante
         </CardTitle>
         <CardDescription>
-          Preencha tudo — o sistema envia automaticamente para activar a conta do restaurante: site, tipo de
+          Preencha tudo, o sistema envia automaticamente para activar a conta do restaurante: site, tipo de
           empresa (NIF/CIF), e-mail, telefone, morada e IBAN. O e-mail é o do dono, não o seu de administrador.
         </CardDescription>
       </CardHeader>
@@ -240,7 +240,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
             className="mt-1"
           />
           <p className="text-[11px] text-muted-foreground mt-1">
-            Use o e-mail pessoal ou do negócio do dono — não o seu e-mail de administrador.
+            Use o e-mail pessoal ou do negócio do dono, não o seu e-mail de administrador.
           </p>
         </div>
         <div>
@@ -252,7 +252,7 @@ export default function AdminPayoutIntakeForm({ storeId, onSaved }: Props) {
             className="mt-1"
           />
           <p className="text-[11px] text-muted-foreground mt-1">
-            Obrigatório na Stripe — use o site público do restaurante ou da marca.
+            Obrigatório na Stripe, use o site público do restaurante ou da marca.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,4 +1,4 @@
-// Core utilitário Redsys/Bizum — sem credenciais reais.
+// Core utilitário Redsys/Bizum, sem credenciais reais.
 // Implementa assinatura HMAC SHA-256 + Triple DES conforme docs Redsys.
 // Esta camada está PRONTA para uso assim que MERCHANT_CODE/TERMINAL/SECRET_KEY forem configurados na loja.
 

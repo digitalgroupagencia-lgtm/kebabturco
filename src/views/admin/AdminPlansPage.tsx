@@ -78,7 +78,7 @@ export default function AdminPlansPage() {
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
       <AdminPageHeader
         title="Planos & funcionalidades"
-        description={`Define o plano do ${APP_NAME}: START, PRO ou PREMIUM — com IA, fidelidade, campanhas, etc.`}
+        description={`Define o plano do ${APP_NAME}: START, PRO ou PREMIUM, com IA, fidelidade, campanhas, etc.`}
         breadcrumbs={[
           { label: "Administração", to: "/admin" },
           { label: "Planos" },
@@ -150,7 +150,7 @@ export default function AdminPlansPage() {
         <AdminCollapsibleSection title="Benefícios activos neste plano" summary={flagSummary} defaultOpen>
           <div className="space-y-3">
             {flags.filter((f) => f.enabled).length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhuma funcionalidade extra activa — verifique o plano.</p>
+              <p className="text-sm text-muted-foreground">Nenhuma funcionalidade extra activa, verifique o plano.</p>
             )}
             <div className="flex flex-wrap gap-1.5">
               {flags

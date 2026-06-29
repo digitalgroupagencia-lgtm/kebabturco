@@ -242,7 +242,7 @@ const FinancePage = () => {
       }
       setEmbeddedMode("onboarding");
       toast.success(
-        `Formulário aberto — use o e-mail ${intakeSaved.owner_email} (já fica pré-preenchido).`,
+        `Formulário aberto, use o e-mail ${intakeSaved.owner_email} (já fica pré-preenchido).`,
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("finance.admin.toast.connect_error"));

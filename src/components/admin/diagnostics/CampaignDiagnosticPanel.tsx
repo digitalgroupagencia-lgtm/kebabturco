@@ -40,7 +40,7 @@ export default function CampaignDiagnosticPanel() {
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [sendLog, setSendLog] = useState<CampaignSendLogRow[]>([]);
   const [title, setTitle] = useState("Promo hoje!");
-  const [body, setBody] = useState("Desconto especial só hoje — peça já.");
+  const [body, setBody] = useState("Desconto especial só hoje, peça já.");
   const [url, setUrl] = useState("/");
   const [target, setTarget] = useState<"all" | "this_device">("all");
   const [sending, setSending] = useState(false);
@@ -99,7 +99,7 @@ export default function CampaignDiagnosticPanel() {
     const r = await simulateCampaignRun(storeId, undefined, true);
     setSimulating(false);
     if (r.ok) toast.success(`Simulação: ${JSON.stringify(r.data)}`);
-    else toast.error(r.error ?? "Motor indisponível — aplique migration e deploy");
+    else toast.error(r.error ?? "Motor indisponível, aplique migration e deploy");
   };
 
   return (
@@ -139,7 +139,7 @@ export default function CampaignDiagnosticPanel() {
               <CardTitle className="text-base flex items-center gap-2">
                 <Send className="h-4 w-4" /> Envio imediato
               </CardTitle>
-              <CardDescription>Promo relâmpago — todos os clientes com push activo</CardDescription>
+              <CardDescription>Promo relâmpago, todos os clientes com push activo</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2">
@@ -198,7 +198,7 @@ export default function CampaignDiagnosticPanel() {
                     <div>
                       <p className="font-medium">{c.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {c.trigger_event ?? "first_order"} · {c.trigger_days ?? "—"} dias · {c.title ?? c.message_template.slice(0, 40)}
+                        {c.trigger_event ?? "first_order"} · {c.trigger_days ?? ", "} dias · {c.title ?? c.message_template.slice(0, 40)}
                       </p>
                     </div>
                     <Switch checked={c.is_active} onCheckedChange={() => void toggleCampaign(c)} />

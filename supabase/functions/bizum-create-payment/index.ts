@@ -1,5 +1,5 @@
 // Bizum reutiliza a mesma engine Redsys com paymethod "z".
-// Esta function é apenas um atalho semântico — toda a lógica vive em redsys-create-payment.
+// Esta function é apenas um atalho semântico, toda a lógica vive em redsys-create-payment.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { signRedsysParams, redsysEnvironmentUrl } from "../_shared/redsysCore.ts";

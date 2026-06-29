@@ -56,9 +56,7 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
     (async () => {
       if (roleLoading) return;
 
-      const isAdminMaster = roleData?.role === "admin_master";
-
-      if (!roleData?.tenant_id && !roleData?.store_id && !isAdminMaster) {
+      if (!roleData?.tenant_id && !roleData?.store_id) {
         if (active) {
           setStores([]);
           setSelectedStoreId(roleData?.store_id ?? null);
@@ -172,7 +170,7 @@ export function usePanelStore() {
   return ctx;
 }
 
-/** Usado dentro do painel — respeita a unidade seleccionada pelo dono/gerente. */
+/** Usado dentro do painel, respeita a unidade seleccionada pelo dono/gerente. */
 export function usePanelStoreId(): { storeId: string | null; loading: boolean } {
   const ctx = useContext(PanelStoreContext);
   if (!ctx) {

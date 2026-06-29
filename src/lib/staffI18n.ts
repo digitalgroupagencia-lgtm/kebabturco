@@ -95,18 +95,18 @@ export const STAFF_I18N = {
   "profile.field.name.ph": { es: "Ej.: María García", pt: "Ex.: Maria Silva", en: "E.g. Maria Silva" },
   "profile.field.birth": { es: "Fecha de nacimiento", pt: "Data de nascimento", en: "Date of birth" },
   "profile.field.birth.hint": {
-    es: "Opcional — ayuda al restaurante a identificarte.",
-    pt: "Opcional — ajuda o restaurante a identificá-lo.",
-    en: "Optional — helps the restaurant identify you.",
+    es: "Opcional, ayuda al restaurante a identificarte.",
+    pt: "Opcional, ajuda o restaurante a identificá-lo.",
+    en: "Optional, helps the restaurant identify you.",
   },
   "profile.field.email": { es: "Correo", pt: "E-mail", en: "Email" },
   "profile.field.email.hint": {
-    es: "Viene de tu cuenta Google — no se cambia aquí.",
-    pt: "Vem da sua conta Google — não se altera aqui.",
-    en: "Comes from your Google account — not changed here.",
+    es: "Viene de tu cuenta Google, no se cambia aquí.",
+    pt: "Vem da sua conta Google, não se altera aqui.",
+    en: "Comes from your Google account, not changed here.",
   },
   "profile.photo.change": { es: "Cambiar foto", pt: "Mudar foto", en: "Change photo" },
-  "profile.photo.hint": { es: "PNG, JPG o WEBP — máx. 5 MB", pt: "PNG, JPG ou WEBP — máx. 5 MB", en: "PNG, JPG or WEBP — max 5 MB" },
+  "profile.photo.hint": { es: "PNG, JPG o WEBP, máx. 5 MB", pt: "PNG, JPG ou WEBP, máx. 5 MB", en: "PNG, JPG or WEBP, max 5 MB" },
   "profile.photo.updated": { es: "Foto actualizada", pt: "Foto actualizada", en: "Photo updated" },
   "profile.save": { es: "Guardar perfil", pt: "Guardar perfil", en: "Save profile" },
   "profile.saving": { es: "Guardando…", pt: "A guardar…", en: "Saving…" },
@@ -120,9 +120,9 @@ export const STAFF_I18N = {
   },
   "profile.banner.action": { es: "Completar ahora", pt: "Completar agora", en: "Complete now" },
   "team.field.password.google_hint": {
-    es: "Esta persona entró con Google — no necesita contraseña aquí.",
-    pt: "Esta pessoa entrou com Google — não precisa de senha aqui.",
-    en: "This person signed in with Google — no password needed here.",
+    es: "Esta persona entró con Google, no necesita contraseña aquí.",
+    pt: "Esta pessoa entrou com Google, não precisa de senha aqui.",
+    en: "This person signed in with Google, no password needed here.",
   },
   "page.sellers.title": { es: "Vendedores", pt: "Vendedores", en: "Sellers" },
   "page.sellers.subtitle": {
@@ -162,14 +162,14 @@ export const STAFF_I18N = {
   "lang.changed.en": { es: "Idioma: Inglés", pt: "Idioma: Inglês", en: "Language: English" },
 
   // --- KDS (cozinha) ---
-  "kds.title": { es: "KDS — Cocina", pt: "KDS — Cozinha", en: "KDS — Kitchen" },
+  "kds.title": { es: "KDS, Cocina", pt: "KDS, Cozinha", en: "KDS, Kitchen" },
   "kds.col.new": { es: "Nuevos", pt: "Novos", en: "New" },
   "kds.col.preparing": { es: "En preparación", pt: "Em preparação", en: "Preparing" },
   "kds.col.ready": { es: "Listos", pt: "Prontos", en: "Ready" },
   "kds.sound.on": { es: "Sonido ON", pt: "Som ON", en: "Sound ON" },
   "kds.sound.enable": { es: "Activar sonido", pt: "Activar som", en: "Enable sound" },
   "kds.fullscreen": { es: "Pantalla completa", pt: "Tela cheia", en: "Fullscreen" },
-  "kds.gate.title": { es: "Panel KDS — Acceso interno", pt: "Painel KDS — Acesso interno", en: "KDS panel — Internal access" },
+  "kds.gate.title": { es: "Panel KDS, Acceso interno", pt: "Painel KDS, Acesso interno", en: "KDS panel, Internal access" },
   "kds.gate.body": { es: "Es necesario iniciar sesión como equipo.", pt: "É necessário iniciar sessão como equipa.", en: "You need to sign in as staff." },
   "kds.gate.signin": { es: "Iniciar sesión", pt: "Iniciar sessão", en: "Sign in" },
 
@@ -196,8 +196,8 @@ export const STAFF_I18N = {
   },
   "finance.panel.pending.body": {
     es: "Aún no hay movimientos. El equipo Kebab Turco activa la cuenta bancaria y los pagos online; cuando haya ventas, aparecerán aquí.",
-    pt: "Ainda não há movimentos. A equipa Kebab Turco activa a conta bancária e os pagamentos online — quando houver vendas, aparecem aqui.",
-    en: "No movements yet. The Kebab Turco team activates your bank account and online payments — sales will show here automatically.",
+    pt: "Ainda não há movimentos. A equipa Kebab Turco activa a conta bancária e os pagamentos online, quando houver vendas, aparecem aqui.",
+    en: "No movements yet. The Kebab Turco team activates your bank account and online payments, sales will show here automatically.",
   },
   "cashier.orders.count": { es: "pedidos", pt: "pedidos", en: "orders" },
   "staffPin.confirm.title": {
@@ -390,7 +390,7 @@ export const STAFF_I18N = {
     pt: "Escreva o nome do membro antes de guardar.",
     en: "Enter the member name before saving.",
   },
-  "team.toast.draft_restored": { es: "Borrador restaurado — puede continuar donde lo dejó", pt: "Rascunho restaurado — pode continuar de onde parou", en: "Draft restored — you can pick up where you left off" },
+  "team.toast.draft_restored": { es: "Borrador restaurado, puede continuar donde lo dejó", pt: "Rascunho restaurado, pode continuar de onde parou", en: "Draft restored, you can pick up where you left off" },
   "team.toast.login_pending_edit": { es: "Perfil guardado, pero el login aún no responde. Vuelva a guardar la contraseña después de Sync + Publish.", pt: "Perfil guardado, mas o login ainda não responde. Volte a guardar a senha depois de Sync + Publish.", en: "Profile saved, but login isn't ready yet. Save the password again after Sync + Publish." },
   "team.toast.member_added": { es: "Miembro añadido como {role}", pt: "Membro adicionado como {role}!", en: "Member added as {role}" },
   "team.toast.email_existed": { es: "Este correo ya existía: se añadió al equipo, pero la contraseña anterior se mantiene.", pt: "Este e-mail já existia: foi adicionado à equipa, mas a senha anterior mantém-se.", en: "This email already existed: added to the team, but the previous password stays." },
@@ -420,9 +420,9 @@ export const STAFF_I18N = {
     en: "Approve Google access",
   },
   "team.google.toast.approved": {
-    es: "Acceso aprobado — ya puede entrar con Google",
-    pt: "Acesso aprovado — já pode entrar com Google",
-    en: "Access approved — they can now sign in with Google",
+    es: "Acceso aprobado, ya puede entrar con Google",
+    pt: "Acesso aprovado, já pode entrar com Google",
+    en: "Access approved, they can now sign in with Google",
   },
   "team.google.toast.rejected": {
     es: "Acceso con Google excluido",
@@ -437,7 +437,7 @@ export const STAFF_I18N = {
 
   // --- Sellers page ---
   "sellers.units": { es: "vendedores", pt: "vendedores", en: "sellers" },
-  "sellers.limit_reached": { es: "Límite alcanzado — solicite upgrade", pt: "Limite atingido — solicite upgrade", en: "Limit reached — request upgrade" },
+  "sellers.limit_reached": { es: "Límite alcanzado, solicite upgrade", pt: "Limite atingido, solicite upgrade", en: "Limit reached, request upgrade" },
   "sellers.monthly": { es: "Cuota mensual prevista:", pt: "Mensalidade prevista:", en: "Estimated monthly fee:" },
   "sellers.includes_extra": { es: "incluye {n} vendedor(es) extra", pt: "inclui {n} vendedor(es) extra", en: "includes {n} extra seller(s)" },
   "sellers.no_name": { es: "Sin nombre", pt: "Sem nome", en: "No name" },
@@ -455,7 +455,7 @@ export const STAFF_I18N = {
   "sellers.field.email.ph": { es: "vendedor@restaurante.com", pt: "vendedor@restaurante.com", en: "seller@restaurant.com" },
   "sellers.field.password": { es: "Contraseña inicial *", pt: "Senha inicial *", en: "Initial password *" },
   "sellers.field.password.ph": { es: "Mínimo 6 caracteres", pt: "Mínimo 6 caracteres", en: "Minimum 6 characters" },
-  "sellers.field.password.note": { es: "Compártala con el vendedor — puede cambiarla después.", pt: "Compartilhe com o vendedor — ele pode trocar depois.", en: "Share it with the seller — they can change it later." },
+  "sellers.field.password.note": { es: "Compártala con el vendedor, puede cambiarla después.", pt: "Compartilhe com o vendedor, ele pode trocar depois.", en: "Share it with the seller, they can change it later." },
   "sellers.field.phone": { es: "Teléfono (opcional)", pt: "Telefone (opcional)", en: "Phone (optional)" },
   "sellers.action.create": { es: "Crear vendedor", pt: "Criar vendedor", en: "Create seller" },
   "sellers.toast.created": { es: "¡Vendedor creado!", pt: "Vendedor criado!", en: "Seller created!" },
@@ -478,14 +478,14 @@ export const STAFF_I18N = {
     pt: "QR codes premium com número da mesa, idioma principal ({lang}) e token único de segurança. Disponível na administração e no painel do restaurante.",
     en: "Premium QR codes with table number, main language ({lang}) and unique security token. Available in admin and restaurant panel.",
   },
-  "tables.print_all": { es: "PDF — todas", pt: "PDF — todas", en: "PDF — all" },
-  "tables.zip_all": { es: "ZIP (PNG) — todas", pt: "ZIP (PNG) — todas", en: "ZIP (PNG) — all" },
+  "tables.print_all": { es: "PDF, todas", pt: "PDF, todas", en: "PDF, all" },
+  "tables.zip_all": { es: "ZIP (PNG), todas", pt: "ZIP (PNG), todas", en: "ZIP (PNG), all" },
   "tables.new": { es: "Nueva mesa", pt: "Nova mesa", en: "New table" },
   "tables.number": { es: "Número / nombre", pt: "Número / nome", en: "Number / name" },
   "tables.seats": { es: "Plazas", pt: "Lugares", en: "Seats" },
   "tables.add": { es: "Añadir", pt: "Adicionar", en: "Add" },
   "tables.bulk.title": { es: "Crear lote de mesas", pt: "Criar lote de mesas", en: "Bulk create tables" },
-  "tables.bulk.hint": { es: "Ej.: Mesa 1 a Mesa 30 — solo crea las que aún no existen.", pt: "Ex.: Mesa 1 até Mesa 30 — só cria as que ainda não existem.", en: "E.g. Table 1 to Table 30 — only creates those that don't exist yet." },
+  "tables.bulk.hint": { es: "Ej.: Mesa 1 a Mesa 30, solo crea las que aún no existen.", pt: "Ex.: Mesa 1 até Mesa 30, só cria as que ainda não existem.", en: "E.g. Table 1 to Table 30, only creates those that don't exist yet." },
   "tables.bulk.from": { es: "Desde", pt: "De", en: "From" },
   "tables.bulk.to": { es: "Hasta", pt: "Até", en: "To" },
   "tables.bulk.generate": { es: "Generar mesas", pt: "Gerar mesas", en: "Generate tables" },
@@ -497,7 +497,7 @@ export const STAFF_I18N = {
   "tables.empty.manage": { es: "Ninguna mesa registrada. Añada la primera arriba.", pt: "Nenhuma mesa registada. Adicione a primeira acima.", en: "No tables registered. Add the first one above." },
   "tables.empty.view": { es: "Ninguna mesa registrada.", pt: "Nenhuma mesa registada.", en: "No tables registered." },
   "tables.loading": { es: "Cargando mesas...", pt: "A carregar mesas...", en: "Loading tables..." },
-  "tables.qr.dialog": { es: "QR premium — Mesa", pt: "QR premium — Mesa", en: "Premium QR — Table" },
+  "tables.qr.dialog": { es: "QR premium, Mesa", pt: "QR premium, Mesa", en: "Premium QR, Table" },
   "tables.qr.copy": { es: "Copiar enlace", pt: "Copiar link", en: "Copy link" },
   "tables.qr.png": { es: "Descargar PNG", pt: "Baixar PNG", en: "Download PNG" },
   "tables.qr.print": { es: "Descargar PDF", pt: "Descarregar PDF", en: "Download PDF" },
@@ -525,7 +525,7 @@ export const STAFF_I18N = {
   "mkt.push.default_title": { es: "¿Qué tal un kebab hoy?", pt: "Que tal um kebab hoje?", en: "How about a kebab today?" },
   "mkt.push.default_body": { es: "Pide desde la app y recíbelo en casa 🥙", pt: "Peça pela app e receba em casa 🥙", en: "Order in the app and get it at home 🥙" },
   "mkt.push.title": { es: "Promoción push a los clientes", pt: "Promoção push aos clientes", en: "Push promo to customers" },
-  "mkt.push.hint": { es: "Enviado a quien tiene la app y activó notificaciones — incluso sin pedido previo.", pt: "Envia a quem tem a app e activou notificações — mesmo sem pedido feito.", en: "Sent to anyone with the app and notifications on — even without prior orders." },
+  "mkt.push.hint": { es: "Enviado a quien tiene la app y activó notificaciones, incluso sin pedido previo.", pt: "Envia a quem tem a app e activou notificações, mesmo sem pedido feito.", en: "Sent to anyone with the app and notifications on, even without prior orders." },
   "mkt.push.disabled": { es: "Función desactivada por el administrador o el plan.", pt: "Função desactivada pelo administrador ou plano.", en: "Disabled by admin or plan." },
   "mkt.push.field.title": { es: "Título", pt: "Título", en: "Title" },
   "mkt.push.field.body": { es: "Mensaje", pt: "Mensagem", en: "Message" },
@@ -548,7 +548,7 @@ export const STAFF_I18N = {
   "ops.mode.table": { es: "Mesa", pt: "Mesa", en: "Table" },
   "ops.mode.delivery": { es: "Entrega", pt: "Entrega", en: "Delivery" },
   "ops.card.test_badge": { es: "PRUEBA", pt: "TESTE", en: "TEST" },
-  "ops.card.test_hint": { es: "Pedido de prueba — no cuenta en métricas", pt: "Pedido de teste — não conta em métricas", en: "Test order — does not count in metrics" },
+  "ops.card.test_hint": { es: "Pedido de prueba, no cuenta en métricas", pt: "Pedido de teste, não conta em métricas", en: "Test order, does not count in metrics" },
   "ops.card.assigned": { es: "Asignado", pt: "Atribuído", en: "Assigned" },
   "ops.card.on_the_way": { es: "En camino", pt: "A caminho", en: "On the way" },
   "ops.card.cancel": { es: "Cancelar pedido", pt: "Cancelar pedido", en: "Cancel order" },
@@ -558,7 +558,7 @@ export const STAFF_I18N = {
 
   // --- Print status bar ---
   "print.status.failed": { es: "{count} pedido(s) no se imprimieron", pt: "{count} pedido(s) não foram impressos", en: "{count} order(s) failed to print" },
-  "print.status.hint": { es: "— revise la impresora o reimprima abajo.", pt: "— verifica a impressora ou reimprime abaixo.", en: "— check the printer or reprint below." },
+  "print.status.hint": { es: ",  revise la impresora o reimprima abajo.", pt: ",  verifica a impressora ou reimprime abaixo.", en: ",  check the printer or reprint below." },
   "print.status.reprint": { es: "Reimprimir", pt: "Reimprimir", en: "Reprint" },
   "print.status.resent": { es: "{count} pedido(s) reenviado(s) a impresión", pt: "{count} pedido(s) reenviado(s) para impressão", en: "{count} order(s) resent to printing" },
   "print.status.none_to_resend": { es: "Ningún pedido para reenviar", pt: "Nenhum pedido para reenviar", en: "No orders to resend" },
@@ -569,7 +569,7 @@ export const STAFF_I18N = {
   "delivery.layout.title": { es: "Panel del repartidor", pt: "Painel do entregador", en: "Driver panel" },
 
   // --- Dashboard ---
-  "dashboard.subtitle": { es: "Vista general de la tienda — facturación, pedidos y estado del sistema. Para operación en tiempo real, use Pedidos en vivo.", pt: "Visão geral da loja — faturamento, pedidos e estado do sistema. Para operação em tempo real, use Pedidos ao vivo.", en: "Store overview — revenue, orders and system status. For real-time operation, use Live orders." },
+  "dashboard.subtitle": { es: "Vista general de la tienda, facturación, pedidos y estado del sistema. Para operación en tiempo real, use Pedidos en vivo.", pt: "Visão geral da loja, faturamento, pedidos e estado do sistema. Para operação em tempo real, use Pedidos ao vivo.", en: "Store overview, revenue, orders and system status. For real-time operation, use Live orders." },
 
   // --- Panel actions ---
   "panel.delete_test.confirm": { es: "¿Eliminar {count} pedido(s) de prueba de esta tienda? Esta acción no se puede deshacer.", pt: "Apagar {count} pedido(s) de teste desta loja? Esta ação não pode ser desfeita.", en: "Delete {count} test order(s) from this store? This cannot be undone." },
@@ -580,7 +580,7 @@ export const STAFF_I18N = {
   "finance.title": { es: "Recibos", pt: "Recebimentos", en: "Payouts" },
   "finance.subtitle": { es: "Complete los datos de su cuenta para activar los pagos en línea y las transferencias al banco.", pt: "Preencha os dados da sua conta para activarmos os pagamentos online e os repasses para o seu banco.", en: "Fill in your account details to enable online payments and bank transfers." },
   "finance.saved.title": { es: "Datos enviados", pt: "Dados enviados", en: "Details submitted" },
-  "finance.saved.body": { es: "Recibimos su información el {date}. El equipo SnapOrder la registra en Stripe y activa los pagos — no necesita hacer nada más por ahora.", pt: "Recebemos a sua informação em {date}. A equipa SnapOrder regista na Stripe e activa os recebimentos — não precisa fazer mais nada por agora.", en: "We received your details on {date}. The SnapOrder team will register them on Stripe and enable payouts — nothing else to do for now." },
+  "finance.saved.body": { es: "Recibimos su información el {date}. El equipo SnapOrder la registra en Stripe y activa los pagos, no necesita hacer nada más por ahora.", pt: "Recebemos a sua informação em {date}. A equipa SnapOrder regista na Stripe e activa os recebimentos, não precisa fazer mais nada por agora.", en: "We received your details on {date}. The SnapOrder team will register them on Stripe and enable payouts, nothing else to do for now." },
   "finance.card.title": { es: "Datos bancarios", pt: "Dados bancários", en: "Bank details" },
   "finance.card.desc": { es: "Use los datos exactos de la cuenta donde quiere recibir el dinero de los pedidos en línea.", pt: "Use os dados exactos da conta onde quer receber o dinheiro dos pedidos online.", en: "Use the exact details of the account where you want to receive online order payouts." },
   "finance.field.business": { es: "Nombre del negocio / empresa", pt: "Nome do negócio / empresa", en: "Business / company name" },
@@ -597,7 +597,7 @@ export const STAFF_I18N = {
   "finance.btn.send": { es: "Enviar datos", pt: "Enviar dados", en: "Submit details" },
   "finance.btn.update": { es: "Actualizar datos", pt: "Actualizar dados", en: "Update details" },
   "finance.toast.required": { es: "Complete el nombre del negocio, el titular y el IBAN", pt: "Preencha nome do negócio, titular e IBAN", en: "Fill in business name, holder and IBAN" },
-  "finance.toast.saved": { es: "Datos guardados — nuestro equipo activará los pagos", pt: "Dados guardados — a nossa equipa vai activar os recebimentos", en: "Saved — our team will enable payouts" },
+  "finance.toast.saved": { es: "Datos guardados, nuestro equipo activará los pagos", pt: "Dados guardados, a nossa equipa vai activar os recebimentos", en: "Saved, our team will enable payouts" },
   "finance.toast.load_error": { es: "Error al cargar los datos", pt: "Erro ao carregar dados", en: "Failed to load data" },
   "finance.toast.save_error": { es: "Error al guardar", pt: "Erro ao guardar", en: "Save failed" },
 
@@ -662,9 +662,9 @@ export const STAFF_I18N = {
     en: "Accept contactless card, Apple Pay and wallet payments using only this iPhone.",
   },
   "tapToPay.awareness.point1": {
-    es: "Sin terminal extra — el iPhone es el datáfono.",
-    pt: "Sem terminal extra — o iPhone é a maquininha.",
-    en: "No extra terminal — the iPhone is the reader.",
+    es: "Sin terminal extra, el iPhone es el datáfono.",
+    pt: "Sem terminal extra, o iPhone é a maquininha.",
+    en: "No extra terminal, the iPhone is the reader.",
   },
   "tapToPay.awareness.point2": {
     es: "Ideal para mesas y pedidos del vendedor.",
@@ -755,9 +755,9 @@ export const STAFF_I18N = {
     en: "Only available in the iPhone app",
   },
   "tapToPay.settings.status_no_location": {
-    es: "Falta local Terminal — pulse crear",
-    pt: "Falta local Terminal — carregue criar",
-    en: "Missing Terminal location — tap create",
+    es: "Falta local Terminal, pulse crear",
+    pt: "Falta local Terminal, carregue criar",
+    en: "Missing Terminal location, tap create",
   },
   "tapToPay.settings.status_ready": { es: "Listo para cobrar", pt: "Pronto para cobrar", en: "Ready to charge" },
   "tapToPay.settings.status_preparing": {
@@ -822,9 +822,9 @@ export const STAFF_I18N = {
     en: "Charge with Tap to Pay on iPhone",
   },
   "tapToPay.seller.order_saved": {
-    es: "Pedido registrado — ¿cómo paga el cliente?",
-    pt: "Pedido registado — como é que o cliente paga?",
-    en: "Order saved — how will the customer pay?",
+    es: "Pedido registrado, ¿cómo paga el cliente?",
+    pt: "Pedido registado, como é que o cliente paga?",
+    en: "Order saved, how will the customer pay?",
   },
   "tapToPay.seller.pay_cash": {
     es: "Efectivo",

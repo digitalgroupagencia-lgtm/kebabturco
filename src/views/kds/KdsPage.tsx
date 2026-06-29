@@ -39,7 +39,7 @@ function elapsedMin(iso: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
 }
 
-// Beep sintetizado (sem ficheiro externo) — onda quadrada curta
+// Beep sintetizado (sem ficheiro externo), onda quadrada curta
 function playBeep() {
   try {
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
@@ -215,7 +215,7 @@ const KdsPage = () => {
               </header>
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {grouped[col.key].length === 0 ? (
-                  <p className="text-center text-slate-500 text-sm py-6">—</p>
+                  <p className="text-center text-slate-500 text-sm py-6">, </p>
                 ) : (
                   grouped[col.key].map((o) => {
                     const min = elapsedMin(o.created_at);
@@ -242,7 +242,7 @@ const KdsPage = () => {
                           {o.order_type === "delivery"
                             ? t("order.modality.delivery")
                             : o.order_type === "dine_in"
-                              ? `${t("order.modality.table")} ${o.table_number ?? "—"}`
+                              ? `${t("order.modality.table")} ${o.table_number ?? ", "}`
                               : t("order.modality.pickup")}
                         </p>
                       </article>

@@ -27,7 +27,7 @@ const PUSH_SCENARIOS = [
     title: "Promo relâmpago",
     summary: "Notificação instantânea para clientes activos",
     previews: [
-      { id: "a", label: "Curta", content: "🔔 -20% nos próximos 60 min — só delivery!" },
+      { id: "a", label: "Curta", content: "🔔 -20% nos próximos 60 min, só delivery!" },
       { id: "b", label: "Longa", content: "Esta tarde: kebab + bebida por 9,90€. Toque para pedir." },
     ],
   },
@@ -37,7 +37,7 @@ const PUSH_SCENARIOS = [
     summary: "Push para clientes frequentes",
     previews: [
       { id: "a", label: "VIP", content: "⭐ Acesso antecipado ao menu especial de fim-de-semana." },
-      { id: "b", label: "Inactivos", content: "Sentimos a tua falta — 10% válido hoje até 23h." },
+      { id: "b", label: "Inactivos", content: "Sentimos a tua falta, 10% válido hoje até 23h." },
     ],
   },
 ];
@@ -62,7 +62,7 @@ export default function AdminCentralPushPage() {
   return (
     <AdminCentralLayout
       title="Central Push"
-      description="Notificações segmentadas e agendadas — infraestrutura preparada, envios automáticos em fase posterior."
+      description="Notificações segmentadas e agendadas, infraestrutura preparada, envios automáticos em fase posterior."
       centralSegment="push"
       showTenantList
       tenantList={
@@ -107,7 +107,7 @@ function PushTenantPanel({
           stats={[
             { label: "Push", value: on ? "Preparado" : "Off", tone: on ? "success" : "muted" },
             { label: "Enviados hoje", value: "0", tone: "muted" },
-            { label: "Aberturas", value: "—", tone: "muted" },
+            { label: "Aberturas", value: ", ", tone: "muted" },
             { label: "Motor", value: "Standby", tone: "warning" },
           ]}
         />
@@ -120,7 +120,7 @@ function PushTenantPanel({
         status={gated ? "locked" : on ? "active" : "prepared"}
         gated={gated}
         requiredPlan={getMinPlanForFeature("push_notifications")}
-        meta="Subscritores: — · Permissões: aguardam activação"
+        meta="Subscritores:, · Permissões: aguardam activação"
         actions={
           !gated ? (
             <Switch
@@ -160,7 +160,7 @@ function PushTenantPanel({
           <div className="rounded-xl border border-dashed px-3 py-4 text-center text-[11px] text-muted-foreground space-y-2">
             <p>Configure presets e envie promos imediatas em Admin → Centro de testes → Campanhas.</p>
             <Link to={`${nav.admin("diagnostics-hub")}?tab=campaigns`} className="text-primary underline font-semibold">
-              Abrir Centro de testes — Campanhas
+              Abrir Centro de testes, Campanhas
             </Link>
           </div>
         }

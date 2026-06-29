@@ -12,7 +12,7 @@ type Props = {
   destructive?: boolean;
 };
 
-/** Confirmação dentro do ecrã da app — não usa alertas nativos do navegador. */
+/** Confirmação dentro do ecrã da app, não usa alertas nativos do navegador. */
 export default function InAppConfirmDialog({
   open,
   title,

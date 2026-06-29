@@ -49,7 +49,7 @@ async function probeFeatureMetric(
       const n = count ?? 0;
       return n > 0
         ? { status: "ok", detail: `${n} subscritor(es) marketing` }
-        : { status: "warn", detail: "0 subscritores marketing — normal até clientes aceitarem" };
+        : { status: "warn", detail: "0 subscritores marketing, normal até clientes aceitarem" };
     }
     case "loyalty": {
       const { count } = await supabase

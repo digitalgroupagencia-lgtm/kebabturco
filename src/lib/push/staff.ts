@@ -1,5 +1,5 @@
 /**
- * Push — API exclusiva do STAFF (painel / equipa / admin / diagnósticos).
+ * Push, API exclusiva do STAFF (painel / equipa / admin / diagnósticos).
  *
  * O cliente NÃO pode importar este módulo. O smoke test bloqueia o build
  * se qualquer ecrã público trouxer estes símbolos estaticamente.

@@ -1,5 +1,5 @@
 /**
- * Espelho da lógica de taxas do servidor — apenas para ecrãs (checkout e admin).
+ * Espelho da lógica de taxas do servidor, apenas para ecrãs (checkout e admin).
  * Autoritativo: supabase/functions/_shared/stripeFees.ts
  *
  * Regra: o cliente paga só produtos + entrega − desconto.
@@ -28,7 +28,7 @@ export function computeRestaurantPortionEur(subtotal: number, delivery: number, 
   return Math.max(0, Math.round((subtotal + delivery - discount) * 100) / 100);
 }
 
-/** Taxa retida do restaurante (plataforma + Stripe — não aparece no total do cliente). */
+/** Taxa retida do restaurante (plataforma + Stripe, não aparece no total do cliente). */
 export function computePlatformDeductionEur(restaurantPortionEur: number): number {
   if (restaurantPortionEur <= 0) return 0;
   const portionCents = Math.round(restaurantPortionEur * 100);
@@ -38,7 +38,7 @@ export function computePlatformDeductionEur(restaurantPortionEur: number): numbe
   return Math.min(rawCents, maxCents) / 100;
 }
 
-/** @deprecated Use computePlatformDeductionEur — mantido para compatibilidade interna */
+/** @deprecated Use computePlatformDeductionEur, mantido para compatibilidade interna */
 export function computeOnlineServiceFeeEur(restaurantPortionEur: number): number {
   return computePlatformDeductionEur(restaurantPortionEur);
 }

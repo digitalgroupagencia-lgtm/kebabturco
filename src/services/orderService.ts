@@ -139,13 +139,31 @@ export type ValidateCouponResult = {
   coupon_id?: string;
   code?: string;
   discount_amount?: number;
+  discount_type?: string;
+  free_delivery?: boolean;
+  combo_applied?: boolean;
 };
 
-export async function validateCoupon(storeId: string, code: string, subtotal: number) {
+export type CartItemForCoupon = {
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+};
+
+export async function validateCoupon(
+  storeId: string,
+  code: string,
+  subtotal: number,
+  deliveryFee = 0,
+  cartItems: CartItemForCoupon[] = [],
+) {
   const { data, error } = await supabase.rpc("validate_coupon", {
     _store_id: storeId,
     _code: code,
     _subtotal: subtotal,
+    _delivery_fee: deliveryFee,
+    _cart_items: cartItems,
   });
   if (error) throw error;
   return data as ValidateCouponResult;
@@ -398,7 +416,7 @@ export async function attachStripeOrderToPaymentIntent(params: {
   return data as { success: boolean };
 }
 
-/** Consulta estado — não marca o pedido como pago (isso é só via webhook). */
+/** Consulta estado, não marca o pedido como pago (isso é só via webhook). */
 export async function pollStripePaymentConfirmation(params: {
   storeId: string;
   paymentIntentId: string;
@@ -430,7 +448,7 @@ export async function pollStripePaymentConfirmation(params: {
   }
 }
 
-/** @deprecated use pollStripePaymentConfirmation — mantido para chamadas antigas */
+/** @deprecated use pollStripePaymentConfirmation, mantido para chamadas antigas */
 export async function verifyStripePaymentIntent(params: {
   storeId: string;
   paymentIntentId: string;
@@ -485,7 +503,7 @@ export async function waitForOrderPaymentConfirmed(
           orderId,
         });
       } catch {
-        /* ainda pendente — webhook é a fonte de verdade em produção */
+        /* ainda pendente, webhook é a fonte de verdade em produção */
       }
     }
 
@@ -495,7 +513,7 @@ export async function waitForOrderPaymentConfirmed(
   }
 
   throw new Error(
-    "O pagamento foi aceite mas a confirmação está a demorar. Não volte a pagar — o pedido será confirmado em breve.",
+    "O pagamento foi aceite mas a confirmação está a demorar. Não volte a pagar, o pedido será confirmado em breve.",
   );
 }
 
@@ -665,7 +683,7 @@ async function invokeConnectFunction(
   if (options?.silent || readOnly) return null;
 
   throw new Error(
-    "Serviço de recebimentos indisponível — peça na Lovable para actualizar as funções do servidor.",
+    "Serviço de recebimentos indisponível, peça na Lovable para actualizar as funções do servidor.",
   );
 }
 
@@ -676,7 +694,7 @@ export async function activateLiveStripeConnect(
   const data = await invokeConnectFunction({ storeId, mode: "activate_live" });
   if (!data) {
     throw new Error(
-      "Não foi possível activar recebimentos oficiais — peça na Lovable para publicar as funções do servidor.",
+      "Não foi possível activar recebimentos oficiais, peça na Lovable para publicar as funções do servidor.",
     );
   }
   return data as { activated: boolean; connectEnvironment: "live"; alreadyLive?: boolean };
@@ -689,7 +707,7 @@ export async function createStoreOnboardingLink(
   const data = await invokeConnectFunction({ storeId, mode: "create_onboarding_link" });
   if (!data) {
     throw new Error(
-      "Não foi possível gerar o link — peça na Lovable para publicar as funções do servidor.",
+      "Não foi possível gerar o link, peça na Lovable para publicar as funções do servidor.",
     );
   }
   return data as { token: string; expiresAt: string; path: string };
@@ -810,7 +828,7 @@ export async function createStripeConnectEmbeddedSession(
 ) {
   const data = await invokeConnectFunction({ storeId, mode }, { allowPaymentIntentFallback: true });
   if (!data) {
-    throw new Error("Não foi possível abrir o formulário de recebimentos — tente modo teste.");
+    throw new Error("Não foi possível abrir o formulário de recebimentos, tente modo teste.");
   }
   return data as {
     clientSecret?: string;
@@ -822,7 +840,7 @@ export async function createStripeConnectEmbeddedSession(
   };
 }
 
-/** Só usar quando o utilizador pedir actualização explícita — nunca no carregamento do painel. */
+/** Só usar quando o utilizador pedir actualização explícita, nunca no carregamento do painel. */
 export async function fetchStripePlatformStatus(storeId?: string): Promise<StripePlatformStatus | null> {
   const data = await invokeConnectFunction(
     { storeId: storeId ?? "", mode: "platform_status" },
@@ -840,7 +858,7 @@ export async function resyncStorePayoutIntakeToStripe(storeId: string): Promise<
 }> {
   const data = await invokeConnectFunction({ storeId, mode: "resync_intake_to_stripe" });
   if (!data) {
-    throw new Error("Não foi possível enviar para a Stripe — tente de novo.");
+    throw new Error("Não foi possível enviar para a Stripe, tente de novo.");
   }
   if (data && typeof data === "object" && "error" in data && (data as { error?: unknown }).error) {
     throw new Error(String((data as { error: unknown }).error));
@@ -910,7 +928,7 @@ export async function syncStripeConnectStatus(
   if (!data) {
     if (options?.silent) return null;
     throw new Error(
-      "As funções do servidor estão desactualizadas — na Lovable escreva: Deploy all Supabase edge functions. Depois Sync + Publish.",
+      "As funções do servidor estão desactualizadas, na Lovable escreva: Deploy all Supabase edge functions. Depois Sync + Publish.",
     );
   }
   return data as StripeConnectStatus;
@@ -1024,7 +1042,7 @@ export async function provisionTestStripeConnect(storeId: string) {
   return provisionTestStripeConnectLocal(storeId);
 }
 
-/** @deprecated Usar createStripeConnectEmbeddedSession — onboarding embebido no painel */
+/** @deprecated Usar createStripeConnectEmbeddedSession, onboarding embebido no painel */
 export async function startStripeConnectOnboarding(storeId: string, returnUrl: string) {
   const data = await invokeConnectFunction(
     { storeId, returnUrl, mode: "start_onboarding" },

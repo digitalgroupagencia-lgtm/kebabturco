@@ -146,7 +146,7 @@ export async function checkForDeployedUpdate() {
     deployDebugLog({
       hypothesisId: "H5",
       location: "appCacheBust.ts:checkForDeployedUpdate",
-      message: "reload skipped — already reloaded this deploy",
+      message: "reload skipped, already reloaded this deploy",
       data: { reloadToken },
       runId: "post-fix",
     });
@@ -158,7 +158,7 @@ export async function checkForDeployedUpdate() {
   deployDebugLog({
     hypothesisId: "H1-H2",
     location: "appCacheBust.ts:checkForDeployedUpdate",
-    message: "forcing reload — deploy mismatch",
+    message: "forcing reload, deploy mismatch",
     data: { buildMismatch, scriptMismatch, reloadToken },
     runId: "post-fix",
   });

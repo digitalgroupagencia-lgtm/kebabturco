@@ -8,7 +8,7 @@ const PHONE_BEZEL =
   "[@media(hover:hover)_and_(pointer:fine)]:h-[min(880px,calc(100dvh-2rem))] [@media(hover:hover)_and_(pointer:fine)]:w-[min(420px,calc(100vw-2rem))] [@media(hover:hover)_and_(pointer:fine)]:rounded-[3rem] [@media(hover:hover)_and_(pointer:fine)]:bg-black [@media(hover:hover)_and_(pointer:fine)]:p-[14px] [@media(hover:hover)_and_(pointer:fine)]:shadow-2xl";
 
 /**
- * Moldura mobile só no desktop com rato — telemóvel real usa ecrã completo
+ * Moldura mobile só no desktop com rato, telemóvel real usa ecrã completo
  * (incluindo landscape, onde md: disparava a moldura de 420px por engano).
  */
 export default function MobileFrame({ children }: { children: ReactNode }) {

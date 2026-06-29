@@ -135,7 +135,7 @@ export function getUsageSnapshotForPrompt(): string {
     `- Desde: ${s.firstSeen || "agora"}`,
     `- Total de visitas: ${s.totalVisits}`,
     `- Top rotas: ${top}`,
-    `- Telas conhecidas NUNCA abertas neste dispositivo (${s.neverVisited.length}): ${cold || "—"}`,
+    `- Telas conhecidas NUNCA abertas neste dispositivo (${s.neverVisited.length}): ${cold || ", "}`,
     `Aviso: estes dados são apenas do navegador actual. Não são consolidados no servidor.`,
   ].join("\n");
 }

@@ -34,7 +34,7 @@ function bridgeReason(
   if (bridge === "active") return null;
   if (bridge === "unknown") {
     return lastSeen
-      ? "Bridge sem heartbeat recente — verifique se o serviço Print Bridge está aberto no PC da loja."
+      ? "Bridge sem heartbeat recente, verifique se o serviço Print Bridge está aberto no PC da loja."
       : "Nenhum heartbeat do Print Bridge alguma vez registado. Instale e abra o Print Bridge no PC ligado à impressora.";
   }
   // inactive

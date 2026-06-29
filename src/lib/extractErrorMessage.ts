@@ -9,7 +9,7 @@ export function extractErrorMessage(err: unknown): string {
     const parts = [record.message, record.details, record.hint, record.error_description]
       .filter((part) => typeof part === "string" && part.trim())
       .map((part) => String(part).trim());
-    if (parts.length > 0) return parts.join(" — ");
+    if (parts.length > 0) return parts.join(", ");
   }
 
   return String(err);

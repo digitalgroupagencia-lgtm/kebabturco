@@ -1,5 +1,5 @@
 /**
- * Push — API exclusiva do CLIENTE (cardápio / pedidos).
+ * Push, API exclusiva do CLIENTE (cardápio / pedidos).
  *
  * Qualquer ecrã do cliente deve importar daqui e NUNCA de `@/lib/staffPush`,
  * `@/lib/push/pushTestService` ou de `@/lib/diagnostics/*`.

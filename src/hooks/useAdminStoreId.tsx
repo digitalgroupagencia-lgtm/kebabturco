@@ -39,7 +39,7 @@ async function firstActiveStoreForTenant(tenantId: string): Promise<string | nul
 }
 
 /**
- * Resolve store_id para páginas admin/panel — nunca usa loja global aleatória.
+ * Resolve store_id para páginas admin/panel, nunca usa loja global aleatória.
  */
 export function useAdminStoreId(): { storeId: string | null; loading: boolean } {
   const { slug } = useParams<{ slug?: string }>();

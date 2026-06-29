@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeNotificationText } from "../_shared/campaignTemplateEngine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +48,7 @@ type PushSubRow = {
 };
 
 // =============================================================
-// Web Push (VAPID) — navegador / PWA
+// Web Push (VAPID), navegador / PWA
 // =============================================================
 async function sendWebPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
@@ -67,7 +68,7 @@ async function sendWebPush(
 }
 
 // =============================================================
-// FCM HTTP v1 — Android nativo (Capacitor)
+// FCM HTTP v1, Android nativo (Capacitor)
 // =============================================================
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
@@ -139,6 +140,7 @@ async function sendFcmV1(
   serviceAccount: { project_id: string; client_email: string; private_key: string; token_uri?: string },
 ): Promise<void> {
   const access = await getFcmAccessToken(serviceAccount);
+  const androidSound = payload.tag?.startsWith("staff-new-order") ? "staff_order_alert" : "default";
   const body = {
     message: {
       token,
@@ -151,7 +153,7 @@ async function sendFcmV1(
         priority: "HIGH",
         notification: {
           channel_id: "staff_orders",
-          sound: "default",
+          sound: androidSound,
           default_vibrate_timings: true,
           visibility: "PUBLIC",
           notification_priority: "PRIORITY_MAX",
@@ -204,7 +206,7 @@ function getFcmServiceAccount(): {
 }
 
 // =============================================================
-// APNs HTTP/2 — iPhone nativo (token APNs do Capacitor)
+// APNs HTTP/2, iPhone nativo (token APNs do Capacitor)
 // =============================================================
 type ApnsConfig = {
   keyId: string;
@@ -474,10 +476,28 @@ function isMarketingAudienceRow(row: PushSubRow): boolean {
 
 function selectAudienceRows(
   rows: PushSubRow[],
-  opts: { orderId?: string; storeId?: string; audience?: string },
+  opts: { orderId?: string; storeId?: string; audience?: string; customerPhone?: string; marketingBroadcast?: boolean },
 ): PushSubRow[] {
   if (opts.orderId) return rows.filter((r) => r.order_id === opts.orderId);
-  if (opts.audience === "marketing") return rows.filter(isMarketingAudienceRow);
+  if (opts.audience === "marketing") {
+    if (opts.marketingBroadcast) {
+      return rows.filter(
+        (r) =>
+          r.customer_phone === MARKETING_PHONE_TAG ||
+          (r.customer_phone != null &&
+            r.customer_phone !== STAFF_PHONE_TAG &&
+            r.customer_phone !== MARKETING_PHONE_TAG &&
+            !r.customer_phone.startsWith("__")),
+      );
+    }
+    if (opts.customerPhone) {
+      const phone = opts.customerPhone.trim();
+      const direct = rows.filter((r) => r.customer_phone === phone);
+      if (direct.length) return direct;
+      return rows.filter((r) => r.customer_phone === MARKETING_PHONE_TAG);
+    }
+    return rows.filter(isMarketingAudienceRow);
+  }
   if (opts.storeId) return rows.filter(isStaffAudienceRow);
   return [];
 }
@@ -509,7 +529,12 @@ Deno.serve(async (req) => {
       nativePlatform,
       requireInteraction,
       pushDiagnostic,
+      customerPhone,
+      marketingBroadcast,
     } = body;
+
+    const pushTitle = sanitizeNotificationText(String(title ?? ""));
+    const pushBody = sanitizeNotificationText(String(msgBody ?? ""));
 
     if (!(await authorizeStaffBroadcast(req, { ...body, pushDiagnostic }))) {
       return new Response(
@@ -565,7 +590,13 @@ Deno.serve(async (req) => {
       if (orderId) query = query.eq("order_id", orderId);
       else if (storeId) query = query.eq("store_id", storeId);
       const { data: rows } = await query;
-      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], { orderId, storeId, audience });
+      const matched = selectAudienceRows((rows ?? []) as PushSubRow[], {
+        orderId,
+        storeId,
+        audience,
+        customerPhone: customerPhone as string | undefined,
+        marketingBroadcast: Boolean(marketingBroadcast),
+      });
       matchedInDb = matched.length;
       for (const sub of matched) targetMap.set(sub.endpoint, sub);
     }
@@ -599,7 +630,7 @@ Deno.serve(async (req) => {
     }
 
     const subs = [...targetMap.values()];
-    const payloadJson = JSON.stringify({ title, body: msgBody, tag, url, requireInteraction });
+    const payloadJson = JSON.stringify({ title: pushTitle, body: pushBody, tag, url, requireInteraction });
 
     let sent = 0;
     let sentWeb = 0;
@@ -608,7 +639,7 @@ Deno.serve(async (req) => {
     const errors: { endpoint: string; status?: number; message: string; channel: string }[] = [];
 
     let apnsDeliveryNote: string | undefined;
-    // Sempre tentar sandbox + produção no iOS — corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
+    // Sempre tentar sandbox + produção no iOS, corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
     const apnsTryBothHosts = true;
 
     for (const sub of subs) {
@@ -619,7 +650,7 @@ Deno.serve(async (req) => {
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           const apnsResult = await sendApns(
             token,
-            { title, body: msgBody, tag, url, requireInteraction },
+            { title: pushTitle, body: pushBody, tag, url, requireInteraction },
             apns,
             { tryBothHosts: apnsTryBothHosts },
           );
@@ -639,7 +670,7 @@ Deno.serve(async (req) => {
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
-          await sendFcmV1(token, { title, body: msgBody, tag, url, requireInteraction }, fcm);
+          await sendFcmV1(token, { title: pushTitle, body: pushBody, tag, url, requireInteraction }, fcm);
           sent++;
           sentFcm++;
         } else {

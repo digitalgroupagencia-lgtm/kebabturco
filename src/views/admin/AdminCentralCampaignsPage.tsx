@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Clock, Heart, Gift, TrendingUp, Users, Megaphone } from "lucide-react";
+import { Clock, Heart, Gift, TrendingUp, Users, Megaphone, Radio, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import AdminCentralLayout from "@/components/admin/premium/AdminCentralLayout";
 import AdminPremiumCard from "@/components/admin/premium/AdminPremiumCard";
 import AdminPreviewTabs from "@/components/admin/premium/AdminPreviewTabs";
@@ -11,6 +12,8 @@ import {
   useAdminCentralsTenants,
   useSetFeatureOverride,
   useTenantFeatureFlags,
+  useTenantMarketingSettings,
+  upsertTenantMarketingSettings,
 } from "@/hooks/usePlatformFeatures";
 import { CAMPAIGN_TEMPLATES } from "@/lib/adminCentralPreviews";
 import {
@@ -27,6 +30,8 @@ const TEMPLATE_ICONS = {
   trending: TrendingUp,
   users: Users,
 };
+
+const WINE = "#3a0205";
 
 export default function AdminCentralCampaignsPage() {
   const { data: tenants } = useAdminCentralsTenants();
@@ -48,7 +53,7 @@ export default function AdminCentralCampaignsPage() {
   return (
     <AdminCentralLayout
       title="Central Campanhas"
-      description="Modelos visuais prontos a activar. Envios automáticos chegam numa fase posterior."
+      description="Acesso a marketing push, campanhas automáticas e limites por restaurante."
       centralSegment="campaigns"
       showTenantList
       tenantList={
@@ -82,10 +87,32 @@ function CampaignsTenantPanel({
   onToggle: (tenantId: string, key: string, enabled: boolean) => void;
 }) {
   const { data: flags } = useTenantFeatureFlags(tenantId);
+  const { data: mktSettings, refetch: refetchMkt } = useTenantMarketingSettings(tenantId);
+  const [savingMkt, setSavingMkt] = useState<string | null>(null);
+
   const activeCampaigns = CAMPAIGN_TEMPLATES.filter((t) => {
     const f = flags?.find((x) => x.feature_key === t.featureKey);
     return f?.enabled;
   }).length;
+
+  const toggleMkt = async (key: string, value: boolean) => {
+    setSavingMkt(key);
+    try {
+      await upsertTenantMarketingSettings(tenantId, { [key]: value });
+      await refetchMkt();
+      toast.success("Definição guardada");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setSavingMkt(null);
+    }
+  };
+
+  const mktRows = [
+    { key: "push_enabled", label: "Marketing push activo", icon: Radio },
+    { key: "auto_campaigns_enabled", label: "Campanhas automáticas", icon: Megaphone },
+    { key: "manual_broadcast_enabled", label: "Envio manual / broadcast", icon: Send },
+  ] as const;
 
   return (
     <div className="space-y-4">
@@ -94,10 +121,46 @@ function CampaignsTenantPanel({
           stats={[
             { label: "Modelos", value: String(CAMPAIGN_TEMPLATES.length) },
             { label: "Preparadas", value: String(activeCampaigns), tone: activeCampaigns ? "success" : "muted" },
-            { label: "Envios hoje", value: "0", tone: "muted" },
-            { label: "Motor", value: "Standby", tone: "warning" },
+            {
+              label: "Anti-spam",
+              value: (mktSettings?.anti_spam_max_pushes ?? 0) <= 0
+                ? "Desligado"
+                : `${mktSettings?.anti_spam_max_pushes}/${mktSettings?.anti_spam_window_days ?? 1}d`,
+              tone: "muted",
+            },
+            { label: "Motor", value: mktSettings?.auto_campaigns_enabled === false ? "Pausado" : "Activo", tone: "success" },
           ]}
         />
+      )}
+
+      {isScoped && (
+        <div className="rounded-2xl border bg-card p-4 space-y-3">
+          <h3 className="text-sm font-bold" style={{ color: WINE }}>
+            Acesso marketing, {tenantPlan.toUpperCase()}
+          </h3>
+          {mktRows.map(({ key, label, icon: Icon }) => (
+            <div key={key} className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5">
+              <div className="flex items-center gap-2 text-sm">
+                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor={key}>{label}</Label>
+              </div>
+              <Switch
+                id={key}
+                checked={mktSettings?.[key] !== false}
+                disabled={savingMkt === key}
+                onCheckedChange={(v) => void toggleMkt(key, v)}
+              />
+            </div>
+          ))}
+          <p className="text-[11px] text-muted-foreground">
+            Limite: {mktSettings?.max_active_campaigns ?? 10} campanhas activas ·{" "}
+            {mktSettings?.max_sends_per_month ?? 500} envios/mês · anti-spam marketing:{" "}
+            {(mktSettings?.anti_spam_max_pushes ?? 0) <= 0
+              ? "desligado (avisos de pedidos nunca bloqueados)"
+              : `máx. ${mktSettings?.anti_spam_max_pushes} push/cliente em ${mktSettings?.anti_spam_window_days ?? 1} dia(s)`}
+            .
+          </p>
+        </div>
       )}
 
       <div className="space-y-3">
@@ -116,7 +179,7 @@ function CampaignsTenantPanel({
               icon={Icon}
               accent={tpl.accent}
               status={gated ? "locked" : on ? "active" : "prepared"}
-              meta="Canal: push + in-app · Agendamento: manual (fase 2)"
+              meta="Canal: push app + web · Agendamento e winback activos"
               gated={gated}
               requiredPlan={requiredPlan}
               preview={<AdminPreviewTabs variants={tpl.previews} bubble={false} />}

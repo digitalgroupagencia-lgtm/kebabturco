@@ -49,7 +49,7 @@ async function refreshLiveConnectStore(
   }
 }
 
-/** Sincroniza estado Connect da loja com a Stripe — não exige login (service role no servidor). */
+/** Sincroniza estado Connect da loja com a Stripe, não exige login (service role no servidor). */
 export async function runStoreConnectStatusSync(
   service: SupabaseClient,
   storeId: string,
@@ -66,7 +66,7 @@ export async function runStoreConnectStatusSync(
     connectEnv === "test" || store.stripe_connect_test_simulated ? "test" : connectEnv,
   );
   if (!stripeKey) {
-    throw new Error("Chave Stripe em falta no servidor — configure STRIPE_SECRET_KEY nos segredos");
+    throw new Error("Chave Stripe em falta no servidor, configure STRIPE_SECRET_KEY nos segredos");
   }
 
   const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
@@ -140,7 +140,7 @@ export async function runStoreBizumEnable(
   const sanitized = await sanitizeStoredConnectAccount(stripe, service, loaded.store);
   if (sanitized.cleared || !sanitized.store.stripe_connect_account_id) {
     throw new Error(
-      "Conta de recebimentos inválida — use «Recriar conta Stripe» no painel de administração.",
+      "Conta de recebimentos inválida, use «Recriar conta Stripe» no painel de administração.",
     );
   }
   const bizum = await ensureBizumEnabledOnConnectAccount(

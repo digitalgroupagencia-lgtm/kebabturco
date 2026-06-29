@@ -241,7 +241,7 @@ export async function recordFailedPaymentIntent(
   });
 }
 
-/** Só consulta estado — não marca pedido como pago (webhook é a fonte de verdade). */
+/** Só consulta estado, não marca pedido como pago (webhook é a fonte de verdade). */
 export async function handlePollPaymentConfirmation(body: Record<string, unknown>): Promise<Response> {
   const storeId = body.storeId as string;
   const paymentIntentId = body.paymentIntentId as string;
@@ -325,13 +325,13 @@ export async function handlePollPaymentConfirmation(body: Record<string, unknown
   }
 
   return json({
-    error: "Pagamento confirmado pelo banco — a aguardar confirmação do sistema",
+    error: "Pagamento confirmado pelo banco, a aguardar confirmação do sistema",
     pending: true,
     stripeSucceeded: true,
   }, 402);
 }
 
-/** @deprecated alias — mantido para compatibilidade com clientes antigos */
+/** @deprecated alias, mantido para compatibilidade com clientes antigos */
 export async function handleVerifyPaymentIntent(body: Record<string, unknown>): Promise<Response> {
   return handlePollPaymentConfirmation(body);
 }

@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import PanelOrdersBoard from "@/features/ops/PanelOrdersBoard";
 import { useStaffT } from "@/hooks/useStaffT";
 
-/** Alias legado — /panel aponta para a operação ao vivo. */
+/** Alias legado, /panel aponta para a operação ao vivo. */
 const OrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
   const { t } = useStaffT();

@@ -69,7 +69,7 @@ function applyInstallMeta(s: CompanySettings, theme: "light" | "dark" = "light")
       (s as { header_color?: string }).header_color || s.primary_color,
     );
 
-    // Mantém manifest.json estático em /public — necessário para PWA Builder, TWA e Play Store.
+    // Mantém manifest.json estático em /public, necessário para PWA Builder, TWA e Play Store.
     // Só actualiza meta tags dinâmicas (título e cor da barra).
     const appleTitle = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.content = name;

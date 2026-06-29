@@ -271,7 +271,7 @@ const CustomerAccountScreen = () => {
       const results = await Promise.all(queries);
       for (const r of results) {
         if (r.error) {
-          // Não bloqueia a recompra — apenas regista e segue com fallback por nome/dados do pedido.
+          // Não bloqueia a recompra, apenas regista e segue com fallback por nome/dados do pedido.
           console.warn("[reorder] product lookup failed", r.error);
           continue;
         }
@@ -297,7 +297,7 @@ const CustomerAccountScreen = () => {
       // Fallback: lookup by product name when no id or product was removed.
       if (!prod && item.product_name) prod = productsByName.get(item.product_name);
       if (item.product_id && !prod && !productsByName.get(item.product_name || "")) {
-        // Produto removido do menu — pula para não meter imagem vazia.
+        // Produto removido do menu, pula para não meter imagem vazia.
         missingCount += 1;
         continue;
       }

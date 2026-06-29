@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useStaffT } from "@/hooks/useStaffT";
 
-/** Botão "Atualizar agora" — limpa caches/SW e recarrega para puxar a última versão publicada. */
+/** Botão "Atualizar agora", limpa caches/SW e recarrega para puxar a última versão publicada. */
 const PanelUpdateButton = () => {
   const [busy, setBusy] = useState(false);
   const { t } = useStaffT();

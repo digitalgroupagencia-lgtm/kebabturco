@@ -13,7 +13,7 @@ export type StoreChannel = "store" | "delivery";
 const FORCE_OPEN_KEY = "__forceStoreOpen";
 
 /**
- * Override de teste — permite forçar a loja como ABERTA durante validação:
+ * Override de teste, permite forçar a loja como ABERTA durante validação:
  *   - URL: ?forceOpen=1  (grava em localStorage e persiste na sessão)
  *   - URL: ?forceOpen=0  (remove o override)
  *   - localStorage["__forceStoreOpen"] = "1"
@@ -39,8 +39,8 @@ function readForceOpenFlag(): boolean {
 }
 
 /**
- * Estado de abertura por canal — re-avalia a cada 30s.
- * Cliente nunca é bloqueado de navegar — usa-se só no checkout.
+ * Estado de abertura por canal, re-avalia a cada 30s.
+ * Cliente nunca é bloqueado de navegar, usa-se só no checkout.
  */
 export function useStoreOpenStatus(channel: StoreChannel = "store"): OpenStatus {
   const { settings } = useOperationsSettings();

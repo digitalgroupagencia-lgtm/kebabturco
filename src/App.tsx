@@ -38,7 +38,7 @@ const withSuspense = (node: ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{node}</Suspense>
 );
 
-// Cliente — qualquer crash em providers/módulos internos é contido aqui
+// Cliente, qualquer crash em providers/módulos internos é contido aqui
 const tenantStore = (
   <CustomerAreaBoundary>
     {withSuspense(
@@ -52,7 +52,7 @@ const tenantStore = (
 );
 
 
-// Interno — falhas em admin/painel/equipa/etc. não escapam deste boundary
+// Interno, falhas em admin/painel/equipa/etc. não escapam deste boundary
 const internal = (
   <AdminErrorBoundary area="admin">
     {withSuspense(<CatchAllResolver notFound={<NotFound />} />)}
@@ -60,7 +60,7 @@ const internal = (
 );
 
 /**
- * Rotas do dropdown Lovable — APENAS 2 entradas literais + catch-all.
+ * Rotas do dropdown Lovable, APENAS 2 entradas literais + catch-all.
  * O scanner do preview lê App.tsx directamente: não adicionar /panel, /admin, etc.
  * Painel, admin, entregador e vendedor funcionam via CatchAllResolver + nav interno.
  */

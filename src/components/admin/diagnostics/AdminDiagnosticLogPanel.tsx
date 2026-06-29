@@ -32,7 +32,7 @@ export default function AdminDiagnosticLogPanel({
   description = "Erros e passos de teste (também na consola do browser)",
   logs,
   onClear,
-  emptyMessage = "Sem logs ainda — execute um teste.",
+  emptyMessage = "Sem logs ainda, execute um teste.",
 }: Props) {
   const copyLogs = async () => {
     const text = logs

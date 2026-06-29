@@ -54,7 +54,7 @@ const AppCacheBustRouter = ({ children }: Props) => {
     return () => window.clearInterval(interval);
   }, []);
 
-  // Não incluir pathname no key — remount ao navegar resetava a sessão e expulsava /panel → /admin.
+  // Não incluir pathname no key, remount ao navegar resetava a sessão e expulsava /panel → /admin.
   const routeKey = `${cacheEpoch}:${APP_BUILD_ID}`;
 
   return (

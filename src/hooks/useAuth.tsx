@@ -63,7 +63,7 @@ export function useAuth() {
     try {
       await supabase.auth.signOut();
     } catch {
-      // ignore — we still force navigation below
+      // ignore, we still force navigation below
     }
     if (typeof window !== "undefined") {
       // Hard navigation guarantees all in-memory state is wiped and
