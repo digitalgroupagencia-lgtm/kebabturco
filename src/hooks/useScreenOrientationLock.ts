@@ -13,6 +13,11 @@ import { setNativeOrientation } from "@/services/nativeOrientation";
 
 type RotateMode = "none" | "fp";
 
+function isIphoneDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPod/i.test(navigator.userAgent);
+}
+
 function clearRotateClasses() {
   document.body.classList.remove("fp-rotate", "fl-rotate");
   document.body.style.removeProperty("--fp-w");
@@ -28,7 +33,7 @@ function resolveRotateMode(
   w: number,
   h: number,
 ): RotateMode {
-  if (isCapacitorNativeSync()) return "none";
+  if (isCapacitorNativeSync() || isIphoneDevice()) return "none";
   if (landscapeLock && h > w) return "fp";
   return "none";
 }
