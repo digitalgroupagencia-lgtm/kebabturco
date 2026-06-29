@@ -24,3 +24,5 @@ xcode-project build-ipa \
   --scheme "$SCHEME" \
   --config Release \
   2>&1 | tee /tmp/xcodebuild-build-ipa.log
+
+bash "$ROOT/scripts/ios-verify-built-ipa.sh"

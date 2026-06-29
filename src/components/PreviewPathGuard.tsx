@@ -4,7 +4,6 @@ import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "
 import { LOVABLE_WILDCARD_HINT } from "@/lib/routeMap";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
 import { nav } from "@/lib/navPaths.ts";
-import { resolveRoute } from "@/lib/internalRoutes.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 import {
   isLovableEditorPreview,
@@ -93,11 +92,13 @@ export default function PreviewPathGuard() {
         navigate(legacy, { replace: true });
         return;
       }
-      const sellerTarget = nav.seller(parts[0]);
-      if (resolveRoute(sellerTarget)) {
-        navigate(sellerTarget, { replace: true });
-        return;
-      }
+      void import("@/lib/internalRoutes.ts").then(({ resolveRoute }) => {
+        const sellerTarget = nav.seller(parts[0]);
+        if (resolveRoute(sellerTarget)) {
+          navigate(sellerTarget, { replace: true });
+        }
+      });
+      return;
     }
 
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {

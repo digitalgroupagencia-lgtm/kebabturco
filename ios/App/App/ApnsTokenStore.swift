@@ -77,15 +77,26 @@ final class ApnsTokenStore {
             "lastError": UserDefaults.standard.string(forKey: Self.lastErrorKey) as Any,
             "tokenPreview": (token.map { Self.preview($0) }) as Any,
             "hasToken": token != nil,
-            "authorizationStatus": Self.authorizationStatusString(),
+            "authorizationStatus": "unknown",
         ]
     }
 
-    func authorizationStatusString() -> String {
-        Self.authorizationStatusString()
+    func authorizationStatusString(completion: @escaping (String) -> Void) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status: String
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                status = "granted"
+            case .denied:
+                status = "denied"
+            case .notDetermined:
+                status = "prompt"
+            @unknown default:
+                status = "unknown"
+            }
+            completion(status)
+        }
     }
-
-    func requestPushAuthorization(completion: @escaping (String) -> Void) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .authorized, .provisional, .ephemeral:
@@ -112,27 +123,7 @@ final class ApnsTokenStore {
         }
     }
 
-    private static func authorizationStatusString() -> String {
-        var status = "unknown"
-        let semaphore = DispatchSemaphore(value: 0)
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .provisional, .ephemeral:
-                status = "granted"
-            case .denied:
-                status = "denied"
-            case .notDetermined:
-                status = "prompt"
-            @unknown default:
-                status = "unknown"
-            }
-            semaphore.signal()
-        }
-        _ = semaphore.wait(timeout: .now() + 1.0)
-        return status
-    }
-
-    private func deliverToJavaScript(token: String) {
+    func requestPushAuthorization(completion: @escaping (String) -> Void) {
         retryWorkItem?.cancel()
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }

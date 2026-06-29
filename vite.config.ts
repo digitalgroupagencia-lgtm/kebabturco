@@ -183,6 +183,10 @@ export default defineConfig(({ mode }) => {
             return "internal";
           }
 
+          if (id.includes("/src/customer/")) {
+            return "customer";
+          }
+
           return undefined;
         },
       },
