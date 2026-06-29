@@ -17,6 +17,37 @@ echo "startup diagnostic: $KEBAB_IOS_STARTUP_DIAGNOSTIC"
 npm run build
 npx cap sync ios
 cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
+if [ "$KEBAB_IOS_STARTUP_DIAGNOSTIC" != "0" ]; then
+  cat > "$ROOT/ios/App/CapApp-SPM/Package.swift" <<'SWIFT_PACKAGE'
+// swift-tools-version: 5.9
+import PackageDescription
+
+// Diagnóstico de crash de arranque — shell mínimo: Capacitor + AppPlugin.
+let package = Package(
+    name: "CapApp-SPM",
+    platforms: [.iOS(.v15)],
+    products: [
+        .library(
+            name: "CapApp-SPM",
+            targets: ["CapApp-SPM"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.0"),
+        .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app"),
+    ],
+    targets: [
+        .target(
+            name: "CapApp-SPM",
+            dependencies: [
+                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+                .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "CapacitorApp", package: "CapacitorApp"),
+            ]
+        )
+    ]
+)
+SWIFT_PACKAGE
+fi
 bash "$ROOT/scripts/ios-patch-capacitor-config-appstore.sh"
 bash "$ROOT/scripts/ios-verify-appstore-capacitor-config.sh"
 
@@ -36,7 +67,20 @@ fi
 /usr/libexec/PlistBuddy -c "Add :KebabTurcoGitBranch string $GIT_BRANCH" "$PLIST"
 /usr/libexec/PlistBuddy -c "Delete :KebabTurcoStartupDiagnostic" "$PLIST" >/dev/null 2>&1 || true
 /usr/libexec/PlistBuddy -c "Add :KebabTurcoStartupDiagnostic string $([ "$KEBAB_IOS_STARTUP_DIAGNOSTIC" = "0" ] && echo false || echo true)" "$PLIST"
+if [ "$KEBAB_IOS_STARTUP_DIAGNOSTIC" != "0" ]; then
+  /usr/libexec/PlistBuddy -c "Delete :UIBackgroundModes" "$PLIST" >/dev/null 2>&1 || true
+fi
 
+if [ "$KEBAB_IOS_STARTUP_DIAGNOSTIC" != "0" ]; then
+cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+</dict>
+</plist>
+ENTITLEMENTS
+else
 cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -47,6 +91,7 @@ cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 </dict>
 </plist>
 ENTITLEMENTS
+fi
 
 echo "=== capacitor.config.json (App Store) ==="
 cat "$ROOT/ios/App/App/capacitor.config.json" || true
