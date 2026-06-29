@@ -14,9 +14,10 @@ fi
 IPA_SIZE="$(du -sk "$IPA" | awk '{print $1}')"
 echo "=== Verificar IPA: $(basename "$IPA") (~${IPA_SIZE}KB) ==="
 
-if [ "${IPA_SIZE:-0}" -lt 8000 ]; then
+# IPA comprimido: ~4MB só nativo, ~7MB com menu embutido (public ~6MB dentro do .app).
+if [ "${IPA_SIZE:-0}" -lt 5500 ]; then
   echo "ERRO: IPA demasiado pequeno (${IPA_SIZE}KB) — provável pacote sem menu embutido."
-  echo "      Um IPA completo com o site dentro costuma ter >15MB."
+  echo "      Com menu embutido o IPA comprimido costuma ter >=6MB."
   exit 1
 fi
 
