@@ -143,8 +143,3 @@ NOTAS
 • Não precisa de Xcode no seu Mac
 • Cada push em main dispara build automático (pode desligar depois)
 • Erro de certificado: ver Partes 3 e 4 outra vez
-• TestFlight bloqueado em «criptografia»: nas builds antigas responda
-  «Nenhum dos algoritmos mencionados» uma vez. Builds novas (Info.plist
-  ITSAppUsesNonExemptEncryption=false) passam automático sem esse passo.
-• «Post-processing failed» no Codemagic é normal — o IPA já foi enviado;
-  confira TestFlight em 10–30 min.

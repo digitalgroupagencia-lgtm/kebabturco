@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
-# Sincroniza Capacitor iOS para App Store — menu embutido (build 33/34) + push produção.
+# Sincroniza Capacitor iOS para App Store — push produção, SEM Tap to Pay no perfil de distribuição.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# App Store: Tap to Pay desligado no JS até a Apple aprovar entitlement de produção.
 export VITE_IOS_TAP_TO_PAY_ENABLED=false
-export VITE_IOS_BUNDLE_WEB=true
 
 npm run build
 npx cap sync ios
-cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
-bash "$ROOT/scripts/ios-patch-capacitor-config-appstore.sh"
-bash "$ROOT/scripts/ios-verify-appstore-capacitor-config.sh"
-bash "$ROOT/scripts/ios-verify-uiscene.sh"
 
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"
@@ -23,6 +19,7 @@ if ! grep -q 'DEVELOPMENT_TEAM = 4QW32SBR7H;' "$PBX"; then
 ' "$PBX"
 fi
 
+# Release = só notificações push (produção). Tap to Pay fica só no perfil Development.
 cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -34,9 +31,7 @@ cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 </plist>
 ENTITLEMENTS
 
-echo "=== capacitor.config.json (App Store) ==="
-cat "$ROOT/ios/App/App/capacitor.config.json" || true
-echo ""
+cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
 
 SOUND_SRC="$ROOT/public/sounds/new-order-notification.mp3"
 SOUND_DST="$ROOT/ios/App/App/staff_order_alert.caf"
@@ -48,4 +43,3 @@ echo "✓ iOS App Store: net.kebabturco.app"
 echo "  · Release entitlements: aps-environment=production (sem Tap to Pay)"
 echo "  · Package SPM: sem Stripe Terminal (App Store)"
 echo "  · VITE_IOS_TAP_TO_PAY_ENABLED=false"
-echo "  · Menu embutido no pacote iPhone (arranque TestFlight, como build 33)"
