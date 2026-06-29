@@ -68,12 +68,15 @@
 
   function purgeCaches(preservePush) {
     var tasks = [];
+    var removed = { serviceWorkers: 0, caches: 0 };
     if ("serviceWorker" in navigator) {
       tasks.push(
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           return Promise.all(
             regs.map(function (r) {
-              return shouldKeepSw(r, preservePush) ? Promise.resolve() : r.unregister();
+              if (shouldKeepSw(r, preservePush)) return Promise.resolve();
+              removed.serviceWorkers += 1;
+              return r.unregister();
             }),
           );
         }),
@@ -82,6 +85,7 @@
     if ("caches" in window) {
       tasks.push(
         caches.keys().then(function (keys) {
+          removed.caches = keys.length;
           return Promise.all(
             keys.map(function (k) {
               return caches.delete(k);
@@ -90,13 +94,21 @@
         }),
       );
     }
-    return Promise.all(tasks).catch(function () {});
+    return Promise.all(tasks).then(function () { return removed; }).catch(function () { return removed; });
+  }
+
+  function getBuildToken() {
+    try {
+      var build = document.querySelector('meta[name="app-build-id"]');
+      return build && build.getAttribute("content") || String(Date.now());
+    } catch (e) {
+      return String(Date.now());
+    }
   }
 
   function withBootCacheBust(src) {
     try {
-      var build = document.querySelector('meta[name="app-build-id"]');
-      var token = build && build.getAttribute("content") || String(Date.now());
+      var token = getBuildToken();
       return src + (src.indexOf("?") === -1 ? "?" : "&") + "boot=" + encodeURIComponent(token);
     } catch (e) {
       return src;
@@ -153,7 +165,7 @@
     scheduleBootTimeout(bootTimeoutMs());
   }
 
-  function loadAfterPurge(preservePush, timeoutMs) {
+  function loadAfterPurge(preservePush, timeoutMs, reloadAfterNativePurge) {
     var loaded = false;
     function once() {
       if (loaded) return;
@@ -161,15 +173,30 @@
       loadApp();
     }
     window.setTimeout(once, timeoutMs || 2500);
-    purgeCaches(preservePush).then(once).catch(once);
+    purgeCaches(preservePush).then(function (removed) {
+      if (reloadAfterNativePurge && !loaded && (removed.serviceWorkers > 0 || removed.caches > 0)) {
+        try {
+          var key = "snaporder:native-cache-reloaded:" + getBuildToken();
+          if (sessionStorage.getItem(key) !== "1") {
+            loaded = true;
+            sessionStorage.setItem(key, "1");
+            window.location.reload();
+            return;
+          }
+        } catch (e) {
+          /* continua sem reload */
+        }
+      }
+      once();
+    }).catch(once);
   }
 
   if (isLovableEditorHost()) {
     loadApp();
   } else if (isCapacitorNative()) {
     // No IPA/TestFlight não pode existir Service Worker antigo do PWA a servir bundles/cache antigos.
-    loadAfterPurge(false, 2000);
+    loadAfterPurge(false, 3500, true);
   } else {
-    loadAfterPurge(true, 1200);
+    loadAfterPurge(true, 1200, false);
   }
 })();
