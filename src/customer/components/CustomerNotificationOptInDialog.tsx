@@ -133,8 +133,11 @@ const CustomerNotificationOptInDialog = ({
   ];
 
   const handleLater = () => {
-    if (audience === "staff") markStaffPushPromptShown();
-    else markCustomerMarketingPromptShown();
+    if (audience === "staff") {
+      void import("@/lib/staffPush").then((m) => m.markStaffPushPromptShown());
+    } else {
+      markCustomerMarketingPromptShown();
+    }
     onOpenChange(false);
   };
 
@@ -148,6 +151,7 @@ const CustomerNotificationOptInDialog = ({
       await initNativePushBridge();
 
       if (audience === "staff") {
+        const { subscribeStaffPush, markStaffPushPromptShown } = await import("@/lib/staffPush");
         const result = await subscribeStaffPush(storeId);
         markStaffPushPromptShown();
         if (result.ok) {
