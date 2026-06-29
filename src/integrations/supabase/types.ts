@@ -4950,24 +4950,15 @@ export type Database = {
         Args: { _password: string; _user_id: string }
         Returns: undefined
       }
-      mark_order_paid_at_counter:
-        | {
-            Args: {
-              _order_id: string
-              _payment_method?: string
-              _staff_pin?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _order_id: string
-              _payment_method?: string
-              _staff_pin?: string
-              _stripe_payment_intent_id?: string
-            }
-            Returns: Json
-          }
+      mark_order_paid_at_counter: {
+        Args: {
+          _order_id: string
+          _payment_method?: string
+          _staff_pin?: string
+          _stripe_payment_intent_id?: string
+        }
+        Returns: Json
+      }
       marketing_push_count_recent: {
         Args: {
           _customer_phone: string
@@ -5033,28 +5024,17 @@ export type Database = {
         Args: { _table_id: string }
         Returns: string
       }
-      register_native_push_subscription:
-        | {
-            Args: {
-              _customer_phone?: string
-              _fcm_token: string
-              _order_id?: string
-              _platform?: string
-              _store_id: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _customer_phone?: string
-              _device_locale?: string
-              _fcm_token: string
-              _order_id?: string
-              _platform?: string
-              _store_id: string
-            }
-            Returns: undefined
-          }
+      register_native_push_subscription: {
+        Args: {
+          _customer_phone?: string
+          _device_locale?: string
+          _fcm_token: string
+          _order_id?: string
+          _platform?: string
+          _store_id: string
+        }
+        Returns: undefined
+      }
       register_push_subscription:
         | {
             Args: {
