@@ -9,6 +9,8 @@ export VITE_IOS_TAP_TO_PAY_ENABLED=false
 
 npm run build
 npx cap sync ios
+cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
+bash "$ROOT/scripts/ios-patch-capacitor-config-appstore.sh"
 
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = app\.lovable\.[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;/g' "$PBX"
@@ -31,7 +33,9 @@ cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 </plist>
 ENTITLEMENTS
 
-cp "$ROOT/ios/App/CapApp-SPM/Package.appstore.swift" "$ROOT/ios/App/CapApp-SPM/Package.swift"
+echo "=== capacitor.config.json (App Store) ==="
+cat "$ROOT/ios/App/App/capacitor.config.json" || true
+echo ""
 
 SOUND_SRC="$ROOT/public/sounds/new-order-notification.mp3"
 SOUND_DST="$ROOT/ios/App/App/staff_order_alert.caf"
