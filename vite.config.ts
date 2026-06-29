@@ -42,13 +42,12 @@ const injectAppBuildId = () => ({
   },
 });
 
-/** Safari/PWA: boot diferido. iPhone nativo: script module directo (Capacitor). */
+/** Carrega a app através do boot shell em todos os ambientes. */
 const deferAppBoot = () => ({
   name: "defer-app-boot",
   transformIndexHtml: {
     order: "post" as const,
     handler(html: string) {
-      if (process.env.VITE_IOS_BUNDLE_WEB === "true") return html;
       const moduleRe = /<script type="module"(?: crossorigin)? src="([^"]+)"><\/script>/;
       const match = html.match(moduleRe);
       if (!match) return html;
@@ -56,20 +55,6 @@ const deferAppBoot = () => ({
       const src = match[1];
       const boot = `<script src="/snaporder-boot.js" data-app-src="${src}" defer></script>`;
       return html.replace(moduleRe, boot);
-    },
-  },
-});
-
-/** iPhone App Store: sem overlay boot-fallback (bloqueava o ecrã de idiomas). */
-const iosNativeIndex = () => ({
-  name: "ios-native-index",
-  transformIndexHtml: {
-    order: "post" as const,
-    handler(html: string) {
-      if (process.env.VITE_IOS_BUNDLE_WEB !== "true") return html;
-      return html
-        .replace(/\s*<div id="boot-fallback"[^>]*><\/div>\s*/g, "\n")
-        .replace(/#boot-fallback\{[^}]+\}\s*/g, "");
     },
   },
 });
@@ -111,7 +96,6 @@ function parsePublicEnvFile(filePath: string): Record<string, string> {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const iosBundleWeb = process.env.VITE_IOS_BUNDLE_WEB === "true";
   const stripePublicFile = parsePublicEnvFile(path.join(__dirname, "config/stripe.public.env"));
   const stripePublishableFromEnv =
     env.VITE_STRIPE_PUBLISHABLE_KEY ||
@@ -145,7 +129,6 @@ export default defineConfig(({ mode }) => {
     react(),
     injectAppBuildId(),
     deferAppBoot(),
-    iosNativeIndex(),
     emitVersionJson(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
@@ -167,59 +150,48 @@ export default defineConfig(({ mode }) => {
       "@tanstack/query-core",
     ],
   },
-  build: iosBundleWeb
-    ? {
-        // TestFlight/iPhone: empacota tudo num único entry para evitar
-        // falhas de carregamento de chunks locais (causa comum de ecrã branco).
-        modulePreload: false,
-        rollupOptions: {
-          output: {
-            inlineDynamicImports: true,
-          },
-        },
-      }
-    : {
-        modulePreload: false,
-        rollupOptions: {
-          output: {
-            /**
-             * Chunks isolados: cliente (cardápio/carrinho/checkout) vs interno
-             * (admin/painel/equipa/etc). Alterar um módulo interno NÃO invalida
-             * o bundle do cliente — o navegador continua a usar o chunk cliente
-             * cacheado, e o fluxo de venda fica protegido.
-             */
-            manualChunks(id: string) {
-              if (!id.includes("/src/")) return undefined;
+  build: {
+    modulePreload: false,
+    rollupOptions: {
+      output: {
+        /**
+         * Chunks isolados: cliente (cardápio/carrinho/checkout) vs interno
+         * (admin/painel/equipa/etc). Alterar um módulo interno NÃO invalida
+         * o bundle do cliente — o navegador continua a usar o chunk cliente
+         * cacheado, e o fluxo de venda fica protegido.
+         */
+        manualChunks(id: string) {
+          if (!id.includes("/src/")) return undefined;
 
-              if (id.includes("/src/lib/internalRoutes")) {
-                return "internal";
-              }
+          if (id.includes("/src/lib/internalRoutes")) {
+            return "internal";
+          }
 
-              // Área interna (painel, admin, equipa…)
-              if (
-                id.includes("/src/views/admin/") ||
-                id.includes("/src/views/panel/") ||
-                id.includes("/src/views/seller/") ||
-                id.includes("/src/views/delivery/") ||
-                id.includes("/src/components/admin/") ||
-                id.includes("/src/components/panel/") ||
-                id.includes("/src/components/seller/") ||
-                id.includes("/src/components/delivery/") ||
-                id.includes("/src/components/kitchen/") ||
-                id.includes("/src/components/staff/") ||
-                id.includes("/src/routes/internalRouteOutlet")
-              ) {
-                return "internal";
-              }
+          // Área interna (painel, admin, equipa…)
+          if (
+            id.includes("/src/views/admin/") ||
+            id.includes("/src/views/panel/") ||
+            id.includes("/src/views/seller/") ||
+            id.includes("/src/views/delivery/") ||
+            id.includes("/src/components/admin/") ||
+            id.includes("/src/components/panel/") ||
+            id.includes("/src/components/seller/") ||
+            id.includes("/src/components/delivery/") ||
+            id.includes("/src/components/kitchen/") ||
+            id.includes("/src/components/staff/") ||
+            id.includes("/src/routes/internalRouteOutlet")
+          ) {
+            return "internal";
+          }
 
-              if (id.includes("/src/customer/")) {
-                return "customer";
-              }
+          if (id.includes("/src/customer/")) {
+            return "customer";
+          }
 
-              return undefined;
-            },
-          },
+          return undefined;
         },
       },
+    },
+  },
 };
 });
