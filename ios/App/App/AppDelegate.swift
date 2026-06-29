@@ -10,14 +10,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
-    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
-        guard let bridgeViewController = self.window?.rootViewController as? CAPBridgeViewController else {
-            return .allButUpsideDown
-        }
-
-        return UIInterfaceOrientationMask(rawValue: bridgeViewController.supportedInterfaceOrientations.rawValue)
-    }
-
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         ApnsTokenStore.shared.handle(deviceToken: deviceToken)
     }
