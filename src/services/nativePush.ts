@@ -628,6 +628,19 @@ export async function requestNativePushPermissionOnly(): Promise<{
   return requestNativePermission();
 }
 
+async function resolveNativePushPlatform(): Promise<"ios" | "android" | null> {
+  if (!(await isNativePushAvailable())) return null;
+  const bridge = await getCapacitorBridgeAvailability();
+  if (bridge?.platform === "ios" || bridge?.platform === "android") {
+    return bridge.platform;
+  }
+  const platform = getCapacitorPlatformSync();
+  if (platform === "ios" || platform === "android") return platform;
+  if (isIosInjectedApp()) return "ios";
+  if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) return "android";
+  return null;
+}
+
 async function triggerRegisterWithRetries(platform: "ios" | "android"): Promise<void> {
   if (!(await getCapacitorBridgeAvailability())) {
     if (isIosInjectedApp()) {
@@ -674,18 +687,16 @@ export async function registerNativeStaffPush(
   reason?: string;
   token?: string;
 }> {
-  const { isNative, platform } = await getCapacitorAvailability();
+  const nativePlatform = await resolveNativePushPlatform();
   logNative("info", "registerNativeStaffPush iniciado", {
-    isNative,
-    platform,
+    isNative: Boolean(nativePlatform),
+    platform: nativePlatform ?? "web",
     forceRefresh: Boolean(opts?.forceRefresh),
   });
 
-  if (!isNative || platform === "web") {
+  if (!nativePlatform) {
     return { ok: false, reason: "not-native" };
   }
-
-  const nativePlatform = platform as "android" | "ios";
   await initNativePushBridge();
 
   try {
@@ -779,19 +790,17 @@ export async function registerNativeCustomerPush(
   token?: string;
 }> {
   const logContext = opts.logContext ?? (opts.orderId ? "order" : "customer_marketing");
-  const { isNative, platform } = await getCapacitorAvailability();
+  const nativePlatform = await resolveNativePushPlatform();
   logCustomerNative(logContext, "info", "registerNativeCustomerPush iniciado", {
-    isNative,
-    platform,
+    isNative: Boolean(nativePlatform),
+    platform: nativePlatform ?? "web",
     customerPhone: opts.customerPhone,
     orderId: opts.orderId,
   });
 
-  if (!isNative || platform === "web") {
+  if (!nativePlatform) {
     return { ok: false, reason: "not-native" };
   }
-
-  const nativePlatform = platform as "android" | "ios";
   await initNativePushBridge();
 
   try {

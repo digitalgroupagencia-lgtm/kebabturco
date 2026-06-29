@@ -7,6 +7,7 @@ import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
 
 export const STAFF_PUSH_TAG = "__staff__";
 export const STAFF_PUSH_ENABLED_KEY = "panel-staff-push-enabled";
+export const STAFF_PUSH_PROMPT_SESSION_KEY = "staff-push-prompt-shown";
 
 export {
   PUSH_HANDLER_SW_PATH,
@@ -29,6 +30,24 @@ export function setStaffPushEnabled(enabled: boolean) {
   } catch {
     /* ignore */
   }
+}
+
+export function markStaffPushPromptShown() {
+  try {
+    sessionStorage.setItem(STAFF_PUSH_PROMPT_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function shouldPromptStaffPush(): boolean {
+  try {
+    if (sessionStorage.getItem(STAFF_PUSH_PROMPT_SESSION_KEY)) return false;
+  } catch {
+    /* ignore */
+  }
+  if (isStaffPushEnabled()) return false;
+  return isStaffPushSupported();
 }
 
 export function isStaffWebPushSupported(): boolean {

@@ -15,6 +15,7 @@ import { SelectedTenantProvider } from "@/contexts/SelectedTenantContext";
 import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 import { StaffScreenHelpProvider } from "@/contexts/StaffScreenHelpContext";
 import StaffTopBarAlerts from "@/components/staff/StaffTopBarAlerts";
+import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
 type Props = {
@@ -81,6 +82,7 @@ const AdminLayout = ({ page: Page }: Props) => {
             </div>
             <AdminAssistant />
           </div>
+          <StaffPushPromptHost />
         </SidebarProvider>
         </StaffScreenHelpProvider>
       </AdminStoreProvider>

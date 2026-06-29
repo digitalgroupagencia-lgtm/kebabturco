@@ -3,7 +3,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import CustomerNotificationOptInDialog from "@/customer/components/CustomerNotificationOptInDialog";
 import {
-  isCustomerMarketingPushSupported,
+  isCustomerMarketingPushSupportedAsync,
   shouldPromptCustomerMarketingPush,
 } from "@/lib/customerMarketingPush";
 
@@ -20,11 +20,21 @@ const CustomerPushPromptHost = () => {
   useEffect(() => {
     if (loading || !activeStoreId || promptedRef.current) return;
     if (!PROMPT_SCREENS.has(screen)) return;
-    if (!isCustomerMarketingPushSupported()) return;
     if (!shouldPromptCustomerMarketingPush()) return;
-    promptedRef.current = true;
-    const timer = window.setTimeout(() => setOpen(true), 1200);
-    return () => window.clearTimeout(timer);
+
+    let timer = 0;
+    let cancelled = false;
+
+    void isCustomerMarketingPushSupportedAsync().then((supported) => {
+      if (cancelled || !supported || promptedRef.current) return;
+      promptedRef.current = true;
+      timer = window.setTimeout(() => setOpen(true), 1200);
+    });
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, [loading, activeStoreId, screen]);
 
   if (!activeStoreId) return null;
