@@ -394,8 +394,8 @@ export function usePanelOrders(storeId: string | undefined) {
           _estimated_ready_at: (patch.estimated_ready_at as string) ?? undefined,
           _delivery_confirmation_code: (patch.delivery_confirmation_code as string) ?? undefined,
         } as never);
-        if (!rpcRes.error && rpcRes.data) {
-          updated = rpcRes.data as PanelOrder;
+        if (!rpcRes.error && (rpcRes as { data?: unknown }).data) {
+          updated = (rpcRes as { data: unknown }).data as PanelOrder;
         } else {
           lastError = rpcRes.error ?? lastError;
           const directRes = await supabase
