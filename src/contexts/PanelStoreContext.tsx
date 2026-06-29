@@ -56,7 +56,9 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
     (async () => {
       if (roleLoading) return;
 
-      if (!roleData?.tenant_id && !roleData?.store_id) {
+      const isAdminMaster = roleData?.role === "admin_master";
+
+      if (!roleData?.tenant_id && !roleData?.store_id && !isAdminMaster) {
         if (active) {
           setStores([]);
           setSelectedStoreId(roleData?.store_id ?? null);
