@@ -1,4 +1,5 @@
 import React, { type ReactNode } from "react";
+import { dismissBootShell } from "@/lib/bootShell";
 
 type Props = {
   children: ReactNode;
@@ -40,6 +41,7 @@ export default class CustomerScreenErrorBoundary extends React.Component<Props, 
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(`[CustomerScreenErrorBoundary:${this.props.scope}]`, error.message, error.stack, info.componentStack);
+    dismissBootShell();
   }
 
   componentDidUpdate(prevProps: Props) {

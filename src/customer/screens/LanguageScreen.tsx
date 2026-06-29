@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
@@ -39,6 +39,7 @@ const LanguageScreen = () => {
   const { theme } = useTheme();
   const logoGesture = useStaffLogoGesture();
   const isDark = theme === "dark";
+  const [forceVisible, setForceVisible] = useState(false);
 
   const logo =
     (isDark && ((settings as any)?.logo_language_dark_url || (settings as any)?.logo_main_dark_url)) ||
@@ -47,10 +48,19 @@ const LanguageScreen = () => {
     "/apple-touch-icon.png";
   const brandName = settings?.company_name || "EL REY";
 
-  const langs = activeLangs.length > 0 ? activeLangs : [primaryLang];
+  const langs = langsReady && activeLangs.length > 0 ? activeLangs : ["es", "pt", "en", "fr"] as const;
   const titles = Array.from(new Set(langs.map((l) => TITLE_BY_LANG[l] || TITLE_BY_LANG.es)));
 
-  const screenReady = !storeLoading && langsReady && !brandingLoading;
+  const screenReady = forceVisible || (!storeLoading && langsReady && !brandingLoading);
+
+  useEffect(() => {
+    // O ecrã cliente nunca pode ficar preso atrás do boot branco do iOS.
+    const timer = window.setTimeout(() => {
+      setForceVisible(true);
+      dismissBootShell();
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (screenReady) dismissBootShell();

@@ -1,4 +1,5 @@
 import React, { type ReactNode } from "react";
+import { dismissBootShell } from "@/lib/bootShell";
 
 type Props = { children: ReactNode };
 
@@ -13,6 +14,7 @@ export default class TotemErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[TotemErrorBoundary]", error.name, error.message, error.stack, info.componentStack);
+    dismissBootShell();
   }
 
   render() {

@@ -1,4 +1,5 @@
 import React, { type ReactNode } from "react";
+import { dismissBootShell } from "@/lib/bootShell";
 
 type Props = { children: ReactNode };
 type State = { error: Error | null };
@@ -22,6 +23,7 @@ export default class CustomerAreaBoundary extends React.Component<Props, State> 
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[CustomerAreaBoundary]", error.message, error.stack, info.componentStack);
+    dismissBootShell();
     try {
       // Marca no localStorage para podermos auditar depois
       window.localStorage.setItem(

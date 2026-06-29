@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { startAndroidPrintListener } from "@/services/androidPrintListener";
-import { initNativePushBridge } from "@/services/nativePush";
 import { enableTabletKeepAwake } from "@/services/tabletKeepAwake";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -91,7 +90,6 @@ const App = () => {
   useEffect(() => {
     void startAndroidPrintListener();
     void enableTabletKeepAwake();
-    void initNativePushBridge();
   }, []);
 
   return (

@@ -45,13 +45,15 @@
   function isCapacitorNative() {
     try {
       var cap = window.Capacitor;
-      return !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+      if (cap && cap.isNativePlatform && cap.isNativePlatform()) return true;
+      return /KebabTurcoCapacitor/i.test(window.navigator && window.navigator.userAgent || "");
     } catch (e) {
       return false;
     }
   }
 
-  function shouldKeepSw(reg) {
+  function shouldKeepSw(reg, preservePush) {
+    if (!preservePush) return false;
     try {
       var url =
         (reg.active && reg.active.scriptURL) ||
@@ -64,14 +66,17 @@
     }
   }
 
-  function purgeCaches() {
+  function purgeCaches(preservePush) {
     var tasks = [];
+    var removed = { serviceWorkers: 0, caches: 0 };
     if ("serviceWorker" in navigator) {
       tasks.push(
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           return Promise.all(
             regs.map(function (r) {
-              return shouldKeepSw(r) ? Promise.resolve() : r.unregister();
+              if (shouldKeepSw(r, preservePush)) return Promise.resolve();
+              removed.serviceWorkers += 1;
+              return r.unregister();
             }),
           );
         }),
@@ -80,6 +85,7 @@
     if ("caches" in window) {
       tasks.push(
         caches.keys().then(function (keys) {
+          removed.caches = keys.length;
           return Promise.all(
             keys.map(function (k) {
               return caches.delete(k);
@@ -88,7 +94,25 @@
         }),
       );
     }
-    return Promise.all(tasks).catch(function () {});
+    return Promise.all(tasks).then(function () { return removed; }).catch(function () { return removed; });
+  }
+
+  function getBuildToken() {
+    try {
+      var build = document.querySelector('meta[name="app-build-id"]');
+      return build && build.getAttribute("content") || String(Date.now());
+    } catch (e) {
+      return String(Date.now());
+    }
+  }
+
+  function withBootCacheBust(src) {
+    try {
+      var token = getBuildToken();
+      return src + (src.indexOf("?") === -1 ? "?" : "&") + "boot=" + encodeURIComponent(token);
+    } catch (e) {
+      return src;
+    }
   }
 
   function scheduleBootTimeout(ms) {
@@ -120,7 +144,7 @@
 
     var script = document.createElement("script");
     script.type = "module";
-    script.src = appSrc;
+    script.src = withBootCacheBust(appSrc);
     script.onerror = function () {
       if (window.__SNAPORDER_BOOT_TIMEOUT__) {
         window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
@@ -141,10 +165,38 @@
     scheduleBootTimeout(bootTimeoutMs());
   }
 
-  if (isLovableEditorHost() || isCapacitorNative()) {
+  function loadAfterPurge(preservePush, timeoutMs, reloadAfterNativePurge) {
+    var loaded = false;
+    function once() {
+      if (loaded) return;
+      loaded = true;
+      loadApp();
+    }
+    window.setTimeout(once, timeoutMs || 2500);
+    purgeCaches(preservePush).then(function (removed) {
+      if (reloadAfterNativePurge && !loaded && (removed.serviceWorkers > 0 || removed.caches > 0)) {
+        try {
+          var key = "snaporder:native-cache-reloaded:" + getBuildToken();
+          if (sessionStorage.getItem(key) !== "1") {
+            loaded = true;
+            sessionStorage.setItem(key, "1");
+            window.location.reload();
+            return;
+          }
+        } catch (e) {
+          /* continua sem reload */
+        }
+      }
+      once();
+    }).catch(once);
+  }
+
+  if (isLovableEditorHost()) {
     loadApp();
+  } else if (isCapacitorNative()) {
+    // No IPA/TestFlight não pode existir Service Worker antigo do PWA a servir bundles/cache antigos.
+    loadAfterPurge(false, 8000, true);
   } else {
-    loadApp();
-    purgeCaches();
+    loadAfterPurge(true, 1200, false);
   }
 })();

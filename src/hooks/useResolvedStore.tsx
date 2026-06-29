@@ -276,7 +276,7 @@ export function ResolvedStoreProvider({ children }: { children: ReactNode }) {
           loading: false,
         });
       });
-    }, isLovableEditorHost(host) ? 2000 : 10000);
+    }, isLovableEditorHost(host) ? 1200 : 2200);
 
     (async () => {
       let tenant: TenantRow | null = null;
