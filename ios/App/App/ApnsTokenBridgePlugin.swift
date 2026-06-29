@@ -43,6 +43,8 @@ public class ApnsTokenBridgePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func getNotificationAuthorizationStatus(_ call: CAPPluginCall) {
-        call.resolve(["status": ApnsTokenStore.shared.authorizationStatusString()])
+        ApnsTokenStore.shared.authorizationStatusString { status in
+            call.resolve(["status": status])
+        }
     }
 }

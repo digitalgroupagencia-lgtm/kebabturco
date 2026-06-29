@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { startAndroidPrintListener } from "@/services/androidPrintListener";
-import { initNativePushBridge } from "@/services/nativePush";
 import { enableTabletKeepAwake } from "@/services/tabletKeepAwake";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -25,11 +24,13 @@ import StaffGoogleLoginRegistrar from "@/components/staff/StaffGoogleLoginRegist
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
-import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { StaffAuthRedirect, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
 import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
+const CatchAllResolver = lazy(() =>
+  import("@/routes/internalRouteOutlet.tsx").then((m) => ({ default: m.CatchAllResolver })),
+);
 
 export { LOVABLE_PREVIEW_PATHS } from "@/lib/navPaths.ts";
 
@@ -93,7 +94,6 @@ const App = () => {
   useEffect(() => {
     void startAndroidPrintListener();
     void enableTabletKeepAwake();
-    void initNativePushBridge();
   }, []);
 
   return (

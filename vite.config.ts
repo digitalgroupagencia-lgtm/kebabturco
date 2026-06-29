@@ -42,7 +42,7 @@ const injectAppBuildId = () => ({
   },
 });
 
-/** Só carrega a app DEPOIS de limpar service worker e caches (evita race no Safari). */
+/** Carrega a app através do boot shell em todos os ambientes. */
 const deferAppBoot = () => ({
   name: "defer-app-boot",
   transformIndexHtml: {
@@ -151,6 +151,7 @@ export default defineConfig(({ mode }) => {
     ],
   },
   build: {
+    modulePreload: false,
     rollupOptions: {
       output: {
         /**
@@ -162,7 +163,11 @@ export default defineConfig(({ mode }) => {
         manualChunks(id: string) {
           if (!id.includes("/src/")) return undefined;
 
-          // Área interna
+          if (id.includes("/src/lib/internalRoutes")) {
+            return "internal";
+          }
+
+          // Área interna (painel, admin, equipa…)
           if (
             id.includes("/src/views/admin/") ||
             id.includes("/src/views/panel/") ||
@@ -179,7 +184,6 @@ export default defineConfig(({ mode }) => {
             return "internal";
           }
 
-          // Área cliente (só módulos do totem — contextos partilhados ficam no chunk principal)
           if (id.includes("/src/customer/")) {
             return "customer";
           }

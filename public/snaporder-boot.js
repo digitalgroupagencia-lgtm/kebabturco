@@ -3,6 +3,30 @@
   var appSrc = bootScript && bootScript.getAttribute("data-app-src");
   if (!appSrc) return;
 
+  function buildTag() {
+    try {
+      var meta = document.querySelector('meta[name="app-build-id"]');
+      if (meta && meta.content) return meta.content;
+    } catch (e) {}
+    return String(Date.now());
+  }
+
+  function withCacheBust(src) {
+    var sep = src.indexOf("?") === -1 ? "?" : "&";
+    return src + sep + "v=" + encodeURIComponent(buildTag());
+  }
+
+  function showBootLoading() {
+    var el = document.getElementById("boot-fallback");
+    if (!el || el.dataset.loading === "1") return;
+    el.dataset.loading = "1";
+    el.innerHTML =
+      '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#fff;background:#5F0504">' +
+      '<p style="font-size:18px;font-weight:700;margin:0 0 12px">Kebab Turco</p>' +
+      '<p style="font-size:14px;opacity:0.85;margin:0">A abrir…</p>' +
+      "</div>";
+  }
+
   function showBootError(message) {
     var el = document.getElementById("boot-fallback");
     if (!el) return;
@@ -16,6 +40,31 @@
       "</div>";
     var btn = document.getElementById("boot-reload-btn");
     if (btn) btn.addEventListener("click", function () { window.location.reload(); });
+  }
+
+  function dismissBootFallback() {
+    var el = document.getElementById("boot-fallback");
+    if (!el || el.dataset.dismissed === "1") return;
+    el.dataset.dismissed = "1";
+    try {
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+      });
+    } catch (e) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+  }
+
+  function rootSeemsRendered() {
+    var root = document.getElementById("root");
+    if (!root) return false;
+    try {
+      return root.childNodes && root.childNodes.length > 0;
+    } catch (e) {
+      return false;
+    }
   }
 
   function isLovableEditorHost() {
@@ -51,27 +100,26 @@
     }
   }
 
-  function shouldKeepSw(reg) {
-    try {
-      var url =
-        (reg.active && reg.active.scriptURL) ||
-        (reg.installing && reg.installing.scriptURL) ||
-        (reg.waiting && reg.waiting.scriptURL) ||
-        "";
-      return url.indexOf("push-handler") !== -1;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function purgeCaches() {
+  function purgeCaches(opts) {
+    var options = opts || {};
+    var keepPushHandler = options.keepPushHandler === true;
     var tasks = [];
     if ("serviceWorker" in navigator) {
       tasks.push(
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           return Promise.all(
             regs.map(function (r) {
-              return shouldKeepSw(r) ? Promise.resolve() : r.unregister();
+              if (keepPushHandler) {
+                try {
+                  var url =
+                    (r.active && r.active.scriptURL) ||
+                    (r.installing && r.installing.scriptURL) ||
+                    (r.waiting && r.waiting.scriptURL) ||
+                    "";
+                  if (url.indexOf("push-handler") !== -1) return Promise.resolve();
+                } catch (e) {}
+              }
+              return r.unregister();
             }),
           );
         }),
@@ -91,19 +139,70 @@
     return Promise.all(tasks).catch(function () {});
   }
 
+  function bootShellVisible() {
+    var el = document.getElementById("boot-fallback");
+    return !!(el && el.dataset.dismissed !== "1" && el.parentNode);
+  }
+
   function scheduleBootTimeout(ms) {
     if (window.__SNAPORDER_BOOT_TIMEOUT__) {
       window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
     }
     window.__SNAPORDER_BOOT_TIMEOUT__ = window.setTimeout(function () {
-      if (!window.__SNAPORDER_APP_READY__) {
+      if (bootShellVisible()) {
         showBootError("A app está a demorar a abrir. Toque em Actualizar.");
       }
     }, ms);
   }
 
+  function watchAppReady() {
+    var tries = 0;
+    var maxTries = 240; // ~120s
+    function tick() {
+      if (window.__SNAPORDER_APP_READY__) {
+        if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+          window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+        }
+        dismissBootFallback();
+        return;
+      }
+      tries += 1;
+      if (tries < maxTries) {
+        window.setTimeout(tick, 500);
+      }
+    }
+    tick();
+  }
+
+  function watchRootRender() {
+    var tries = 0;
+    var maxTries = 120; // ~60s
+    function tick() {
+      if (window.__SNAPORDER_APP_READY__ || rootSeemsRendered()) {
+        if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+          window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+        }
+        dismissBootFallback();
+        return;
+      }
+      tries += 1;
+      if (tries < maxTries) {
+        window.setTimeout(tick, 500);
+      }
+    }
+    tick();
+  }
+
   function bootTimeoutMs() {
-    return isLovableEditorHost() ? 120000 : 30000;
+    if (isLovableEditorHost()) return 120000;
+    if (isCapacitorNative()) return 120000;
+    return 45000;
+  }
+
+  function renderTimeoutMs() {
+    if (isCapacitorNative()) return 90000;
+    if (isLovableEditorHost()) return 90000;
+    return 25000;
   }
 
   function loadApp() {
@@ -113,6 +212,7 @@
     }
 
     window.__SNAPORDER_MAIN__ = appSrc;
+    showBootLoading();
 
     if (isStandalone()) {
       document.documentElement.classList.add("pwa-standalone");
@@ -120,7 +220,7 @@
 
     var script = document.createElement("script");
     script.type = "module";
-    script.src = appSrc;
+    script.src = withCacheBust(appSrc);
     script.onerror = function () {
       if (window.__SNAPORDER_BOOT_TIMEOUT__) {
         window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
@@ -128,23 +228,35 @@
       showBootError("Não foi possível abrir o menu. Toque em Actualizar.");
     };
     script.onload = function () {
-      if (window.__SNAPORDER_APP_READY__) {
+      if (window.__SNAPORDER_APP_READY__ || rootSeemsRendered()) {
+        if (window.__SNAPORDER_BOOT_TIMEOUT__) {
+          window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
+        }
+        dismissBootFallback();
+        return;
+      }
+      if (!bootShellVisible()) {
         if (window.__SNAPORDER_BOOT_TIMEOUT__) {
           window.clearTimeout(window.__SNAPORDER_BOOT_TIMEOUT__);
         }
         return;
       }
-      scheduleBootTimeout(isLovableEditorHost() ? 90000 : 20000);
+      scheduleBootTimeout(renderTimeoutMs());
     };
     document.body.appendChild(script);
 
     scheduleBootTimeout(bootTimeoutMs());
+    watchAppReady();
+    watchRootRender();
   }
 
-  if (isLovableEditorHost() || isCapacitorNative()) {
+  if (isCapacitorNative()) {
+    // iOS TestFlight: limpa TODOS os SW/cache antigos antes de boot.
+    purgeCaches({ keepPushHandler: false }).finally(loadApp);
+  } else if (isLovableEditorHost()) {
     loadApp();
   } else {
     loadApp();
-    purgeCaches();
+    purgeCaches({ keepPushHandler: true });
   }
 })();

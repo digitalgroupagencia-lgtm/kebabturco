@@ -15,7 +15,6 @@ for dir in \
       continue
     fi
     if ! echo "$DECODED" | grep -q "ProvisionedDevices"; then
-      # App Store / distribution profiles não listam dispositivos
       if echo "$DECODED" | grep -qE "aps-environment|com.apple.developer.aps-environment"; then
         echo "✓ Perfil com push: $(basename "$p")"
         FOUND=1
@@ -27,7 +26,5 @@ done
 if [ "$FOUND" -ne 1 ]; then
   echo "ERRO: Perfil App Store sem notificações push para net.kebabturco.app."
   echo "      Isto faz a app abrir e fechar no iPhone."
-  echo "      Apple Developer → Identifiers → net.kebabturco.app → activar Push Notifications"
-  echo "      Depois: Perfis → recriar perfil App Store → Fetch profiles no Codemagic."
   exit 1
 fi

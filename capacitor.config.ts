@@ -11,7 +11,7 @@ const serverAllowNavigation = [
   "snaporder.digitalgroupsti.com",
 ];
 
-/** Só para testes locais; App Store/TestFlight usa kebabturco.net (como build 10). */
+/** iPhone App Store: menu embutido no pacote (arranque fiável no TestFlight). Android: site remoto. */
 const bundleWebInNativeApp = process.env.VITE_IOS_BUNDLE_WEB === "true";
 
 const config: CapacitorConfig = {
@@ -22,7 +22,6 @@ const config: CapacitorConfig = {
     ? {}
     : {
         server: {
-          // Tablet Android / dev: atualizações Lovable ao reabrir, sem rebuild do APK.
           url: "https://kebabturco.net",
           cleartext: true,
           androidScheme: "https",

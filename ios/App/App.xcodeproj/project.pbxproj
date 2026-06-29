@@ -12,6 +12,7 @@
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		A1B2C3D51FED79650016851F /* ApnsTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D61FED79650016851F /* ApnsTokenStore.swift */; };
 		A1B2C3D71FED79650016851F /* ApnsTokenBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D81FED79650016851F /* ApnsTokenBridgePlugin.swift */; };
+		S001SD011FED79650016851F /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = S001SD021FED79650016851F /* SceneDelegate.swift */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
@@ -28,6 +29,7 @@
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D61FED79650016851F /* ApnsTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApnsTokenStore.swift; sourceTree = "<group>"; };
 		A1B2C3D81FED79650016851F /* ApnsTokenBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApnsTokenBridgePlugin.swift; sourceTree = "<group>"; };
+		S001SD021FED79650016851F /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -74,6 +76,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				A1B2C3D61FED79650016851F /* ApnsTokenStore.swift */,
 				A1B2C3D81FED79650016851F /* ApnsTokenBridgePlugin.swift */,
+				S001SD021FED79650016851F /* SceneDelegate.swift */,
 				A1B2C3DA1FED79650016851F /* staff_order_alert.caf */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -96,6 +99,7 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				W001CP011FED79650016851F /* Copy Capacitor Web Assets */,
 			);
 			buildRules = (
 			);
@@ -152,7 +156,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
-				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
@@ -164,6 +167,25 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		W001CP011FED79650016851F /* Copy Capacitor Web Assets */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Capacitor Web Assets";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/public/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nWEB_SRC=\"${PROJECT_DIR}/App/public\"\nWEB_DST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/public\"\nif [ ! -f \"${WEB_SRC}/index.html\" ]; then\n  echo \"ERRO: falta ${WEB_SRC}/index.html\"\n  exit 1\nfi\nrm -rf \"${WEB_DST}\"\nditto \"${WEB_SRC}\" \"${WEB_DST}\"\necho \"✓ Menu embutido copiado para o pacote ($(du -sk \"${WEB_DST}\" | awk '{print $1}')KB)\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		504EC3001FED79650016851F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -172,6 +194,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A1B2C3D51FED79650016851F /* ApnsTokenStore.swift in Sources */,
 				A1B2C3D71FED79650016851F /* ApnsTokenBridgePlugin.swift in Sources */,
+				S001SD011FED79650016851F /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,7 +337,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 4QW32SBR7H;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -338,7 +361,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGN_ENTITLEMENTS = App/App.Release.entitlements;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 4QW32SBR7H;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;

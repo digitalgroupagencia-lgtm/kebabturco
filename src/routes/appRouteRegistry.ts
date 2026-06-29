@@ -2,8 +2,10 @@
  * Lazy imports das páginas, sem `<Route path>` (scanner Lovable lê App.tsx).
  */
 import { lazy } from "react";
+import CustomerIndex from "@/customer/Index.tsx";
 
-export const Index = lazy(() => import("@/customer/Index.tsx"));
+// Arranque do cliente sem lazy para reduzir risco de ecrã branco no iPhone.
+export const Index = CustomerIndex;
 export const StaffAuthRedirect = lazy(() => import("@/pages/StaffAuthRedirect.tsx"));
 export const StaffLogin = lazy(() => import("@/components/staff/StaffEmailLoginScreen.tsx"));
 export const NotFound = lazy(() => import("@/pages/NotFound.tsx"));

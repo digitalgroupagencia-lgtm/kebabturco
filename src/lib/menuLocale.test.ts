@@ -24,7 +24,7 @@ describe("menuLocale", () => {
 
   it("collects product and category fields from menu catalog", () => {
     const fields = collectMenuCatalogFields(
-      [{ name: { es: "Kebabs" } }],
+      [{ id: "c1", name: { es: "Kebabs" }, image: "", icon: "" } as never],
       [
         {
           id: "p1",

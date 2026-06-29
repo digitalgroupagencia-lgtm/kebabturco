@@ -117,7 +117,7 @@ export async function updateMarketingCampaign(
   campaignId: string,
   patch: Partial<MarketingCampaignRow>,
 ): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase.from("marketing_campaigns").update(patch).eq("id", campaignId);
+  const { error } = await supabase.from("marketing_campaigns").update(patch as never).eq("id", campaignId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
@@ -199,7 +199,7 @@ export async function sendCampaignTestToTeam(opts: {
     testSendTeam?: boolean;
   };
   return {
-    ok: Boolean(payload.testSendTeam ? (payload.sent ?? 0) > 0 : payload.ok),
+    ok: Boolean((payload as { testSendTeam?: boolean }).testSendTeam ? (payload.sent ?? 0) > 0 : payload.ok),
     sent: payload.sent,
     title: payload.title,
     body: payload.body,

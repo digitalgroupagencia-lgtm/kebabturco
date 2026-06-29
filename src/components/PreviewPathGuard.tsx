@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { fixBrokenEditorLocation, isBrokenEditorPath, isReservedAppPath } from "@/lib/appPaths";
 import { LOVABLE_WILDCARD_HINT } from "@/lib/routeMap";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
-import { nav, resolveRoute } from "@/lib/navPaths.ts";
+import { nav } from "@/lib/navPaths.ts";
 import { legacyBareSegmentTarget } from "@/lib/panelAccess";
 import {
   isLovableEditorPreview,
@@ -92,11 +92,13 @@ export default function PreviewPathGuard() {
         navigate(legacy, { replace: true });
         return;
       }
-      const sellerTarget = nav.seller(parts[0]);
-      if (resolveRoute(sellerTarget)) {
-        navigate(sellerTarget, { replace: true });
-        return;
-      }
+      void import("@/lib/internalRoutes.ts").then(({ resolveRoute }) => {
+        const sellerTarget = nav.seller(parts[0]);
+        if (resolveRoute(sellerTarget)) {
+          navigate(sellerTarget, { replace: true });
+        }
+      });
+      return;
     }
 
     if (parts.length === 1 && !isReservedAppPath(parts[0])) {

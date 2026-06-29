@@ -46,6 +46,15 @@ function adminStorageKey(tenantId: string) {
   return `kebab-admin-store:${tenantId}`;
 }
 
+async function resolveKebabTenantId(): Promise<string | null> {
+  const { data: t } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("slug", DEFAULT_TENANT_SLUG)
+    .maybeSingle();
+  return t?.id ?? DEFAULT_TENANT_ID;
+}
+
 async function resolveTenantIdForPanel(
   selectedTenantId: string | null | undefined,
   roleTenantId: string | null | undefined,
@@ -53,7 +62,7 @@ async function resolveTenantIdForPanel(
 ): Promise<string | null> {
   if (selectedTenantId) return selectedTenantId;
   if (roleTenantId) return roleTenantId;
-  if (role === "admin_master") return DEFAULT_TENANT_ID;
+  if (role === "admin_master") return resolveKebabTenantId();
 
   if (typeof window !== "undefined") {
     const host = normalizeHostname(window.location.hostname);
@@ -69,22 +78,12 @@ async function resolveTenantIdForPanel(
       if (byDomain?.id) return byDomain.id;
 
       if (isDefaultKebabContextHost(host)) {
-        const { data: t } = await supabase
-          .from("tenants")
-          .select("id")
-          .eq("slug", DEFAULT_TENANT_SLUG)
-          .maybeSingle();
-        if (t?.id) return t.id;
+        return resolveKebabTenantId();
       }
     }
   }
 
-  const { data: t } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("slug", DEFAULT_TENANT_SLUG)
-    .maybeSingle();
-  return t?.id ?? null;
+  return resolveKebabTenantId();
 }
 
 function resolveStoreId(
@@ -106,12 +105,7 @@ function resolveStoreId(
   const fallback = options[0]?.id ?? null;
 
   if (canSwitchStore) {
-    return (
-      pick(panelSaved) ??
-      pick(adminSaved) ??
-      pick(lockedStore) ??
-      fallback
-    );
+    return pick(panelSaved) ?? pick(adminSaved) ?? pick(lockedStore) ?? fallback;
   }
 
   return pick(lockedStore) ?? fallback;
@@ -123,6 +117,7 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
   const { tenant: selectedTenant, loading: tenantLoading } = useSelectedTenant();
   const [stores, setStores] = useState<PanelStoreOption[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const canSwitchStore = Boolean(
@@ -156,6 +151,7 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
         if (active) {
           setStores([]);
           setSelectedStoreId(roleData?.store_id ?? null);
+          setResolvedTenantId(null);
           setLoading(false);
         }
         return;
@@ -170,6 +166,7 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
         address: s.address,
       }));
       setStores(options);
+      setResolvedTenantId(tenantId);
 
       const resolved = resolveStoreId(
         options,
@@ -199,12 +196,12 @@ export function PanelStoreProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       if (!canSwitchStore) return;
       setSelectedStoreId(id);
-      const tenantId = selectedTenant?.id ?? roleData?.tenant_id;
+      const tenantId = resolvedTenantId ?? selectedTenant?.id ?? roleData?.tenant_id;
       if (tenantId && typeof window !== "undefined") {
         window.localStorage.setItem(panelStorageKey(tenantId), id);
       }
     },
-    [canSwitchStore, selectedTenant?.id, roleData?.tenant_id],
+    [canSwitchStore, resolvedTenantId, selectedTenant?.id, roleData?.tenant_id],
   );
 
   const value = useMemo<PanelStoreCtx>(

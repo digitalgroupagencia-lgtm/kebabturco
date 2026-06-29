@@ -6,62 +6,20 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-type PrefsApi = {
-  get: (opts: { key: string }) => Promise<{ value: string | null }>;
-  set: (opts: { key: string; value: string }) => Promise<void>;
-  remove: (opts: { key: string }) => Promise<void>;
-};
-
-let prefsApi: PrefsApi | null | undefined;
-
-async function getPreferencesApi(): Promise<PrefsApi | null> {
-  if (!Capacitor.isNativePlatform()) return null;
-  if (prefsApi !== undefined) return prefsApi;
-  try {
-    const mod = await import('@capacitor/preferences');
-    prefsApi = mod.Preferences;
-    return prefsApi;
-  } catch {
-    prefsApi = null;
-    return null;
-  }
-}
-
-/**
- * Storage híbrido: no telemóvel tenta guardar na memória segura do sistema;
- * se o plugin nativo não existir (versão antiga da loja), usa só memória normal.
- */
+/** Storage local simples para evitar falha de plugin no arranque iOS. */
 const nativeAuthStorage = {
-  getItem: async (key: string) => {
+  getItem: (key: string) => {
     if (typeof localStorage === "undefined") return null;
-    const prefs = await getPreferencesApi();
-    if (prefs) {
-      try {
-        const { value } = await prefs.get({ key });
-        if (value) {
-          try { localStorage.setItem(key, value); } catch { /* noop */ }
-          return value;
-        }
-      } catch { /* noop */ }
-    }
-    return localStorage.getItem(key);
+    try { return localStorage.getItem(key); } catch { return null; }
   },
-  setItem: async (key: string, value: string) => {
+  setItem: (key: string, value: string) => {
     if (typeof localStorage !== "undefined") {
       try { localStorage.setItem(key, value); } catch { /* noop */ }
     }
-    const prefs = await getPreferencesApi();
-    if (prefs) {
-      try { await prefs.set({ key, value }); } catch { /* noop */ }
-    }
   },
-  removeItem: async (key: string) => {
+  removeItem: (key: string) => {
     if (typeof localStorage !== "undefined") {
       try { localStorage.removeItem(key); } catch { /* noop */ }
-    }
-    const prefs = await getPreferencesApi();
-    if (prefs) {
-      try { await prefs.remove({ key }); } catch { /* noop */ }
     }
   },
 };
@@ -78,15 +36,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 /** Hidrata sessão no arranque (não bloqueia se falhar). */
 export async function hydrateAuthStorageBeforeBoot(): Promise<void> {
-  if (!Capacitor.isNativePlatform() || typeof localStorage === "undefined") return;
-  const prefs = await getPreferencesApi();
-  if (!prefs) return;
-  try {
-    const { value } = await prefs.get({ key: "kebabturco-auth" });
-    if (value && !localStorage.getItem("kebabturco-auth")) {
-      localStorage.setItem("kebabturco-auth", value);
-    }
-  } catch {
-    /* ignore */
-  }
+  return;
 }
