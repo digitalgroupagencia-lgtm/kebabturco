@@ -51,7 +51,7 @@ export async function createCouponFromSuggestion(
   };
 
   if (existing) {
-    const { error } = await supabase.from("coupons").update(row).eq("id", existing.id);
+    const { error } = await supabase.from("coupons").update(row as never).eq("id", existing.id);
     if (error) return { ok: false, error: error.message };
     return { ok: true, couponId: existing.id };
   }
