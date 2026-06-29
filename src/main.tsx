@@ -14,7 +14,9 @@ if (typeof window !== "undefined") {
 
 startStripeDebugOverlayGuard();
 dismissNativeIOSMediaPlayer();
-void initNativePushBridge();
+if (import.meta.env.VITE_IOS_DIAGNOSTIC_NO_PUSH !== "true") {
+  void initNativePushBridge();
+}
 
 if (isStaffAppPath()) {
   applyStaffAppChrome();
