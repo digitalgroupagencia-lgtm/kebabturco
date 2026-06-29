@@ -12,9 +12,13 @@ if [ ! -f "$INDEX" ]; then
   exit 1
 fi
 
-if ! grep -q 'snaporder-boot.js' "$INDEX"; then
-  echo "ERRO: index.html sem snaporder-boot.js no projeto iOS."
+if ! grep -q 'snaporder-boot.js' "$INDEX" && ! grep -qE 'type="module"[^>]+src="/assets/index-' "$INDEX"; then
+  echo "ERRO: index.html sem entrada de arranque (snaporder-boot ou module directo)."
   exit 1
+fi
+
+if grep -qE 'type="module"[^>]+src="/assets/index-' "$INDEX"; then
+  echo "✓ arranque Capacitor directo (sem snaporder-boot)"
 fi
 
 ASSET_COUNT="$(find "$PUBLIC/assets" -name '*.js' 2>/dev/null | wc -l | tr -d ' ')"

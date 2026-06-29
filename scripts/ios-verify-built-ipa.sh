@@ -56,8 +56,8 @@ if [ ! -f "$INDEX" ]; then
   exit 1
 fi
 
-if ! grep -q 'snaporder-boot.js' "$INDEX"; then
-  echo "ERRO: index.html sem snaporder-boot.js."
+if ! grep -q 'snaporder-boot.js' "$INDEX" && ! grep -qE 'type="module"[^>]+src="/assets/index-' "$INDEX"; then
+  echo "ERRO: index.html sem entrada de arranque válida."
   exit 1
 fi
 

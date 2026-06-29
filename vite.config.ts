@@ -42,12 +42,13 @@ const injectAppBuildId = () => ({
   },
 });
 
-/** Só carrega a app DEPOIS de limpar service worker e caches (evita race no Safari). */
+/** Safari/PWA: boot diferido. iPhone nativo: script module directo (Capacitor). */
 const deferAppBoot = () => ({
   name: "defer-app-boot",
   transformIndexHtml: {
     order: "post" as const,
     handler(html: string) {
+      if (process.env.VITE_IOS_BUNDLE_WEB === "true") return html;
       const moduleRe = /<script type="module"(?: crossorigin)? src="([^"]+)"><\/script>/;
       const match = html.match(moduleRe);
       if (!match) return html;
@@ -55,6 +56,20 @@ const deferAppBoot = () => ({
       const src = match[1];
       const boot = `<script src="/snaporder-boot.js" data-app-src="${src}" defer></script>`;
       return html.replace(moduleRe, boot);
+    },
+  },
+});
+
+/** iPhone App Store: sem overlay boot-fallback (bloqueava o ecrã de idiomas). */
+const iosNativeIndex = () => ({
+  name: "ios-native-index",
+  transformIndexHtml: {
+    order: "post" as const,
+    handler(html: string) {
+      if (process.env.VITE_IOS_BUNDLE_WEB !== "true") return html;
+      return html
+        .replace(/\s*<div id="boot-fallback"[^>]*><\/div>\s*/g, "\n")
+        .replace(/#boot-fallback\{[^}]+\}\s*/g, "");
     },
   },
 });
@@ -96,6 +111,7 @@ function parsePublicEnvFile(filePath: string): Record<string, string> {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const iosBundleWeb = process.env.VITE_IOS_BUNDLE_WEB === "true";
   const stripePublicFile = parsePublicEnvFile(path.join(__dirname, "config/stripe.public.env"));
   const stripePublishableFromEnv =
     env.VITE_STRIPE_PUBLISHABLE_KEY ||
@@ -129,6 +145,7 @@ export default defineConfig(({ mode }) => {
     react(),
     injectAppBuildId(),
     deferAppBoot(),
+    iosNativeIndex(),
     emitVersionJson(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
@@ -151,7 +168,7 @@ export default defineConfig(({ mode }) => {
     ],
   },
   build: {
-    modulePreload: false,
+    modulePreload: iosBundleWeb ? undefined : false,
     rollupOptions: {
       output: {
         /**
