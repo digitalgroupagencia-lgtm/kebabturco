@@ -26,7 +26,7 @@ import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { CatchAllResolver } from "@/routes/internalRouteOutlet.tsx";
 import { StaffAuthRedirect, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
-import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx";
+
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
 
