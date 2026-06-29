@@ -11,11 +11,9 @@ export const LOVABLE_PREVIEW_SEARCH = `preview=1&tenant=${DEFAULT_TENANT_SLUG}&s
 export function shouldOpenStorefrontInLovablePreview(pathname: string): boolean {
   const p = pathname.replace(/\/+$/, "") || "/";
   if (p === "/") return false;
-  // Rotas públicas/login do preview — manter
-  if (/^\/(staff|auth|install|recibos|ligar-conta)(\/|$)/.test(p)) return false;
-  // Rotas internas (panel/admin/delivery/seller/cashier) exigem login → no editor Lovable
-  // redireccionar para a storefront em vez de mostrar ecrã de login em branco.
-  return true;
+  // Manter todas as rotas internas/login acessíveis no preview do editor;
+  // o admin_master precisa de poder voltar para /admin a partir da storefront.
+  return false;
 }
 
 export function lovableStorefrontLocation(): { pathname: string; search: string } {
