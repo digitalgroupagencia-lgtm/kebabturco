@@ -153,8 +153,9 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode; storeId?: s
     const emergencyReady = window.setTimeout(() => setLoading(false), 2200);
     load();
     let bumpTimer: ReturnType<typeof setTimeout> | null = null;
+    const topic = `company_settings:${storeId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`company_settings:${storeId}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "company_settings", filter: `store_id=eq.${storeId}` },
