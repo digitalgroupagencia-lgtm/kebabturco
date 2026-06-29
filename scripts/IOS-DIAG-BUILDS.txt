@@ -1,0 +1,14 @@
+# Builds de diagnóstico — crash TestFlight (abre e fecha)
+# Testar UMA de cada vez no iPhone. Apagar app antiga antes de instalar.
+
+| Build | Branch            | Commit     | O que muda |
+|-------|-------------------|------------|------------|
+| A     | ios/diag-build-a  | 02288742   | Baseline última que abriu (~build 47). Sem alterações novas. |
+| B     | ios/diag-build-b  | (ver git)  | 4 plugins Capacitor (sem ApnsTokenBridge na lista). diagnosticBuild=B |
+| C     | ios/diag-build-c  | (ver git)  | B + sem push no arranque (VITE_IOS_DIAGNOSTIC_NO_PUSH). diagnosticBuild=C |
+| D     | ios/diag-build-d  | (ver git)  | C + logs os_log no AppDelegate (filtro Consola: subsystem net.kebabturco.app). diagnosticBuild=D |
+
+Codemagic: workflow «Kebab Turco — iPhone App Store», escolher a branch acima.
+Após instalar: bash scripts/audit-ios-ipa.sh App.ipa  (ou extrair do artefacto)
+
+Ordem: A → B → C → D. Parar na primeira que ABRIR.

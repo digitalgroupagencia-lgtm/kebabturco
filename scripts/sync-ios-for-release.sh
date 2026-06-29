@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 export VITE_IOS_TAP_TO_PAY_ENABLED=false
-export IOS_DIAG_BUILD="${IOS_DIAG_BUILD:-C}"
+export IOS_DIAG_BUILD="${IOS_DIAG_BUILD:-D}"
 export VITE_IOS_DIAGNOSTIC_NO_PUSH=true
 
 echo "=== Build diagnóstico iOS: ${IOS_DIAG_BUILD} (sem push no arranque) ==="
