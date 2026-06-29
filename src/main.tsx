@@ -7,6 +7,10 @@ import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
 import { initGoogleAnalytics } from "./lib/googleAnalytics";
+import { markCapacitorNativeRuntime } from "./lib/capacitorRuntime";
+import { hydrateAuthStorageBeforeBoot } from "./integrations/supabase/authStorage";
+
+markCapacitorNativeRuntime();
 
 if (typeof window !== "undefined") {
   window.__SNAPORDER_APP_READY__ = true;
@@ -15,12 +19,6 @@ if (typeof window !== "undefined") {
 
 startStripeDebugOverlayGuard();
 dismissNativeIOSMediaPlayer();
-
-if (isStaffAppPath()) {
-  applyStaffAppChrome();
-} else {
-  applyBrowserChromeColor();
-}
 
 if (typeof window !== "undefined") {
   const markStandalone = () => {
@@ -54,13 +52,30 @@ const rootEl = document.getElementById("root");
 if (!rootEl) {
   showBootError("Página incompleta. Tente novamente.");
 } else {
-  try {
-    createRoot(rootEl).render(<App />);
-    if (isStaffAppPath()) {
-      dismissBootShell();
+  void hydrateAuthStorageBeforeBoot().then(async () => {
+    try {
+      const { initNativePushBridge, isNativePushAvailable } = await import("./services/nativePush");
+      if (await isNativePushAvailable()) {
+        void initNativePushBridge();
+      }
+    } catch {
+      /* ignore */
     }
-  } catch (error) {
-    console.error("[boot]", error);
-    showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
-  }
+
+    if (isStaffAppPath()) {
+      applyStaffAppChrome();
+    } else {
+      applyBrowserChromeColor();
+    }
+
+    try {
+      createRoot(rootEl).render(<App />);
+      if (isStaffAppPath()) {
+        dismissBootShell();
+      }
+    } catch (error) {
+      console.error("[boot]", error);
+      showBootError("Erro ao iniciar. Toque em Actualizar ou limpe o histórico do Safari.");
+    }
+  });
 }

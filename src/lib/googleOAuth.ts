@@ -22,11 +22,16 @@ export async function signInWithGoogleOAuth(params: {
   const { redirectUri, lang = "pt", staffFlow = false } = params;
   if (staffFlow) markStaffGoogleLoginIntent();
 
-  if (useSupabaseGoogleOAuth()) {
+  // Equipa: sempre Supabase OAuth (evita oauth.lovable.app / State verification failed).
+  const redirectTo = staffFlow
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://kebabturco.net"}/staff`
+    : redirectUri;
+
+  if (staffFlow || useSupabaseGoogleOAuth()) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectUri,
+        redirectTo,
         queryParams: { hl: googleLangParam(lang) },
       },
     });

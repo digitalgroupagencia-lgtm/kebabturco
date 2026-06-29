@@ -6,14 +6,11 @@ import { Label } from "@/components/ui/label";
 import { useStaffT } from "@/hooks/useStaffT";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import { staffAccessPinHint, validateStaffAccessPin } from "@/lib/staffAccessPin";
-import {
-  fetchSellerSetupStatus,
-  saveMyStaffAccessPin,
-  saveSellerOnboarding,
-  type SellerSetupStatus,
-} from "@/services/sellerSetupService";
+import { fetchSellerSetupStatus, saveMyStaffAccessPin, saveSellerOnboarding, type SellerSetupStatus } from "@/services/sellerSetupService";
 import { fetchMyStaffProfile } from "@/services/staffProfile";
 import { toast } from "sonner";
+
+const ONBOARDING_READY_KEY = "kebab-seller-onboarding-ready";
 
 type Props = {
   userId: string;
@@ -23,8 +20,22 @@ type Props = {
 export default function SellerOnboardingGate({ userId, children }: Props) {
   const { t, lang } = useStaffT();
   const uiLang = lang === "en" ? "es" : lang;
-  const [checking, setChecking] = useState(true);
-  const [setup, setSetup] = useState<SellerSetupStatus | null>(null);
+  const [checking, setChecking] = useState(() => {
+    try {
+      return sessionStorage.getItem(ONBOARDING_READY_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  });
+  const [setup, setSetup] = useState<SellerSetupStatus | null>(() => {
+    try {
+      return sessionStorage.getItem(ONBOARDING_READY_KEY) === "1"
+        ? { profileComplete: true, hasPin: true, ready: true }
+        : null;
+    } catch {
+      return null;
+    }
+  });
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [pin, setPin] = useState("");
@@ -36,6 +47,14 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
 
   useEffect(() => {
     let mounted = true;
+    try {
+      if (sessionStorage.getItem(ONBOARDING_READY_KEY) === "1") {
+        setChecking(false);
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
     void (async () => {
       setChecking(true);
       try {
@@ -47,6 +66,13 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
         setSetup(status);
         setFullName(profile?.full_name?.trim() || "");
         setBirthDate(profile?.birth_date || "");
+        if (status.ready) {
+          try {
+            sessionStorage.setItem(ONBOARDING_READY_KEY, "1");
+          } catch {
+            /* ignore */
+          }
+        }
       } catch {
         if (mounted) setSetup({ profileComplete: false, hasPin: false, ready: false });
       } finally {
@@ -86,6 +112,11 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
         });
       }
       toast.success(t("seller.setup.done"));
+      try {
+        sessionStorage.setItem(ONBOARDING_READY_KEY, "1");
+      } catch {
+        /* ignore */
+      }
       setSetup({ profileComplete: true, hasPin: true, ready: true });
     } catch (e) {
       toast.error(translateAppErrorFromException(e, uiLang));

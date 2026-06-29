@@ -4,6 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { ApnsTokenBridge } from "@/lib/apnsTokenBridge";
+import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
 import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { pushLog, type PushLogContext } from "@/lib/push/pushLogger";
 import { navigateCustomerFromPushUrl } from "@/lib/customerPushDeepLink";
@@ -59,6 +60,11 @@ function logNative(
 
 function getCapacitorAvailabilitySync(): NativeAvailability | null {
   if (typeof window === "undefined") return null;
+  if (isCapacitorNativeSync()) {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const platform = (/Android/i.test(ua) ? "android" : "ios") as "android" | "ios";
+    return { isNative: true, platform };
+  }
   const cap = (window as unknown as {
     Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
   }).Capacitor;

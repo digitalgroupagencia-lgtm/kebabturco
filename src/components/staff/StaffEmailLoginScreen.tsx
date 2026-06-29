@@ -258,7 +258,7 @@ const StaffEmailLoginScreen = () => {
       try {
         if (nextParam) sessionStorage.setItem("kebab-staff-google-next", nextParam);
       } catch { /* ignore */ }
-      const redirectUri = `${window.location.origin}/`;
+      const redirectUri = `${window.location.origin}/staff`;
       await signInStaffWithGoogle({ redirectUri, lang });
     } catch (e) {
       setError(e instanceof Error ? e.message : copy.googleError);

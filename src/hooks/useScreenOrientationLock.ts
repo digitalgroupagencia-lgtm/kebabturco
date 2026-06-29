@@ -5,8 +5,9 @@ import {
   isLandscapeLockedPath,
   isPortraitLockedPath,
   isStaffWideLayoutPath,
-  isCoarseTouchDevice,
 } from "@/lib/orientationPolicy";
+import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
+import { setNativeOrientation } from "@/services/nativeOrientation";
 
 type RotateMode = "none" | "fp";
 
@@ -22,12 +23,11 @@ function clearRotateClasses() {
 function resolveRotateMode(
   portraitLock: boolean,
   landscapeLock: boolean,
-  touch: boolean,
   w: number,
   h: number,
 ): RotateMode {
-  if (landscapeLock && touch && h > w) return "fp";
-  if (portraitLock && touch && w > h && w >= 600) return "fp";
+  if (landscapeLock && h > w) return "fp";
+  if (portraitLock && w > h && w >= 600) return "fp";
   return "none";
 }
 
@@ -52,7 +52,6 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
   useEffect(() => {
     const html = document.documentElement;
     const inEditor = isLovableEditorPreview();
-    const touch = isCoarseTouchDevice();
 
     if (isStaffWideLayoutPath(pathname)) {
       html.classList.add("staff-landscape-layout");
@@ -71,6 +70,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       } catch {
         /* noop */
       }
+      void setNativeOrientation("unspecified");
       cleanupRotate();
       return () => {
         html.classList.remove("staff-landscape-layout");
@@ -87,6 +87,9 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     }
 
     const lockMode = landscapeLock ? "landscape" : "portrait";
+    if (isCapacitorNativeSync()) {
+      void setNativeOrientation(lockMode);
+    }
     try {
     const orientation = screen.orientation as ScreenOrientation & {
       lock?: (orientation: string) => Promise<void>;
@@ -104,7 +107,7 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     const apply = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const nextMode = resolveRotateMode(portraitLock, landscapeLock, touch, w, h);
+      const nextMode = resolveRotateMode(portraitLock, landscapeLock, w, h);
 
       if (nextMode === activeModeRef.current) return;
 

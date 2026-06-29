@@ -37,9 +37,10 @@ import {
   type ServerVapidDiagnostics,
 } from "@/lib/push/pushTestService";
 import { getLocalDevicePushStatus, type LocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
-import { isNativePushAvailable, getNativePushRuntimeDiagnostics } from "@/services/nativePush";
+import { isNativePushAvailable, getNativePushRuntimeDiagnostics, isNativePushAvailableSync } from "@/services/nativePush";
 import type { NativePushRuntimeDiagnostics } from "@/services/nativePush";
 import { getStaffPushClientMode } from "@/lib/staffPush";
+import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 import type { DiagnosticLogEntry } from "@/lib/diagnostics/createDiagnosticLogger";
@@ -80,7 +81,7 @@ export default function PushDiagnosticPanel({ embedded, showStoreSwitcher = true
 
   const refreshProbe = useCallback(async () => {
     setRefreshing(true);
-    const native = await isNativePushAvailable();
+    const native = isCapacitorNativeSync() || isNativePushAvailableSync() || (await isNativePushAvailable());
     setIsNativeApp(native);
     setClientMode(await getStaffPushClientMode());
     if (native) {

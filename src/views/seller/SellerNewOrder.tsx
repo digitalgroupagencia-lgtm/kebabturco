@@ -3,21 +3,16 @@
  * `SellerModeProvider` faz com que o PaymentScreen substitua o checkout
  * por um form de registo de pedido (sem Stripe).
  */
-import { lazy, Suspense } from "react";
 import { useSellerContext } from "@/hooks/useSellerContext";
 import { SellerModeProvider } from "@/contexts/SellerModeContext";
-import PageSpinner from "@/components/PageSpinner";
-
-const CustomerIndex = lazy(() => import("@/customer/Index"));
+import CustomerIndex from "@/customer/Index";
 
 const SellerNewOrder = () => {
   const { userId, fullName } = useSellerContext();
   return (
     <SellerModeProvider sellerId={userId ?? null} sellerName={fullName ?? "Vendedor"}>
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <Suspense fallback={<PageSpinner />}>
-          <CustomerIndex />
-        </Suspense>
+        <CustomerIndex />
       </div>
     </SellerModeProvider>
   );

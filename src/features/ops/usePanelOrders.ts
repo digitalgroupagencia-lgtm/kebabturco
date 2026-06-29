@@ -377,21 +377,38 @@ export function usePanelOrders(storeId: string | undefined) {
     );
 
     try {
-      const { data: updated, error } = await supabase
-        .from("orders")
-        .update(patch as never)
-        .eq("id", order.id)
-        .select()
-        .single();
+      const rpcArgs = {
+        _order_id: order.id,
+        _new_status: newStatus as Database["public"]["Enums"]["order_status"],
+        _estimated_ready_at: (patch.estimated_ready_at as string) ?? undefined,
+        _delivery_confirmation_code: (patch.delivery_confirmation_code as string) ?? undefined,
+      };
+
+      let updated: PanelOrder | null = null;
+      let error: { message?: string } | null = null;
+
+      const rpcRes = await supabase.rpc("panel_advance_order_status" as never, rpcArgs as never);
+      if (!rpcRes.error && rpcRes.data) {
+        updated = rpcRes.data as PanelOrder;
+      } else {
+        const directRes = await supabase
+          .from("orders")
+          .update(patch as never)
+          .eq("id", order.id)
+          .select()
+          .single();
+        updated = (directRes.data as PanelOrder) ?? null;
+        error = directRes.error;
+      }
 
       if (error || !updated) {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: prevStatus } : o)));
-        console.error("[panel] update order failed", error);
-        toast.error(`Erro ao actualizar: ${error?.message || "sem resposta"}`);
+        console.error("[panel] update order failed", error ?? rpcRes.error);
+        toast.error(`Erro ao actualizar: ${error?.message || rpcRes.error?.message || "sem resposta"}`);
         return false;
       }
 
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...(updated as PanelOrder) } : o)));
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, ...updated } : o)));
       toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
       if (prevStatus === "pending") {
         acknowledgePendingOrderAlert(order.id);
