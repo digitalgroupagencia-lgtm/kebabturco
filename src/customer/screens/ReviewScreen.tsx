@@ -13,7 +13,6 @@ import { loadSavedOrderType } from "@/lib/customerSession";
 import { configurationSummaryLines } from "@/lib/modifiers/legacyBridge";
 import type { CartConfiguration } from "@/lib/modifiers/types";
 import InAppConfirmDialog from "@/components/InAppConfirmDialog";
-import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
 import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
 
 type LangMap = Record<string, string>;
@@ -183,14 +182,12 @@ const ReviewScreen = () => {
   const modalityLabel =
     orderType === "here" ? t("eatHere") : orderType === "delivery" ? t("delivery") : t("takeaway");
 
-  const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
-
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
-        onBack={tabBarVisible ? undefined : () => setScreen("home")}
+        onBack={() => setScreen("home")}
         sticky
       />
 
