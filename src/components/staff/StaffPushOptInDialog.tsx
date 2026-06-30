@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useOptionalLanguage } from "@/contexts/LanguageContext";
 import PushOptInDialogFrame, { type PushOptInCopy } from "@/components/push/PushOptInDialogFrame";
 import {
   markStaffPushPromptShown,
@@ -54,7 +54,7 @@ const STAFF_COPY: Record<string, PushOptInCopy> = {
 };
 
 const StaffPushOptInDialog = ({ open, storeId, onOpenChange }: Props) => {
-  const { lang } = useLanguage();
+  const lang = useOptionalLanguage()?.lang ?? "es";
   const copy = STAFF_COPY[lang] ?? STAFF_COPY.es;
   const [busy, setBusy] = useState(false);
 
