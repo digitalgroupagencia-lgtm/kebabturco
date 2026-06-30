@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { useLanguage, LANG_LABELS } from "@/contexts/LanguageContext";
+import { useLanguage, LANG_LABELS, translateForLang } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
@@ -148,7 +148,7 @@ const LanguageScreen = () => {
       <div className={`${STOREFRONT_FOOTER_WRAP_CLASS} space-y-2`}>
         <InstallAppButton lang={primaryLang} />
         <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-bold pb-1">
-          Desenvolvido por Euro Business Group
+          {translateForLang("poweredBy", primaryLang)}
         </p>
       </div>
     </div>

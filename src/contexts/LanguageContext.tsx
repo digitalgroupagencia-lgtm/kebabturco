@@ -1236,6 +1236,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
   );
 };
 
+export function translateForLang(key: string, lang: Lang): string {
+  return translations[key]?.[lang] || translations[key]?.en || key;
+}
+
 export const useLanguage = () => {
   const ctx = useContext(LanguageContext);
   if (!ctx) throw new Error("useLanguage must be used within LanguageProvider");
