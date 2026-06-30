@@ -66,6 +66,7 @@ const overviewItems = [
   { title: "Centro de testes", url: nav.admin("diagnostics-hub"), icon: Wrench },
   { title: "Teste push", url: nav.admin("push-test"), icon: Bell },
   { title: "Simulador de pedidos", url: nav.admin("order-simulator"), icon: Play },
+  { title: "Demo visita (impressão)", url: nav.admin("visit-print"), icon: Printer },
   { title: "Mapa de rotas", url: nav.admin("routes"), icon: Map },
   { title: "Planos & funcionalidades", url: nav.admin("plans"), icon: CreditCard },
   { title: "Pagamentos (Gateways)", url: nav.admin("payments"), icon: CreditCard },

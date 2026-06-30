@@ -58,6 +58,7 @@ export const INTERNAL_ROUTE_TABLE: readonly RouteSegmentDef[] = [
   { area: "admin", segments: ["diagnostics-hub"], loader: () => import("@/views/admin/DiagnosticsHubPage.tsx") },
   { area: "admin", segments: ["push-test"], loader: () => import("@/views/admin/PushTestPage.tsx") },
   { area: "admin", segments: ["order-simulator"], loader: () => import("@/views/admin/OrderSimulatorPage.tsx") },
+  { area: "admin", segments: ["visit-print"], loader: () => import("@/views/admin/AdminVisitPrintPage.tsx") },
   { area: "admin", segments: ["printer"], loader: () => import("@/views/admin/PrinterPage.tsx") },
   { area: "admin", segments: ["users"], loader: () => import("@/views/admin/UsersPage.tsx") },
   { area: "admin", segments: ["settings"], loader: () => import("@/views/admin/SettingsPage.tsx") },
