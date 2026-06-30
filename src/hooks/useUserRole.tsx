@@ -13,11 +13,15 @@ interface UserRoleData {
 function pickRoleData(rows: { role: AppRole; tenant_id: string | null; store_id: string | null }[]): UserRoleData | null {
   if (!rows.length) return null;
   const adminMaster = rows.find((role) => role.role === "admin_master");
+  if (adminMaster) {
+    // Admin geral: tenant/loja vêm do URL ou do projecto, não de outro papel na equipa.
+    return { role: "admin_master", tenant_id: null, store_id: null };
+  }
   const scopedRole = rows.find((role) => role.store_id || role.tenant_id);
   return {
-    role: adminMaster?.role ?? rows[0].role,
-    tenant_id: scopedRole?.tenant_id ?? adminMaster?.tenant_id ?? rows[0].tenant_id,
-    store_id: scopedRole?.store_id ?? adminMaster?.store_id ?? rows[0].store_id,
+    role: rows[0].role,
+    tenant_id: scopedRole?.tenant_id ?? rows[0].tenant_id,
+    store_id: scopedRole?.store_id ?? rows[0].store_id,
   };
 }
 
@@ -26,6 +30,9 @@ async function fetchRoleViaRpc(): Promise<UserRoleData | null> {
   if (error || !data || typeof data !== "object") return null;
   const row = data as { role?: AppRole; tenant_id?: string | null; store_id?: string | null };
   if (!row.role) return null;
+  if (row.role === "admin_master") {
+    return { role: "admin_master", tenant_id: null, store_id: null };
+  }
   return {
     role: row.role,
     tenant_id: row.tenant_id ?? null,

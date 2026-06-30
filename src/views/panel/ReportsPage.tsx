@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,8 +27,7 @@ const PERIOD_DAYS = [0, 7, 30, 90];
 const ReportsPage = () => {
   const { t, lang } = useStaffT();
   const { user } = useAuth();
-  const { roleData } = useUserRole(user?.id);
-  const storeId = roleData?.store_id;
+  const { storeId } = useAdminStoreId();
 
   const [period, setPeriod] = useState(0);
   const [summary, setSummary] = useState({ total_orders: 0, total_revenue: 0, avg_ticket: 0, total_cancelled: 0 });

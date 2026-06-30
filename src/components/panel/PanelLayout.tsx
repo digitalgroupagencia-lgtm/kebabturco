@@ -25,15 +25,24 @@ import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
 import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
 import { useStaffT } from "@/hooks/useStaffT";
+import { usePanelStoreId } from "@/contexts/PanelStoreContext";
 
 type Props = {
   page?: ComponentType<object>;
 };
 
+/** Idioma do header — usa loja seleccionada no painel (admin master incluído). */
+function PanelHeaderLanguageToggle() {
+  const storeId = usePanelStoreId();
+  const { primaryLang } = useStoreLanguages(storeId);
+  return (
+    <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
+  );
+}
+
 const PanelLayout = ({ page: Page }: Props) => {
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const { primaryLang } = useStoreLanguages(roleData?.store_id);
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useStaffT();
@@ -75,7 +84,7 @@ const PanelLayout = ({ page: Page }: Props) => {
                 <StaffTopBarAlerts area="panel" />
                 <AdminMasterPanelBack />
                 <PanelStoreSwitcher />
-                <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
+                <PanelHeaderLanguageToggle />
                 <PanelUpdateButton />
                 <AdminThemeToggle />
               </header>

@@ -37,7 +37,7 @@ const PanelSettingsPage = () => {
   const panelStore = useOptionalPanelStore();
   const { storeId: adminStoreId, loading: storeLoading } = useAdminStoreId();
   const { t, lang } = useStaffT();
-  const effectiveStoreId = roleData?.store_id ?? panelStore?.storeId ?? adminStoreId ?? "";
+  const effectiveStoreId = adminStoreId ?? panelStore?.storeId ?? "";
   const [resetOpen, setResetOpen] = useState(false);
   const [storeName, setStoreName] = useState("Minha Loja");
   const [storePhone, setStorePhone] = useState("");

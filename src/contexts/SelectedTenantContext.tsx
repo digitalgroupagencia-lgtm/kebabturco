@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
+import { readTenantSlugFromUrl } from "@/lib/staffStoreResolution";
 
 interface SelectedTenant {
   id: string;
@@ -37,18 +38,33 @@ export function SelectedTenantProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       let tenantId: string | null = null;
 
+      const slugFromQuery = readTenantSlugFromUrl();
+      if (slugFromQuery) {
+        const { data: t } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", slugFromQuery)
+          .maybeSingle();
+        tenantId = t?.id ?? null;
+      }
+
       if (slug) {
         const { data: t } = await supabase
           .from("tenants").select("id").eq("slug", slug).maybeSingle();
         tenantId = t?.id ?? null;
       }
 
-      // Fallback: resolve via logged-in user's role
+      // Fallback: resolve via logged-in user's role (except admin geral)
       if (!tenantId && user?.id) {
-        const { data: role } = await supabase
-          .from("user_roles").select("tenant_id").eq("user_id", user.id)
-          .not("tenant_id", "is", null).limit(1).maybeSingle();
-        tenantId = role?.tenant_id ?? null;
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role, tenant_id")
+          .eq("user_id", user.id);
+        const isMaster = (roles ?? []).some((r) => r.role === "admin_master");
+        if (!isMaster) {
+          const role = roles?.find((r) => r.tenant_id);
+          tenantId = role?.tenant_id ?? null;
+        }
       }
 
       // Final fallback: tenant Kebab Turco (projecto único)

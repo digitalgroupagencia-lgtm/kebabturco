@@ -3,7 +3,8 @@ import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useSellerModuleEnabled } from "@/hooks/useSellerModule";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useTenantBilling, fmtMoney } from "@/hooks/useTenantBilling";
@@ -28,9 +29,9 @@ interface Seller {
 
 const SellersPage = () => {
   const { user } = useAuth();
-  const { roleData } = useUserRole(user?.id);
-  const tenantId = roleData?.tenant_id;
-  const storeId = roleData?.store_id;
+  const { tenant } = useSelectedTenant();
+  const tenantId = tenant?.id ?? null;
+  const { storeId } = useAdminStoreId();
   const { enabled: sellerEnabled, isLoading: sellerFlagLoading } = useSellerModuleEnabled(tenantId);
   const { t } = useStaffT();
   const qc = useQueryClient();

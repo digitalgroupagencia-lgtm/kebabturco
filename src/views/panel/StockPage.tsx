@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,8 +23,7 @@ type StockItem = Tables<"stock_items">;
 const StockPage = () => {
   const { t, lang } = useStaffT();
   const { user } = useAuth();
-  const { roleData } = useUserRole(user?.id);
-  const storeId = roleData?.store_id;
+  const { storeId } = useAdminStoreId();
 
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);

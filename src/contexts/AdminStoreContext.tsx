@@ -11,9 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
-import { DEFAULT_TENANT_SLUG } from "@/lib/appMode";
-import { fetchActiveStoresForTenant } from "@/lib/fetchActiveStores";
-import { isDefaultKebabContextHost, normalizeHostname } from "@/lib/platformHosts";
+import { isGeneralAdmin } from "@/lib/projectAccess";
+import {
+  fetchStoresForStaffContext,
+  pickStaffStoreId,
+  resolveStaffTenantId,
+} from "@/lib/staffStoreResolution";
 
 export type AdminStoreOption = {
   id: string;
@@ -35,75 +38,8 @@ function storageKey(tenantId: string) {
   return `kebab-admin-store:${tenantId}`;
 }
 
-async function resolveTenantIdForAdmin(
-  selectedTenantId: string | null | undefined,
-  roleTenantId: string | null | undefined,
-): Promise<string | null> {
-  if (selectedTenantId) return selectedTenantId;
-  if (roleTenantId) return roleTenantId;
-
-  if (typeof window !== "undefined") {
-    const host = normalizeHostname(window.location.hostname);
-    if (host) {
-      const { data: rows } = await supabase
-        .from("tenants")
-        .select("id, custom_domain, slug")
-        .eq("is_active", true);
-
-      const byDomain = (rows ?? []).find(
-        (t) => t.custom_domain && normalizeHostname(t.custom_domain) === host,
-      );
-      if (byDomain?.id) return byDomain.id;
-
-      if (isDefaultKebabContextHost(host)) {
-        const { data: t } = await supabase
-          .from("tenants")
-          .select("id")
-          .eq("slug", DEFAULT_TENANT_SLUG)
-          .maybeSingle();
-        if (t?.id) return t.id;
-      }
-    }
-  }
-
-  const { data: t } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("slug", DEFAULT_TENANT_SLUG)
-    .maybeSingle();
-  return t?.id ?? null;
-}
-
-async function resolveInitialStoreId(
-  options: AdminStoreOption[],
-  tenantId: string,
-): Promise<string | null> {
-  if (!options.length) return null;
-
-  const saved =
-    typeof window !== "undefined" ? window.localStorage.getItem(storageKey(tenantId)) : null;
-
-  const counts = await Promise.all(
-    options.map(async (store) => {
-      const { count, error } = await supabase
-        .from("categories")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", store.id);
-      return { id: store.id, count: error ? 0 : count ?? 0 };
-    }),
-  );
-
-  if (saved && options.some((s) => s.id === saved)) {
-    const savedCount = counts.find((c) => c.id === saved)?.count ?? 0;
-    if (savedCount > 0) return saved;
-  }
-
-  const richest = counts.reduce(
-    (best, row) => (row.count > best.count ? row : best),
-    { id: options[0].id, count: 0 },
-  );
-
-  return richest.count > 0 ? richest.id : options[0].id;
+function panelStorageKey(tenantId: string) {
+  return `kebab-panel-store:${tenantId}`;
 }
 
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
@@ -112,7 +48,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const { tenant: selectedTenant, loading: tenantLoading } = useSelectedTenant();
   const [stores, setStores] = useState<AdminStoreOption[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isAdminMaster = isGeneralAdmin(roleData?.role);
 
   useEffect(() => {
     let active = true;
@@ -121,28 +60,40 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (roleLoading || tenantLoading) return;
       setLoading(true);
 
-      let tenantId = await resolveTenantIdForAdmin(selectedTenant?.id, roleData?.tenant_id ?? null);
+      const tenantId = await resolveStaffTenantId(
+        selectedTenant?.id,
+        roleData?.tenant_id ?? null,
+        isAdminMaster,
+      );
 
       if (!tenantId) {
         if (active) {
           setStores([]);
           setSelectedStoreId(null);
+          setResolvedTenantId(null);
           setLoading(false);
         }
         return;
       }
 
-      const storeOptions = await fetchActiveStoresForTenant(tenantId);
-      const options: AdminStoreOption[] = storeOptions.map((s) => ({
+      const storeRows = await fetchStoresForStaffContext(tenantId, isAdminMaster);
+      const options: AdminStoreOption[] = storeRows.map((s) => ({
         id: s.id,
         name: s.name,
         address: s.address,
       }));
-      setStores(options);
 
-      const resolved = await resolveInitialStoreId(options, tenantId);
+      const resolved = pickStaffStoreId(
+        options,
+        tenantId,
+        roleData?.store_id,
+        panelStorageKey,
+        storageKey,
+      );
 
       if (active) {
+        setStores(options);
+        setResolvedTenantId(tenantId);
         setSelectedStoreId(resolved);
         setLoading(false);
       }
@@ -151,19 +102,19 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [roleLoading, tenantLoading, selectedTenant?.id, roleData?.tenant_id]);
+  }, [roleLoading, tenantLoading, selectedTenant?.id, roleData?.tenant_id, roleData?.store_id, isAdminMaster]);
 
-  const canSwitchStore = stores.length > 1;
+  const canSwitchStore = isAdminMaster || stores.length > 1;
 
   const setStoreId = useCallback(
     (id: string) => {
       setSelectedStoreId(id);
-      const tenantId = selectedTenant?.id ?? roleData?.tenant_id;
+      const tenantId = resolvedTenantId ?? selectedTenant?.id ?? roleData?.tenant_id;
       if (tenantId && typeof window !== "undefined") {
         window.localStorage.setItem(storageKey(tenantId), id);
       }
     },
-    [selectedTenant?.id, roleData?.tenant_id],
+    [resolvedTenantId, selectedTenant?.id, roleData?.tenant_id],
   );
 
   const value = useMemo<AdminStoreCtx>(

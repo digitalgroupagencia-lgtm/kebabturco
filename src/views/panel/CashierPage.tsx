@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { usePanelStoreId } from "@/contexts/PanelStoreContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ type PendingOrder = Tables<"orders">;
 const CashierPage = () => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const storeId = roleData?.store_id;
+  const { storeId, loading: storeContextLoading } = usePanelStoreId();
   const { t } = useStaffT();
   const { requestTapToPay, requestStaffPin, TapToPayCheckoutDialog } = useTapToPayCheckout({
     storeId: storeId ?? "",
