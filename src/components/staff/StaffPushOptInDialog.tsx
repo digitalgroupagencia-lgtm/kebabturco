@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useOptionalLanguage } from "@/contexts/LanguageContext";
 import PushOptInDialogFrame, { type PushOptInCopy } from "@/components/push/PushOptInDialogFrame";
 import {
   markStaffPushPromptShown,
