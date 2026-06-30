@@ -13,6 +13,7 @@ export type VisitPrintConfig = {
 export const VISIT_LOCAL_HELPER_URL = "http://127.0.0.1:3847";
 export const VISIT_LOCAL_BRIDGE_HEALTH_URL = "http://127.0.0.1:3848";
 export const VISIT_LOCAL_BRIDGE_URL = "http://127.0.0.1:3848";
+export const DEMO_VISIT_COUPON_CODE = "DEMO-IMPRESSAO";
 
 export type LocalMacStatus = {
   helper_online: boolean;
@@ -268,8 +269,6 @@ export function formatVisitPrintError(message: string): string {
   }
   return message;
 }
-
-export const DEMO_VISIT_COUPON_CODE = "DEMO-IMPRESSAO";
 
 export const VISIT_BRIDGE_INSTALL = `# Uma vez no Mac (deixe esta janela aberta nas visitas):
 npm run visit-print:helper
