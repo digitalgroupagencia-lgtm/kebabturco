@@ -175,7 +175,7 @@
     max-height: 100dvh;
     overscroll-behavior: none;
   }
-  /* iPhone / app instalada: faixas safe-area com cor certa (vinho em cima, branco em baixo no menu) */
+  /* iPhone: faixa superior vinho; inferior segue o tema (barra de menu / rodapé). */
   html:not(.staff-app)::before {
     content: "";
     position: fixed;
@@ -185,17 +185,6 @@
     height: env(safe-area-inset-top, 0px);
     background: var(--browser-chrome-hex, #3A0205);
     z-index: 9999;
-    pointer-events: none;
-  }
-  html:not(.staff-app)::after {
-    content: "";
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-bottom, 0px);
-    background: hsl(var(--background));
-    z-index: 45;
     pointer-events: none;
   }
   /* Safari browser mobile (legado) */
@@ -251,6 +240,13 @@
   .shadow-primary { box-shadow: var(--shadow-primary); }
   .shadow-cta { box-shadow: var(--shadow-cta); }
   .shadow-header { box-shadow: var(--shadow-header); }
+
+  /* Barra inferior do cliente: uma só peça com a cor do tema até ao fim do ecrã */
+  html:not(.staff-app) .customer-tab-bar,
+  html:not(.staff-app) .customer-bottom-dock-wrap {
+    background-color: hsl(var(--background));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 
   /* Admin/painel — grelhas largas em tablet/telemóvel horizontal */
   html.staff-landscape-layout .staff-kpi-grid:not(.staff-kpi-grid--3) {

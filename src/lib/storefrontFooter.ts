@@ -16,6 +16,6 @@ export const STOREFRONT_FOOTER_BOTTOM_CLASS =
 export const CUSTOMER_ACTION_FOOTER_PAD_CLASS =
   "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]";
 
-export const CUSTOMER_TAB_BAR_SAFE_AREA_CLASS = "pb-[env(safe-area-inset-bottom,0px)]";
+export const CUSTOMER_TAB_BAR_SAFE_AREA_CLASS = "";
 
 export const CUSTOMER_ACTION_FOOTER_CLASS = `shrink-0 z-20 border-t border-border/60 bg-card px-4 pt-3 backdrop-blur-md shadow-[0_-4px_20px_-16px_rgba(0,0,0,0.12)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`;

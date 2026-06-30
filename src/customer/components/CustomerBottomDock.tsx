@@ -4,7 +4,6 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveOrder } from "@/customer/active-order/useActiveOrder";
 import { ACTIVE_ORDER_BAR_SCREENS, CART_BAR_HIDDEN_SCREENS, TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
-import { CUSTOMER_TAB_BAR_SAFE_AREA_CLASS } from "@/lib/storefrontFooter";
 
 /**
  * Barra inferior do carrinho / pedido activo, dentro da moldura mobile (não fixed ao viewport).
@@ -23,8 +22,8 @@ const CustomerBottomDock = () => {
   if (!showActiveOrder && !showCart) return null;
 
   return (
-    <div className={`customer-bottom-dock-wrap shrink-0 bg-background/95 ${CUSTOMER_TAB_BAR_SAFE_AREA_CLASS}`}>
-      <div className="customer-bottom-dock relative z-50 border-t border-border/50 px-3 pt-2 backdrop-blur-md">
+    <div className="customer-bottom-dock-wrap shrink-0 bg-background">
+      <div className="customer-bottom-dock relative z-50 border-t border-border/50 px-3 pt-2">
       <div className="mx-auto flex w-full max-w-md flex-col gap-2">
         {showActiveOrder && (
           <button
