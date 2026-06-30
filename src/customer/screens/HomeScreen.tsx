@@ -209,8 +209,8 @@ const HomeScreen = () => {
       )}
 
 
-      <div className="flex flex-1 overflow-hidden min-h-0 bg-background">
-        <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
+        <aside className="w-[min(98px,26vw)] max-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
           <div className="flex flex-col gap-2 px-2 py-2">
             {allCategories.map((category) => {
               const isActive = activeCategory === category.id;
@@ -250,7 +250,7 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y bg-background md:scrollbar-thin">
+        <main ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y bg-background md:scrollbar-thin">
           <div className="sticky top-0 z-20 bg-background px-3 pt-2">
             <PromoBannerCarousel />
           </div>
@@ -270,7 +270,7 @@ const HomeScreen = () => {
             </span>
           </div>
 
-          <div className="px-3 pb-16 pt-1 grid grid-cols-2 gap-2.5">
+          <div className="grid w-full min-w-0 grid-cols-2 gap-2.5 px-3 pb-16 pt-1 [grid-template-columns:repeat(2,minmax(0,1fr))]">
             {filteredProducts.map((product, index) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
@@ -280,7 +280,7 @@ const HomeScreen = () => {
               <button
                 key={product.id}
                 onClick={() => openProduct(product.id)}
-                className="group flex flex-col rounded-2xl border border-border/60 bg-card p-2 text-left active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
+                className="group flex min-w-0 w-full flex-col rounded-2xl border border-border/60 bg-card p-2 text-left active:scale-[0.98] transition-all hover:border-border hover:shadow-card touch-action-manipulation"
               >
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-secondary/25">
                   {product.isPromo && (

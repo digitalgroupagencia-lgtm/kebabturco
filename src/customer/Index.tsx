@@ -153,17 +153,19 @@ const ScreenRouter = () => {
 
 const CustomerShell = () => (
     <div
-      className="customer-shell relative mx-auto grid h-full min-h-0 w-full max-w-md md:max-w-none grid-rows-[minmax(0,1fr)_auto] overflow-hidden overscroll-none touch-none bg-background"
+      className="customer-shell relative mx-auto flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden overscroll-none bg-background"
       style={{ backgroundColor: "var(--browser-chrome-hex, #3A0205)" }}
     >
       <CustomerBootDismiss />
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <ScreenRouter />
       </div>
       <CustomerScreenErrorBoundary scope="bootstrap" fillHeight={false}>
-        <CustomerBottomDock />
-        <CustomerTabBar />
-        <CustomerPushPromptHost />
+        <div className="shrink-0">
+          <CustomerBottomDock />
+          <CustomerTabBar />
+          <CustomerPushPromptHost />
+        </div>
       </CustomerScreenErrorBoundary>
     </div>
 );
