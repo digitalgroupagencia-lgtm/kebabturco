@@ -24,7 +24,7 @@ const CustomerBottomDock = () => {
 
   return (
     <div
-      className={`customer-bottom-dock sticky bottom-0 shrink-0 z-50 border-t border-border/50 bg-background/95 px-3 pt-2 backdrop-blur-md ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
+      className={`customer-bottom-dock relative shrink-0 z-50 border-t border-border/50 bg-background/95 px-3 pt-2 backdrop-blur-md ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-2">
         {showActiveOrder && (
