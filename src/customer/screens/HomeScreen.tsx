@@ -231,22 +231,23 @@ const HomeScreen = () => {
         </aside>
 
         <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-none bg-background md:scrollbar-thin">
-          <div className="sticky top-0 z-20 bg-background px-3 pt-2 pb-1">
+          <div className="sticky top-0 z-20 bg-background px-3 pt-2">
             <PromoBannerCarousel />
-            <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                  {t("menu")}
-                </span>
-                <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
-                  {activeCategoryName}
-                </h2>
-                <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
-              </div>
-              <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
-                {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
+          </div>
+
+          <div className="px-3 pt-2 pb-1 flex items-end justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                {t("menu")}
               </span>
+              <h2 className="text-[18px] font-black text-foreground tracking-tight leading-tight mt-0.5">
+                {activeCategoryName}
+              </h2>
+              <div className="h-[3px] w-8 bg-primary rounded-full mt-1" />
             </div>
+            <span className="text-[10px] font-bold text-muted-foreground tabular-nums pb-0.5">
+              {filteredProducts.length} {filteredProducts.length === 1 ? t("oneItem") : t("items")}
+            </span>
           </div>
 
           <div className="px-3 pb-16 pt-1 grid grid-cols-2 gap-2.5">
