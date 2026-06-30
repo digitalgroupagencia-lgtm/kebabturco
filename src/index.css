@@ -160,6 +160,9 @@
     overscroll-behavior-y: none;
     background-color: hsl(var(--background));
   }
+  html:not(.staff-app) body {
+    background-color: var(--browser-chrome-hex, #3A0205);
+  }
   /* Cardápio cliente: sem scroll no body — só a lista de produtos rola */
   html:not(.staff-app) body,
   html:not(.staff-app) #root {
@@ -168,19 +171,31 @@
     max-height: 100dvh;
     overscroll-behavior: none;
   }
-  /* Safari / app instalado: faixa superior igual ao vinho do cabeçalho */
+  /* iPhone / app instalada: faixas safe-area com cor certa (vinho em cima, branco em baixo no menu) */
+  html:not(.staff-app)::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--browser-chrome-hex, #3A0205);
+    z-index: 9999;
+    pointer-events: none;
+  }
+  html:not(.staff-app)::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: hsl(var(--background));
+    z-index: 45;
+    pointer-events: none;
+  }
+  /* Safari browser mobile (legado) */
   @media (max-width: 767px) {
-    html::before {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: env(safe-area-inset-top, 0px);
-      background: var(--browser-chrome-hex, #3A0205);
-      z-index: 9999;
-      pointer-events: none;
-    }
     html.staff-app::before {
       display: none;
     }
@@ -194,6 +209,7 @@
   html:not(.staff-app) #root {
     overflow-x: clip;
     overflow-y: hidden;
+    background-color: var(--browser-chrome-hex, #3A0205);
   }
   html.staff-app #root {
     overflow-x: clip;

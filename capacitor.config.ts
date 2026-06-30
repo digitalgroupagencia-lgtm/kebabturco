@@ -29,9 +29,10 @@ const config: CapacitorConfig = {
         },
       }),
   ios: {
-    contentInset: "automatic",
+    contentInset: "never",
     allowsLinkPreview: false,
     appendUserAgent: "KebabTurcoCapacitor",
+    backgroundColor: "#3A0205",
   },
   android: {
     allowMixedContent: true,

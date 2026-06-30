@@ -4,7 +4,7 @@ import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveOrder } from "@/customer/active-order/useActiveOrder";
 import { TAB_BAR_VISIBLE_SCREENS } from "@/lib/customerBottomBars";
-import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
+import { CUSTOMER_ACTION_FOOTER_PAD_CLASS, CUSTOMER_TAB_BAR_SAFE_AREA_CLASS } from "@/lib/storefrontFooter";
 
 type TabId = "home" | "orders" | "cart" | "account";
 
@@ -57,10 +57,11 @@ const CustomerTabBar = () => {
   const showActiveOrderBanner = screen === "home" && hasActiveOrder;
 
   return (
-    <nav
-      className={`customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)] overscroll-none touch-none ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
-      aria-label={t("navHome")}
-    >
+    <div className="customer-tab-bar-wrap shrink-0 bg-background">
+      <nav
+        className={`customer-tab-bar relative z-50 border-t border-border/60 bg-background backdrop-blur-md shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)] overscroll-none touch-none ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}
+        aria-label={t("navHome")}
+      >
       {showActiveOrderBanner && (
         <div className="px-3 pt-1">
           <button
@@ -124,7 +125,9 @@ const CustomerTabBar = () => {
           );
         })}
       </div>
-    </nav>
+      </nav>
+      <div aria-hidden className={CUSTOMER_TAB_BAR_SAFE_AREA_CLASS} />
+    </div>
   );
 };
 

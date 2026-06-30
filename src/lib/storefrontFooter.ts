@@ -12,8 +12,9 @@ export const STOREFRONT_FOOTER_BOTTOM_STYLE = {
 export const STOREFRONT_FOOTER_BOTTOM_CLASS =
   "[@media(hover:hover)_and_(pointer:fine)]:!bottom-10";
 
-/** Rodapé fixo com Continuar / Adicionar / Pagar, margem extra na moldura desktop. */
-export const CUSTOMER_ACTION_FOOTER_PAD_CLASS =
-  "pb-[env(safe-area-inset-bottom)] [@media(hover:hover)_and_(pointer:fine)]:pb-2";
+/** Rodapé fixo com Continuar / Adicionar / Pagar / tab bar — safe-area tratada no wrapper. */
+export const CUSTOMER_ACTION_FOOTER_PAD_CLASS = "";
+
+export const CUSTOMER_TAB_BAR_SAFE_AREA_CLASS = "h-[env(safe-area-inset-bottom,0px)] shrink-0 bg-background";
 
 export const CUSTOMER_ACTION_FOOTER_CLASS = `shrink-0 z-20 border-t border-border/60 bg-card/95 px-4 pt-3 backdrop-blur-md ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`;
