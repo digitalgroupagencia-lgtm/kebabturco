@@ -231,8 +231,7 @@ const HomeScreen = () => {
         </aside>
 
         <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-none bg-background md:scrollbar-thin">
-          {/* Banner e título rolam com os produtos, liberta espaço vertical com a barra inferior */}
-          <div className="px-3 pt-2">
+          <div className="sticky top-0 z-20 bg-background px-3 pt-2 pb-1">
             <PromoBannerCarousel />
             <div className="px-1 pt-2.5 pb-1.5 flex items-end justify-between">
               <div>
@@ -250,7 +249,7 @@ const HomeScreen = () => {
             </div>
           </div>
 
-          <div className="px-3 pb-16 grid grid-cols-2 gap-2.5">
+          <div className="px-3 pb-16 pt-1 grid grid-cols-2 gap-2.5">
             {filteredProducts.map((product, index) => {
               const { code, name: cleanName } = parseProductCode(tProduct(product.name));
               const [l1, l2] = splitProductName(cleanName);
