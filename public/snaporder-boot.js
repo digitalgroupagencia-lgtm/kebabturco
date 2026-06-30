@@ -57,6 +57,10 @@
     var el = document.getElementById("boot-fallback");
     if (!el || el.dataset.dismissed === "1") return;
     el.dataset.dismissed = "1";
+    if (window.__SNAPORDER_BOOT_TEXT_TIMER__) {
+      window.clearTimeout(window.__SNAPORDER_BOOT_TEXT_TIMER__);
+      window.__SNAPORDER_BOOT_TEXT_TIMER__ = null;
+    }
     try {
       window.requestAnimationFrame(function () {
         window.requestAnimationFrame(function () {
