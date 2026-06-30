@@ -205,9 +205,8 @@ const HomeScreen = () => {
           </div>
         </div>
       </header>
-        </div>
-      </header>
       )}
+
 
       <div className="flex flex-1 overflow-hidden min-h-0 bg-background">
         <aside className="w-[98px] min-w-[98px] shrink-0 overflow-y-auto border-r border-border/40 bg-secondary/30 md:[&::-webkit-scrollbar]:hidden">
