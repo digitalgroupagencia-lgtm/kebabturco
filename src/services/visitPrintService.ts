@@ -250,6 +250,49 @@ export async function printVisitDemoOrder(input: CheckoutPrintInput) {
   return enqueueVisitDemoPrint(data, input.orderId);
 }
 
+type VisitPrintJobRow = {
+  id: string;
+  printer_ip: string;
+  printer_port: number;
+  ticket_data: string;
+};
+
+/** Mac com painel admin aberto: apanha jobs pendentes (pedido feito no telemóvel). */
+export async function claimAndPrintPendingVisitJobs(): Promise<number> {
+  const cfg = await fetchVisitPrintConfig();
+  if (!cfg?.user_id?.trim()) return 0;
+
+  const local = await probeLocalMacPrint();
+  if (!local.bridge_running) return 0;
+
+  const { data, error } = await supabase.rpc("claim_visit_print_jobs", {
+    _owner_user_id: cfg.user_id,
+    _limit: 3,
+  });
+  if (error || !data?.length) return 0;
+
+  let printed = 0;
+  for (const raw of data as VisitPrintJobRow[]) {
+    try {
+      const direct = await printVisitDemoDirectLocal({
+        printerIp: raw.printer_ip,
+        printerPort: raw.printer_port || 9100,
+        ticketBase64: raw.ticket_data,
+      });
+      if (!direct.ok) throw new Error(direct.error || "Falha na impressão local");
+      const { error: doneErr } = await supabase.rpc("complete_visit_demo_print_job", {
+        _job_id: raw.id,
+      });
+      if (doneErr) throw doneErr;
+      printed += 1;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await supabase.rpc("fail_visit_demo_print_job", { _job_id: raw.id, _error: msg });
+    }
+  }
+  return printed;
+}
+
 export function isVisitBridgeOnline(lastSeen: string | null): boolean {
   if (!lastSeen) return false;
   return Date.now() - new Date(lastSeen).getTime() < 90_000;

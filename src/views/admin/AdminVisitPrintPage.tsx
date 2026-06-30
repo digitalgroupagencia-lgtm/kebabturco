@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isGeneralAdmin } from "@/lib/projectAccess";
 import {
+  claimAndPrintPendingVisitJobs,
   beginDemoVisitCustomerOrder,
   DEMO_VISIT_COUPON_CODE,
   VISIT_BRIDGE_INSTALL,
@@ -113,6 +114,15 @@ export default function AdminVisitPrintPage() {
     const i = setInterval(() => void refreshStatus(), 12000);
     return () => clearInterval(i);
   }, [loadInitial, refreshStatus]);
+
+  useEffect(() => {
+    const relay = () => {
+      void claimAndPrintPendingVisitJobs();
+    };
+    relay();
+    const id = setInterval(relay, 2500);
+    return () => clearInterval(id);
+  }, []);
 
   const persistConfig = async () => {
     await saveVisitPrintConfig({
@@ -318,6 +328,10 @@ export default function AdminVisitPrintPage() {
               Copiar comando helper
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Deixe esta página aberta no <strong>Mac</strong> enquanto faz o pedido no telemóvel — ela envia
+            automaticamente para a impressora.
+          </p>
           <p className="text-xs text-muted-foreground">
             Na primeira vez do dia: no Terminal do Mac, na pasta do projeto,{" "}
             <code className="bg-muted px-1 rounded">npm run visit-print:helper</code> e deixe aberto.
