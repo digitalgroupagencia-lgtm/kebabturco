@@ -15,6 +15,7 @@ import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
 import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import SmartImage from "@/components/SmartImage";
+import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 
 
 const HomeScreen = () => {
