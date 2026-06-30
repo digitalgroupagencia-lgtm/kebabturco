@@ -71,8 +71,9 @@ export function drinkOptionMatchesRule(option: ModifierOption, rule: DrinkSizeRu
 }
 
 export function resolveDrinkSizeRuleForProduct(product: MenuProduct): DrinkSizeRule | null {
+  const name = drinkProductLabel(product);
   const desc = `${productDescriptionText(product)} ${product.description?.es || ""} ${product.description?.pt || ""}`;
-  return detectDrinkSizeRule(desc);
+  return detectDrinkSizeRule(`${name} ${desc}`);
 }
 
 export const DEFAULT_DRINK_LABELS: Record<DrinkSizeRule, string[]> = {

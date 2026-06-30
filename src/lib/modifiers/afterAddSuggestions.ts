@@ -1,7 +1,7 @@
 import type { Category } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import { resolveIsComboProduct } from "@/lib/modifiers/productClassification";
-import { isDrinkProduct } from "@/lib/modifiers/drinkProduct";
+import { isCustomerMenuDrink } from "@/lib/modifiers/drinkProduct";
 
 function categoryMatches(category: Category | undefined, pattern: RegExp): boolean {
   if (!category) return false;
@@ -35,7 +35,7 @@ export function resolveAfterAddSuggestions(
     .map((c) => c.id);
 
   const drinks = allProducts.filter(
-    (p) => drinkCategoryIds.includes(p.category) && !excludeIds.has(p.id) && isDrinkProduct(p),
+    (p) => !excludeIds.has(p.id) && isCustomerMenuDrink(p),
   );
   const desserts = allProducts.filter(
     (p) => dessertCategoryIds.includes(p.category) && !excludeIds.has(p.id),

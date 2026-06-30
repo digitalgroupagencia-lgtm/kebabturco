@@ -4,12 +4,15 @@ import type { ModifierGroup, ProductModifierConfig } from "./types";
 import { sortModifierGroups } from "./groupOrder";
 import {
   DEFAULT_DRINK_LABELS,
+  drinkProductLabel,
   drinkProductMatchesRule,
   resolveDrinkSizeRuleForProduct,
 } from "./drinkSizeRules";
 
 const DRINK_CATEGORY_RE = /bebida|drink|boisson|refresco|boissons/i;
 const DRINK_NAME_RE = /refresco|lata\s*33|bebida|coca|fanta|sprite|nestea|aquarius|agua|zumo|cola/i;
+const DRINK_BRAND_RE =
+  /coca|fanta|sprite|nestea|aquarius|pepsi|7up|monster|zumo|cola|schweppes|tónica|tonica|red\s*bull|powerade|heineken|zero/i;
 const MEAT_LABEL_RE = /carne|meat|pollo|ternera|viande|frango/i;
 const DRINK_OPTION_RE = /coca|fanta|sprite|nestea|aquarius|cola|zumo|agua|refresco|pepsi|7up|tonica/i;
 
@@ -22,6 +25,32 @@ export function isDrinkProduct(product: MenuProduct | undefined): boolean {
 }
 
 /** Detecta especificamente água (mineral/sem gás), onde gelo não faz sentido. */
+/**
+ * Produto genérico tipo «Refresco Lata 33cl» — placeholder de tamanho sem marca.
+ * No menu do cliente mostram-se as bebidas concretas (Coca-Cola, Fanta, etc.).
+ */
+export function isGenericDrinkPlaceholder(product: MenuProduct | undefined): boolean {
+  if (!product || !isDrinkProduct(product)) return false;
+  const label = drinkProductLabel(product).toLowerCase();
+  const desc = `${product.description?.es || ""} ${product.description?.pt || ""} ${product.description?.en || ""}`.toLowerCase();
+
+  if (/^refresco\s+(botella|lata)\b/i.test(label)) return true;
+  if (/^bebida\s+(a\s+elegir|inclu|2\s*l|33|lata|botella)/i.test(label)) return true;
+
+  const nameHasBrand = DRINK_BRAND_RE.test(label);
+  const descListsBrands = /coca|fanta|sprite|nestea|aquarius|pepsi/.test(desc) && desc.includes(",");
+  if (!nameHasBrand && descListsBrands) return true;
+
+  if (!nameHasBrand && /^refresco\b/.test(label) && /\d|botella|lata|litro/i.test(label)) return true;
+
+  return false;
+}
+
+/** Bebida visível no menu do cliente (marca + tamanho, não placeholder genérico). */
+export function isCustomerMenuDrink(product: MenuProduct | undefined): boolean {
+  return Boolean(product && isDrinkProduct(product) && !isGenericDrinkPlaceholder(product));
+}
+
 export function isWaterProduct(product: MenuProduct | undefined): boolean {
   if (!product) return false;
   const text = `${product.name?.es || ""} ${product.name?.pt || ""} ${product.name?.en || ""} ${product.name?.fr || ""}`.toLowerCase();
@@ -34,7 +63,9 @@ export function resolveDrinkExtrasFromMenu(product: MenuProduct, menuProducts: M
   const rule = resolveDrinkSizeRuleForProduct(product);
   if (!rule) return [];
 
-  const drinks = menuProducts.filter((item) => item.id !== product.id && isDrinkProduct(item));
+  const drinks = menuProducts.filter(
+    (item) => item.id !== product.id && isCustomerMenuDrink(item),
+  );
   const matched = drinks.filter((item) => drinkProductMatchesRule(item, rule));
 
   const pool =

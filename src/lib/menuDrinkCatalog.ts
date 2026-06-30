@@ -1,5 +1,5 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
-import { isDrinkProduct } from "@/lib/modifiers/drinkProduct";
+import { isCustomerMenuDrink, isDrinkProduct, isGenericDrinkPlaceholder } from "@/lib/modifiers/drinkProduct";
 
 type NamedCategory = {
   id: string;
@@ -18,8 +18,23 @@ export function findBebidasCategoryId(categories: NamedCategory[]): string | nul
   return categories.find(isBebidasCategory)?.id ?? null;
 }
 
+/** Todas as bebidas concretas do cardápio (sem placeholders «Refresco Lata/Botella»). */
+export function listCustomerDrinkProducts(products: MenuProduct[]): MenuProduct[] {
+  const seen = new Set<string>();
+  const merged: MenuProduct[] = [];
+  for (const product of products) {
+    if (!isCustomerMenuDrink(product)) continue;
+    if (!seen.has(product.id)) {
+      seen.add(product.id);
+      merged.push(product);
+    }
+  }
+  return merged;
+}
+
 /**
- * Na categoria Bebidas, mostra todas as bebidas do cardápio (incluindo as usadas em combos).
+ * Na categoria Bebidas, mostra marcas e tamanhos concretos (Coca-Cola 2L, Fanta Lata…),
+ * não os placeholders genéricos «Refresco Botella/Lata».
  */
 export function filterProductsForCategory(
   products: MenuProduct[],
@@ -31,14 +46,11 @@ export function filterProductsForCategory(
     return products.filter((product) => product.category === activeCategoryId);
   }
 
-  const seen = new Set<string>();
-  const merged: MenuProduct[] = [];
-  for (const product of products) {
-    if (product.category !== bebidasId && !isDrinkProduct(product)) continue;
-    if (!seen.has(product.id)) {
-      seen.add(product.id);
-      merged.push(product);
-    }
-  }
-  return merged;
+  return listCustomerDrinkProducts(products);
+}
+
+/** Oculta placeholders genéricos em listagens do cliente (ex.: mais vendidos). */
+export function isCustomerMenuProduct(product: MenuProduct): boolean {
+  if (!isDrinkProduct(product)) return true;
+  return !isGenericDrinkPlaceholder(product);
 }

@@ -16,7 +16,7 @@ import { nav } from "@/lib/navPaths";
 import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import SmartImage from "@/components/SmartImage";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
-import { filterProductsForCategory } from "@/lib/menuDrinkCatalog";
+import { filterProductsForCategory, isCustomerMenuProduct } from "@/lib/menuDrinkCatalog";
 
 
 const HomeScreen = () => {
@@ -102,7 +102,7 @@ const HomeScreen = () => {
   const activeCategory = selectedCategory || allCategories[0]?.id || "";
   const filteredProducts =
     activeCategory === "bestsellers"
-      ? products.filter((product) => product.isBestseller)
+      ? products.filter((product) => product.isBestseller && isCustomerMenuProduct(product))
       : filterProductsForCategory(products, categories, activeCategory);
 
   const activeCategoryName =

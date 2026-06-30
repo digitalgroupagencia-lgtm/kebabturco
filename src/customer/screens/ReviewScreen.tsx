@@ -14,6 +14,8 @@ import { configurationSummaryLines } from "@/lib/modifiers/legacyBridge";
 import type { CartConfiguration } from "@/lib/modifiers/types";
 import InAppConfirmDialog from "@/components/InAppConfirmDialog";
 import { CUSTOMER_ACTION_FOOTER_PAD_CLASS } from "@/lib/storefrontFooter";
+import { listCustomerDrinkProducts } from "@/lib/menuDrinkCatalog";
+import { isCustomerMenuDrink } from "@/lib/modifiers/drinkProduct";
 
 type LangMap = Record<string, string>;
 type SuggestionConfig = {
@@ -130,12 +132,12 @@ const ReviewScreen = () => {
         .filter((p): p is NonNullable<typeof p> => Boolean(p) && !inCartIds.has(p!.id));
     }
     // Fallback antigo
-    const drinkCategoryIds = categories
-      .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
-      .map((category) => category.id);
-    const cartCats = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category));
-    const drinks = products.filter((p) => drinkCategoryIds.includes(p.category) && !inCartIds.has(p.id));
-    if (!drinkCategoryIds.some((id) => cartCats.has(id)) && drinks.length > 0) {
+    const cartHasDrink = items.some((i) => {
+      const p = products.find((pr) => pr.id === i.productId);
+      return isCustomerMenuDrink(p);
+    });
+    const drinks = listCustomerDrinkProducts(products).filter((p) => !inCartIds.has(p.id));
+    if (!cartHasDrink && drinks.length > 0) {
       return drinks;
     }
     return products.filter((p) => p.isBestseller && !inCartIds.has(p.id)).slice(0, 8);
@@ -143,12 +145,11 @@ const ReviewScreen = () => {
 
   const customTitle = pickLang(suggestionConfig?.title);
   const fallbackTitle = (() => {
-    const drinkCategoryIds = categories
-      .filter((category) => /bebida|drink|boisson/i.test(Object.values(category.name).join(" ")))
-      .map((category) => category.id);
-    const cartCats = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category).filter(Boolean));
-    const suggestingDrinks = !drinkCategoryIds.some((id) => cartCats.has(id));
-    return suggestingDrinks ? t("addDrink") : t("addMore");
+    const cartHasDrink = items.some((i) => {
+      const p = products.find((pr) => pr.id === i.productId);
+      return isCustomerMenuDrink(p);
+    });
+    return !cartHasDrink ? t("addDrink") : t("addMore");
   })();
   const sectionTitle = customTitle || fallbackTitle;
 
