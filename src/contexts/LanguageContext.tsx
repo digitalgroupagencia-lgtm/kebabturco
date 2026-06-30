@@ -1187,3 +1187,10 @@ export const useLanguage = () => {
   if (!ctx) throw new Error("useLanguage must be used within LanguageProvider");
   return ctx;
 };
+
+/**
+ * Variante "tolerante": devolve null se não houver LanguageProvider acima.
+ * Usar em componentes que podem ser montados fora do storefront (ex.: painel admin).
+ */
+export const useOptionalLanguage = () => useContext(LanguageContext) ?? null;
+};
