@@ -13,7 +13,8 @@ import { splitProductName } from "@/lib/splitProductName";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { shouldHideHeader } from "@/lib/embed-mode";
 import { nav } from "@/lib/navPaths";
-import { collectMenuCatalogFields } from "@/lib/menuLocale";
+import { collectMenuCatalogFields, collectTranslationSources } from "@/lib/menuLocale";
+import { seedMenuGlossaryCache } from "@/lib/menuFoodGlossary";
 import SmartImage from "@/components/SmartImage";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
 import { filterProductsForCategory, isCustomerMenuProduct } from "@/lib/menuDrinkCatalog";
@@ -74,9 +75,12 @@ const HomeScreen = () => {
       setMenuLocaleReady(true);
       return;
     }
+    const fields = collectMenuCatalogFields(categories, products);
+    const sources = collectTranslationSources(fields, primaryLang, lang);
+    seedMenuGlossaryCache(sources, primaryLang, lang);
+    setMenuLocaleReady(true);
     let alive = true;
-    setMenuLocaleReady(false);
-    void ensureMenuLocalizedReady(collectMenuCatalogFields(categories, products)).then(() => {
+    void ensureMenuLocalizedReady(fields).then(() => {
       if (alive) setMenuLocaleReady(true);
     });
     return () => {
@@ -285,7 +289,7 @@ const HomeScreen = () => {
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-secondary/25">
                   {product.isPromo && (
                     <span className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
-                      Oferta
+                      {t("offerBadge")}
                     </span>
                   )}
                   {code && (

@@ -440,7 +440,7 @@ function buildModifierConfigFromProduct(
       if (drinkExtras.some((e) => (e.name.es || e.name.pt) === label)) continue;
       drinkExtras.push({
         id: slugifyLabel(label),
-        name: { es: label, pt: label, en: label, fr: label },
+        name: { es: label },
         price: 0,
       });
     }
@@ -462,7 +462,7 @@ function buildModifierConfigFromProduct(
         options: Array.from(removalMap.values()).map((label, i) => ({
           id: `${SYNTH_PREFIX}-${product.id}-rem-${i}`,
           groupId: `${SYNTH_PREFIX}-${product.id}-removal`,
-          name: { es: label, pt: label, en: label, fr: label },
+          name: { es: label },
           priceDelta: 0,
           maxQty: 1,
           isDefault: false,

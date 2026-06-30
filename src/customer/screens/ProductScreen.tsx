@@ -9,7 +9,8 @@ import ProductErrorBoundary from "@/components/ProductErrorBoundary";
 import CustomerProductSkeleton from "@/customer/components/CustomerProductSkeleton";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { collectMenuCatalogFields, collectModifierConfigFields } from "@/lib/menuLocale";
+import { collectMenuCatalogFields, collectModifierConfigFields, collectTranslationSources } from "@/lib/menuLocale";
+import { seedMenuGlossaryCache } from "@/lib/menuFoodGlossary";
 
 /** Escolhe ecrã legado vs personalização avançada, sem violar regras de hooks do React. */
 const ProductScreen = () => {
@@ -64,11 +65,13 @@ const ProductScreen = () => {
       return;
     }
     let alive = true;
-    setModifierLocaleReady(false);
     const fields = [
       ...collectMenuCatalogFields([], [product]),
       ...collectModifierConfigFields(modifierConfig),
     ];
+    const sources = collectTranslationSources(fields, primaryLang, lang);
+    seedMenuGlossaryCache(sources, primaryLang, lang);
+    setModifierLocaleReady(true);
     void ensureMenuLocalizedReady(fields).then(() => {
       if (alive) setModifierLocaleReady(true);
     });

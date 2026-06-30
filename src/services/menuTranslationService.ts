@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AppLang } from "@/lib/localizedText";
 import { getCachedMenuTranslation, setCachedMenuTranslations } from "@/lib/menuTranslationCache";
+import { seedMenuGlossaryCache, translateMenuGlossary } from "@/lib/menuFoodGlossary";
 
 export async function translateMenuTexts(
   texts: string[],
@@ -44,8 +45,9 @@ export async function translateMenuTexts(
 }
 
 const BATCH_SIZE = 40;
+const BATCH_CONCURRENCY = 3;
 
-/** Traduz todos os textos em lotes (API aceita até 40 por pedido). */
+/** Traduz todos os textos em lotes paralelos (API aceita até 40 por pedido). */
 export async function translateMenuTextsBatched(
   texts: string[],
   from: AppLang,
@@ -53,10 +55,14 @@ export async function translateMenuTextsBatched(
 ): Promise<Record<string, string>> {
   const unique = [...new Set(texts.map((t) => t.trim()).filter(Boolean))];
   const merged: Record<string, string> = {};
+  const chunks: string[][] = [];
   for (let i = 0; i < unique.length; i += BATCH_SIZE) {
-    const chunk = unique.slice(i, i + BATCH_SIZE);
-    const part = await translateMenuTexts(chunk, from, to);
-    Object.assign(merged, part);
+    chunks.push(unique.slice(i, i + BATCH_SIZE));
+  }
+  for (let i = 0; i < chunks.length; i += BATCH_CONCURRENCY) {
+    const wave = chunks.slice(i, i + BATCH_CONCURRENCY);
+    const parts = await Promise.all(wave.map((chunk) => translateMenuTexts(chunk, from, to)));
+    for (const part of parts) Object.assign(merged, part);
   }
   return merged;
 }
@@ -67,5 +73,12 @@ export async function ensureMenuTranslationSources(
   to: AppLang,
 ): Promise<void> {
   if (from === to || !sources.length) return;
-  await translateMenuTextsBatched(sources, from, to);
+  seedMenuGlossaryCache(sources, from, to);
+  const stillMissing = sources.filter((text) => {
+    const glossary = translateMenuGlossary(text, from, to);
+    if (glossary && glossary !== text) return false;
+    return !getCachedMenuTranslation(text, from, to);
+  });
+  if (!stillMissing.length) return;
+  await translateMenuTextsBatched(stillMissing, from, to);
 }

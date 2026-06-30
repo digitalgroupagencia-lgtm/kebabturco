@@ -4,7 +4,8 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { getEmbedLang, isEmbedded } from "@/lib/embed-mode";
 import { loadSavedLang, readLangFromUrl, saveSavedLang } from "@/lib/customerSession";
 import { pickSourceText, readLocalized, type AppLang } from "@/lib/localizedText";
-import { getCachedMenuTranslation } from "@/lib/menuTranslationCache";
+import { getCachedMenuTranslation, setCachedMenuTranslations } from "@/lib/menuTranslationCache";
+import { looksLikeUntranslatedCopy, translateMenuGlossary } from "@/lib/menuFoodGlossary";
 import { collectTranslationSources, type LocalizedField } from "@/lib/menuLocale";
 import { translateMenuTexts, ensureMenuTranslationSources } from "@/services/menuTranslationService";
 
@@ -78,6 +79,7 @@ const translations: Translations = {
   },
   bestsellers: { pt: "Mais vendidos", en: "Bestsellers", es: "Más vendidos", fr: "Meilleures ventes" },
   promotions: { pt: "Promoções", en: "Promotions", es: "Promociones", fr: "Promotions" },
+  offerBadge: { pt: "Promoção", en: "Offer", es: "Oferta", fr: "Offre" },
   suggestions: { pt: "Sugestões", en: "Suggestions", es: "Sugerencias", fr: "Suggestions" },
   categories: { pt: "Categorias", en: "Categories", es: "Categorías", fr: "Catégories" },
   addToOrder: { pt: "Adicionar ao pedido", en: "Add to order", es: "Añadir al pedido", fr: "Ajouter à la commande" },
@@ -1197,6 +1199,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
 
   const t = (key: string) => translations[key]?.[lang] || translations[key]?.en || key;
 
+  const resolveProductText = useCallback(
+    (source: string, from: AppLang, to: AppLang): string => {
+      const trimmed = source.trim();
+      if (!trimmed || from === to) return trimmed;
+      const cached = getCachedMenuTranslation(trimmed, from, to);
+      if (cached) return cached;
+      const glossary = translateMenuGlossary(trimmed, from, to);
+      if (glossary && glossary !== trimmed) {
+        setCachedMenuTranslations(from, to, { [trimmed]: glossary });
+        return glossary;
+      }
+      return trimmed;
+    },
+    [],
+  );
+
   const tProduct = useCallback(
     (obj: Record<string, string> | string | null | undefined) => {
       void translationTick;
@@ -1204,26 +1222,31 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; storeId?: s
         const trimmed = obj.trim();
         if (!trimmed) return "";
         if (lang === primaryLang) return trimmed;
-        const cached = getCachedMenuTranslation(trimmed, primaryLang, lang);
-        if (cached) return cached;
+        const resolved = resolveProductText(trimmed, primaryLang, lang);
+        if (resolved !== trimmed) return resolved;
         scheduleTranslation(trimmed, primaryLang, lang);
         return trimmed;
       }
 
       const record = readLocalized(obj);
-      const inUserLang = record[lang]?.trim();
-      if (inUserLang) return inUserLang;
-
       const source = pickSourceText(obj, primaryLang);
-      if (!source) return "";
+      const direct = record[lang]?.trim();
+      if (direct && source && !looksLikeUntranslatedCopy(direct, source, lang, primaryLang)) {
+        return direct;
+      }
+
+      if (!source) return direct || "";
       if (lang === primaryLang) return source;
+
+      const resolved = resolveProductText(source, primaryLang, lang);
+      if (resolved !== source) return resolved;
 
       const cached = getCachedMenuTranslation(source, primaryLang, lang);
       if (cached) return cached;
       scheduleTranslation(source, primaryLang, lang);
       return source;
     },
-    [lang, primaryLang, translationTick, scheduleTranslation],
+    [lang, primaryLang, translationTick, scheduleTranslation, resolveProductText],
   );
 
   const preloadMenuTranslations = useCallback(

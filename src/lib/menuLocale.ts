@@ -2,6 +2,7 @@ import type { Category } from "@/data/products";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ProductModifierConfig } from "@/lib/modifiers/types";
 import { pickSourceText, readLocalized, type AppLang } from "@/lib/localizedText";
+import { looksLikeUntranslatedCopy, translateMenuGlossary } from "@/lib/menuFoodGlossary";
 
 export type LocalizedField = Record<string, string> | string | null | undefined;
 
@@ -13,7 +14,11 @@ export function menuItemNeedsTranslation(
   if (lang === primaryLang) return false;
   if (typeof obj === "string") return Boolean(obj.trim());
   const record = readLocalized(obj);
-  return !record[lang]?.trim();
+  const direct = record[lang]?.trim();
+  const source = pickSourceText(obj, primaryLang);
+  if (!direct) return Boolean(source);
+  if (looksLikeUntranslatedCopy(direct, source, lang, primaryLang)) return Boolean(source);
+  return false;
 }
 
 export function collectTranslationSources(

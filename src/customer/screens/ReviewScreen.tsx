@@ -307,7 +307,7 @@ const ReviewScreen = () => {
                   )}
                   {item.removedIngredients.length > 0 && (
                     <p className="text-[11px] text-destructive font-semibold mt-1">
-                      {t("without")}: {item.removedIngredients.join(", ")}
+                      {t("without")}: {item.removedIngredients.map((label) => tProduct(label)).join(", ")}
                     </p>
                   )}
                   {item.configuration && (

@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage, LANG_LABELS, translateForLang } from "@/contexts/LanguageContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { readMenuCache } from "@/lib/menuCache";
-import { collectMenuCatalogFields } from "@/lib/menuLocale";
+import { collectMenuCatalogFields, collectTranslationSources } from "@/lib/menuLocale";
+import { seedMenuGlossaryCache } from "@/lib/menuFoodGlossary";
 import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
 import { dismissBootShell } from "@/lib/bootShell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -56,12 +57,18 @@ const LanguageScreen = () => {
     if (screenReady) dismissBootShell();
   }, [screenReady]);
 
-  const handleSelect = (code: "pt" | "en" | "es" | "fr") => {
+  const [preparingLang, setPreparingLang] = useState<string | null>(null);
+
+  const handleSelect = async (code: "pt" | "en" | "es" | "fr") => {
     setLang(code);
     if (storeId && code !== primaryLang) {
       const cached = readMenuCache(storeId);
       if (cached) {
-        void ensureMenuLocalizedReady(collectMenuCatalogFields(cached.categories, cached.products));
+        setPreparingLang(code);
+        const fields = collectMenuCatalogFields(cached.categories, cached.products);
+        seedMenuGlossaryCache(collectTranslationSources(fields, primaryLang, code), primaryLang, code);
+        await ensureMenuLocalizedReady(fields);
+        setPreparingLang(null);
       }
     }
     setScreen(stores.length >= 2 ? "storeSelect" : "orderType");
@@ -125,8 +132,9 @@ const LanguageScreen = () => {
               <button
                 key={code}
                 type="button"
-                onClick={() => handleSelect(code)}
-                className={`active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0 ${flagMax}`}
+                disabled={preparingLang !== null}
+                onClick={() => void handleSelect(code)}
+                className={`active:scale-95 transition-transform touch-action-manipulation flex-1 min-w-0 ${flagMax} disabled:opacity-50`}
                 aria-label={label}
               >
                 <div className="w-full aspect-square flex items-center justify-center">
