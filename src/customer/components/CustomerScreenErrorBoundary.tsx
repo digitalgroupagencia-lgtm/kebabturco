@@ -7,6 +7,7 @@ type Props = {
   title?: string;
   description?: string;
   onRecover?: () => void;
+  fillHeight?: boolean;
 };
 
 type State = { error: Error | null };
@@ -78,10 +79,6 @@ export default class CustomerScreenErrorBoundary extends React.Component<Props, 
       );
     }
 
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        {this.props.children}
-      </div>
-    );
+    return <div className={`flex min-h-0 flex-col ${this.props.fillHeight === false ? "" : "h-full"}`}>{this.props.children}</div>;
   }
 }

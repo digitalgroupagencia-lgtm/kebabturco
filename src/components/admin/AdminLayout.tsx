@@ -62,9 +62,9 @@ const AdminLayout = ({ page: Page }: Props) => {
       <AdminStoreProvider>
         <StaffScreenHelpProvider>
         <SidebarProvider defaultOpen={false}>
-          <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
+          <div className="flex h-[100dvh] min-h-0 w-full max-w-full overflow-x-hidden">
             <AdminSidebar />
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex min-h-0 flex-1 flex-col min-w-0">
               <header className="sticky top-0 z-30 h-14 flex items-center border-b px-3 sm:px-4 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
                 <SidebarTrigger className="mr-2 sm:mr-4" />
                 <h1 className="text-base sm:text-lg font-bold text-foreground truncate flex-1">
@@ -74,7 +74,7 @@ const AdminLayout = ({ page: Page }: Props) => {
                 <StaffLanguageToggle defaultLang="pt" compact />
                 <AdminThemeToggle />
               </header>
-              <main className="flex-1 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
+              <main className="flex-1 min-h-0 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
                 <div className="max-w-full mx-auto">
                   {Page ? <Page /> : <Outlet />}
                 </div>
