@@ -1164,6 +1164,7 @@ export type Database = {
           bridge_last_seen_at: string | null
           printer_ip: string
           printer_port: number
+          restaurant_display_name: string
           target_store_id: string | null
           updated_at: string
           user_id: string
@@ -1172,6 +1173,7 @@ export type Database = {
           bridge_last_seen_at?: string | null
           printer_ip?: string
           printer_port?: number
+          restaurant_display_name?: string
           target_store_id?: string | null
           updated_at?: string
           user_id: string
@@ -1180,6 +1182,7 @@ export type Database = {
           bridge_last_seen_at?: string | null
           printer_ip?: string
           printer_port?: number
+          restaurant_display_name?: string
           target_store_id?: string | null
           updated_at?: string
           user_id?: string
