@@ -123,9 +123,11 @@ async function main() {
   const found = await scanSubnet();
   if (!found.length) {
     console.log("\n✗ Nenhuma impressora encontrada na rede.");
-    console.log("  • Ligue a Epson e confirme que está na mesma Wi‑Fi do Mac");
-    console.log("  • Imprima o ticket de rede da impressora (botão) e actualize o IP no painel");
-    console.log("  • Depois volte a correr: npm run visit-print:wait-test\n");
+    console.log("  • Cabo ou Wi‑Fi: o Mac e a impressora têm de estar no MESMO router");
+    console.log("  • O cabo da Epson deve ir a uma porta LAN do router (não na porta «Internet»)");
+    console.log("  • Imprima de novo o ticket de rede na impressora — o IP pode ter mudado");
+    console.log("  • Actualize o IP no painel Admin → Demo visita → Guardar");
+    console.log("  • Depois: npm run visit-print:wait-test\n");
     process.exit(1);
   }
 

@@ -1,0 +1,12 @@
+Cole no chat Lovable (após Sync):
+
+Deploy no Supabase deste projeto as edge functions:
+- visit-print-bridge-api (pasta supabase/functions/visit-print-bridge-api/)
+- print-order (pasta supabase/functions/print-order/ — versão actual com suporte a visit-print)
+
+Confirme que o secret VISIT_BRIDGE_TOKEN está activo.
+Depois Publish.
+
+Teste no browser:
+https://kvpssbhclafoymhecmuk.supabase.co/functions/v1/visit-print-bridge-api
+(deve responder ok:true, não "not found")

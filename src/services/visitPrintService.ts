@@ -240,7 +240,7 @@ export function isVisitBridgeOnline(lastSeen: string | null): boolean {
 export function formatVisitPrintError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("ehostdown") || m.includes("host is down")) {
-    return "A impressora está desligada ou fora da rede. Ligue-a e confirme que está na mesma Wi‑Fi do Mac.";
+    return "A impressora não responde nesse endereço. Por cabo ou Wi‑Fi, imprima de novo o ticket de rede na Epson — o IP pode ter mudado — e actualize no painel.";
   }
   if (m.includes("timeout tcp") || m.includes("timeout") || m.includes("timed out")) {
     return "O Mac não conseguiu falar com a impressora nesse endereço. Verifique se está ligada e se o IP está correcto (imprima o ticket de rede da Epson).";
