@@ -158,12 +158,8 @@ workflows:
       node: 22
       xcode: latest
 
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
+    # iPhone: só manual no Codemagic («Start new build»). Evita uma compilação
+    # nova a cada push quando a alteração é só site/Android/Google Play.
 
     scripts:
       - name: Confirmar Xcode 26 (obrigatório para Capacitor 8)
@@ -230,6 +226,12 @@ workflows:
       branch_patterns:
         - pattern: main
           include: true
+
+    when:
+      changeset:
+        includes:
+          - "android/"
+          - "scripts/sync-android-for-release.sh"
 
     scripts:
       - name: Instalar dependências
