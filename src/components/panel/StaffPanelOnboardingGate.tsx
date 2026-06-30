@@ -10,7 +10,6 @@ import {
   fetchSellerSetupStatus,
   isPanelOnboardingCached,
   markPanelOnboardingCached,
-  saveMyStaffAccessPin,
   saveSellerOnboarding,
   verifyMyStaffAccessPin,
   type SellerSetupStatus,
@@ -29,6 +28,7 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
   const { t, lang } = useStaffT();
   const uiLang = lang === "en" ? "es" : lang;
   const { storeId } = usePanelStore();
+  const [cached, setCached] = useState(() => isPanelOnboardingCached(userId));
   const [checking, setChecking] = useState(() => !isPanelOnboardingCached(userId));
   const [setup, setSetup] = useState<SellerSetupStatus | null>(() =>
     isPanelOnboardingCached(userId)
@@ -41,16 +41,9 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
   const [pinConfirm, setPinConfirm] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (isPanelOnboardingCached(userId)) {
-    return <>{children}</>;
-  }
-
-  const ready = setup?.ready ?? false;
-  const showProfile = !setup?.profileComplete;
-  const pinOnly = Boolean(setup?.hasPin && setup?.profileComplete);
-
   useEffect(() => {
     if (isPanelOnboardingCached(userId)) {
+      setCached(true);
       setChecking(false);
       return;
     }
@@ -66,7 +59,10 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
         setSetup(status);
         setFullName(profile?.full_name?.trim() || "");
         setBirthDate(profile?.birth_date || "");
-        if (status.ready) markPanelOnboardingCached(userId);
+        if (status.ready) {
+          markPanelOnboardingCached(userId);
+          setCached(true);
+        }
       } catch {
         if (mounted) setSetup({ profileComplete: false, hasPin: false, ready: false });
       } finally {
@@ -77,6 +73,10 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
       mounted = false;
     };
   }, [userId]);
+
+  const ready = cached || (setup?.ready ?? false);
+  const showProfile = !setup?.profileComplete;
+  const pinOnly = Boolean(setup?.hasPin && setup?.profileComplete);
 
   const handleSave = async () => {
     if (!storeId) {
@@ -124,6 +124,7 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
 
       toast.success(t("staff.setup.done"));
       markPanelOnboardingCached(userId);
+      setCached(true);
       setSetup({ profileComplete: true, hasPin: true, ready: true });
     } catch (e) {
       toast.error(translateAppErrorFromException(e, uiLang));
@@ -132,6 +133,10 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
     }
   };
 
+  if (cached || ready) {
+    return <>{children}</>;
+  }
+
   if (checking) {
     return (
       <div className="min-h-[40vh] flex items-center justify-center">
@@ -139,8 +144,6 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
       </div>
     );
   }
-
-  if (ready) return <>{children}</>;
 
   return (
     <div className="mx-auto max-w-md w-full space-y-6 py-4">

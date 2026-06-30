@@ -34,7 +34,7 @@ type Props = {
 
 /** Idioma do header — usa loja seleccionada no painel (admin master incluído). */
 function PanelHeaderLanguageToggle() {
-  const storeId = usePanelStoreId();
+  const { storeId } = usePanelStoreId();
   const { primaryLang } = useStoreLanguages(storeId);
   return (
     <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />

@@ -212,17 +212,20 @@ export async function importStoreModifiersFromCatalog(
       const linkKey = `${product.id}|${dbGroupId}`;
       if (linkKeys.has(linkKey)) continue;
 
-      const { error: linkError } = await supabase.from("product_modifier_groups").upsert(
-        {
-          product_id: product.id,
-          group_id: dbGroupId,
-          sort_order: group.linkSortOrder ?? group.sortOrder,
-          repeat_per_unit: group.repeatPerUnit,
-        },
-        { onConflict: "product_id,group_id", ignoreDuplicates: true },
-      );
+      const { error: linkError } = await supabase.from("product_modifier_groups").insert({
+        product_id: product.id,
+        group_id: dbGroupId,
+        sort_order: group.linkSortOrder ?? group.sortOrder,
+        repeat_per_unit: group.repeatPerUnit,
+      });
 
-      if (linkError && linkError.code !== "23505") throw linkError;
+      if (linkError) {
+        if (linkError.code === "23505") {
+          linkKeys.add(linkKey);
+          continue;
+        }
+        throw linkError;
+      }
       linkKeys.add(linkKey);
       linksCreated += 1;
     }
