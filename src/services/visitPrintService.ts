@@ -226,9 +226,24 @@ export async function printVisitDemoTest(): Promise<{
 }
 
 export async function printVisitDemoOrder(input: CheckoutPrintInput) {
-  const companyName = await resolveVisitDemoCompanyName();
+  const cfg = await fetchVisitPrintConfig();
+  const companyName = await resolveVisitDemoCompanyName(cfg);
   const ticket = checkoutPayloadToTicket({ ...input, companyName });
   const data = buildEscPosTicket(ticket);
+
+  const local = await probeLocalMacPrint();
+  if (local.bridge_running && cfg?.printer_ip?.trim()) {
+    const direct = await printVisitDemoDirectLocal({
+      printerIp: cfg.printer_ip.trim(),
+      printerPort: cfg.printer_port || 9100,
+      ticketBase64: data,
+    });
+    if (direct.ok) return { success: true, direct: true };
+    if (!direct.error?.includes("404")) {
+      return { success: false, error: formatVisitPrintError(direct.error || "Falha na impressão local") };
+    }
+  }
+
   return enqueueVisitDemoPrint(data, input.orderId);
 }
 
