@@ -199,7 +199,9 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Só envia o .ipa para o TestFlight (processamento Apple). Não pede revisão beta
+        # automática — evita erro 422 «Another build is in review» quando há várias builds seguidas.
+        submit_to_testflight: false
 
     # Alternativa sem Transporter no Mac: o Codemagic envia directo para a Apple.
 
