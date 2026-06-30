@@ -20,12 +20,23 @@
     var el = document.getElementById("boot-fallback");
     if (!el || el.dataset.loading === "1") return;
     el.dataset.loading = "1";
+    // Mantém apenas o fundo (sem texto "Kebab Turco / A abrir…") para evitar
+    // o "flash" da tela vermelha em arranques rápidos. O texto só aparece
+    // se o arranque demorar mais de 1.2s (ver scheduleBootLoadingText).
     el.innerHTML =
-      '<div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#fff;background:#5F0504">' +
+      '<div id="boot-fallback-inner" style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#fff;background:#5F0504;opacity:0;transition:opacity 200ms ease">' +
       '<p style="font-size:18px;font-weight:700;margin:0 0 12px">Kebab Turco</p>' +
       '<p style="font-size:14px;opacity:0.85;margin:0">A abrir…</p>' +
       "</div>";
+    if (window.__SNAPORDER_BOOT_TEXT_TIMER__) {
+      window.clearTimeout(window.__SNAPORDER_BOOT_TEXT_TIMER__);
+    }
+    window.__SNAPORDER_BOOT_TEXT_TIMER__ = window.setTimeout(function () {
+      var inner = document.getElementById("boot-fallback-inner");
+      if (inner) inner.style.opacity = "1";
+    }, 1200);
   }
+
 
   function showBootError(message) {
     var el = document.getElementById("boot-fallback");
