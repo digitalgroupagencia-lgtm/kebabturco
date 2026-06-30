@@ -12,9 +12,10 @@ export const STOREFRONT_FOOTER_BOTTOM_STYLE = {
 export const STOREFRONT_FOOTER_BOTTOM_CLASS =
   "[@media(hover:hover)_and_(pointer:fine)]:!bottom-10";
 
-/** Rodapé fixo com Continuar / Adicionar / Pagar / tab bar — safe-area tratada no wrapper. */
-export const CUSTOMER_ACTION_FOOTER_PAD_CLASS = "";
+/** Rodapé fixo com Continuar / Adicionar / Pagar — margem para o indicador do iPhone. */
+export const CUSTOMER_ACTION_FOOTER_PAD_CLASS =
+  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]";
 
 export const CUSTOMER_TAB_BAR_SAFE_AREA_CLASS = "pb-[env(safe-area-inset-bottom,0px)]";
 
-export const CUSTOMER_ACTION_FOOTER_CLASS = `shrink-0 z-20 border-t border-border/60 bg-card/95 px-4 pt-3 backdrop-blur-md ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`;
+export const CUSTOMER_ACTION_FOOTER_CLASS = `shrink-0 z-20 border-t border-border/60 bg-card px-4 pt-3 backdrop-blur-md shadow-[0_-4px_20px_-16px_rgba(0,0,0,0.12)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`;

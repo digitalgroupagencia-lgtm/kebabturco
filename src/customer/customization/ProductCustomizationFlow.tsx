@@ -482,7 +482,7 @@ export default function ProductCustomizationFlow({
   );
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/15 animate-fade-in">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <ScreenHeader eyebrow={t("customizeProduct")} title={productCleanName} onBack={onBack} sticky />
 
       {useStepWizard && (

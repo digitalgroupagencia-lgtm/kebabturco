@@ -1153,7 +1153,7 @@ const PaymentScreen = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
 
 
       <StoreClosedDialog
@@ -1166,8 +1166,14 @@ const PaymentScreen = () => {
         }}
       />
       <ScreenHeader
-        eyebrow={checkoutStep === "details" && !isTableOrder ? "Etapa 1 de 2" : t("finalStep")}
-        title={isTableOrder ? "Pagamento na mesa" : checkoutStep === "details" ? "Os teus dados" : t("pay")}
+        eyebrow={checkoutStep === "details" && !isTableOrder ? t("checkoutStep1Of2") : t("finalStep")}
+        title={
+          isTableOrder
+            ? t("tablePaymentTitle")
+            : checkoutStep === "details"
+              ? t("yourDetailsTitle")
+              : t("pay")
+        }
         onBack={() => {
           if (stripePaymentLocked || processing || recoveringCheckout) return;
           if (stripeClientSecret) {
@@ -1510,7 +1516,7 @@ const PaymentScreen = () => {
             {checkoutStep === "details" && !isTableOrder && (
               <div className="mt-3 bg-card rounded-2xl border border-border p-3">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">
-                  {t("couponLabel") || "Cupão / Cupón"}
+                  {t("couponLabel")}
                 </p>
                 <div className="flex gap-2">
                   <input
@@ -1521,20 +1527,20 @@ const PaymentScreen = () => {
                       setCouponError(null);
                     }}
                     placeholder="CÓDIGO"
-                    className="flex-1 h-10 px-3 rounded-xl border border-border font-bold uppercase text-sm"
+                    className="flex-1 h-10 px-3 rounded-xl border border-border bg-secondary/60 font-bold uppercase text-sm text-foreground"
                   />
                   <button
                     type="button"
                     onClick={() => void applyCoupon()}
                     className="px-4 h-10 rounded-xl bg-gradient-primary text-primary-foreground font-bold text-xs shadow-primary"
                   >
-                    {t("couponApply") || "Aplicar"}
+                    {t("couponApply")}
                   </button>
                 </div>
                 {couponError && <p className="text-xs text-destructive mt-1.5 font-medium">{couponError}</p>}
                 {couponDiscount > 0 && (
                   <p className="text-xs text-success mt-1.5 font-bold">
-                    −{couponDiscount.toFixed(2)}€ {t("couponApplied") || "desconto aplicado"}
+                    −{couponDiscount.toFixed(2)}€ {t("couponApplied")}
                   </p>
                 )}
                 {isDemoVisitCoupon && (
@@ -1621,7 +1627,7 @@ const PaymentScreen = () => {
       </div>
 
       {!stripeClientSecret && !showCheckoutSpinner && (
-        <div className={`shrink-0 z-50 bg-background/95 backdrop-blur-md border-t border-border px-4 pt-3 ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}>
+        <div className={`shrink-0 z-50 border-t border-border bg-card px-4 pt-3 shadow-[0_-4px_20px_-16px_rgba(0,0,0,0.12)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}>
           {showError === "store" && (
             <div className="mb-2 px-1">
               <p className="text-xs text-destructive font-bold">

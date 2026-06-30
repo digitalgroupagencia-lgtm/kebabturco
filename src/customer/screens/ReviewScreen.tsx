@@ -186,7 +186,7 @@ const ReviewScreen = () => {
   const tabBarVisible = TAB_BAR_VISIBLE_SCREENS.has(screen);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-secondary/20 animate-fade-in">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in">
       <ScreenHeader
         eyebrow={t("yourOrder")}
         title={t("review")}
@@ -402,7 +402,7 @@ const ReviewScreen = () => {
 
       {/* Checkout compacto, acima da tab bar */}
       {items.length > 0 && (
-        <div className={`shrink-0 z-40 border-t border-border/70 bg-background/98 backdrop-blur-md px-4 pt-2 shadow-[0_-6px_20px_-16px_rgba(0,0,0,0.18)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}>
+        <div className={`shrink-0 z-40 border-t border-border/70 bg-card px-4 pt-2 shadow-[0_-6px_20px_-16px_rgba(0,0,0,0.18)] ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`}>
           <button
             type="button"
             onClick={() => setScreen("home")}

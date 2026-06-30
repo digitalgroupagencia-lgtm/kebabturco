@@ -384,6 +384,37 @@ const translations: Translations = {
   freeKetchup: { pt: "Adicionar ketchup grátis?", en: "Add free ketchup?", es: "¿Añadir ketchup gratis?", fr: "Ajouter ketchup gratuit ?" },
   yes: { pt: "Sim", en: "Yes", es: "Sí", fr: "Oui" },
   goToPayment: { pt: "Ir para pagamento", en: "Go to payment", es: "Ir al pago", fr: "Aller au paiement" },
+  couponLabel: {
+    pt: "Cupão de desconto",
+    en: "Discount coupon",
+    es: "Cupón de descuento",
+    fr: "Code promo",
+  },
+  couponApply: { pt: "Aplicar", en: "Apply", es: "Aplicar", fr: "Appliquer" },
+  couponApplied: {
+    pt: "desconto aplicado",
+    en: "discount applied",
+    es: "descuento aplicado",
+    fr: "réduction appliquée",
+  },
+  yourDetailsTitle: {
+    pt: "Os teus dados",
+    en: "Your details",
+    es: "Tus datos",
+    fr: "Vos coordonnées",
+  },
+  checkoutStep1Of2: {
+    pt: "Etapa 1 de 2",
+    en: "Step 1 of 2",
+    es: "Paso 1 de 2",
+    fr: "Étape 1 sur 2",
+  },
+  tablePaymentTitle: {
+    pt: "Pagamento na mesa",
+    en: "Pay at table",
+    es: "Pago en mesa",
+    fr: "Paiement à table",
+  },
   checkoutNeedOrderType: {
     pt: "Escolha como quer pedir (mesa, levar ou entrega) para continuar.",
     en: "Choose how you want to order (table, takeaway or delivery) to continue.",

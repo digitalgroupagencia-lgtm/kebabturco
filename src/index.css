@@ -145,10 +145,14 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    background-color: var(--browser-chrome-bg, hsl(var(--brand-wine-dark)));
-    background-color: var(--browser-chrome-hex, #3A0205);
     height: 100%;
     overscroll-behavior-y: none;
+    color-scheme: light dark;
+  }
+  html[data-theme="light"]:not(.staff-app) {
+    color-scheme: light;
+  }
+  html[data-theme="dark"]:not(.staff-app) {
     color-scheme: dark;
   }
   body {
@@ -161,7 +165,7 @@
     background-color: hsl(var(--background));
   }
   html:not(.staff-app) body {
-    background-color: var(--browser-chrome-hex, #3A0205);
+    background-color: var(--customer-canvas-bg, hsl(var(--background)));
   }
   /* Cardápio cliente: sem scroll no body — só a lista de produtos rola */
   html:not(.staff-app) body,
@@ -209,7 +213,7 @@
   html:not(.staff-app) #root {
     overflow-x: clip;
     overflow-y: hidden;
-    background-color: var(--browser-chrome-hex, #3A0205);
+    background-color: var(--customer-canvas-bg, hsl(var(--background)));
   }
   html.staff-app #root {
     overflow-x: clip;

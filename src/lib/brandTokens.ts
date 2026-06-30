@@ -182,7 +182,7 @@ function setOrCreateMeta(name: string, content: string, extra?: Record<string, s
 }
 
 /** Actualiza theme-color, safe-area e meta iOS, só no site do cliente (não admin/painel). */
-export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "dark" = "light"): void {
+export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "dark" = "light"): void {
   if (typeof document === "undefined") return;
 
   if (isStaffAppPath()) {
@@ -196,6 +196,7 @@ export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "d
   const base = headerHex || BRAND_WINE_HEX;
   const palette = winePaletteFromHex(base);
   const chromeHex = chromeHexFromHeader(base);
+  const isDark = theme === "dark";
 
   const themeMedia = [
     undefined,
@@ -213,11 +214,15 @@ export function applyBrowserChromeColor(headerHex?: string, _theme: "light" | "d
   setOrCreateMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
   setOrCreateMeta("mobile-web-app-capable", "yes");
 
-  root.style.setProperty("--browser-chrome-bg", `hsl(${palette.wineDark})`);
   root.style.setProperty("--browser-chrome-hex", chromeHex);
   root.style.setProperty("--gradient-header", chromeHex);
-  root.style.backgroundColor = chromeHex;
-  root.style.colorScheme = "dark";
+  root.style.setProperty(
+    "--customer-canvas-bg",
+    isDark ? chromeHex : "hsl(var(--background))",
+  );
+  root.style.setProperty("--browser-chrome-bg", isDark ? `hsl(${palette.wineDark})` : "hsl(var(--background))");
+  root.style.backgroundColor = isDark ? chromeHex : "";
+  root.style.colorScheme = isDark ? "dark" : "light";
 
   if (window.matchMedia("(display-mode: standalone)").matches) {
     root.classList.add("pwa-standalone");
