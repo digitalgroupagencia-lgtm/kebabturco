@@ -21,3 +21,10 @@ CREATE TRIGGER trg_orders_mark_demo_visit
   BEFORE INSERT OR UPDATE OF coupon_code, is_test, notes ON public.orders
   FOR EACH ROW
   EXECUTE FUNCTION public.orders_mark_demo_visit();
+
+UPDATE public.orders
+SET
+  is_test = true,
+  notes = trim(COALESCE(notes, '') || ' [DEMO VISITA — só admin master]')
+WHERE upper(trim(COALESCE(coupon_code, ''))) = 'DEMO-IMPRESSAO'
+  AND COALESCE(is_test, false) = false;
