@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { clearStaffSessionFlag } from "@/lib/staffLogin";
+import { stashPushCoupon } from "@/lib/customerPushDeepLink";
 import { buildEscPosTicket, sampleOrder } from "@/services/escPosTicketBuilder";
 import { checkoutPayloadToTicket, type CheckoutPrintInput } from "@/services/checkoutPrintHelper";
 
@@ -270,6 +272,13 @@ export function formatVisitPrintError(message: string): string {
 }
 
 export const DEMO_VISIT_COUPON_CODE = "DEMO-IMPRESSAO";
+
+/** Abre o cardápio do cliente no mesmo telemóvel, mantendo login admin (cupão demo). */
+export function beginDemoVisitCustomerOrder(): void {
+  clearStaffSessionFlag();
+  stashPushCoupon(DEMO_VISIT_COUPON_CODE);
+  window.location.assign("/?screen=home&demo_visita=1");
+}
 
 export const VISIT_BRIDGE_INSTALL = `# Uma vez no Mac (deixe esta janela aberta nas visitas):
 npm run visit-print:helper

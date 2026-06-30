@@ -37,9 +37,19 @@ export function shouldRedirectRootToStaffPanel(opts: {
   pathname: string;
   staffSessionFlag: boolean;
   hasUser: boolean;
+  search?: string;
 }): boolean {
   const root = opts.pathname.replace(/\/+$/, "") || "/";
-  return root === "/" && opts.staffSessionFlag && opts.hasUser;
+  if (root !== "/" || !opts.staffSessionFlag || !opts.hasUser) return false;
+  try {
+    const params = new URLSearchParams(
+      opts.search ?? (typeof window !== "undefined" ? window.location.search : ""),
+    );
+    if (params.get("demo_visita") === "1") return false;
+  } catch {
+    /* ignore */
+  }
+  return true;
 }
 
 /** Volta ao totem do cliente (idioma → tipo de pedido → menu). */

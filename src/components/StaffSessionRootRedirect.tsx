@@ -17,7 +17,7 @@ export default function StaffSessionRootRedirect({ children }: { children: React
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
@@ -26,6 +26,7 @@ export default function StaffSessionRootRedirect({ children }: { children: React
         pathname,
         staffSessionFlag: isStaffSessionFlagSet(),
         hasUser: Boolean(user),
+        search,
       })
     ) {
       return;
@@ -34,7 +35,7 @@ export default function StaffSessionRootRedirect({ children }: { children: React
     if (dest && dest !== "/") {
       navigate(dest, { replace: true });
     }
-  }, [authLoading, roleLoading, user, roleData?.role, navigate, pathname]);
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, pathname, search]);
 
   return <>{children}</>;
 }

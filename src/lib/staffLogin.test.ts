@@ -20,6 +20,17 @@ describe("shouldRedirectRootToStaffPanel", () => {
       shouldRedirectRootToStaffPanel({ pathname: "/admin", staffSessionFlag: true, hasUser: true }),
     ).toBe(false);
   });
+
+  it("allows demo visit customer flow on root", () => {
+    expect(
+      shouldRedirectRootToStaffPanel({
+        pathname: "/",
+        staffSessionFlag: true,
+        hasUser: true,
+        search: "?screen=home&demo_visita=1",
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("resolveStaffLoginDestination", () => {

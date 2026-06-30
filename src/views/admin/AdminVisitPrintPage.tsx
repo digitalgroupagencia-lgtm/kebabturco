@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isGeneralAdmin } from "@/lib/projectAccess";
 import {
+  beginDemoVisitCustomerOrder,
   DEMO_VISIT_COUPON_CODE,
   VISIT_BRIDGE_INSTALL,
   VISIT_HELPER_ONLY,
@@ -31,6 +32,7 @@ import {
   Play,
   Printer,
   Save,
+  ShoppingBag,
   Terminal,
   Wifi,
   WifiOff,
@@ -257,10 +259,37 @@ export default function AdminVisitPrintPage() {
         <AlertDescription className="space-y-2 text-sm">
           <p>1. Nome do restaurante + IP + porta → <strong>Guardar</strong></p>
           <p>2. <strong>Ligar Mac</strong> (só precisa do helper activo uma vez por sessão)</p>
-          <p>3. <strong>Imprimir teste</strong> ou pedido na app com cupão <code className="bg-muted px-1 rounded">{DEMO_VISIT_COUPON_CODE}</code></p>
+          <p>
+            3. No telemóvel: <strong>Abrir cardápio demo</strong> (fica com a tua conta — não precisa sair do admin)
+            → montar pedido → cupão já vem preenchido → <strong>Confirmar demonstração</strong>
+          </p>
+          <p>Ou use <strong>Imprimir teste</strong> só para papel de amostra.</p>
           <p>O ticket mostra o <strong>nome que escreveu</strong>. Não precisa escolher loja nem ligar «impressão automática» na configuração oficial.</p>
         </AlertDescription>
       </Alert>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5" />
+            Pedido com cupão no telemóvel
+          </CardTitle>
+          <CardDescription>
+            Abre o cardápio como cliente sem sair da sua conta — o cupão {DEMO_VISIT_COUPON_CODE} só funciona para
+            administrador.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button type="button" className="w-full sm:w-auto" onClick={() => beginDemoVisitCustomerOrder()}>
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            Abrir cardápio demo
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Monta o pedido → no pagamento o cupão aparece sozinho → carrega em{" "}
+            <strong>Confirmar demonstração</strong> (0 €) → imprime no Mac.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
