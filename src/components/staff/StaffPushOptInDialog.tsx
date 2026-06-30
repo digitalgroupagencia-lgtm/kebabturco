@@ -54,7 +54,7 @@ const STAFF_COPY: Record<string, PushOptInCopy> = {
 };
 
 const StaffPushOptInDialog = ({ open, storeId, onOpenChange }: Props) => {
-  const { lang } = useLanguage();
+  const lang = useOptionalLanguage()?.lang ?? "es";
   const copy = STAFF_COPY[lang] ?? STAFF_COPY.es;
   const [busy, setBusy] = useState(false);
 
