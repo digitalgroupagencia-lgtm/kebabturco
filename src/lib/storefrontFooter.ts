@@ -14,6 +14,6 @@ export const STOREFRONT_FOOTER_BOTTOM_CLASS =
 
 /** Rodapé fixo com Continuar / Adicionar / Pagar, margem extra na moldura desktop. */
 export const CUSTOMER_ACTION_FOOTER_PAD_CLASS =
-  "pb-[max(0.75rem,env(safe-area-inset-bottom))] [@media(hover:hover)_and_(pointer:fine)]:pb-8";
+  "pb-[env(safe-area-inset-bottom)] [@media(hover:hover)_and_(pointer:fine)]:pb-2";
 
 export const CUSTOMER_ACTION_FOOTER_CLASS = `shrink-0 z-20 border-t border-border/60 bg-card/95 px-4 pt-3 backdrop-blur-md ${CUSTOMER_ACTION_FOOTER_PAD_CLASS}`;
