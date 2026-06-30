@@ -1193,4 +1193,3 @@ export const useLanguage = () => {
  * Usar em componentes que podem ser montados fora do storefront (ex.: painel admin).
  */
 export const useOptionalLanguage = () => useContext(LanguageContext) ?? null;
-};
