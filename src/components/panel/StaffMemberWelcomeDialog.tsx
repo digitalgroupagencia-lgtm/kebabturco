@@ -53,6 +53,18 @@ const StaffMemberWelcomeDialog = ({ open, data, onOpenChange, mode = "create" }:
           <DialogDescription>{t("welcome.description")}</DialogDescription>
         </DialogHeader>
 
+        {data.paymentCode?.trim() ? (
+          <div className="rounded-xl border-2 border-primary/40 bg-primary/10 p-4 text-center space-y-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {t("team.field.accessPin")}
+            </p>
+            <p className="text-3xl font-black tracking-[0.3em] font-mono text-primary">
+              {data.paymentCode.trim()}
+            </p>
+            <p className="text-xs text-muted-foreground">{t("team.field.accessPin.hint")}</p>
+          </div>
+        ) : null}
+
         <pre className="flex-1 overflow-y-auto rounded-xl border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap font-sans">
           {summary}
         </pre>

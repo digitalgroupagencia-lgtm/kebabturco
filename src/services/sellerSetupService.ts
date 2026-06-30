@@ -85,3 +85,30 @@ export async function saveMyStaffAccessPin(pin: string): Promise<void> {
   const { error } = await supabase.rpc("upsert_my_staff_access_pin", { _pin: pin.trim() });
   if (error) throw error;
 }
+
+export async function verifyMyStaffAccessPin(storeId: string, pin: string, userId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("verify_staff_access_pin", {
+    _store_id: storeId,
+    _pin: pin.trim(),
+  });
+  if (error) throw error;
+  return (data ?? []).some((row: { user_id: string }) => row.user_id === userId);
+}
+
+const PANEL_ONBOARDING_KEY = "kebab-panel-onboarding-ready";
+
+export function isPanelOnboardingCached(userId: string): boolean {
+  try {
+    return sessionStorage.getItem(`${PANEL_ONBOARDING_KEY}:${userId}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markPanelOnboardingCached(userId: string): void {
+  try {
+    sessionStorage.setItem(`${PANEL_ONBOARDING_KEY}:${userId}`, "1");
+  } catch {
+    /* ignore */
+  }
+}

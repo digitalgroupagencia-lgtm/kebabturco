@@ -8,6 +8,7 @@ import { normalizeProductClassification } from "@/lib/modifiers/productClassific
 import { safeHasFixedProtein } from "@/lib/modifiers/safeCustomization";
 import { synthesizeModifierConfigFromProduct } from "@/lib/modifiers/synthesizeConfig";
 import type { ModifierGroup, ModifierOption } from "@/lib/modifiers/types";
+import { ImportModifiersError } from "@/lib/modifiers/importStoreModifiersErrors";
 
 export type ImportStoreModifiersResult = {
   groupsCreated: number;
@@ -132,7 +133,7 @@ export async function importStoreModifiersFromCatalog(
   if (countError) throw countError;
 
   if ((existingGroups ?? 0) > 0 && !replaceExisting) {
-    throw new Error("Esta unidade já tem grupos de personalização.");
+    throw new ImportModifiersError("HAS_GROUPS");
   }
 
   if (replaceExisting && (existingGroups ?? 0) > 0) {
@@ -142,7 +143,7 @@ export async function importStoreModifiersFromCatalog(
 
   const menuProducts = await fetchMenuProductsForStore(storeId);
   if (!menuProducts.length) {
-    throw new Error("Não há produtos no cardápio desta unidade para importar.");
+    throw new ImportModifiersError("NO_PRODUCTS");
   }
 
   const groupIdByKey = new Map<string, string>();
@@ -211,21 +212,24 @@ export async function importStoreModifiersFromCatalog(
       const linkKey = `${product.id}|${dbGroupId}`;
       if (linkKeys.has(linkKey)) continue;
 
-      const { error: linkError } = await supabase.from("product_modifier_groups").insert({
-        product_id: product.id,
-        group_id: dbGroupId,
-        sort_order: group.linkSortOrder ?? group.sortOrder,
-        repeat_per_unit: group.repeatPerUnit,
-      });
+      const { error: linkError } = await supabase.from("product_modifier_groups").upsert(
+        {
+          product_id: product.id,
+          group_id: dbGroupId,
+          sort_order: group.linkSortOrder ?? group.sortOrder,
+          repeat_per_unit: group.repeatPerUnit,
+        },
+        { onConflict: "product_id,group_id", ignoreDuplicates: true },
+      );
 
-      if (linkError) throw linkError;
+      if (linkError && linkError.code !== "23505") throw linkError;
       linkKeys.add(linkKey);
       linksCreated += 1;
     }
   }
 
   if (groupsCreated === 0) {
-    throw new Error("Nenhuma personalização encontrada no cardápio desta unidade.");
+    throw new ImportModifiersError("NO_CUSTOMIZATIONS");
   }
 
   return {

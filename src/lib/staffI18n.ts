@@ -119,6 +119,46 @@ export const STAFF_I18N = {
     en: "Add your name and photo so the restaurant knows who you are on each order.",
   },
   "profile.banner.action": { es: "Completar ahora", pt: "Completar agora", en: "Complete now" },
+  "staff.setup.title": {
+    es: "Bienvenido al equipo",
+    pt: "Bem-vindo à equipa",
+    en: "Welcome to the team",
+  },
+  "staff.setup.subtitle": {
+    es: "Complete su perfil y confirme su código de cobro en mostrador para empezar.",
+    pt: "Complete o seu perfil e confirme o código de pagamento no balcão para começar.",
+    en: "Complete your profile and confirm your counter payment code to get started.",
+  },
+  "staff.setup.pin_only_subtitle": {
+    es: "Introduzca el código de cobro que le dio el gerente.",
+    pt: "Introduza o código de pagamento que o gerente lhe deu.",
+    en: "Enter the payment code your manager gave you.",
+  },
+  "staff.setup.pin_title": {
+    es: "Código de cobro en mostrador",
+    pt: "Código de pagamento no balcão",
+    en: "Counter payment code",
+  },
+  "staff.setup.pin_body": {
+    es: "Lo pedirá el sistema cuando confirme un pago en efectivo. Si el gerente ya lo definió, escríbalo aquí para confirmar.",
+    pt: "O sistema pede-o quando confirma um pagamento em dinheiro. Se o gerente já o definiu, escreva-o aqui para confirmar.",
+    en: "The system asks for it when you confirm a cash payment. If your manager already set it, enter it here to confirm.",
+  },
+  "staff.setup.pin_label": { es: "Su código", pt: "O seu código", en: "Your code" },
+  "staff.setup.pin_confirm": { es: "Repita el código", pt: "Repita o código", en: "Repeat code" },
+  "staff.setup.pin_mismatch": { es: "Los códigos no coinciden", pt: "Os códigos não coincidem", en: "Codes do not match" },
+  "staff.setup.pin_invalid": {
+    es: "Código incorrecto. Revise el que le dio el gerente.",
+    pt: "Código incorrecto. Verifique o que o gerente lhe deu.",
+    en: "Wrong code. Check the one your manager gave you.",
+  },
+  "staff.setup.save": { es: "Guardar y continuar", pt: "Guardar e continuar", en: "Save and continue" },
+  "staff.setup.done": { es: "¡Listo! Ya puede usar el panel.", pt: "Pronto! Já pode usar o painel.", en: "Done! You can use the panel now." },
+  "team.field.accessPin.required": {
+    es: "Defina el código de cobro en mostrador",
+    pt: "Defina o código de pagamento no balcão",
+    en: "Set the counter payment code",
+  },
   "team.field.password.google_hint": {
     es: "Esta persona entró con Google, no necesita contraseña aquí.",
     pt: "Esta pessoa entrou com Google, não precisa de senha aqui.",

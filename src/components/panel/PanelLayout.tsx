@@ -20,6 +20,7 @@ import PanelStoreSwitcher from "@/components/panel/PanelStoreSwitcher";
 import PanelUpdateButton from "@/components/panel/PanelUpdateButton";
 import AdminMasterPanelBack from "@/components/admin/AdminMasterPanelBack";
 import StaffProfileBanner from "@/components/panel/StaffProfileBanner";
+import StaffPanelOnboardingGate from "@/components/panel/StaffPanelOnboardingGate";
 import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
@@ -43,6 +44,7 @@ function PanelHeaderLanguageToggle() {
 const PanelLayout = ({ page: Page }: Props) => {
   const { user, loading } = useAuth();
   const { roleData } = useUserRole(user?.id);
+  const skipStaffOnboarding = roleData?.role === "admin_master";
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useStaffT();
@@ -91,7 +93,15 @@ const PanelLayout = ({ page: Page }: Props) => {
               <main className="flex-1 min-h-0 p-4 sm:p-6 bg-secondary/50 overflow-x-hidden overflow-y-auto">
                 <StaffProfileBanner />
                 <PanelAccessGuard>
-                  <PanelPageErrorBoundary>{Page ? <Page /> : <Outlet />}</PanelPageErrorBoundary>
+                  <PanelPageErrorBoundary>
+                    {skipStaffOnboarding || !user ? (
+                      Page ? <Page /> : <Outlet />
+                    ) : (
+                      <StaffPanelOnboardingGate userId={user.id}>
+                        {Page ? <Page /> : <Outlet />}
+                      </StaffPanelOnboardingGate>
+                    )}
+                  </PanelPageErrorBoundary>
                 </PanelAccessGuard>
               </main>
             </div>

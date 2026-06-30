@@ -17,6 +17,7 @@ import type { ModifierGroupKind, SelectionMode, ModifierGroup } from "@/lib/modi
 import { GROUP_KIND_META, normalizeGroupKindSettings } from "@/lib/modifiers/groupKindMeta";
 import { getModifierConfigWarnings } from "@/lib/modifiers/sanitizeGroups";
 import { importStoreModifiersFromCatalog } from "@/lib/modifiers/importStoreModifiersFromCatalog";
+import { isImportModifiersError } from "@/lib/modifiers/importStoreModifiersErrors";
 import { useStoreLanguages } from "@/hooks/useStoreLanguages";
 import { LANG_LABELS } from "@/contexts/LanguageContext";
 import { buildPrimaryLanguagePayload, pickSourceText } from "@/lib/localizedText";
@@ -137,29 +138,46 @@ export default function ModifierGroupsPage() {
   }, [storeId]);
 
   const runImport = useCallback(
-    async (replaceExisting = false) => {
+    async (replaceExisting = false, silent = false) => {
       if (!storeId) return;
       setImporting(true);
       try {
         const result = await importStoreModifiersFromCatalog(storeId, { replaceExisting });
-        toast.success(panelT(lang, "modifiers.toast.imported", {
-          groups: result.groupsCreated,
-          options: result.optionsCreated,
-        }));
+        if (!silent) {
+          toast.success(panelT(lang, "modifiers.toast.imported", {
+            groups: result.groupsCreated,
+            options: result.optionsCreated,
+          }));
+        }
         await fetchAll();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : t("modifiers.toast.import_error"));
+        if (isImportModifiersError(err)) {
+          if (silent && (err.code === "NO_CUSTOMIZATIONS" || err.code === "HAS_GROUPS")) {
+            return;
+          }
+          const key =
+            err.code === "HAS_GROUPS"
+              ? "modifiers.import.error.has_groups"
+              : err.code === "NO_PRODUCTS"
+                ? "modifiers.import.error.no_products"
+                : "modifiers.import.error.no_customizations";
+          if (!silent) toast.error(t(key));
+        } else {
+          if (!silent) {
+            toast.error(err instanceof Error ? err.message : t("modifiers.toast.import_error"));
+          }
+        }
       } finally {
         setImporting(false);
       }
     },
-    [storeId, fetchAll],
+    [storeId, fetchAll, lang, t],
   );
 
   useEffect(() => {
     if (!storeId || loading || loadingStore || groups.length > 0 || autoImportDone || importing) return;
     setAutoImportDone(true);
-    void runImport(false);
+    void runImport(false, true);
   }, [storeId, loading, loadingStore, groups.length, autoImportDone, importing, runImport]);
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);

@@ -1090,6 +1090,21 @@ export const STAFF_I18N_CATALOG = {
   "modifiers.toast.load_options_error": { es: "No se pudieron cargar opciones.", pt: "Não foi possível carregar opções.", en: "Could not load options." },
   "modifiers.toast.imported": { es: "Importadas: {groups} grupos, {options} opciones", pt: "Importadas: {groups} grupos, {options} opções", en: "Imported: {groups} groups, {options} options" },
   "modifiers.toast.import_error": { es: "Error al importar", pt: "Erro ao importar", en: "Import failed" },
+  "modifiers.import.error.has_groups": {
+    es: "Esta unidad ya tiene grupos de personalización. Use «Reimportar» si quiere sustituirlos.",
+    pt: "Esta unidade já tem grupos de personalização. Use «Reimportar» se quiser substituí-los.",
+    en: "This store already has customization groups. Use «Reimport» to replace them.",
+  },
+  "modifiers.import.error.no_products": {
+    es: "No hay productos activos en el menú de esta unidad.",
+    pt: "Não há produtos activos no cardápio desta unidade.",
+    en: "There are no active products in this store menu.",
+  },
+  "modifiers.import.error.no_customizations": {
+    es: "No se encontraron personalizaciones en el menú de esta unidad.",
+    pt: "Não foram encontradas personalizações no cardápio desta unidade.",
+    en: "No customizations were found in this store menu.",
+  },
   "modifiers.toast.group_saved": { es: "Grupo guardado", pt: "Grupo guardado", en: "Group saved" },
   "modifiers.confirm.delete_group": { es: "¿Eliminar este grupo? Los productos pierden la asociación.", pt: "Apagar este grupo? Produtos ligados perdem a associação.", en: "Delete this group? Linked products lose association." },
   "modifiers.toast.group_deleted": { es: "Grupo eliminado", pt: "Grupo apagado", en: "Group deleted" },

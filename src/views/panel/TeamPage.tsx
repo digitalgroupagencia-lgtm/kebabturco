@@ -100,6 +100,8 @@ const TeamPage = () => {
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("operator");
   const [newLanguage, setNewLanguage] = useState<string>("es");
+  const [newAccessPin, setNewAccessPin] = useState("");
+  const [showNewAccessPin, setShowNewAccessPin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [welcomeMode, setWelcomeMode] = useState<"create" | "review">("create");
@@ -140,6 +142,14 @@ const TeamPage = () => {
       setLoading(false);
     }
   }, [storeId, roleData?.role]);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    if (!newAccessPin.trim()) {
+      setNewAccessPin(suggestStaffAccessPin(true));
+      setShowNewAccessPin(true);
+    }
+  }, [dialogOpen, newAccessPin]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -389,13 +399,26 @@ const TeamPage = () => {
       toast.error(passwordError);
       return;
     }
+    const pinError = validateStaffAccessPin(newAccessPin, uiLang);
+    if (pinError) {
+      toast.error(pinError);
+      return;
+    }
+    if (!newAccessPin.trim()) {
+      toast.error(t("team.field.accessPin.required"));
+      return;
+    }
     setSaving(true);
+
+    const memberName = newName.trim();
+    const memberEmail = newEmail.trim();
+    const memberPin = newAccessPin.trim();
 
     try {
       const result = await createStaffMember({
-        email: newEmail.trim(),
+        email: memberEmail,
         password: newPassword,
-        full_name: newName.trim() || null,
+        full_name: memberName || null,
         role: newRole,
         store_id: storeId,
         tenant_id: tenantId,
@@ -412,13 +435,14 @@ const TeamPage = () => {
         toast.success(t("team.toast.login_ready"), { duration: 6000 });
       }
       setWelcomeData({
-        name: newName.trim(),
-        email: newEmail.trim(),
+        name: memberName,
+        email: memberEmail,
         password: newPassword,
         role: newRole,
         lang: uiLang,
         siteUrl: typeof window !== "undefined" ? window.location.origin : undefined,
         loginMethod: "email",
+        paymentCode: memberPin,
       });
       setWelcomeMode("create");
       setWelcomeOpen(true);
@@ -427,18 +451,21 @@ const TeamPage = () => {
       setHasDraft(false);
 
       const savedOnboarding = {
-        name: newName.trim(),
-        email: newEmail.trim(),
+        name: memberName,
+        email: memberEmail,
         password: newPassword,
         role: newRole,
         lang: uiLang,
         loginMethod: "email" as const,
+        paymentCode: memberPin,
       };
 
       setNewEmail("");
       setNewPassword("");
       setShowPassword(false);
       setNewName("");
+      setNewAccessPin("");
+      setShowNewAccessPin(false);
       setNewRole("operator");
       setNewLanguage(primaryLang || "es");
 
@@ -450,6 +477,15 @@ const TeamPage = () => {
           .eq("user_id", result.user_id)
           .maybeSingle();
         if (roleRow?.id) {
+          await saveTeamMemberByManager({
+            storeId,
+            userRoleId: roleRow.id,
+            userId: result.user_id,
+            fullName: memberName || memberEmail,
+            preferredLanguage: newLanguage,
+            role: newRole,
+            accessPin: memberPin,
+          });
           persistOnboardingCache(roleRow.id, savedOnboarding);
         }
       }
@@ -820,6 +856,37 @@ const TeamPage = () => {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {t("team.field.password.note")}
               </p>
+            </div>
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5" />
+                {t("team.field.accessPin")}
+              </Label>
+              <div className="flex gap-2">
+                <SecretInput
+                  visible={showNewAccessPin}
+                  onVisibleChange={setShowNewAccessPin}
+                  inputMode="numeric"
+                  value={newAccessPin}
+                  onChange={(e) => setNewAccessPin(sanitizeStaffAccessPinInput(e.target.value))}
+                  placeholder={t("team.field.accessPin.ph")}
+                  className="flex-1 font-mono tracking-widest"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setNewAccessPin(suggestStaffAccessPin(true));
+                    setShowNewAccessPin(true);
+                  }}
+                >
+                  {t("team.field.accessPin.suggest")}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{t("team.field.accessPin.hint")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{staffAccessPinHint(uiLang)}</p>
             </div>
             <div>
               <Label>{t("team.col.role")}</Label>

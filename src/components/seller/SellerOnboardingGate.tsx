@@ -91,7 +91,7 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
       return;
     }
     if (pin !== pinConfirm) {
-      toast.error(t("seller.setup.pin_mismatch"));
+      toast.error(t("staff.setup.pin_mismatch"));
       return;
     }
 
@@ -111,7 +111,7 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
           pin: pin.trim(),
         });
       }
-      toast.success(t("seller.setup.done"));
+      toast.success(t("staff.setup.done"));
       try {
         sessionStorage.setItem(ONBOARDING_READY_KEY, "1");
       } catch {
@@ -142,9 +142,9 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             {pinOnly ? <KeyRound className="h-7 w-7" /> : <User className="h-7 w-7" />}
           </div>
-          <h1 className="text-2xl font-black">{t("seller.setup.title")}</h1>
+          <h1 className="text-2xl font-black">{t("staff.setup.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {pinOnly ? t("seller.setup.pin_only_subtitle") : t("seller.setup.subtitle")}
+            {pinOnly ? t("staff.setup.pin_only_subtitle") : t("staff.setup.subtitle")}
           </p>
         </div>
 
@@ -177,12 +177,12 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
         <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
           <div className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
-            <p className="font-bold">{t("seller.setup.pin_title")}</p>
+            <p className="font-bold">{t("staff.setup.pin_title")}</p>
           </div>
-          <p className="text-xs text-muted-foreground">{t("seller.setup.pin_body")}</p>
+          <p className="text-xs text-muted-foreground">{t("staff.setup.pin_body")}</p>
           <p className="text-[11px] text-muted-foreground">{staffAccessPinHint(uiLang)}</p>
           <div className="space-y-2">
-            <Label htmlFor="seller-pin">{t("seller.setup.pin_label")}</Label>
+            <Label htmlFor="seller-pin">{t("staff.setup.pin_label")}</Label>
             <Input
               id="seller-pin"
               inputMode="numeric"
@@ -193,7 +193,7 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="seller-pin2">{t("seller.setup.pin_confirm")}</Label>
+            <Label htmlFor="seller-pin2">{t("staff.setup.pin_confirm")}</Label>
             <Input
               id="seller-pin2"
               inputMode="numeric"
@@ -206,7 +206,7 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
         </div>
 
         <Button className="w-full h-12 font-black text-base" disabled={saving} onClick={() => void handleSave()}>
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : t("seller.setup.save")}
+          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : t("staff.setup.save")}
         </Button>
       </div>
     </div>

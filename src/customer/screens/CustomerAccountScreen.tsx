@@ -51,14 +51,6 @@ type PastOrder = {
   }>;
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Recebido",
-  preparing: "A preparar",
-  ready: "Pronto",
-  delivered: "Entregue",
-  cancelled: "Cancelado",
-};
-
 const CustomerAccountScreen = () => {
   const {
     screen,
@@ -73,6 +65,17 @@ const CustomerAccountScreen = () => {
   } = useOrder();
   const { addItem } = useCart();
   const { t } = useLanguage();
+
+  const orderStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      pending: t("orderStatusPending"),
+      preparing: t("orderStatusPreparing"),
+      ready: t("orderStatusReady"),
+      delivered: t("orderStatusDelivered"),
+      cancelled: t("orderStatusCancelled"),
+    };
+    return map[status] || status;
+  };
   const { storeId, selectedStoreId } = useResolvedStore();
   const effectiveStoreId = selectedStoreId ?? storeId;
 
@@ -225,7 +228,7 @@ const CustomerAccountScreen = () => {
   const reorder = async (order: PastOrder) => {
     const items = order.items || [];
     if (items.length === 0) {
-      appToastError("Pedido vazio");
+      appToastError(t("emptyOrderError"));
       return;
     }
 
@@ -362,13 +365,13 @@ const CustomerAccountScreen = () => {
     }
 
     if (addedCount === 0) {
-      appToastError("Los productos de este pedido ya no están disponibles.");
+      appToastError(t("reorderProductsUnavailable"));
       return;
     }
     if (missingCount > 0) {
       appToastSuccess(`${addedCount} producto(s) añadido(s). ${missingCount} ya no disponible(s).`);
     } else {
-      appToastSuccess("Productos añadidos al carrito");
+      appToastSuccess(t("reorderProductsAdded"));
     }
     setScreen("review");
   };
@@ -597,7 +600,7 @@ const CustomerAccountScreen = () => {
         {localOrders.length > 0 && (
           <div className="space-y-2">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Pedidos neste dispositivo
+              {t("localDeviceOrdersTitle")}
             </p>
             {localOrders.slice(0, 5).map((entry) => {
               const ageHours = (Date.now() - new Date(entry.createdAt).getTime()) / 36e5;
@@ -609,7 +612,7 @@ const CustomerAccountScreen = () => {
                 <div>
                   <p className="font-black">#{entry.orderNumber}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(entry.createdAt).toLocaleDateString()} · {STATUS_LABEL[entry.status] || entry.status}
+                    {new Date(entry.createdAt).toLocaleDateString()} · {orderStatusLabel(entry.status)}
                   </p>
                 </div>
                 {isActive && (
@@ -632,17 +635,19 @@ const CustomerAccountScreen = () => {
           <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
             <Gift className="w-8 h-8 text-primary shrink-0" />
             <div>
-              <p className="font-black">Fidelidade</p>
+              <p className="font-black">{t("loyaltyTitle")}</p>
               <p className="text-sm text-muted-foreground">
-                {loyalty.stamps} / {loyalty.stamps_needed} carimbos
-                {loyalty.reward_ready && " · 🎁 Recompensa disponível!"}
+                {t("loyaltyStamps")
+                  .replace("{current}", String(loyalty.stamps))
+                  .replace("{needed}", String(loyalty.stamps_needed))}
+                {loyalty.reward_ready ? `🎁${t("loyaltyRewardReady")}` : ""}
               </p>
             </div>
           </div>
         )}
 
         {searched && orders.length === 0 && !loading && (
-          <p className="text-center text-muted-foreground py-4">Nenhum pedido encontrado para este número</p>
+          <p className="text-center text-muted-foreground py-4">{t("noOrdersForPhone")}</p>
         )}
 
         {orders.map((order) => {
@@ -658,7 +663,7 @@ const CustomerAccountScreen = () => {
               <div>
                 <p className="font-black text-lg">#{order.order_number}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(order.created_at).toLocaleDateString()} · {STATUS_LABEL[order.status] || order.status}
+                  {new Date(order.created_at).toLocaleDateString()} · {orderStatusLabel(order.status)}
                 </p>
               </div>
               <p className="font-black text-price tabular-nums">{Number(order.total).toFixed(2)}€</p>
@@ -681,7 +686,7 @@ const CustomerAccountScreen = () => {
                 onClick={() => void reorder(order)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success/15 text-success text-sm font-bold"
               >
-                <RotateCcw className="w-4 h-4" /> Pedir de novo
+                <RotateCcw className="w-4 h-4" /> {t("reorderFromHistory")}
               </button>
             </div>
           </div>
