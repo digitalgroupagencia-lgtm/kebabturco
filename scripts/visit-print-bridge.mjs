@@ -48,6 +48,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const OWNER_ID = process.env.VISIT_OWNER_USER_ID || "";
 
 const API_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/visit-print-bridge-api` : "";
+const API_FALLBACK_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/print-order` : "";
 
 if (!SUPABASE_URL || !OWNER_ID) {
   console.error("[ERRO] Defina SUPABASE_URL e VISIT_OWNER_USER_ID em ~/.kebab-visit-print.env");
@@ -70,21 +71,27 @@ if (!useCloudApi) {
 }
 
 async function cloudApi(body) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${ANON_KEY}`,
-      apikey: ANON_KEY,
-      "x-visit-bridge-token": BRIDGE_TOKEN,
-    },
-    body: JSON.stringify({ owner_user_id: OWNER_ID, ...body }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data?.error || `API ${res.status}`);
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${ANON_KEY}`,
+    apikey: ANON_KEY,
+    "x-visit-bridge-token": BRIDGE_TOKEN,
+  };
+  const payload = JSON.stringify({ owner_user_id: OWNER_ID, ...body });
+
+  for (const url of [API_URL, API_FALLBACK_URL].filter(Boolean)) {
+    const res = await fetch(url, { method: "POST", headers, body: payload });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404 && url === API_URL && API_FALLBACK_URL) {
+      console.warn("[VISIT-BRIDGE] API principal indisponível — a usar fallback print-order");
+      continue;
+    }
+    if (!res.ok) {
+      throw new Error(data?.error || `API ${res.status}`);
+    }
+    return data;
   }
-  return data;
+  throw new Error("API de visita indisponível no servidor");
 }
 
 function printTcp(ip, port, buffer) {

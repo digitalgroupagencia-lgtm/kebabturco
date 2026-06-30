@@ -1,9 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildEscPosTicket, type TicketOrder } from "../_shared/escPosTicketBuilder.ts";
+import { handleVisitPrintBridgeRequest } from "../_shared/visitPrintBridgeApi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-visit-bridge-token",
 };
 
 interface ExtraLine { name: string; quantity: number; price: number }
@@ -72,8 +74,11 @@ Deno.serve(async (req) => {
     });
   }
 
+  const raw = await req.json().catch(() => ({}));
+  const visitBridgeRes = await handleVisitPrintBridgeRequest(req, raw);
+  if (visitBridgeRes) return visitBridgeRes;
+
   try {
-    const raw = await req.json().catch(() => ({}));
     if (raw?.ping === true || raw?.health === true) {
       return new Response(JSON.stringify({ ok: true, service: "print-order" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
