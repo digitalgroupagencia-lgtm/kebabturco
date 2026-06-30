@@ -20,6 +20,7 @@
     "visit-print": "node scripts/visit-print-bridge.mjs",
     "visit-print:helper": "node scripts/visit-print-helper.mjs",
     "visit-print:setup": "node scripts/setup-visit-print-env.mjs",
+    "visit-print:wait-test": "node scripts/visit-print-wait-test.mjs",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",

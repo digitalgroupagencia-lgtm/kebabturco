@@ -13,6 +13,7 @@ import {
   probeLocalMacPrint,
   saveVisitPrintConfig,
   startLocalMacPrintBridge,
+  formatVisitPrintError,
   type LocalMacStatus,
   type VisitPrintConfig,
 } from "@/services/visitPrintService";
@@ -193,7 +194,11 @@ export default function AdminVisitPrintPage() {
       }
       await refreshStatus();
     } catch (e) {
-      toast({ title: "Erro", description: (e as Error).message, variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: formatVisitPrintError((e as Error).message),
+        variant: "destructive",
+      });
     } finally {
       setTesting(false);
     }

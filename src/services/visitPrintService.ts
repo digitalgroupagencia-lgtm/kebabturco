@@ -218,7 +218,7 @@ export async function printVisitDemoTest(): Promise<{
     if (direct.error?.includes("404")) {
       /* bridge antigo sem /print-direct — cair para fila */
     } else if (direct.error) {
-      return { success: false, error: direct.error };
+      return { success: false, error: formatVisitPrintError(direct.error) };
     }
   }
 
@@ -237,7 +237,22 @@ export function isVisitBridgeOnline(lastSeen: string | null): boolean {
   return Date.now() - new Date(lastSeen).getTime() < 90_000;
 }
 
-export const DEMO_VISIT_COUPON_CODE = "DEMO-IMPRESSAO";
+export function formatVisitPrintError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("ehostdown") || m.includes("host is down")) {
+    return "A impressora está desligada ou fora da rede. Ligue-a e confirme que está na mesma Wi‑Fi do Mac.";
+  }
+  if (m.includes("timeout tcp") || m.includes("timeout") || m.includes("timed out")) {
+    return "O Mac não conseguiu falar com a impressora nesse endereço. Verifique se está ligada e se o IP está correcto (imprima o ticket de rede da Epson).";
+  }
+  if (m.includes("econnrefused")) {
+    return "A impressora recusou a ligação — confirme o IP e a porta 9100.";
+  }
+  if (m.includes("token") && m.includes("inválido")) {
+    return "A palavra-passe secreta no Mac não coincide com a do Lovable. Corra npm run visit-print:setup e faça Publish.";
+  }
+  return message;
+}
 
 export const VISIT_BRIDGE_INSTALL = `# Uma vez no Mac (deixe esta janela aberta nas visitas):
 npm run visit-print:helper
