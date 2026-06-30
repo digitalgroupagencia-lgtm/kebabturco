@@ -717,28 +717,6 @@ const PaymentScreen = () => {
       itemCount: items.length,
     });
 
-    await enableCustomerOrderAlerts();
-    void subscribePush({
-      storeId,
-      orderId: result.order_id,
-      customerPhone: fullCustomerPhone || undefined,
-    }).catch(() => undefined);
-
-    const printOk = shouldPrintAfterCheckout(
-      orderType || "takeaway",
-      opts.paymentStatus,
-      settings,
-      mesaValidated,
-    );
-
-    clearCart();
-    void trackMarketingEvent("order_completed", { storeId, customerPhone: fullCustomerPhone });
-    if (awaitsCounterPayment) {
-      setScreen("cashPending");
-    } else {
-      setScreen("confirmation");
-    }
-
     if (isDemoVisitCoupon) {
       try {
         await finalizeDemoVisitOrder(result.order_id);
@@ -767,7 +745,31 @@ const PaymentScreen = () => {
       } catch (printErr) {
         console.warn("[checkout] demo visita impressão:", printErr);
       }
-    } else if (printOk) {
+    }
+
+    await enableCustomerOrderAlerts();
+    void subscribePush({
+      storeId,
+      orderId: result.order_id,
+      customerPhone: fullCustomerPhone || undefined,
+    }).catch(() => undefined);
+
+    const printOk = shouldPrintAfterCheckout(
+      orderType || "takeaway",
+      opts.paymentStatus,
+      settings,
+      mesaValidated,
+    );
+
+    clearCart();
+    void trackMarketingEvent("order_completed", { storeId, customerPhone: fullCustomerPhone });
+    if (awaitsCounterPayment) {
+      setScreen("cashPending");
+    } else {
+      setScreen("confirmation");
+    }
+
+    if (!isDemoVisitCoupon && printOk) {
       void enqueueCheckoutPrint(result, {
         paymentMethod: opts.paymentMethod,
         paymentStatus: opts.paymentStatus,
@@ -1039,7 +1041,7 @@ const PaymentScreen = () => {
       deliveryFee,
       deliveryZoneId: deliveryQuote.zone?.id || null,
       deliveryZoneName: deliveryQuote.zone?.name || null,
-      couponCode: couponId ? couponCode.trim() : null,
+      couponCode: couponId || isDemoVisitCoupon ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
       onlineServiceFeeCents: fin.onlineServiceFeeCents,

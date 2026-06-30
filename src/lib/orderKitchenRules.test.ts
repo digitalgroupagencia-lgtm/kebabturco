@@ -4,6 +4,7 @@ import {
   isAwaitingCounterPaymentConfirmation,
   isAwaitingOnlinePaymentConfirmation,
   isConfirmedPaidOrder,
+  isDemoVisitOrder,
   shouldShowOrderInRestaurantPanel,
 } from "./orderKitchenRules";
 
@@ -49,5 +50,17 @@ describe("orderKitchenRules", () => {
     };
     expect(shouldShowOrderInRestaurantPanel(paidBizum)).toBe(true);
     expect(isAwaitingOnlinePaymentConfirmation(paidBizum)).toBe(false);
+  });
+
+  it("hides demo visit orders from restaurant panel", () => {
+    const demo = {
+      order_type: "takeaway",
+      payment_status: "paid",
+      payment_method: "counter",
+      status: "pending",
+      coupon_code: "DEMO-IMPRESSAO",
+    };
+    expect(isDemoVisitOrder(demo)).toBe(true);
+    expect(shouldShowOrderInRestaurantPanel(demo)).toBe(false);
   });
 });

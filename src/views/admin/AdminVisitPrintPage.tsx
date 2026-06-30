@@ -75,7 +75,7 @@ export default function AdminVisitPrintPage() {
         .from("orders")
         .select("id, order_number, created_at, store_id")
         .eq("is_test", true)
-        .ilike("notes", "%DEMO VISITA%")
+        .or(`notes.ilike.%DEMO VISITA%,coupon_code.eq.${DEMO_VISIT_COUPON_CODE}`)
         .order("created_at", { ascending: false })
         .limit(15);
       setDemoOrders(data ?? []);
@@ -100,7 +100,7 @@ export default function AdminVisitPrintPage() {
         .from("orders")
         .select("id, order_number, created_at, store_id")
         .eq("is_test", true)
-        .ilike("notes", "%DEMO VISITA%")
+        .or(`notes.ilike.%DEMO VISITA%,coupon_code.eq.${DEMO_VISIT_COUPON_CODE}`)
         .order("created_at", { ascending: false })
         .limit(15);
       setDemoOrders(data ?? []);
@@ -121,8 +121,33 @@ export default function AdminVisitPrintPage() {
     };
     relay();
     const id = setInterval(relay, 2500);
-    return () => clearInterval(id);
-  }, []);
+
+    const ownerId = user?.id;
+    if (!ownerId) {
+      return () => clearInterval(id);
+    }
+
+    const channel = supabase
+      .channel(`visit-demo-print-${ownerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "print_jobs",
+          filter: `visit_owner_id=eq.${ownerId}`,
+        },
+        () => {
+          relay();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(id);
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const persistConfig = async () => {
     await saveVisitPrintConfig({
@@ -272,6 +297,10 @@ export default function AdminVisitPrintPage() {
           <p>
             3. No telemóvel: <strong>Abrir cardápio demo</strong> (fica com a tua conta — não precisa sair do admin)
             → montar pedido → cupão já vem preenchido → <strong>Confirmar demonstração</strong>
+          </p>
+          <p>
+            <strong>Importante:</strong> se o pedido for no telemóvel, deixe esta página <strong>aberta no Mac</strong> (com
+            «Ligar Mac» activo). O Mac recebe o ticket pela fila e imprime automaticamente.
           </p>
           <p>Ou use <strong>Imprimir teste</strong> só para papel de amostra.</p>
           <p>O ticket mostra o <strong>nome que escreveu</strong>. Não precisa escolher loja nem ligar «impressão automática» na configuração oficial.</p>

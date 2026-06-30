@@ -269,7 +269,11 @@ export async function claimAndPrintPendingVisitJobs(): Promise<number> {
     _owner_user_id: cfg.user_id,
     _limit: 3,
   });
-  if (error || !data?.length) return 0;
+  if (error) {
+    console.warn("[visit-print] claim jobs:", error.message);
+    return 0;
+  }
+  if (!data?.length) return 0;
 
   let printed = 0;
   for (const raw of data as VisitPrintJobRow[]) {

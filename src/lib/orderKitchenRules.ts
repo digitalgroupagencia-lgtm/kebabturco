@@ -7,9 +7,16 @@ export type KitchenOrderLike = {
   status?: string | null;
   table_validated?: boolean | null;
   kitchen_printed_at?: string | null;
+  is_test?: boolean | null;
+  coupon_code?: string | null;
 };
 
 const ONLINE_PAYMENT_METHODS = new Set(["card", "bizum", "apple_pay", "google_pay", "pix"]);
+
+export function isDemoVisitOrder(order: KitchenOrderLike): boolean {
+  if (order.is_test) return true;
+  return String(order.coupon_code ?? "").trim().toUpperCase() === "DEMO-IMPRESSAO";
+}
 
 /** Cliente abriu cartão/Bizum na app mas o Stripe ainda não confirmou o pagamento. */
 export function isAwaitingOnlinePaymentConfirmation(order: KitchenOrderLike): boolean {
@@ -33,6 +40,7 @@ export function isConfirmedPaidOrder(order: { payment_status?: string | null }):
 }
 
 export function shouldShowOrderInRestaurantPanel(order: KitchenOrderLike): boolean {
+  if (isDemoVisitOrder(order)) return false;
   if (order.status === "cancelled") return true;
   if (order.payment_status === "paid") return true;
   if (order.order_type === "dine_in") return true;
