@@ -68,6 +68,7 @@ const CustomerBottomDock = () => {
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 };
