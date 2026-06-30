@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 APP_ID="com.eurobusinessgroup.kebabturco"
-VERSION_CODE="5"
+VERSION_CODE="6"
 VERSION_NAME="1.2"
 
 npm run build
