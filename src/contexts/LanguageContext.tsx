@@ -29,6 +29,7 @@ const translations: Translations = {
   takeaway: { pt: "Levar", en: "Take away", es: "Para llevar", fr: "À emporter" },
   menu: { pt: "Cardápio", en: "Menu", es: "Menú", fr: "Menu" },
   storeOpen: { pt: "Aberto", en: "Open", es: "Abierto", fr: "Ouvert" },
+  storeClosed: { pt: "Fechado", en: "Closed", es: "Cerrado", fr: "Fermé" },
   loadingMenu: { pt: "A carregar menu…", en: "Loading menu…", es: "Cargando menú…", fr: "Chargement du menu…" },
   loadingGeneric: { pt: "A carregar…", en: "Loading…", es: "Cargando…", fr: "Chargement…" },
   menuUnavailable: {
