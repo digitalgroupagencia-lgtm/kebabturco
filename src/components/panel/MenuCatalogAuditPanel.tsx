@@ -1,15 +1,21 @@
-import { useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Plus, RefreshCw, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ClipboardCopy, Loader2, Plus, RefreshCw, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useMenuCatalogAudit } from "@/hooks/useMenuCatalogAudit";
+import { useMenuData } from "@/hooks/useMenuData";
 import {
   buildProductPayloadFromIssue,
   buildProductPayloadFromOption,
   type CatalogAuditIssue,
 } from "@/lib/modifiers/menuCatalogAudit";
+import {
+  auditMenuProducts,
+  auditSummary,
+  type CustomizationAuditIssue,
+} from "@/lib/modifiers/menuCustomizationAudit";
 import { toast } from "sonner";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
@@ -30,12 +36,27 @@ async function findDrinksCategoryId(storeId: string): Promise<string | null> {
   return match?.id ?? data?.[0]?.id ?? null;
 }
 
+function toCustomizationReport(issues: CustomizationAuditIssue[], emptyLabel: string): string {
+  if (!issues.length) return emptyLabel;
+  return issues
+    .map(
+      (i) =>
+        `Produto: ${i.productName}\nProblema: ${i.problem}\nSugestão: ${i.suggestion}\n`,
+    )
+    .join("\n");
+}
+
 export default function MenuCatalogAuditPanel() {
   const { storeId } = useAdminStoreId();
   const { loading, createIssues, summary, groups, products, loadAuditData } = useMenuCatalogAudit(storeId);
-  const [open, setOpen] = useState(false);
+  const { products: menuProducts, loading: menuLoading } = useMenuData();
+  const [openCreate, setOpenCreate] = useState(false);
+  const [openCustom, setOpenCustom] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const { t, lang } = useStaffT();
+
+  const customizationIssues = useMemo(() => auditMenuProducts(menuProducts), [menuProducts]);
+  const customizationSummary = useMemo(() => auditSummary(customizationIssues), [customizationIssues]);
 
   useEffect(() => {
     const refresh = () => void loadAuditData();
@@ -90,7 +111,23 @@ export default function MenuCatalogAuditPanel() {
     }
   };
 
-  if (loading) {
+  const copyCustomizationReport = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        toCustomizationReport(customizationIssues, t("audit.custom.no_issues")),
+      );
+      toast.success(t("audit.custom.toast.copied"));
+    } catch {
+      toast.error(t("welcome.copy_error"));
+    }
+  };
+
+  const allOk =
+    summary.total === 0 &&
+    customizationSummary.errors === 0 &&
+    customizationSummary.warnings === 0;
+
+  if (loading || menuLoading) {
     return (
       <Card className="border-primary/20 mb-6">
         <CardContent className="py-6 flex items-center gap-2 text-sm text-muted-foreground">
@@ -108,24 +145,17 @@ export default function MenuCatalogAuditPanel() {
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" />
-              {t("audit.catalog.title")}
+              {t("audit.unified.title")}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{t("audit.catalog.subtitle")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("audit.unified.subtitle")}</p>
           </div>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => void loadAuditData()}>
-              <RefreshCw className="h-4 w-4 mr-1" />
-              {t("common.refresh")}
-            </Button>
-            {createIssues.length > 0 && (
-              <Button type="button" variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
-                {open ? t("audit.catalog.hide") : t("audit.catalog.show_create")}
-              </Button>
-            )}
-          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => void loadAuditData()}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            {t("common.refresh")}
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-3 text-sm">
           <span className="font-semibold text-destructive">
             {summary.errors} {t("audit.catalog.count.create")}
@@ -133,50 +163,113 @@ export default function MenuCatalogAuditPanel() {
           <span className="font-semibold text-amber-600">
             {summary.warnings} {t("audit.catalog.count.review")}
           </span>
+          <span className="font-semibold text-destructive">
+            {customizationSummary.errors} {t("audit.custom.count.errors")}
+          </span>
+          <span className="font-semibold text-amber-600">
+            {customizationSummary.warnings} {t("audit.custom.count.warnings")}
+          </span>
           <span className="text-muted-foreground">
             {products.length} {t("audit.catalog.count.products")}
           </span>
         </div>
 
-        {summary.total === 0 && (
-          <p className="text-sm text-success font-medium">{t("audit.catalog.all_ok")}</p>
+        {allOk && (
+          <p className="text-sm text-success font-medium">{t("audit.unified.all_ok")}</p>
         )}
 
-        {open && createIssues.length > 0 && (
-          <ul className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-            {createIssues.map((issue) => (
-              <li
-                key={`${issue.optionId}-${issue.problem}`}
-                className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm"
-              >
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
-                  <div className="flex-1 space-y-1">
-                    <p className="font-bold">{issue.optionName}</p>
-                    <p className="text-xs text-muted-foreground">{issue.groupName}</p>
-                    <p>
-                      <span className="font-semibold">{t("audit.catalog.problem")}</span> {issue.problem}
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      className="mt-2 h-8"
-                      disabled={creatingId === issue.optionId}
-                      onClick={() => void createProductForOption(issue)}
-                    >
-                      {creatingId === issue.optionId ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                      ) : (
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                      )}
-                      {t("audit.catalog.create_btn")}
-                    </Button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+        {createIssues.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">{t("audit.catalog.title")}</p>
+              <Button type="button" variant="outline" size="sm" onClick={() => setOpenCreate((v) => !v)}>
+                {openCreate ? t("audit.catalog.hide") : t("audit.catalog.show_create")}
+              </Button>
+            </div>
+            {openCreate && (
+              <ul className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                {createIssues.map((issue) => (
+                  <li
+                    key={`${issue.optionId}-${issue.problem}`}
+                    className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm"
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+                      <div className="flex-1 space-y-1">
+                        <p className="font-bold">{issue.optionName}</p>
+                        <p className="text-xs text-muted-foreground">{issue.groupName}</p>
+                        <p>
+                          <span className="font-semibold">{t("audit.catalog.problem")}</span> {issue.problem}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="mt-2 h-8"
+                          disabled={creatingId === issue.optionId}
+                          onClick={() => void createProductForOption(issue)}
+                        >
+                          {creatingId === issue.optionId ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                          ) : (
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                          )}
+                          {t("audit.catalog.create_btn")}
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {customizationIssues.length > 0 && (
+          <div className="space-y-2 border-t border-border/50 pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">{t("audit.custom.title")}</p>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setOpenCustom((v) => !v)}>
+                  {openCustom ? t("common.hide") : t("audit.custom.show_report")}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => void copyCustomizationReport()}>
+                  <ClipboardCopy className="h-4 w-4 mr-1" />
+                  {t("common.copy")}
+                </Button>
+              </div>
+            </div>
+            {openCustom && (
+              <ul className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                {customizationIssues.map((issue, idx) => (
+                  <li
+                    key={`${issue.productId}-${idx}`}
+                    className={`rounded-xl border p-3 text-sm ${
+                      issue.severity === "error"
+                        ? "border-destructive/30 bg-destructive/5"
+                        : "border-amber-500/30 bg-amber-500/5"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle
+                        className={`h-4 w-4 shrink-0 mt-0.5 ${issue.severity === "error" ? "text-destructive" : "text-amber-600"}`}
+                      />
+                      <div className="space-y-1">
+                        <p className="font-bold">{issue.productName}</p>
+                        <p>
+                          <span className="font-semibold">{t("audit.catalog.problem")}</span> {issue.problem}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">{t("audit.custom.suggestion")}</span>{" "}
+                          {issue.suggestion}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

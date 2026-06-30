@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import ProductModifierEditor, { saveProductModifierLinks } from "@/components/panel/ProductModifierEditor";
-import MenuCustomizationAuditPanel from "@/components/panel/MenuCustomizationAuditPanel";
 import MenuCatalogAuditPanel from "@/components/panel/MenuCatalogAuditPanel";
 import MenuProductReviewQueue from "@/components/panel/MenuProductReviewQueue";
 import PanelPageHeader from "@/components/panel/PanelPageHeader";
@@ -495,7 +494,6 @@ const MenuPage = () => {
             onOpen={(issue) => void openReviewIssue(issue)}
             onApprove={(issue) => void approveReviewIssue(issue)}
           />
-          <MenuCustomizationAuditPanel />
         </>
       )}
 

@@ -160,6 +160,14 @@
     overscroll-behavior-y: none;
     background-color: hsl(var(--background));
   }
+  /* Cardápio cliente: sem scroll no body — só a lista de produtos rola */
+  html:not(.staff-app) body,
+  html:not(.staff-app) #root {
+    overflow: hidden;
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
   /* Safari / app instalado: faixa superior igual ao vinho do cabeçalho */
   @media (max-width: 767px) {
     html::before {

@@ -16,6 +16,7 @@ import { nav } from "@/lib/navPaths";
 import { collectMenuCatalogFields } from "@/lib/menuLocale";
 import SmartImage from "@/components/SmartImage";
 import { useStoreOpenStatus } from "@/hooks/useStoreOpenStatus";
+import { filterProductsForCategory } from "@/lib/menuDrinkCatalog";
 
 
 const HomeScreen = () => {
@@ -102,7 +103,7 @@ const HomeScreen = () => {
   const filteredProducts =
     activeCategory === "bestsellers"
       ? products.filter((product) => product.isBestseller)
-      : products.filter((product) => product.category === activeCategory);
+      : filterProductsForCategory(products, categories, activeCategory);
 
   const activeCategoryName =
     activeCategory === "bestsellers"
@@ -151,7 +152,7 @@ const HomeScreen = () => {
     >
       {!shouldHideHeader() && (
       <header
-        className="sticky top-0 z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
+        className="z-30 shrink-0 text-primary-foreground px-4 pb-3 shadow-header overflow-hidden rounded-b-[18px]"
         style={{
           paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
           backgroundColor: "var(--browser-chrome-hex, #3A0205)",
@@ -249,7 +250,7 @@ const HomeScreen = () => {
           </div>
         </aside>
 
-        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-none bg-background md:scrollbar-thin">
+        <main ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y bg-background md:scrollbar-thin">
           <div className="sticky top-0 z-20 bg-background px-3 pt-2">
             <PromoBannerCarousel />
           </div>

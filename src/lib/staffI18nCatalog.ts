@@ -307,6 +307,21 @@ export const STAFF_I18N_CATALOG = {
     pt: "Cardápio em dia, nada a criar nem a rever.",
     en: "Menu up to date, nothing to create or review.",
   },
+  "audit.unified.title": {
+    es: "Auditoría del cardápio",
+    pt: "Auditoria do cardápio",
+    en: "Menu audit",
+  },
+  "audit.unified.subtitle": {
+    es: "Bebidas de los combos y coherencia de personalización en un solo informe.",
+    pt: "Bebidas dos combos e coerência da personalização num único relatório.",
+    en: "Combo drinks and customization consistency in one report.",
+  },
+  "audit.unified.all_ok": {
+    es: "Cardápio coherente: bebidas y personalización sin problemas.",
+    pt: "Cardápio coerente: bebidas e personalização sem problemas.",
+    en: "Menu consistent: drinks and customization look good.",
+  },
   "audit.catalog.problem": { es: "Problema:", pt: "Problema:", en: "Issue:" },
   "audit.catalog.create_btn": { es: "Crear en el menú", pt: "Criar no cardápio", en: "Create on menu" },
   "audit.catalog.toast.no_category": { es: "Cree primero una categoría Bebidas", pt: "Crie primeiro uma categoria Bebidas", en: "Create a Drinks category first" },
