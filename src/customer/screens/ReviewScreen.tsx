@@ -136,9 +136,9 @@ const ReviewScreen = () => {
     const cartCats = new Set(items.map((i) => products.find((p) => p.id === i.productId)?.category));
     const drinks = products.filter((p) => drinkCategoryIds.includes(p.category) && !inCartIds.has(p.id));
     if (!drinkCategoryIds.some((id) => cartCats.has(id)) && drinks.length > 0) {
-      return drinks.slice(0, 4);
+      return drinks;
     }
-    return products.filter((p) => p.isBestseller && !inCartIds.has(p.id)).slice(0, 4);
+    return products.filter((p) => p.isBestseller && !inCartIds.has(p.id)).slice(0, 8);
   }, [suggestionConfig, configuredEnabled, configuredIds, products, categories, items, inCartIds]);
 
   const customTitle = pickLang(suggestionConfig?.title);
@@ -366,7 +366,7 @@ const ReviewScreen = () => {
                 {sectionTitle}
               </p>
             </div>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-0.5 snap-x snap-mandatory">
+            <div className="flex flex-nowrap gap-3 overflow-x-auto overscroll-x-contain no-scrollbar -mx-4 px-4 pb-1 snap-x snap-mandatory touch-pan-x">
               {suggestions.map((p) => (
                 <UpsellProductCard
                   key={p.id}
