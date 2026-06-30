@@ -25,6 +25,8 @@ const HomeScreen = () => {
   const { theme } = useTheme();
   const { categories, products, loading, error, retry } = useMenuData();
   const navigate = useNavigate();
+  const storeStatus = useStoreOpenStatus("store");
+  const isStoreOpen = storeStatus.open;
   const [logoTaps, setLogoTaps] = useState(0);
   const tapResetRef = useRef<number | null>(null);
   const handleLogoTap = () => {
