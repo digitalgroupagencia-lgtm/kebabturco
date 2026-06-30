@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
-const VERSION = "1.2.0-visit-cloud";
+const VERSION = "1.2.1-visit-local-direct";
 const POLL_MS = 2500;
 const HEARTBEAT_MS = 30000;
 const TCP_TIMEOUT = 8000;
@@ -24,7 +24,7 @@ function loadEnvFile(filePath) {
     const eq = t.indexOf("=");
     if (eq < 1) continue;
     const key = t.slice(0, eq).trim();
-    const val = t.slice(eq + 1).trim();
+    const val = t.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
     if (!process.env[key]) process.env[key] = val;
   }
 }
@@ -213,8 +213,23 @@ process.on("exit", () => {
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on("error", reject);
+  });
 }
 
 const localServer = http.createServer((req, res) => {
@@ -235,6 +250,33 @@ const localServer = http.createServer((req, res) => {
         mode: useCloudApi ? "cloud" : "service_role",
       }),
     );
+    return;
+  }
+  if (req.url === "/print-direct" && req.method === "POST") {
+    void (async () => {
+      try {
+        const body = await readJsonBody(req);
+        const ip = String(body.printer_ip || "").trim();
+        const port = Number(body.printer_port || 9100);
+        const ticket = String(body.ticket_data || "").trim();
+        if (!ip || !ticket) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "printer_ip e ticket_data obrigatórios" }));
+          return;
+        }
+        const data = Buffer.from(ticket, "base64");
+        console.log(`[DIRECT] → ${ip}:${port} (${data.length} bytes)`);
+        await printTcp(ip, port, data);
+        console.log(`[DIRECT] ✓ impresso`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, direct: true }));
+      } catch (e) {
+        const msg = e?.message || String(e);
+        console.error(`[DIRECT] ✗ ${msg}`);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: msg }));
+      }
+    })();
     return;
   }
   res.writeHead(404);

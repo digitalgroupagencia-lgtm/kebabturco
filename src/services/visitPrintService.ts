@@ -12,6 +12,7 @@ export type VisitPrintConfig = {
 
 export const VISIT_LOCAL_HELPER_URL = "http://127.0.0.1:3847";
 export const VISIT_LOCAL_BRIDGE_HEALTH_URL = "http://127.0.0.1:3848";
+export const VISIT_LOCAL_BRIDGE_URL = "http://127.0.0.1:3848";
 
 export type LocalMacStatus = {
   helper_online: boolean;
@@ -161,8 +162,43 @@ export async function finalizeDemoVisitOrder(orderId: string) {
   return data as { success: boolean; demo_visit?: boolean };
 }
 
+/** Impressão directa no Mac (sem passar pelo servidor) — demo visita no mesmo computador. */
+export async function printVisitDemoDirectLocal(opts: {
+  printerIp: string;
+  printerPort: number;
+  ticketBase64: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${VISIT_LOCAL_BRIDGE_URL}/print-direct`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        printer_ip: opts.printerIp,
+        printer_port: opts.printerPort || 9100,
+        ticket_data: opts.ticketBase64,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+    if (!res.ok || !body.ok) {
+      return { ok: false, error: body.error || `Mac respondeu ${res.status}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Mac offline — abra «Demo visita» no computador",
+    };
+  }
+}
+
 /** Ticket fixo de demonstração — só muda o nome do restaurante. */
-export async function printVisitDemoTest() {
+export async function printVisitDemoTest(): Promise<{
+  success: boolean;
+  jobId?: string;
+  error?: string;
+  direct?: boolean;
+}> {
   const cfg = await fetchVisitPrintConfig();
   if (!cfg?.printer_ip?.trim()) throw new Error("Configure o IP da impressora de visita");
   if (!cfg.restaurant_display_name?.trim()) {
@@ -170,6 +206,22 @@ export async function printVisitDemoTest() {
   }
   const companyName = await resolveVisitDemoCompanyName(cfg);
   const ticket = buildEscPosTicket(sampleOrder(companyName));
+
+  const local = await probeLocalMacPrint();
+  if (local.bridge_running) {
+    const direct = await printVisitDemoDirectLocal({
+      printerIp: cfg.printer_ip.trim(),
+      printerPort: cfg.printer_port || 9100,
+      ticketBase64: ticket,
+    });
+    if (direct.ok) return { success: true, direct: true };
+    if (direct.error?.includes("404")) {
+      /* bridge antigo sem /print-direct — cair para fila */
+    } else if (direct.error) {
+      return { success: false, error: direct.error };
+    }
+  }
+
   return enqueueVisitDemoPrint(ticket);
 }
 

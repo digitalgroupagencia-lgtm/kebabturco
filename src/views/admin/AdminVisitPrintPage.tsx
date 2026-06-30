@@ -183,8 +183,10 @@ export default function AdminVisitPrintPage() {
       const res = await printVisitDemoTest();
       if (res.success) {
         toast({
-          title: "Teste enviado",
-          description: `Ticket de «${restaurantName.trim()}» a imprimir…`,
+          title: res.direct ? "A imprimir agora" : "Teste enviado",
+          description: res.direct
+            ? `Ticket de «${restaurantName.trim()}» enviado directo para a impressora.`
+            : `Ticket de «${restaurantName.trim()}» a imprimir…`,
         });
       } else {
         throw new Error(res.error);

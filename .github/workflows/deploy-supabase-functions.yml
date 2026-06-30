@@ -45,3 +45,4 @@ jobs:
           supabase functions deploy send-push-notification --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy run-marketing-campaigns --project-ref "$SUPABASE_PROJECT_ID"
           supabase functions deploy visit-print-bridge-api --project-ref "$SUPABASE_PROJECT_ID"
+          supabase functions deploy print-order --project-ref "$SUPABASE_PROJECT_ID"
