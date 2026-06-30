@@ -220,18 +220,7 @@ workflows:
       node: 22
       java: 21
 
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-
-    when:
-      changeset:
-        includes:
-          - "android/"
-          - "scripts/sync-android-for-release.sh"
+    # Android: só manual no Codemagic. Evita fila 19→20→21 a cada push no Git.
 
     scripts:
       - name: Instalar dependências
