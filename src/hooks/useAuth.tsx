@@ -3,6 +3,27 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { clearStaffSessionFlag } from "@/lib/staffLogin";
 
+const AUTH_STORAGE_KEY = "kebabturco-auth";
+
+async function purgeLocalAuthSession(): Promise<void> {
+  try {
+    await supabase.auth.signOut({ scope: "local" });
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function withLogoutQuery(path: string): string {
+  if (path.includes("logout=1")) return path;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}logout=1`;
+}
+
 type AuthState = {
   user: User | null;
   session: Session | null;
@@ -64,15 +85,15 @@ export function useAuth() {
     // Limpa o estado local imediatamente para evitar sensação de travamento no clique.
     applySession(null, false);
 
-    const signOutWithTimeout = Promise.race([
-      supabase.auth.signOut({ scope: "local" }),
-      new Promise((resolve) => setTimeout(resolve, 700)),
+    // No telemóvel a navegação era mais rápida que o signOut — a sessão ficava e o /staff
+    // voltava a mandar para o painel. Esperar + apagar storage garante saída real.
+    await Promise.race([
+      purgeLocalAuthSession(),
+      new Promise((resolve) => setTimeout(resolve, 2500)),
     ]);
-    void signOutWithTimeout.catch(() => undefined);
 
     if (typeof window !== "undefined") {
-      // Hard navigation garante limpeza de estado em memória e revalidação dos guards.
-      window.location.replace(redirectTo);
+      window.location.replace(withLogoutQuery(redirectTo));
     }
   };
 

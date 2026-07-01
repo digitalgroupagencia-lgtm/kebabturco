@@ -110,6 +110,8 @@ const StaffEmailLoginScreen = () => {
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
     if (!roleData?.role) return;
+    // Só redirecciona após login explícito da equipa — não quando a sessão sobreviveu a um logout.
+    if (!isStaffSessionFlagSet()) return;
 
     void (async () => {
       if (nextParam) {
@@ -177,8 +179,29 @@ const StaffEmailLoginScreen = () => {
     if (!user || staffAccessLoading || staffAccessStatus !== "active") return;
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
+    if (!isStaffSessionFlagSet()) return;
     navigate(resolveStaffLoginDestination(role), { replace: true });
   }, [user, staffAccessLoading, staffAccessStatus, roleData?.role, navigate]);
+
+  useEffect(() => {
+    if (searchParams.get("logout") !== "1") return;
+    if (authLoading) return;
+    if (!user) {
+      const params = new URLSearchParams(searchParams);
+      params.delete("logout");
+      const q = params.toString();
+      navigate({ pathname: nav.staff(), search: q ? `?${q}` : "" }, { replace: true });
+      return;
+    }
+    void (async () => {
+      await supabase.auth.signOut({ scope: "local" });
+      try {
+        localStorage.removeItem("kebabturco-auth");
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [authLoading, user, searchParams, navigate]);
 
   const handleLogin = async (event?: React.FormEvent) => {
     event?.preventDefault();
