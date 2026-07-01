@@ -2564,6 +2564,7 @@ export type Database = {
       products: {
         Row: {
           after_add_suggestions: Json
+          catalog_review_ok: boolean
           category_id: string
           combo_unit_count: number
           created_at: string
@@ -2584,6 +2585,7 @@ export type Database = {
         }
         Insert: {
           after_add_suggestions?: Json
+          catalog_review_ok?: boolean
           category_id: string
           combo_unit_count?: number
           created_at?: string
@@ -2604,6 +2606,7 @@ export type Database = {
         }
         Update: {
           after_add_suggestions?: Json
+          catalog_review_ok?: boolean
           category_id?: string
           combo_unit_count?: number
           created_at?: string

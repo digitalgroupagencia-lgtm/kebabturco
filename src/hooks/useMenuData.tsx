@@ -20,6 +20,7 @@ export type MenuProduct = Product & {
   unitLabel?: Record<string, string>;
   categorySlug?: string;
   afterAddSuggestions?: string[];
+  catalogReviewOk?: boolean;
 };
 
 export type MenuLoadError = "network" | "empty" | "no_store";

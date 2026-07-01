@@ -58,14 +58,52 @@ describe("menuCatalogAudit", () => {
     expect(issues.some((i) => i.action === "review" && i.problem.includes("foto"))).toBe(true);
   });
 
-  it("treats existing recommended drinks as review instead of create", () => {
+  it("does not flag recommended drinks that already match the catalog", () => {
     const issues = auditExpectedDrinkCatalog(KEBAB_DRINK_CATALOG);
     expect(issues.some((i) => i.optionName === "Coca-Cola 2L" && i.action === "create")).toBe(false);
-    expect(
-      issues.some(
-        (i) => i.optionName === "Coca-Cola 2L" && i.action === "review" && i.matchedProductId,
-      ),
-    ).toBe(true);
+    expect(issues.some((i) => i.optionName === "Coca-Cola Lata 33cl" && i.action === "review")).toBe(false);
+    expect(issues.some((i) => i.optionName === "Agua Pequeña" && i.action === "review")).toBe(false);
+  });
+
+  it("flags recommended drinks only when photo or name needs attention", () => {
+    const coca = product("Coca-Cola Lata 33cl", "/product-placeholder.svg");
+    const agua = product("Agua Pequeña", "/product-placeholder.svg");
+    const issues = auditExpectedDrinkCatalog([coca, agua]);
+    expect(issues.some((i) => i.matchedProductId === coca.id && i.problem.includes("foto"))).toBe(true);
+    expect(issues.some((i) => i.matchedProductId === agua.id && i.problem.includes("foto"))).toBe(true);
+  });
+
+  it("dedupes multiple review warnings for the same product", () => {
+    const match = product("Coca-Cola Lata 33cl", "");
+    const merged = mergeCatalogAudits([
+      [
+        {
+          optionId: "o1",
+          optionName: "Coca-Cola Lata 33cl",
+          groupName: "Bebida",
+          severity: "warning",
+          action: "review",
+          problem: "convém rever foto",
+          suggestion: "",
+          matchedProductId: match.id,
+          match,
+        } as never,
+      ],
+      [
+        {
+          optionId: match.id,
+          optionName: "Coca-Cola Lata 33cl",
+          groupName: "Catálogo recomendado",
+          severity: "warning",
+          action: "review",
+          problem: "convém rever nome",
+          suggestion: "",
+          matchedProductId: match.id,
+          match,
+        } as never,
+      ],
+    ]);
+    expect(merged.filter((i) => i.action === "review")).toHaveLength(1);
   });
 
   it("merges expected drink catalog gaps", () => {

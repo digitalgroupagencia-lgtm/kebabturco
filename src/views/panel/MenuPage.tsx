@@ -381,7 +381,7 @@ const MenuPage = () => {
     setProdDialogOpen(false);
     setProdReviewMode(false);
     if (approveAfterSave && reviewProductId) {
-      menuAudit.approveReview(reviewProductId);
+      await menuAudit.approveReview(reviewProductId);
       toast.success(t("menu.toast.approved"));
       void menuAudit.loadAuditData();
     } else {
@@ -407,7 +407,7 @@ const MenuPage = () => {
   const approveReviewIssue = async (issue: CatalogAuditIssue) => {
     if (!issue.matchedProductId) return;
     setApprovingReviewId(issue.matchedProductId);
-    menuAudit.approveReview(issue.matchedProductId);
+    await menuAudit.approveReview(issue.matchedProductId);
     toast.success(panelT(lang, "menu.toast.issue_approved", { name: issue.matchedProductName || issue.optionName }));
     await menuAudit.loadAuditData();
     setApprovingReviewId(null);

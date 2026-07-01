@@ -11,7 +11,10 @@ import {
 } from "@/lib/modifiers/menuCatalogAudit";
 import {
   approveProductReview,
+  approvedIdsFromProducts,
+  persistProductReviewApproval,
   readApprovedProductIds,
+  syncLocalReviewApprovalsToDb,
 } from "@/lib/modifiers/menuCatalogReviewStorage";
 
 function asName(value: unknown): Record<string, string> {
@@ -22,7 +25,7 @@ function asName(value: unknown): Record<string, string> {
 async function fetchCatalogProducts(storeId: string): Promise<MenuProduct[]> {
   const { data, error } = await supabase
     .from("products")
-    .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order")
+    .select("id, category_id, name, description, price, image_url, is_bestseller, is_promo, sort_order, catalog_review_ok")
     .eq("store_id", storeId)
     .eq("is_active", true)
     .order("sort_order");
@@ -42,6 +45,7 @@ async function fetchCatalogProducts(storeId: string): Promise<MenuProduct[]> {
       isBestseller: Boolean(row.is_bestseller),
       isPromo: Boolean(row.is_promo),
       sortOrder: row.sort_order ?? 0,
+      catalogReviewOk: Boolean(row.catalog_review_ok),
       extras: [],
       ingredients: [],
     } as MenuProduct;
@@ -96,13 +100,17 @@ export function useMenuCatalogAudit(storeId: string | null) {
     if (!storeId) return;
     setLoading(true);
     try {
+      const localApprovals = readApprovedProductIds(storeId);
       const [catalogProducts, drinkGroups] = await Promise.all([
         fetchCatalogProducts(storeId),
         fetchDrinkGroups(storeId),
       ]);
       setProducts(catalogProducts);
       setGroups(drinkGroups);
-      setApprovedIds(readApprovedProductIds(storeId));
+      setApprovedIds(approvedIdsFromProducts(catalogProducts, storeId));
+      if (localApprovals.size > 0) {
+        void syncLocalReviewApprovalsToDb(storeId, localApprovals);
+      }
     } finally {
       setLoading(false);
     }
@@ -151,12 +159,22 @@ export function useMenuCatalogAudit(storeId: string | null) {
   }, [issues, reviewIssues, createIssues]);
 
   const approveReview = useCallback(
-    (productId: string) => {
+    async (productId: string) => {
       if (!storeId) return;
-      setApprovedIds(approveProductReview(storeId, productId));
-      window.dispatchEvent(
-        new CustomEvent("menu-catalog-product-approved", { detail: { productId } }),
-      );
+      try {
+        const next = await persistProductReviewApproval(storeId, productId);
+        setApprovedIds(next);
+        setProducts((prev) =>
+          prev.map((product) =>
+            product.id === productId ? { ...product, catalogReviewOk: true } : product,
+          ),
+        );
+        window.dispatchEvent(
+          new CustomEvent("menu-catalog-product-approved", { detail: { productId } }),
+        );
+      } catch {
+        setApprovedIds(approveProductReview(storeId, productId));
+      }
     },
     [storeId],
   );

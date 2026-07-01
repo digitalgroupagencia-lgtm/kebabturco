@@ -173,11 +173,8 @@ function reviewPartsForMatch(expectedName: string, match: MenuProduct): string[]
   if (isPlaceholderImage(match.image)) {
     parts.push("foto");
   }
-  if (expected && actual && expected !== actual && !actual.includes(expected) && !expected.includes(actual)) {
+  if (expected && actual && !labelsLooselyMatch(expected, actual)) {
     parts.push("nome");
-  }
-  if (!parts.length) {
-    parts.push("dados");
   }
   return parts;
 }
@@ -278,7 +275,40 @@ export function mergeCatalogAudits(lists: CatalogAuditIssue[][]): CatalogAuditIs
     const key = `${issue.optionId}:${issue.action}:${issue.problem}`;
     if (!byKey.has(key)) byKey.set(key, issue);
   }
-  return [...byKey.values()];
+  return dedupeReviewIssuesByProduct([...byKey.values()]);
+}
+
+function dedupeReviewIssuesByProduct(issues: CatalogAuditIssue[]): CatalogAuditIssue[] {
+  const reviewByProduct = new Map<string, CatalogAuditIssue>();
+  const result: CatalogAuditIssue[] = [];
+
+  for (const issue of issues) {
+    if (issue.action !== "review" || !issue.matchedProductId) {
+      result.push(issue);
+      continue;
+    }
+
+    const existing = reviewByProduct.get(issue.matchedProductId);
+    if (!existing) {
+      reviewByProduct.set(issue.matchedProductId, issue);
+      continue;
+    }
+
+    const mergedParts = new Set<string>();
+    for (const text of [existing.problem, issue.problem]) {
+      if (text.includes("foto")) mergedParts.add("foto");
+      if (text.includes("nome")) mergedParts.add("nome");
+      if (text.includes("dados")) mergedParts.add("dados");
+    }
+    const displayName = existing.matchedProductName || issue.matchedProductName || existing.optionName;
+    reviewByProduct.set(issue.matchedProductId, {
+      ...existing,
+      problem: `Produto «${displayName}» já está no cardápio, convém rever ${[...mergedParts].join(" e ") || "dados"}`,
+    });
+  }
+
+  result.push(...reviewByProduct.values());
+  return result;
 }
 
 export function catalogAuditSummary(issues: CatalogAuditIssue[]) {
