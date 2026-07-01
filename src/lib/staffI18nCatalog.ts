@@ -1290,6 +1290,11 @@ export const STAFF_I18N_CATALOG = {
   },
   "menu.prod.new_btn": { es: "Nuevo producto", pt: "Novo produto", en: "New product" },
   "menu.prod.empty_add": { es: "Ningún producto en esta categoría. ¡Añada el primero!", pt: "Nenhum produto nesta categoria. Adicione o primeiro!", en: "No products in this category. Add the first one!" },
+  "menu.drinks.hidden_generics": {
+    es: "Solo se muestran bebidas con marca (Coca-Cola 2L, Fanta Lata…). {count} producto(s) genérico(s) antiguo(s) («Refresco Botella/Lata») quedaron ocultos — use las bebidas reales para cambiar fotos.",
+    pt: "Só aparecem bebidas com marca (Coca-Cola 2L, Fanta Lata…). {count} produto(s) genérico(s) antigo(s) («Refresco Botella/Lata») ficaram ocultos — use as bebidas reais para mudar fotos.",
+    en: "Only branded drinks are shown (Coca-Cola 2L, Fanta Can…). {count} old generic placeholder(s) are hidden — edit photos on the real drink products.",
+  },
   "menu.legacy_hint2": { es: "Use grupos arriba para personalización profesional. Esto es fallback antiguo.", pt: "Use grupos acima para personalização profissional. Isto é fallback antigo.", en: "Use groups above for pro customization. Legacy fallback only." },
   "menu.suggestions.ph": { es: "uuid-bebida, uuid-postre", pt: "uuid-bebida, uuid-sobremesa", en: "uuid-drink, uuid-dessert" },
   "menu.review.banner_short": {

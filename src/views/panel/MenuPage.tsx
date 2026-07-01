@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useLocation } from "react-router-dom";
 import { supabase as _supabaseRaw } from "@/integrations/supabase/client";
@@ -33,6 +33,10 @@ import {
 } from "@/lib/localizedText";
 import { useMenuCatalogAudit } from "@/hooks/useMenuCatalogAudit";
 import type { CatalogAuditIssue } from "@/lib/modifiers/menuCatalogAudit";
+import {
+  countHiddenGenericDrinks,
+  filterPanelProductsForCategory,
+} from "@/lib/menuDrinkCatalog";
 
 type Category = Tables<"categories">;
 type Product = Tables<"products">;
@@ -76,6 +80,22 @@ const MenuPage = () => {
   const [approvingReviewId, setApprovingReviewId] = useState<string | null>(null);
 
   const menuAudit = useMenuCatalogAudit(isAdminMenu ? storeId : null);
+
+  const visibleProducts = useMemo(
+    () =>
+      selectedCategoryId
+        ? filterPanelProductsForCategory(products, categories, selectedCategoryId)
+        : [],
+    [products, categories, selectedCategoryId],
+  );
+
+  const hiddenGenericDrinkCount = useMemo(
+    () =>
+      selectedCategoryId
+        ? countHiddenGenericDrinks(products, categories, selectedCategoryId)
+        : 0,
+    [products, categories, selectedCategoryId],
+  );
 
   useEffect(() => {
     if (!storeId) {
@@ -703,15 +723,23 @@ const MenuPage = () => {
                 {t("menu.select_category")}
               </CardContent>
             </Card>
-          ) : products.length === 0 ? (
+          ) : visibleProducts.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 {t("menu.prod.empty_add")}
               </CardContent>
             </Card>
           ) : (
+            <div className="space-y-3">
+              {hiddenGenericDrinkCount > 0 && (
+                <Card className="border-amber-500/40 bg-amber-500/10">
+                  <CardContent className="p-3 text-sm text-amber-950 dark:text-amber-50">
+                    {panelT(lang, "menu.drinks.hidden_generics", { count: hiddenGenericDrinkCount })}
+                  </CardContent>
+                </Card>
+              )}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {products.map((prod) => {
+              {visibleProducts.map((prod) => {
                 const name = prod.name as Record<string, string>;
                 return (
                   <Card key={prod.id} className={`overflow-hidden ${!prod.is_active ? "opacity-50" : ""}`}>
@@ -762,6 +790,7 @@ const MenuPage = () => {
                   </Card>
                 );
               })}
+            </div>
             </div>
           )}
         </div>

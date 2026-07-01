@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { MenuProduct } from "@/hooks/useMenuData";
 import { KEBAB_DRINK_CATALOG } from "@/lib/modifiers/__fixtures__/kebabMenuAuditProducts";
 import {
+  countHiddenGenericDrinks,
+  filterPanelProductsForCategory,
   filterProductsForCategory,
   isCustomerMenuProduct,
   listCustomerDrinkProducts,
@@ -65,5 +67,17 @@ describe("menuDrinkCatalog", () => {
     generic.isBestseller = true;
     expect(isCustomerMenuProduct(generic)).toBe(false);
     expect(isCustomerMenuProduct(drink("c", "Coca-Cola 2L"))).toBe(true);
+  });
+
+  it("hides generic drinks from admin panel list", () => {
+    const rows = [
+      { id: "g-lata", category_id: "bebidas", name: { es: "Refresco Lata 33cl" }, description: { es: "Coca-Cola, Fanta" } },
+      { id: "g-2l", category_id: "bebidas", name: { es: "Refresco Botella 2L" }, description: { es: "Coca-Cola, Fanta" } },
+      { id: "coca", category_id: "bebidas", name: { es: "Coca-Cola 2L" } },
+      { id: "fanta", category_id: "bebidas", name: { es: "Fanta Naranja Lata 33cl" } },
+    ];
+    const visible = filterPanelProductsForCategory(rows, categories, "bebidas");
+    expect(visible.map((p) => p.id)).toEqual(["coca", "fanta"]);
+    expect(countHiddenGenericDrinks(rows, categories, "bebidas")).toBe(2);
   });
 });
