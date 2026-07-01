@@ -10,6 +10,13 @@ interface UserRoleData {
   store_id: string | null;
 }
 
+type RoleState = {
+  userId: string | null;
+  roleData: UserRoleData | null;
+  loading: boolean;
+  error: string | null;
+};
+
 function pickRoleData(rows: { role: AppRole; tenant_id: string | null; store_id: string | null }[]): UserRoleData | null {
   if (!rows.length) return null;
   const adminMaster = rows.find((role) => role.role === "admin_master");
@@ -40,56 +47,104 @@ async function fetchRoleViaRpc(): Promise<UserRoleData | null> {
   };
 }
 
+const roleListeners = new Set<(state: RoleState) => void>();
+let roleState: RoleState = {
+  userId: null,
+  roleData: null,
+  loading: false,
+  error: null,
+};
+let inFlight: Promise<void> | null = null;
+
+function publishRole(next: RoleState) {
+  roleState = next;
+  roleListeners.forEach((listener) => listener(roleState));
+}
+
+function resetRoleState(userId: string | null) {
+  publishRole({
+    userId,
+    roleData: null,
+    loading: false,
+    error: null,
+  });
+}
+
+async function loadRole(userId: string) {
+  publishRole({
+    userId,
+    roleData: roleState.userId === userId ? roleState.roleData : null,
+    loading: true,
+    error: null,
+  });
+
+  const rpcRole = await fetchRoleViaRpc();
+  if (rpcRole) {
+    publishRole({
+      userId,
+      roleData: rpcRole,
+      loading: false,
+      error: null,
+    });
+    return;
+  }
+
+  const { data, error: queryError } = await supabase
+    .from("user_roles")
+    .select("role, tenant_id, store_id")
+    .eq("user_id", userId);
+
+  if (!queryError && data?.length) {
+    publishRole({
+      userId,
+      roleData: pickRoleData(data as UserRoleData[]),
+      loading: false,
+      error: null,
+    });
+    return;
+  }
+
+  publishRole({
+    userId,
+    roleData: null,
+    loading: false,
+    error: queryError?.message ?? "Perfil de acesso não encontrado.",
+  });
+}
+
+function ensureRoleLoaded(userId: string) {
+  if (
+    roleState.userId === userId &&
+    !roleState.loading &&
+    (roleState.roleData || roleState.error)
+  ) {
+    return;
+  }
+  if (inFlight && roleState.userId === userId) return;
+
+  inFlight = loadRole(userId).finally(() => {
+    inFlight = null;
+  });
+}
+
 export function useUserRole(userId: string | undefined) {
-  const [roleData, setRoleData] = useState<UserRoleData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<RoleState>(roleState);
 
   useEffect(() => {
     if (!userId) {
-      setRoleData(null);
-      setError(null);
-      setLoading(false);
+      resetRoleState(null);
+      setState(roleState);
       return;
     }
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+    roleListeners.add(setState);
+    setState(roleState);
+    ensureRoleLoaded(userId);
 
-    const fetchRole = async () => {
-      const rpcRole = await fetchRoleViaRpc();
-      if (!active) return;
-
-      if (rpcRole) {
-        setRoleData(rpcRole);
-        setError(null);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error: queryError } = await supabase
-        .from("user_roles")
-        .select("role, tenant_id, store_id")
-        .eq("user_id", userId);
-
-      if (!active) return;
-
-      if (!queryError && data?.length) {
-        setRoleData(pickRoleData(data as UserRoleData[]));
-        setError(null);
-      } else {
-        setRoleData(null);
-        setError(queryError?.message ?? "Perfil de acesso não encontrado.");
-      }
-      setLoading(false);
-    };
-
-    void fetchRole();
     return () => {
-      active = false;
+      roleListeners.delete(setState);
     };
   }, [userId]);
 
-  return { roleData, loading, error };
+  return { roleData: state.roleData, loading: state.loading, error: state.error };
 }

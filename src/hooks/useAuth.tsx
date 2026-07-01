@@ -60,15 +60,19 @@ export function useAuth() {
 
   const signOut = async (redirectTo: string = "/staff") => {
     clearStaffSessionFlag();
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore, we still force navigation below
-    }
+
+    // Limpa o estado local imediatamente para evitar sensação de travamento no clique.
+    applySession(null, false);
+
+    const signOutWithTimeout = Promise.race([
+      supabase.auth.signOut({ scope: "local" }),
+      new Promise((resolve) => setTimeout(resolve, 700)),
+    ]);
+    void signOutWithTimeout.catch(() => undefined);
+
     if (typeof window !== "undefined") {
-      // Hard navigation guarantees all in-memory state is wiped and
-      // any guard hooks re-evaluate cleanly on the login screen.
-      window.location.assign(redirectTo);
+      // Hard navigation garante limpeza de estado em memória e revalidação dos guards.
+      window.location.replace(redirectTo);
     }
   };
 
