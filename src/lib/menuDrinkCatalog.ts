@@ -3,11 +3,12 @@ import { isCustomerMenuDrink, isDrinkProduct, isGenericDrinkPlaceholder } from "
 
 type NamedCategory = {
   id: string;
-  name: Record<string, string>;
+  name: unknown;
 };
 
 export function categoryLabel(category: NamedCategory): string {
-  return `${category.name.es || ""} ${category.name.pt || ""} ${category.name.en || ""}`.toLowerCase();
+  const name = asLocalizedName(category.name);
+  return `${name.es || ""} ${name.pt || ""} ${name.en || ""}`.toLowerCase();
 }
 
 export function isBebidasCategory(category: NamedCategory): boolean {
@@ -104,7 +105,7 @@ export function filterPanelProductsForCategory<T extends { id: string; category_
   return products.filter((product) => !isGenericDrinkPlaceholder(asMenuProductFromPanelRow(product)));
 }
 
-export function countHiddenGenericDrinks<T extends { category_id: string; name: unknown; description?: unknown }>(
+export function countHiddenGenericDrinks<T extends { id: string; category_id: string; name: unknown; description?: unknown }>(
   products: T[],
   categories: NamedCategory[],
   activeCategoryId: string,
