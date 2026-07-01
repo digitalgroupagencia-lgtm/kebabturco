@@ -95,7 +95,7 @@ const LanguageScreen = () => {
       </div>
 
       {/* Logo + títulos, tamanho original, sem flex-1 (evita espaço branco gigante) */}
-      <div className="flex flex-col items-center px-6 pt-3 shrink-0">
+      <div className="flex flex-col items-center px-6 pt-10 md:pt-12 lg:pt-14 shrink-0">
         <div
           className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
           {...logoGesture}
@@ -118,7 +118,7 @@ const LanguageScreen = () => {
       </div>
 
       {/* Bandeiras, altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
-      <div className="flex min-h-0 items-center justify-center overflow-hidden px-4 py-2 w-full">
+      <div className="flex min-h-0 items-start justify-center overflow-hidden px-4 pt-3 md:pt-5 pb-2 w-full">
         <div
           className="flex flex-row items-center justify-center w-full max-w-md flex-nowrap"
           style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
