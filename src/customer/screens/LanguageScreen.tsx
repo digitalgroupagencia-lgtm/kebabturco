@@ -118,7 +118,7 @@ const LanguageScreen = () => {
       </div>
 
       {/* Bandeiras, altura limitada para o rodapé (App Store / Play) ficar sempre visível */}
-      <div className="flex min-h-0 items-start justify-center overflow-hidden px-4 pt-10 md:pt-11 pb-2 w-full">
+      <div className="flex min-h-0 items-start justify-center overflow-hidden px-4 pt-16 md:pt-[4.25rem] pb-2 w-full">
         <div
           className="flex flex-row items-center justify-center w-full max-w-md flex-nowrap"
           style={{ gap: langs.length >= 4 ? "0.5rem" : langs.length === 3 ? "1rem" : "1.5rem" }}
