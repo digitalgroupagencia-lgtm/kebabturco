@@ -4460,11 +4460,6 @@ export type Database = {
         Args: { _driver_user_id: string; _order_id: string }
         Returns: Json
       }
-      complete_visit_demo_print_job: { Args: { _job_id: string }; Returns: undefined }
-      fail_visit_demo_print_job: {
-        Args: { _error: string; _job_id: string }
-        Returns: undefined
-      }
       claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
       claim_visit_print_jobs: {
         Args: { _limit?: number; _owner_user_id: string }
@@ -4510,6 +4505,10 @@ export type Database = {
       close_table_session_unified: {
         Args: { _payment_method: string; _session_id: string }
         Returns: Json
+      }
+      complete_visit_demo_print_job: {
+        Args: { _job_id: string }
+        Returns: undefined
       }
       confirm_delivery_with_code: {
         Args: { _code: string; _order_id: string }
@@ -4625,6 +4624,10 @@ export type Database = {
       }
       enqueue_wgm_order_sync: {
         Args: { _event_type?: string; _order_id: string; _store_id: string }
+        Returns: undefined
+      }
+      fail_visit_demo_print_job: {
+        Args: { _error: string; _job_id: string }
         Returns: undefined
       }
       finalize_demo_visit_order: { Args: { _order_id: string }; Returns: Json }
