@@ -135,6 +135,29 @@ export default function MenuCatalogAuditPanel() {
     }
   };
 
+  const missing2lIssues = useMemo(
+    () => createIssues.filter((issue) => issue.drinkRule === "2l"),
+    [createIssues],
+  );
+
+  const createMissing2lDrinks = async () => {
+    if (!missing2lIssues.length || creatingAll) return;
+    setCreatingAll(true);
+    let created = 0;
+    try {
+      for (const issue of missing2lIssues) {
+        const ok = await createProductForOption(issue);
+        if (ok) created += 1;
+      }
+      if (created > 0) {
+        toast.success(t("audit.catalog.create_all_done"));
+        window.dispatchEvent(new CustomEvent("menu-catalog-audit-product-created"));
+      }
+    } finally {
+      setCreatingAll(false);
+    }
+  };
+
   const copyCustomizationReport = async () => {
     try {
       await navigator.clipboard.writeText(
@@ -163,7 +186,7 @@ export default function MenuCatalogAuditPanel() {
   }
 
   return (
-    <Card className="border-primary/20 mb-6 shadow-sm">
+    <Card id="menu-catalog-audit" className="border-primary/20 mb-6 shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -200,6 +223,25 @@ export default function MenuCatalogAuditPanel() {
 
         {allOk && (
           <p className="text-sm text-success font-medium">{t("audit.unified.all_ok")}</p>
+        )}
+
+        {missing2lIssues.length > 0 && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-3">
+            <p className="text-sm font-semibold text-destructive">
+              {panelT(lang, "menu.drinks.missing_2l", {
+                names: missing2lIssues.map((i) => i.optionName).join(", "),
+              })}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              disabled={creatingAll || !!creatingId}
+              onClick={() => void createMissing2lDrinks()}
+            >
+              {creatingAll ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+              {panelT(lang, "menu.drinks.add_2l_btn")}
+            </Button>
+          </div>
         )}
 
         {createIssues.length > 0 && (

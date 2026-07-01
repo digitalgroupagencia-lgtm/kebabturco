@@ -1295,6 +1295,16 @@ export const STAFF_I18N_CATALOG = {
     pt: "Só aparecem bebidas com marca (Coca-Cola 2L, Fanta Lata…). {count} produto(s) genérico(s) antigo(s) («Refresco Botella/Lata») ficaram ocultos — use as bebidas reais para mudar fotos.",
     en: "Only branded drinks are shown (Coca-Cola 2L, Fanta Can…). {count} old generic placeholder(s) are hidden — edit photos on the real drink products.",
   },
+  "menu.drinks.missing_2l": {
+    es: "Faltan bebidas de 2 litros en el cardápio: {names}. Créelas para poder editar foto y precio en combos.",
+    pt: "Faltam bebidas de 2 litros no cardápio: {names}. Crie-as para poder editar foto e preço nos combos.",
+    en: "Missing 2-litre drinks in the menu: {names}. Create them to edit photo and price in combos.",
+  },
+  "menu.drinks.add_2l_btn": {
+    es: "Añadir bebidas 2L",
+    pt: "Adicionar bebidas 2L",
+    en: "Add 2L drinks",
+  },
   "menu.legacy_hint2": { es: "Use grupos arriba para personalización profesional. Esto es fallback antiguo.", pt: "Use grupos acima para personalização profissional. Isto é fallback antigo.", en: "Use groups above for pro customization. Legacy fallback only." },
   "menu.suggestions.ph": { es: "uuid-bebida, uuid-postre", pt: "uuid-bebida, uuid-sobremesa", en: "uuid-drink, uuid-dessert" },
   "menu.review.banner_short": {

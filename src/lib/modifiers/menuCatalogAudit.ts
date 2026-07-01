@@ -1,5 +1,6 @@
 import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ModifierGroup, ModifierOption } from "./types";
+import { isGenericDrinkPlaceholder } from "./drinkProduct";
 import {
   DEFAULT_DRINK_LABELS,
   drinkLabelMatchesRule,
@@ -66,6 +67,11 @@ function extractDrinkBrand(label: string): string | null {
   if (/nestea/.test(n)) return "nestea";
   if (/agua/.test(n)) return "agua";
   return null;
+}
+
+/** Exclui cartões genéricos («Refresco Botella 2L») — só contam produtos com marca real. */
+export function catalogDrinkProductsForAudit(products: MenuProduct[]): MenuProduct[] {
+  return products.filter((p) => !isGenericDrinkPlaceholder(p));
 }
 
 function productMatchesDrinkRule(product: MenuProduct, rule: DrinkSizeRule | null): boolean {
@@ -185,6 +191,7 @@ export function auditModifierOptionsAgainstCatalog(
 ): CatalogAuditIssue[] {
   const issues: CatalogAuditIssue[] = [];
   const seenOptions = new Set<string>();
+  const catalogProducts = catalogDrinkProductsForAudit(products);
 
   for (const group of groups) {
     if (!isDrinkGroup(group)) continue;
@@ -197,7 +204,7 @@ export function auditModifierOptionsAgainstCatalog(
       if (!label || seenOptions.has(option.id)) continue;
       seenOptions.add(option.id);
 
-      const match = findMatchingProduct(option, products);
+      const match = findMatchingProduct(option, catalogProducts);
       if (!match) {
         issues.push({
           optionId: option.id,
@@ -232,10 +239,11 @@ export function auditModifierOptionsAgainstCatalog(
 
 export function auditExpectedDrinkCatalog(products: MenuProduct[]): CatalogAuditIssue[] {
   const issues: CatalogAuditIssue[] = [];
+  const catalogProducts = catalogDrinkProductsForAudit(products);
 
   (Object.entries(DEFAULT_DRINK_LABELS) as [DrinkSizeRule, string[]][]).forEach(([rule, expected]) => {
     for (const name of expected) {
-      const match = findMatchingProductByName(name, rule, products);
+      const match = findMatchingProductByName(name, rule, catalogProducts);
       if (!match) {
         issues.push({
           optionId: `expected-${rule}-${normalizeLabel(name)}`,

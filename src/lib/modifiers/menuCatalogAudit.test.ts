@@ -43,19 +43,26 @@ describe("menuCatalogAudit", () => {
     expect(issues.some((i) => i.action === "create")).toBe(true);
   });
 
-  it("suggests review when matched product has no image", () => {
+  it("suggests review when matched branded product has no image", () => {
     const groups: ModifierGroup[] = [
       {
         id: "g1",
         name: { es: "Bebida 2L", pt: "Bebida 2L" },
         groupKind: "choice",
-        options: [{ id: "o1", name: { es: "Refresco Botella 2L" }, price: 0 } as never],
+        options: [{ id: "o1", name: { es: "Coca-Cola 2L" }, price: 0 } as never],
       } as never,
     ];
-    const products = [product("Refresco Botella 2L", "")];
+    const products = [product("Coca-Cola 2L", "")];
 
     const issues = auditModifierOptionsAgainstCatalog(groups, products);
     expect(issues.some((i) => i.action === "review" && i.problem.includes("foto"))).toBe(true);
+  });
+
+  it("ignores generic placeholder when auditing recommended 2L drinks", () => {
+    const products = [product("Refresco Botella 2L")];
+    const issues = auditExpectedDrinkCatalog(products);
+    expect(issues.some((i) => i.optionName === "Coca-Cola 2L" && i.action === "create")).toBe(true);
+    expect(issues.some((i) => i.optionName === "Fanta Naranja 2L" && i.action === "create")).toBe(true);
   });
 
   it("does not flag recommended drinks that already match the catalog", () => {

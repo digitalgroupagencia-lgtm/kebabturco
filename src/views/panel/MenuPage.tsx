@@ -79,7 +79,7 @@ const MenuPage = () => {
   const [reviewProductId, setReviewProductId] = useState<string | null>(null);
   const [approvingReviewId, setApprovingReviewId] = useState<string | null>(null);
 
-  const menuAudit = useMenuCatalogAudit(isAdminMenu ? storeId : null);
+  const menuAudit = useMenuCatalogAudit(storeId);
 
   const visibleProducts = useMemo(
     () =>
@@ -95,6 +95,19 @@ const MenuPage = () => {
         ? countHiddenGenericDrinks(products, categories, selectedCategoryId)
         : 0,
     [products, categories, selectedCategoryId],
+  );
+
+  const isDrinksCategory = useMemo(() => {
+    const cat = categories.find((c) => c.id === selectedCategoryId);
+    if (!cat) return false;
+    const name = cat.name as Record<string, string>;
+    const label = `${name?.es || ""} ${name?.pt || ""}`.toLowerCase();
+    return /bebida|drink|boisson|refresco/i.test(label);
+  }, [categories, selectedCategoryId]);
+
+  const missing2lDrinkIssues = useMemo(
+    () => menuAudit.createIssues.filter((issue) => issue.drinkRule === "2l"),
+    [menuAudit.createIssues],
   );
 
   useEffect(() => {
@@ -731,6 +744,26 @@ const MenuPage = () => {
             </Card>
           ) : (
             <div className="space-y-3">
+              {isDrinksCategory && missing2lDrinkIssues.length > 0 && (
+                <Card className="border-destructive/40 bg-destructive/5">
+                  <CardContent className="p-3 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-destructive">
+                      {panelT(lang, "menu.drinks.missing_2l", {
+                        names: missing2lDrinkIssues.map((i) => i.optionName).join(", "),
+                      })}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() =>
+                        document.getElementById("menu-catalog-audit")?.scrollIntoView({ behavior: "smooth" })
+                      }
+                    >
+                      {panelT(lang, "menu.drinks.add_2l_btn")}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               {hiddenGenericDrinkCount > 0 && (
                 <Card className="border-amber-500/40 bg-amber-500/10">
                   <CardContent className="p-3 text-sm text-amber-950 dark:text-amber-50">
