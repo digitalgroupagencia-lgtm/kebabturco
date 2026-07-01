@@ -56,6 +56,13 @@ export function resolveDrinkOptionImage(option: ModifierOption, menuProducts: Me
 
   const partial = menuProducts.find((p) => {
     const pl = productLabel(p);
+    if (pl === label) return true;
+    const wants2L = /2\s*l|2l/i.test(label);
+    const wants33 = /33\s*cl|33cl|lata/i.test(label);
+    const wants125 = /1[\.,]25|125\s*cl/i.test(label);
+    if (wants2L && !/2\s*l|2l/i.test(pl)) return false;
+    if (wants33 && !/33\s*cl|33cl|lata/i.test(pl)) return false;
+    if (wants125 && !/1[\.,]25|125\s*cl/i.test(pl)) return false;
     return pl.includes(label) || label.includes(pl);
   });
   if (partial?.image) return partial.image;
@@ -81,7 +88,16 @@ export function resolveDrinkOptionImage(option: ModifierOption, menuProducts: Me
   }
 
   if (/2\s*l|2l|refresco|bebida/i.test(label)) {
-    return findMenuProduct(menuProducts, [/coca.*2/i, /refresco.*2/i, /beb-coca/i, /bebida/i])?.image ?? null;
+    const sized = menuProducts.find((p) => {
+      const pl = productLabel(p);
+      if (!/2\s*l|2l/i.test(pl)) return false;
+      if (/coca/i.test(label)) return /coca/i.test(pl);
+      if (/fanta/i.test(label)) return /fanta/i.test(pl);
+      if (/sprite/i.test(label)) return /sprite/i.test(pl);
+      return true;
+    });
+    if (sized?.image) return sized.image;
+    return null;
   }
 
   return null;

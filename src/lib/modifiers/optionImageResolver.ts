@@ -2,13 +2,15 @@ import type { MenuProduct } from "@/hooks/useMenuData";
 import type { ModifierOption } from "./types";
 import { parseProductCode } from "@/lib/parseProductCode";
 import { isWeakProductImage, normalizeProductLabel } from "./productDisplayImage";
+import { resolveDrinkOptionImage } from "./optionCatalog";
 
 /**
  * Resolve a imagem ideal para uma opção de modificador.
  * Tenta, em ordem:
  *   1. opt.imageUrl (se forte)
- *   2. produto do cardápio com o mesmo código numérico (ex.: "21")
- *   3. produto do cardápio com nome similar
+ *   2. bebida/patata/carne via catálogo
+ *   3. produto do cardápio com o mesmo código numérico (ex.: "21")
+ *   4. produto do cardápio com nome similar
  */
 export function resolveModifierOptionImage(
   opt: ModifierOption,
@@ -19,6 +21,10 @@ export function resolveModifierOptionImage(
   if (!menuProducts.length) return opt.imageUrl ?? null;
 
   const rawName = tName ? tName(opt.name) : opt.name.es || opt.name.pt || opt.name.en || "";
+  if (/coca|fanta|sprite|nestea|aquarius|refresco|bebida|agua|2\s*l|33\s*cl|lata/i.test(rawName)) {
+    const drinkImage = resolveDrinkOptionImage(opt, menuProducts);
+    if (drinkImage && !isWeakProductImage(drinkImage)) return drinkImage;
+  }
   const { code, name: cleanName } = parseProductCode(rawName);
 
   if (code) {

@@ -324,6 +324,16 @@ export const STAFF_I18N_CATALOG = {
   },
   "audit.catalog.problem": { es: "Problema:", pt: "Problema:", en: "Issue:" },
   "audit.catalog.create_btn": { es: "Crear en el menú", pt: "Criar no cardápio", en: "Create on menu" },
+  "audit.catalog.create_all_btn": {
+    es: "Crear todas las bebidas que faltan",
+    pt: "Criar todas as bebidas em falta",
+    en: "Create all missing drinks",
+  },
+  "audit.catalog.create_all_done": {
+    es: "Bebidas añadidas al menú. Ya puede editar fotos en Bebidas.",
+    pt: "Bebidas adicionadas ao cardápio. Já pode editar fotos em Bebidas.",
+    en: "Drinks added to the menu. You can now edit photos under Drinks.",
+  },
   "audit.catalog.toast.no_category": { es: "Cree primero una categoría Bebidas", pt: "Crie primeiro uma categoria Bebidas", en: "Create a Drinks category first" },
   "audit.catalog.toast.added": { es: '"{name}" añadido al menú', pt: '"{name}" adicionado ao cardápio', en: '"{name}" added to menu' },
   "audit.catalog.toast.error": { es: "Error al crear producto", pt: "Erro ao criar produto", en: "Failed to create product" },

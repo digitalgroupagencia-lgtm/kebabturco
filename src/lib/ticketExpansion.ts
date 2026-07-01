@@ -11,27 +11,17 @@
 import type { TicketItem } from "@/services/escPosTicketBuilder";
 import type { CartItem } from "@/customer/contexts/CartContext";
 import type { CartConfiguration, ModifierSelection } from "@/lib/modifiers/types";
+import {
+  inferUnitTag,
+  pickLocalizedLabel,
+} from "@/lib/ticketUnitLabels";
 
 function pickLabel(name: Record<string, string> | null | undefined): string {
-  if (!name) return "";
-  return name.es || name.pt || name.en || name.fr || Object.values(name)[0] || "";
-}
-
-function extractUnitNumber(unitLabel?: Record<string, string> | null): number | null {
-  const lbl = pickLabel(unitLabel || undefined);
-  const match = lbl.match(/(?:pita|unidad|item|hamburguesa|burger|durum|wrap|kebab)\s*(\d+)/i)
-    || lbl.match(/\b(\d+)\s*[º°ª\.]?\s*(?:pan|pita|unidad|item|hamburguesa|burger|durum|wrap|kebab)\b/i);
-  if (!match) return null;
-  const n = Number.parseInt(match[1], 10);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return pickLocalizedLabel(name);
 }
 
 function unitTag(unitIndex: number | null | undefined, unitLabel: Record<string, string> | null | undefined, zeroBased: boolean): string {
-  // Usa "Pita N" como prefixo canônico, reconhecido pelo regex do builder.
-  const fromLabel = extractUnitNumber(unitLabel);
-  if (fromLabel) return `Pita ${fromLabel}`;
-  if (typeof unitIndex === "number" && unitIndex >= 0) return `Pita ${zeroBased ? unitIndex + 1 : unitIndex}`;
-  return "Item";
+  return inferUnitTag(unitIndex, unitLabel, zeroBased);
 }
 
 function pushSelection(

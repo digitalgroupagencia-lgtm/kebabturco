@@ -87,21 +87,38 @@ const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "
 
 type W = ReturnType<typeof writer>;
 
-function detectUnitIndex(label: string): number | null {
+const UNIT_WITH_INDEX =
+  /(?:pizza|pan\s*pita|pita|rollo|hamburguesa|burger|durum|wrap|d[oö]ner|kebab|unidad|item)\s*(\d+)/i;
+const UNIT_FROM_PHRASE =
+  /(?:del|de la|sabor de la)\s*(\d+)\s*[º°ª\.]?\s*(?:pan|pita|pizza|rollo|hamburguesa|burger|unidad|item)?/i;
+
+function extractUnitNumberFromLabel(label: string): number | null {
   const l = label.toLowerCase();
-  const m =
-    l.match(/(?:pan\s*pita|pita|unidad|item|hamburguesa|burger|durum|wrap|d[oö]ner|kebab)\s*(\d+)/i) ||
-    l.match(/del\s*(\d+)\s*[º°ª\.]?\s*(?:pan|pita|unidad|item)/i) ||
-    l.match(/\b(\d+)\s*[º°ª]\b/);
+  const m = l.match(UNIT_WITH_INDEX) || l.match(UNIT_FROM_PHRASE) || l.match(/\b(\d+)\s*[º°ª]\b/);
   if (!m) return null;
   const n = parseInt(m[1], 10);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+function detectUnitIndexFromExtraLabel(label: string): number | null {
+  const prefix = label.split(":")[0]?.trim() ?? label;
+  return extractUnitNumberFromLabel(prefix);
+}
+
+function unitHeaderFromExtraLabel(label: string, fallbackIndex: number): string {
+  const prefix = label.split(":")[0]?.trim();
+  if (prefix && extractUnitNumberFromLabel(prefix)) return prefix.toUpperCase();
+  return `UNIDAD ${fallbackIndex}`;
+}
+
+function detectUnitIndex(label: string): number | null {
+  return detectUnitIndexFromExtraLabel(label) ?? extractUnitNumberFromLabel(label);
+}
+
 function stripUnitPrefix(label: string): string {
   return label
-    .replace(/^.*?(?:pan\s*pita|pita|unidad|item|hamburguesa|burger|durum|wrap|d[oö]ner|kebab)\s*\d+\s*[:\-–]\s*/i, "")
-    .replace(/^.*?del\s*\d+\s*[º°ª\.]?\s*(?:pan|pita|unidad|item|hamburguesa)[^:]*[:\-–]\s*/i, "")
+    .replace(/^.*?(?:pizza|pan\s*pita|pita|rollo|hamburguesa|burger|durum|wrap|d[oö]ner|kebab|unidad|item)\s*\d+\s*[:\-–]\s*/i, "")
+    .replace(/^.*?del\s*\d+\s*[º°ª\.]?\s*(?:pan|pita|pizza|rollo|hamburguesa|unidad|item)[^:]*[:\-–]\s*/i, "")
     .trim();
 }
 
@@ -154,24 +171,33 @@ function renderItemExtras(w: W, it: TicketItem) {
     w.line(`    >> ${spicyShared}`);
     w.cmd(BOLD_OFF);
   }
-  if (it.removed?.length) w.line(`    - sin ${it.removed.map(sanitize).join(", ")}`);
 
   const indices = Array.from(perUnit.keys()).sort((a, b) => a - b);
+  if (it.removed?.length && indices.length === 0) {
+    w.line(`    - sin ${it.removed.map(sanitize).join(", ")}`);
+  }
+
   for (const idx of indices) {
+    const items = perUnit.get(idx) ?? [];
+    const header = unitHeaderFromExtraLabel(items[0]?.name || "", idx);
     w.line();
     w.cmd(BOLD_ON);
-    w.line(`  >> PAN PITA ${idx}`);
+    w.line(`  >> ${header}`);
     w.cmd(BOLD_OFF);
-    const items = perUnit.get(idx) ?? [];
     const carnes: string[] = [];
     const verduras: string[] = [];
     const salsas: string[] = [];
+    const removidos: string[] = [];
     const otros: string[] = [];
     for (const e of items) {
       const c = classifyChoice(e.name || "");
       const display = c.isRemoval
-        ? `Sin ${c.value.replace(/^(sin|sem|no|sans)\s+/i, "")}`
+        ? c.value.replace(/^(sin|sem|no|sans)\s+/i, "")
         : c.value;
+      if (c.isRemoval) {
+        removidos.push(display);
+        continue;
+      }
       if (c.type === "carne") carnes.push(display);
       else if (c.type === "verdura") verduras.push(display);
       else if (c.type === "salsa") salsas.push(display);
@@ -180,6 +206,7 @@ function renderItemExtras(w: W, it: TicketItem) {
     if (carnes.length) w.line(`     Carne: ${sanitize(carnes.join(", "))}`);
     if (verduras.length) w.line(`     Verduras: ${sanitize(verduras.join(", "))}`);
     if (salsas.length) w.line(`     Salsas: ${sanitize(salsas.join(", "))}`);
+    if (removidos.length) w.line(`     Sin: ${sanitize(removidos.join(", "))}`);
     for (const o of otros) w.line(`     ${sanitize(o)}`);
     const sp = spicyPerUnit.get(idx);
     if (sp) {
@@ -187,6 +214,14 @@ function renderItemExtras(w: W, it: TicketItem) {
       w.line(`     ${sp}`);
       w.cmd(BOLD_OFF);
     }
+  }
+
+  if (it.removed?.length && indices.length > 0) {
+    w.line();
+    w.cmd(BOLD_ON);
+    w.line("  >> PERSONALIZACIÓN SIN UNIDAD");
+    w.cmd(BOLD_OFF);
+    w.line(`     Sin: ${sanitize(it.removed.join(", "))}`);
   }
 
   if (it.notes?.trim()) w.line(`    >> ${sanitize(it.notes.trim())}`);

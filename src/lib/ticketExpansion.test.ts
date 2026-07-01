@@ -119,6 +119,51 @@ describe("ticketExpansion", () => {
     expect(t.removed).toEqual([]);
   });
 
+  it("agrupa removidos por pizza no combo", () => {
+    const t = cartItemToTicketItem({
+      ...baseCombo,
+      productName: { es: "Combo 3 Pizzas Kebab" },
+      configuration: {
+        productType: "combo",
+        globalSelections: [
+          {
+            groupId: "g-drink",
+            groupName: { es: "Bebida" },
+            groupKind: "choice",
+            optionId: "coca",
+            optionName: { es: "Coca-Cola 2L" },
+            quantity: 1,
+            priceDelta: 0,
+          },
+        ],
+        comboUnits: [
+          {
+            unitIndex: 0,
+            unitLabel: { es: "Elige el sabor de la 1ª pizza" },
+            selections: [
+              { groupId: "g-flavor", groupName: { es: "Sabor" }, groupKind: "choice", optionId: "kebab", optionName: { es: "Kebab" }, quantity: 1, priceDelta: 0 },
+              { groupId: "g-rem", groupName: { es: "Quitar" }, groupKind: "removal", optionId: "cebolla", optionName: { es: "Cebolla" }, quantity: 1, priceDelta: 0 },
+            ],
+          },
+          {
+            unitIndex: 1,
+            unitLabel: { es: "Elige el sabor de la 2ª pizza" },
+            selections: [
+              { groupId: "g-flavor", groupName: { es: "Sabor" }, groupKind: "choice", optionId: "mixta", optionName: { es: "Mixta" }, quantity: 1, priceDelta: 0 },
+              { groupId: "g-rem", groupName: { es: "Quitar" }, groupKind: "removal", optionId: "tomate", optionName: { es: "Tomate" }, quantity: 1, priceDelta: 0 },
+            ],
+          },
+        ],
+      },
+    });
+    const names = (t.extras ?? []).map((e) => e.name);
+    expect(names).toContain("Pizza 1: Kebab");
+    expect(names).toContain("Pizza 1: Sin Cebolla");
+    expect(names).toContain("Pizza 2: Mixta");
+    expect(names).toContain("Pizza 2: Sin Tomate");
+    expect(t.removed).toEqual([]);
+  });
+
   it("não expande produtos simples", () => {
     const t = cartItemToTicketItem({
       ...baseCombo,

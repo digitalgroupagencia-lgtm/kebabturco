@@ -53,10 +53,15 @@ export default function MenuCatalogAuditPanel() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openCustom, setOpenCustom] = useState(false);
   const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [creatingAll, setCreatingAll] = useState(false);
   const { t, lang } = useStaffT();
 
   const customizationIssues = useMemo(() => auditMenuProducts(menuProducts), [menuProducts]);
   const customizationSummary = useMemo(() => auditSummary(customizationIssues), [customizationIssues]);
+
+  useEffect(() => {
+    if (createIssues.length > 0) setOpenCreate(true);
+  }, [createIssues.length]);
 
   useEffect(() => {
     const refresh = () => void loadAuditData();
@@ -64,9 +69,9 @@ export default function MenuCatalogAuditPanel() {
     return () => window.removeEventListener("menu-catalog-product-approved", refresh);
   }, [loadAuditData]);
 
-  const createProductForOption = async (issue: CatalogAuditIssue) => {
+  const createProductForOption = async (issue: CatalogAuditIssue): Promise<boolean> => {
     if (!storeId || issue.action !== "create") {
-      return;
+      return false;
     }
 
     const group = groups.find((g) =>
@@ -74,14 +79,14 @@ export default function MenuCatalogAuditPanel() {
     );
     const option = group?.options?.find((o) => o.id === issue.optionId);
     const isExpectedCatalogItem = issue.optionId.startsWith("expected-");
-    if (!option && !isExpectedCatalogItem) return;
+    if (!option && !isExpectedCatalogItem) return false;
 
     setCreatingId(issue.optionId);
     try {
       const categoryId = await findDrinksCategoryId(storeId);
       if (!categoryId) {
         toast.error(t("audit.catalog.toast.no_category"));
-        return;
+        return false;
       }
 
       const { count } = await supabase
@@ -104,10 +109,29 @@ export default function MenuCatalogAuditPanel() {
       window.dispatchEvent(
         new CustomEvent("menu-catalog-audit-product-created", { detail: { categoryId } }),
       );
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("audit.catalog.toast.error"));
+      return false;
     } finally {
       setCreatingId(null);
+    }
+  };
+
+  const createAllMissingDrinks = async () => {
+    if (!createIssues.length || creatingAll) return;
+    setCreatingAll(true);
+    let created = 0;
+    try {
+      for (const issue of createIssues) {
+        const ok = await createProductForOption(issue);
+        if (ok) created += 1;
+      }
+      if (created > 0) {
+        toast.success(t("audit.catalog.create_all_done"));
+      }
+    } finally {
+      setCreatingAll(false);
     }
   };
 
@@ -180,11 +204,22 @@ export default function MenuCatalogAuditPanel() {
 
         {createIssues.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">{t("audit.catalog.title")}</p>
-              <Button type="button" variant="outline" size="sm" onClick={() => setOpenCreate((v) => !v)}>
-                {openCreate ? t("audit.catalog.hide") : t("audit.catalog.show_create")}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={creatingAll || !!creatingId}
+                  onClick={() => void createAllMissingDrinks()}
+                >
+                  {creatingAll ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                  {t("audit.catalog.create_all_btn")}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setOpenCreate((v) => !v)}>
+                  {openCreate ? t("audit.catalog.hide") : t("audit.catalog.show_create")}
+                </Button>
+              </div>
             </div>
             {openCreate && (
               <ul className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
