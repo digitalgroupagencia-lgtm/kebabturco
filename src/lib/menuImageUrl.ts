@@ -30,6 +30,28 @@ export function menuImageUrl(src: string | null | undefined, width?: number): st
   return src;
 }
 
+/** Pré-carrega o primeiro banner promocional (evita flash ao abrir o cardápio). */
+export function preloadPromoBannerMedia(
+  banners: { media_type?: string | null; image_url?: string | null; video_url?: string | null }[],
+): void {
+  if (typeof window === "undefined" || banners.length === 0) return;
+  const first = banners[0];
+  const mediaType = first.media_type ?? "image";
+  if (mediaType === "image" && first.image_url) {
+    const img = new Image();
+    img.decoding = "async";
+    // @ts-expect-error fetchpriority válido em HTML
+    img.fetchpriority = "high";
+    img.src = menuImageUrl(first.image_url, 820);
+    return;
+  }
+  if (mediaType === "video" && first.image_url) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = menuImageUrl(first.image_url, 820);
+  }
+}
+
 /** Pré-carrega imagens em memória para aparecerem de imediato no cardápio. */
 export function preloadMenuImages(
   categories: { image?: string }[],

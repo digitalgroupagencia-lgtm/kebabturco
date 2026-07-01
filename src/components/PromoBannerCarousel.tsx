@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePromoBanners } from "@/hooks/usePromoBanners";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
-import bannerDefault from "@/assets/elrey/banner-default-1.jpg";
+import { menuImageUrl, preloadPromoBannerMedia } from "@/lib/menuImageUrl";
+import { cn } from "@/lib/utils";
 import { Music, Volume2, VolumeX } from "lucide-react";
 
 /**
@@ -20,23 +21,24 @@ function getYoutubeId(url: string): string | null {
   } catch { return null; }
 }
 
+const BANNER_IMAGE_WIDTH = 820;
+
 const PromoBannerCarousel = () => {
-  const { banners } = usePromoBanners();
-  const { settings } = useOperationsSettings();
+  const { banners, loading: bannersLoading } = usePromoBanners();
+  const { settings, loading: opsLoading } = useOperationsSettings();
   const [index, setIndex] = useState(0);
-  // Controle global de mute para vídeos (cliente pode ligar/desligar áudio)
+  const [mediaReady, setMediaReady] = useState(false);
   const [muted, setMuted] = useState(true);
 
+  const loading = bannersLoading || opsLoading;
   const enabled = settings?.banner_enabled ?? false;
   const interval = settings?.banner_interval_ms ?? 5000;
+  const items = enabled ? banners : [];
 
-  // Fallback: se admin não desativou explicitamente, mostra banner default quando não há nenhum cadastrado
-  const showFallback = !enabled && banners.length === 0;
-  const items = useMemo(() => {
-    if (banners.length > 0) return banners;
-    if (showFallback) return [{ id: "fallback", image_url: bannerDefault, media_type: "image" } as any];
-    return [] as any[];
-  }, [banners, showFallback]);
+  useEffect(() => {
+    if (items.length > 0) preloadPromoBannerMedia(items);
+  }, [items]);
+
   const goNext = () => setIndex((i) => (i + 1) % Math.max(items.length, 1));
 
   useEffect(() => {
@@ -59,17 +61,33 @@ const PromoBannerCarousel = () => {
   const ytId = currentIsVideo ? getYoutubeId(currentItem?.video_url || "") : null;
 
   useEffect(() => {
+    setMediaReady(false);
+  }, [currentItem?.id, currentMediaType, currentItem?.image_url, currentItem?.video_url]);
+
+  useEffect(() => {
     if (currentIsVideo || currentIsAudio) {
       setMuted(currentItem?.video_muted ?? currentIsVideo);
     }
   }, [currentItem?.id, currentItem?.video_muted, currentIsAudio, currentIsVideo]);
 
-  if (!enabled && banners.length === 0 && !showFallback) return null;
-  if (items.length === 0 || !currentItem) return null;
+  if (loading) {
+    return (
+      <div className="w-full" aria-hidden>
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[22px] border border-border/70 bg-secondary/30" />
+      </div>
+    );
+  }
+
+  if (!enabled || items.length === 0 || !currentItem) return null;
+
+  const posterUrl = currentItem.image_url ? menuImageUrl(currentItem.image_url, BANNER_IMAGE_WIDTH) : undefined;
 
   return (
     <div className="w-full">
       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[22px] border border-border/70 bg-primary shadow-card">
+        {!mediaReady && (currentMediaType === "image" || (currentIsVideo && posterUrl)) && (
+          <div className="absolute inset-0 bg-secondary/30" aria-hidden />
+        )}
         {currentIsVideo && ytId ? (
           <iframe
             key={currentItem.id}
@@ -78,19 +96,26 @@ const PromoBannerCarousel = () => {
             className="absolute inset-0 w-full h-full pointer-events-none"
             allow="autoplay; encrypted-media"
             frameBorder={0}
+            onLoad={() => setMediaReady(true)}
           />
         ) : currentIsVideo ? (
           <video
             key={currentItem.id}
             src={currentItem.video_url || ""}
+            poster={posterUrl}
             autoPlay
             muted={muted}
             playsInline
+            preload="auto"
+            onLoadedData={() => setMediaReady(true)}
             onEnded={items.length > 1 ? goNext : undefined}
             onError={items.length > 1 ? goNext : undefined}
             disablePictureInPicture
             controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            className={cn(
+              "absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-200",
+              mediaReady || !posterUrl ? "opacity-100" : "opacity-0",
+            )}
           />
         ) : currentIsAudio ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-secondary text-secondary-foreground">
@@ -101,6 +126,7 @@ const PromoBannerCarousel = () => {
               src={currentItem.video_url || ""}
               autoPlay
               muted={muted}
+              onCanPlay={() => setMediaReady(true)}
               onEnded={items.length > 1 ? goNext : undefined}
               onError={items.length > 1 ? goNext : undefined}
             />
@@ -108,15 +134,21 @@ const PromoBannerCarousel = () => {
         ) : (
           <img
             key={currentItem.id}
-            src={currentItem.image_url ?? ""}
+            src={menuImageUrl(currentItem.image_url ?? "", BANNER_IMAGE_WIDTH)}
             alt="Promoção"
-            className="absolute inset-0 h-full w-full object-cover object-center"
             loading={index === 0 ? "eager" : "lazy"}
+            // @ts-expect-error fetchpriority válido em HTML
+            fetchpriority={index === 0 ? "high" : "auto"}
+            decoding={index === 0 ? "sync" : "async"}
+            onLoad={() => setMediaReady(true)}
+            onError={() => setMediaReady(true)}
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-200",
+              mediaReady ? "opacity-100" : "opacity-0",
+            )}
           />
         )}
-        {/* Camada que bloqueia interação com YouTube/MP4/áudio (sem controles, sem pause). */}
         {(currentIsVideo || currentIsAudio) && <div className="absolute inset-0 z-10" aria-hidden />}
-        {/* Botão único: ligar/desligar áudio da mídia atual. */}
         {(currentIsVideo || currentIsAudio) && (
           <button
             type="button"
