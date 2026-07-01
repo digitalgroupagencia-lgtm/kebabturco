@@ -15,8 +15,12 @@ export function menuImageUrl(src: string | null | undefined, width?: number): st
       );
       if (width && !url.searchParams.has("width")) {
         url.searchParams.set("width", String(width));
-        url.searchParams.set("quality", "75");
+        url.searchParams.set("quality", "68");
         url.searchParams.set("resize", "contain");
+      }
+      if (!url.searchParams.has("format")) {
+        // WebP reduz bastante peso sem perder qualidade perceptível no cardápio.
+        url.searchParams.set("format", "webp");
       }
       return url.toString();
     }
@@ -36,12 +40,21 @@ export function preloadMenuImages(
   for (const cat of categories) {
     if (cat.image) urls.add(menuImageUrl(cat.image, 160));
   }
-  for (const prod of products.slice(0, 14)) {
+  for (const prod of products.slice(0, 42)) {
     if (prod.image) urls.add(menuImageUrl(prod.image, 360));
   }
-  for (const href of urls) {
-    const img = new Image();
-    img.decoding = "async";
-    img.src = href;
+
+  const hydrate = () => {
+    for (const href of urls) {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = href;
+    }
+  };
+
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(hydrate, { timeout: 800 });
+  } else {
+    window.setTimeout(hydrate, 60);
   }
 }

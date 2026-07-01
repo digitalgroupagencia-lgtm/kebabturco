@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { splitProductName } from "@/lib/splitProductName";
+import SmartImage from "@/components/SmartImage";
 
 interface Props {
   name: Record<string, string>;
@@ -24,12 +25,15 @@ const ProductCard = ({ name, image, price, onClick, badge }: Props) => {
           {badge}
         </span>
       )}
-      <img
-        src={image}
-        alt={tProduct(name)}
-        className="w-32 h-32 object-contain mb-3"
-        loading="lazy"
-      />
+      <div className="w-32 h-32 mb-3">
+        <SmartImage
+          src={image}
+          alt={tProduct(name)}
+          targetWidth={256}
+          className="w-full h-full object-contain"
+          wrapperClassName="w-full h-full"
+        />
+      </div>
       <span className="text-[15px] font-bold text-foreground text-center leading-tight min-h-[2.75rem] flex flex-col items-center justify-center px-1">
         <span className="block w-full">{line1}</span>
         {line2 && <span className="block w-full">{line2}</span>}

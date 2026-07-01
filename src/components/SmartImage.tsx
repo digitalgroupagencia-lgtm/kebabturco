@@ -13,6 +13,8 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "loading" | "onLoad"> & {
   fallbackSrc?: string;
 };
 
+const hotImageCache = new Set<string>();
+
 export default function SmartImage({
   src,
   alt,
@@ -31,15 +33,17 @@ export default function SmartImage({
 
   const effective = src && src.trim() ? src : fallbackSrc;
   const finalSrc = errored ? fallbackSrc : menuImageUrl(effective, targetWidth);
+  const isHot = hotImageCache.has(finalSrc);
 
   useEffect(() => {
-    setLoaded(false);
+    setLoaded(isHot);
     setErrored(false);
-  }, [finalSrc]);
+  }, [finalSrc, isHot]);
 
   useEffect(() => {
     const el = imgRef.current;
     if (el && el.complete && el.naturalWidth > 0) {
+      hotImageCache.add(finalSrc);
       setLoaded(true);
     }
   }, [finalSrc]);
@@ -64,9 +68,12 @@ export default function SmartImage({
         alt={alt}
         loading={priority ? "eager" : "lazy"}
         // @ts-expect-error fetchpriority válido em HTML
-        fetchpriority={priority ? "high" : "auto"}
-        decoding={priority ? "sync" : "async"}
-        onLoad={() => setLoaded(true)}
+        fetchpriority={priority || isHot ? "high" : "auto"}
+        decoding={priority || isHot ? "sync" : "async"}
+        onLoad={() => {
+          hotImageCache.add(finalSrc);
+          setLoaded(true);
+        }}
         onError={() => {
           if (!errored) setErrored(true);
           setLoaded(true);

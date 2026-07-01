@@ -300,7 +300,7 @@ const HomeScreen = () => {
                   <SmartImage
                     src={product.image}
                     alt={cleanName}
-                    targetWidth={400}
+                    targetWidth={300}
                     priority={isPriority}
                     className="h-full w-full object-contain object-center"
                     wrapperClassName="flex h-full w-full items-center justify-center"
