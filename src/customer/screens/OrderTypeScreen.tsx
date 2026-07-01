@@ -206,7 +206,7 @@ const OrderTypeScreen = () => {
         <ThemeToggle />
       </div>
 
-      <div className="flex flex-col items-center px-6 pt-16 md:pt-[4.5rem] shrink-0">
+      <div className="flex flex-col items-center px-6 pt-[4.25rem] md:pt-[4.75rem] shrink-0">
         {!brandingLoading && logo && (
           <div
             className="w-full max-w-[200px] aspect-square flex items-center justify-center drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] select-none touch-none cursor-pointer"
