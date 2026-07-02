@@ -12,6 +12,7 @@ import {
 } from "@/lib/panelAlerts";
 import {
   blocksOperationalProgressUntilPaid,
+  isAwaitingOnlinePaymentConfirmation,
   orderReadyForKitchen,
   shouldShowOrderInRestaurantPanel,
 } from "@/lib/orderKitchenRules";
@@ -79,12 +80,17 @@ export function usePanelOrders(storeId: string | undefined) {
   const notifyNewPending = useCallback(
     async (row: PanelOrder, items: OrderItem[], withPrint = true) => {
       if (!storeId) return;
-      const sound = playNewOrderAlert(row.id);
-      toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
-      if (!sound && !isPanelAlertsEnabled()) {
-        toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
+      const kitchenReady = orderReadyForKitchen(row);
+      if (kitchenReady) {
+        const sound = playNewOrderAlert(row.id);
+        toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
+        if (!sound && !isPanelAlertsEnabled()) {
+          toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
+        }
+      } else if (isAwaitingOnlinePaymentConfirmation(row)) {
+        toast.message(`Pedido #${row.order_number} aguarda confirmação Bizum/cartão`, { duration: 6000 });
       }
-      if (withPrint && orderReadyForKitchen(row)) {
+      if (withPrint && kitchenReady) {
         void tryPrintPanelOrder(storeId, row, items);
       }
     },
@@ -246,17 +252,18 @@ export function usePanelOrders(storeId: string | undefined) {
               acknowledgePendingOrderAlert(row.id);
             }
 
-            const becameVisible =
-              visible &&
+            const becamePaid =
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
-              !shouldShowOrderInRestaurantPanel(old);
+              row.status === "pending";
 
-            if (becameVisible && row.status === "pending" && !knownPendingRef.current.has(row.id)) {
-              knownPendingRef.current.add(row.id);
+            if (becamePaid) {
+              if (!knownPendingRef.current.has(row.id)) {
+                knownPendingRef.current.add(row.id);
+              }
               const items = itemsByOrder[row.id] || (await fetchItemsForOrders([row.id]))[row.id] || [];
               setItemsByOrder((prev) => ({ ...prev, [row.id]: items }));
-              void notifyNewPending(row, items, orderReadyForKitchen(row));
+              void notifyNewPending(row, items, true);
             }
 
             if (

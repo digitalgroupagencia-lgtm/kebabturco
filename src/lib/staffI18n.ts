@@ -593,6 +593,7 @@ export const STAFF_I18N = {
   "ops.card.on_the_way": { es: "En camino", pt: "A caminho", en: "On the way" },
   "ops.card.cancel": { es: "Cancelar pedido", pt: "Cancelar pedido", en: "Cancel order" },
   "ops.card.blocked_until_paid": { es: "Mostrador solo va a cocina tras confirmar pago.", pt: "Balcão só vai para cozinha após confirmar pagamento.", en: "Counter only goes to kitchen after payment is confirmed." },
+  "ops.card.awaiting_online_payment": { es: "Esperando confirmación Bizum/tarjeta en la app.", pt: "A aguardar confirmação Bizum/cartão na app.", en: "Waiting for Bizum/card confirmation in the app." },
   "ops.card.registering": { es: "Registrando…", pt: "A registar…", en: "Registering…" },
   "ops.card.confirm_payment": { es: "Confirmar pago", pt: "Confirmar pagamento", en: "Confirm payment" },
 

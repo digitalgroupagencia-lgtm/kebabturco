@@ -117,6 +117,11 @@ export const STAFF_I18N_CATALOG = {
   "order.detail.items_with_count": { es: "Artículos ({count})", pt: "Itens ({count})", en: "Items ({count})" },
   "order.detail.adjust_prep": { es: "Ajustar tiempo", pt: "Ajustar tempo", en: "Adjust time" },
   "order.detail.payment_pending": { es: "Pago pendiente", pt: "Pagamento pendente", en: "Payment pending" },
+  "order.detail.awaiting_online_payment": {
+    es: "El cliente inició Bizum o tarjeta pero el banco aún no confirmó. Cuando llegue el pago, podrá aceptar el pedido.",
+    pt: "O cliente iniciou Bizum ou cartão mas o banco ainda não confirmou. Quando o pagamento chegar, poderá aceitar o pedido.",
+    en: "The customer started Bizum or card but the bank has not confirmed yet. When payment arrives, you can accept the order.",
+  },
   "order.detail.counter_payment_required": {
     es: "Primero toque «Registrar efectivo» o «Tarjeta» e introduzca SU código personal (ej. 5606). Después podrá aceptar el pedido.",
     pt: "Primeiro toque «Registar dinheiro» ou «Cartão» e escreva o SEU código pessoal (ex. 5606). Só depois pode aceitar o pedido.",

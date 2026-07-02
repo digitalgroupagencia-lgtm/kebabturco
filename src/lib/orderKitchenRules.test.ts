@@ -5,11 +5,12 @@ import {
   isAwaitingOnlinePaymentConfirmation,
   isConfirmedPaidOrder,
   isDemoVisitOrder,
+  orderReadyForKitchen,
   shouldShowOrderInRestaurantPanel,
 } from "./orderKitchenRules";
 
 describe("orderKitchenRules", () => {
-  it("hides takeaway card/bizum orders until Stripe confirms payment", () => {
+  it("shows bizum/card pending in panel but kitchen waits for Stripe", () => {
     const unpaidCard = {
       order_type: "takeaway",
       payment_status: "pending",
@@ -18,9 +19,10 @@ describe("orderKitchenRules", () => {
       status: "pending",
     };
     expect(isAwaitingOnlinePaymentConfirmation(unpaidCard)).toBe(true);
-    expect(shouldShowOrderInRestaurantPanel(unpaidCard)).toBe(false);
+    expect(shouldShowOrderInRestaurantPanel(unpaidCard)).toBe(true);
     expect(isAwaitingCounterPaymentConfirmation(unpaidCard)).toBe(false);
     expect(blocksOperationalProgressUntilPaid(unpaidCard)).toBe(false);
+    expect(orderReadyForKitchen(unpaidCard)).toBe(false);
   });
 
   it("shows cash takeaway waiting for counter confirmation", () => {

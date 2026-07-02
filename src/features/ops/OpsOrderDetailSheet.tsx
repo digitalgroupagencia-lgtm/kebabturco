@@ -6,11 +6,11 @@ import { User, Phone, MapPin, Clock, XCircle, Printer, Loader2 } from "lucide-re
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
-import { blocksOperationalProgressUntilPaid } from "@/lib/orderKitchenRules";
+import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation, isAwaitingOnlinePaymentConfirmation } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { groupOrderItemDetails } from "@/lib/modifiers/formatOrderItem";
 import { useStaffT } from "@/hooks/useStaffT";
-import { panelT } from "@/lib/staffPanelLocale";
+import { panelT, formatStaffPanelDateTime } from "@/lib/staffPanelLocale";
 import type { StaffI18nKey } from "@/lib/staffI18n";
 import type { PanelOrder, OrderStatus } from "./usePanelOrders";
 import {
@@ -106,6 +106,7 @@ const OpsOrderDetailSheet = ({
   const prepRemaining = formatPrepRemaining(order, lang);
   const itemCount = orderItemCount(items);
   const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
+  const awaitingOnlinePayment = isAwaitingOnlinePaymentConfirmation(order);
   const showDeliveryCode =
     isDeliveryOrder(order) &&
     (order.status === "ready" || order.status === "out_for_delivery") &&
@@ -147,7 +148,7 @@ const OpsOrderDetailSheet = ({
             <SheetTitle className="flex items-center justify-between gap-2">
               <span>{panelT(lang, "order.detail.title", { code: order.order_number })}</span>
               <span className="text-sm font-normal text-muted-foreground">
-                {formatOrderClock(order.created_at, lang)}
+                {formatStaffPanelDateTime(order.created_at, lang)}
               </span>
             </SheetTitle>
             <p className="text-sm text-muted-foreground">{getStatusLabel(order.status, order.order_type, lang)}</p>
@@ -293,7 +294,14 @@ const OpsOrderDetailSheet = ({
             </div>
           )}
 
-          {order.payment_status === "pending" && onMarkPaid && (
+          {awaitingOnlinePayment && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wide">{t("order.detail.payment_pending")}</p>
+              <p className="text-xs font-semibold text-foreground">{t("order.detail.awaiting_online_payment")}</p>
+            </div>
+          )}
+
+          {isAwaitingCounterPaymentConfirmation(order) && onMarkPaid && (
             <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wide">{t("order.detail.payment_pending")}</p>
               {blockedUntilPaid && (
