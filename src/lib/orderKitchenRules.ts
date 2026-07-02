@@ -44,7 +44,7 @@ export function shouldShowOrderInRestaurantPanel(order: KitchenOrderLike): boole
   if (order.status === "cancelled") return true;
   if (order.payment_status === "paid") return true;
   if (order.order_type === "dine_in") return true;
-  if (isAwaitingOnlinePaymentConfirmation(order)) return true;
+  if (isAwaitingOnlinePaymentConfirmation(order)) return false;
   return true;
 }
 

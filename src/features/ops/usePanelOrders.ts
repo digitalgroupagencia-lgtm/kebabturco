@@ -12,7 +12,7 @@ import {
 } from "@/lib/panelAlerts";
 import {
   blocksOperationalProgressUntilPaid,
-  isAwaitingOnlinePaymentConfirmation,
+  isAwaitingCounterPaymentConfirmation,
   orderReadyForKitchen,
   shouldShowOrderInRestaurantPanel,
 } from "@/lib/orderKitchenRules";
@@ -80,17 +80,13 @@ export function usePanelOrders(storeId: string | undefined) {
   const notifyNewPending = useCallback(
     async (row: PanelOrder, items: OrderItem[], withPrint = true) => {
       if (!storeId) return;
-      const kitchenReady = orderReadyForKitchen(row);
-      if (kitchenReady) {
-        const sound = playNewOrderAlert(row.id);
-        toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
-        if (!sound && !isPanelAlertsEnabled()) {
-          toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
-        }
-      } else if (isAwaitingOnlinePaymentConfirmation(row)) {
-        toast.message(`Pedido #${row.order_number} aguarda confirmação Bizum/cartão`, { duration: 6000 });
+      if (!orderReadyForKitchen(row)) return;
+      const sound = playNewOrderAlert(row.id);
+      toast.info(`Novo pedido #${row.order_number}`, { duration: 5000 });
+      if (!sound && !isPanelAlertsEnabled()) {
+        toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
       }
-      if (withPrint && kitchenReady) {
+      if (withPrint) {
         void tryPrintPanelOrder(storeId, row, items);
       }
     },
@@ -252,12 +248,13 @@ export function usePanelOrders(storeId: string | undefined) {
               acknowledgePendingOrderAlert(row.id);
             }
 
-            const becamePaid =
+            const becameVisible =
+              visible &&
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
-              row.status === "pending";
+              !shouldShowOrderInRestaurantPanel(old);
 
-            if (becamePaid) {
+            if (becameVisible && row.status === "pending") {
               if (!knownPendingRef.current.has(row.id)) {
                 knownPendingRef.current.add(row.id);
               }
