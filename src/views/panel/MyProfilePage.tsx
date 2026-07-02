@@ -1,20 +1,32 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, User } from "lucide-react";
+import { Camera, KeyRound, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SecretInput } from "@/components/ui/secret-input";
 import { useAuth } from "@/hooks/useAuth";
 import { usePanelStore } from "@/contexts/PanelStoreContext";
 import { useStaffT } from "@/hooks/useStaffT";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import {
+  staffAccessPinHint,
+  suggestStaffAccessPin,
+  validateStaffAccessPin,
+} from "@/lib/staffAccessPin";
+import {
   fetchMyStaffProfile,
   saveMyStaffProfile,
   uploadStaffAvatar,
 } from "@/services/staffProfile";
+import {
+  hasMyStaffAccessPin,
+  markPanelOnboardingCached,
+  saveMyStaffAccessPin,
+} from "@/services/sellerSetupService";
 
 export default function MyProfilePage() {
   const { user } = useAuth();
@@ -25,11 +37,15 @@ export default function MyProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingPin, setSavingPin] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [hasPin, setHasPin] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
 
   useEffect(() => {
     if (!user?.id) return;
@@ -37,10 +53,14 @@ export default function MyProfilePage() {
     void (async () => {
       setLoading(true);
       try {
-        const profile = await fetchMyStaffProfile(user.id);
+        const [profile, pinReady] = await Promise.all([
+          fetchMyStaffProfile(user.id),
+          hasMyStaffAccessPin(user.id),
+        ]);
         setFullName(profile?.full_name?.trim() || "");
         setBirthDate(profile?.birth_date || "");
         setAvatarUrl(profile?.avatar_url || null);
+        setHasPin(pinReady);
       } catch (e) {
         toast.error(translateAppErrorFromException(e, uiLang));
       } finally {
@@ -56,6 +76,7 @@ export default function MyProfilePage() {
       const url = await uploadStaffAvatar(storeId, user.id, file);
       setAvatarUrl(url);
       toast.success(t("profile.photo.updated"));
+      window.dispatchEvent(new Event("kebab-staff-setup-changed"));
     } catch (e) {
       toast.error(translateAppErrorFromException(e, uiLang));
     } finally {
@@ -76,10 +97,37 @@ export default function MyProfilePage() {
         avatar_url: avatarUrl,
       });
       toast.success(t("profile.saved"));
+      window.dispatchEvent(new Event("kebab-staff-setup-changed"));
     } catch (e) {
       toast.error(translateAppErrorFromException(e, uiLang));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSavePin = async () => {
+    const pinError = validateStaffAccessPin(pin, uiLang);
+    if (pinError) {
+      toast.error(pinError);
+      return;
+    }
+    if (pin !== pinConfirm) {
+      toast.error(t("staff.setup.pin_mismatch"));
+      return;
+    }
+    setSavingPin(true);
+    try {
+      await saveMyStaffAccessPin(pin.trim());
+      setHasPin(true);
+      setPin("");
+      setPinConfirm("");
+      if (user?.id) markPanelOnboardingCached(user.id);
+      toast.success(t("profile.pin.saved"));
+      window.dispatchEvent(new Event("kebab-staff-setup-changed"));
+    } catch (e) {
+      toast.error(translateAppErrorFromException(e, uiLang));
+    } finally {
+      setSavingPin(false);
     }
   };
 
@@ -169,6 +217,70 @@ export default function MyProfilePage() {
               </>
             ) : (
               t("profile.save")
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">{t("profile.pin.card.title")}</CardTitle>
+            {hasPin ? (
+              <Badge variant="secondary" className="h-5 text-[10px] font-normal">
+                {t("team.field.accessPin.active")}
+              </Badge>
+            ) : null}
+          </div>
+          <CardDescription>{t("profile.pin.card.subtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">{t("staff.setup.pin_body")}</p>
+          <p className="text-[11px] text-muted-foreground">{staffAccessPinHint(uiLang)}</p>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-pin">{t("staff.setup.pin_label")}</Label>
+            <div className="flex gap-2">
+              <SecretInput
+                id="profile-pin"
+                inputMode="numeric"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/[^\d#]/g, "").slice(0, 10))}
+                placeholder={t("team.field.accessPin.ph")}
+                className="flex-1 text-center text-lg tracking-widest"
+                autoComplete="new-password"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPin(suggestStaffAccessPin(true))}
+              >
+                {t("team.field.accessPin.suggest")}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-pin2">{t("staff.setup.pin_confirm")}</Label>
+            <SecretInput
+              id="profile-pin2"
+              inputMode="numeric"
+              value={pinConfirm}
+              onChange={(e) => setPinConfirm(e.target.value.replace(/[^\d#]/g, "").slice(0, 10))}
+              className="text-center text-lg tracking-widest"
+              autoComplete="new-password"
+            />
+          </div>
+
+          <Button className="w-full" onClick={() => void handleSavePin()} disabled={savingPin || !pin || !pinConfirm}>
+            {savingPin ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("profile.pin.saving")}
+              </>
+            ) : (
+              t("profile.pin.save")
             )}
           </Button>
         </CardContent>

@@ -28,22 +28,23 @@ async function saveSellerPinViaEdge(input: {
   throw new Error("Não foi possível guardar o perfil do vendedor");
 }
 
-export async function fetchSellerSetupStatus(userId: string): Promise<SellerSetupStatus> {
-  const [profile, pinRes] = await Promise.all([
-    fetchMyStaffProfile(userId),
-    supabase.rpc("has_my_staff_access_pin"),
-  ]);
+export async function hasMyStaffAccessPin(userId: string): Promise<boolean> {
+  const pinRes = await supabase.rpc("has_my_staff_access_pin");
+  if (!pinRes.error) return pinRes.data === true;
+  const { data: pinRow } = await supabase
+    .from("staff_access_pins")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return Boolean(pinRow?.id);
+}
 
-  let hasPin = pinRes.data === true;
-  if (pinRes.error) {
-    const { data: pinRow } = await supabase
-      .from("staff_access_pins")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .maybeSingle();
-    hasPin = Boolean(pinRow?.id);
-  }
+export async function fetchSellerSetupStatus(userId: string): Promise<SellerSetupStatus> {
+  const [profile, hasPin] = await Promise.all([
+    fetchMyStaffProfile(userId),
+    hasMyStaffAccessPin(userId),
+  ]);
 
   const profileComplete = !isStaffProfileIncomplete(profile);
   return {

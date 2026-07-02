@@ -1,31 +1,43 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStaffT } from "@/hooks/useStaffT";
 import { nav } from "@/lib/navPaths";
 import { fetchMyStaffProfile, isStaffProfileIncomplete } from "@/services/staffProfile";
+import { hasMyStaffAccessPin } from "@/services/sellerSetupService";
 
-/** Lembra a equipa de completar nome e foto, usado nos pedidos aceites. */
+/** Lembra a equipa de completar nome, foto e código de cobro. */
 export default function StaffProfileBanner() {
   const { user } = useAuth();
   const { t } = useStaffT();
   const [show, setShow] = useState(false);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!user?.id) {
       setShow(false);
       return;
     }
-    void (async () => {
-      try {
-        const profile = await fetchMyStaffProfile(user.id);
-        setShow(isStaffProfileIncomplete(profile) || !profile?.avatar_url);
-      } catch {
-        setShow(false);
-      }
-    })();
+    try {
+      const [profile, pinReady] = await Promise.all([
+        fetchMyStaffProfile(user.id),
+        hasMyStaffAccessPin(user.id),
+      ]);
+      setShow(isStaffProfileIncomplete(profile) || !profile?.avatar_url || !pinReady);
+    } catch {
+      setShow(false);
+    }
   }, [user?.id]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const onChanged = () => void refresh();
+    window.addEventListener("kebab-staff-setup-changed", onChanged);
+    return () => window.removeEventListener("kebab-staff-setup-changed", onChanged);
+  }, [refresh]);
 
   if (!show) return null;
 

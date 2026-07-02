@@ -81,9 +81,9 @@ export const STAFF_I18N = {
 
   "profile.title": { es: "Mi perfil", pt: "O meu perfil", en: "My profile" },
   "profile.subtitle": {
-    es: "Tu nombre y foto aparecen cuando aceptas pedidos u otras acciones.",
-    pt: "O seu nome e foto aparecem quando aceita pedidos ou outras acções.",
-    en: "Your name and photo show when you accept orders or other actions.",
+    es: "Tu nombre, foto y código de cobro aparecen cuando aceptas pedidos u otras acciones.",
+    pt: "O seu nome, foto e código de pagamento aparecem quando aceita pedidos ou outras acções.",
+    en: "Your name, photo and payment code show when you accept orders or other actions.",
   },
   "profile.card.title": { es: "Datos personales", pt: "Dados pessoais", en: "Personal details" },
   "profile.card.subtitle": {
@@ -114,10 +114,23 @@ export const STAFF_I18N = {
   "profile.name.required": { es: "Escribe tu nombre", pt: "Escreva o seu nome", en: "Enter your name" },
   "profile.banner.title": { es: "Completa tu perfil", pt: "Complete o seu perfil", en: "Complete your profile" },
   "profile.banner.body": {
-    es: "Pon tu nombre y foto para que el restaurante sepa quién eres en cada pedido.",
-    pt: "Coloque o seu nome e foto para o restaurante saber quem é em cada pedido.",
-    en: "Add your name and photo so the restaurant knows who you are on each order.",
+    es: "Pon tu nombre, foto y código de cobro en mostrador para que el restaurante sepa quién eres en cada pedido.",
+    pt: "Coloque o seu nome, foto e código de pagamento no balcão para o restaurante saber quem é em cada pedido.",
+    en: "Add your name, photo and counter payment code so the restaurant knows who you are on each order.",
   },
+  "profile.pin.card.title": {
+    es: "Código de cobro en mostrador",
+    pt: "Código de pagamento no balcão",
+    en: "Counter payment code",
+  },
+  "profile.pin.card.subtitle": {
+    es: "Lo pedirá el sistema cuando confirme un pago en efectivo o manual en la tablet.",
+    pt: "O sistema pede-o quando confirma um pagamento em dinheiro ou manual no tablet.",
+    en: "The system asks for it when you confirm a cash or manual payment on the tablet.",
+  },
+  "profile.pin.save": { es: "Guardar código", pt: "Guardar código", en: "Save code" },
+  "profile.pin.saving": { es: "Guardando código…", pt: "A guardar código…", en: "Saving code…" },
+  "profile.pin.saved": { es: "Código guardado", pt: "Código guardado", en: "Code saved" },
   "profile.banner.action": { es: "Completar ahora", pt: "Completar agora", en: "Complete now" },
   "staff.setup.title": {
     es: "Bienvenido al equipo",
