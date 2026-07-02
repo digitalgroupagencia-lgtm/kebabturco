@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePromoBanners } from "@/hooks/usePromoBanners";
 import { useOperationsSettings } from "@/hooks/useOperationsSettings";
 import { menuImageUrl, preloadPromoBannerMedia } from "@/lib/menuImageUrl";
 import { cn } from "@/lib/utils";
 import { Music, Volume2, VolumeX } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 /**
  * Extrai o ID de um link do YouTube (várias formas suportadas).
@@ -29,6 +30,9 @@ const PromoBannerCarousel = () => {
   const [index, setIndex] = useState(0);
   const [mediaReady, setMediaReady] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [iframeNonce, setIframeNonce] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const loading = bannersLoading || opsLoading;
   const enabled = settings?.banner_enabled ?? false;
@@ -60,6 +64,69 @@ const PromoBannerCarousel = () => {
   const currentIsAudio = currentMediaType === "audio";
   const ytId = currentIsVideo ? getYoutubeId(currentItem?.video_url || "") : null;
 
+  const resumePausedMedia = useCallback(() => {
+    const video = videoRef.current;
+    if (video && !ytId && video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      void video.play().catch(() => undefined);
+    }
+    const audio = audioRef.current;
+    if (audio && audio.paused) {
+      void audio.play().catch(() => undefined);
+    }
+  }, [ytId]);
+
+  const handleAppReturned = useCallback(() => {
+    if (document.visibilityState !== "visible") return;
+    if (ytId) {
+      setIframeNonce((n) => n + 1);
+      setMediaReady(false);
+      return;
+    }
+    resumePausedMedia();
+  }, [resumePausedMedia, ytId]);
+
+  useEffect(() => {
+    if (!currentIsVideo && !currentIsAudio) return;
+
+    let cancelled = false;
+    let appListener: { remove: () => void } | undefined;
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") handleAppReturned();
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", handleAppReturned);
+    window.addEventListener("pageshow", handleAppReturned);
+
+    if (Capacitor.isNativePlatform()) {
+      void import("@capacitor/app")
+        .then(({ App }) => {
+          if (cancelled) return undefined;
+          return App.addListener("appStateChange", ({ isActive }) => {
+            if (isActive) handleAppReturned();
+          });
+        })
+        .then((handle) => {
+          if (!cancelled && handle) appListener = handle;
+        });
+    }
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", handleAppReturned);
+      window.removeEventListener("pageshow", handleAppReturned);
+      appListener?.remove();
+    };
+  }, [currentIsVideo, currentIsAudio, currentItem?.id, handleAppReturned]);
+
+  const handleNativeVideoPause = useCallback(() => {
+    window.setTimeout(() => {
+      if (document.visibilityState === "visible") resumePausedMedia();
+    }, 120);
+  }, [resumePausedMedia]);
+
   useEffect(() => {
     setMediaReady(false);
   }, [currentItem?.id, currentMediaType, currentItem?.image_url, currentItem?.video_url]);
@@ -90,7 +157,7 @@ const PromoBannerCarousel = () => {
         )}
         {currentIsVideo && ytId ? (
           <iframe
-            key={currentItem.id}
+            key={`${currentItem.id}-${iframeNonce}`}
             src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&showinfo=0&cc_load_policy=0`}
             title="Vídeo promocional"
             className="absolute inset-0 w-full h-full pointer-events-none"
@@ -100,14 +167,17 @@ const PromoBannerCarousel = () => {
           />
         ) : currentIsVideo ? (
           <video
+            ref={videoRef}
             key={currentItem.id}
             src={currentItem.video_url || ""}
             poster={posterUrl}
             autoPlay
             muted={muted}
             playsInline
+            loop={items.length === 1}
             preload="auto"
             onLoadedData={() => setMediaReady(true)}
+            onPause={handleNativeVideoPause}
             onEnded={items.length > 1 ? goNext : undefined}
             onError={items.length > 1 ? goNext : undefined}
             disablePictureInPicture
@@ -122,11 +192,13 @@ const PromoBannerCarousel = () => {
             <Music className="w-12 h-12" />
             <span className="text-sm font-semibold">Áudio promocional</span>
             <audio
+              ref={audioRef}
               key={currentItem.id}
               src={currentItem.video_url || ""}
               autoPlay
               muted={muted}
               onCanPlay={() => setMediaReady(true)}
+              onPause={handleNativeVideoPause}
               onEnded={items.length > 1 ? goNext : undefined}
               onError={items.length > 1 ? goNext : undefined}
             />
