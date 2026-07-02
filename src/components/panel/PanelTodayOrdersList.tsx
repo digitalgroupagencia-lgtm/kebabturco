@@ -10,7 +10,7 @@ import {
 } from "@/lib/orderStatusLabels";
 import { nav } from "@/lib/navPaths";
 import { useStaffT } from "@/hooks/useStaffT";
-import { formatStaffPanelTime, panelT } from "@/lib/staffPanelLocale";
+import { formatStaffPanelDateTime, panelT } from "@/lib/staffPanelLocale";
 
 export type PanelTodayOrderRow = {
   id: string;
@@ -64,7 +64,7 @@ export default function PanelTodayOrdersList({ orders, loading, onOrderClick }: 
             const payment = getPanelPaymentBadge(order, lang);
             const methodLabel =
               payment.methodLabel ?? getPaymentMethodLabel(order.payment_method, lang) ?? ", ";
-            const time = formatStaffPanelTime(order.created_at, lang);
+            const time = formatStaffPanelDateTime(order.created_at, lang);
             const orderCode = String(order.order_number).padStart(4, "0");
 
             return (

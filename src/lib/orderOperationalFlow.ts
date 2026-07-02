@@ -2,6 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { StaffUiLang } from "@/components/StaffLanguageToggle";
 import { panelT } from "@/lib/staffPanelLocale";
 import type { StaffI18nKey } from "@/lib/staffI18n";
+import { isAwaitingOnlinePaymentConfirmation } from "@/lib/orderKitchenRules";
 
 export type OrderStatus = Database["public"]["Enums"]["order_status"] | "out_for_delivery";
 
@@ -70,6 +71,7 @@ export function getPanelOrderAction(
   const label = (key: StaffI18nKey) => panelT(lang, key);
 
   if (status === "pending") {
+    if (isAwaitingOnlinePaymentConfirmation(order)) return null;
     if (type === "takeaway" && order.payment_status !== "paid") return null;
     return { kind: "accept_eta", label: label(ACTION_LABEL_KEYS.accept_eta) };
   }
