@@ -6,7 +6,7 @@ import { User, Phone, MapPin, Clock, XCircle, Printer, Loader2 } from "lucide-re
 import type { Tables } from "@/integrations/supabase/types";
 import { getOrderModalityBanner, getPanelPaymentBadge, getStatusLabel } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
-import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation, isAwaitingOnlinePaymentConfirmation } from "@/lib/orderKitchenRules";
+import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { groupOrderItemDetails } from "@/lib/modifiers/formatOrderItem";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -106,7 +106,6 @@ const OpsOrderDetailSheet = ({
   const prepRemaining = formatPrepRemaining(order, lang);
   const itemCount = orderItemCount(items);
   const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
-  const awaitingOnlinePayment = isAwaitingOnlinePaymentConfirmation(order);
   const showDeliveryCode =
     isDeliveryOrder(order) &&
     (order.status === "ready" || order.status === "out_for_delivery") &&
@@ -291,13 +290,6 @@ const OpsOrderDetailSheet = ({
                   </button>
                 ))}
               </div>
-            </div>
-          )}
-
-          {awaitingOnlinePayment && (
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-wide">{t("order.detail.payment_pending")}</p>
-              <p className="text-xs font-semibold text-foreground">{t("order.detail.awaiting_online_payment")}</p>
             </div>
           )}
 

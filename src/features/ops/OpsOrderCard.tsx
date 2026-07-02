@@ -5,7 +5,7 @@ import { ChevronRight, Clock, Bike, XCircle, Banknote, CreditCard } from "lucide
 import type { Tables } from "@/integrations/supabase/types";
 import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
-import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation, isAwaitingOnlinePaymentConfirmation } from "@/lib/orderKitchenRules";
+import { blocksOperationalProgressUntilPaid, isAwaitingCounterPaymentConfirmation } from "@/lib/orderKitchenRules";
 import { canAssignDeliveryDriver } from "@/lib/staffPermissions";
 import { useStaffT } from "@/hooks/useStaffT";
 import { panelT } from "@/lib/staffPanelLocale";
@@ -77,7 +77,6 @@ const OpsOrderCard = memo(function OpsOrderCard({
   const onTheWay = order.status === "out_for_delivery";
   const canQuickPay = isAwaitingCounterPaymentConfirmation(order) && !!onMarkPaid;
   const blockedUntilPaid = blocksOperationalProgressUntilPaid(order);
-  const awaitingOnlinePayment = isAwaitingOnlinePaymentConfirmation(order);
 
   const handlePrimary = async (e: MouseEvent) => {
     e.stopPropagation();
@@ -179,11 +178,6 @@ const OpsOrderCard = memo(function OpsOrderCard({
         {blockedUntilPaid && (
           <p className="mt-0.5 text-[9px] font-semibold text-foreground">
             {t("ops.card.blocked_until_paid")}
-          </p>
-        )}
-        {awaitingOnlinePayment && (
-          <p className="mt-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-400">
-            {t("ops.card.awaiting_online_payment")}
           </p>
         )}
 

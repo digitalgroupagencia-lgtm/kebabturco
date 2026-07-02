@@ -10,7 +10,7 @@ import {
 } from "./orderKitchenRules";
 
 describe("orderKitchenRules", () => {
-  it("shows bizum/card pending in panel but kitchen waits for Stripe", () => {
+  it("hides takeaway card/bizum orders until Stripe confirms payment", () => {
     const unpaidCard = {
       order_type: "takeaway",
       payment_status: "pending",
@@ -19,7 +19,7 @@ describe("orderKitchenRules", () => {
       status: "pending",
     };
     expect(isAwaitingOnlinePaymentConfirmation(unpaidCard)).toBe(true);
-    expect(shouldShowOrderInRestaurantPanel(unpaidCard)).toBe(true);
+    expect(shouldShowOrderInRestaurantPanel(unpaidCard)).toBe(false);
     expect(isAwaitingCounterPaymentConfirmation(unpaidCard)).toBe(false);
     expect(blocksOperationalProgressUntilPaid(unpaidCard)).toBe(false);
     expect(orderReadyForKitchen(unpaidCard)).toBe(false);
