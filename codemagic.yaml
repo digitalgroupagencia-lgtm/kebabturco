@@ -218,7 +218,7 @@ workflows:
       vars:
         PACKAGE_NAME: com.eurobusinessgroup.kebabturco
         VERSION_NAME: "1.2"
-        VERSION_CODE: "9"
+        VERSION_CODE: "10"
       node: 22
       java: 21
 
