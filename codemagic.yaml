@@ -206,7 +206,7 @@ workflows:
     # Alternativa sem Transporter no Mac: o Codemagic envia directo para a Apple.
 
   kebabturco-android-playstore:
-    name: Kebab Turco — Android Google Play 1.2
+    name: Kebab Turco — Android Google Play 1.2 (12)
     max_build_duration: 120
     instance_type: mac_mini_m2
 
@@ -218,7 +218,7 @@ workflows:
       vars:
         PACKAGE_NAME: com.eurobusinessgroup.kebabturco
         VERSION_NAME: "1.2"
-        VERSION_CODE: "11"
+        VERSION_CODE: "12"
       node: 22
       java: 21
 
