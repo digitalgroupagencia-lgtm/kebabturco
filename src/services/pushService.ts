@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMarketingBroadcastCopy } from "@/lib/marketing/resolveMarketingBroadcast";
 
 const STATUS_MESSAGES: Record<string, Record<string, string>> = {
   pending: { es: "¡Pedido recibido!", pt: "Pedido recebido!", en: "Order received!" },
@@ -67,12 +68,13 @@ export async function notifyStoreMarketingBroadcast(
   url = "/",
 ) {
   try {
+    const resolved = await resolveMarketingBroadcastCopy(storeId, title, body);
     await supabase.functions.invoke("send-push-notification", {
       body: {
         storeId,
         audience: "marketing",
-        title,
-        body,
+        title: resolved.title,
+        body: resolved.body,
         tag: `marketing-${storeId}-${Date.now()}`,
         url,
       },

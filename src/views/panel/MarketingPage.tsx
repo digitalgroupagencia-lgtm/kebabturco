@@ -305,8 +305,8 @@ const MarketingPage = () => {
     }
     setBroadcastSending(true);
     try {
-      const title = broadcastTitle.trim();
-      const body = broadcastBody.trim();
+      const title = previewTitle;
+      const body = previewBody;
       const [marketingRes, staffRes] = await Promise.all([
         sendMarketingBroadcast({ storeId, title, body, target: "all" }),
         sendBroadcastTestPushNotification({ storeId, audience: "staff", title, body }),

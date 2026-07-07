@@ -4,6 +4,7 @@ import { translateServerVapidReason } from "@/lib/push/pushTestService";
 import { campaignDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { sanitizeNotificationText } from "@/lib/marketing/campaignTemplateEngine";
+import { resolveMarketingBroadcastCopy } from "@/lib/marketing/resolveMarketingBroadcast";
 
 export type MarketingBroadcastResult = {
   ok: boolean;
@@ -62,8 +63,9 @@ export async function sendMarketingBroadcast(opts: {
   target: "all" | "this_device";
 }): Promise<MarketingBroadcastResult> {
   const { storeId, title, body, url = "/", target } = opts;
-  const safeTitle = sanitizeNotificationText(title);
-  const safeBody = sanitizeNotificationText(body);
+  const resolved = await resolveMarketingBroadcastCopy(storeId, title, body);
+  const safeTitle = sanitizeNotificationText(resolved.title);
+  const safeBody = sanitizeNotificationText(resolved.body);
 
   log("broadcast", "info", target === "all" ? "Envio a todos os clientes" : "Envio a este dispositivo", {
     storeId,

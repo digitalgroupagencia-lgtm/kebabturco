@@ -4,6 +4,7 @@ import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
 import { pushLog } from "@/lib/push/pushLogger";
 import { readCachedNativePushToken } from "@/services/nativePush";
 import { getLocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
+import { resolveMarketingBroadcastCopy } from "@/lib/marketing/resolveMarketingBroadcast";
 
 export type PushTestAudience = "staff" | "marketing";
 
@@ -502,6 +503,9 @@ export async function sendBroadcastTestPushNotification(opts: {
   alsoNotifyStaff?: boolean;
 }): Promise<PushTestSendResult> {
   const { storeId, audience, title, body: msgBody, alsoNotifyStaff } = opts;
+  const resolved = await resolveMarketingBroadcastCopy(storeId, title, msgBody);
+  const titleResolved = resolved.title;
+  const bodyResolved = resolved.body;
 
   pushLog("test", "broadcast_send", "info", "A enviar broadcast de teste", {
     storeId,
@@ -513,8 +517,8 @@ export async function sendBroadcastTestPushNotification(opts: {
     if (audience === "staff") {
       const result = await invokeStoreBroadcast({
         storeId,
-        title,
-        body: msgBody,
+        title: titleResolved,
+        body: bodyResolved,
         url: "/panel/live",
       });
       if (result.ok) {
@@ -526,8 +530,8 @@ export async function sendBroadcastTestPushNotification(opts: {
     const marketing = await invokeStoreBroadcast({
       storeId,
       audience: "marketing",
-      title,
-      body: msgBody,
+      title: titleResolved,
+      body: bodyResolved,
       url: "/",
     });
 
@@ -535,8 +539,8 @@ export async function sendBroadcastTestPushNotification(opts: {
 
     const staff = await invokeStoreBroadcast({
       storeId,
-      title,
-      body: msgBody,
+      title: titleResolved,
+      body: bodyResolved,
       url: "/panel/live",
     });
 
