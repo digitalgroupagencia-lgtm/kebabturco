@@ -323,7 +323,7 @@ export function formatVisitPrintError(message: string): string {
 export function beginDemoVisitCustomerOrder(): void {
   clearStaffSessionFlag();
   stashPushCoupon(DEMO_VISIT_COUPON_CODE);
-  window.location.assign("/?screen=home&demo_visita=1");
+  window.location.assign("/?screen=language&demo_visita=1");
 }
 
 export const VISIT_BRIDGE_INSTALL = `# Uma vez no Mac (deixe esta janela aberta nas visitas):
