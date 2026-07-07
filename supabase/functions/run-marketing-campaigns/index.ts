@@ -727,10 +727,13 @@ async function testSendCampaignToTeam(
 
   const { data: subs } = await supabase
     .from("push_subscriptions")
-    .select("id, customer_phone, order_id")
+    .select("id, customer_phone, order_id, staff_alerts")
     .eq("store_id", storeId);
   const hasStaffDevice = (subs ?? []).some(
-    (row) => !row.order_id && (row.customer_phone == null || row.customer_phone === "" || row.customer_phone === STAFF_PHONE_TAG),
+    (row) =>
+      row.staff_alerts === true ||
+      (!row.order_id &&
+        (row.customer_phone == null || row.customer_phone === "" || row.customer_phone === STAFF_PHONE_TAG)),
   );
   if (!hasStaffDevice) {
     return {

@@ -58,6 +58,7 @@ type PushSubRow = {
   platform?: string | null;
   fcm_token?: string | null;
   device_locale?: string | null;
+  staff_alerts?: boolean | null;
 };
 
 type StaffOrderPushContext = {
@@ -487,7 +488,7 @@ async function buildHealthPayload() {
         .from("push_subscriptions")
         .select("id", { count: "exact", head: true })
         .eq("platform", "ios")
-        .eq("customer_phone", STAFF_PHONE_TAG);
+        .or(`staff_alerts.eq.true,customer_phone.eq.${STAFF_PHONE_TAG}`);
       iosStaffDevices = count ?? 0;
     }
   } catch (e) {
@@ -534,6 +535,7 @@ async function healthProbeResponse() {
 }
 
 function isStaffAudienceRow(row: PushSubRow): boolean {
+  if (row.staff_alerts === true) return true;
   if (row.order_id) return false;
   const tag = row.customer_phone;
   return tag == null || tag === "" || tag === STAFF_PHONE_TAG;
@@ -669,7 +671,7 @@ Deno.serve(async (req) => {
     if (!directOnly && (storeId || orderId)) {
       let query = supabase
         .from("push_subscriptions")
-        .select("endpoint, p256dh, auth, order_id, customer_phone, platform, fcm_token, device_locale");
+        .select("endpoint, p256dh, auth, order_id, customer_phone, platform, fcm_token, device_locale, staff_alerts");
       if (orderId) query = query.eq("order_id", orderId);
       else if (storeId) query = query.eq("store_id", storeId);
       const { data: rows } = await query;

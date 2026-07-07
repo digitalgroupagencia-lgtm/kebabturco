@@ -143,9 +143,8 @@ export async function unsubscribeStaffPush(): Promise<void> {
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       const endpoint = sub.endpoint;
-      await sub.unsubscribe();
-      await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
-      pushLog("staff", "unsubscribe", "info", "Subscrição push da equipa removida", {
+      await supabase.rpc("unregister_staff_push_subscription", { _endpoint: endpoint });
+      pushLog("staff", "unsubscribe", "info", "Alertas da equipa desactivados (cliente mantido se existir)", {
         endpointPreview: endpoint.slice(0, 48) + "…",
       });
     }

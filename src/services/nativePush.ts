@@ -902,16 +902,16 @@ export async function registerNativeCustomerPush(
   }
 }
 
-/** Remove registo push nativo deste telemóvel no servidor e localmente. */
+/** Remove registo push da equipa; mantém alertas de cliente no mesmo telemóvel. */
 export async function unregisterNativeStaffPush(): Promise<void> {
   const token = readCachedNativePushToken();
   clearCachedNativePushToken();
   if (token) {
     const endpoint = `fcm://${token.replace(/[<>\s]/g, "").toLowerCase()}`;
-    await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+    await supabase.rpc("unregister_staff_push_subscription", { _endpoint: endpoint });
   }
   // Mantém listeners activos, no iPhone apagar a ponte impede voltar a obter token.
-  logNative("info", "Registo push desactivado neste telemóvel");
+  logNative("info", "Alertas da equipa desactivados (cliente mantido se existir)");
 }
 
 /** Para usar no boot do painel, pede permissão e re-regista (como build 10). */
