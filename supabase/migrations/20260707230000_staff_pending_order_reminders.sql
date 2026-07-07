@@ -103,7 +103,7 @@ BEGIN
   PERFORM cron.schedule(
     'staff-pending-order-reminders',
     '* * * * *',
-    $$SELECT public.remind_staff_pending_order_pushes();$$
+    $cron$SELECT public.remind_staff_pending_order_pushes();$cron$
   );
 EXCEPTION
   WHEN OTHERS THEN
