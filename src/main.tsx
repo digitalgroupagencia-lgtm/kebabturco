@@ -6,6 +6,7 @@ import { isStaffAppPath } from "./lib/appRouteKind";
 import { dismissBootShell } from "./lib/bootShell";
 import { startStripeDebugOverlayGuard } from "./lib/stripeDebugOverlayGuard";
 import { dismissNativeIOSMediaPlayer } from "./lib/panelAlerts";
+import { forceStaffRecoveryPathWhenNeeded } from "./lib/staffPasswordRecoveryUrl";
 
 let appMounted = false;
 
@@ -49,6 +50,7 @@ if (typeof window !== "undefined") {
 
 startStripeDebugOverlayGuard();
 dismissNativeIOSMediaPlayer();
+forceStaffRecoveryPathWhenNeeded();
 // Push inicializado sob demanda (evita crash no arranque do TestFlight).
 if (typeof window !== "undefined") {
   window.setTimeout(() => {

@@ -25,6 +25,11 @@ import StaffAuthWaitingScreen from "@/components/staff/StaffAuthWaitingScreen";
 import { canAccessGeneralAdmin, canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 import { nav } from "@/lib/navPaths";
 import {
+  getStaffPasswordRecoveryUrl,
+  hasPasswordRecoveryToken,
+  isStaffPasswordResetPath,
+} from "@/lib/staffPasswordRecoveryUrl";
+import {
   registerStaffGoogleLoginWithRetry,
   userHasAnyStaffRole,
   userHasRoleAtStore,
@@ -47,13 +52,9 @@ type StaffAuthView = "login" | "signup" | "forgot" | "recovery";
 
 function isPasswordRecoveryUrl(): boolean {
   if (typeof window === "undefined") return false;
-  if (window.location.hash.includes("type=recovery")) return true;
-  if (window.location.pathname.replace(/\/+$/, "") === "/senhareset") return true;
+  if (hasPasswordRecoveryToken(window.location)) return true;
+  if (isStaffPasswordResetPath(window.location)) return true;
   return new URLSearchParams(window.location.search).get("mode") === "recovery";
-}
-
-function getKebabPasswordRecoveryUrl(): string {
-  return "https://kebabturco.net/senhareset";
 }
 
 /** Login da equipa, e-mail + senha ou Google (pedido pendente até aprovação). */
@@ -265,7 +266,7 @@ const StaffEmailLoginScreen = () => {
 
     try {
       // Sempre usar o domínio oficial: evita auth-bridge/login da Lovable quando o pedido sai do preview.
-      const redirectTo = getKebabPasswordRecoveryUrl();
+      const redirectTo = getStaffPasswordRecoveryUrl();
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo,
       });
