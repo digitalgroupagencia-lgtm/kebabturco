@@ -148,6 +148,7 @@ const StaffEmailLoginScreen = () => {
   }, [roleData?.role]);
 
   useEffect(() => {
+    if (isRecovery) return;
     if (authLoading || roleLoading || !user) return;
     if (!roleData?.role) return;
     // Só redirecciona após login explícito da equipa — não quando a sessão sobreviveu a um logout.
@@ -171,7 +172,7 @@ const StaffEmailLoginScreen = () => {
         navigate(resolveStaffLoginDestination(role), { replace: true });
       }
     })();
-  }, [authLoading, roleLoading, user, roleData?.role, navigate, nextParam]);
+  }, [authLoading, roleLoading, user, roleData?.role, navigate, nextParam, isRecovery]);
 
   useEffect(() => {
     if (authLoading || roleLoading || !user) return;
@@ -216,6 +217,7 @@ const StaffEmailLoginScreen = () => {
   }, [authLoading, roleLoading, user, roleData?.role, storeId, storeLoading]);
 
   useEffect(() => {
+    if (isRecovery) return;
     if (!user || staffAccessLoading) return;
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
@@ -231,7 +233,7 @@ const StaffEmailLoginScreen = () => {
     if (staffAccessStatus !== "active") return;
     if (!isStaffSessionFlagSet()) return;
     navigate(resolveStaffLoginDestination(role), { replace: true });
-  }, [user, staffAccessLoading, staffAccessStatus, roleData?.role, navigate]);
+  }, [user, staffAccessLoading, staffAccessStatus, roleData?.role, navigate, isRecovery]);
 
   useEffect(() => {
     if (searchParams.get("logout") !== "1") return;
