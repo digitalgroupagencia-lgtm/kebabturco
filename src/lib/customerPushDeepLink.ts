@@ -164,8 +164,9 @@ async function openExternalTarget(raw: string): Promise<void> {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform?.()) {
       try {
-        // @ts-expect-error módulo opcional, resolvido em runtime só se instalado
-        const mod = await import("@capacitor/browser");
+        // Import indirecto para o Rollup não falhar quando o módulo não está instalado.
+        const dynImport = new Function("m", "return import(m)") as (m: string) => Promise<{ Browser?: { open: (opts: { url: string }) => Promise<void> } }>;
+        const mod = await dynImport("@capacitor/browser").catch(() => null);
         if (mod?.Browser?.open) {
           await mod.Browser.open({ url });
           return;
