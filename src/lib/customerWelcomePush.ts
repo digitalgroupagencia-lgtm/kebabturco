@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getDeviceLocaleTag } from "@/lib/deviceLocale";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
-import { STAFF_PUSH_TAG } from "@/lib/staffPush";
+// Inlined to avoid static import of staff module from customer flow.
+const STAFF_PUSH_TAG = "__staff__";
 
 const WELCOME_SENT_PREFIX = "customer-welcome-push-sent:";
 
