@@ -79,6 +79,14 @@ const LovablePreviewRoutes = () => (
       )}
     />
     <Route
+      path="/senhareset"
+      element={withSuspense(
+        <MobileFrame>
+          <StaffLogin />
+        </MobileFrame>,
+      )}
+    />
+    <Route
       path="/recibos/registro-datos/:token"
       element={withSuspense(<OnboardLinkPage />)}
     />
