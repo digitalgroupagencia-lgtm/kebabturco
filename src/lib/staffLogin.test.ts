@@ -9,6 +9,17 @@ describe("shouldRedirectRootToStaffPanel", () => {
     ).toBe(false);
   });
 
+  it("does not redirect admin geral even with staff tablet session", () => {
+    expect(
+      shouldRedirectRootToStaffPanel({
+        pathname: "/",
+        staffSessionFlag: true,
+        hasUser: true,
+        role: "admin_master",
+      }),
+    ).toBe(false);
+  });
+
   it("redirects staff tablet session on root", () => {
     expect(
       shouldRedirectRootToStaffPanel({ pathname: "/", staffSessionFlag: true, hasUser: true }),

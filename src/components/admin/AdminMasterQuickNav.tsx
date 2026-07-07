@@ -6,7 +6,7 @@ import { isCustomerStorefrontPath } from "@/lib/appRouteKind";
 import { nav } from "@/lib/navPaths";
 import { canAccessGeneralAdmin } from "@/lib/staffPermissions";
 import {
-  markStaffSession,
+  markStaffSessionForRole,
   openCustomerStorefrontFromStaff,
   openStaffLivePanel,
 } from "@/lib/staffLogin";
@@ -63,7 +63,7 @@ export default function AdminMasterQuickNav({ mode = "inline" }: Props) {
       variant={mode === "overlay" ? "secondary" : onLive ? "default" : "outline"}
       size="sm"
       className={pillClass}
-      onClick={() => openStaffLivePanel(navigate)}
+      onClick={() => openStaffLivePanel(navigate, roleData?.role)}
     >
       <Radio className="h-4 w-4 shrink-0" />
       <span className="hidden min-[380px]:inline">Painel ao vivo</span>
@@ -78,7 +78,7 @@ export default function AdminMasterQuickNav({ mode = "inline" }: Props) {
       size="sm"
       className={pillClass}
       onClick={() => {
-        markStaffSession();
+        markStaffSessionForRole(roleData?.role);
         navigate(nav.admin());
       }}
     >

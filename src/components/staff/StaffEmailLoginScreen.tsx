@@ -22,7 +22,7 @@ import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import StaffLanguageToggle from "@/components/StaffLanguageToggle";
 import StaffPendingApprovalScreen from "@/components/staff/StaffPendingApprovalScreen";
 import StaffAuthWaitingScreen from "@/components/staff/StaffAuthWaitingScreen";
-import { canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
+import { canAccessGeneralAdmin, canAccessPanel, canAccessDeliveryPanel, type StaffRole } from "@/lib/staffPermissions";
 import { nav } from "@/lib/navPaths";
 import {
   registerStaffGoogleLoginWithRetry,
@@ -176,9 +176,14 @@ const StaffEmailLoginScreen = () => {
   }, [authLoading, roleLoading, user, roleData?.role, storeId, storeLoading]);
 
   useEffect(() => {
-    if (!user || staffAccessLoading || staffAccessStatus !== "active") return;
+    if (!user || staffAccessLoading) return;
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
+    if (canAccessGeneralAdmin(role)) {
+      navigate(resolveStaffLoginDestination(role), { replace: true });
+      return;
+    }
+    if (staffAccessStatus !== "active") return;
     if (!isStaffSessionFlagSet()) return;
     navigate(resolveStaffLoginDestination(role), { replace: true });
   }, [user, staffAccessLoading, staffAccessStatus, roleData?.role, navigate]);

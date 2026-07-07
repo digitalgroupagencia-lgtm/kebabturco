@@ -6,6 +6,7 @@ import {
   isStaffSessionFlagSet,
   resolveStaffLoginDestination,
   shouldRedirectRootToStaffPanel,
+  clearStaffSessionFlag,
 } from "@/lib/staffLogin";
 
 /**
@@ -20,6 +21,13 @@ export default function StaffSessionRootRedirect({ children }: { children: React
   const { pathname, search } = useLocation();
 
   useEffect(() => {
+    if (roleLoading) return;
+    if (roleData?.role === "admin_master") {
+      clearStaffSessionFlag();
+    }
+  }, [roleData?.role, roleLoading]);
+
+  useEffect(() => {
     if (authLoading || roleLoading) return;
     if (
       !shouldRedirectRootToStaffPanel({
@@ -27,6 +35,7 @@ export default function StaffSessionRootRedirect({ children }: { children: React
         staffSessionFlag: isStaffSessionFlagSet(),
         hasUser: Boolean(user),
         search,
+        role: roleData?.role ?? null,
       })
     ) {
       return;

@@ -29,18 +29,29 @@ export function isStaffSessionFlagSet(): boolean {
   }
 }
 
+/** Tablets da equipa ficam no painel ao reabrir; admin geral abre sempre no cliente. */
+export function shouldPersistStaffTabletSession(role: StaffRole | string | null | undefined): boolean {
+  return role !== "admin_master";
+}
+
+export function markStaffSessionForRole(role: StaffRole | string | null | undefined) {
+  if (shouldPersistStaffTabletSession(role)) markStaffSession();
+}
+
 /**
  * Só tablets com login explícito da equipa (/staff) devem sair do totem em `/`.
- * Sessão Supabase de desenvolvimento (ex. preview Lovable) não desvia o cliente.
+ * Admin geral mantém sessão mas reabre no cardápio (idiomas).
  */
 export function shouldRedirectRootToStaffPanel(opts: {
   pathname: string;
   staffSessionFlag: boolean;
   hasUser: boolean;
   search?: string;
+  role?: StaffRole | string | null;
 }): boolean {
   const root = opts.pathname.replace(/\/+$/, "") || "/";
   if (root !== "/" || !opts.staffSessionFlag || !opts.hasUser) return false;
+  if (opts.role === "admin_master") return false;
   try {
     const params = new URLSearchParams(
       opts.search ?? (typeof window !== "undefined" ? window.location.search : ""),
@@ -71,9 +82,12 @@ export function openCustomerStorefrontFromStaff(navigate: NavigateFunction) {
   navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
 }
 
-/** Painel operacional — marca sessão staff para o tablet/app reabrir no painel. */
-export function openStaffLivePanel(navigate: NavigateFunction) {
-  markStaffSession();
+/** Painel operacional — tablets reabrem no painel; admin geral não altera o arranque. */
+export function openStaffLivePanel(
+  navigate: NavigateFunction,
+  role?: StaffRole | string | null,
+) {
+  markStaffSessionForRole(role);
   navigate(nav.panel("live"));
 }
 

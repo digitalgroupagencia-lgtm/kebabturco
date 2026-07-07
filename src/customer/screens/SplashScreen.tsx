@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useOrder } from "@/contexts/OrderContext";
-import { useNavigate } from "react-router-dom";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -8,38 +7,26 @@ import InstallAppButton from "@/components/InstallAppButton";
 import CustomerSplashSkeleton from "@/customer/components/CustomerSplashSkeleton";
 import { hasMesaQrInUrl } from "@/lib/customerSession";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
-import { nav } from "@/lib/navPaths";
+import { useStaffLogoGesture } from "@/hooks/useStaffLogoGesture";
 import {
   STOREFRONT_FOOTER_BOTTOM_CLASS,
   STOREFRONT_FOOTER_BOTTOM_STYLE,
 } from "@/lib/storefrontFooter";
-
-const STAFF_LONG_PRESS_MS = 5000;
 
 const SplashScreen = () => {
   const { setScreen } = useOrder();
   const { settings, loading: brandingLoading } = useBranding();
   const { activeLangs, t, lang } = useLanguage();
   const { theme } = useTheme();
-
-  const navigate = useNavigate();
-  const [tapCount, setTapCount] = useState(0);
-  const longPressTimer = useRef<number | null>(null);
+  const logoGesture = useStaffLogoGesture();
+  const bootTimerRef = useRef<number | null>(null);
 
   const isDark = theme === "dark";
-  // Fallbacks Master Template: nunca quebrar se company_settings estiver vazio
   const logo =
-    (isDark && (settings as any)?.logo_main_dark_url) ||
+    (isDark && (settings as { logo_main_dark_url?: string })?.logo_main_dark_url) ||
     settings?.logo_main_url ||
     "/placeholder.svg";
   const brandName = settings?.company_name || "Template Restaurant";
-
-
-  useEffect(() => {
-    return () => {
-      if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
-    };
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -48,36 +35,18 @@ const SplashScreen = () => {
       setScreen((params.get("screen") || "language") as Parameters<typeof setScreen>[0]);
       return;
     }
-    const timer = setTimeout(() => {
+    if (params.get("screen") === "language") {
+      setScreen("language");
+      return;
+    }
+    bootTimerRef.current = window.setTimeout(() => {
       const mesaQr = hasMesaQrInUrl();
       setScreen(mesaQr ? "orderType" : activeLangs.length > 1 ? "language" : "orderType");
     }, 900);
-    return () => clearTimeout(timer);
+    return () => {
+      if (bootTimerRef.current) window.clearTimeout(bootTimerRef.current);
+    };
   }, [setScreen, activeLangs.length]);
-
-  useEffect(() => {
-    if (tapCount >= 5) navigate(nav.staff());
-    const reset = setTimeout(() => setTapCount(0), 2000);
-    return () => clearTimeout(reset);
-  }, [tapCount, navigate]);
-
-  const openStaffArea = () => navigate(nav.staff());
-
-  const handleLogoPressStart = () => {
-    longPressTimer.current = window.setTimeout(openStaffArea, STAFF_LONG_PRESS_MS);
-  };
-
-  const handleLogoPressEnd = () => {
-    if (longPressTimer.current) {
-      window.clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
-  const handleLogoTap = () => {
-    handleLogoPressEnd();
-    setTapCount((c) => c + 1);
-  };
 
   if (brandingLoading) {
     return <CustomerSplashSkeleton />;
@@ -90,20 +59,16 @@ const SplashScreen = () => {
       }} />
 
       <div
-        className="flex flex-col items-center animate-scale-in min-h-[14rem]"
-        onClick={handleLogoTap}
-        onTouchStart={handleLogoPressStart}
-        onTouchEnd={handleLogoPressEnd}
-        onMouseDown={handleLogoPressStart}
-        onMouseUp={handleLogoPressEnd}
-        onMouseLeave={handleLogoPressEnd}
+        className="flex flex-col items-center animate-scale-in min-h-[14rem] select-none touch-none cursor-pointer"
+        {...logoGesture}
         role="presentation"
       >
         {logo && (
           <img
             src={logo}
             alt={brandName}
-            className="w-40 h-40 object-contain drop-shadow-xl mb-6"
+            className="w-40 h-40 object-contain drop-shadow-xl mb-6 pointer-events-none"
+            draggable={false}
           />
         )}
         {brandName && (
@@ -111,7 +76,6 @@ const SplashScreen = () => {
         )}
         <p className="text-muted-foreground mt-2 text-sm tracking-widest uppercase">{t("splashTagline")}</p>
       </div>
-
 
       <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-32 h-1 rounded-full bg-secondary overflow-hidden">
         <div className="splash-shimmer absolute inset-0" />

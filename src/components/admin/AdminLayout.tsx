@@ -17,7 +17,7 @@ import { StaffScreenHelpProvider } from "@/contexts/StaffScreenHelpContext";
 import StaffTopBarAlerts from "@/components/staff/StaffTopBarAlerts";
 import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
 import AdminMasterQuickNav from "@/components/admin/AdminMasterQuickNav";
-import { markStaffSession } from "@/lib/staffLogin";
+import { markStaffSessionForRole } from "@/lib/staffLogin";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
 type Props = {
@@ -30,8 +30,8 @@ const AdminLayout = ({ page: Page }: Props) => {
   usePageTelemetry();
 
   useEffect(() => {
-    if (user) markStaffSession();
-  }, [user]);
+    if (user) markStaffSessionForRole(roleData?.role);
+  }, [user, roleData?.role]);
 
   if (authLoading || roleLoading) {
     return (
