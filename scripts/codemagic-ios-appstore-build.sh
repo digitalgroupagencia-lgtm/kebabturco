@@ -10,14 +10,7 @@ echo "SDK iOS: $(xcrun --sdk iphoneos --show-sdk-version)"
 
 bash "$ROOT/scripts/ios-align-release-entitlements.sh"
 bash "$ROOT/scripts/ios-verify-live-activity-target.sh"
-bash "$ROOT/scripts/codemagic-install-ios-profiles-from-secrets.sh"
-
-echo "=== Certificado e perfis App Store ==="
-keychain initialize
-keychain add-certificates
-xcode-project use-profiles \
-  --project "$PROJECT" \
-  --archive-method app-store
+bash "$ROOT/scripts/codemagic-setup-ios-appstore-signing.sh"
 
 echo "=== Criar IPA ==="
 xcode-project build-ipa \

@@ -6,8 +6,8 @@ PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 mkdir -p "$PROFILE_DIR"
 
 if [ -z "${IOS_APPSTORE_PROFILE_B64:-}" ] || [ -z "${IOS_WIDGET_APPSTORE_PROFILE_B64:-}" ]; then
-  echo "ERRO: faltam segredos IOS_APPSTORE_PROFILE_B64 ou IOS_WIDGET_APPSTORE_PROFILE_B64 (grupo ios_appstore)."
-  exit 1
+  echo "AVISO: perfis manuais em falta — a usar só os perfis obtidos da Apple."
+  exit 0
 fi
 
 echo "$IOS_APPSTORE_PROFILE_B64" | base64 --decode > "$PROFILE_DIR/kebabturco_appstore.mobileprovision"
