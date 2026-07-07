@@ -43,12 +43,25 @@ import {
   type StaffLastLogin,
 } from "@/lib/staffLoginMemory";
 
+type StaffAuthView = "login" | "signup" | "forgot" | "recovery";
+
+function isPasswordRecoveryUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.location.hash.includes("type=recovery")) return true;
+  return new URLSearchParams(window.location.search).get("mode") === "recovery";
+}
+
 /** Login da equipa, e-mail + senha ou Google (pedido pendente até aprovação). */
 const StaffEmailLoginScreen = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const signupFromUrl = searchParams.get("signup") === "1" || searchParams.get("mode") === "signup";
   const nextParam = searchParams.get("next");
+  const initialView: StaffAuthView = signupFromUrl
+    ? "signup"
+    : isPasswordRecoveryUrl()
+      ? "recovery"
+      : "login";
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading } = useUserRole(user?.id);
   const { storeId, loading: storeLoading } = useStaffLoginStore();
@@ -64,9 +77,14 @@ const StaffEmailLoginScreen = () => {
   const brandName = settings?.company_name || "Logo";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [isSignup, setIsSignup] = useState(signupFromUrl);
+  const [authView, setAuthView] = useState<StaffAuthView>(initialView);
+  const isSignup = authView === "signup";
+  const isForgot = authView === "forgot";
+  const isRecovery = authView === "recovery";
   const [submitting, setSubmitting] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [staffAccessStatus, setStaffAccessStatus] = useState<StaffGoogleLoginStatus | null>(null);
@@ -74,6 +92,22 @@ const StaffEmailLoginScreen = () => {
   const [lastLogin, setLastLogin] = useState<StaffLastLogin | null>(() => loadLastStaffLogin());
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthView("recovery");
+        setError(null);
+      }
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (isPasswordRecoveryUrl()) {
+      setAuthView("recovery");
+    }
+  }, []);
 
   const googleOAuthReturn =
     (hasStaffGoogleLoginIntent() && !roleData?.role) ||
@@ -213,6 +247,69 @@ const StaffEmailLoginScreen = () => {
     })();
   }, [authLoading, user, searchParams, navigate]);
 
+  const handleForgotPassword = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    if (!email.trim()) {
+      setError(copy.forgotEmailRequired);
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setForgotSent(false);
+
+    try {
+      const redirectTo = `${window.location.origin}${nav.staff()}?mode=recovery`;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo,
+      });
+      if (resetError) throw resetError;
+      setForgotSent(true);
+      toast.success(copy.forgotSuccess);
+    } catch (e) {
+      setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSetNewPassword = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+
+    if (!password || password.length < 6) {
+      setError(copy.recoveryTooShort);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(copy.recoveryMismatch);
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
+
+      markStaffSession();
+      toast.success(copy.recoverySuccess);
+      setPassword("");
+      setConfirmPassword("");
+      setAuthView("login");
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("mode");
+        url.hash = "";
+        window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+      }
+    } catch (e) {
+      setError(translateAppErrorFromException(e, lang === "en" ? "es" : lang));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleLogin = async (event?: React.FormEvent) => {
     event?.preventDefault();
 
@@ -251,11 +348,11 @@ const StaffEmailLoginScreen = () => {
         if (data.session?.user) {
           await registerPendingAccess();
           toast.success(copy.signupSuccess);
-          setIsSignup(false);
+          setAuthView("login");
           return;
         }
         toast.success(copy.signupSuccess);
-        setIsSignup(false);
+        setAuthView("login");
         return;
       }
 
@@ -323,7 +420,7 @@ const StaffEmailLoginScreen = () => {
     passwordRef.current?.focus();
   };
 
-  const showLastLoginSuggestion = !isSignup && lastLogin && !dismissedSuggestion;
+  const showLastLoginSuggestion = !isSignup && !isForgot && !isRecovery && lastLogin && !dismissedSuggestion;
 
   if (authLoading || (user && roleLoading) || (user && accessFlowActive && staffAccessLoading && !staffAccessStatus)) {
     return (
@@ -375,12 +472,26 @@ const StaffEmailLoginScreen = () => {
             {brandLogo && (
               <img src={brandLogo} alt={brandName} className="mb-5 h-28 w-28 object-contain drop-shadow-xl" />
             )}
-            <h1 className="text-2xl font-bold leading-tight text-foreground">{copy.title}</h1>
+            <h1 className="text-2xl font-bold leading-tight text-foreground">
+              {isForgot ? copy.forgotTitle : isRecovery ? copy.recoveryTitle : copy.title}
+            </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">{copy.subtitle}</p>
             <p className="mt-4 text-sm text-muted-foreground">
-              {isSignup ? copy.signupInstruction : copy.instruction}
+              {isForgot
+                ? copy.forgotInstruction
+                : isRecovery
+                  ? copy.recoveryInstruction
+                  : isSignup
+                    ? copy.signupInstruction
+                    : copy.instruction}
             </p>
           </div>
+
+          {forgotSent && isForgot && (
+            <p className="mb-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm text-foreground">
+              {copy.forgotSuccess}
+            </p>
+          )}
 
           {showLastLoginSuggestion && (
             <div className="mb-5 space-y-2">
@@ -415,6 +526,104 @@ const StaffEmailLoginScreen = () => {
             </div>
           )}
 
+          {isForgot ? (
+            <form className="space-y-4" onSubmit={(e) => void handleForgotPassword(e)}>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-email-forgot">{copy.emailLabel}</Label>
+                <Input
+                  id="staff-email-forgot"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(null);
+                    setForgotSent(false);
+                  }}
+                  placeholder="entregador@gmail.com"
+                  className="h-12 w-full"
+                />
+              </div>
+
+              {error && (
+                <p className="text-center text-sm font-medium text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <Button type="submit" className="h-12 w-full text-base font-bold" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {copy.forgotSubmitting}
+                  </>
+                ) : (
+                  copy.forgotSubmit
+                )}
+              </Button>
+
+              <button
+                type="button"
+                className="w-full py-2 text-center text-sm font-semibold text-primary hover:underline"
+                onClick={() => {
+                  setAuthView("login");
+                  setError(null);
+                  setForgotSent(false);
+                }}
+              >
+                {copy.forgotBack}
+              </button>
+            </form>
+          ) : isRecovery ? (
+            <form className="space-y-4" onSubmit={(e) => void handleSetNewPassword(e)}>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-password-new">{copy.recoveryPasswordLabel}</Label>
+                <SecretInput
+                  id="staff-password-new"
+                  name="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(null);
+                  }}
+                  className="h-12 w-full"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-password-confirm">{copy.recoveryConfirmLabel}</Label>
+                <SecretInput
+                  id="staff-password-confirm"
+                  name="password-confirm"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setError(null);
+                  }}
+                  className="h-12 w-full"
+                />
+              </div>
+
+              {error && (
+                <p className="text-center text-sm font-medium text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <Button type="submit" className="h-12 w-full text-base font-bold" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {copy.recoverySubmitting}
+                  </>
+                ) : (
+                  copy.recoverySubmit
+                )}
+              </Button>
+            </form>
+          ) : (
           <form className="space-y-4" onSubmit={(e) => void handleLogin(e)}>
             {isSignup && (
               <div className="space-y-1.5">
@@ -463,6 +672,19 @@ const StaffEmailLoginScreen = () => {
                 }}
                 className="h-12 w-full"
               />
+              {!isSignup && (
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-primary hover:underline"
+                  onClick={() => {
+                    setAuthView("forgot");
+                    setError(null);
+                    setForgotSent(false);
+                  }}
+                >
+                  {copy.forgotLink}
+                </button>
+              )}
             </div>
 
             {error && (
@@ -484,22 +706,25 @@ const StaffEmailLoginScreen = () => {
               )}
             </Button>
           </form>
+          )}
 
+          {!isForgot && !isRecovery && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
             {isSignup ? copy.loginToggle : copy.signupToggle}{" "}
             <button
               type="button"
               className="font-semibold text-primary hover:underline"
               onClick={() => {
-                setIsSignup((v) => !v);
+                setAuthView(isSignup ? "login" : "signup");
                 setError(null);
               }}
             >
               {isSignup ? copy.loginLink : copy.signupLink}
             </button>
           </p>
+          )}
 
-          {!isSignup && (
+          {!isSignup && !isForgot && !isRecovery && (
             <>
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
