@@ -42,15 +42,19 @@ const PushOptInDialogFrame = ({
         <DialogOverlay className="bg-black/75 backdrop-blur-sm" />
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2",
-            "rounded-3xl border border-[#5a0a0e]/50 p-0 shadow-2xl outline-none overflow-hidden",
+            "fixed z-50 outline-none overflow-hidden",
+            "left-1/2 -translate-x-1/2",
+            "top-[max(0.75rem,env(safe-area-inset-top))] sm:top-1/2 sm:-translate-y-1/2",
+            "w-[calc(100%-1.5rem)] max-w-sm",
+            "max-h-[min(90dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem))]",
+            "rounded-2xl sm:rounded-3xl border border-[#5a0a0e]/50 p-0 shadow-2xl",
             "bg-gradient-to-b from-[#3a0205] via-[#2a0104] to-[#1a0204] text-white",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           )}
         >
-          <div className="relative px-6 pt-8 pb-6">
+          <div className="relative max-h-[inherit] overflow-y-auto overscroll-contain px-4 pt-5 pb-4 sm:px-6 sm:pt-8 sm:pb-6">
             <div
               className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#6b1015]/30 blur-2xl"
               aria-hidden
@@ -71,11 +75,11 @@ const PushOptInDialogFrame = ({
             </DialogPrimitive.Close>
 
             <div className="relative flex flex-col items-center text-center">
-              <div className="mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
-                <Bell className="h-9 w-9 text-white stroke-[1.5]" />
+              <div className="mb-3 sm:mb-5 flex h-14 w-14 sm:h-[72px] sm:w-[72px] items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
+                <Bell className="h-7 w-7 sm:h-9 sm:w-9 text-white stroke-[1.5]" />
               </div>
 
-              <DialogPrimitive.Title className="text-[1.35rem] font-bold leading-snug tracking-tight text-white">
+              <DialogPrimitive.Title className="text-lg sm:text-[1.35rem] font-bold leading-snug tracking-tight text-white">
                 {copy.title}
               </DialogPrimitive.Title>
 
@@ -83,13 +87,13 @@ const PushOptInDialogFrame = ({
                 {copy.subtitle}
               </DialogPrimitive.Description>
 
-              <ul className="mt-5 w-full space-y-2.5 text-left">
+              <ul className="mt-4 sm:mt-5 w-full space-y-2 sm:space-y-2.5 text-left">
                 {benefits.map((text, index) => {
                   const Icon = BENEFIT_ICONS[index] ?? Package;
                   return (
                     <li
                       key={text}
-                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5"
+                      className="flex items-center gap-2.5 sm:gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 sm:px-3.5 sm:py-2.5"
                     >
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#5a0a0e]/60">
                         <Icon className="h-4 w-4 text-white/90" strokeWidth={1.75} />
@@ -105,7 +109,7 @@ const PushOptInDialogFrame = ({
                 disabled={busy || !storeId}
                 onClick={onActivate}
                 className={cn(
-                  "mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4",
+                  "mt-4 sm:mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4",
                   "bg-white text-[#3a0205]",
                   "text-base font-bold shadow-[0_4px_20px_rgba(0,0,0,0.25)] transition",
                   "hover:bg-white/95 active:scale-[0.98] disabled:opacity-60",

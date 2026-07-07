@@ -37,7 +37,7 @@ import {
   PANEL_UNACK_CHANGED_EVENT,
   tickPendingAlertUrgency,
 } from "@/lib/panelAlerts";
-import PanelUrgentAlertOverlay from "@/features/ops/PanelUrgentAlertOverlay";
+import { CUSTOMER_PUSH_NAV_EVENT } from "@/lib/customerPushDeepLink";
 
 const statusIcons: Record<string, React.ElementType> = {
   pending: Clock,
@@ -131,6 +131,53 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     drivers.forEach((d) => map.set(d.user_id, d.full_name));
     return map;
   }, [drivers]);
+
+  const openOrderFromPush = useCallback(
+    (orderId: string) => {
+      const order = orders.find((o) => o.id === orderId);
+      if (!order) return false;
+      acknowledgePendingOrderAlert(order.id);
+      setMobileTab(panelColumnStatus(order.status as OrderStatus));
+      if (order.status === "pending") {
+        setEtaDialogOrder(order);
+      } else {
+        setDetailOrderId(order.id);
+      }
+      return true;
+    },
+    [orders],
+  );
+
+  const consumePushOrderParam = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("order")?.trim() || null;
+  }, []);
+
+  const clearPushOrderParam = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("order")) return;
+    params.delete("order");
+    const qs = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+  }, []);
+
+  useEffect(() => {
+    const tryOpen = () => {
+      const orderId = consumePushOrderParam();
+      if (!orderId) return;
+      if (openOrderFromPush(orderId)) clearPushOrderParam();
+    };
+    tryOpen();
+    const onNav = () => tryOpen();
+    window.addEventListener(CUSTOMER_PUSH_NAV_EVENT, onNav);
+    window.addEventListener("popstate", onNav);
+    return () => {
+      window.removeEventListener(CUSTOMER_PUSH_NAV_EVENT, onNav);
+      window.removeEventListener("popstate", onNav);
+    };
+  }, [clearPushOrderParam, consumePushOrderParam, openOrderFromPush, orders]);
 
   const openOrderDetail = useCallback((order: PanelOrder) => {
     acknowledgePendingOrderAlert(order.id);

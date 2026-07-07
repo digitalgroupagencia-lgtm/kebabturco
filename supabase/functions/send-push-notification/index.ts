@@ -659,6 +659,13 @@ Deno.serve(async (req) => {
       staffOrderContext = await loadStaffOrderPushContext(supabase, staffOrderAlertId);
     }
 
+    const resolvedUrl =
+      staffOrderAlertId != null
+        ? `/panel/live?order=${staffOrderAlertId}`
+        : typeof url === "string" && url.trim()
+          ? url.trim()
+          : "/";
+
     if (!directOnly && (storeId || orderId)) {
       let query = supabase
         .from("push_subscriptions")
@@ -724,14 +731,14 @@ Deno.serve(async (req) => {
         : { title: pushTitle, body: pushBody };
       const subTitle = localized.title;
       const subBody = localized.body;
-      const payloadJson = JSON.stringify({ title: subTitle, body: subBody, tag, url, requireInteraction });
+      const payloadJson = JSON.stringify({ title: subTitle, body: subBody, tag, url: resolvedUrl, requireInteraction });
       try {
         if (platform === "ios") {
           if (!apns) throw new Error("APNs not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           const apnsResult = await sendApns(
             token,
-            { title: subTitle, body: subBody, tag, url, sound: resolveStaffOrderSound(tag) },
+            { title: subTitle, body: subBody, tag, url: resolvedUrl, sound: resolveStaffOrderSound(tag) },
             apns,
             { tryBothHosts: apnsTryBothHosts },
           );
@@ -751,7 +758,7 @@ Deno.serve(async (req) => {
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
-          await sendFcmV1(token, { title: subTitle, body: subBody, tag, url, requireInteraction }, fcm);
+          await sendFcmV1(token, { title: subTitle, body: subBody, tag, url: resolvedUrl, requireInteraction }, fcm);
           sent++;
           sentFcm++;
         } else {

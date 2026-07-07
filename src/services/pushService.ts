@@ -50,7 +50,7 @@ export async function notifyStaffNewOrder(
         storeId,
         staffOrderId: orderId,
         tag: `staff-new-order-${orderId}`,
-        url: "/panel/live",
+        url: `/panel/live?order=${orderId}`,
         requireInteraction: true,
       },
     });
