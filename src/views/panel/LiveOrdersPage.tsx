@@ -7,6 +7,7 @@ import { useStaffT } from "@/hooks/useStaffT";
 import HowToUsePanel from "@/components/admin/HowToUsePanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import BuildVersionBadge from "@/components/panel/BuildVersionBadge";
 
 const LiveOrdersPage = () => {
   const { storeId, loading: storeLoading } = useAdminStoreId();
