@@ -160,9 +160,6 @@ workflows:
 
     environment:
       ios_signing:
-        provisioning_profiles:
-          - kebabturco_appstore
-          - kebabturco_widget_appstore
         certificates:
           - kebabturco_appstore
       vars:
@@ -196,12 +193,6 @@ workflows:
 
       - name: Compilar site + sincronizar iPhone
         script: bash scripts/sync-ios-for-release.sh
-
-      - name: Perfil e certificado Apple (upload Codemagic)
-        script: |
-          set -euo pipefail
-          keychain initialize
-          keychain add-certificates
 
       - name: Criar pacote para a App Store
         script: bash scripts/codemagic-ios-appstore-build.sh

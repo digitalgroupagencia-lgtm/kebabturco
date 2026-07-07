@@ -9,8 +9,19 @@ echo "Xcode: $(xcodebuild -version | head -1)"
 echo "SDK iOS: $(xcrun --sdk iphoneos --show-sdk-version)"
 
 bash "$ROOT/scripts/ios-align-release-entitlements.sh"
+bash "$ROOT/scripts/ios-verify-live-activity-target.sh"
 
-echo "=== Aplicar perfil App Store (kebabturco_appstore) ==="
+echo "=== Obter perfis App Store na Apple (app + cartão) ==="
+app-store-connect fetch-signing-files "net.kebabturco.app" \
+  --type IOS_APP_STORE \
+  --verbose
+app-store-connect fetch-signing-files "net.kebabturco.app.StaffOrderWidget" \
+  --type IOS_APP_STORE \
+  --verbose
+
+echo "=== Aplicar certificados e perfis no projeto ==="
+keychain initialize
+keychain add-certificates
 xcode-project use-profiles \
   --project "$PROJECT" \
   --archive-method app-store
