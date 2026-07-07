@@ -12,6 +12,7 @@ echo "Xcode: $(xcodebuild -version | head -1)"
 echo "SDK iOS: $(xcrun --sdk iphoneos --show-sdk-version)"
 
 bash "$ROOT/scripts/ios-align-release-entitlements.sh"
+bash "$ROOT/scripts/ios-align-widget-release-entitlements.sh"
 bash "$ROOT/scripts/ios-verify-live-activity-target.sh"
 bash "$ROOT/scripts/codemagic-setup-ios-appstore-signing.sh"
 
