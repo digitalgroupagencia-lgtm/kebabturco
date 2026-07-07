@@ -138,11 +138,70 @@ export function applyCustomerPushDeepLink(
   return true;
 }
 
+const INTERNAL_NON_CUSTOMER_PREFIXES = ["/panel", "/admin", "/kds", "/seller", "/delivery", "/kitchen"];
+
+function isExternalTarget(raw: string): boolean {
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) return false;
+  if (trimmed.startsWith("whatsapp:") || trimmed.startsWith("tel:") || trimmed.startsWith("mailto:") || trimmed.startsWith("sms:")) {
+    return true;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const u = new URL(trimmed);
+      if (typeof window !== "undefined" && u.origin === window.location.origin) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+async function openExternalTarget(raw: string): Promise<void> {
+  const url = raw.trim();
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform?.()) {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url });
+        return;
+      } catch {
+        /* fallback abaixo */
+      }
+    }
+  } catch {
+    /* fallback abaixo */
+  }
+  if (typeof window !== "undefined") {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
 /** Toque numa notificação (nativo ou web): actualiza URL e estado do cliente. */
 export function navigateCustomerFromPushUrl(raw: string): void {
   if (typeof window === "undefined") return;
-  const normalized = normalizeCustomerPushUrl(raw);
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return;
+
+  // 1) Links externos (WhatsApp, tel, mailto, outros domínios) → abrir fora do app cliente.
+  if (isExternalTarget(trimmed)) {
+    void openExternalTarget(trimmed);
+    return;
+  }
+
+  const normalized = normalizeCustomerPushUrl(trimmed);
   const target = normalized || "/";
+
+  // 2) Rotas internas fora do fluxo cliente (painel, admin, etc.) → navegação forçada.
+  const pathOnly = target.split("?")[0].split("#")[0];
+  if (INTERNAL_NON_CUSTOMER_PREFIXES.some((p) => pathOnly === p || pathOnly.startsWith(`${p}/`))) {
+    window.location.href = target;
+    return;
+  }
+
+  // 3) Fluxo cliente normal — actualiza URL + dispara evento para o app cliente responder.
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (current !== target) {
     window.history.pushState(null, "", target);
