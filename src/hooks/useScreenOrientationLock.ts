@@ -1,16 +1,22 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { isCapacitorNativeSync } from "@/lib/capacitorRuntime";
 import { isLovableEditorPreview } from "@/lib/lovablePreview";
 import {
   isLandscapeLockedPath,
   isPortraitLockedPath,
   isStaffWideLayoutPath,
-  isStaffWideScreen,
   isCoarseTouchDevice,
 } from "@/lib/orientationPolicy";
 
 type RotateMode = "none" | "fp";
+
+function readViewportSize() {
+  const vv = window.visualViewport;
+  return {
+    w: Math.round(vv?.width ?? window.innerWidth),
+    h: Math.round(vv?.height ?? window.innerHeight),
+  };
+}
 
 function clearRotateClasses() {
   document.body.classList.remove("fp-rotate", "fl-rotate");
@@ -20,7 +26,7 @@ function clearRotateClasses() {
   document.body.style.removeProperty("--fl-h");
 }
 
-/** Totem em landscape físico → CSS vertical; KDS em portrait → CSS horizontal (só app nativa). */
+/** Totem em landscape físico → CSS vertical; painel admin em portrait → CSS horizontal. */
 function resolveRotateMode(
   portraitLock: boolean,
   landscapeLock: boolean,
@@ -28,7 +34,6 @@ function resolveRotateMode(
   w: number,
   h: number,
 ): RotateMode {
-  if (!isCapacitorNativeSync()) return "none";
   if (landscapeLock && touch && h > w) return "fp";
   if (portraitLock && touch && w > h && w >= 600) return "fp";
   return "none";
@@ -42,18 +47,9 @@ function applyRotateMode(mode: RotateMode, w: number, h: number) {
   document.body.classList.add("fp-rotate");
 }
 
-function applyStaffWideLayoutClass(pathname: string, w: number, h: number) {
-  const html = document.documentElement;
-  if (isStaffWideLayoutPath(pathname) && isStaffWideScreen(w, h)) {
-    html.classList.add("staff-landscape-layout");
-  } else {
-    html.classList.remove("staff-landscape-layout");
-  }
-}
-
 /**
- * Orientação por rota. Browser: sempre vertical legível nos painéis.
- * App nativa: só KDS pode forçar horizontal com rotação CSS.
+ * Bloqueio de orientação por rota (PWA standalone / Capacitor).
+ * Admin/painel: em telemóvel vertical força layout horizontal (como build 10).
  */
 export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();
@@ -66,27 +62,52 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
     const inEditor = isLovableEditorPreview();
     const touch = isCoarseTouchDevice();
 
+    if (isStaffWideLayoutPath(pathname)) {
+      html.classList.add("staff-landscape-layout");
+    } else {
+      html.classList.remove("staff-landscape-layout");
+    }
+
     const cleanupRotate = () => {
       activeModeRef.current = "none";
       clearRotateClasses();
     };
 
+    if (!portraitLock && !landscapeLock) {
+      try {
+        screen.orientation?.unlock?.();
+      } catch {
+        /* noop */
+      }
+      cleanupRotate();
+      return () => {
+        html.classList.remove("staff-landscape-layout");
+        cleanupRotate();
+      };
+    }
+
+    if (inEditor) {
+      cleanupRotate();
+      return () => {
+        html.classList.remove("staff-landscape-layout");
+        cleanupRotate();
+      };
+    }
+
+    const lockMode = landscapeLock ? "landscape" : "portrait";
+    try {
+      const lock = screen.orientation?.lock;
+      if (typeof lock === "function") {
+        lock.call(screen.orientation, lockMode).catch(() => {
+          /* utilizador deve rodar o aparelho */
+        });
+      }
+    } catch {
+      /* noop */
+    }
+
     const apply = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-
-      applyStaffWideLayoutClass(pathname, w, h);
-
-      if (!portraitLock && !landscapeLock) {
-        cleanupRotate();
-        return;
-      }
-
-      if (inEditor) {
-        cleanupRotate();
-        return;
-      }
-
+      const { w, h } = readViewportSize();
       const nextMode = resolveRotateMode(portraitLock, landscapeLock, touch, w, h);
 
       if (nextMode === activeModeRef.current) {
@@ -98,26 +119,6 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
       applyRotateMode(nextMode, w, h);
     };
 
-    if (!portraitLock && !landscapeLock) {
-      try {
-        screen.orientation?.unlock?.();
-      } catch {
-        /* noop */
-      }
-    } else if (!inEditor) {
-      const lockMode = landscapeLock ? "landscape" : "portrait";
-      try {
-        const lock = screen.orientation?.lock;
-        if (typeof lock === "function") {
-          lock.call(screen.orientation, lockMode).catch(() => {
-            /* utilizador deve rodar o aparelho */
-          });
-        }
-      } catch {
-        /* noop */
-      }
-    }
-
     apply();
 
     let raf = 0;
@@ -128,11 +129,15 @@ export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any
 
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("scroll", onResize);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("scroll", onResize);
       html.classList.remove("staff-landscape-layout");
       cleanupRotate();
       try {
