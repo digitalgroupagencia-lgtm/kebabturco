@@ -25,6 +25,7 @@ import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
 import { StaffAuthRedirect, Index, NotFound, StaffLogin } from "@/routes/appRouteRegistry.ts";
 import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx";
+import AdminMasterStaffEntryGate from "@/components/admin/AdminMasterStaffEntryGate.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
 const CatchAllResolver = lazy(() =>
@@ -108,6 +109,7 @@ const App = () => {
               <AppCacheBustRouter>
                 <LovablePreviewGate />
                 <PreviewPathGuard />
+                <AdminMasterStaffEntryGate>
                 <ResolvedStoreProvider>
                   <SiteBrandingEffect />
                   <SeoDocumentEffect />
@@ -118,6 +120,7 @@ const App = () => {
                     </OperationsSettingsProvider>
                   </BrandingProvider>
                 </ResolvedStoreProvider>
+                </AdminMasterStaffEntryGate>
               </AppCacheBustRouter>
             </BrowserRouter>
           </ThemeProvider>

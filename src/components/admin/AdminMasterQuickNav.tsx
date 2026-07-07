@@ -6,6 +6,7 @@ import { isCustomerStorefrontPath } from "@/lib/appRouteKind";
 import { nav } from "@/lib/navPaths";
 import { canAccessGeneralAdmin } from "@/lib/staffPermissions";
 import {
+  markAdminStaffAreaEntry,
   markStaffSessionForRole,
   openCustomerStorefrontFromStaff,
   openStaffLivePanel,
@@ -78,6 +79,7 @@ export default function AdminMasterQuickNav({ mode = "inline" }: Props) {
       size="sm"
       className={pillClass}
       onClick={() => {
+        markAdminStaffAreaEntry();
         markStaffSessionForRole(roleData?.role);
         navigate(nav.admin());
       }}

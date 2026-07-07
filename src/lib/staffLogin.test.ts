@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { resolveStaffLoginDestination, shouldRedirectRootToStaffPanel } from "@/lib/staffLogin";
+import {
+  resolveStaffLoginDestination,
+  shouldRedirectRootToStaffPanel,
+  shouldAdminMasterStartAsCustomer,
+  markAdminStaffAreaEntry,
+  clearAdminStaffAreaEntry,
+} from "@/lib/staffLogin";
 import { nav } from "@/lib/navPaths";
 
 describe("shouldRedirectRootToStaffPanel", () => {
@@ -41,6 +47,25 @@ describe("shouldRedirectRootToStaffPanel", () => {
         search: "?screen=home&demo_visita=1",
       }),
     ).toBe(false);
+  });
+});
+
+describe("shouldAdminMasterStartAsCustomer", () => {
+  it("admin geral reopens as customer on staff paths without session entry", () => {
+    expect(
+      shouldAdminMasterStartAsCustomer({ pathname: "/admin", role: "admin_master" }),
+    ).toBe(true);
+    expect(
+      shouldAdminMasterStartAsCustomer({ pathname: "/panel/live", role: "admin_master" }),
+    ).toBe(true);
+  });
+
+  it("admin geral stays on staff path when session entry is marked", () => {
+    markAdminStaffAreaEntry();
+    expect(
+      shouldAdminMasterStartAsCustomer({ pathname: "/admin", role: "admin_master" }),
+    ).toBe(false);
+    clearAdminStaffAreaEntry();
   });
 });
 

@@ -4,6 +4,8 @@ import type { StaffRole } from "@/lib/staffPermissions";
 import { saveSavedOrderType, KIOSK_LANG_KEY } from "@/lib/customerSession";
 
 export const STAFF_SESSION_FLAG = "kebabturco.staffSession";
+/** Só nesta sessão do browser — fecha o separador e perde-se (admin reabre no cliente). */
+export const STAFF_ENTRY_SESSION_KEY = "kebabturco.staffEntry";
 
 export function markStaffSession() {
   try {
@@ -19,6 +21,51 @@ export function clearStaffSessionFlag() {
   } catch {
     /* ignore */
   }
+}
+
+export function markAdminStaffAreaEntry() {
+  try {
+    sessionStorage.setItem(STAFF_ENTRY_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearAdminStaffAreaEntry() {
+  try {
+    sessionStorage.removeItem(STAFF_ENTRY_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasAdminStaffAreaEntry(): boolean {
+  try {
+    return sessionStorage.getItem(STAFF_ENTRY_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function isStaffAppPathname(pathname: string): boolean {
+  const p = pathname.replace(/\/+$/, "") || "/";
+  return (
+    p.startsWith("/admin") ||
+    p.startsWith("/panel") ||
+    p.startsWith("/seller") ||
+    p.startsWith("/delivery") ||
+    p === "/staff"
+  );
+}
+
+/** Admin geral: reabrir app no cliente salvo que estava em /admin ou /panel. */
+export function shouldAdminMasterStartAsCustomer(opts: {
+  role?: StaffRole | string | null;
+  pathname: string;
+}): boolean {
+  if (opts.role !== "admin_master") return false;
+  if (!isStaffAppPathname(opts.pathname)) return false;
+  return !hasAdminStaffAreaEntry();
 }
 
 export function isStaffSessionFlagSet(): boolean {
@@ -73,6 +120,7 @@ export function returnToCustomerTotemStart(navigate: NavigateFunction) {
 /** Abre o cardápio como cliente real, mantendo login admin (sem logout). */
 export function openCustomerStorefrontFromStaff(navigate: NavigateFunction) {
   clearStaffSessionFlag();
+  clearAdminStaffAreaEntry();
   saveSavedOrderType(null);
   try {
     localStorage.removeItem(KIOSK_LANG_KEY);
@@ -88,6 +136,7 @@ export function openStaffLivePanel(
   role?: StaffRole | string | null,
 ) {
   markStaffSessionForRole(role);
+  if (role === "admin_master") markAdminStaffAreaEntry();
   navigate(nav.panel("live"));
 }
 

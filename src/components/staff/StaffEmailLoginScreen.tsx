@@ -13,7 +13,7 @@ import { useStaffUiLang } from "@/hooks/useStaffUiLang";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffLoginStore } from "@/hooks/useStaffLoginStore";
-import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart, isStaffSessionFlagSet } from "@/lib/staffLogin";
+import { markStaffSession, resolveStaffLoginDestination, returnToCustomerTotemStart, isStaffSessionFlagSet, markAdminStaffAreaEntry, shouldAdminMasterStartAsCustomer } from "@/lib/staffLogin";
 import { resolvePostLoginDestination } from "@/lib/authRedirect";
 import { signInStaffWithGoogle } from "@/lib/staffGoogleOAuth";
 import { ensureStaffLoginStoreId } from "@/lib/resolveStaffLoginStore";
@@ -180,6 +180,11 @@ const StaffEmailLoginScreen = () => {
     const role = roleData?.role as StaffRole | undefined;
     if (!role) return;
     if (canAccessGeneralAdmin(role)) {
+      if (shouldAdminMasterStartAsCustomer({ role, pathname: window.location.pathname })) {
+        navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
+        return;
+      }
+      markAdminStaffAreaEntry();
       navigate(resolveStaffLoginDestination(role), { replace: true });
       return;
     }
