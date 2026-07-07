@@ -748,16 +748,9 @@ const PaymentScreen = () => {
     }
 
     await enableCustomerOrderAlerts();
-    void subscribePush({
-      storeId,
-      orderId: result.order_id,
-      customerPhone: fullCustomerPhone || undefined,
-      customerName: customerName.trim() || undefined,
-      storeName: brandingCtx?.settings?.company_name || undefined,
-    }).catch(() => undefined);
 
-    // Alerta push à equipa do restaurante (novo pedido) — carregamento dinâmico
-    // porque o cliente não pode importar estaticamente módulos de staff.
+    // Aviso à equipa em paralelo: usa o token staff já registado no dispositivo,
+    // não depende do registo push do cliente terminar antes.
     void (async () => {
       try {
         const { notifyStaffNewOrder } = await import("@/services/pushService");
@@ -766,6 +759,22 @@ const PaymentScreen = () => {
         console.warn("[push] aviso staff falhou:", e);
       }
     })();
+
+    // Registo push do cliente (permissão + token FCM/APNs) — aguardamos
+    // para que a boas-vindas encontre o customer_phone actualizado na BD.
+    // Mesmo num dispositivo admin, isto adiciona o telefone real à mesma linha
+    // (staff_alerts=true é mantido no upsert), pelo que ambas as audiências recebem.
+    try {
+      await subscribePush({
+        storeId,
+        orderId: result.order_id,
+        customerPhone: fullCustomerPhone || undefined,
+        customerName: customerName.trim() || undefined,
+        storeName: brandingCtx?.settings?.company_name || undefined,
+      });
+    } catch (e) {
+      console.warn("[push] registo cliente falhou:", e);
+    }
 
     // Boas-vindas ao cliente (idempotente, só envia se for primeiro pedido).
     if (fullCustomerPhone) {
@@ -783,6 +792,7 @@ const PaymentScreen = () => {
         }
       })();
     }
+
 
     const printOk = shouldPrintAfterCheckout(
       orderType || "takeaway",
