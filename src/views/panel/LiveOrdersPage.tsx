@@ -42,7 +42,8 @@ const LiveOrdersPage = () => {
   return (
     <div className="space-y-2">
       <HowToUsePanel {...liveHelp} />
-      <div className="sticky top-0 z-20 -mx-1 px-1 py-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b flex items-center justify-end gap-1.5">
+      <div className="sticky top-0 z-20 -mx-1 px-1 py-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b flex items-center justify-between gap-1.5">
+          <BuildVersionBadge />
           <Button
             type="button"
             variant="ghost"
