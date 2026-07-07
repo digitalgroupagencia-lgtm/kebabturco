@@ -8,11 +8,20 @@ import {
 } from "@/services/nativePush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { sendImmediateWelcomePushIfNeeded } from "@/lib/customerWelcomePush";
-import { restoreStaffPushIfEnabled } from "@/lib/staffPush";
 
 function isTechnicalPushError(message: string | undefined): boolean {
   if (!message) return false;
   return /plugin is not implemented|not implemented on web|native-bridge-unavailable/i.test(message);
+}
+
+/** Mantém alertas da equipa no mesmo telemóvel sem import estático (regra do fluxo cliente). */
+async function restoreStaffPushIfEnabledSafe(storeId: string): Promise<void> {
+  try {
+    const { restoreStaffPushIfEnabled } = await import("@/lib/staffPush");
+    await restoreStaffPushIfEnabled(storeId);
+  } catch (e) {
+    console.warn("[push] re-registo equipa após pedido cliente ignorado:", e);
+  }
 }
 
 /** Subscrição push opcional — falhas nunca devem bloquear checkout ou pagamento. */
@@ -51,7 +60,7 @@ export function usePushNotifications() {
         if (native.ok) {
           setSubscribed(true);
           setError(null);
-          await restoreStaffPushIfEnabled(opts.storeId);
+          await restoreStaffPushIfEnabledSafe(opts.storeId);
           void sendImmediateWelcomePushIfNeeded(
             opts.storeId,
             customerPhone,
@@ -84,7 +93,7 @@ export function usePushNotifications() {
         }
 
         setError(null);
-        await restoreStaffPushIfEnabled(opts.storeId);
+        await restoreStaffPushIfEnabledSafe(opts.storeId);
         void sendImmediateWelcomePushIfNeeded(
           opts.storeId,
           customerPhone,
