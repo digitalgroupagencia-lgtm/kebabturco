@@ -1533,6 +1533,8 @@ export type Database = {
           accepted_by_user_id: string | null
           application_fee_cents: number
           assigned_driver_id: string | null
+          cancelled_by_name: string | null
+          cancelled_by_user_id: string | null
           coupon_code: string | null
           created_at: string
           customer_email: string | null
@@ -1589,6 +1591,8 @@ export type Database = {
           accepted_by_user_id?: string | null
           application_fee_cents?: number
           assigned_driver_id?: string | null
+          cancelled_by_name?: string | null
+          cancelled_by_user_id?: string | null
           coupon_code?: string | null
           created_at?: string
           customer_email?: string | null
@@ -1645,6 +1649,8 @@ export type Database = {
           accepted_by_user_id?: string | null
           application_fee_cents?: number
           assigned_driver_id?: string | null
+          cancelled_by_name?: string | null
+          cancelled_by_user_id?: string | null
           coupon_code?: string | null
           created_at?: string
           customer_email?: string | null
@@ -4466,6 +4472,10 @@ export type Database = {
         Args: { _driver_user_id: string; _order_id: string }
         Returns: Json
       }
+      cancel_order_with_staff_pin: {
+        Args: { _order_id: string; _reason?: string; _staff_pin: string }
+        Returns: Json
+      }
       claim_kitchen_print: { Args: { _order_id: string }; Returns: boolean }
       claim_visit_print_jobs: {
         Args: { _limit?: number; _owner_user_id: string }
@@ -4596,6 +4606,10 @@ export type Database = {
         Returns: undefined
       }
       dispatch_staff_new_order_push: {
+        Args: { _order_id: string; _order_number: string; _store_id: string }
+        Returns: undefined
+      }
+      dispatch_staff_order_cancelled_push: {
         Args: { _order_id: string; _order_number: string; _store_id: string }
         Returns: undefined
       }
@@ -5100,6 +5114,13 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_staff_pin_for_order: {
+        Args: { _staff_pin: string; _store_id: string }
+        Returns: {
+          staff_name: string
+          user_id: string
+        }[]
+      }
       retry_failed_print_jobs: { Args: { _store_id: string }; Returns: number }
       save_master_visit_print_config:
         | {
@@ -5209,6 +5230,8 @@ export type Database = {
           accepted_by_user_id: string | null
           application_fee_cents: number
           assigned_driver_id: string | null
+          cancelled_by_name: string | null
+          cancelled_by_user_id: string | null
           coupon_code: string | null
           created_at: string
           customer_email: string | null

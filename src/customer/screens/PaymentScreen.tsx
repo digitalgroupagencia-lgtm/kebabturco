@@ -43,6 +43,9 @@ import { appendLocalOrderHistory } from "@/lib/customerOrderHistory";
 import { consumePushCoupon } from "@/lib/customerPushDeepLink";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { enableCustomerOrderAlerts } from "@/lib/customerOrderAlerts";
+import CustomerNotificationOptInDialog from "@/customer/components/CustomerNotificationOptInDialog";
+import { getLocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
+import { isCustomerMarketingPushSupportedAsync } from "@/lib/customerMarketingPush";
 import { hasStripePublishableKey, type StripePublishableEnvironment } from "@/lib/stripePublishableKey";
 import { preloadStripeCheckout } from "@/lib/stripeLoader";
 import { isStripeConnectReady } from "@/lib/stripeConnectReady";
@@ -748,13 +751,72 @@ const PaymentScreen = () => {
     }
 
     await enableCustomerOrderAlerts();
-    void subscribePush({
-      storeId,
-      orderId: result.order_id,
-      customerPhone: fullCustomerPhone || undefined,
-      customerName: customerName.trim() || undefined,
-      storeName: brandingCtx?.settings?.company_name || undefined,
-    }).catch(() => undefined);
+
+    // Aviso à equipa em paralelo: usa o token staff já registado no dispositivo,
+    // não depende do registo push do cliente terminar antes.
+    void (async () => {
+      try {
+        const { notifyStaffNewOrder } = await import("@/services/pushService");
+        await notifyStaffNewOrder(storeId, result.order_id, result.order_number);
+      } catch (e) {
+        console.warn("[push] aviso staff falhou:", e);
+      }
+    })();
+
+    // Registo push do cliente (permissão + token FCM/APNs) — aguardamos
+    // para que a boas-vindas encontre o customer_phone actualizado na BD.
+    // Mesmo num dispositivo admin, isto adiciona o telefone real à mesma linha
+    // (staff_alerts=true é mantido no upsert), pelo que ambas as audiências recebem.
+    try {
+      await subscribePush({
+        storeId,
+        orderId: result.order_id,
+        customerPhone: fullCustomerPhone || undefined,
+        customerName: customerName.trim() || undefined,
+        storeName: brandingCtx?.settings?.company_name || undefined,
+      });
+    } catch (e) {
+      console.warn("[push] registo cliente falhou:", e);
+    }
+
+    // Boas-vindas ao cliente (idempotente, só envia se for primeiro pedido).
+    if (fullCustomerPhone) {
+      void (async () => {
+        try {
+          const { sendImmediateWelcomePushIfNeeded } = await import("@/lib/customerWelcomePush");
+          await sendImmediateWelcomePushIfNeeded(
+            storeId,
+            fullCustomerPhone,
+            customerName.trim() || null,
+            brandingCtx?.settings?.company_name || null,
+          );
+        } catch (e) {
+          console.warn("[push] boas-vindas falharam:", e);
+        }
+      })();
+    }
+
+    // Push imediato "Pedido recebido" ao cliente que acabou de fazer o pedido.
+    // Alvo por order_id (subscrição foi atualizada acima com este pedido).
+    if (result?.order_id) {
+      void (async () => {
+        try {
+          const { supabase } = await import("@/integrations/supabase/client");
+          await supabase.functions.invoke("send-push-notification", {
+            body: {
+              orderId: result.order_id,
+              customerOrderEvent: "pending",
+              tag: `order-pending-${result.order_id}`,
+            },
+          });
+        } catch (e) {
+          console.warn("[push] aviso 'pedido recebido' falhou:", e);
+        }
+      })();
+    }
+
+
+
 
     const printOk = shouldPrintAfterCheckout(
       orderType || "takeaway",
@@ -1058,7 +1120,10 @@ const PaymentScreen = () => {
     return result;
   };
 
-  const handlePayClick = () => {
+  const [pushGateOpen, setPushGateOpen] = useState(false);
+  const pushGateCheckedRef = useRef(false);
+
+  const proceedPayClick = () => {
     if (processing || stripeClientSecret) return;
     if (isDemoVisitCoupon && grandTotal <= 0.01) {
       setProcessing(true);
@@ -1085,6 +1150,44 @@ const PaymentScreen = () => {
     if (!selected) setSelected(method);
     void confirm(method);
   };
+
+  const handlePayClick = () => {
+    if (processing || stripeClientSecret) return;
+    if (pushGateCheckedRef.current || !storeId || isTableOrder) {
+      proceedPayClick();
+      return;
+    }
+    void (async () => {
+      try {
+        const status = await getLocalDevicePushStatus();
+        if (status.ready) {
+          pushGateCheckedRef.current = true;
+          proceedPayClick();
+          return;
+        }
+        const supported = await isCustomerMarketingPushSupportedAsync();
+        if (!supported) {
+          pushGateCheckedRef.current = true;
+          proceedPayClick();
+          return;
+        }
+        pushGateCheckedRef.current = true;
+        setPushGateOpen(true);
+      } catch {
+        pushGateCheckedRef.current = true;
+        proceedPayClick();
+      }
+    })();
+  };
+
+  const handlePushGateChange = (open: boolean) => {
+    setPushGateOpen(open);
+    if (!open) {
+      // após activar ou dispensar, seguir para o pagamento
+      setTimeout(() => proceedPayClick(), 100);
+    }
+  };
+
 
   const confirm = async (methodOverride?: PaymentMethodId) => {
     const method = methodOverride ?? selectedMethodRef.current ?? selected;
@@ -1686,6 +1789,13 @@ const PaymentScreen = () => {
             </button>
           )}
         </div>
+      )}
+      {storeId && (
+        <CustomerNotificationOptInDialog
+          open={pushGateOpen}
+          storeId={storeId}
+          onOpenChange={handlePushGateChange}
+        />
       )}
     </div>
   );

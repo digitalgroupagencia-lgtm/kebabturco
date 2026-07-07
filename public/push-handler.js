@@ -44,14 +44,27 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+  const isExternal = /^(whatsapp:|tel:|mailto:|sms:)/i.test(targetUrl) ||
+    (/^https?:\/\//i.test(targetUrl) && (() => {
+      try { return new URL(targetUrl).origin !== self.location.origin; } catch (_) { return false; }
+    })());
+  const isInternalNonCustomer = /^\/(panel|admin|kds|seller|delivery|kitchen)(\/|$|\?)/.test(targetUrl);
+
   event.waitUntil(
     (async () => {
+      if (isExternal) {
+        await self.clients.openWindow(targetUrl);
+        return;
+      }
       const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of all) {
         try {
           if ("focus" in client) {
             await client.focus();
-            if ("navigate" in client) await client.navigate(targetUrl).catch(() => null);
+            if ("navigate" in client) {
+              // Para rotas fora do fluxo cliente forçamos sempre a navegação
+              await client.navigate(targetUrl).catch(() => null);
+            }
             return;
           }
         } catch (_) {}
