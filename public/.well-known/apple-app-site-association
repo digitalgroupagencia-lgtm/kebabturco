@@ -6,6 +6,7 @@
         "appIDs": ["4QW32SBR7H.net.kebabturco.app"],
         "components": [
           { "/": "/staff*", "comment": "Abrir login e aprovação da equipa no app nativo" },
+          { "/": "/senhareset*", "comment": "Abrir redefinição de senha da equipa no app nativo" },
           { "/": "/auth*", "comment": "Compatibilidade com links antigos de autenticação" },
           { "/": "/panel*", "comment": "Abrir painel do restaurante no app nativo" },
           { "/": "/admin*", "comment": "Abrir admin do restaurante no app nativo" }
