@@ -125,6 +125,8 @@ function NavItem({
   collapsed: boolean;
   onNav: () => void;
 }) {
+  const { isMobile } = useSidebar();
+  const showLabels = isMobile || !collapsed;
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
@@ -132,12 +134,12 @@ function NavItem({
           to={item.url}
           end={item.end}
           className={({ isActive }) =>
-            cn("hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
+            cn("text-sidebar-foreground hover:bg-muted/50", isActive && "bg-primary/10 text-primary font-semibold")
           }
           onClick={onNav}
         >
           <item.icon className="mr-2 h-4 w-4 shrink-0" />
-          {!collapsed && <span className="truncate">{item.title}</span>}
+          {showLabels ? <span className="truncate">{item.title}</span> : null}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -145,8 +147,9 @@ function NavItem({
 }
 
 export function AdminSidebar() {
-  const { state, setOpenMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
+  const showLabels = isMobile || !collapsed;
   const { signOut, user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const financeOnly = isFinanceOnlyAdmin(roleData?.role);
@@ -216,11 +219,11 @@ export function AdminSidebar() {
                   onClick={handleNav}
                 >
                   <Layers className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>Hub centrais</span>}
+                  {!showLabels ? null : <span>Hub centrais</span>}
                 </NavLink>
               </SidebarMenuItem>
 
-              {!collapsed ? (
+              {showLabels ? (
                 <Collapsible open={centralsExpanded} onOpenChange={setCentralsExpanded}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
@@ -299,11 +302,11 @@ export function AdminSidebar() {
       <SidebarFooter>
         <Button
           variant="ghost"
-          className="w-full justify-start text-muted-foreground"
+          className="w-full justify-start text-sidebar-foreground"
           onClick={() => void signOut(nav.staff())}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          {!collapsed && "Sair"}
+          {showLabels ? "Sair" : null}
         </Button>
       </SidebarFooter>
     </Sidebar>

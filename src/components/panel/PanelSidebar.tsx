@@ -62,6 +62,7 @@ const ICONS: Record<string, typeof ShoppingBag> = {
 export function PanelSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
+  const showLabels = isMobile || !collapsed;
   const { signOut, user } = useAuth();
   const { roleData } = useUserRole(user?.id);
   const { enabled: sellerEnabled } = useSellerModuleEnabled(roleData?.tenant_id);
@@ -86,7 +87,7 @@ export function PanelSidebar() {
       <SidebarContent className="gap-1">
         {navGroups.map((group) => (
           <SidebarGroup key={group.id}>
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/70">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -106,24 +107,24 @@ export function PanelSidebar() {
                               const p = (typeof window !== "undefined" ? window.location.pathname : "").replace(/\/+$/, "") || "/";
                               const active = isActive || p === "/panel" || p === "/panel/live";
                               return cn(
-                                "hover:bg-muted/50 rounded-lg flex w-full items-center gap-2 px-2 py-1.5 text-sm",
+                                "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-muted/50",
                                 active && "bg-primary/10 text-primary font-semibold",
                               );
                             }}
                           >
                             <Icon className="mr-2 h-4 w-4 shrink-0" />
-                            {!collapsed && <span>{item.label}</span>}
+                            {!showLabels ? null : <span>{item.label}</span>}
                           </RouterNavLink>
                         ) : (
                           <NavLink
                             to={url}
                             end
-                            className="hover:bg-muted/50 rounded-lg"
+                            className="rounded-lg text-sidebar-foreground hover:bg-muted/50"
                             activeClassName="bg-primary/10 text-primary font-semibold"
                             onClick={handleNav}
                           >
                             <Icon className="mr-2 h-4 w-4 shrink-0" />
-                            {!collapsed && <span>{item.label}</span>}
+                            {!showLabels ? null : <span>{item.label}</span>}
                           </NavLink>
                         )}
                       </SidebarMenuButton>
@@ -136,9 +137,9 @@ export function PanelSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <Button variant="ghost" className="w-full justify-start rounded-lg" onClick={() => void signOut("/staff")}>
+        <Button variant="ghost" className="w-full justify-start rounded-lg text-sidebar-foreground" onClick={() => void signOut("/staff")}>
           <LogOut className="mr-2 h-4 w-4" />
-          {!collapsed && t("common.signout")}
+          {showLabels ? t("common.signout") : null}
         </Button>
       </SidebarFooter>
     </Sidebar>
