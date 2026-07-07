@@ -17,12 +17,9 @@ export default function AppChromeEffect() {
     if (isStaffAppPath(pathname)) {
       applyStaffAppChrome();
       dismissBootShell();
-      // Painel / Admin / KDS → horizontal; login equipa, entregador e vendedor → vertical.
-      const isWideStaff =
-        pathname.startsWith("/panel") ||
-        pathname.startsWith("/admin") ||
-        pathname.startsWith("/kds");
-      void setAndroidOrientation(isWideStaff ? "landscape" : "portrait");
+      // Só a cozinha (KDS) força horizontal na app instalada; painel/admin ficam em vertical.
+      const isKds = pathname.startsWith("/kds");
+      void setAndroidOrientation(isKds ? "landscape" : "portrait");
     } else {
       applyBrowserChromeColor();
       void setAndroidOrientation("portrait");
