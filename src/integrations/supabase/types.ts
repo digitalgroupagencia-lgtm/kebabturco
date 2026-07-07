@@ -2754,6 +2754,7 @@ export type Database = {
           order_id: string | null
           p256dh: string | null
           platform: string
+          staff_alerts: boolean
           store_id: string | null
         }
         Insert: {
@@ -2767,6 +2768,7 @@ export type Database = {
           order_id?: string | null
           p256dh?: string | null
           platform?: string
+          staff_alerts?: boolean
           store_id?: string | null
         }
         Update: {
@@ -2780,6 +2782,7 @@ export type Database = {
           order_id?: string | null
           p256dh?: string | null
           platform?: string
+          staff_alerts?: boolean
           store_id?: string | null
         }
         Relationships: [
@@ -5193,6 +5196,10 @@ export type Database = {
           _store_id: string
         }
         Returns: string
+      }
+      unregister_staff_push_subscription: {
+        Args: { _endpoint: string }
+        Returns: undefined
       }
       update_order_status_v2: {
         Args: { _order_id: string; _patch: Json }
