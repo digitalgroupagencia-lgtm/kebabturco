@@ -100,11 +100,11 @@ Tem de gerar perfis NOVOS:
       • Generate → Download
 
 ────────────────────────────────────────────────────────────
-PARTE 2 — MAC COM XCODE (UMA VEZ, ~20 min)
+PARTE 2 — MAC COM XCODE (OPCIONAL SE O GIT JÁ TIVER A EXTENSÃO)
 ────────────────────────────────────────────────────────────
 
-Se não tiver Mac: peça a alguém da equipa com Mac para fazer
-estes passos e fazer commit do projeto — depois só usa Codemagic.
+A extensão do cartão já está no repositório (project.pbxproj).
+Só precisa desta parte no Mac se quiser testar antes do Codemagic.
 
 1. No Mac, clone o repositório kebabturco (branch main)
 2. Terminal:
@@ -114,39 +114,20 @@ estes passos e fazer commit do projeto — depois só usa Codemagic.
 3. Abra o projeto:
      npx cap open ios
 
-─── 2A. Criar extensão do cartão ───
+─── 2A. Confirmar extensão do cartão ───
 
-4. No Xcode: File → New → Target…
-5. Escolha: Widget Extension → Next
-6. Product Name: StaffOrderLiveWidget
-7. MARQUE: ☑ Include Live Activity
-8. Finish → Activate
+4. No Xcode, confirme o target StaffOrderLiveWidgetExtension
+5. Target «App» → App Groups → group.net.kebabturco.app
+6. Target StaffOrderLiveWidgetExtension → App Groups → group.net.kebabturco.app
 
-9. Apague os ficheiros modelo vazios que o Xcode criou
+─── 2B. Testar no iPhone ───
 
-10. Arraste para a pasta StaffOrderLiveWidget no Xcode os ficheiros
-    que estão no repositório em:
-      ios/StaffOrderLiveWidget/
-    Ao adicionar, marque o target StaffOrderLiveWidgetExtension
+7. Ligue o iPhone → Run (▶)
+8. Login equipa → pedido de teste → cartão no ecrã bloqueado
 
-─── 2B. Capabilities na app principal ───
+─── 2C. Guardar no Git (só se alterou algo no Xcode) ───
 
-11. Target «App» → Signing & Capabilities → + Capability:
-      • App Groups → group.net.kebabturco.app
-
-─── 2C. Capabilities na extensão ───
-
-12. Target StaffOrderLiveWidgetExtension → App Groups
-      → group.net.kebabturco.app
-
-─── 2D. Testar no iPhone ───
-
-13. Ligue o iPhone → Run (▶)
-14. Login equipa → pedido de teste → cartão no ecrã bloqueado
-
-─── 2E. Guardar no Git ───
-
-15. Commit + push para main (obrigatório para Codemagic)
+9. Commit + push para main (obrigatório para Codemagic)
 
 ────────────────────────────────────────────────────────────
 PARTE 3 — CODEMAGIC (browser)
@@ -155,9 +136,13 @@ PARTE 3 — CODEMAGIC (browser)
 1. codemagic.io → Team settings → Code signing identities
 2. iOS provisioning profiles → Fetch profiles
 3. Development: perfis novos de net.kebabturco.app E da extensão
-   → reference name kebabturco_dev → Download selected
+   → app principal: reference name kebabturco_dev
+   → extensão cartão: reference name kebabturco_widget_dev
+   → Download selected
 4. App Store: perfis novos de app E extensão
-   → reference name kebabturco_appstore → Download selected
+   → app principal: reference name kebabturco_appstore
+   → extensão cartão: reference name kebabturco_widget_appstore
+   → Download selected
 5. Start new build → «Kebab Turco — iPhone Development» → testar
 6. Start new build → «Kebab Turco — iPhone App Store» → TestFlight
 

@@ -11,8 +11,12 @@ cat > "$ENT" <<'EOF'
 <dict>
 	<key>aps-environment</key>
 	<string>production</string>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.net.kebabturco.app</string>
+	</array>
 </dict>
 </plist>
 EOF
 
-echo "✓ Entitlements Release: notificações push (produção)"
+echo "✓ Entitlements Release: notificações push (produção) + grupo partilhado do cartão"

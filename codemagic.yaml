@@ -15,6 +15,7 @@ workflows:
       ios_signing:
         provisioning_profiles:
           - kebabturco_dev
+          - kebabturco_widget_dev
         certificates:
           - kebabturco_dev
       vars:
@@ -67,6 +68,7 @@ workflows:
           set -eo pipefail
 
           DEV_PROFILE_NAME=""
+          WIDGET_DEV_PROFILE_NAME=""
           for dir in \
             "$HOME/Library/MobileDevice/Provisioning Profiles" \
             "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
@@ -76,7 +78,10 @@ workflows:
               if echo "$DECODED" | grep -q 'proximity-reader.payment.acceptance' && \
                  echo "$DECODED" | grep -q 'get-task-allow'; then
                 DEV_PROFILE_NAME=$(echo "$DECODED" | plutil -extract Name raw -)
-                break 2
+              fi
+              if echo "$DECODED" | grep -q 'net.kebabturco.app.StaffOrderWidget' && \
+                 echo "$DECODED" | grep -q 'get-task-allow'; then
+                WIDGET_DEV_PROFILE_NAME=$(echo "$DECODED" | plutil -extract Name raw -)
               fi
             done
           done
@@ -84,7 +89,13 @@ workflows:
             echo "ERRO: Perfil Development não encontrado para exportação."
             exit 1
           fi
+          if [ -z "$WIDGET_DEV_PROFILE_NAME" ]; then
+            echo "ERRO: Perfil Development da extensão do cartão não encontrado."
+            echo "Crie perfil para net.kebabturco.app.StaffOrderWidget e carregue como kebabturco_widget_dev."
+            exit 1
+          fi
           echo "Perfil Development: $DEV_PROFILE_NAME"
+          echo "Perfil Widget Development: $WIDGET_DEV_PROFILE_NAME"
 
           ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/xcarchive/App-dev.xcarchive"
           EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa-dev"
@@ -101,7 +112,6 @@ workflows:
             DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Development" \
-            PROVISIONING_PROFILE_SPECIFIER="$DEV_PROFILE_NAME" \
             2>&1 | tee /tmp/xcodebuild-dev-archive.log
 
           cat > /tmp/exportOptionsDev.plist <<PLIST
@@ -121,6 +131,8 @@ workflows:
             <dict>
               <key>net.kebabturco.app</key>
               <string>${DEV_PROFILE_NAME}</string>
+              <key>net.kebabturco.app.StaffOrderWidget</key>
+              <string>${WIDGET_DEV_PROFILE_NAME}</string>
             </dict>
           </dict>
           </plist>
@@ -150,6 +162,7 @@ workflows:
       ios_signing:
         provisioning_profiles:
           - kebabturco_appstore
+          - kebabturco_widget_appstore
         certificates:
           - kebabturco_appstore
       vars:

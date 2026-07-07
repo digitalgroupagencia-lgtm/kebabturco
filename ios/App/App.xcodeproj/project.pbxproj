@@ -19,6 +19,9 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		A1B2C3D91FED79650016851F /* staff_order_alert.caf in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3DA1FED79650016851F /* staff_order_alert.caf */; };
+		LA0000011FED79650016851F /* StaffOrderLiveWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LA0000021FED79650016851F /* StaffOrderLiveWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		LA0000031FED79650016851F /* GenericAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000041FED79650016851F /* GenericAttributes.swift */; };
+		LA0000051FED79650016851F /* StaffOrderLiveWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +40,11 @@
 		A1B2C3DA1FED79650016851F /* staff_order_alert.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = staff_order_alert.caf; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		LA0000021FED79650016851F /* StaffOrderLiveWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StaffOrderLiveWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		LA0000041FED79650016851F /* GenericAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericAttributes.swift; sourceTree = "<group>"; };
+		LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaffOrderLiveWidget.swift; sourceTree = "<group>"; };
+		LA0000071FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		LA0000081FED79650016851F /* StaffOrderLiveWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StaffOrderLiveWidget.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,12 +58,37 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
+/* Begin PBXContainerItemProxy section */
+		LA00000D1FED79650016851F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = LA00000A1FED79650016851F;
+			remoteInfo = StaffOrderLiveWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		LA00000C1FED79650016851F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				LA0000011FED79650016851F /* StaffOrderLiveWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXGroup section */
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				LA0000091FED79650016851F /* StaffOrderLiveWidget */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,8 +97,21 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				LA0000021FED79650016851F /* StaffOrderLiveWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		LA0000091FED79650016851F /* StaffOrderLiveWidget */ = {
+			isa = PBXGroup;
+			children = (
+				LA0000041FED79650016851F /* GenericAttributes.swift */,
+				LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */,
+				LA0000071FED79650016851F /* Info.plist */,
+				LA0000081FED79650016851F /* StaffOrderLiveWidget.entitlements */,
+			);
+			name = StaffOrderLiveWidget;
+			path = ../StaffOrderLiveWidget;
 			sourceTree = "<group>";
 		};
 		504EC3061FED79650016851F /* App */ = {
@@ -99,10 +145,12 @@
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
 				W001CP011FED79650016851F /* Copy Capacitor Web Assets */,
+				LA00000C1FED79650016851F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				LA00000B1FED79650016851F /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -111,6 +159,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		LA00000A1FED79650016851F /* StaffOrderLiveWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = LA0000111FED79650016851F /* Build configuration list for PBXNativeTarget "StaffOrderLiveWidgetExtension" */;
+			buildPhases = (
+				LA00000E1FED79650016851F /* Sources */,
+				LA00000F1FED79650016851F /* Frameworks */,
+				LA0000101FED79650016851F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StaffOrderLiveWidgetExtension;
+			productName = StaffOrderLiveWidgetExtension;
+			productReference = LA0000021FED79650016851F /* StaffOrderLiveWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -124,7 +189,11 @@
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
-						ProvisioningStyle = Automatic;
+						ProvisioningStyle = Manual;
+					};
+					LA00000A1FED79650016851F = {
+						CreatedOnToolsVersion = 1640;
+						ProvisioningStyle = Manual;
 					};
 				};
 			};
@@ -145,6 +214,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				LA00000A1FED79650016851F /* StaffOrderLiveWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -185,6 +255,26 @@
 		};
 /* End PBXShellScriptBuildPhase section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		LA00000F1FED79650016851F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		LA0000101FED79650016851F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		504EC3001FED79650016851F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -197,7 +287,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		LA00000E1FED79650016851F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				LA0000031FED79650016851F /* GenericAttributes.swift in Sources */,
+				LA0000051FED79650016851F /* StaffOrderLiveWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		LA00000B1FED79650016851F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = LA00000A1FED79650016851F /* StaffOrderLiveWidgetExtension */;
+			targetProxy = LA00000D1FED79650016851F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -377,6 +484,59 @@
 			};
 			name = Release;
 		};
+		LA0000121FED79650016851F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(SRCROOT)/../StaffOrderLiveWidget/StaffOrderLiveWidget.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 75;
+				DEVELOPMENT_TEAM = 4QW32SBR7H;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/../StaffOrderLiveWidget/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app.StaffOrderWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		LA0000131FED79650016851F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(SRCROOT)/../StaffOrderLiveWidget/StaffOrderLiveWidget.entitlements";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 75;
+				DEVELOPMENT_TEAM = 4QW32SBR7H;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/../StaffOrderLiveWidget/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app.StaffOrderWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -394,6 +554,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		LA0000111FED79650016851F /* Build configuration list for PBXNativeTarget "StaffOrderLiveWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				LA0000121FED79650016851F /* Debug */,
+				LA0000131FED79650016851F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
