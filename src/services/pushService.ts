@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import { resolveMarketingBroadcastCopy } from "@/lib/marketing/resolveMarketingBroadcast";
+import {
+  buildMarketingBroadcastI18n,
+  type MarketingBroadcastI18n,
+} from "@/lib/marketing/resolveMarketingBroadcast";
 
 const STATUS_MESSAGES: Record<string, Record<string, string>> = {
   pending: { es: "¡Pedido recibido!", pt: "Pedido recebido!", en: "Order received!" },
@@ -66,15 +69,20 @@ export async function notifyStoreMarketingBroadcast(
   title: string,
   body: string,
   url = "/",
+  i18n?: { titleI18n: MarketingBroadcastI18n; bodyI18n: MarketingBroadcastI18n },
 ) {
   try {
-    const resolved = await resolveMarketingBroadcastCopy(storeId, title, body);
+    const payload =
+      i18n ?? buildMarketingBroadcastI18n({ title, body });
     await supabase.functions.invoke("send-push-notification", {
       body: {
         storeId,
         audience: "marketing",
-        title: resolved.title,
-        body: resolved.body,
+        title: payload.titleI18n.es || title,
+        body: payload.bodyI18n.es || body,
+        titleI18n: payload.titleI18n,
+        bodyI18n: payload.bodyI18n,
+        marketingBroadcast: true,
         tag: `marketing-${storeId}-${Date.now()}`,
         url,
       },

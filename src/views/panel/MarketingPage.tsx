@@ -46,6 +46,7 @@ import {
 } from "@/lib/marketing/marketingService";
 import { sendMarketingBroadcast } from "@/lib/diagnostics/campaignPushService";
 import { sendBroadcastTestPushNotification } from "@/lib/push/pushTestService";
+import { buildMarketingBroadcastI18n } from "@/lib/marketing/resolveMarketingBroadcast";
 import CampaignPresetCard from "@/components/marketing/CampaignPresetCard";
 import MarketingSuggestionCard from "@/components/marketing/MarketingSuggestionCard";
 import PushPreviewMockup from "@/components/marketing/PushPreviewMockup";
@@ -305,11 +306,18 @@ const MarketingPage = () => {
     }
     setBroadcastSending(true);
     try {
-      const title = previewTitle;
-      const body = previewBody;
+      const title = broadcastTitle.trim();
+      const body = broadcastBody.trim();
+      const { titleI18n, bodyI18n } = buildMarketingBroadcastI18n({
+        title,
+        body,
+        titleCatalogKey: "marketing.broadcast.default_title",
+        bodyCatalogKey: "marketing.broadcast.default_body",
+        editorLang: lang,
+      });
       const [marketingRes, staffRes] = await Promise.all([
-        sendMarketingBroadcast({ storeId, title, body, target: "all" }),
-        sendBroadcastTestPushNotification({ storeId, audience: "staff", title, body }),
+        sendMarketingBroadcast({ storeId, title, body, titleI18n, bodyI18n, target: "all" }),
+        sendBroadcastTestPushNotification({ storeId, audience: "staff", title, body, titleI18n, bodyI18n }),
       ]);
 
       const customers = marketingRes.sent ?? 0;
@@ -340,11 +348,27 @@ const MarketingPage = () => {
     if (!storeId) return;
     setBroadcastTestSending(true);
     try {
+      const title = broadcastTitle.trim();
+      const body = broadcastBody.trim();
+      const { titleI18n, bodyI18n } = buildMarketingBroadcastI18n({
+        title,
+        body,
+        titleCatalogKey: "marketing.broadcast.default_title",
+        bodyCatalogKey: "marketing.broadcast.default_body",
+        editorLang: lang,
+      });
       const res = await sendBroadcastTestPushNotification({
         storeId,
         audience: "staff",
-        title: `[TESTE] ${previewTitle}`,
-        body: previewBody,
+        title: `[TESTE] ${titleI18n.es}`,
+        body: bodyI18n.es,
+        titleI18n: {
+          ...titleI18n,
+          es: `[TESTE] ${titleI18n.es}`,
+          pt: `[TESTE] ${titleI18n.pt}`,
+          en: `[TESTE] ${titleI18n.en}`,
+        },
+        bodyI18n,
       });
       if (!res.ok) {
         toast.error(res.userMessage ?? res.error ?? t("marketing.broadcast.test_team_error"));

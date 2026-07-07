@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sanitizeNotificationText } from "../_shared/campaignTemplateEngine.ts";
+import { applyTemplate, buildVars, normalizeLocale, sanitizeNotificationText } from "../_shared/campaignTemplateEngine.ts";
 import {
   buildCustomerOrderPush,
   buildCustomerWelcomePush,
@@ -189,6 +189,24 @@ function resolveStaffOrderPushText(
   return {
     title: built.title || fallbackTitle,
     body: built.body || fallbackBody,
+  };
+}
+
+function resolveMarketingBroadcastPushText(
+  deviceLocale: string | null | undefined,
+  titleI18n: Record<string, string> | undefined,
+  bodyI18n: Record<string, string> | undefined,
+  storeName: string,
+  fallbackTitle: string,
+  fallbackBody: string,
+): { title: string; body: string } {
+  const locale = normalizeLocale(deviceLocale);
+  const rawTitle = titleI18n?.[locale] ?? titleI18n?.es ?? fallbackTitle;
+  const rawBody = bodyI18n?.[locale] ?? bodyI18n?.es ?? fallbackBody;
+  const vars = buildVars({ storeName });
+  return {
+    title: sanitizeNotificationText(applyTemplate(rawTitle, vars)),
+    body: sanitizeNotificationText(applyTemplate(rawBody, vars)),
   };
 }
 
@@ -719,7 +737,14 @@ Deno.serve(async (req) => {
       customerOrderEvent,
       welcomeCustomerName,
       welcomeStoreName,
+      titleI18n,
+      bodyI18n,
     } = body;
+
+    const marketingTitleI18n =
+      titleI18n && typeof titleI18n === "object" ? (titleI18n as Record<string, string>) : undefined;
+    const marketingBodyI18n =
+      bodyI18n && typeof bodyI18n === "object" ? (bodyI18n as Record<string, string>) : undefined;
 
     const pushTitle = sanitizeNotificationText(String(title ?? ""));
     const pushBody = sanitizeNotificationText(String(msgBody ?? ""));
@@ -818,6 +843,18 @@ Deno.serve(async (req) => {
               ? url.trim()
               : "/";
 
+    const usesMarketingI18n =
+      Boolean(marketingBroadcast) || Boolean(marketingTitleI18n) || Boolean(marketingBodyI18n);
+    let marketingStoreName: string | null = null;
+    if (usesMarketingI18n && storeId) {
+      const { data: marketingStore } = await supabase
+        .from("stores")
+        .select("name")
+        .eq("id", storeId)
+        .maybeSingle();
+      marketingStoreName = marketingStore?.name?.trim() || "Kebab Turco";
+    }
+
     if (!directOnly && (storeId || orderId)) {
       let query = supabase
         .from("push_subscriptions")
@@ -896,6 +933,15 @@ Deno.serve(async (req) => {
                 pushTitle,
                 pushBody,
               )
+            : usesMarketingI18n && marketingStoreName
+              ? resolveMarketingBroadcastPushText(
+                  sub.device_locale,
+                  marketingTitleI18n,
+                  marketingBodyI18n,
+                  marketingStoreName,
+                  pushTitle,
+                  pushBody,
+                )
             : audience === "marketing" &&
                 (typeof welcomeCustomerName === "string" || typeof welcomeStoreName === "string")
               ? buildCustomerWelcomePush({

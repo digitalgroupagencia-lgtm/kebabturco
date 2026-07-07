@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { notifyStoreMarketingBroadcast } from "@/services/pushService";
+import { buildMarketingBroadcastI18n } from "@/lib/marketing/resolveMarketingBroadcast";
 import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
 import { normalizePlan } from "@/lib/platformFeatureGates";
 import { useStaffT } from "@/hooks/useStaffT";
@@ -17,7 +18,7 @@ type Props = {
 };
 
 const MarketingBroadcastCard = ({ storeId, tenantId, tenantPlan = "starter" }: Props) => {
-  const { t } = useStaffT();
+  const { t, lang } = useStaffT();
   const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
   const pushEnabled = isFeatureEnabled("push_notifications", normalizePlan(tenantPlan));
   const [title, setTitle] = useState(t("mkt.push.default_title"));
@@ -35,7 +36,16 @@ const MarketingBroadcastCard = ({ storeId, tenantId, tenantPlan = "starter" }: P
     }
     setSending(true);
     try {
-      await notifyStoreMarketingBroadcast(storeId, title.trim(), body.trim());
+      const titleText = title.trim();
+      const bodyText = body.trim();
+      const i18n = buildMarketingBroadcastI18n({
+        title: titleText,
+        body: bodyText,
+        titleCatalogKey: "mkt.push.default_title",
+        bodyCatalogKey: "mkt.push.default_body",
+        editorLang: lang,
+      });
+      await notifyStoreMarketingBroadcast(storeId, titleText, bodyText, "/", i18n);
       toast.success(t("mkt.push.toast.sent"));
     } catch {
       toast.error(t("mkt.push.toast.error"));

@@ -4,7 +4,10 @@ import { getLocalPushSubscription } from "@/lib/push/getLocalPushSubscription";
 import { pushLog } from "@/lib/push/pushLogger";
 import { readCachedNativePushToken } from "@/services/nativePush";
 import { getLocalDevicePushStatus } from "@/lib/push/getLocalDevicePushStatus";
-import { resolveMarketingBroadcastCopy } from "@/lib/marketing/resolveMarketingBroadcast";
+import {
+  buildMarketingBroadcastI18n,
+  type MarketingBroadcastI18n,
+} from "@/lib/marketing/resolveMarketingBroadcast";
 
 export type PushTestAudience = "staff" | "marketing";
 
@@ -440,8 +443,20 @@ async function invokeStoreBroadcast(opts: {
   title: string;
   body: string;
   url: string;
+  titleI18n?: MarketingBroadcastI18n;
+  bodyI18n?: MarketingBroadcastI18n;
+  marketingBroadcast?: boolean;
 }): Promise<PushTestSendResult> {
-  const { storeId, audience, title, body: msgBody, url } = opts;
+  const {
+    storeId,
+    audience,
+    title,
+    body: msgBody,
+    url,
+    titleI18n,
+    bodyI18n,
+    marketingBroadcast,
+  } = opts;
 
   const { data, error } = await invokePushFunction({
     storeId,
@@ -451,6 +466,10 @@ async function invokeStoreBroadcast(opts: {
     url,
     requireInteraction: true,
     pushDiagnostic: true,
+    ...(audience ? { audience } : {}),
+    ...(titleI18n ? { titleI18n } : {}),
+    ...(bodyI18n ? { bodyI18n } : {}),
+    ...(marketingBroadcast ? { marketingBroadcast: true } : {}),
   });
 
   if (error) {
@@ -500,12 +519,17 @@ export async function sendBroadcastTestPushNotification(opts: {
   audience: PushTestAudience;
   title: string;
   body: string;
+  titleI18n?: MarketingBroadcastI18n;
+  bodyI18n?: MarketingBroadcastI18n;
   alsoNotifyStaff?: boolean;
 }): Promise<PushTestSendResult> {
-  const { storeId, audience, title, body: msgBody, alsoNotifyStaff } = opts;
-  const resolved = await resolveMarketingBroadcastCopy(storeId, title, msgBody);
-  const titleResolved = resolved.title;
-  const bodyResolved = resolved.body;
+  const { storeId, audience, title, body: msgBody, alsoNotifyStaff, titleI18n, bodyI18n } = opts;
+  const i18n =
+    titleI18n && bodyI18n
+      ? { titleI18n, bodyI18n }
+      : buildMarketingBroadcastI18n({ title, body: msgBody });
+  const titleResolved = i18n.titleI18n.es || title;
+  const bodyResolved = i18n.bodyI18n.es || msgBody;
 
   pushLog("test", "broadcast_send", "info", "A enviar broadcast de teste", {
     storeId,
@@ -519,6 +543,8 @@ export async function sendBroadcastTestPushNotification(opts: {
         storeId,
         title: titleResolved,
         body: bodyResolved,
+        titleI18n: i18n.titleI18n,
+        bodyI18n: i18n.bodyI18n,
         url: "/panel/live",
       });
       if (result.ok) {
@@ -532,6 +558,9 @@ export async function sendBroadcastTestPushNotification(opts: {
       audience: "marketing",
       title: titleResolved,
       body: bodyResolved,
+      titleI18n: i18n.titleI18n,
+      bodyI18n: i18n.bodyI18n,
+      marketingBroadcast: true,
       url: "/",
     });
 
@@ -541,6 +570,8 @@ export async function sendBroadcastTestPushNotification(opts: {
       storeId,
       title: titleResolved,
       body: bodyResolved,
+      titleI18n: i18n.titleI18n,
+      bodyI18n: i18n.bodyI18n,
       url: "/panel/live",
     });
 

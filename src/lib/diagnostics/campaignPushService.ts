@@ -4,7 +4,10 @@ import { translateServerVapidReason } from "@/lib/push/pushTestService";
 import { campaignDiagnosticLogger } from "@/lib/diagnostics/diagnosticLoggers";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
 import { sanitizeNotificationText } from "@/lib/marketing/campaignTemplateEngine";
-import { resolveMarketingBroadcastCopy } from "@/lib/marketing/resolveMarketingBroadcast";
+import {
+  buildMarketingBroadcastI18n,
+  type MarketingBroadcastI18n,
+} from "@/lib/marketing/resolveMarketingBroadcast";
 
 export type MarketingBroadcastResult = {
   ok: boolean;
@@ -59,13 +62,18 @@ export async function sendMarketingBroadcast(opts: {
   storeId: string;
   title: string;
   body: string;
+  titleI18n?: MarketingBroadcastI18n;
+  bodyI18n?: MarketingBroadcastI18n;
   url?: string;
   target: "all" | "this_device";
 }): Promise<MarketingBroadcastResult> {
-  const { storeId, title, body, url = "/", target } = opts;
-  const resolved = await resolveMarketingBroadcastCopy(storeId, title, body);
-  const safeTitle = sanitizeNotificationText(resolved.title);
-  const safeBody = sanitizeNotificationText(resolved.body);
+  const { storeId, title, body, url = "/", target, titleI18n, bodyI18n } = opts;
+  const i18n =
+    titleI18n && bodyI18n
+      ? { titleI18n, bodyI18n }
+      : buildMarketingBroadcastI18n({ title, body });
+  const safeTitle = sanitizeNotificationText(i18n.titleI18n.es || title);
+  const safeBody = sanitizeNotificationText(i18n.bodyI18n.es || body);
 
   log("broadcast", "info", target === "all" ? "Envio a todos os clientes" : "Envio a este dispositivo", {
     storeId,
@@ -76,6 +84,8 @@ export async function sendMarketingBroadcast(opts: {
     storeId,
     title: safeTitle,
     body: safeBody,
+    titleI18n: i18n.titleI18n,
+    bodyI18n: i18n.bodyI18n,
     tag: `marketing-${storeId}-${Date.now()}`,
     url,
   };
