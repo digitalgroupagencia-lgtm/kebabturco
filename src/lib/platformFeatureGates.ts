@@ -58,6 +58,21 @@ export function isFeatureAvailableForPlan(featureKey: string, tenantPlan: PlanKe
   return isPlanAtLeast(tenantPlan, getMinPlanForFeature(featureKey));
 }
 
+/** Admin geral ignora limites de plano; restantes respeitam flags e plano do tenant. */
+export function isTenantFeatureEnabled(
+  featureKey: string,
+  tenantPlan: PlanKey,
+  options?: {
+    platformAdmin?: boolean;
+    featureFlags?: Array<{ feature_key: string; enabled: boolean }>;
+  },
+): boolean {
+  if (options?.platformAdmin) return true;
+  const flag = options?.featureFlags?.find((f) => f.feature_key === featureKey);
+  if (flag?.enabled === false) return false;
+  return isFeatureAvailableForPlan(featureKey, tenantPlan);
+}
+
 export function upgradeLabelForFeature(featureKey: string): string {
   const plan = getMinPlanForFeature(featureKey);
   return `Disponível no ${PLAN_DISPLAY[plan]}`;

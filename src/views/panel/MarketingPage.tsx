@@ -13,9 +13,11 @@ import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
+import { isGeneralAdmin } from "@/lib/projectAccess";
 import { panelT } from "@/lib/staffPanelLocale";
 import { useTenantFeatureFlags } from "@/hooks/usePlatformFeatures";
-import { isFeatureAvailableForPlan, normalizePlan } from "@/lib/platformFeatureGates";
+import { isTenantFeatureEnabled, normalizePlan } from "@/lib/platformFeatureGates";
 import { nav } from "@/lib/navPaths";
 import { CAMPAIGN_PRESETS, getPresetByKey, isMandatoryPreset, isWinbackPreset, presetNeedsCoupon } from "@/lib/marketing/campaignPresets";
 import { getCouponSuggestion, getCouponSuggestionForPreset } from "@/lib/marketing/couponSuggestions";
@@ -68,13 +70,18 @@ const MarketingPage = () => {
   const { storeId } = useAdminStoreId();
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
-  const tenantId = roleData?.tenant_id ?? "";
-  const [tenantPlan, setTenantPlan] = useState<ReturnType<typeof normalizePlan>>("start");
+  const { tenant } = useSelectedTenant();
+  const isPlatformAdmin = isGeneralAdmin(roleData?.role);
+  const tenantId = tenant?.id ?? roleData?.tenant_id ?? "";
+  const [tenantPlan, setTenantPlan] = useState<ReturnType<typeof normalizePlan>>(() =>
+    normalizePlan(tenant?.plan),
+  );
   const { data: flags } = useTenantFeatureFlags(tenantId);
 
-  const campaignsEnabled =
-    flags?.find((f) => f.feature_key === "campaigns")?.enabled !== false &&
-    isFeatureAvailableForPlan("campaigns", tenantPlan);
+  const campaignsEnabled = isTenantFeatureEnabled("campaigns", tenantPlan, {
+    platformAdmin: isPlatformAdmin,
+    featureFlags: flags,
+  });
 
   const [campaigns, setCampaigns] = useState<MarketingCampaignRow[]>([]);
   const [history, setHistory] = useState<CampaignSendLogEntry[]>([]);
@@ -187,6 +194,12 @@ const MarketingPage = () => {
   }, [storeId, tenantId]);
 
   useEffect(() => {
+    if (tenant?.plan) {
+      setTenantPlan(normalizePlan(tenant.plan));
+    }
+  }, [tenant?.plan]);
+
+  useEffect(() => {
     void load();
   }, [load]);
 
@@ -296,7 +309,7 @@ const MarketingPage = () => {
 
   const handleBroadcast = async () => {
     if (!storeId) return;
-    if (!marketingOk || !campaignsEnabled) {
+    if (!marketingActive || !campaignsEnabled) {
       toast.error(t("marketing.broadcast.disabled"));
       return;
     }
@@ -411,7 +424,9 @@ const MarketingPage = () => {
     return <div className="p-6 text-sm text-muted-foreground">{t("ops.loading.orders")}</div>;
   }
 
-  if (!marketingOk) {
+  const marketingActive = marketingOk || isPlatformAdmin;
+
+  if (!marketingActive) {
     return (
       <div className="mx-auto max-w-lg p-6 text-center space-y-3">
         <Megaphone className="mx-auto h-10 w-10 text-muted-foreground" />
@@ -604,7 +619,7 @@ const MarketingPage = () => {
                 type="button"
                 className="w-full font-bold"
                 style={{ backgroundColor: WINE }}
-                disabled={broadcastSending || !marketingOk}
+                disabled={broadcastSending || !marketingActive}
                 onClick={() => void handleBroadcast()}
               >
                 <Send className="mr-2 h-4 w-4" />
