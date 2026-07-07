@@ -1,7 +1,7 @@
 import type { NavigateFunction } from "react-router-dom";
 import { nav } from "@/lib/navPaths";
 import type { StaffRole } from "@/lib/staffPermissions";
-import { saveSavedOrderType } from "@/lib/customerSession";
+import { saveSavedOrderType, KIOSK_LANG_KEY } from "@/lib/customerSession";
 
 export const STAFF_SESSION_FLAG = "kebabturco.staffSession";
 
@@ -57,6 +57,24 @@ export function returnToCustomerTotemStart(navigate: NavigateFunction) {
   clearStaffSessionFlag();
   saveSavedOrderType(null);
   navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
+}
+
+/** Abre o cardápio como cliente real, mantendo login admin (sem logout). */
+export function openCustomerStorefrontFromStaff(navigate: NavigateFunction) {
+  clearStaffSessionFlag();
+  saveSavedOrderType(null);
+  try {
+    localStorage.removeItem(KIOSK_LANG_KEY);
+  } catch {
+    /* ignore */
+  }
+  navigate({ pathname: nav.home(), search: "?screen=language" }, { replace: true });
+}
+
+/** Painel operacional — marca sessão staff para o tablet/app reabrir no painel. */
+export function openStaffLivePanel(navigate: NavigateFunction) {
+  markStaffSession();
+  navigate(nav.panel("live"));
 }
 
 /** Destino após login da equipa, separado do fluxo do cliente. */

@@ -27,6 +27,7 @@ import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
 import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
 import { useStaffT } from "@/hooks/useStaffT";
 import { usePanelStoreId } from "@/contexts/PanelStoreContext";
+import { markStaffSession } from "@/lib/staffLogin";
 
 type Props = {
   page?: ComponentType<object>;
@@ -55,6 +56,10 @@ const PanelLayout = ({ page: Page }: Props) => {
       navigate(nav.staff(), { replace: true });
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) markStaffSession();
+  }, [user]);
 
 
   if (loading) {

@@ -1,4 +1,4 @@
-import { type ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -16,6 +16,8 @@ import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 import { StaffScreenHelpProvider } from "@/contexts/StaffScreenHelpContext";
 import StaffTopBarAlerts from "@/components/staff/StaffTopBarAlerts";
 import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
+import AdminMasterQuickNav from "@/components/admin/AdminMasterQuickNav";
+import { markStaffSession } from "@/lib/staffLogin";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 
 type Props = {
@@ -26,6 +28,10 @@ const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole(user?.id);
   usePageTelemetry();
+
+  useEffect(() => {
+    if (user) markStaffSession();
+  }, [user]);
 
   if (authLoading || roleLoading) {
     return (
@@ -71,6 +77,7 @@ const AdminLayout = ({ page: Page }: Props) => {
                   {APP_NAME} · Administração
                 </h1>
                 <StaffTopBarAlerts area="admin" />
+                <AdminMasterQuickNav />
                 <StaffLanguageToggle defaultLang="pt" compact />
                 <AdminThemeToggle />
               </header>
