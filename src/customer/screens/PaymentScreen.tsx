@@ -1120,7 +1120,10 @@ const PaymentScreen = () => {
     return result;
   };
 
-  const handlePayClick = () => {
+  const [pushGateOpen, setPushGateOpen] = useState(false);
+  const pushGateCheckedRef = useRef(false);
+
+  const proceedPayClick = () => {
     if (processing || stripeClientSecret) return;
     if (isDemoVisitCoupon && grandTotal <= 0.01) {
       setProcessing(true);
@@ -1147,6 +1150,44 @@ const PaymentScreen = () => {
     if (!selected) setSelected(method);
     void confirm(method);
   };
+
+  const handlePayClick = () => {
+    if (processing || stripeClientSecret) return;
+    if (pushGateCheckedRef.current || !storeId || isTableOrder) {
+      proceedPayClick();
+      return;
+    }
+    void (async () => {
+      try {
+        const status = await getLocalDevicePushStatus();
+        if (status.ready) {
+          pushGateCheckedRef.current = true;
+          proceedPayClick();
+          return;
+        }
+        const supported = await isCustomerMarketingPushSupportedAsync();
+        if (!supported) {
+          pushGateCheckedRef.current = true;
+          proceedPayClick();
+          return;
+        }
+        pushGateCheckedRef.current = true;
+        setPushGateOpen(true);
+      } catch {
+        pushGateCheckedRef.current = true;
+        proceedPayClick();
+      }
+    })();
+  };
+
+  const handlePushGateChange = (open: boolean) => {
+    setPushGateOpen(open);
+    if (!open) {
+      // após activar ou dispensar, seguir para o pagamento
+      setTimeout(() => proceedPayClick(), 100);
+    }
+  };
+
 
   const confirm = async (methodOverride?: PaymentMethodId) => {
     const method = methodOverride ?? selectedMethodRef.current ?? selected;
