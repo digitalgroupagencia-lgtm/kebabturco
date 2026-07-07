@@ -1,6 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sanitizeNotificationText } from "../_shared/campaignTemplateEngine.ts";
-import { buildStaffNewOrderPush, type StaffOrderPushItem } from "../_shared/staffOrderPushMessages.ts";
+import {
+  buildCustomerOrderPush,
+  buildCustomerWelcomePush,
+  customerOrderPushUrl,
+  type CustomerOrderPushContext,
+  type CustomerOrderPushEvent,
+} from "../_shared/customerOrderPushMessages.ts";
+import {
+  buildStaffNewOrderPush,
+  buildStaffOrderCancelledPush,
+  type StaffOrderPushItem,
+} from "../_shared/staffOrderPushMessages.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,6 +106,69 @@ async function loadStaffOrderPushContext(
       quantity: Number(row.quantity) || 1,
       product_name: String(row.product_name ?? ""),
     })),
+  };
+}
+
+async function loadCustomerOrderPushContext(
+  supabase: ReturnType<typeof createClient>,
+  orderId: string,
+): Promise<CustomerOrderPushContext | null> {
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("order_number, customer_name, order_type, delivery_confirmation_code, store_id")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (orderErr || !order) return null;
+
+  const { data: store } = await supabase
+    .from("stores")
+    .select("name, whatsapp_phone, phone")
+    .eq("id", order.store_id)
+    .maybeSingle();
+
+  return {
+    orderNumber: String(order.order_number ?? ""),
+    customerName: order.customer_name ?? null,
+    storeName: store?.name ?? null,
+    whatsappPhone: store?.whatsapp_phone ?? store?.phone ?? null,
+    orderType: order.order_type ?? null,
+    deliveryCode: order.delivery_confirmation_code ?? null,
+  };
+}
+
+function resolveCustomerOrderPushText(
+  context: CustomerOrderPushContext,
+  deviceLocale: string | null | undefined,
+  event: CustomerOrderPushEvent,
+  fallbackTitle: string,
+  fallbackBody: string,
+): { title: string; body: string } {
+  const built = buildCustomerOrderPush({
+    locale: deviceLocale,
+    event,
+    context,
+  });
+  return {
+    title: built.title || fallbackTitle,
+    body: built.body || fallbackBody,
+  };
+}
+
+function resolveStaffOrderCancelledPushText(
+  orderNumber: string,
+  cancelledByName: string | null,
+  deviceLocale: string | null | undefined,
+  fallbackTitle: string,
+  fallbackBody: string,
+): { title: string; body: string } {
+  const built = buildStaffOrderCancelledPush({
+    locale: deviceLocale,
+    orderNumber,
+    cancelledByName,
+  });
+  return {
+    title: built.title || fallbackTitle,
+    body: built.body || fallbackBody,
   };
 }
 
@@ -435,6 +509,27 @@ async function authorizeStaffBroadcast(
     }
   }
 
+  const staffOrderCancelledId =
+    typeof (body as { staffOrderCancelledId?: string }).staffOrderCancelledId === "string"
+      ? (body as { staffOrderCancelledId?: string }).staffOrderCancelledId
+      : undefined;
+  if (staffOrderCancelledId && body.storeId && serviceKey) {
+    try {
+      const service = createClient(supabaseUrl, serviceKey);
+      const { data: order } = await service
+        .from("orders")
+        .select("id")
+        .eq("id", staffOrderCancelledId)
+        .eq("store_id", body.storeId)
+        .maybeSingle();
+      if (order?.id) return true;
+    } catch (e) {
+      console.warn("[send-push-notification] staffOrderCancelledId auth check failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
   if (!auth.startsWith("Bearer ")) return false;
   if (headerSecret) {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -620,11 +715,21 @@ Deno.serve(async (req) => {
       customerPhone,
       marketingBroadcast,
       staffOrderId,
+      staffOrderCancelledId,
+      customerOrderEvent,
+      welcomeCustomerName,
+      welcomeStoreName,
     } = body;
 
     const pushTitle = sanitizeNotificationText(String(title ?? ""));
     const pushBody = sanitizeNotificationText(String(msgBody ?? ""));
     const staffOrderAlertId = typeof staffOrderId === "string" ? staffOrderId : undefined;
+    const staffOrderCancelledAlertId =
+      typeof staffOrderCancelledId === "string" ? staffOrderCancelledId : undefined;
+    const customerEvent =
+      typeof customerOrderEvent === "string"
+        ? (customerOrderEvent as CustomerOrderPushEvent)
+        : undefined;
 
     if (!(await authorizeStaffBroadcast(req, { ...body, pushDiagnostic }))) {
       return new Response(
@@ -678,12 +783,40 @@ Deno.serve(async (req) => {
       staffOrderContext = await loadStaffOrderPushContext(supabase, staffOrderAlertId);
     }
 
+    let staffOrderCancelledContext: { orderNumber: string; cancelledByName: string | null } | null = null;
+    if (staffOrderCancelledAlertId && storeId) {
+      const { data: cancelledOrder } = await supabase
+        .from("orders")
+        .select("order_number, cancelled_by_name")
+        .eq("id", staffOrderCancelledAlertId)
+        .maybeSingle();
+      if (cancelledOrder) {
+        staffOrderCancelledContext = {
+          orderNumber: String(cancelledOrder.order_number ?? ""),
+          cancelledByName: cancelledOrder.cancelled_by_name ?? null,
+        };
+      }
+    }
+
+    let customerOrderContext: CustomerOrderPushContext | null = null;
+    if (orderId && customerEvent) {
+      customerOrderContext = await loadCustomerOrderPushContext(supabase, orderId);
+    }
+
     const resolvedUrl =
       staffOrderAlertId != null
         ? `/panel/live?order=${staffOrderAlertId}`
-        : typeof url === "string" && url.trim()
-          ? url.trim()
-          : "/";
+        : staffOrderCancelledAlertId != null
+          ? `/panel/live?order=${staffOrderCancelledAlertId}`
+          : orderId && customerEvent
+            ? customerOrderPushUrl(
+                orderId,
+                customerEvent,
+                customerOrderContext?.whatsappPhone ?? null,
+              )
+            : typeof url === "string" && url.trim()
+              ? url.trim()
+              : "/";
 
     if (!directOnly && (storeId || orderId)) {
       let query = supabase
@@ -747,7 +880,31 @@ Deno.serve(async (req) => {
       const platform = (sub.platform ?? "web").toLowerCase();
       const localized = staffOrderContext
         ? resolveStaffOrderPushText(staffOrderContext, sub.device_locale, pushTitle, pushBody)
-        : { title: pushTitle, body: pushBody };
+        : staffOrderCancelledContext
+          ? resolveStaffOrderCancelledPushText(
+              staffOrderCancelledContext.orderNumber,
+              staffOrderCancelledContext.cancelledByName,
+              sub.device_locale,
+              pushTitle,
+              pushBody,
+            )
+          : customerOrderContext && customerEvent
+            ? resolveCustomerOrderPushText(
+                customerOrderContext,
+                sub.device_locale,
+                customerEvent,
+                pushTitle,
+                pushBody,
+              )
+            : audience === "marketing" &&
+                (typeof welcomeCustomerName === "string" || typeof welcomeStoreName === "string")
+              ? buildCustomerWelcomePush({
+                  locale: sub.device_locale,
+                  customerName:
+                    typeof welcomeCustomerName === "string" ? welcomeCustomerName : null,
+                  storeName: typeof welcomeStoreName === "string" ? welcomeStoreName : null,
+                })
+              : { title: pushTitle, body: pushBody };
       const subTitle = localized.title;
       const subBody = localized.body;
       const payloadJson = JSON.stringify({ title: subTitle, body: subBody, tag, url: resolvedUrl, requireInteraction });

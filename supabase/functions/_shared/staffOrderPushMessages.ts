@@ -106,3 +106,36 @@ export function buildStaffNewOrderPush(params: {
   const body = sanitizeNotificationText(segments.join(", "));
   return { title, body };
 }
+
+const CANCELLED_TITLE: Record<MessageLocale, (orderNumber: string) => string> = {
+  pt: (n) => `Pedido #${n} cancelado`,
+  es: (n) => `Pedido #${n} cancelado`,
+  en: (n) => `Order #${n} cancelled`,
+};
+
+export function buildStaffOrderCancelledPush(params: {
+  locale: string | null | undefined;
+  orderNumber: string;
+  cancelledByName: string | null;
+}): { title: string; body: string } {
+  const locale = normalizeLocale(params.locale);
+  const orderNumber = formatOrderNumber(params.orderNumber);
+  const title = sanitizeNotificationText(CANCELLED_TITLE[locale](orderNumber));
+  const by = params.cancelledByName?.trim();
+
+  const body = sanitizeNotificationText(
+    by
+      ? locale === "pt"
+        ? `Cancelado manualmente por ${by}. Abre o painel para ver.`
+        : locale === "es"
+          ? `Cancelado manualmente por ${by}. Abre el panel para ver.`
+          : `Manually cancelled by ${by}. Open the panel to view.`
+      : locale === "pt"
+        ? "Pedido cancelado. Abre o painel para ver."
+        : locale === "es"
+          ? "Pedido cancelado. Abre el panel para ver."
+          : "Order cancelled. Open the panel to view.",
+  );
+
+  return { title, body };
+}

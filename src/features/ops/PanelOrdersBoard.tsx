@@ -290,6 +290,23 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     }
   };
 
+  const confirmCancelOrder = useCallback(
+    async (orderId: string) => {
+      const order = orders.find((o) => o.id === orderId);
+      if (!order) return;
+
+      const pin = await requestStaffPin({
+        title: t("order.detail.cancel"),
+        description: t("order.detail.cancel_pin"),
+        amountLabel: `#${order.order_number}`,
+      });
+      if (!pin) return;
+
+      await cancelOrder(orderId, pin);
+    },
+    [cancelOrder, orders, requestStaffPin, t],
+  );
+
   const confirmMarkPaid = useCallback(
     async (order: PanelOrder, method: "cash" | "card" = "cash") => {
       const isTapPay = method === "card" && isTapToPayPlatform();
@@ -325,7 +342,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     viewerRole: roleData?.role,
     driverName: order.assigned_driver_id ? driverNameById.get(order.assigned_driver_id) : null,
     onAdvance: handleAdvance,
-    onCancel: cancelOrder,
+    onCancel: confirmCancelOrder,
     onOpenDetail: openOrderDetail,
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
@@ -462,7 +479,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
             ? driverNameById.get(detailOrder.assigned_driver_id)
             : undefined
         }
-        onCancel={cancelOrder}
+        onCancel={confirmCancelOrder}
         onSetPrepMinutes={setPrepMinutes}
         onMarkPaid={(o, m) => { void confirmMarkPaid(o, m); }}
         onReprint={(o) => reprintOrder(o)}

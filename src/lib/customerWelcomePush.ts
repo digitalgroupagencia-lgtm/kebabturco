@@ -5,28 +5,6 @@ import { STAFF_PUSH_TAG } from "@/lib/staffPush";
 
 const WELCOME_SENT_PREFIX = "customer-welcome-push-sent:";
 
-type WelcomeCopy = { title: string; body: string };
-
-function welcomeCopy(locale: string): WelcomeCopy {
-  const lang = locale.toLowerCase().startsWith("pt") ? "pt" : locale.toLowerCase().startsWith("en") ? "en" : "es";
-  if (lang === "pt") {
-    return {
-      title: "Bem-vindo à família!",
-      body: "Obrigado pelo seu primeiro pedido. Voltamos a avisar com novidades e ofertas.",
-    };
-  }
-  if (lang === "en") {
-    return {
-      title: "Welcome to the family!",
-      body: "Thanks for your first order. We'll keep you posted with news and offers.",
-    };
-  }
-  return {
-    title: "¡Bienvenido a la familia!",
-    body: "Gracias por tu primer pedido. Te avisaremos con novedades y ofertas.",
-  };
-}
-
 function isRealCustomerPhone(phone: string | undefined | null): phone is string {
   const trimmed = phone?.trim();
   if (!trimmed) return false;
@@ -59,6 +37,8 @@ function wasWelcomeSent(storeId: string, phone: string): boolean {
 export async function sendImmediateWelcomePushIfNeeded(
   storeId: string,
   customerPhone: string | undefined | null,
+  customerName?: string | null,
+  storeName?: string | null,
 ): Promise<void> {
   if (!storeId || !isRealCustomerPhone(customerPhone)) return;
   if (wasWelcomeSent(storeId, customerPhone)) return;
@@ -72,16 +52,13 @@ export async function sendImmediateWelcomePushIfNeeded(
 
   if (countErr || (count ?? 0) > 1) return;
 
-  const locale = getDeviceLocaleTag();
-  const { title, body } = welcomeCopy(locale);
-
   const { error } = await supabase.functions.invoke("send-push-notification", {
     body: {
       storeId,
       audience: "marketing",
       customerPhone,
-      title,
-      body,
+      welcomeCustomerName: customerName?.trim() || null,
+      welcomeStoreName: storeName?.trim() || null,
       tag: `welcome-${storeId}-${customerPhone}`,
       url: "/",
     },

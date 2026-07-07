@@ -30,7 +30,13 @@ export function usePushNotifications() {
   }, []);
 
   const subscribe = useCallback(
-    async (opts: { storeId?: string; orderId?: string; customerPhone?: string }) => {
+    async (opts: {
+      storeId?: string;
+      orderId?: string;
+      customerPhone?: string;
+      customerName?: string;
+      storeName?: string;
+    }) => {
       if (!opts.storeId) return false;
 
       const customerPhone = opts.customerPhone ?? CUSTOMER_MARKETING_PUSH_TAG;
@@ -46,7 +52,12 @@ export function usePushNotifications() {
           setSubscribed(true);
           setError(null);
           await restoreStaffPushIfEnabled(opts.storeId);
-          void sendImmediateWelcomePushIfNeeded(opts.storeId, customerPhone);
+          void sendImmediateWelcomePushIfNeeded(
+            opts.storeId,
+            customerPhone,
+            opts.customerName,
+            opts.storeName,
+          );
           return true;
         }
           if (native.reason !== "not-native" && !isTechnicalPushError(native.reason)) {
@@ -74,7 +85,12 @@ export function usePushNotifications() {
 
         setError(null);
         await restoreStaffPushIfEnabled(opts.storeId);
-        void sendImmediateWelcomePushIfNeeded(opts.storeId, customerPhone);
+        void sendImmediateWelcomePushIfNeeded(
+          opts.storeId,
+          customerPhone,
+          opts.customerName,
+          opts.storeName,
+        );
         return true;
       } catch (e) {
         console.warn("[push] subscribe opcional falhou:", e);

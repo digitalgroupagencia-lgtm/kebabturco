@@ -77,6 +77,7 @@ export async function handleRefundOrder(
 ): Promise<Response> {
   const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
   const storeId = typeof body.storeId === "string" ? body.storeId.trim() : "";
+  const staffPin = typeof body.staffPin === "string" ? body.staffPin.trim() : "";
   const reason =
     typeof body.reason === "string" && body.reason.trim()
       ? body.reason.trim().slice(0, 300)
@@ -86,6 +87,10 @@ export async function handleRefundOrder(
     return json({ error: "Parâmetros inválidos" }, 400);
   }
 
+  if (!staffPin) {
+    return json({ error: "Introduza o código pessoal para cancelar" }, 400);
+  }
+
   const auth = await assertStaffCanManageStore(req, storeId);
   if (!auth.ok) return auth.response;
 
@@ -93,6 +98,17 @@ export async function handleRefundOrder(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  const { data: pinRows, error: pinErr } = await supabase.rpc("resolve_staff_pin_for_order", {
+    _store_id: storeId,
+    _staff_pin: staffPin,
+  });
+  const pinRow = Array.isArray(pinRows) ? pinRows[0] : pinRows;
+  const cancelledByUserId = pinRow?.user_id as string | undefined;
+  const cancelledByName = pinRow?.staff_name as string | undefined;
+  if (pinErr || !cancelledByUserId) {
+    return json({ error: "Código incorreto ou inativo" }, 403);
+  }
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
@@ -183,6 +199,16 @@ export async function handleRefundOrder(
       return json({ error: "Reembolso no banco falhou após Stripe" }, 500);
     }
 
+    await supabase
+      .from("orders")
+      .update({
+        cancelled_by_user_id: cancelledByUserId,
+        cancelled_by_name: cancelledByName ?? null,
+        notes: reason,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId);
+
     return json({
       success: true,
       orderId,
@@ -190,6 +216,7 @@ export async function handleRefundOrder(
       refundMode,
       stripeRefundId,
       refunded: true,
+      cancelledByName,
       record: refundRow,
     });
   }
@@ -203,6 +230,8 @@ export async function handleRefundOrder(
     .update({
       status: "cancelled",
       notes: reason,
+      cancelled_by_user_id: cancelledByUserId,
+      cancelled_by_name: cancelledByName ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);

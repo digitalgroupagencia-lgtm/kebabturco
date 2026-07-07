@@ -431,13 +431,13 @@ export function usePanelOrders(storeId: string | undefined) {
     }
   }, []);
 
-  const cancelOrder = useCallback(async (orderId: string) => {
+  const cancelOrder = useCallback(async (orderId: string, staffPin: string) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order || updatingRef.current.has(orderId)) return;
 
     updatingRef.current.add(orderId);
 
-    const result = await cancelOrderWithRefund(storeId!, orderId);
+    const result = await cancelOrderWithRefund(storeId!, orderId, staffPin);
     updatingRef.current.delete(orderId);
 
     if (!result.success) {

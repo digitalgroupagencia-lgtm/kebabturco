@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cancelOrderWithRefund } from "@/services/orderRefund";
 import { useStaffT } from "@/hooks/useStaffT";
+import { useStaffPinConfirm } from "@/hooks/useStaffPinConfirm";
 import { formatStaffPanelDateTime, panelT } from "@/lib/staffPanelLocale";
 
 type Row = {
@@ -30,6 +31,7 @@ const STATUSES_OPEN = ["pending", "preparing", "ready", "out_for_delivery"] as c
 
 const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
   const { t, lang } = useStaffT();
+  const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -58,9 +60,17 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
   const handleCancel = async (row: Row) => {
     const confirmMsg = panelT(lang, "old_pending.confirm", { number: row.order_number });
     if (!confirm(confirmMsg)) return;
+
+    const pin = await requestStaffPin({
+      title: t("order.detail.cancel"),
+      description: t("order.detail.cancel_pin"),
+      amountLabel: `#${row.order_number}`,
+    });
+    if (!pin) return;
+
     setCancellingId(row.id);
     try {
-      const res = await cancelOrderWithRefund(storeId, row.id, t("old_pending.cancel_reason"));
+      const res = await cancelOrderWithRefund(storeId, row.id, pin, t("old_pending.cancel_reason"));
       if (res.success) {
         toast.success(panelT(lang, "old_pending.toast.success", { number: row.order_number }));
         setRows((prev) => prev.filter((r) => r.id !== row.id));
@@ -75,7 +85,9 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <StaffPinDialog />
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -133,6 +145,7 @@ const OldPendingOrdersDialog = ({ open, onOpenChange, storeId }: Props) => {
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

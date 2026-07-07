@@ -752,6 +752,8 @@ const PaymentScreen = () => {
       storeId,
       orderId: result.order_id,
       customerPhone: fullCustomerPhone || undefined,
+      customerName: customerName.trim() || undefined,
+      storeName: brandingCtx?.settings?.company_name || undefined,
     }).catch(() => undefined);
 
     const printOk = shouldPrintAfterCheckout(
@@ -915,6 +917,8 @@ const PaymentScreen = () => {
       storeId,
       orderId: result.order_id,
       customerPhone: fullCustomerPhone || undefined,
+      customerName: customerName.trim() || undefined,
+      storeName: brandingCtx?.settings?.company_name || undefined,
     }).catch(() => undefined);
 
     clearCart();

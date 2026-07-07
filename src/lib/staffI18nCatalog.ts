@@ -108,6 +108,11 @@ export const STAFF_I18N_CATALOG = {
   "order.detail.accept": { es: "Aceptar pedido", pt: "Aceitar pedido", en: "Accept order" },
   "order.detail.accepting": { es: "Aceptando…", pt: "A aceitar…", en: "Accepting…" },
   "order.detail.cancel": { es: "Cancelar pedido", pt: "Cancelar pedido", en: "Cancel order" },
+  "order.detail.cancel_pin": {
+    es: "Introduce TU código personal para confirmar la cancelación",
+    pt: "Introduza o SEU código pessoal para confirmar o cancelamento",
+    en: "Enter YOUR personal code to confirm cancellation",
+  },
   "order.detail.reprint": { es: "Reimprimir pedido", pt: "Reimprimir pedido", en: "Reprint order" },
   "order.detail.mark_cash": { es: "Registrar efectivo", pt: "Registar dinheiro", en: "Record cash" },
   "order.detail.mark_card": { es: "Registrar tarjeta", pt: "Registar cartão", en: "Record card" },
