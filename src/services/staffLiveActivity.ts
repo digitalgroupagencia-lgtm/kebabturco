@@ -1,0 +1,106 @@
+import { registerPlugin } from "@capacitor/core";
+import { isNativeIOSAppSync } from "@/lib/nativeAppPlatform";
+
+export type StaffLiveActivityState = {
+  title: string;
+  message: string;
+  timer: string;
+  status: string;
+  urgent: "0" | "1";
+};
+
+type LiveActivityPlugin = {
+  isAvailable(): Promise<{ available: boolean }>;
+  startActivity(options: {
+    id: string;
+    attributes: Record<string, string>;
+    contentState: Record<string, string>;
+  }): Promise<{ activityId: string }>;
+  updateActivity(options: {
+    id: string;
+    contentState: Record<string, string>;
+    alert?: { title: string; body: string; sound?: string };
+  }): Promise<void>;
+  endActivity(options: { id: string; dismissalPolicy?: "immediate" | "default" }): Promise<void>;
+  isRunning(options: { id: string }): Promise<{ running: boolean }>;
+};
+
+const LiveActivity = registerPlugin<LiveActivityPlugin>("LiveActivity");
+
+const activeOrderActivities = new Map<string, number>();
+
+function formatElapsed(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function buildState(orderNumber: string, startedAt: number, urgent: boolean): StaffLiveActivityState {
+  return {
+    title: `Novo pedido #${orderNumber}`,
+    message: urgent ? "Urgente — aceite já no painel" : "Aguarda aceitação da equipa",
+    timer: formatElapsed(Date.now() - startedAt),
+    status: urgent ? "!" : "•••",
+    urgent: urgent ? "1" : "0",
+  };
+}
+
+export async function isStaffLiveActivitySupported(): Promise<boolean> {
+  if (!isNativeIOSAppSync()) return false;
+  try {
+    const { available } = await LiveActivity.isAvailable();
+    return available;
+  } catch {
+    return false;
+  }
+}
+
+export async function startStaffOrderLiveActivity(orderId: string, orderNumber: string): Promise<void> {
+  if (!(await isStaffLiveActivitySupported())) return;
+
+  const startedAt = Date.now();
+  const state = buildState(orderNumber, startedAt, false);
+
+  try {
+    await LiveActivity.startActivity({
+      id: orderId,
+      attributes: { orderId, orderNumber },
+      contentState: { ...state },
+    });
+
+    if (activeOrderActivities.has(orderId)) {
+      window.clearInterval(activeOrderActivities.get(orderId)!);
+    }
+
+    const tick = window.setInterval(() => {
+      const urgent = Date.now() - startedAt >= 5 * 60 * 1000;
+      const next = buildState(orderNumber, startedAt, urgent);
+      void LiveActivity.updateActivity({
+        id: orderId,
+        contentState: { ...next },
+        alert: urgent ? { title: next.title, body: next.message, sound: "default" } : undefined,
+      }).catch(() => undefined);
+    }, 30_000);
+
+    activeOrderActivities.set(orderId, tick);
+  } catch {
+    /* extensão ainda não configurada no Xcode */
+  }
+}
+
+export async function endStaffOrderLiveActivity(orderId: string): Promise<void> {
+  const tick = activeOrderActivities.get(orderId);
+  if (tick) {
+    window.clearInterval(tick);
+    activeOrderActivities.delete(orderId);
+  }
+  if (!(await isStaffLiveActivitySupported())) return;
+  try {
+    await LiveActivity.endActivity({ id: orderId, dismissalPolicy: "immediate" });
+  } catch {
+    /* ignore */
+  }
+}

@@ -22,7 +22,7 @@ for bad in StripeTerminalPlugin TcpSocketPlugin GeolocationPlugin PreferencesPlu
   fi
 done
 
-for required in KeepAwakePlugin AppPlugin PushNotificationsPlugin ScreenOrientationPlugin ApnsTokenBridgePlugin; do
+for required in KeepAwakePlugin AppPlugin PushNotificationsPlugin ScreenOrientationPlugin ApnsTokenBridgePlugin LiveActivityPlugin; do
   if ! grep -q "$required" "$CFG"; then
     echo "ERRO: falta plugin obrigatório: $required"
     exit 1

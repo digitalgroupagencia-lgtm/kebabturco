@@ -21,6 +21,7 @@ cfg.packageClassList = [
   "PushNotificationsPlugin",
   "ScreenOrientationPlugin",
   "ApnsTokenBridgePlugin",
+  "LiveActivityPlugin",
 ];
 
 delete cfg.server;

@@ -1,0 +1,182 @@
+KEBAB TURCO — CARTÃO FIXO NO ECRÃ BLOQUEADO (estilo Duolingo)
+================================================================
+
+O que vai aparecer no iPhone da equipa:
+  • Cartão grande no ecrã bloqueado: «Novo pedido #47»
+  • Contador de quanto tempo está à espera
+  • Some quando alguém aceita o pedido
+  • Nos iPhones novos, também na «ilha» de cima
+
+Isto chama-se «Atividade em direto» (Live Activity) da Apple.
+Só funciona na app instalada no iPhone — não no browser.
+
+────────────────────────────────────────────────────────────
+ANTES DE COMEÇAR — O QUE VAI PRECISAR
+────────────────────────────────────────────────────────────
+
+  □ Conta Apple Developer (a mesma do Kebab Turco)
+  □ Conta Codemagic (a mesma que já usa para publicar)
+  □ Um iPhone real para testar (não basta simulador)
+  □ UMA VEZ: 20–30 minutos no Mac com Xcode instalado
+    (só para criar a extensão do cartão — depois o Codemagic compila sozinho)
+
+  Identificadores que já usa:
+    App principal:      net.kebabturco.app
+    Equipa Apple:       4QW32SBR7H
+    Grupo de dados:     group.net.kebabturco.app
+    Extensão do cartão: net.kebabturco.app.StaffOrderWidget
+
+────────────────────────────────────────────────────────────
+PARTE 1 — PORTAL APPLE DEVELOPER (browser)
+────────────────────────────────────────────────────────────
+
+1. Abra https://developer.apple.com/account
+2. Entre com a conta da equipa (GROUP EURO BUSINESS)
+
+─── 1A. Activar «Live Activities» na app principal ───
+
+3. Certificates, Identifiers & Profiles → Identifiers
+4. Clique em net.kebabturco.app
+5. Em Capabilities, marque:
+     ☑ Push Notifications (já deve estar)
+     ☑ Live Activities   ← NOVO
+6. Guardar (Save)
+
+─── 1B. Criar grupo partilhado (app + cartão) ───
+
+7. Identifiers → botão + (novo)
+8. Escolha: App Groups → Continue
+9. Description: Kebab Turco Shared
+10. Identifier: group.net.kebabturco.app
+11. Register
+
+12. Volte a net.kebabturco.app → Edit
+13. Em App Groups → marque group.net.kebabturco.app → Save
+
+─── 1C. Criar identificador da extensão do cartão ───
+
+14. Identifiers → botão +
+15. Escolha: App IDs → App → Continue
+16. Description: Kebab Turco Staff Order Widget
+17. Bundle ID: Explicit → net.kebabturco.app.StaffOrderWidget
+18. Capabilities:
+      ☑ App Groups → group.net.kebabturco.app
+19. Register
+
+─── 1D. Recriar perfis de instalação (OBRIGATÓRIO) ───
+
+Os perfis antigos NÃO incluem Live Activities nem a extensão.
+Tem de gerar perfis NOVOS:
+
+20. Profiles → botão +
+21. Para TESTE no iPhone (Development):
+      • iOS App Development
+      • App ID: net.kebabturco.app
+      • Certificado: Apple Development
+      • Dispositivos: marque o iPhone de teste
+      • Nome: Kebab Turco Dev Live Activity
+      • Generate → Download
+
+22. Repita para a extensão (Development):
+      • iOS App Development
+      • App ID: net.kebabturco.app.StaffOrderWidget
+      • Mesmo certificado Development
+      • Mesmo iPhone
+      • Nome: Kebab Turco Widget Dev
+      • Generate → Download
+
+23. Para APP STORE (Distribution):
+      • App Store Connect
+      • App ID: net.kebabturco.app
+      • Certificado: Apple Distribution
+      • Nome: Kebab Turco App Store Live Activity
+      • Generate → Download
+
+24. Repita para extensão (App Store):
+      • App Store Connect
+      • App ID: net.kebabturco.app.StaffOrderWidget
+      • Certificado: Apple Distribution
+      • Nome: Kebab Turco Widget App Store
+      • Generate → Download
+
+────────────────────────────────────────────────────────────
+PARTE 2 — MAC COM XCODE (UMA VEZ, ~20 min)
+────────────────────────────────────────────────────────────
+
+Se não tiver Mac: peça a alguém da equipa com Mac para fazer
+estes passos e fazer commit do projeto — depois só usa Codemagic.
+
+1. No Mac, clone o repositório kebabturco (branch main)
+2. Terminal:
+     cd kebabturco
+     npm ci
+     npm run cap:prepare:ios
+3. Abra o projeto:
+     npx cap open ios
+
+─── 2A. Criar extensão do cartão ───
+
+4. No Xcode: File → New → Target…
+5. Escolha: Widget Extension → Next
+6. Product Name: StaffOrderLiveWidget
+7. MARQUE: ☑ Include Live Activity
+8. Finish → Activate
+
+9. Apague os ficheiros modelo vazios que o Xcode criou
+
+10. Arraste para a pasta StaffOrderLiveWidget no Xcode os ficheiros
+    que estão no repositório em:
+      ios/StaffOrderLiveWidget/
+    Ao adicionar, marque o target StaffOrderLiveWidgetExtension
+
+─── 2B. Capabilities na app principal ───
+
+11. Target «App» → Signing & Capabilities → + Capability:
+      • App Groups → group.net.kebabturco.app
+
+─── 2C. Capabilities na extensão ───
+
+12. Target StaffOrderLiveWidgetExtension → App Groups
+      → group.net.kebabturco.app
+
+─── 2D. Testar no iPhone ───
+
+13. Ligue o iPhone → Run (▶)
+14. Login equipa → pedido de teste → cartão no ecrã bloqueado
+
+─── 2E. Guardar no Git ───
+
+15. Commit + push para main (obrigatório para Codemagic)
+
+────────────────────────────────────────────────────────────
+PARTE 3 — CODEMAGIC (browser)
+────────────────────────────────────────────────────────────
+
+1. codemagic.io → Team settings → Code signing identities
+2. iOS provisioning profiles → Fetch profiles
+3. Development: perfis novos de net.kebabturco.app E da extensão
+   → reference name kebabturco_dev → Download selected
+4. App Store: perfis novos de app E extensão
+   → reference name kebabturco_appstore → Download selected
+5. Start new build → «Kebab Turco — iPhone Development» → testar
+6. Start new build → «Kebab Turco — iPhone App Store» → TestFlight
+
+Se falhar «provisioning profile»: volte à Parte 1D e Parte 3.
+
+────────────────────────────────────────────────────────────
+PARTE 4 — NO IPHONE (utilizador)
+────────────────────────────────────────────────────────────
+
+1. Definições → Kebab Turco → Notificações → Permitir
+2. Definições → Kebab Turco → Actividades em direto → Activar
+3. App → login equipa → alertas de pedidos activos
+4. Pedido novo → cartão no ecrã bloqueado até aceitar
+
+────────────────────────────────────────────────────────────
+ORDEM RESUMIDA
+────────────────────────────────────────────────────────────
+
+  1. Apple Developer (Live Activities + grupos + perfis novos)
+  2. Mac Xcode uma vez (extensão + teste + commit)
+  3. Codemagic (perfis + build + TestFlight)
+  4. Publish no Lovable

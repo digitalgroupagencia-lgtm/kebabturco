@@ -10,11 +10,13 @@ import {
 } from "@/lib/panelAlerts";
 import { orderReadyForKitchen, shouldShowOrderInRestaurantPanel } from "@/lib/orderKitchenRules";
 import { restoreNativeStaffPushIfPossible } from "@/services/nativePush";
+import { endStaffOrderLiveActivity, startStaffOrderLiveActivity } from "@/services/staffLiveActivity";
 
 const POLL_MS = 8_000;
 
 type PendingOrderRow = {
   id: string;
+  order_number: number | string | null;
   status: string | null;
   payment_status: string | null;
   order_type: string | null;
@@ -44,7 +46,9 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
 
       const { data } = await supabase
         .from("orders")
-        .select("id, status, payment_status, order_type, table_validated, is_test, coupon_code")
+        .select(
+          "id, order_number, status, payment_status, order_type, table_validated, is_test, coupon_code",
+        )
         .eq("store_id", storeId)
         .eq("status", "pending")
         .gte("created_at", today.toISOString());
@@ -58,6 +62,7 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
         if (!knownPendingRef.current.has(order.id)) {
           knownPendingRef.current.add(order.id);
           registerNewPendingOrderAlert(order.id);
+          void startStaffOrderLiveActivity(order.id, String(order.order_number ?? "?"));
         }
       }
 
@@ -65,6 +70,7 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
         if (!pendingIds.has(id)) {
           knownPendingRef.current.delete(id);
           acknowledgePendingOrderAlert(id);
+          void endStaffOrderLiveActivity(id);
         }
       }
 

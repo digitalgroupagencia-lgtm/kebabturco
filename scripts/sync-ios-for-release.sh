@@ -27,6 +27,10 @@ cat > "$ROOT/ios/App/App/App.Release.entitlements" <<'ENTITLEMENTS'
 <dict>
 	<key>aps-environment</key>
 	<string>production</string>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.net.kebabturco.app</string>
+	</array>
 </dict>
 </plist>
 ENTITLEMENTS

@@ -1,5 +1,6 @@
 # Publicar Kebab Turco na App Store sem Xcode local.
 # Guia: scripts/CODEMAGIC-PASSO-A-PASSO.txt
+# Cartão fixo no ecrã (Live Activities): scripts/LIVE-ACTIVITIES-PASSO-A-PASSO.txt
 
 workflows:
   kebabturco-ios-development:
