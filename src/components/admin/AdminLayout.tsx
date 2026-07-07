@@ -16,6 +16,8 @@ import { AdminStoreProvider } from "@/contexts/AdminStoreContext";
 import { StaffScreenHelpProvider } from "@/contexts/StaffScreenHelpContext";
 import StaffTopBarAlerts from "@/components/staff/StaffTopBarAlerts";
 import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
+import StaffPendingOrderAlertsHost from "@/components/staff/StaffPendingOrderAlertsHost";
+import { useAdminStoreId } from "@/hooks/useAdminStoreId";
 import AdminMasterQuickNav from "@/components/admin/AdminMasterQuickNav";
 import { markStaffSessionForRole } from "@/lib/staffLogin";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
@@ -23,6 +25,11 @@ import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 type Props = {
   page?: ComponentType<object>;
 };
+
+function AdminStaffAlertsHost() {
+  const { storeId } = useAdminStoreId();
+  return <StaffPendingOrderAlertsHost storeId={storeId} />;
+}
 
 const AdminLayout = ({ page: Page }: Props) => {
   const { user, loading: authLoading } = useAuth();
@@ -90,6 +97,7 @@ const AdminLayout = ({ page: Page }: Props) => {
             <AdminAssistant />
           </div>
           <StaffPushPromptHost />
+          <AdminStaffAlertsHost />
         </SidebarProvider>
         </StaffScreenHelpProvider>
       </AdminStoreProvider>

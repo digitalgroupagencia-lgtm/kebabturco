@@ -145,6 +145,9 @@ const PanelSettingsPage = () => {
 
         setPushNotifications(true);
         setStaffPushEnabled(true);
+        const { enablePanelAlerts, setPanelAlertsEnabled } = await import("@/lib/panelAlerts");
+        await enablePanelAlerts();
+        setPanelAlertsEnabled(true);
         toast.info("A registar este telemóvel, pode demorar até 1 minuto.");
 
         const res = await registerNativeStaffPush(effectiveStoreId, { skipPermissionRequest: true });

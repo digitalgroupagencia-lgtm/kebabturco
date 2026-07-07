@@ -9,6 +9,7 @@ import {
   KACHING_SOUND_URL,
 } from "@/lib/kachingSound";
 import { isNativeIOSAppSync } from "@/lib/nativeAppPlatform";
+import { isStaffPushEnabled } from "@/lib/staffPush";
 
 const ALERTS_ENABLED_KEY = "panel-alerts-enabled";
 export const PANEL_ALERTS_CHANGED_EVENT = "panel-alerts-changed";
@@ -154,14 +155,14 @@ function currentAlertRepeatMs(): number {
 
 function restartPendingAlertLoop() {
   stopPendingOrderAlertLoop();
-  if (!isPanelAlertsEnabled() || unacknowledgedPending.size === 0) return;
+  if (!isStaffOrderAlertsActive() || unacknowledgedPending.size === 0) return;
   void playAlertSoundOnce();
   repeatTimer = window.setInterval(() => {
     if (unacknowledgedPending.size === 0) {
       stopPendingOrderAlertLoop();
       return;
     }
-    if (isPanelAlertsEnabled()) {
+    if (isStaffOrderAlertsActive()) {
       void playAlertSoundOnce();
       if (hasUrgentPendingOrders()) flashVisualAlert();
       window.dispatchEvent(new CustomEvent(PANEL_URGENT_CHANGED_EVENT));
@@ -170,7 +171,7 @@ function restartPendingAlertLoop() {
 }
 
 function ensurePendingAlertLoop() {
-  if (!isPanelAlertsEnabled() || unacknowledgedPending.size === 0) {
+  if (!isStaffOrderAlertsActive() || unacknowledgedPending.size === 0) {
     stopPendingOrderAlertLoop();
     return;
   }
@@ -184,11 +185,11 @@ export function registerNewPendingOrderAlert(orderId: string): boolean {
   unacknowledgedPending.add(orderId);
   if (isNew) pendingRegisteredAt.set(orderId, Date.now());
   if (isNew) dispatchUnackChanged();
-  if (isPanelAlertsEnabled()) {
+  if (isStaffOrderAlertsActive()) {
     if (repeatTimer !== null && hasUrgentPendingOrders()) restartPendingAlertLoop();
     else ensurePendingAlertLoop();
   }
-  return isPanelAlertsEnabled();
+  return isStaffOrderAlertsActive();
 }
 
 /** Para todos os alertas de pedidos recebidos (botão silenciar). */
@@ -234,6 +235,11 @@ export function isPanelAlertsEnabled(): boolean {
   } catch {
     return false;
   }
+}
+
+/** Som de pedidos activo (botão «Activar alertas» ou push da equipa ligado). */
+export function isStaffOrderAlertsActive(): boolean {
+  return isPanelAlertsEnabled() || isStaffPushEnabled();
 }
 
 export function setPanelAlertsEnabled(enabled: boolean) {
@@ -495,7 +501,7 @@ function playWebBeep(urgent = false): boolean {
 
 /** Som curto, usado no loop persistente e no teste. */
 async function playAlertSoundOnce(): Promise<boolean> {
-  if (!isPanelAlertsEnabled()) return false;
+  if (!isStaffOrderAlertsActive()) return false;
 
   const urgent = hasUrgentPendingOrders();
   flashVisualAlert();
@@ -580,7 +586,7 @@ export function playNewOrderAlert(orderId: string) {
 
 /** Mantém o loop activo enquanto existirem pedidos pendentes no painel. */
 export function syncPendingOrderAlertLoop(hasPendingOrders: boolean) {
-  if (hasPendingOrders && isPanelAlertsEnabled()) {
+  if (hasPendingOrders && isStaffOrderAlertsActive()) {
     ensurePendingAlertLoop();
   } else if (!hasPendingOrders) {
     stopPendingOrderAlertLoop();
@@ -588,7 +594,7 @@ export function syncPendingOrderAlertLoop(hasPendingOrders: boolean) {
 }
 
 export function tickPendingAlertUrgency() {
-  if (!isPanelAlertsEnabled() || unacknowledgedPending.size === 0) return;
+  if (!isStaffOrderAlertsActive() || unacknowledgedPending.size === 0) return;
   const wasUrgent = hasUrgentPendingOrders();
   window.dispatchEvent(new CustomEvent(PANEL_URGENT_CHANGED_EVENT));
   if (hasUrgentPendingOrders() && repeatTimer !== null) {
@@ -617,7 +623,7 @@ export function dismissNativeIOSMediaPlayer(): void {
 /** Prepara áudio e push se alertas já estavam activos numa sessão anterior. */
 export async function preparePanelAlertsIfEnabled(storeId?: string): Promise<void> {
   installVisibilityHook();
-  if (!isPanelAlertsEnabled()) return;
+  if (!isStaffOrderAlertsActive()) return;
   await ensureAudioReady();
   if (unacknowledgedPending.size > 0) ensurePendingAlertLoop();
   if (storeId) {

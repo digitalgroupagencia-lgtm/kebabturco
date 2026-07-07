@@ -25,6 +25,7 @@ import { panelSegmentFromPathname } from "@/lib/panelAccess";
 import { usePageTelemetry } from "@/hooks/usePageTelemetry";
 import PanelPageErrorBoundary from "@/components/panel/PanelPageErrorBoundary";
 import StaffPushPromptHost from "@/components/staff/StaffPushPromptHost";
+import StaffPendingOrderAlertsHost from "@/components/staff/StaffPendingOrderAlertsHost";
 import { useStaffT } from "@/hooks/useStaffT";
 import { usePanelStoreId } from "@/contexts/PanelStoreContext";
 import { markStaffSessionForRole } from "@/lib/staffLogin";
@@ -40,6 +41,11 @@ function PanelHeaderLanguageToggle() {
   return (
     <StaffLanguageToggle defaultLang={primaryLang === "fr" ? "es" : primaryLang} compact />
   );
+}
+
+function PanelStaffAlertsHost() {
+  const { storeId } = usePanelStoreId();
+  return <StaffPendingOrderAlertsHost storeId={storeId} />;
 }
 
 const PanelLayout = ({ page: Page }: Props) => {
@@ -115,6 +121,7 @@ const PanelLayout = ({ page: Page }: Props) => {
               roleData?.role === "manager") && <AdminAssistant />}
           </div>
           <StaffPushPromptHost />
+          <PanelStaffAlertsHost />
         </SidebarProvider>
         </StaffScreenHelpProvider>
       </PanelStoreProvider>

@@ -99,6 +99,9 @@ export async function subscribeStaffPush(
     const native = await registerNativeStaffPush(storeId, opts);
     if (native.ok) {
       setStaffPushEnabled(true);
+      const { enablePanelAlerts, setPanelAlertsEnabled } = await import("@/lib/panelAlerts");
+      await enablePanelAlerts();
+      setPanelAlertsEnabled(true);
       return { ok: true };
     }
     if (native.reason === "not-native") {
@@ -122,7 +125,10 @@ export async function subscribeStaffPush(
     storeId,
     orderId: null,
     customerPhone: STAFF_PUSH_TAG,
-    onOptIn: () => setStaffPushEnabled(true),
+    onOptIn: () => {
+      setStaffPushEnabled(true);
+      void import("@/lib/panelAlerts").then(({ setPanelAlertsEnabled }) => setPanelAlertsEnabled(true));
+    },
     userMessageDenied: "Permissão de notificações negada",
     userMessageUnavailable: "Push não configurado no servidor",
   });
