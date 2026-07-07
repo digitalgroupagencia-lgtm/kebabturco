@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { isGeneralAdmin } from "@/lib/roles";
+import { isGeneralAdmin } from "@/lib/projectAccess";
 
 const GIT_SHA = typeof __GIT_SHA__ !== "undefined" ? __GIT_SHA__ : "dev";
 const BUILD_ID = typeof __APP_BUILD_ID__ !== "undefined" ? __APP_BUILD_ID__ : "local";
