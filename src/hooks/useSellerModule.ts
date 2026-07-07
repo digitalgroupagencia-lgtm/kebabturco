@@ -1,12 +1,18 @@
 import { useTenantFeatureFlags } from "@/hooks/usePlatformFeatures";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { isGeneralAdmin } from "@/lib/projectAccess";
 
 /**
  * Verifica se o módulo "Vendedor" está activo para o restaurante.
- * Por defeito está DESACTIVADO, apenas o admin master da plataforma pode ligar
- * (override em `tenant_feature_overrides` para `seller_app`).
+ * Admin geral vê e gere sempre; restaurantes dependem do override/plano.
  */
 export function useSellerModuleEnabled(tenantId: string | null | undefined) {
+  const { user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
+  const isPlatformAdmin = isGeneralAdmin(roleData?.role);
   const { data: flags, isLoading } = useTenantFeatureFlags(tenantId);
-  const enabled = !!flags?.find((f) => f.feature_key === "seller_app")?.enabled;
+  const enabled =
+    isPlatformAdmin || !!flags?.find((f) => f.feature_key === "seller_app")?.enabled;
   return { enabled, isLoading };
 }

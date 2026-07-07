@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { notifyStoreMarketingBroadcast } from "@/services/pushService";
-import { useTenantFeatureFlags } from "@/hooks/usePlatformFeatures";
-import { isFeatureAvailableForPlan } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
+import { normalizePlan } from "@/lib/platformFeatureGates";
 import { useStaffT } from "@/hooks/useStaffT";
 
 type Props = {
@@ -18,9 +18,8 @@ type Props = {
 
 const MarketingBroadcastCard = ({ storeId, tenantId, tenantPlan = "starter" }: Props) => {
   const { t } = useStaffT();
-  const { data: flags } = useTenantFeatureFlags(tenantId);
-  const pushFlag = flags?.find((f) => f.feature_key === "push_notifications");
-  const pushEnabled = pushFlag?.enabled !== false && isFeatureAvailableForPlan("push_notifications", tenantPlan as any);
+  const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
+  const pushEnabled = isFeatureEnabled("push_notifications", normalizePlan(tenantPlan));
   const [title, setTitle] = useState(t("mkt.push.default_title"));
   const [body, setBody] = useState(t("mkt.push.default_body"));
   const [sending, setSending] = useState(false);

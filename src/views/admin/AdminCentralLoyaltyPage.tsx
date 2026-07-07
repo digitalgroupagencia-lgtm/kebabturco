@@ -18,9 +18,9 @@ import { LOYALTY_MODELS } from "@/lib/platformFeatures";
 import { LOYALTY_PREVIEWS } from "@/lib/adminCentralPreviews";
 import {
   getMinPlanForFeature,
-  isFeatureAvailableForPlan,
   normalizePlan,
 } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
 import type { PlanKey } from "@/lib/platformFeatures";
 
 const MODEL_ICONS: Record<string, typeof Heart> = {
@@ -67,8 +67,9 @@ function LoyaltyTenantPanel({
   const setOverride = useSetFeatureOverride();
   const { data: flags } = useTenantFeatureFlags(tenantId);
   const { data: program } = useTenantLoyaltyProgram(tenantId);
+  const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
   const loyaltyOn = flags?.find((f) => f.feature_key === "loyalty")?.enabled ?? false;
-  const loyaltyGated = !isFeatureAvailableForPlan("loyalty", tenantPlan);
+  const loyaltyGated = !isFeatureEnabled("loyalty", tenantPlan);
 
   const toggleLoyalty = async (enabled: boolean) => {
     setSaving(true);
@@ -122,7 +123,7 @@ function LoyaltyTenantPanel({
           const active = program?.model_type === m.key;
           const preview = LOYALTY_PREVIEWS[m.key];
           const isFuture = m.key !== "stamps";
-          const gated = isFuture || !isFeatureAvailableForPlan("loyalty", tenantPlan);
+          const gated = isFuture || !isFeatureEnabled("loyalty", tenantPlan);
           const Icon = MODEL_ICONS[m.key] ?? Heart;
 
           return (

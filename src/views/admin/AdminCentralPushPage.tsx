@@ -16,9 +16,9 @@ import {
 } from "@/hooks/usePlatformFeatures";
 import {
   getMinPlanForFeature,
-  isFeatureAvailableForPlan,
   normalizePlan,
 } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
 import type { PlanKey } from "@/lib/platformFeatures";
 
 const PUSH_SCENARIOS = [
@@ -96,8 +96,9 @@ function PushTenantPanel({
   onToggle: (tenantId: string, enabled: boolean) => void;
 }) {
   const { data: flags } = useTenantFeatureFlags(tenantId);
+  const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
   const pushFlag = flags?.find((f) => f.feature_key === "push_notifications");
-  const gated = !isFeatureAvailableForPlan("push_notifications", tenantPlan);
+  const gated = !isFeatureEnabled("push_notifications", tenantPlan);
   const on = pushFlag?.enabled ?? false;
 
   return (

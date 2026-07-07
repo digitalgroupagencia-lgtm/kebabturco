@@ -18,9 +18,9 @@ import {
 import { CAMPAIGN_TEMPLATES } from "@/lib/adminCentralPreviews";
 import {
   getMinPlanForFeature,
-  isFeatureAvailableForPlan,
   normalizePlan,
 } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
 import type { PlanKey } from "@/lib/platformFeatures";
 
 const TEMPLATE_ICONS = {
@@ -88,6 +88,7 @@ function CampaignsTenantPanel({
 }) {
   const { data: flags } = useTenantFeatureFlags(tenantId);
   const { data: mktSettings, refetch: refetchMkt } = useTenantMarketingSettings(tenantId);
+  const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
   const [savingMkt, setSavingMkt] = useState<string | null>(null);
 
   const activeCampaigns = CAMPAIGN_TEMPLATES.filter((t) => {
@@ -166,7 +167,7 @@ function CampaignsTenantPanel({
       <div className="space-y-3">
         {CAMPAIGN_TEMPLATES.map((tpl) => {
           const flag = flags?.find((f) => f.feature_key === tpl.featureKey);
-          const gated = !isFeatureAvailableForPlan(tpl.featureKey, tenantPlan);
+          const gated = !isFeatureEnabled(tpl.featureKey, tenantPlan);
           const requiredPlan = getMinPlanForFeature(tpl.featureKey);
           const on = flag?.enabled ?? false;
           const Icon = TEMPLATE_ICONS[tpl.icon] ?? Megaphone;

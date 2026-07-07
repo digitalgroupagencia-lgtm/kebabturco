@@ -16,9 +16,9 @@ import {
 import { CONVERSATIONAL_PREVIEWS } from "@/lib/adminCentralPreviews";
 import {
   getMinPlanForFeature,
-  isFeatureAvailableForPlan,
   normalizePlan,
 } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
 import type { PlanKey } from "@/lib/platformFeatures";
 
 const FLOW_STEPS = [
@@ -83,7 +83,8 @@ function ConversationalPanel({
 }) {
   const { data: flags } = useTenantFeatureFlags(tenantId);
   const conv = flags?.find((f) => f.feature_key === "conversational_ordering");
-  const gated = !isFeatureAvailableForPlan("conversational_ordering", tenantPlan);
+  const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
+  const gated = !isFeatureEnabled("conversational_ordering", tenantPlan);
   const on = conv?.enabled ?? false;
 
   return (

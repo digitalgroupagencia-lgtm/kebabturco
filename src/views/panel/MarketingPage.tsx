@@ -10,14 +10,11 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useAuth } from "@/hooks/useAuth";
 import { useStaffT } from "@/hooks/useStaffT";
 import { useSelectedTenant } from "@/contexts/SelectedTenantContext";
-import { isGeneralAdmin } from "@/lib/projectAccess";
 import { panelT } from "@/lib/staffPanelLocale";
-import { useTenantFeatureFlags } from "@/hooks/usePlatformFeatures";
-import { isTenantFeatureEnabled, normalizePlan } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
+import { normalizePlan } from "@/lib/platformFeatureGates";
 import { nav } from "@/lib/navPaths";
 import { CAMPAIGN_PRESETS, getPresetByKey, isMandatoryPreset, isWinbackPreset, presetNeedsCoupon } from "@/lib/marketing/campaignPresets";
 import { getCouponSuggestion, getCouponSuggestionForPreset } from "@/lib/marketing/couponSuggestions";
@@ -68,20 +65,13 @@ const MarketingPage = () => {
   const { t, lang } = useStaffT();
   const uiLang = (lang === "pt" || lang === "en" ? lang : "es") as MessageLocale;
   const { storeId } = useAdminStoreId();
-  const { user } = useAuth();
-  const { roleData } = useUserRole(user?.id);
   const { tenant } = useSelectedTenant();
-  const isPlatformAdmin = isGeneralAdmin(roleData?.role);
-  const tenantId = tenant?.id ?? roleData?.tenant_id ?? "";
+  const { isPlatformAdmin, tenantId, isFeatureEnabled } = useTenantFeatureAccess();
   const [tenantPlan, setTenantPlan] = useState<ReturnType<typeof normalizePlan>>(() =>
     normalizePlan(tenant?.plan),
   );
-  const { data: flags } = useTenantFeatureFlags(tenantId);
 
-  const campaignsEnabled = isTenantFeatureEnabled("campaigns", tenantPlan, {
-    platformAdmin: isPlatformAdmin,
-    featureFlags: flags,
-  });
+  const campaignsEnabled = isFeatureEnabled("campaigns", tenantPlan);
 
   const [campaigns, setCampaigns] = useState<MarketingCampaignRow[]>([]);
   const [history, setHistory] = useState<CampaignSendLogEntry[]>([]);

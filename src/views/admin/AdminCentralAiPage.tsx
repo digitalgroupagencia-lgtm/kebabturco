@@ -24,9 +24,9 @@ import { AI_MODULE_PREVIEWS } from "@/lib/adminCentralPreviews";
 import {
   AI_MODULE_FEATURES,
   getMinPlanForFeature,
-  isFeatureAvailableForPlan,
   normalizePlan,
 } from "@/lib/platformFeatureGates";
+import { useTenantFeatureAccess } from "@/hooks/useTenantFeatureAccess";
 import type { PlanKey } from "@/lib/platformFeatures";
 import { useState } from "react";
 
@@ -92,6 +92,7 @@ function AiTenantPanel({
   onToggle: (tenantId: string, moduleKey: string, enabled: boolean) => void;
 }) {
   const { data: modules } = useTenantAiModules(tenantId);
+  const { isFeatureEnabled } = useTenantFeatureAccess(tenantId);
   const enabledCount = modules?.filter((m) => m.is_enabled).length ?? 0;
 
   return (
@@ -110,7 +111,7 @@ function AiTenantPanel({
       <div className="space-y-3">
         {AI_MODULES.map((m) => {
           const featureKey = AI_MODULE_FEATURES[m.key] ?? "ai_support";
-          const gated = !isFeatureAvailableForPlan(featureKey, tenantPlan);
+          const gated = !isFeatureEnabled(featureKey, tenantPlan);
           const requiredPlan = getMinPlanForFeature(featureKey);
           const row = modules?.find((x) => x.module_key === m.key);
           const on = row?.is_enabled ?? false;
