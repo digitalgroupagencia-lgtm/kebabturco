@@ -17,6 +17,7 @@ import OpsAssignDriverDialog, { type StoreDriver } from "@/features/ops/OpsAssig
 import OpsModeFilter, { filterOrdersByMode, type OpsViewMode } from "@/features/ops/OpsModeFilter";
 import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelAlertsPermissionDialog from "@/features/ops/PanelAlertsPermissionDialog";
+import PanelUrgentAlertOverlay from "@/features/ops/PanelUrgentAlertOverlay";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
 import { isPanelAlertsEnabled, preparePanelAlertsIfEnabled } from "@/lib/panelAlerts";
 import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } from "@/services/nativePush";

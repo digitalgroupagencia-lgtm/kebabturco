@@ -3,6 +3,7 @@ import { KeyRound, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import StaffPinKeypad from "@/components/tapToPay/StaffPinKeypad";
 import { useStaffT } from "@/hooks/useStaffT";
 import { translateAppErrorFromException } from "@/lib/authErrorMessages";
 import { staffAccessPinHint, validateStaffAccessPin } from "@/lib/staffAccessPin";
@@ -137,7 +138,7 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
-      <div className="flex-1 overflow-y-auto px-4 py-8 max-w-md mx-auto w-full space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 py-8 max-w-md mx-auto w-full space-y-6 pb-[max(5rem,env(safe-area-inset-bottom))]">
         <div className="text-center space-y-2">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             {pinOnly ? <KeyRound className="h-7 w-7" /> : <User className="h-7 w-7" />}
@@ -182,26 +183,12 @@ export default function SellerOnboardingGate({ userId, children }: Props) {
           <p className="text-xs text-muted-foreground">{t("staff.setup.pin_body")}</p>
           <p className="text-[11px] text-muted-foreground">{staffAccessPinHint(uiLang)}</p>
           <div className="space-y-2">
-            <Label htmlFor="seller-pin">{t("staff.setup.pin_label")}</Label>
-            <Input
-              id="seller-pin"
-              inputMode="numeric"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              className="h-11 text-center text-lg tracking-widest font-mono"
-              autoComplete="new-password"
-            />
+            <Label>{t("staff.setup.pin_label")}</Label>
+            <StaffPinKeypad value={pin} onChange={setPin} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="seller-pin2">{t("staff.setup.pin_confirm")}</Label>
-            <Input
-              id="seller-pin2"
-              inputMode="numeric"
-              value={pinConfirm}
-              onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              className="h-11 text-center text-lg tracking-widest font-mono"
-              autoComplete="new-password"
-            />
+            <Label>{t("staff.setup.pin_confirm")}</Label>
+            <StaffPinKeypad value={pinConfirm} onChange={setPinConfirm} />
           </div>
         </div>
 

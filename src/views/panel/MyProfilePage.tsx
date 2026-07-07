@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { SecretInput } from "@/components/ui/secret-input";
+import StaffPinKeypad from "@/components/tapToPay/StaffPinKeypad";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { usePanelStore } from "@/contexts/PanelStoreContext";
 import { useStaffT } from "@/hooks/useStaffT";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
@@ -30,6 +31,8 @@ import {
 
 export default function MyProfilePage() {
   const { user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
+  const isAdminMaster = roleData?.role === "admin_master";
   const { storeId } = usePanelStore();
   const { t, lang } = useStaffT();
   const uiLang = lang === "en" ? "es" : lang;
@@ -140,7 +143,7 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto max-w-lg space-y-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <PremiumPageHeader
         icon={User}
         title={t("profile.title")}
@@ -222,6 +225,7 @@ export default function MyProfilePage() {
         </CardContent>
       </Card>
 
+      {!isAdminMaster ? (
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -239,38 +243,24 @@ export default function MyProfilePage() {
           <p className="text-xs text-muted-foreground">{t("staff.setup.pin_body")}</p>
           <p className="text-[11px] text-muted-foreground">{staffAccessPinHint(uiLang)}</p>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-pin">{t("staff.setup.pin_label")}</Label>
-            <div className="flex gap-2">
-              <SecretInput
-                id="profile-pin"
-                inputMode="numeric"
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/[^\d#]/g, "").slice(0, 10))}
-                placeholder={t("team.field.accessPin.ph")}
-                className="flex-1 text-center text-lg tracking-widest"
-                autoComplete="new-password"
-              />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label>{t("staff.setup.pin_label")}</Label>
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => setPin(suggestStaffAccessPin(true))}
               >
                 {t("team.field.accessPin.suggest")}
               </Button>
             </div>
+            <StaffPinKeypad value={pin} onChange={setPin} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-pin2">{t("staff.setup.pin_confirm")}</Label>
-            <SecretInput
-              id="profile-pin2"
-              inputMode="numeric"
-              value={pinConfirm}
-              onChange={(e) => setPinConfirm(e.target.value.replace(/[^\d#]/g, "").slice(0, 10))}
-              className="text-center text-lg tracking-widest"
-              autoComplete="new-password"
-            />
+          <div className="space-y-2">
+            <Label>{t("staff.setup.pin_confirm")}</Label>
+            <StaffPinKeypad value={pinConfirm} onChange={setPinConfirm} />
           </div>
 
           <Button className="w-full" onClick={() => void handleSavePin()} disabled={savingPin || !pin || !pinConfirm}>
@@ -285,6 +275,7 @@ export default function MyProfilePage() {
           </Button>
         </CardContent>
       </Card>
+      ) : null}
     </div>
   );
 }

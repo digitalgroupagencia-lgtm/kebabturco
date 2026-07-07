@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useStaffT } from "@/hooks/useStaffT";
 import { nav } from "@/lib/navPaths";
 import { fetchMyStaffProfile, isStaffProfileIncomplete } from "@/services/staffProfile";
@@ -10,6 +11,8 @@ import { hasMyStaffAccessPin } from "@/services/sellerSetupService";
 /** Lembra a equipa de completar nome, foto e código de cobro. */
 export default function StaffProfileBanner() {
   const { user } = useAuth();
+  const { roleData } = useUserRole(user?.id);
+  const isAdminMaster = roleData?.role === "admin_master";
   const { t } = useStaffT();
   const [show, setShow] = useState(false);
 
@@ -19,15 +22,17 @@ export default function StaffProfileBanner() {
       return;
     }
     try {
-      const [profile, pinReady] = await Promise.all([
-        fetchMyStaffProfile(user.id),
-        hasMyStaffAccessPin(user.id),
-      ]);
+      const profile = await fetchMyStaffProfile(user.id);
+      if (isAdminMaster) {
+        setShow(isStaffProfileIncomplete(profile) || !profile?.avatar_url);
+        return;
+      }
+      const pinReady = await hasMyStaffAccessPin(user.id);
       setShow(isStaffProfileIncomplete(profile) || !profile?.avatar_url || !pinReady);
     } catch {
       setShow(false);
     }
-  }, [user?.id]);
+  }, [user?.id, isAdminMaster]);
 
   useEffect(() => {
     void refresh();

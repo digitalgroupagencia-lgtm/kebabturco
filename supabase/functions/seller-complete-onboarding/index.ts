@@ -7,6 +7,15 @@ const corsHeaders = {
 };
 
 const PIN_PATTERN = /^\d{4,8}$/;
+const STAFF_PIN_ROLES = [
+  "seller",
+  "restaurant_admin",
+  "manager",
+  "operator",
+  "kitchen",
+  "cashier",
+  "attendant",
+] as const;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -70,18 +79,39 @@ Deno.serve(async (req) => {
       return json({ error: "Código demasiado fácil" }, 400);
     }
 
-    const { data: sellerRole, error: roleErr } = await admin
+    const { data: staffRoles, error: roleErr } = await admin
       .from("user_roles")
       .select("id, store_id, role")
       .eq("user_id", user.id)
-      .eq("role", "seller")
+      .in("role", [...STAFF_PIN_ROLES])
       .not("store_id", "is", null)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
 
-    if (roleErr || !sellerRole?.store_id || !sellerRole.id) {
-      return json({ error: "Perfil de vendedor não encontrado" }, 403);
+    if (roleErr) {
+      return json({ error: roleErr.message }, 500);
+    }
+
+    const staffRole =
+      staffRoles?.find((row) => row.role === "seller") ??
+      staffRoles?.[0] ??
+      null;
+
+    if (!staffRole?.store_id || !staffRole.id) {
+      const { data: isMaster } = await admin.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin_master",
+      });
+      if (isMaster) {
+        const { error: profileOnlyErr } = await userClient.rpc("upsert_my_staff_profile", {
+          _full_name: fullName,
+          _birth_date: birthDate || undefined,
+        });
+        if (profileOnlyErr) {
+          return json({ error: profileOnlyErr.message }, 400);
+        }
+        return json({ success: true, skipped_pin: true });
+      }
+      return json({ error: "Perfil de equipa não encontrado nesta loja" }, 403);
     }
 
     const { error: profileErr } = await userClient.rpc("upsert_my_staff_profile", {
@@ -95,10 +125,10 @@ Deno.serve(async (req) => {
     const { data: storePins } = await admin
       .from("staff_access_pins")
       .select("pin_hash, user_role_id")
-      .eq("store_id", sellerRole.store_id)
+      .eq("store_id", staffRole.store_id)
       .eq("is_active", true);
 
-    if (pinInUseAtStore(storePins ?? [], pin, sellerRole.id)) {
+    if (pinInUseAtStore(storePins ?? [], pin, staffRole.id)) {
       return json({ error: "Este código já está em uso nesta loja" }, 400);
     }
 
@@ -106,9 +136,9 @@ Deno.serve(async (req) => {
 
     const { error: pinErr } = await admin.from("staff_access_pins").upsert(
       {
-        store_id: sellerRole.store_id,
+        store_id: staffRole.store_id,
         user_id: user.id,
-        user_role_id: sellerRole.id,
+        user_role_id: staffRole.id,
         pin_hash: pinHash,
         is_active: true,
         updated_at: new Date().toISOString(),
