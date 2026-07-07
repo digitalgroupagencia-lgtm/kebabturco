@@ -1790,6 +1790,13 @@ const PaymentScreen = () => {
           )}
         </div>
       )}
+      {storeId && (
+        <CustomerNotificationOptInDialog
+          open={pushGateOpen}
+          storeId={storeId}
+          onOpenChange={handlePushGateChange}
+        />
+      )}
     </div>
   );
 };
