@@ -80,7 +80,7 @@ bash "$ROOT/scripts/codemagic-install-ios-profiles-from-secrets.sh"
 echo "=== Aplicar perfis no projeto Xcode ==="
 xcode-project use-profiles \
   --project "$PROJECT" \
-  --archive-method app-store-connect
+  --archive-method app-store
 
 PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 for pair in \
@@ -91,8 +91,12 @@ for pair in \
   path="$(find "$PROFILE_DIR" -name "*.mobileprovision" 2>/dev/null | while read -r f; do
     name="$(security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw - 2>/dev/null || true)"
     case "$label" in
-      "app principal") [ "$name" = "Kebab Turco App Store" ] && echo "$f" && break ;;
-      "cartão") [ "$name" = "Kebab Turco Cartão App Store" ] && echo "$f" && break ;;
+      "app principal")
+        [[ "$name" == "Kebab Turco App Store" || "$name" == Kebab\ Turco\ ios_app_store* ]] && echo "$f" && break
+        ;;
+      "cartão")
+        [[ "$name" == "Kebab Turco Cartão App Store" || "$name" == *StaffOrderWidget* ]] && echo "$f" && break
+        ;;
     esac
   done | head -1)"
   if [ -n "$path" ] && [ -f "$path" ]; then
