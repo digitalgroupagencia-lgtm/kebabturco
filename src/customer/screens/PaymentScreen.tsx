@@ -793,6 +793,27 @@ const PaymentScreen = () => {
       })();
     }
 
+    // Push imediato "Pedido recebido" ao cliente que acabou de fazer o pedido.
+    // Alvo por order_id (subscrição foi atualizada acima com este pedido).
+    if (result?.order_id) {
+      void (async () => {
+        try {
+          const { supabase } = await import("@/integrations/supabase/client");
+          await supabase.functions.invoke("send-push-notification", {
+            body: {
+              orderId: result.order_id,
+              customerOrderEvent: "pending",
+              tag: `order-pending-${result.order_id}`,
+            },
+          });
+        } catch (e) {
+          console.warn("[push] aviso 'pedido recebido' falhou:", e);
+        }
+      })();
+    }
+
+
+
 
     const printOk = shouldPrintAfterCheckout(
       orderType || "takeaway",
