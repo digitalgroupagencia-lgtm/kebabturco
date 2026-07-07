@@ -259,7 +259,14 @@ const StaffEmailLoginScreen = () => {
     setForgotSent(false);
 
     try {
-      const redirectTo = `${window.location.origin}${nav.staff()}?mode=recovery`;
+      // Força o link do email a abrir sempre no domínio publicado do Kebab Turco.
+      // Se cair no preview da Lovable (lovableproject.com / lovable.app / lovable.dev),
+      // o Supabase mostra o "auth-bridge" com marca Lovable e login desnecessário.
+      const PUBLIC_ORIGIN = "https://kebabturco.net";
+      const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+      const isLovableHosted = /\.lovable(project)?\.(app|dev)$/i.test(currentOrigin.replace(/^https?:\/\//, ""));
+      const baseOrigin = !currentOrigin || isLovableHosted ? PUBLIC_ORIGIN : currentOrigin;
+      const redirectTo = `${baseOrigin}${nav.staff()}?mode=recovery`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo,
       });
