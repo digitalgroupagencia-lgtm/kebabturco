@@ -7,6 +7,8 @@ import {
   registerNativeCustomerPush,
 } from "@/services/nativePush";
 import { CUSTOMER_MARKETING_PUSH_TAG } from "@/lib/customerMarketingPush";
+import { sendImmediateWelcomePushIfNeeded } from "@/lib/customerWelcomePush";
+import { restoreStaffPushIfEnabled } from "@/lib/staffPush";
 
 function isTechnicalPushError(message: string | undefined): boolean {
   if (!message) return false;
@@ -40,11 +42,13 @@ export function usePushNotifications() {
             orderId: opts.orderId ?? null,
             logContext: "order",
           });
-          if (native.ok) {
-            setSubscribed(true);
-            setError(null);
-            return true;
-          }
+        if (native.ok) {
+          setSubscribed(true);
+          setError(null);
+          await restoreStaffPushIfEnabled(opts.storeId);
+          void sendImmediateWelcomePushIfNeeded(opts.storeId, customerPhone);
+          return true;
+        }
           if (native.reason !== "not-native" && !isTechnicalPushError(native.reason)) {
             setError(native.reason ?? "Erro ao activar push");
             return false;
@@ -69,6 +73,8 @@ export function usePushNotifications() {
         }
 
         setError(null);
+        await restoreStaffPushIfEnabled(opts.storeId);
+        void sendImmediateWelcomePushIfNeeded(opts.storeId, customerPhone);
         return true;
       } catch (e) {
         console.warn("[push] subscribe opcional falhou:", e);

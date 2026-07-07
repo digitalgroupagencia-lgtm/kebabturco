@@ -56,13 +56,13 @@ export function resolveAfterAddSuggestions(
   const isKids = /infantil|niño|kids|menu ni/i.test(name);
 
   if (isCombo) {
-    return [...desserts, ...drinks].slice(0, 4);
+    return [...desserts, ...drinks];
   }
   if (isKebabLike || isKids) {
-    return drinks.slice(0, 4);
+    return drinks;
   }
   if (/burger|hamburg/i.test(name)) {
-    return [...drinks, ...extras].slice(0, 4);
+    return [...drinks, ...extras];
   }
   return allProducts.filter((p) => p.isBestseller && !excludeIds.has(p.id)).slice(0, 3);
 }

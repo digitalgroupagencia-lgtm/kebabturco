@@ -149,8 +149,7 @@ export default function ProductCustomizationFlow({
   const [lockedTotalRounds, setLockedTotalRounds] = useState<number | null>(null);
 
   const upsellSuggestions = useMemo(
-    () =>
-      resolveAfterAddSuggestions(product, menuProducts, menuCategories, new Set([product.id])).slice(0, 4),
+    () => resolveAfterAddSuggestions(product, menuProducts, menuCategories, new Set([product.id])),
     [product, menuProducts, menuCategories],
   );
   const upsellTitle = useMemo(() => {

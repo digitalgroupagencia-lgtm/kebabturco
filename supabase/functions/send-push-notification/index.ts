@@ -404,6 +404,7 @@ async function authorizeStaffBroadcast(
     audience?: string;
     testDirect?: boolean;
     pushDiagnostic?: boolean;
+    staffOrderId?: string;
   },
 ): Promise<boolean> {
   if (!isStaffStoreBroadcast(body)) return true;
@@ -416,9 +417,25 @@ async function authorizeStaffBroadcast(
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (serviceKey && auth.includes(serviceKey)) return true;
 
-  if (!auth.startsWith("Bearer ")) return false;
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  if (body.staffOrderId && body.storeId && serviceKey) {
+    try {
+      const service = createClient(supabaseUrl, serviceKey);
+      const { data: order } = await service
+        .from("orders")
+        .select("id")
+        .eq("id", body.staffOrderId)
+        .eq("store_id", body.storeId)
+        .maybeSingle();
+      if (order?.id) return true;
+    } catch (e) {
+      console.warn("[send-push-notification] staffOrderId auth check failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  if (!auth.startsWith("Bearer ")) return false;
   if (headerSecret) {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (serviceKey) {
