@@ -1,9 +1,9 @@
 import { isCustomerStorefrontPath } from "@/lib/appRouteKind";
 
-/** Admin master, painel do restaurante e KDS, layout horizontal em tablet/telemóvel. */
+/** Só o ecrã de cozinha (KDS) força horizontal em telemóvel vertical. */
 export function isLandscapeLockedPath(pathname: string): boolean {
   const p = pathname.replace(/\/+$/, "") || "/";
-  return p.startsWith("/admin") || p.startsWith("/panel") || p.startsWith("/kds");
+  return p.startsWith("/kds");
 }
 
 /** Totem cliente, login equipa, entregador e vendedor, sempre vertical. */
@@ -16,9 +16,10 @@ export function isPortraitLockedPath(pathname: string): boolean {
   return false;
 }
 
-/** Activa breakpoints de layout largo (como desktop) em telemóvel horizontal. */
+/** Activa breakpoints de layout largo quando o ecrã é largo (sem rotação forçada). */
 export function isStaffWideLayoutPath(pathname: string): boolean {
-  return isLandscapeLockedPath(pathname);
+  const p = pathname.replace(/\/+$/, "") || "/";
+  return p.startsWith("/admin") || p.startsWith("/panel") || p.startsWith("/kds");
 }
 
 export function isTouchDevice(): boolean {

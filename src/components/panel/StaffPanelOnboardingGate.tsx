@@ -147,7 +147,7 @@ export default function StaffPanelOnboardingGate({ userId, children }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-md w-full space-y-6 py-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="mx-auto w-full max-w-md space-y-6 overflow-x-hidden py-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="text-center space-y-2">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
           {pinOnly ? <KeyRound className="h-7 w-7" /> : <User className="h-7 w-7" />}

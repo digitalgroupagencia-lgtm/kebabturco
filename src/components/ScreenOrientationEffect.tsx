@@ -2,8 +2,8 @@ import { useScreenOrientationLock } from "@/hooks/useScreenOrientationLock";
 
 /**
  * Orientação por área:
- * - Cliente / entregador / login equipa → vertical
- * - Admin / painel / KDS → horizontal (rotação automática no telemóvel)
+ * - Cliente / entregador / login equipa / painel → vertical no telemóvel
+ * - KDS → horizontal (rotação automática só na cozinha)
  */
 export default function ScreenOrientationEffect() {
   useScreenOrientationLock();

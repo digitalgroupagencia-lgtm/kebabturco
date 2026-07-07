@@ -243,13 +243,15 @@ const CashierPage = () => {
 
       {/* Status */}
       <Card className={currentRegister ? "border-success/50 bg-success/5" : "border-destructive/50 bg-destructive/5"}>
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${currentRegister ? "bg-success animate-pulse" : "bg-destructive"}`} />
+        <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full shrink-0 ${currentRegister ? "bg-success animate-pulse" : "bg-destructive"}`} />
           <span className="font-semibold">
             {currentRegister ? t("cashier.state.open") : t("cashier.state.closed")}
           </span>
+          </div>
           {currentRegister && (
-            <span className="text-sm text-muted-foreground ml-auto">
+            <span className="text-sm text-muted-foreground sm:ml-auto">
               <Clock className="inline h-3 w-3 mr-1" />
               {t("cashier.openedAt")} {new Date(currentRegister.opened_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
             </span>
@@ -312,7 +314,7 @@ const CashierPage = () => {
                     ? `${t("order.modality.table")} ${o.table_number ?? ""}`
                     : t("order.modality.pickup");
                 return (
-                  <li key={o.id} className="flex items-center gap-2 rounded-lg border bg-card p-2.5">
+                  <li key={o.id} className="flex flex-col gap-2 rounded-lg border bg-card p-2.5 sm:flex-row sm:items-center">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm">#{o.order_number}</span>
@@ -324,10 +326,11 @@ const CashierPage = () => {
                         {" · "}Status: <span className="font-semibold">{o.status}</span>
                       </p>
                     </div>
-                    <span className="font-black text-primary text-base tabular-nums shrink-0">€{Number(o.total).toFixed(2)}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-black text-primary text-base tabular-nums">€{Number(o.total).toFixed(2)}</span>
                     <Button
                       size="sm"
-                      className="h-9 bg-green-600 hover:bg-green-700 text-white"
+                      className="h-9 flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white"
                       disabled={confirmingId === o.id}
                       onClick={() => void confirmCashPayment(o, "cash")}
                     >
@@ -337,13 +340,14 @@ const CashierPage = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-9"
+                      className="h-9 flex-1 sm:flex-none"
                       disabled={confirmingId === o.id}
                       onClick={() => void confirmCashPayment(o, "card")}
                     >
                       <CreditCard className="h-4 w-4 mr-1" />
                       {isTapToPayPlatform() ? t("ops.card.tap_to_pay") : t("cashier.method.card")}
                     </Button>
+                    </div>
                   </li>
                 );
               })}

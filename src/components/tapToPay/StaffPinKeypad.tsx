@@ -31,9 +31,9 @@ export default function StaffPinKeypad({
   const slots = Math.max(4, Math.min(maxLength, value.length + 1));
 
   return (
-    <div className={cn("select-none", className)}>
+    <div className={cn("mx-auto w-full max-w-[min(100%,20rem)] select-none", className)}>
       <div
-        className="flex items-center justify-center gap-2.5 py-3"
+        className="flex flex-wrap items-center justify-center gap-2 py-3"
         aria-live="polite"
         aria-label={value.length ? `${value.length} digits entered` : "Enter your code"}
       >
@@ -44,7 +44,7 @@ export default function StaffPinKeypad({
             <div
               key={index}
               className={cn(
-                "flex h-12 w-10 items-center justify-center rounded-xl border-2 text-xl font-bold font-mono transition-colors",
+                "flex h-11 w-9 sm:h-12 sm:w-10 items-center justify-center rounded-xl border-2 text-lg sm:text-xl font-bold font-mono transition-colors",
                 filled
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border bg-muted/40 text-transparent",
@@ -56,7 +56,7 @@ export default function StaffPinKeypad({
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
         {KEYS.map((key) => (
           <button
             key={key}
@@ -64,7 +64,7 @@ export default function StaffPinKeypad({
             disabled={disabled}
             onClick={() => press(key)}
             className={cn(
-              "h-14 rounded-2xl border-2 border-border bg-card text-xl font-bold shadow-sm",
+              "h-12 sm:h-14 rounded-2xl border-2 border-border bg-card text-lg sm:text-xl font-bold shadow-sm",
               "active:scale-[0.97] transition-transform touch-manipulation",
               "disabled:opacity-50 disabled:pointer-events-none",
               key === "back" && "text-muted-foreground",

@@ -143,7 +143,7 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="mx-auto w-full max-w-lg space-y-6 overflow-x-hidden pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <PremiumPageHeader
         icon={User}
         title={t("profile.title")}

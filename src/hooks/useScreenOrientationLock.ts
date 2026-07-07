@@ -41,7 +41,7 @@ function applyRotateMode(mode: RotateMode, w: number, h: number) {
 
 /**
  * Bloqueio de orientação por rota (PWA standalone / Capacitor).
- * Admin/painel: em telemóvel vertical força layout horizontal (como build 10).
+ * Painel/admin ficam em vertical no telemóvel; só KDS força horizontal.
  */
 export function useScreenOrientationLock(_mode?: "portrait" | "landscape" | "any") {
   const { pathname } = useLocation();
