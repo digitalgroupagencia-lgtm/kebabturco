@@ -10,16 +10,9 @@ echo "SDK iOS: $(xcrun --sdk iphoneos --show-sdk-version)"
 
 bash "$ROOT/scripts/ios-align-release-entitlements.sh"
 bash "$ROOT/scripts/ios-verify-live-activity-target.sh"
+bash "$ROOT/scripts/codemagic-install-ios-profiles-from-secrets.sh"
 
-echo "=== Obter perfis App Store na Apple (app + cartão) ==="
-app-store-connect fetch-signing-files "net.kebabturco.app" \
-  --type IOS_APP_STORE \
-  --verbose
-app-store-connect fetch-signing-files "net.kebabturco.app.StaffOrderWidget" \
-  --type IOS_APP_STORE \
-  --verbose
-
-echo "=== Aplicar certificados e perfis no projeto ==="
+echo "=== Certificado e perfis App Store ==="
 keychain initialize
 keychain add-certificates
 xcode-project use-profiles \

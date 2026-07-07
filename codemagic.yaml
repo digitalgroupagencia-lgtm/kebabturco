@@ -159,6 +159,8 @@ workflows:
       app_store_connect: kebabturco
 
     environment:
+      groups:
+        - ios_appstore
       ios_signing:
         distribution_type: app_store
         bundle_identifier: net.kebabturco.app
