@@ -2,10 +2,18 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
+struct GenericAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        var values: [String: String]
+    }
+
+    var id: String
+    var staticValues: [String: String]
+}
+
 private let wine = Color(red: 58 / 255, green: 2 / 255, blue: 5 / 255)
 private let wineLight = Color(red: 90 / 255, green: 8 / 255, blue: 12 / 255)
 
-@available(iOS 16.2, *)
 struct StaffOrderLiveWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: GenericAttributes.self) { context in
@@ -71,7 +79,6 @@ struct StaffOrderLiveWidget: Widget {
     }
 }
 
-@available(iOS 16.2, *)
 @main
 struct StaffOrderLiveWidgetBundle: WidgetBundle {
     var body: some Widget {

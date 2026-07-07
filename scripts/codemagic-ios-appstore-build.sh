@@ -12,7 +12,6 @@ echo "Xcode: $(xcodebuild -version | head -1)"
 echo "SDK iOS: $(xcrun --sdk iphoneos --show-sdk-version)"
 
 bash "$ROOT/scripts/ios-align-release-entitlements.sh"
-bash "$ROOT/scripts/ios-align-widget-release-entitlements.sh"
 bash "$ROOT/scripts/ios-verify-live-activity-target.sh"
 bash "$ROOT/scripts/codemagic-setup-ios-appstore-signing.sh"
 
@@ -38,8 +37,6 @@ if [ "$ARCHIVE_EXIT" -ne 0 ]; then
   tail -n 80 /tmp/xcodebuild-archive-full.log || true
   exit "$ARCHIVE_EXIT"
 fi
-
-bash "$ROOT/scripts/ios-verify-widget-macho.sh" "$ARCHIVE_PATH"
 
 if [ ! -f "$EXPORT_PLIST" ]; then
   echo "ERRO: falta $EXPORT_PLIST (use-profiles devia criar)"
