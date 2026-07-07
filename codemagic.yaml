@@ -159,8 +159,12 @@ workflows:
       app_store_connect: kebabturco
 
     environment:
-      groups:
-        - ios_appstore
+      ios_signing:
+        provisioning_profiles:
+          - kebabturco_appstore
+          - kebabturco_widget_appstore
+        certificates:
+          - kebabturco_appstore
       vars:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
