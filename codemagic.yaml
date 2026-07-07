@@ -169,6 +169,7 @@ workflows:
         XCODE_SCHEME: App
         BUNDLE_ID: net.kebabturco.app
         DEVELOPMENT_TEAM: 4QW32SBR7H
+        IOS_APP_STORE_VERSION: "1.1.3"
       node: 22
       xcode: latest
 

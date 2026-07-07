@@ -5,10 +5,13 @@ ROOT="${CM_BUILD_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 
 BUILD_NUM="${CM_BUILD_NUMBER:-${BUILD_NUMBER:-$(date +%s)}}"
+MARKETING_VERSION="${IOS_APP_STORE_VERSION:-1.1.3}"
 echo "=== iOS build number: $BUILD_NUM ==="
+echo "=== iOS versão visível: $MARKETING_VERSION ==="
 
 if [ -f "$PBX" ]; then
   sed -i.bak "s/CURRENT_PROJECT_VERSION = [0-9][0-9]*;/CURRENT_PROJECT_VERSION = ${BUILD_NUM};/g" "$PBX"
+  sed -i.bak "s/MARKETING_VERSION = [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*;/MARKETING_VERSION = ${MARKETING_VERSION};/g" "$PBX"
   rm -f "${PBX}.bak"
 fi
 

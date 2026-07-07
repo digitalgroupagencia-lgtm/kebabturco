@@ -39,6 +39,8 @@ if [ "$ARCHIVE_EXIT" -ne 0 ]; then
   exit "$ARCHIVE_EXIT"
 fi
 
+bash "$ROOT/scripts/ios-verify-widget-macho.sh" "$ARCHIVE_PATH"
+
 if [ ! -f "$EXPORT_PLIST" ]; then
   echo "ERRO: falta $EXPORT_PLIST (use-profiles devia criar)"
   exit 1

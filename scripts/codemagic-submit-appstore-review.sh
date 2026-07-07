@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Liga a compilação mais recente à versão 1.1.2 e envia para revisão da Apple.
+# Liga a compilação mais recente à versão 1.1.3 e envia para revisão da Apple.
 # Corre no Codemagic (sem Transporter, sem Xcode no Mac).
 set -euo pipefail
 
-VERSION="${IOS_APP_STORE_VERSION:-1.1.2}"
+VERSION="${IOS_APP_STORE_VERSION:-1.1.3}"
 
 echo "=== Enviar versão ${VERSION} para revisão da App Store ==="
 echo "A usar a compilação já enviada (sem novo upload)."
