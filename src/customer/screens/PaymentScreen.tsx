@@ -756,6 +756,34 @@ const PaymentScreen = () => {
       storeName: brandingCtx?.settings?.company_name || undefined,
     }).catch(() => undefined);
 
+    // Alerta push à equipa do restaurante (novo pedido) — carregamento dinâmico
+    // porque o cliente não pode importar estaticamente módulos de staff.
+    void (async () => {
+      try {
+        const { notifyStaffNewOrder } = await import("@/services/pushService");
+        await notifyStaffNewOrder(storeId, result.order_id, result.order_number);
+      } catch (e) {
+        console.warn("[push] aviso staff falhou:", e);
+      }
+    })();
+
+    // Boas-vindas ao cliente (idempotente, só envia se for primeiro pedido).
+    if (fullCustomerPhone) {
+      void (async () => {
+        try {
+          const { sendImmediateWelcomePushIfNeeded } = await import("@/lib/customerWelcomePush");
+          await sendImmediateWelcomePushIfNeeded(
+            storeId,
+            fullCustomerPhone,
+            customerName.trim() || null,
+            brandingCtx?.settings?.company_name || null,
+          );
+        } catch (e) {
+          console.warn("[push] boas-vindas falharam:", e);
+        }
+      })();
+    }
+
     const printOk = shouldPrintAfterCheckout(
       orderType || "takeaway",
       opts.paymentStatus,
