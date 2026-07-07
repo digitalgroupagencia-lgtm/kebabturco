@@ -199,6 +199,7 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild-build-ipa.log
+      - /tmp/xcodebuild-archive-full.log
 
     publishing:
       app_store_connect:
