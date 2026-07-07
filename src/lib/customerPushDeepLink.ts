@@ -164,9 +164,12 @@ async function openExternalTarget(raw: string): Promise<void> {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform?.()) {
       try {
-        const { Browser } = await import("@capacitor/browser");
-        await Browser.open({ url });
-        return;
+        // @ts-expect-error módulo opcional, resolvido em runtime só se instalado
+        const mod = await import("@capacitor/browser");
+        if (mod?.Browser?.open) {
+          await mod.Browser.open({ url });
+          return;
+        }
       } catch {
         /* fallback abaixo */
       }
