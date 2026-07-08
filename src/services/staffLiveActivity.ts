@@ -329,7 +329,7 @@ export function describeLockScreenCardStatus(opts: {
       tone: "error",
       title: "O cartão grande não consegue arrancar neste iPhone",
       detail:
-        "A extensão do cartão na app pode estar em falta. Confirme que usa a app 1.1.6 (build Codemagic #123) e reinstale se necessário.",
+        "O cartão grande não arrancou neste telemóvel. Confirme que usa a app pelo TestFlight (versão actual) e, se precisar, desinstale e instale outra vez.",
     };
   }
 
