@@ -64,6 +64,43 @@ const PanelSettingsPage = () => {
     null,
   );
   const [pushNativeHint, setPushNativeHint] = useState<string | null>(null);
+  const [lockScreenBusy, setLockScreenBusy] = useState(false);
+  const [lockScreenStatus, setLockScreenStatus] = useState<{
+    tone: "ok" | "warn" | "error";
+    title: string;
+    detail: string;
+  } | null>(null);
+
+  const refreshLockScreenStatus = async (storeId: string, lastResult?: Awaited<ReturnType<typeof import("@/services/staffLiveActivity").registerStaffLockScreenCard>>) => {
+    const { checkStaffLockScreenCardCount, describeLockScreenCardStatus } = await import(
+      "@/services/staffLiveActivity"
+    );
+    const count = await checkStaffLockScreenCardCount(storeId);
+    setLockScreenStatus(describeLockScreenCardStatus({ count, result: lastResult }));
+  };
+
+  const runLockScreenRegistration = async (storeId: string) => {
+    setLockScreenBusy(true);
+    try {
+      const { registerStaffLockScreenCard, describeLockScreenCardStatus } = await import(
+        "@/services/staffLiveActivity"
+      );
+      const la = await registerStaffLockScreenCard(storeId);
+      const status = describeLockScreenCardStatus({ count: la.registeredInDb ? 1 : 0, result: la });
+      setLockScreenStatus(status);
+      if (la.registeredInDb) {
+        setPushNativeHint("Alertas + cartão no ecrã bloqueado registados.");
+      }
+      return la;
+    } finally {
+      setLockScreenBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!effectiveStoreId || pushClientMode !== "native") return;
+    void refreshLockScreenStatus(effectiveStoreId);
+  }, [effectiveStoreId, pushClientMode]);
 
   useEffect(() => {
     setSoundOnNewOrder(isPanelAlertsEnabled());
@@ -155,22 +192,7 @@ const PanelSettingsPage = () => {
           setPushLastError(null);
           setPushNativeHint("Telemóvel registado para alertas.");
           toast.success(t("settings.push.enabled"));
-
-          const { registerStaffLockScreenCard } = await import("@/services/staffLiveActivity");
-          toast.info("A registar cartão no ecrã bloqueado… não feche a app (15 s).");
-          const la = await registerStaffLockScreenCard(effectiveStoreId);
-          if (la.registeredInDb) {
-            setPushNativeHint("Alertas + cartão no ecrã bloqueado registados.");
-            toast.success("Cartão grande (ACEITAR) registado neste iPhone.");
-          } else if (la.reason === "ios-too-old") {
-            toast.error("Este iPhone precisa de iOS 17.2 ou mais recente para o cartão no ecrã.");
-          } else if (la.reason === "disabled") {
-            toast.error("Live Activities desligadas — Definições → Kebab Turco → permitir Atividades em tempo real.");
-          } else {
-            toast.warning(
-              "Faixa pequena OK, mas o cartão grande ainda não registou. Mantenha a app aberta e tente desligar/ligar push outra vez.",
-            );
-          }
+          await runLockScreenRegistration(effectiveStoreId);
         } else {
           const err = res.reason ?? t("settings.push.enable_error");
           setPushLastError(err);
@@ -385,6 +407,56 @@ const PanelSettingsPage = () => {
                 <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm flex gap-2">
                   <Smartphone className="h-5 w-5 shrink-0 text-emerald-700" />
                   <p>{t("settings.push.native_hint")}</p>
+                </div>
+              ) : null}
+              {pushClientMode === "web" ? (
+                <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+                  <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                  <p>
+                    O cartão grande no ecrã bloqueado <strong>só funciona na app Kebab Turco no iPhone</strong>, não
+                    neste browser.
+                  </p>
+                </div>
+              ) : null}
+              {pushClientMode === "native" ? (
+                <div
+                  className={`rounded-lg border px-4 py-3 text-sm space-y-3 ${
+                    lockScreenStatus?.tone === "ok"
+                      ? "border-emerald-500/40 bg-emerald-500/10"
+                      : lockScreenStatus?.tone === "error"
+                        ? "border-destructive/50 bg-destructive/10"
+                        : "border-amber-500/50 bg-amber-500/10"
+                  }`}
+                >
+                  <div className="flex gap-2">
+                    {lockScreenStatus?.tone === "ok" ? (
+                      <Smartphone className="h-5 w-5 shrink-0 text-emerald-700" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                    )}
+                    <div>
+                      <p className="font-semibold">
+                        {lockScreenStatus?.title ?? "Cartão no ecrã bloqueado (ACEITAR)"}
+                      </p>
+                      <p className="text-xs mt-1 opacity-90">
+                        {lockScreenStatus?.detail ??
+                          "Carregue no botão para registar. Não feche a app enquanto espera (~20 s)."}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    disabled={lockScreenBusy || !effectiveStoreId || storeLoading}
+                    onClick={() => {
+                      if (!effectiveStoreId) return;
+                      void runLockScreenRegistration(effectiveStoreId);
+                    }}
+                  >
+                    {lockScreenBusy ? "A registar… não feche a app" : "Registar cartão no ecrã"}
+                  </Button>
                 </div>
               ) : null}
               {pushClientMode === "web" ? (

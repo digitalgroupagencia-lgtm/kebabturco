@@ -214,7 +214,7 @@ async function ensurePushToStartListener(): Promise<void> {
 
 export type StaffLiveActivityPushToStartResult = {
   ok: boolean;
-  reason?: "not-ios" | "disabled" | "ios-too-old" | "no-session" | "observer-failed";
+  reason?: "not-ios" | "disabled" | "ios-too-old" | "no-session" | "observer-failed" | "db-not-ready" | "timeout";
 };
 
 export async function ensureStaffLiveActivityPushToStart(
@@ -254,30 +254,124 @@ export async function ensureStaffLiveActivityPushToStart(
   }
 }
 
+export async function checkStaffLockScreenCardCount(storeId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("count_staff_la_push_to_start_tokens", {
+      _store_id: storeId,
+    });
+    if (error) {
+      if (/function|does not exist|schema cache/i.test(error.message)) return -1;
+      return -1;
+    }
+    return typeof data === "number" ? data : Number(data) || 0;
+  } catch {
+    return -1;
+  }
+}
+
+export function describeLockScreenCardStatus(opts: {
+  count: number;
+  result?: StaffLiveActivityPushToStartResult & { registeredInDb?: boolean };
+}): { tone: "ok" | "warn" | "error"; title: string; detail: string } {
+  const { count, result } = opts;
+
+  if (result?.registeredInDb || count > 0) {
+    return {
+      tone: "ok",
+      title: "Cartão no ecrã bloqueado: registado",
+      detail:
+        "Este iPhone está pronto. Ao chegar um pedido novo, deve aparecer o cartão grande com ACEITAR (com a app fechada ou ecrã bloqueado).",
+    };
+  }
+
+  if (result?.reason === "ios-too-old") {
+    return {
+      tone: "error",
+      title: "iPhone demasiado antigo para o cartão grande",
+      detail: "Precisa de iOS 17.2 ou mais recente. Definições → Geral → Informação → Versão do software.",
+    };
+  }
+
+  if (result?.reason === "disabled") {
+    return {
+      tone: "error",
+      title: "Atividades em tempo real desligadas",
+      detail: "Definições do iPhone → Kebab Turco → ligue Notificações e Atividades em tempo real (se aparecer).",
+    };
+  }
+
+  if (result?.reason === "not-ios") {
+    return {
+      tone: "warn",
+      title: "Só funciona na app no iPhone",
+      detail: "Abra a app Kebab Turco instalada no telemóvel — não use o site no browser do computador ou do telemóvel.",
+    };
+  }
+
+  if (result?.reason === "no-session") {
+    return {
+      tone: "warn",
+      title: "Tem de estar com sessão iniciada",
+      detail: "Saia e entre outra vez no painel na app, depois carregue em «Registar cartão no ecrã».",
+    };
+  }
+
+  if (count === -1 || result?.reason === "db-not-ready") {
+    return {
+      tone: "warn",
+      title: "Base de dados ainda não preparada",
+      detail: "Peça para correr o script LIVE_ACTIVITY_FULL no Supabase (ou no editor SQL da Lovable) e Publish.",
+    };
+  }
+
+  if (result?.reason === "timeout" || result?.ok) {
+    return {
+      tone: "warn",
+      title: "Aviso pequeno OK — cartão grande ainda não registado",
+      detail:
+        "Mantenha a app aberta 20 segundos e carregue outra vez em «Registar cartão no ecrã». Confirme iOS 17.2+ e Atividades em tempo real ligadas.",
+    };
+  }
+
+  return {
+    tone: "warn",
+    title: "Cartão no ecrã bloqueado: ainda não registado",
+    detail: "Carregue no botão abaixo. Não feche a app enquanto espera.",
+  };
+}
+
 export async function registerStaffLockScreenCard(
   storeId: string,
 ): Promise<StaffLiveActivityPushToStartResult & { registeredInDb?: boolean }> {
+  if (!isNativeIOSAppSync()) {
+    return { ok: false, reason: "not-ios" };
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    return { ok: false, reason: "no-session" };
+  }
+
+  const initialCount = await checkStaffLockScreenCardCount(storeId);
+  if (initialCount === -1) {
+    return { ok: false, reason: "db-not-ready" };
+  }
+
   await retryCachedPushToStartToken(storeId);
   const result = await ensureStaffLiveActivityPushToStart(storeId, { force: true });
   if (!result.ok) return result;
 
-  // O token da Apple pode demorar alguns segundos após observePushToStartToken
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     await new Promise((r) => setTimeout(r, 1500));
     await retryCachedPushToStartToken(storeId);
-    try {
-      const { data, error } = await supabase.rpc("count_staff_la_push_to_start_tokens", {
-        _store_id: storeId,
-      });
-      if (!error && typeof data === "number" && data > 0) {
-        return { ok: true, registeredInDb: true };
-      }
-    } catch {
-      /* ignore */
-    }
+    const count = await checkStaffLockScreenCardCount(storeId);
+    if (count === -1) return { ok: false, reason: "db-not-ready" };
+    if (count > 0) return { ok: true, registeredInDb: true };
   }
 
-  return { ok: true, registeredInDb: false };
+  return { ok: true, registeredInDb: false, reason: "timeout" };
 }
 
 export async function isStaffLiveActivitySupported(): Promise<boolean> {
