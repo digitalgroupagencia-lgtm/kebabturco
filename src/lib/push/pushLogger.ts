@@ -17,7 +17,11 @@ export type PushLogStage =
   | "test_send"
   | "broadcast_send"
   | "unsubscribe"
-  | "native_register";
+  | "native_register"
+  | "la_token_count"
+  | "lab_orders"
+  | "lab_order_create"
+  | "lab_send";
 
 export type PushLogEntry = DiagnosticLogEntry & {
   context: PushLogContext;

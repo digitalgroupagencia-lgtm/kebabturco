@@ -66,9 +66,9 @@ export async function showAndroidOrderCard(opts: OrderCardOpts): Promise<void> {
             accept_url: opts.acceptUrl,
             status: opts.status ?? "",
             card_id: opts.id,
+            actions,
           },
           actionTypeId: actions.length ? "ORDER_CARD" : undefined,
-          actions,
         },
       ],
     });
