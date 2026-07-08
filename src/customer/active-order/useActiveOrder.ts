@@ -16,7 +16,7 @@ export {
   type StoredActiveOrder,
 } from "./useActiveOrderStorage";
 
-const TERMINAL_STATUSES = new Set(["delivered", "cancelled"]);
+const TERMINAL_STATUSES = new Set(["delivered", "cancelled", "completed"]);
 
 export function useActiveOrder() {
   const { activeOrderId, orderNumber, setActiveOrderId, setTrackingOrderId, setScreen, storeId } =
@@ -72,15 +72,8 @@ export function useActiveOrder() {
     }
   }, [activeOrderId, storeId, clearActiveOrder]);
 
-  useEffect(() => {
-    if (!activeOrderId || loading || !fetchSettled) return;
-    if (!order) {
-      clearActiveOrder();
-    }
-  }, [activeOrderId, loading, fetchSettled, order, clearActiveOrder]);
-
   const trackOrder = () => {
-    if (!activeOrderId || !order) return;
+    if (!activeOrderId) return;
     setTrackingOrderId(activeOrderId);
     setScreen("tracking");
   };
@@ -89,7 +82,7 @@ export function useActiveOrder() {
     clearActiveOrder();
   };
 
-  const hasActiveOrder = Boolean(activeOrderId && order && !TERMINAL_STATUSES.has(order.status));
+  const hasActiveOrder = Boolean(activeOrderId && (!order || !TERMINAL_STATUSES.has(order.status)));
   const isLoadingOrder = Boolean(activeOrderId && loading && !order);
 
   return {
@@ -98,7 +91,7 @@ export function useActiveOrder() {
     isLoadingOrder,
     hasActiveOrder,
     displayNumber: order?.order_number || orderNumber,
-    statusLabel: order ? t(customerStatusTranslationKey(order.status, order.order_type)) : "",
+    statusLabel: order ? t(customerStatusTranslationKey(order.status, order.order_type)) : "Pedido recebido",
     trackOrder,
     dismiss,
   };
