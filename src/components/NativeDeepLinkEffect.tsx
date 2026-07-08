@@ -1,13 +1,16 @@
 import { useEffect } from "react";
+import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 
 const APP_HOSTS = new Set(["kebabturco.net", "www.kebabturco.net"]);
 const PROCESSED_KEY = "__kebabturco_deeplink_processed__";
 const PROCESSED_TS_KEY = "__kebabturco_deeplink_processed_at__";
-// Janela curta: se o mesmo URL voltar dentro deste tempo (ex: reload da WKWebView),
+const ORDER_PROCESSED_KEY = "__kebabturco_deeplink_order__";
+const ORDER_PROCESSED_TS_KEY = "__kebabturco_deeplink_order_at__";
+// Janela curta: se o mesmo URL/order voltar dentro deste tempo (ex: reload da WKWebView),
 // ignoramos para evitar loops de piscar entre tela branca/vinho.
-const DEDUP_WINDOW_MS = 60_000;
+const DEDUP_WINDOW_MS = 45_000;
 
 function readProcessed(): { url: string | null; ts: number } {
   try {
@@ -29,11 +32,30 @@ function markProcessed(url: string) {
   }
 }
 
+export function isOrderDeepLinkDuplicate(orderId: string): boolean {
+  try {
+    const last = sessionStorage.getItem(ORDER_PROCESSED_KEY);
+    const ts = Number(sessionStorage.getItem(ORDER_PROCESSED_TS_KEY) || "0") || 0;
+    return last === orderId && Date.now() - ts < DEDUP_WINDOW_MS;
+  } catch {
+    return false;
+  }
+}
+
+export function markOrderDeepLinkProcessed(orderId: string) {
+  try {
+    sessionStorage.setItem(ORDER_PROCESSED_KEY, orderId);
+    sessionStorage.setItem(ORDER_PROCESSED_TS_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
+
 function currentPath(): string {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
 
-async function safeRouteNativeUrl(rawUrl?: string | null) {
+async function safeRouteNativeUrl(rawUrl: string | null | undefined, navigate: NavigateFunction) {
   if (!rawUrl) return;
   const { url: lastUrl, ts } = readProcessed();
   if (lastUrl === rawUrl && Date.now() - ts < DEDUP_WINDOW_MS) {
@@ -43,13 +65,13 @@ async function safeRouteNativeUrl(rawUrl?: string | null) {
   markProcessed(rawUrl);
 
   try {
-    await routeNativeUrl(rawUrl);
+    await routeNativeUrl(rawUrl, navigate);
   } catch (e) {
     console.warn("[NativeDeepLink] erro a processar", e);
   }
 }
 
-async function routeNativeUrl(rawUrl: string) {
+async function routeNativeUrl(rawUrl: string, navigate: NavigateFunction) {
   console.info("[NativeDeepLink] recebido", { rawUrl });
 
   const { handleStaffLiveActivityDeepLink } = await import(
@@ -57,7 +79,7 @@ async function routeNativeUrl(rawUrl: string) {
   );
 
   if (rawUrl.startsWith("kebabturco://")) {
-    await handleStaffLiveActivityDeepLink(rawUrl);
+    await handleStaffLiveActivityDeepLink(rawUrl, navigate);
     return;
   }
 
@@ -70,7 +92,7 @@ async function routeNativeUrl(rawUrl: string) {
   }
 
   if (url.protocol === "kebabturco:") {
-    await handleStaffLiveActivityDeepLink(rawUrl);
+    await handleStaffLiveActivityDeepLink(rawUrl, navigate);
     return;
   }
 
@@ -90,18 +112,22 @@ async function routeNativeUrl(rawUrl: string) {
       url.pathname.match(/\/order\/([^/]+)/i)?.[1];
     if (orderId) {
       const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
-      if (currentPath() !== target) window.location.assign(target);
+      console.info("[NativeDeepLink] navegar (accept) →", { target });
+      if (currentPath() !== target) navigate(target, { replace: true });
+      markOrderDeepLinkProcessed(orderId);
     }
     return;
   }
 
   if (currentPath() === path) return;
   console.info("[NativeDeepLink] navegar para", { path });
-  window.location.assign(path);
+  navigate(path, { replace: true });
 }
 
 /** Deep links nativos: apenas navegação, sem auto-aceitar. Dedup para evitar loops. */
 export default function NativeDeepLinkEffect() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
@@ -109,12 +135,12 @@ export default function NativeDeepLinkEffect() {
     // Atraso pequeno garante que o router/auth começaram a hidratar antes de navegar.
     const launchTimer = setTimeout(() => {
       void CapacitorApp.getLaunchUrl()
-        .then((launch) => safeRouteNativeUrl(launch?.url))
+        .then((launch) => safeRouteNativeUrl(launch?.url, navigate))
         .catch(() => undefined);
-    }, 400);
+    }, 500);
 
     void CapacitorApp.addListener("appUrlOpen", (event) =>
-      safeRouteNativeUrl(event.url),
+      safeRouteNativeUrl(event.url, navigate),
     )
       .then((handle) => {
         remove = () => void handle.remove();
@@ -125,7 +151,7 @@ export default function NativeDeepLinkEffect() {
       clearTimeout(launchTimer);
       remove?.();
     };
-  }, []);
+  }, [navigate]);
 
   return null;
 }
