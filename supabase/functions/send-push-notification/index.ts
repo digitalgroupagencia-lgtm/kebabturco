@@ -1336,12 +1336,14 @@ Deno.serve(async (req) => {
             });
             // Marcar tokens staff como inativos (remover push_to_start p/ este order,
             // activity_update e staff_start_sent). Impede novos starts/updates.
+            // Remove apenas activity_update; mantém staff_start_sent para bloquear
+            // futuros push_to_start deste mesmo pedido (evita ressuscitar a LA).
             const { error: delErr } = await supabase
               .from("staff_live_activity_tokens")
               .delete()
               .eq("store_id", storeId)
               .eq("order_id", orderId)
-              .in("token_kind", ["activity_update", "staff_start_sent"]);
+              .eq("token_kind", "activity_update");
             console.log("[send-push-notification] marked_inactive", {
               scope: "staff", orderId, error: delErr?.message ?? null,
             });
