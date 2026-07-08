@@ -22,10 +22,14 @@ self.addEventListener("push", (event) => {
   const isStaff = typeof tag === "string" && tag.indexOf("staff-") === 0;
   const requireInteraction = Boolean(data.requireInteraction) || isStaff;
 
+  const imageUrl =
+    typeof data.image === "string" && /^https?:\/\//i.test(data.image) ? data.image : null;
+
   const options = {
     body: data.body || "",
-    icon: "/icon-192.png",
+    icon: imageUrl || "/icon-192.png",
     badge: "/icon-192.png",
+    ...(imageUrl ? { image: imageUrl } : {}),
     tag,
     renotify: isStaff,
     requireInteraction,

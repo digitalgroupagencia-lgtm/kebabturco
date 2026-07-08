@@ -8,6 +8,7 @@ import {
   buildMarketingBroadcastI18n,
   type MarketingBroadcastI18n,
 } from "@/lib/marketing/resolveMarketingBroadcast";
+import type { CustomerStatusEvent, PushLabScenarioId } from "@/lib/push/pushTestLabScenarios";
 
 export type PushTestAudience = "staff" | "marketing";
 
@@ -26,6 +27,8 @@ export type PushTestSendResult = {
   reason?: string;
   error?: string;
   userMessage?: string;
+  liveActivitySent?: number;
+  liveActivityErrors?: string[];
 };
 
 export type ServerPushDiagnostics = {
@@ -89,6 +92,8 @@ function parseSendPayload(data: unknown): {
   reason?: string;
   error?: string;
   apnsDeliveryNote?: string;
+  liveActivitySent?: number;
+  liveActivityErrors?: string[];
   errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
 } {
   return (data ?? {}) as {
@@ -104,6 +109,8 @@ function parseSendPayload(data: unknown): {
     reason?: string;
     error?: string;
     apnsDeliveryNote?: string;
+    liveActivitySent?: number;
+    liveActivityErrors?: string[];
     errors?: { endpoint: string; status?: number; message: string; channel?: string }[];
   };
 }
@@ -209,6 +216,33 @@ function finalizeWebDirectResult(payload: ReturnType<typeof parseSendPayload>): 
   return { ok: true, sent: sentWeb, targeted: payload.targeted, sentWeb };
 }
 
+function withLiveActivityInfo(
+  base: PushTestSendResult,
+  payload: ReturnType<typeof parseSendPayload>,
+): PushTestSendResult {
+  const laSent = payload.liveActivitySent ?? 0;
+  const laErrors = payload.liveActivityErrors ?? [];
+  let userMessage = base.userMessage;
+
+  if (laSent > 0) {
+    const laNote = `Cartão grande enviado para ${laSent} iPhone(s).`;
+    userMessage = userMessage ? `${userMessage} ${laNote}` : laNote;
+  } else if (laErrors.length > 0) {
+    const laNote =
+      laErrors[0]?.includes("push_to_start") || laErrors.some((e) => /token/i.test(e))
+        ? "Cartão grande não enviado — registe push na app iPhone com ecrã bloqueado."
+        : `Cartão grande: ${laErrors[0]?.slice(0, 160)}`;
+    userMessage = userMessage ? `${userMessage} ${laNote}` : laNote;
+  }
+
+  return {
+    ...base,
+    liveActivitySent: laSent,
+    liveActivityErrors: laErrors.length ? laErrors : undefined,
+    userMessage,
+  };
+}
+
 function withChannelCounts(
   base: PushTestSendResult,
   payload: ReturnType<typeof parseSendPayload>,
@@ -273,10 +307,13 @@ function finalizeBroadcastResult(
   }
 
   if (channelMessage) {
-    return { ...enriched, partial: (payload.sentWeb ?? 0) > 0 && (payload.sentApns ?? 0) === 0, userMessage: channelMessage };
+    return withLiveActivityInfo(
+      { ...enriched, partial: (payload.sentWeb ?? 0) > 0 && (payload.sentApns ?? 0) === 0, userMessage: channelMessage },
+      payload,
+    );
   }
 
-  return enriched;
+  return withLiveActivityInfo(enriched, payload);
 }
 
 function finalizeSendResult(
@@ -446,6 +483,11 @@ async function invokeStoreBroadcast(opts: {
   titleI18n?: MarketingBroadcastI18n;
   bodyI18n?: MarketingBroadcastI18n;
   marketingBroadcast?: boolean;
+  imageUrl?: string;
+  staffOrderId?: string;
+  staffOrderCancelledId?: string;
+  orderId?: string;
+  customerOrderEvent?: string;
 }): Promise<PushTestSendResult> {
   const {
     storeId,
@@ -456,6 +498,11 @@ async function invokeStoreBroadcast(opts: {
     titleI18n,
     bodyI18n,
     marketingBroadcast,
+    imageUrl,
+    staffOrderId,
+    staffOrderCancelledId,
+    orderId,
+    customerOrderEvent,
   } = opts;
 
   const { data, error } = await invokePushFunction({
@@ -470,6 +517,11 @@ async function invokeStoreBroadcast(opts: {
     ...(titleI18n ? { titleI18n } : {}),
     ...(bodyI18n ? { bodyI18n } : {}),
     ...(marketingBroadcast ? { marketingBroadcast: true } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(staffOrderId ? { staffOrderId } : {}),
+    ...(staffOrderCancelledId ? { staffOrderCancelledId } : {}),
+    ...(orderId ? { orderId } : {}),
+    ...(customerOrderEvent ? { customerOrderEvent } : {}),
   });
 
   if (error) {
@@ -507,9 +559,9 @@ async function invokeStoreBroadcast(opts: {
     return { ok: false, sent: 0, matched, targeted: payload.targeted, errors, userMessage };
   }
 
-  return finalizeBroadcastResult(
+  return withLiveActivityInfo(
+    finalizeBroadcastResult(payload, "Nenhum dispositivo recebeu o broadcast."),
     payload,
-    "Nenhum dispositivo recebeu o broadcast.",
   );
 }
 
@@ -728,6 +780,271 @@ export async function sendNativeDeviceTestPush(opts: {
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     pushLog("test", "test_send", "error", message);
+    return { ok: false, error: message, userMessage: message };
+  }
+}
+
+export type PushLabOrderRow = {
+  id: string;
+  order_number: string | number;
+  status: string;
+  order_type: string | null;
+  total: number | null;
+  created_at: string;
+};
+
+export type PushLabBannerRow = {
+  id: string;
+  image_url: string | null;
+  video_url: string | null;
+  media_type: string | null;
+};
+
+export async function fetchPushLabOrders(storeId: string): Promise<PushLabOrderRow[]> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, order_number, status, order_type, total, created_at")
+    .eq("store_id", storeId)
+    .in("status", ["pending", "preparing", "ready", "cancelled"])
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (error) {
+    pushLog("test", "lab_orders", "error", error.message);
+    return [];
+  }
+  return (data ?? []) as PushLabOrderRow[];
+}
+
+export async function fetchPushLabBanners(storeId: string): Promise<PushLabBannerRow[]> {
+  const { data, error } = await supabase
+    .from("promo_banners")
+    .select("id, image_url, video_url, media_type")
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .order("sort_order");
+  if (error) return [];
+  return (data ?? []) as PushLabBannerRow[];
+}
+
+export async function createPushLabTestOrder(
+  storeId: string,
+  mode: "takeaway" | "delivery" | "dine_in" = "takeaway",
+): Promise<PushLabOrderRow | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("simulate-test-order", {
+      body: { storeId, mode },
+    });
+    if (error) throw error;
+    const orderId = data?.orderId as string | undefined;
+    if (!orderId) return null;
+    const { data: row } = await supabase
+      .from("orders")
+      .select("id, order_number, status, order_type, total, created_at")
+      .eq("id", orderId)
+      .maybeSingle();
+    return (row as PushLabOrderRow) ?? {
+      id: orderId,
+      order_number: data.orderNumber ?? "?",
+      status: "pending",
+      order_type: mode,
+      total: null,
+      created_at: new Date().toISOString(),
+    };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    pushLog("test", "lab_order_create", "error", message);
+    return null;
+  }
+}
+
+async function invokeLabDirect(opts: Record<string, unknown>): Promise<PushTestSendResult> {
+  const directSubscription = await getLocalPushSubscription();
+  const token = readCachedNativePushToken();
+  const device = await getLocalDevicePushStatus();
+
+  let nativePlatform: "ios" | "android" | undefined;
+  if (token && device.mode === "native") {
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      nativePlatform = Capacitor.getPlatform() === "android" ? "android" : "ios";
+    } catch {
+      nativePlatform = "ios";
+    }
+  }
+
+  if (!directSubscription && !token) {
+    return {
+      ok: false,
+      userMessage: "Registe push neste dispositivo antes de enviar o teste directo.",
+    };
+  }
+
+  const body: Record<string, unknown> = {
+    ...opts,
+    pushDiagnostic: true,
+    testDirect: true,
+    requireInteraction: true,
+  };
+
+  if (token && nativePlatform) {
+    body.nativeDirectToken = token;
+    body.nativePlatform = nativePlatform;
+  } else if (directSubscription) {
+    body.directSubscription = directSubscription;
+  }
+
+  const { data, error } = await invokePushFunction(body);
+  if (error) {
+    return { ok: false, error: error.message, userMessage: formatInvokeError(error) };
+  }
+
+  const payload = parseSendPayload(data);
+  if (nativePlatform) {
+    return withLiveActivityInfo(finalizeNativeDirectResult(payload, nativePlatform), payload);
+  }
+  return withLiveActivityInfo(finalizeWebDirectResult(payload), payload);
+}
+
+/** Dispara um cenário do laboratório — este dispositivo ou broadcast. */
+export async function sendPushLabScenario(opts: {
+  storeId: string;
+  scenario: PushLabScenarioId;
+  target: "device" | "broadcast";
+  title?: string;
+  body?: string;
+  imageUrl?: string;
+  orderId?: string;
+  customerEvent?: CustomerStatusEvent;
+}): Promise<PushTestSendResult> {
+  const { storeId, scenario, target, title = "", body = "", imageUrl, orderId, customerEvent } = opts;
+  const image = imageUrl?.trim() && /^https?:\/\//i.test(imageUrl.trim()) ? imageUrl.trim() : undefined;
+
+  pushLog("test", "lab_send", "info", "Laboratório push", { scenario, target, orderId, customerEvent });
+
+  try {
+    if (scenario === "simple_staff" || scenario === "simple_marketing") {
+      const audience = scenario === "simple_marketing" ? "marketing" : undefined;
+      if (target === "device") {
+        if (scenario === "simple_marketing" && audience) {
+          const i18n = buildMarketingBroadcastI18n({ title, body });
+          return invokeLabDirect({
+            storeId,
+            audience,
+            title: i18n.titleI18n.es || title,
+            body: i18n.bodyI18n.es || body,
+            titleI18n: i18n.titleI18n,
+            bodyI18n: i18n.bodyI18n,
+            tag: `lab-marketing-${Date.now()}`,
+            url: "/",
+            ...(image ? { imageUrl: image } : {}),
+          });
+        }
+        return invokeLabDirect({
+          storeId,
+          title,
+          body,
+          tag: `lab-staff-${Date.now()}`,
+          url: "/panel/live",
+          ...(image ? { imageUrl: image } : {}),
+        });
+      }
+
+      if (scenario === "simple_marketing") {
+        const i18n = buildMarketingBroadcastI18n({ title, body });
+        return invokeStoreBroadcast({
+          storeId,
+          audience: "marketing",
+          title: i18n.titleI18n.es || title,
+          body: i18n.bodyI18n.es || body,
+          titleI18n: i18n.titleI18n,
+          bodyI18n: i18n.bodyI18n,
+          marketingBroadcast: true,
+          url: "/",
+          imageUrl: image,
+        });
+      }
+
+      return invokeStoreBroadcast({
+        storeId,
+        title,
+        body,
+        url: "/panel/live",
+        imageUrl: image,
+      });
+    }
+
+    if (scenario === "marketing_broadcast") {
+      const i18n = buildMarketingBroadcastI18n({ title, body });
+      return invokeStoreBroadcast({
+        storeId,
+        audience: "marketing",
+        title: i18n.titleI18n.es || title,
+        body: i18n.bodyI18n.es || body,
+        titleI18n: i18n.titleI18n,
+        bodyI18n: i18n.bodyI18n,
+        marketingBroadcast: true,
+        url: "/",
+        imageUrl: image,
+      });
+    }
+
+    if (!orderId) {
+      return { ok: false, userMessage: "Escolha ou crie um pedido para este teste." };
+    }
+
+    if (scenario === "staff_new_order") {
+      const payload = {
+        storeId,
+        staffOrderId: orderId,
+        title,
+        body,
+        tag: `staff-new-order-${orderId}`,
+        url: `/panel/live?order=${orderId}`,
+      };
+      if (target === "device") return invokeLabDirect(payload);
+      return invokeStoreBroadcast({ ...payload, url: `/panel/live?order=${orderId}` });
+    }
+
+    if (scenario === "staff_cancelled") {
+      const payload = {
+        storeId,
+        staffOrderCancelledId: orderId,
+        title: title || "Pedido cancelado",
+        body: body || "Um pedido foi cancelado.",
+        tag: `staff-cancelled-${orderId}`,
+        url: `/panel/live?order=${orderId}`,
+      };
+      if (target === "device") return invokeLabDirect(payload);
+      return invokeStoreBroadcast({ ...payload, url: `/panel/live?order=${orderId}` });
+    }
+
+    if (scenario === "customer_status") {
+      if (!customerEvent) {
+        return { ok: false, userMessage: "Escolha o estado do pedido para o cliente." };
+      }
+      const payload = {
+        storeId,
+        orderId,
+        customerOrderEvent: customerEvent,
+        title,
+        body,
+        tag: `order-${orderId}`,
+        url: `/?screen=tracking&order=${orderId}`,
+      };
+      if (target === "device") {
+        return invokeLabDirect({ ...payload, audience: "marketing" });
+      }
+      return invokeStoreBroadcast({
+        ...payload,
+        audience: "marketing",
+        url: `/?screen=tracking&order=${orderId}`,
+      });
+    }
+
+    return { ok: false, userMessage: "Cenário desconhecido." };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    pushLog("test", "lab_send", "error", message);
     return { ok: false, error: message, userMessage: message };
   }
 }

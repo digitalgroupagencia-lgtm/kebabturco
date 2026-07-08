@@ -312,6 +312,7 @@ async function sendFcmV1(
     body: string;
     tag?: string;
     url?: string;
+    imageUrl?: string;
     requireInteraction?: boolean;
     acceptAction?: string;
     ongoing?: boolean;
@@ -350,6 +351,7 @@ async function sendFcmV1(
           tag: payload.tag,
           sticky: Boolean(payload.ongoing),
           color: payload.accentColor ?? "#3A0205",
+          ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
         },
       },
       apns: {
@@ -440,7 +442,7 @@ async function getApnsJwt(config: ApnsConfig): Promise<string> {
 
 async function sendApns(
   deviceToken: string,
-  payload: { title: string; body: string; tag?: string; url?: string; sound?: string },
+  payload: { title: string; body: string; tag?: string; url?: string; sound?: string; imageUrl?: string },
   config: ApnsConfig,
   opts?: { tryBothHosts?: boolean },
 ): Promise<{ host: string }> {
@@ -456,9 +458,11 @@ async function sendApns(
     aps: {
       alert: { title: payload.title, body: payload.body },
       sound: apnsSound,
+      ...(payload.imageUrl ? { "mutable-content": 1 } : {}),
     },
     url: payload.url ?? "/",
     tag: payload.tag ?? "",
+    ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
   });
 
   const primaryHost = config.useSandbox ? "api.sandbox.push.apple.com" : "api.push.apple.com";
@@ -767,7 +771,13 @@ Deno.serve(async (req) => {
       welcomeStoreName,
       titleI18n,
       bodyI18n,
+      imageUrl: rawImageUrl,
     } = body;
+
+    const imageUrl =
+      typeof rawImageUrl === "string" && /^https?:\/\//i.test(rawImageUrl.trim())
+        ? rawImageUrl.trim()
+        : undefined;
 
     const marketingTitleI18n =
       titleI18n && typeof titleI18n === "object" ? (titleI18n as Record<string, string>) : undefined;
@@ -990,14 +1000,28 @@ Deno.serve(async (req) => {
               : { title: pushTitle, body: pushBody };
       const subTitle = localized.title;
       const subBody = localized.body;
-      const payloadJson = JSON.stringify({ title: subTitle, body: subBody, tag, url: resolvedUrl, requireInteraction });
+      const payloadJson = JSON.stringify({
+        title: subTitle,
+        body: subBody,
+        tag,
+        url: resolvedUrl,
+        requireInteraction,
+        ...(imageUrl ? { image: imageUrl } : {}),
+      });
       try {
         if (platform === "ios") {
           if (!apns) throw new Error("APNs not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
           const apnsResult = await sendApns(
             token,
-            { title: subTitle, body: subBody, tag, url: resolvedUrl, sound: resolveStaffOrderSound(tag) },
+            {
+              title: subTitle,
+              body: subBody,
+              tag,
+              url: resolvedUrl,
+              sound: resolveStaffOrderSound(tag),
+              imageUrl,
+            },
             apns,
             { tryBothHosts: apnsTryBothHosts },
           );
@@ -1028,6 +1052,7 @@ Deno.serve(async (req) => {
               body: subBody,
               tag,
               url: resolvedUrl,
+              imageUrl,
               requireInteraction,
               acceptAction: staffAcceptDeepLink,
               ongoing: Boolean(staffOrderAlertId || (orderId && customerEvent)),
