@@ -1034,6 +1034,8 @@ Deno.serve(async (req) => {
               url: resolvedUrl,
               sound: resolveStaffOrderSound(tag),
               imageUrl,
+              orderId: staffOrderAlertId ?? staffOrderCancelledAlertId ?? (orderId as string | undefined),
+              storeId: (storeId as string | undefined) ?? undefined,
             },
             apns,
             { tryBothHosts: apnsTryBothHosts },
