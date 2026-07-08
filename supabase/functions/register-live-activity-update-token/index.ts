@@ -36,8 +36,9 @@ Deno.serve(async (req) => {
     await admin
       .from("staff_live_activity_tokens")
       .delete()
-      .eq("activity_id", activityId)
-      .eq("token_kind", tokenKind);
+      .eq("order_id", orderId)
+      .eq("token_kind", tokenKind)
+      .eq("token_value", token);
 
     const row = {
       store_id: resolvedStoreId || null,
@@ -51,38 +52,6 @@ Deno.serve(async (req) => {
     };
 
     const { error } = await admin.from("staff_live_activity_tokens").insert(row);
-
-    if (error?.code === "23505") {
-      const { error: updateError } = await admin
-        .from("staff_live_activity_tokens")
-        .update({
-          store_id: row.store_id,
-          order_id: row.order_id,
-          token_value: row.token_value,
-          is_active: true,
-          ended_at: null,
-          updated_at: row.updated_at,
-        })
-        .eq("activity_id", activityId)
-        .eq("token_kind", tokenKind);
-      if (updateError) {
-        console.error("[register-live-activity-update-token] update failed", updateError);
-        return new Response(JSON.stringify({ error: updateError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.log("[register-live-activity-update-token] actualizado", {
-        activityId,
-        orderId,
-        storeId: resolvedStoreId,
-        tokenKind,
-        tokenLen: token.length,
-      });
-      return new Response(JSON.stringify({ success: true, updated: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     if (error) {
       console.error("[register-live-activity-update-token]", error);
