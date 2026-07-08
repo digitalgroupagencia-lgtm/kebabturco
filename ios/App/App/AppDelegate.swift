@@ -1,11 +1,27 @@
 import UIKit
 import Capacitor
 
+private let liveActivityAppGroupId = "group.net.kebabturco.app"
+private let pendingLiveActivityDeepLinkKey = "pendingLiveActivityDeepLink"
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        flushPendingLiveActivityDeepLink(application)
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        flushPendingLiveActivityDeepLink(application)
+    }
+
+    private func flushPendingLiveActivityDeepLink(_ application: UIApplication) {
+        guard let defaults = UserDefaults(suiteName: liveActivityAppGroupId),
+              let urlString = defaults.string(forKey: pendingLiveActivityDeepLinkKey),
+              let url = URL(string: urlString) else { return }
+        defaults.removeObject(forKey: pendingLiveActivityDeepLinkKey)
+        _ = ApplicationDelegateProxy.shared.application(application, open: url, options: [:])
     }
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {

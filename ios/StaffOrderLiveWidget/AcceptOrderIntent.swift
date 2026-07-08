@@ -2,6 +2,36 @@ import ActivityKit
 import AppIntents
 import Foundation
 
+private let appGroupId = "group.net.kebabturco.app"
+private let pendingDeepLinkKey = "pendingLiveActivityDeepLink"
+
+@available(iOS 17.0, *)
+struct OpenStaffOrderFromLiveActivityIntent: AppIntent {
+    static var title: LocalizedStringResource = "Abrir pedido"
+    static var openAppWhenRun: Bool = true
+
+    @Parameter(title: "Order ID")
+    var orderId: String
+
+    @Parameter(title: "Store ID")
+    var storeId: String
+
+    init() {}
+
+    init(orderId: String, storeId: String) {
+        self.orderId = orderId
+        self.storeId = storeId
+    }
+
+    func perform() async throws -> some IntentResult {
+        if let url = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId),
+           let defaults = UserDefaults(suiteName: appGroupId) {
+            defaults.set(url.absoluteString, forKey: pendingDeepLinkKey)
+        }
+        return .result()
+    }
+}
+
 @available(iOS 17.0, *)
 struct AcceptOrderIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Aceitar pedido"
@@ -46,13 +76,10 @@ struct AcceptOrderIntent: LiveActivityIntent {
             return .result()
         }
 
-        if let fallback = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId) {
-            await MainActor.run {
-                _ = fallback.open()
-            }
-        }
-
-        return .result(dialog: IntentDialog(stringLiteral: result.message))
+        return .result(
+            opensIntent: OpenStaffOrderFromLiveActivityIntent(orderId: orderId, storeId: storeId),
+            dialog: IntentDialog(stringLiteral: result.message)
+        )
     }
 
     @MainActor
@@ -64,18 +91,3 @@ struct AcceptOrderIntent: LiveActivityIntent {
         }
     }
 }
-
-private extension URL {
-    func open() -> Bool {
-        #if canImport(UIKit)
-        UIApplication.shared.open(self)
-        return true
-        #else
-        return false
-        #endif
-    }
-}
-
-#if canImport(UIKit)
-import UIKit
-#endif

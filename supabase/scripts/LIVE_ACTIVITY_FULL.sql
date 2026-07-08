@@ -1,5 +1,6 @@
 -- Cartões no ecrã (Live Activity) — configuração + tokens
 -- Correr no SQL Editor Supabase (projeto kvpssbhclafoymhecmuk)
+-- Seguro correr mais do que uma vez (actualiza tabela antiga se já existir).
 
 -- 1) Personalização pelo painel (por loja)
 ALTER TABLE public.operations_settings
@@ -12,18 +13,29 @@ ALTER TABLE public.operations_settings
   ADD COLUMN IF NOT EXISTS la_color_urgent text NOT NULL DEFAULT '#5A080C',
   ADD COLUMN IF NOT EXISTS la_urgent_after_minutes integer NOT NULL DEFAULT 5;
 
--- 2) Tokens push-to-start / update (equipa + cliente)
+-- 2) Tabela base (primeira instalação)
 CREATE TABLE IF NOT EXISTS public.staff_live_activity_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  order_id uuid REFERENCES public.orders(id) ON DELETE CASCADE,
-  customer_phone text,
   token_kind text NOT NULL DEFAULT 'push_to_start',
   token_value text NOT NULL,
-  activity_id text,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- 2b) Actualizar esquema antigo (LIVE_ACTIVITY_TOKENS.sql) → versão completa
+ALTER TABLE public.staff_live_activity_tokens
+  ADD COLUMN IF NOT EXISTS order_id uuid REFERENCES public.orders(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS customer_phone text,
+  ADD COLUMN IF NOT EXISTS activity_id text;
+
+ALTER TABLE public.staff_live_activity_tokens
+  ALTER COLUMN user_id DROP NOT NULL;
+
+ALTER TABLE public.staff_live_activity_tokens
+  DROP CONSTRAINT IF EXISTS staff_live_activity_tokens_store_id_user_id_token_kind_key;
+
+DROP INDEX IF EXISTS staff_live_activity_tokens_store_id_user_id_token_kind_key;
 
 CREATE UNIQUE INDEX IF NOT EXISTS staff_live_activity_tokens_staff_unique
   ON public.staff_live_activity_tokens (store_id, user_id, token_kind)
