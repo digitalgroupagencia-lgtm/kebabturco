@@ -499,7 +499,7 @@ export async function dispatchCustomerLiveActivityPush(opts: {
             alert: { title, body: message, sound: "default" },
           }
         : event === "end"
-          ? { "content-state": contentState, dismissal_date: Math.floor(Date.now() / 1000) }
+          ? { "content-state": contentState, "dismissal-date": Math.floor(Date.now() / 1000) }
           : { "content-state": contentState };
 
     const result = await sendLiveActivityApns(row.token_value, payload, config, event, {
@@ -535,7 +535,19 @@ export async function dispatchStaffLiveActivityEnd(opts: {
   for (const row of (updateTokens ?? []) as Array<{ token_value: string }>) {
     const result = await sendLiveActivityApns(
       row.token_value,
-      { dismissal_date: Math.floor(Date.now() / 1000) },
+      {
+        "content-state": {
+          values: {
+            title: "Pedido tratado",
+            message: "Pedido já não está pendente",
+            timer: "",
+            status: "ENCERRADO",
+            urgent: "0",
+            role: "staff",
+          },
+        },
+        "dismissal-date": Math.floor(Date.now() / 1000),
+      },
       config,
       "end",
       { orderId: opts.orderId, storeId: opts.storeId },
