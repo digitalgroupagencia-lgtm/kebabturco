@@ -618,6 +618,24 @@ export async function dispatchCustomerLiveActivityPush(opts: {
   }
 
   // Sem update tokens: iniciar via push-to-start (uma vez).
+  const { error: markerError } = await opts.admin.from("staff_live_activity_tokens").insert({
+    store_id: opts.storeId,
+    order_id: opts.orderId,
+    token_kind: "customer_start_sent",
+    token_value: startRows[0]?.token_value?.slice(0, 64) ?? "customer_start",
+    is_active: true,
+    updated_at: new Date().toISOString(),
+  });
+  if (markerError) {
+    console.log("[liveActivity] customer start bloqueado por marker existente", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      code: markerError.code,
+      message: markerError.message,
+    });
+    return { sent: 0, errors: [] };
+  }
+
   for (const row of startRows) {
     const result = await sendLiveActivityApns(
       row.token_value,
