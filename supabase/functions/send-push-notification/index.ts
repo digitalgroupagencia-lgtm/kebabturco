@@ -1248,8 +1248,6 @@ Deno.serve(async (req) => {
 
     let liveActivitySent = 0;
     const liveActivityErrors: string[] = [];
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     if (staffOrderAlertId && storeId) {
       try {
