@@ -305,6 +305,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
         },
         config,
         "update",
+        { orderId: opts.orderId, storeId: opts.storeId },
       );
       if (result.ok) sent++;
       else if (result.error) errors.push(`update: ${result.error}`);
