@@ -721,6 +721,7 @@ export async function dispatchStaffLiveActivityEnd(opts: {
     .update({ is_active: false, ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq("store_id", opts.storeId)
     .eq("order_id", opts.orderId)
-    .in("token_kind", ["activity_update", "staff_start_sent"]);
+    .in("token_kind", ["activity_update", "staff_start_sent"])
+    .or(`activity_id.is.null,activity_id.eq.${opts.orderId}`);
   return { sent };
 }
