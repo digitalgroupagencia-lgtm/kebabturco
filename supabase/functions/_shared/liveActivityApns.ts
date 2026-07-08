@@ -29,6 +29,42 @@ export const DEFAULT_LA_SETTINGS: LiveActivityStoreSettings = {
 
 type AdminClient = ReturnType<typeof createClient>;
 
+type ActivityTokenRow = {
+  token_value: string;
+  activity_id?: string | null;
+  updated_at?: string | null;
+};
+
+function tokenDedupeKey(token: string): string {
+  return token.replace(/[<>\s]/g, "").toLowerCase().slice(0, 32);
+}
+
+function isCustomerActivityId(activityId: string | null | undefined): boolean {
+  return String(activityId ?? "").startsWith("customer-");
+}
+
+function isStaffActivityForOrder(row: ActivityTokenRow, orderId: string): boolean {
+  const activityId = String(row.activity_id ?? "");
+  return !isCustomerActivityId(activityId) && (!activityId || activityId === orderId);
+}
+
+function isCustomerActivityForOrder(row: ActivityTokenRow, orderId: string): boolean {
+  const activityId = String(row.activity_id ?? "");
+  return activityId === `customer-${orderId}` || activityId.startsWith("customer-");
+}
+
+function uniqueActivityRows<T extends ActivityTokenRow>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const row of rows) {
+    const key = tokenDedupeKey(row.token_value);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+  return unique;
+}
+
 export async function loadLiveActivitySettings(
   admin: AdminClient,
   storeId: string,
@@ -272,12 +308,18 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
   // enviamos apenas UPDATE em vez de criar outra Live Activity via push_to_start.
   const { data: existingUpdateTokens } = await opts.admin
     .from("staff_live_activity_tokens")
-    .select("token_value")
+    .select("token_value, activity_id, updated_at")
     .eq("store_id", opts.storeId)
     .eq("order_id", opts.orderId)
-    .eq("token_kind", "activity_update");
+    .eq("token_kind", "activity_update")
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false });
 
-  const updateRows = (existingUpdateTokens ?? []) as Array<{ token_value: string }>;
+  const updateRows = uniqueActivityRows(
+    ((existingUpdateTokens ?? []) as ActivityTokenRow[]).filter((row) =>
+      isStaffActivityForOrder(row, opts.orderId),
+    ),
+  );
   const formattedNumber = formatOrderNumber(opts.orderNumber);
   const totalLabel = formatStaffOrderPrice(Number(opts.total) || 0, "pt");
   const orderTypeLabel = staffOrderModalityLabel(opts.orderType, opts.tableNumber, "pt");
@@ -315,11 +357,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     // IMPORTANTE: não incluir `alert` no update — cada alert com liveactivity
     // cria um novo card na lock screen, o que duplica visualmente a mesma LA.
     // O som/alerta do pedido é entregue pelo push normal separado.
-    const seenTokens = new Set<string>();
     for (const row of updateRows) {
-      const key = row.token_value.slice(0, 32);
-      if (seenTokens.has(key)) continue;
-      seenTokens.add(key);
       const result = await sendLiveActivityApns(
         row.token_value,
         { "content-state": contentState },
@@ -340,6 +378,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     .eq("store_id", opts.storeId)
     .eq("order_id", opts.orderId)
     .eq("token_kind", "staff_start_sent")
+    .eq("is_active", true)
     .limit(1);
 
   if ((startMarkers ?? []).length > 0) {
@@ -357,7 +396,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     .eq("store_id", opts.storeId)
     .eq("token_kind", "push_to_start");
 
-  const rows = (tokens ?? []) as Array<{ token_value: string; user_id: string | null }>;
+  const rows = uniqueActivityRows((tokens ?? []) as Array<{ token_value: string; user_id: string | null }>);
   if (!rows.length) {
     return {
       sent: 0,
@@ -371,6 +410,26 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
 
   let sent = 0;
   const errors: string[] = [];
+
+  // Reserva atómica antes do envio. Se duas invocações chegarem juntas, só a
+  // primeira pode enviar START; as seguintes ficam como push normal apenas.
+  const { error: markerError } = await opts.admin.from("staff_live_activity_tokens").insert({
+    store_id: opts.storeId,
+    order_id: opts.orderId,
+    token_kind: "staff_start_sent",
+    token_value: rows[0].token_value.slice(0, 64),
+    is_active: true,
+    updated_at: new Date().toISOString(),
+  });
+  if (markerError) {
+    console.log("[liveActivity] start bloqueado por marker existente", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      code: markerError.code,
+      message: markerError.message,
+    });
+    return { sent: 0, errors: [] };
+  }
 
   for (const row of rows) {
     const uid = row.user_id ?? opts.userId;
@@ -449,13 +508,6 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     );
     if (result.ok) {
       sent++;
-      await opts.admin.from("staff_live_activity_tokens").insert({
-        store_id: opts.storeId,
-        order_id: opts.orderId,
-        token_kind: "staff_start_sent",
-        token_value: row.token_value.slice(0, 64),
-        updated_at: new Date().toISOString(),
-      });
     } else if (result.error) errors.push(result.error);
   }
 
@@ -481,16 +533,32 @@ export async function dispatchCustomerLiveActivityPush(opts: {
     .from("staff_live_activity_tokens")
     .select("token_value")
     .eq("order_id", opts.orderId)
-    .eq("token_kind", "customer_push_to_start");
+    .eq("token_kind", "customer_push_to_start")
+    .eq("is_active", true);
 
   const { data: updateTokens } = await opts.admin
     .from("staff_live_activity_tokens")
-    .select("token_value")
+    .select("token_value, activity_id, token_kind, updated_at")
     .eq("order_id", opts.orderId)
-    .eq("token_kind", "activity_update");
+    .in("token_kind", ["customer_activity_update", "activity_update"])
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false });
 
-  const startRows = (startTokens ?? []) as Array<{ token_value: string }>;
-  const updateRows = (updateTokens ?? []) as Array<{ token_value: string }>;
+  const startRows = uniqueActivityRows((startTokens ?? []) as Array<{ token_value: string }>);
+  const updateRows = uniqueActivityRows(
+    ((updateTokens ?? []) as Array<ActivityTokenRow & { token_kind?: string }>).filter((row) =>
+      row.token_kind === "customer_activity_update" || isCustomerActivityForOrder(row, opts.orderId),
+    ),
+  );
+
+  console.log("[liveActivity] customer tokens", {
+    orderId: opts.orderId,
+    storeId: opts.storeId,
+    startTokensFound: startRows.length,
+    updateTokensFound: updateRows.length,
+    status: opts.status,
+    event: opts.event,
+  });
 
   const statusLabel = customerStatusLabel(opts.status);
   const title = `${opts.settings.la_customer_card_title} #${opts.orderNumber}`;
@@ -515,14 +583,10 @@ export async function dispatchCustomerLiveActivityPush(opts: {
 
   let sent = 0;
   const errors: string[] = [];
-  const seen = new Set<string>();
 
   // Terminal: dismiss existing activities apenas.
   if (isTerminal) {
     for (const row of updateRows) {
-      const key = row.token_value.slice(0, 32);
-      if (seen.has(key)) continue;
-      seen.add(key);
       const result = await sendLiveActivityApns(
         row.token_value,
         { "content-state": contentState, "dismissal-date": Math.floor(Date.now() / 1000) },
@@ -540,9 +604,6 @@ export async function dispatchCustomerLiveActivityPush(opts: {
   // Nunca reenviar START — isso duplica a Live Activity do cliente.
   if (updateRows.length > 0) {
     for (const row of updateRows) {
-      const key = row.token_value.slice(0, 32);
-      if (seen.has(key)) continue;
-      seen.add(key);
       const result = await sendLiveActivityApns(
         row.token_value,
         { "content-state": contentState },
@@ -558,9 +619,6 @@ export async function dispatchCustomerLiveActivityPush(opts: {
 
   // Sem update tokens: iniciar via push-to-start (uma vez).
   for (const row of startRows) {
-    const key = row.token_value.slice(0, 32);
-    if (seen.has(key)) continue;
-    seen.add(key);
     const result = await sendLiveActivityApns(
       row.token_value,
       {
@@ -590,17 +648,26 @@ export async function dispatchStaffLiveActivityEnd(opts: {
 
   const { data: updateTokens } = await opts.admin
     .from("staff_live_activity_tokens")
-    .select("token_value")
+    .select("token_value, activity_id, updated_at")
+    .eq("store_id", opts.storeId)
     .eq("order_id", opts.orderId)
-    .eq("token_kind", "activity_update");
+    .eq("token_kind", "activity_update")
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false });
+
+  const rows = uniqueActivityRows(
+    ((updateTokens ?? []) as ActivityTokenRow[]).filter((row) =>
+      isStaffActivityForOrder(row, opts.orderId),
+    ),
+  );
 
   let sent = 0;
   console.log("[liveActivity] end staff activity", {
     orderId: opts.orderId,
     storeId: opts.storeId,
-    updateTokens: (updateTokens ?? []).length,
+    updateTokens: rows.length,
   });
-  for (const row of (updateTokens ?? []) as Array<{ token_value: string }>) {
+  for (const row of rows) {
     const result = await sendLiveActivityApns(
       row.token_value,
       {
@@ -622,5 +689,11 @@ export async function dispatchStaffLiveActivityEnd(opts: {
     );
     if (result.ok) sent++;
   }
+  await opts.admin
+    .from("staff_live_activity_tokens")
+    .update({ is_active: false, ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("store_id", opts.storeId)
+    .eq("order_id", opts.orderId)
+    .in("token_kind", ["activity_update", "staff_start_sent"]);
   return { sent };
 }
