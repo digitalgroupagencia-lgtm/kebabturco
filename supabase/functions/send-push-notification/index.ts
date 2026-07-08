@@ -80,6 +80,7 @@ type PushSubRow = {
 
 type StaffOrderPushContext = {
   orderNumber: string;
+  status: string | null;
   total: number;
   orderType: string | null;
   tableNumber: string | null;
@@ -93,7 +94,7 @@ async function loadStaffOrderPushContext(
 ): Promise<StaffOrderPushContext | null> {
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("order_number, total, order_type, table_number, created_at")
+    .select("order_number, status, total, order_type, table_number, created_at")
     .eq("id", staffOrderId)
     .maybeSingle();
   if (orderErr || !order) return null;
@@ -106,6 +107,7 @@ async function loadStaffOrderPushContext(
 
   return {
     orderNumber: String(order.order_number ?? ""),
+    status: order.status ?? null,
     total: Number(order.total) || 0,
     orderType: order.order_type ?? null,
     tableNumber: order.table_number ?? null,
@@ -863,6 +865,38 @@ Deno.serve(async (req) => {
     let staffOrderContext: StaffOrderPushContext | null = null;
     if (staffOrderAlertId && storeId) {
       staffOrderContext = await loadStaffOrderPushContext(supabase, staffOrderAlertId);
+      if (staffOrderContext && staffOrderContext.status !== "pending") {
+        let liveActivitySent = 0;
+        try {
+          const ended = await dispatchStaffLiveActivityEnd({
+            admin: supabase,
+            storeId,
+            orderId: staffOrderAlertId,
+          });
+          liveActivitySent = ended.sent;
+        } catch (e) {
+          console.warn("[send-push-notification] skipped non-pending staff order; LA end failed", {
+            staffOrderAlertId,
+            status: staffOrderContext.status,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+        console.log("[send-push-notification] skipped non-pending staff order", {
+          staffOrderAlertId,
+          status: staffOrderContext.status,
+          liveActivitySent,
+        });
+        return new Response(
+          JSON.stringify({
+            skipped: true,
+            reason: "staff_order_not_pending",
+            status: staffOrderContext.status,
+            sent: 0,
+            liveActivitySent,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     let staffOrderCancelledContext: { orderNumber: string; cancelledByName: string | null } | null = null;
