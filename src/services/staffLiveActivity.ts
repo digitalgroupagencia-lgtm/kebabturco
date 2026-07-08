@@ -515,8 +515,12 @@ export async function startStaffOrderLiveActivity(
     return;
   }
 
+  // iOS: o cartão grande da equipa é criado pelo push-to-start remoto do backend.
+  // Criar também uma Activity local quando o painel está aberto gera dois cartões
+  // para o mesmo pedido. Aqui só garantimos tokens/endpoints para o backend.
   void ensureStaffLiveActivityPushToStart(storeId, { force: false });
   void ensureUpdateTokenEndpoint();
+  return;
 
   try {
     const alreadyActive = activeOrderActivities.has(orderId);
