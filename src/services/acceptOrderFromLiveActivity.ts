@@ -145,6 +145,7 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
   try {
     parsed = new URL(url);
   } catch {
+    console.warn("[LADeepLink] URL inválido", { url });
     return false;
   }
 
@@ -165,25 +166,26 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
     parsed.searchParams.get("order_id")?.trim();
   const storeId = parsed.searchParams.get("store_id")?.trim();
 
+  console.info("[LADeepLink] parsed", { orderId, storeId, action, openOnly });
+
   if (!orderId) return false;
 
-  if (openOnly && action !== "accept") {
+  // Tap no corpo/cartão → abrir painel do pedido (nunca aceitar sem o botão explícito).
+  if (openOnly || action !== "accept") {
     if (typeof window !== "undefined") {
-      const target = storeId
-        ? `/panel/live?order=${encodeURIComponent(orderId)}`
-        : `/?screen=tracking&order=${encodeURIComponent(orderId)}`;
+      const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
+      console.info("[LADeepLink] abrir painel do pedido", { target });
       window.location.assign(target);
     }
     return true;
   }
-
-  if (action !== "accept") return false;
 
   if (!storeId) return false;
 
   const etaRaw = Number(parsed.searchParams.get("eta") ?? DEFAULT_PREP_MINUTES);
   const prepMinutes = Number.isFinite(etaRaw) ? etaRaw : DEFAULT_PREP_MINUTES;
 
+  console.info("[LADeepLink] aceitar via deep link", { orderId, storeId, prepMinutes });
   const result = await acceptOrderWithSession(orderId, storeId, prepMinutes);
   if (result.ok) {
     const { toast } = await import("sonner");
@@ -199,6 +201,11 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
 
   const { toast } = await import("sonner");
   const errorMessage = "error" in result ? result.error : "Erro ao aceitar pedido";
+  console.warn("[LADeepLink] falha aceitar → abrir painel", { errorMessage });
   toast.error(errorMessage);
+  // Fallback: mesmo assim abre o painel do pedido para aceitar/recusar manualmente.
+  if (typeof window !== "undefined") {
+    window.location.assign(`/panel/live?order=${encodeURIComponent(orderId)}`);
+  }
   return true;
 }
