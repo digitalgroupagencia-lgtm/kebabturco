@@ -473,7 +473,10 @@ export async function dispatchCustomerLiveActivityPush(opts: {
           ? { "content-state": contentState, dismissal_date: Math.floor(Date.now() / 1000) }
           : { "content-state": contentState };
 
-    const result = await sendLiveActivityApns(row.token_value, payload, config, event);
+    const result = await sendLiveActivityApns(row.token_value, payload, config, event, {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+    });
     if (result.ok) sent++;
     else if (result.error) errors.push(result.error);
   }
