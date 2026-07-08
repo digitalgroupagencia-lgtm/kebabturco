@@ -1,6 +1,9 @@
+import { isCapacitorNativeSync, getCapacitorPlatformSync } from "@/lib/capacitorRuntime";
+
 /** Deteta app instalada no iPhone (Capacitor), não Safari nem browser. */
 export function isNativeIOSAppSync(): boolean {
   if (typeof window === "undefined") return false;
+  if (isCapacitorNativeSync() && getCapacitorPlatformSync() === "ios") return true;
   const cap = (window as unknown as {
     Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
   }).Capacitor;

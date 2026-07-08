@@ -215,7 +215,15 @@ async function ensurePushToStartListener(): Promise<void> {
 export type StaffLiveActivityPushToStartResult = {
   ok: boolean;
   reason?: "not-ios" | "disabled" | "ios-too-old" | "no-session" | "observer-failed" | "db-not-ready" | "timeout" | "probe-failed";
+  registeredInDb?: boolean;
+  progress?: string;
 };
+
+function readLiveActivityAvailability(result: unknown): boolean {
+  if (!result || typeof result !== "object") return false;
+  const row = result as { value?: boolean; available?: boolean };
+  return Boolean(row.value ?? row.available);
+}
 
 export async function ensureStaffLiveActivityPushToStart(
   storeId: string,
@@ -228,7 +236,7 @@ export async function ensureStaffLiveActivityPushToStart(
 
   try {
     const result = await LiveActivity.isAvailable();
-    const enabled = Boolean((result as { value?: boolean }).value);
+    const enabled = readLiveActivityAvailability(result);
     if (!enabled) return { ok: false, reason: "disabled" };
   } catch {
     return { ok: false, reason: "disabled" };
@@ -386,7 +394,10 @@ async function probeLocalLiveActivity(storeId: string): Promise<{ ok: boolean }>
 
 export async function registerStaffLockScreenCard(
   storeId: string,
-): Promise<StaffLiveActivityPushToStartResult & { registeredInDb?: boolean }> {
+  opts?: { onProgress?: (message: string) => void },
+): Promise<StaffLiveActivityPushToStartResult> {
+  const progress = (message: string) => opts?.onProgress?.(message);
+
   if (!isNativeIOSAppSync()) {
     return { ok: false, reason: "not-ios" };
   }
@@ -398,26 +409,35 @@ export async function registerStaffLockScreenCard(
     return { ok: false, reason: "no-session" };
   }
 
+  progress("A verificar a base de dados…");
   const initialCount = await checkStaffLockScreenCardCount(storeId);
   if (initialCount === -1) {
     return { ok: false, reason: "db-not-ready" };
   }
-
-  const probe = await probeLocalLiveActivity(storeId);
-  if (!probe.ok) {
-    return { ok: false, reason: "probe-failed" };
+  if (initialCount > 0) {
+    return { ok: true, registeredInDb: true };
   }
 
+  progress("A preparar o cartão no iPhone…");
+  const probeOk = (await probeLocalLiveActivity(storeId)).ok;
+
   await retryCachedPushToStartToken(storeId);
+  progress("A pedir o código ao iPhone…");
   const result = await ensureStaffLiveActivityPushToStart(storeId, { force: true });
   if (!result.ok) return result;
 
-  for (let i = 0; i < 10; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
+  for (let i = 0; i < 12; i++) {
+    const seconds = (i + 1) * 2;
+    progress(`A aguardar o iPhone (${seconds}s)… não feche a app`);
+    await new Promise((r) => setTimeout(r, 2000));
     await retryCachedPushToStartToken(storeId);
     const count = await checkStaffLockScreenCardCount(storeId);
     if (count === -1) return { ok: false, reason: "db-not-ready" };
     if (count > 0) return { ok: true, registeredInDb: true };
+  }
+
+  if (!probeOk) {
+    return { ok: false, reason: "probe-failed", registeredInDb: false };
   }
 
   return { ok: true, registeredInDb: false, reason: "timeout" };
@@ -428,7 +448,7 @@ export async function isStaffLiveActivitySupported(): Promise<boolean> {
   if (!isNativeIOSAppSync()) return false;
   try {
     const result = await LiveActivity.isAvailable();
-    return Boolean((result as { value?: boolean }).value);
+    return readLiveActivityAvailability(result);
   } catch {
     return false;
   }

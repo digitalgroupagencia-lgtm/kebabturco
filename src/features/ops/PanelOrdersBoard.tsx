@@ -19,6 +19,7 @@ import PanelAlertsBar from "@/features/ops/PanelAlertsBar";
 import PanelAlertsPermissionDialog from "@/features/ops/PanelAlertsPermissionDialog";
 import PanelUrgentAlertOverlay from "@/features/ops/PanelUrgentAlertOverlay";
 import PanelPrintStatusBar from "@/features/ops/PanelPrintStatusBar";
+import PanelLockScreenCardBanner from "@/components/panel/PanelLockScreenCardBanner";
 import { isPanelAlertsEnabled, preparePanelAlertsIfEnabled } from "@/lib/panelAlerts";
 import { restoreNativeStaffPushIfPossible, enableKeepAwake, disableKeepAwake } from "@/services/nativePush";
 import { usePanelPrintStatus } from "@/features/ops/usePanelPrintStatus";
@@ -414,6 +415,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
         connectionStatus={connectionStatus}
         headerExtra={
           <div className="space-y-2">
+            {isLive ? <PanelLockScreenCardBanner storeId={storeId} /> : null}
             {!hideInlineAlertsBar && <PanelAlertsBar storeId={storeId} />}
             {printSummary?.printerEnabled && (
               <PanelPrintStatusBar

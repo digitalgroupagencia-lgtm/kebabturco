@@ -64,6 +64,7 @@ const PanelSettingsPage = () => {
     null,
   );
   const [pushNativeHint, setPushNativeHint] = useState<string | null>(null);
+  const [iosNative, setIosNative] = useState<boolean | null>(null);
   const [lockScreenBusy, setLockScreenBusy] = useState(false);
   const [lockScreenStatus, setLockScreenStatus] = useState<{
     tone: "ok" | "warn" | "error";
@@ -81,15 +82,33 @@ const PanelSettingsPage = () => {
 
   const runLockScreenRegistration = async (storeId: string) => {
     setLockScreenBusy(true);
+    setLockScreenStatus({
+      tone: "warn",
+      title: "A registar cartão no ecrã…",
+      detail: "Não feche a app. Isto pode demorar até 25 segundos.",
+    });
     try {
-      const { registerStaffLockScreenCard, describeLockScreenCardStatus } = await import(
-        "@/services/staffLiveActivity"
-      );
-      const la = await registerStaffLockScreenCard(storeId);
-      const status = describeLockScreenCardStatus({ count: la.registeredInDb ? 1 : 0, result: la });
+      const { registerStaffLockScreenCard, describeLockScreenCardStatus, checkStaffLockScreenCardCount } =
+        await import("@/services/staffLiveActivity");
+      const la = await registerStaffLockScreenCard(storeId, {
+        onProgress: (message) => {
+          setLockScreenStatus({
+            tone: "warn",
+            title: "A registar cartão no ecrã…",
+            detail: message,
+          });
+        },
+      });
+      const count = la.registeredInDb ? 1 : await checkStaffLockScreenCardCount(storeId);
+      const status = describeLockScreenCardStatus({ count, result: la });
       setLockScreenStatus(status);
       if (la.registeredInDb) {
         setPushNativeHint("Alertas + cartão no ecrã bloqueado registados.");
+        toast.success("Cartão no ecrã bloqueado registado!");
+      } else if (status.tone === "error") {
+        toast.error(status.title);
+      } else if (status.tone === "warn") {
+        toast.warning(status.title);
       }
       return la;
     } finally {
@@ -98,17 +117,23 @@ const PanelSettingsPage = () => {
   };
 
   useEffect(() => {
-    if (!effectiveStoreId || pushClientMode !== "native") return;
+    if (!effectiveStoreId || iosNative !== true) return;
     void refreshLockScreenStatus(effectiveStoreId);
-  }, [effectiveStoreId, pushClientMode]);
+  }, [effectiveStoreId, iosNative]);
 
   useEffect(() => {
     setSoundOnNewOrder(isPanelAlertsEnabled());
     setPushNotifications(isStaffPushEnabled());
-    void getStaffPushClientMode().then(setPushClientMode);
-    void import("@/services/nativePush").then(async ({ getNativePushRuntimeDiagnostics, isNativePushAvailable }) => {
-      if (!(await isNativePushAvailable())) return;
-      const diag = await getNativePushRuntimeDiagnostics();
+    void (async () => {
+      const { waitForCapacitorNative } = await import("@/lib/capacitorRuntime");
+      const { isNativeIOSApp } = await import("@/lib/nativeAppPlatform");
+      await waitForCapacitorNative(10_000);
+      setIosNative(await isNativeIOSApp());
+      const mode = await getStaffPushClientMode();
+      setPushClientMode(mode);
+      const nativePush = await import("@/services/nativePush");
+      if (!(await nativePush.isNativePushAvailable())) return;
+      const diag = await nativePush.getNativePushRuntimeDiagnostics();
       if (diag.permission === "denied") {
         setPushNativeHint("Notificações bloqueadas no iPhone, Definições → Kebab Turco → Notificações → Permitir.");
       } else if (diag.permission === "granted" && diag.hasCachedToken) {
@@ -116,7 +141,7 @@ const PanelSettingsPage = () => {
       } else if (diag.permission === "granted") {
         setPushNativeHint("Permissão OK, ao ligar o interruptor, o telemóvel pode demorar até 1 minuto.");
       }
-    });
+    })();
   }, []);
 
   const handlePushToggle = async (enabled: boolean) => {
@@ -235,6 +260,7 @@ const PanelSettingsPage = () => {
 
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "").toLowerCase();
+    if (hash === "notif") setSettingsTab("notif");
     if ((hash === "tap-to-pay" || hash === "tap") && tapToPayAvailable) {
       setSettingsTab("tap");
     }
@@ -397,7 +423,12 @@ const PanelSettingsPage = () => {
                   <p>Loja não identificada, saia e entre outra vez no painel, ou escolha a unidade no menu.</p>
                 </div>
               ) : null}
-              {pushClientMode === "needs-native-app" ? (
+              {iosNative === null ? (
+                <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                  A verificar se está na app Kebab Turco no iPhone…
+                </div>
+              ) : null}
+              {pushClientMode === "needs-native-app" && iosNative === false ? (
                 <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
                   <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
                   <p>{t("settings.push.native_required")}</p>
@@ -418,7 +449,7 @@ const PanelSettingsPage = () => {
                   </p>
                 </div>
               ) : null}
-              {pushClientMode === "native" ? (
+              {iosNative === true ? (
                 <div
                   className={`rounded-lg border px-4 py-3 text-sm space-y-3 ${
                     lockScreenStatus?.tone === "ok"
@@ -431,6 +462,8 @@ const PanelSettingsPage = () => {
                   <div className="flex gap-2">
                     {lockScreenStatus?.tone === "ok" ? (
                       <Smartphone className="h-5 w-5 shrink-0 text-emerald-700" />
+                    ) : lockScreenStatus?.tone === "error" ? (
+                      <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
                     ) : (
                       <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
                     )}
@@ -440,7 +473,7 @@ const PanelSettingsPage = () => {
                       </p>
                       <p className="text-xs mt-1 opacity-90">
                         {lockScreenStatus?.detail ??
-                          "Carregue no botão para registar. Não feche a app enquanto espera (~20 s)."}
+                          "Carregue no botão abaixo e mantenha a app aberta ~25 segundos até ficar verde."}
                       </p>
                     </div>
                   </div>
@@ -459,12 +492,12 @@ const PanelSettingsPage = () => {
                   </Button>
                 </div>
               ) : null}
-              {pushClientMode === "web" ? (
+              {pushClientMode === "web" && iosNative === false ? (
                 <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
                   {t("settings.push.web_hint")}
                 </div>
               ) : null}
-              {pushNativeHint && pushClientMode === "native" ? (
+              {pushNativeHint && (pushClientMode === "native" || iosNative === true) ? (
                 <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
                   {pushNativeHint}
                 </div>

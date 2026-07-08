@@ -134,8 +134,8 @@ const LiveActivitySettingsPage = () => {
                   <strong>Lovable:</strong> Publish (para o servidor e a app web actualizados).
                 </li>
                 <li>
-                  <strong>iPhone da equipa:</strong> app Kebab Turco 1.1.6, iOS 17.2+, entrar no Painel com login,
-                  Definições → desligar e ligar «Notificações push», fechar a app.
+                  <strong>iPhone da equipa:</strong> app pelo TestFlight, iOS 17.2+, Painel ao vivo → «Registar agora»
+                  (faixa amarela no topo) ou Definições → Notificações → «Registar cartão no ecrã».
                 </li>
                 <li>
                   <strong>Teste:</strong> no painel ao vivo, «Enviar alerta» no pedido — com ecrã bloqueado deve
