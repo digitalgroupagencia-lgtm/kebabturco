@@ -414,7 +414,6 @@ async function probeLocalLiveActivity(storeId: string): Promise<{ ok: boolean }>
     await new Promise((r) => setTimeout(r, 2500));
     await LiveActivity.endActivity({
       id: probeId,
-      contentState: { ...state },
       dismissalPolicy: "immediate",
     });
     return { ok: true };
