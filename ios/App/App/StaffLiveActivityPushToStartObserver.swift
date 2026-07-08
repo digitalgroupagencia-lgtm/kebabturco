@@ -83,16 +83,20 @@ import LiveActivityPlugin
             return
         }
 
+        var shouldStartActivityObserver = false
         queue.sync {
             if observerTask != nil && !force {
-                startActivityObserverLocked(force: false)
+                shouldStartActivityObserver = true
                 return
             }
             observerTask?.cancel()
             observerTask = Task { [weak self] in
                 await self?.runPushToStartLoop()
             }
-            startActivityObserverLocked(force: force)
+            shouldStartActivityObserver = true
+        }
+        if shouldStartActivityObserver {
+            startActivityObserver(force: force)
         }
         print("[StaffLA] observador push-to-start arrancado (force=\(force))")
         #else
@@ -114,7 +118,7 @@ import LiveActivityPlugin
 
     #if canImport(LiveActivityPlugin)
     @available(iOS 16.2, *)
-    private func startActivityObserverLocked(force: Bool) {
+    private func startActivityObserver(force: Bool) {
         if activityObserverTask != nil && !force { return }
         activityObserverTask?.cancel()
         activityObserverTask = Task { [weak self] in
@@ -162,7 +166,7 @@ import LiveActivityPlugin
         print("[StaffLA] a observar update token activity=\(activityId) order=\(orderId)")
     }
     #else
-    private func startActivityObserverLocked(force: Bool) {}
+    private func startActivityObserver(force: Bool) {}
     #endif
 
     private func handleReceivedToken(_ token: String) async {
