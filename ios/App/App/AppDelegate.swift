@@ -9,11 +9,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         flushPendingLiveActivityDeepLink(application)
+        StaffLiveActivityPushToStartObserver.shared.bootstrapIfConfigured()
         return true
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         flushPendingLiveActivityDeepLink(application)
+        StaffLiveActivityPushToStartObserver.shared.bootstrapIfConfigured()
     }
 
     private func flushPendingLiveActivityDeepLink(_ application: UIApplication) {

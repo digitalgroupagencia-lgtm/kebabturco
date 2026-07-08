@@ -19,6 +19,15 @@ export interface ApnsTokenBridgePlugin {
   redeliverToJavaScript(): Promise<void>;
   requestPushAuthorization(): Promise<{ status: ApnsAuthorizationStatus }>;
   getNotificationAuthorizationStatus(): Promise<{ status: ApnsAuthorizationStatus }>;
+  configureStaffLiveActivity?(options: {
+    supabaseUrl: string;
+    anonKey: string;
+    jwt: string;
+    storeId: string;
+    userId?: string;
+    deviceId?: string;
+    appVersion?: string;
+  }): Promise<{ ok: boolean }>;
 }
 
 class ApnsTokenBridgeWeb extends WebPlugin implements ApnsTokenBridgePlugin {

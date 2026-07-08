@@ -22,4 +22,8 @@ export class ApnsTokenBridgeWeb extends WebPlugin implements ApnsTokenBridgePlug
   async redeliverToJavaScript() {
     /* web */
   }
+
+  async configureStaffLiveActivity() {
+    return { ok: false };
+  }
 }
