@@ -33,6 +33,7 @@
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D61FED79650016851F /* ApnsTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApnsTokenStore.swift; sourceTree = "<group>"; };
 		A1B2C3D81FED79650016851F /* ApnsTokenBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApnsTokenBridgePlugin.swift; sourceTree = "<group>"; };
+		A1B2C3F81FED79650016851F /* StaffLiveActivityPushToStartObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaffLiveActivityPushToStartObserver.swift; sourceTree = "<group>"; };
 		S001SD021FED79650016851F /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
