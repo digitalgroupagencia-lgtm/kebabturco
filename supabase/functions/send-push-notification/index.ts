@@ -481,6 +481,10 @@ async function sendApns(
   const hosts = opts?.tryBothHosts ? [primaryHost, alternateHost] : [primaryHost];
 
   const attemptErrors: string[] = [];
+  // Sem apns-collapse-id: pedido do restaurante — alertas repetidos devem empilhar
+  // até que alguém aceite o pedido.
+  const collapseId: string | undefined = undefined;
+
   for (const host of hosts) {
     const res = await fetch(`https://${host}/3/device/${token}`, {
       method: "POST",
@@ -489,6 +493,7 @@ async function sendApns(
         "apns-topic": config.topic,
         "apns-push-type": "alert",
         "apns-priority": "10",
+        ...(collapseId ? { "apns-collapse-id": collapseId } : {}),
         "content-type": "application/json",
       },
       body,
@@ -953,6 +958,26 @@ Deno.serve(async (req) => {
     }
 
     const subs = [...targetMap.values()];
+    console.log("[send-push-notification] subsMatched", {
+      storeId,
+      staffOrderAlertId,
+      total: subs.length,
+      byPlatform: subs.reduce((acc: Record<string, number>, s) => {
+        const p = (s.platform ?? "web").toLowerCase();
+        acc[p] = (acc[p] ?? 0) + 1;
+        return acc;
+      }, {}),
+      iosSample: subs
+        .filter((s) => (s.platform ?? "").toLowerCase() === "ios")
+        .map((s) => ({
+          endpointPreview: s.endpoint.slice(0, 40),
+          hasFcmToken: Boolean(s.fcm_token),
+          tokenLen: (s.fcm_token ?? s.endpoint.replace(/^fcm:\/\//i, "")).length,
+          staffAlerts: s.staff_alerts,
+          customerPhone: s.customer_phone,
+          orderId: s.order_id,
+        })),
+    });
 
     let sent = 0;
     let sentWeb = 0;
@@ -1042,6 +1067,13 @@ Deno.serve(async (req) => {
           );
           sent++;
           sentApns++;
+          console.log("[send-push-notification] apnsSent", {
+            endpointPreview: sub.endpoint.slice(0, 40),
+            host: apnsResult.host,
+            tag,
+            tokenLen: token.length,
+            staffOrderAlertId,
+          });
           const expectedHost = apns.useSandbox ? "api.sandbox.push.apple.com" : "api.push.apple.com";
           if (apnsResult.host !== expectedHost) {
             apnsDeliveryNote =
