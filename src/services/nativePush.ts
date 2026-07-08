@@ -494,7 +494,30 @@ async function attachPushListeners(): Promise<void> {
   await PushNotifications.addListener("pushNotificationActionPerformed", (a) => {
     const data = (a?.notification?.data ?? {}) as Record<string, unknown>;
     const url = typeof data.url === "string" ? data.url : undefined;
+    const orderId =
+      (typeof data.order_id === "string" && data.order_id) ||
+      (typeof data.orderId === "string" && data.orderId) ||
+      undefined;
+    const storeId =
+      (typeof data.store_id === "string" && data.store_id) ||
+      (typeof data.storeId === "string" && data.storeId) ||
+      undefined;
+    logNative("info", "Notificação tocada", {
+      url,
+      orderId,
+      storeId,
+      actionId: a?.actionId,
+      dataKeys: Object.keys(data),
+    });
+    // Se vier order_id explícito na notificação staff, força abertura do painel do pedido.
+    if (orderId && typeof window !== "undefined") {
+      const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
+      logNative("info", "Rota do pedido a abrir", { target });
+      navigateCustomerFromPushUrl(target);
+      return;
+    }
     if (url && typeof window !== "undefined") {
+      logNative("info", "URL do push a abrir", { url });
       navigateCustomerFromPushUrl(url);
     }
   });
