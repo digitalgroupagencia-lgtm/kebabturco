@@ -44,9 +44,9 @@ const PushOptInDialogFrame = ({
           className={cn(
             "fixed z-50 outline-none overflow-hidden",
             "left-1/2 -translate-x-1/2",
-            "top-[max(0.75rem,env(safe-area-inset-top))] sm:top-1/2 sm:-translate-y-1/2",
+            "top-[max(4.75rem,calc(env(safe-area-inset-top)+3.5rem))] sm:top-1/2 sm:-translate-y-1/2",
             "w-[calc(100%-1.5rem)] max-w-sm",
-            "max-h-[min(90dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem))]",
+            "max-h-[min(86dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-5rem))] sm:max-h-[min(90dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem))]",
             "rounded-2xl sm:rounded-3xl border border-[#5a0a0e]/50 p-0 shadow-2xl",
             "bg-gradient-to-b from-[#3a0205] via-[#2a0104] to-[#1a0204] text-white",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
