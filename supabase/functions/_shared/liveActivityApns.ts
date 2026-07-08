@@ -504,6 +504,7 @@ export async function dispatchStaffLiveActivityEnd(opts: {
       { dismissal_date: Math.floor(Date.now() / 1000) },
       config,
       "end",
+      { orderId: opts.orderId, storeId: opts.storeId },
     );
     if (result.ok) sent++;
   }
