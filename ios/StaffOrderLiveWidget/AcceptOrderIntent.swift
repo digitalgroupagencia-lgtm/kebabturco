@@ -5,10 +5,16 @@ import Foundation
 private let appGroupId = "group.net.kebabturco.app"
 private let pendingDeepLinkKey = "pendingLiveActivityDeepLink"
 
+private func queuePendingStaffOrderDeepLink(orderId: String, storeId: String) {
+    guard let url = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId),
+          let defaults = UserDefaults(suiteName: appGroupId) else { return }
+    defaults.set(url.absoluteString, forKey: pendingDeepLinkKey)
+}
+
 @available(iOS 17.0, *)
 struct OpenStaffOrderFromLiveActivityIntent: AppIntent {
-    static var title: LocalizedStringResource = "Abrir pedido"
-    static var openAppWhenRun: Bool = true
+    static let title: LocalizedStringResource = "Abrir pedido"
+    static let openAppWhenRun: Bool = true
 
     @Parameter(title: "Order ID")
     var orderId: String
@@ -24,18 +30,15 @@ struct OpenStaffOrderFromLiveActivityIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        if let url = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId),
-           let defaults = UserDefaults(suiteName: appGroupId) {
-            defaults.set(url.absoluteString, forKey: pendingDeepLinkKey)
-        }
+        queuePendingStaffOrderDeepLink(orderId: orderId, storeId: storeId)
         return .result()
     }
 }
 
 @available(iOS 17.0, *)
 struct AcceptOrderIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Aceitar pedido"
-    static var description = IntentDescription("Aceita o pedido pendente no servidor Kebab Turco.")
+    static let title: LocalizedStringResource = "Aceitar pedido"
+    static let description = IntentDescription("Aceita o pedido pendente no servidor Kebab Turco.")
 
     @Parameter(title: "Order ID")
     var orderId: String
@@ -73,13 +76,12 @@ struct AcceptOrderIntent: LiveActivityIntent {
 
         if result.ok {
             await endMatchingActivities()
-            return .result()
+            return .result(dialog: IntentDialog(stringLiteral: "Pedido aceite"))
         }
 
-        return .result(
-            opensIntent: OpenStaffOrderFromLiveActivityIntent(orderId: orderId, storeId: storeId),
-            dialog: IntentDialog(stringLiteral: result.message)
-        )
+        queuePendingStaffOrderDeepLink(orderId: orderId, storeId: storeId)
+        _ = try await OpenStaffOrderFromLiveActivityIntent(orderId: orderId, storeId: storeId).perform()
+        return .result(dialog: IntentDialog(stringLiteral: result.message))
     }
 
     @MainActor
