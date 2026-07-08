@@ -515,6 +515,22 @@ export function usePanelOrders(storeId: string | undefined) {
 
     acknowledgePendingOrderAlert(orderId);
     void endRemoteLiveActivity(orderId);
+    // Sincroniza o cartão push do cliente com o estado cancelado.
+    if (storeId) {
+      void supabase.functions
+        .invoke("send-push-notification", {
+          body: {
+            orderId,
+            storeId,
+            customerOrderEvent: "cancelled",
+            tag: `order-${orderId}-cancelled`,
+            url: `/?screen=tracking&order=${orderId}`,
+          },
+        })
+        .catch(() => {
+          /* não bloqueia operação */
+        });
+    }
   }, [orders, storeId, endRemoteLiveActivity]);
 
   const setPrepMinutes = useCallback(async (order: PanelOrder, minutes: number) => {
