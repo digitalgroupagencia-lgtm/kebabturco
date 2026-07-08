@@ -451,6 +451,7 @@ async function sendApns(
     imageUrl?: string;
     orderId?: string;
     storeId?: string;
+    category?: string;
   },
   config: ApnsConfig,
   opts?: { tryBothHosts?: boolean },
@@ -467,6 +468,8 @@ async function sendApns(
     aps: {
       alert: { title: payload.title, body: payload.body },
       sound: apnsSound,
+        ...(payload.category ? { category: payload.category } : {}),
+        ...(payload.orderId ? { "thread-id": `staff-order-${payload.orderId}` } : {}),
       ...(payload.imageUrl ? { "mutable-content": 1 } : {}),
     },
     url: payload.url ?? "/",
@@ -1061,6 +1064,7 @@ Deno.serve(async (req) => {
               imageUrl,
               orderId: staffOrderAlertId ?? staffOrderCancelledAlertId ?? (orderId as string | undefined),
               storeId: (storeId as string | undefined) ?? undefined,
+              category: staffOrderAlertId ? "STAFF_ORDER" : undefined,
             },
             apns,
             { tryBothHosts: apnsTryBothHosts },
@@ -1071,6 +1075,9 @@ Deno.serve(async (req) => {
             endpointPreview: sub.endpoint.slice(0, 40),
             host: apnsResult.host,
             tag,
+            url: resolvedUrl,
+            category: staffOrderAlertId ? "STAFF_ORDER" : undefined,
+            orderId: staffOrderAlertId ?? staffOrderCancelledAlertId ?? (orderId as string | undefined),
             tokenLen: token.length,
             staffOrderAlertId,
           });
