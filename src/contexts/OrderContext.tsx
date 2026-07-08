@@ -10,7 +10,12 @@ import {
   saveStoredActiveOrder,
   clearStoredActiveOrder,
 } from "@/customer/active-order/useActiveOrderStorage";
-import { readOrderIdFromUrl, readCustomerScreenFromUrl, syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import {
+  readOrderIdFromUrl,
+  readOrderTokenFromUrl,
+  readCustomerScreenFromUrl,
+  syncActiveOrderUrl,
+} from "@/lib/customerOrderUrl";
 import {
   clearMesaBindingStorage,
   loadSavedLang,
@@ -212,10 +217,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     if (activeOrderId && orderNumber && effectiveStoreId && !isEmergencyFallbackStoreId(effectiveStoreId)) {
+      const keepToken = readOrderTokenFromUrl() || loadAnyStoredActiveOrder()?.orderToken || undefined;
       saveStoredActiveOrder({
         orderId: activeOrderId,
         orderNumber,
         storeId: effectiveStoreId,
+        orderToken: keepToken,
         screen: screen === "confirmation" || screen === "tracking" ? screen : undefined,
       });
     }

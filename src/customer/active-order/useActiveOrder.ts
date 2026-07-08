@@ -5,7 +5,7 @@ import { customerStatusTranslationKey } from "@/lib/orderStatusLabels";
 import { isEmergencyFallbackStoreId } from "@/lib/storeResolution";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
-import { clearStoredActiveOrder } from "./useActiveOrderStorage";
+import { clearStoredActiveOrder, loadAnyStoredActiveOrder } from "./useActiveOrderStorage";
 
 export {
   ACTIVE_ORDER_STORAGE_KEY,
@@ -56,7 +56,8 @@ export function useActiveOrder() {
     if (next) setFetchSettled(false);
   }, []);
 
-  useOrderTracking(activeOrderId || null, onOrder, onLoading);
+  const activeOrderToken = loadAnyStoredActiveOrder()?.orderToken ?? null;
+  useOrderTracking(activeOrderId || null, onOrder, onLoading, activeOrderToken);
   useCustomerOrderNotifications(order);
 
   useEffect(() => {

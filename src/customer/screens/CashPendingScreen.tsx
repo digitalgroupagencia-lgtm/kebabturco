@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import { loadAnyStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 
 const CashPendingScreen = () => {
   const {
@@ -20,7 +21,8 @@ const CashPendingScreen = () => {
   const [acknowledged, setAcknowledged] = useState(false);
 
   const onOrder = useCallback((next: PublicOrderTrack | null) => setOrder(next), []);
-  useOrderTracking(activeOrderId || null, onOrder, setLoading);
+  const activeOrderToken = loadAnyStoredActiveOrder()?.orderToken ?? null;
+  useOrderTracking(activeOrderId || null, onOrder, setLoading, activeOrderToken);
   useCustomerOrderNotifications(order);
 
   useEffect(() => {
@@ -28,14 +30,14 @@ const CashPendingScreen = () => {
       setScreen("home");
       return;
     }
-    syncActiveOrderUrl(activeOrderId, "cashPending");
+    syncActiveOrderUrl(activeOrderId, "cashPending", activeOrderToken);
     setTrackingOrderId(activeOrderId);
   }, [activeOrderId, setScreen, setTrackingOrderId]);
 
   useEffect(() => {
     if (order?.payment_status !== "paid") return;
     setOrderPaymentStatus("paid");
-    syncActiveOrderUrl(order.id, "confirmation");
+    syncActiveOrderUrl(order.id, "confirmation", activeOrderToken);
     setScreen("confirmation");
   }, [order?.payment_status, order?.id, setOrderPaymentStatus, setScreen]);
 

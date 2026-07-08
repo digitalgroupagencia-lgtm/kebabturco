@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+const sb = supabase as unknown as any;
+
 
 export type PublicOrderTrack = {
   id: string;
@@ -27,6 +29,7 @@ export function useOrderTracking(
   orderId: string | null | undefined,
   onOrder: (order: PublicOrderTrack | null) => void,
   onLoading?: (loading: boolean) => void,
+  orderToken?: string | null | undefined,
 ) {
   const onOrderRef = useRef(onOrder);
   onOrderRef.current = onOrder;
@@ -36,22 +39,24 @@ export function useOrderTracking(
   const pollIdRef = useRef<number | null>(null);
 
   const fetchOrder = useCallback(async () => {
-    if (!orderId) {
+    if (!orderId && !orderToken) {
       onOrderRef.current(null);
       onLoading?.(false);
       return;
     }
-    const { data, error } = await supabase.rpc("get_order_public", { _order_id: orderId });
+    const { data, error } = orderToken
+      ? await sb.rpc("get_order_by_customer_token", { _customer_order_token: orderToken })
+      : await sb.rpc("get_order_public", { _order_id: orderId });
     if (!error && data?.[0]) {
       onOrderRef.current(data[0] as unknown as PublicOrderTrack);
     } else {
       onOrderRef.current(null);
     }
     onLoading?.(false);
-  }, [orderId, onLoading]);
+  }, [orderId, onLoading, orderToken]);
 
   useEffect(() => {
-    if (!orderId) {
+    if (!orderId && !orderToken) {
       onLoading?.(false);
       return;
     }
@@ -108,5 +113,5 @@ export function useOrderTracking(
       clearReconnect();
       if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
-  }, [orderId, fetchOrder, onLoading]);
+  }, [orderId, fetchOrder, onLoading, orderToken]);
 }

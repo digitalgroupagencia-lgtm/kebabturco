@@ -39,6 +39,7 @@ export type CreateCustomerOrderResult = {
   success: boolean;
   order_id: string;
   order_number: string;
+  customer_order_token?: string;
   loyalty?: { stamps: number; reward_ready: boolean };
 };
 

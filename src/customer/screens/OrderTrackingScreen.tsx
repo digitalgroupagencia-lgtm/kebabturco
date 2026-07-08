@@ -13,6 +13,8 @@ import OrderReviewForm from "@/customer/components/OrderReviewForm";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
+import { loadAnyStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
+import { readOrderTokenFromUrl } from "@/lib/customerOrderUrl";
 import { Button } from "@/components/ui/button";
 
 const OrderTrackingScreen = () => {
@@ -33,11 +35,13 @@ const OrderTrackingScreen = () => {
   const orderId =
     trackingOrderId ||
     (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("order") : null);
+  const orderToken =
+    readOrderTokenFromUrl() || loadAnyStoredActiveOrder()?.orderToken || null;
 
   const handleOrder = useCallback((o: PublicOrderTrack | null) => setOrder(o), []);
   const handleLoading = useCallback((l: boolean) => setLoading(l), []);
 
-  useOrderTracking(orderId, handleOrder, handleLoading);
+  useOrderTracking(orderId, handleOrder, handleLoading, orderToken);
   useCustomerOrderNotifications(order);
 
   useEffect(() => {
@@ -56,7 +60,7 @@ const OrderTrackingScreen = () => {
 
   const prepMin = (settings as { avg_prep_minutes?: number })?.avg_prep_minutes ?? 12;
 
-  if (!orderId) {
+  if (!orderId && !orderToken) {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center p-6 text-center">
         <p className="text-muted-foreground">{t("orderNotFound")}</p>

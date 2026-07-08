@@ -9,7 +9,7 @@ import { toPng } from "html-to-image";
 import { shouldForceDeliveryOnly } from "@/lib/embed-mode";
 import { useOrderTracking, type PublicOrderTrack } from "@/hooks/useOrderTracking";
 import { useCustomerOrderNotifications } from "@/hooks/useCustomerOrderNotifications";
-import { clearStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
+import { clearStoredActiveOrder, loadAnyStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 import OrderDelaySupportBanner from "@/customer/components/OrderDelaySupportBanner";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { hasCustomerAcknowledged } from "@/lib/customerOrderUrl";
@@ -59,7 +59,8 @@ const ConfirmationScreen = () => {
     if (o?.id && o.status) updateLocalOrderHistoryStatus(o.id, o.status);
   }, []);
   const onTrackingLoading = useCallback(() => {}, []);
-  useOrderTracking(activeOrderId || null, onLiveOrder, onTrackingLoading);
+  const activeOrderToken = loadAnyStoredActiveOrder()?.orderToken ?? null;
+  useOrderTracking(activeOrderId || null, onLiveOrder, onTrackingLoading, activeOrderToken);
   useCustomerOrderNotifications(liveOrder);
 
   useEffect(() => {

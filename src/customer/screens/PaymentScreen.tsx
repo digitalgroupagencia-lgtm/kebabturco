@@ -691,6 +691,7 @@ const PaymentScreen = () => {
       orderId: result.order_id,
       orderNumber: result.order_number,
       storeId,
+      orderToken: result.customer_order_token,
       screen: "confirmation",
     });
     console.info("[active-order] saved", {
@@ -704,7 +705,11 @@ const PaymentScreen = () => {
       .eq("id", result.order_id);
     const awaitsCounterPayment =
       (opts.paymentMethod === "cash" || opts.paymentMethod === "counter") && opts.paymentStatus !== "paid";
-    syncActiveOrderUrl(result.order_id, awaitsCounterPayment ? "cashPending" : "confirmation");
+    syncActiveOrderUrl(
+      result.order_id,
+      awaitsCounterPayment ? "cashPending" : "confirmation",
+      result.customer_order_token ?? null,
+    );
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
     if (customerPhone.trim()) saveSavedCustomerPhone(phoneDialCode, customerPhone.trim());
@@ -973,6 +978,7 @@ const PaymentScreen = () => {
       orderId: result.order_id,
       orderNumber: result.order_number,
       storeId,
+      orderToken: result.customer_order_token,
       screen: "confirmation",
     });
     console.info("[active-order] saved", {
@@ -980,7 +986,7 @@ const PaymentScreen = () => {
       orderNumber: result.order_number,
       storeId,
     });
-    syncActiveOrderUrl(result.order_id, "confirmation");
+    syncActiveOrderUrl(result.order_id, "confirmation", result.customer_order_token ?? null);
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
     if (customerPhone.trim()) saveSavedCustomerPhone(phoneDialCode, customerPhone.trim());

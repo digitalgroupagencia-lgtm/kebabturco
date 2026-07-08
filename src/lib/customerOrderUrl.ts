@@ -1,15 +1,21 @@
 export type CustomerOrderScreen = "confirmation" | "tracking" | "cashPending";
 
 /** Mantém ?order= e ?screen= na URL para o cliente recuperar o pedido após refresh. */
-export function syncActiveOrderUrl(orderId: string | null, screen?: CustomerOrderScreen | null) {
+export function syncActiveOrderUrl(
+  orderId: string | null,
+  screen?: CustomerOrderScreen | null,
+  orderToken?: string | null,
+) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   const currentScreen = url.searchParams.get("screen");
   if (orderId) {
     url.searchParams.set("order", orderId);
+    if (orderToken) url.searchParams.set("ot", orderToken);
     if (screen) url.searchParams.set("screen", screen);
   } else {
     url.searchParams.delete("order");
+    url.searchParams.delete("ot");
     // Não apagar ecrãs normais do cliente/preview (ex.: ?screen=language).
     // Antes isto removia o screen, o PreviewGate colocava de novo e a página ficava a piscar.
     if (currentScreen === "confirmation" || currentScreen === "tracking" || currentScreen === "cashPending") {
@@ -25,6 +31,11 @@ export function syncActiveOrderUrl(orderId: string | null, screen?: CustomerOrde
 export function readOrderIdFromUrl(): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get("order");
+}
+
+export function readOrderTokenFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("ot");
 }
 
 export function readCustomerScreenFromUrl(): CustomerOrderScreen | null {

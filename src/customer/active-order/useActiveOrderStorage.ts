@@ -4,6 +4,7 @@ export interface StoredActiveOrder {
   orderId: string;
   orderNumber: string;
   storeId: string;
+  orderToken?: string;
   screen?: "confirmation" | "tracking";
 }
 

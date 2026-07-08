@@ -46,6 +46,7 @@ DECLARE
   v_customer_profile uuid;
   v_order uuid;
   v_order_number text;
+  v_customer_order_token text := encode(extensions.gen_random_bytes(16), 'hex');
 
   v_item jsonb;
   v_qty int;
@@ -71,12 +72,12 @@ DECLARE
   v_total_final numeric;
 
   v_prep_min integer;
-  v_loyalty jsonb;
   v_ops public.operations_settings%ROWTYPE;
   v_table_validated boolean := false;
   v_is_anon boolean := (auth.uid() IS NULL);
   v_store public.stores%ROWTYPE;
   v_test_simulated boolean := false;
+  v_rate_key text;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.stores WHERE id = _store_id AND is_active = true) THEN
     RAISE EXCEPTION 'Loja inválida';
@@ -86,6 +87,19 @@ BEGIN
   v_test_simulated := COALESCE(v_store.stripe_connect_test_simulated, false)
     OR v_store.stripe_connect_environment = 'test';
   SELECT * INTO v_ops FROM public.operations_settings WHERE store_id = _store_id LIMIT 1;
+
+  -- Rate limit de criação de pedido (fallback sem IP):
+  -- - autenticado: por user_id
+  -- - anónimo: por store + phone (quando existir), senão por store + order_type
+  v_rate_key := CASE
+    WHEN auth.uid() IS NOT NULL THEN 'uid:' || auth.uid()::text
+    WHEN NULLIF(trim(COALESCE(_customer_phone, '')), '') IS NOT NULL THEN
+      'anon-phone:' || _store_id::text || ':' || md5(trim(_customer_phone))
+    ELSE
+      'anon-store:' || _store_id::text || ':' || COALESCE(_order_type, 'unknown')
+  END;
+
+  PERFORM public.assert_rate_limit(v_rate_key, 'create_customer_order', 8, 60);
 
   -- Build canonical cart and subtotal (ignore frontend prices/totals)
   FOR v_item IN SELECT * FROM jsonb_array_elements(_items) LOOP
@@ -299,6 +313,7 @@ BEGIN
     discount_amount, coupon_code,
     online_service_fee_cents, platform_fee_cents, stripe_fee_cents, net_to_store_cents,
     stripe_connect_account_id,
+    customer_order_token,
     estimated_ready_at
   ) VALUES (
     _store_id, v_order_number, 'totem'::order_source, 'pending'::order_status, _order_type,
@@ -316,6 +331,7 @@ BEGIN
     COALESCE(_stripe_fee_cents, 0),
     _net_to_store_cents,
     NULLIF(trim(_stripe_connect_account_id), ''),
+    v_customer_order_token,
     CASE WHEN v_prep_min IS NOT NULL THEN now() + (v_prep_min || ' minutes')::interval ELSE NULL END
   ) RETURNING id INTO v_order;
 
@@ -378,17 +394,14 @@ BEGIN
     WHERE id = v_session;
   END IF;
 
-  IF NULLIF(trim(_customer_phone), '') IS NOT NULL THEN
-    v_loyalty := public.add_loyalty_stamp(_store_id, _customer_phone, v_customer_profile);
-  END IF;
-
   RETURN jsonb_build_object(
     'success', true,
     'order_id', v_order,
     'order_number', v_order_number,
+    'customer_order_token', v_customer_order_token,
     'session_id', v_session,
     'customer_id', v_customer,
-    'loyalty', v_loyalty,
+    'loyalty', NULL,
     'table_validated', v_table_validated
   );
 END;
