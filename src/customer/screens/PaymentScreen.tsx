@@ -62,6 +62,7 @@ import {
   stripeConfigIssue,
 } from "@/lib/paymentPolicy";
 import { syncActiveOrderUrl } from "@/lib/customerOrderUrl";
+import { saveStoredActiveOrder } from "@/customer/active-order/useActiveOrderStorage";
 import {
   clearStripeCheckoutSession,
   loadStripeCheckoutSession,
@@ -686,6 +687,17 @@ const PaymentScreen = () => {
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
+    saveStoredActiveOrder({
+      orderId: result.order_id,
+      orderNumber: result.order_number,
+      storeId,
+      screen: "confirmation",
+    });
+    console.info("[active-order] saved", {
+      orderId: result.order_id,
+      orderNumber: result.order_number,
+      storeId,
+    });
     void supabase
       .from("orders")
       .update({ order_locale: lang })
@@ -957,6 +969,17 @@ const PaymentScreen = () => {
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
     setTrackingOrderId(result.order_id);
+    saveStoredActiveOrder({
+      orderId: result.order_id,
+      orderNumber: result.order_number,
+      storeId,
+      screen: "confirmation",
+    });
+    console.info("[active-order] saved", {
+      orderId: result.order_id,
+      orderNumber: result.order_number,
+      storeId,
+    });
     syncActiveOrderUrl(result.order_id, "confirmation");
 
     if (customerName.trim()) saveSavedCustomerName(customerName.trim());
