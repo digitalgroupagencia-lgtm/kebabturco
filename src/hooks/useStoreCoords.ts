@@ -11,8 +11,8 @@ export function useStoreCoords(storeId: string | null | undefined) {
     }
     let active = true;
     void (async () => {
-      const { data } = await supabase
-        .from("stores")
+      const { data } = await (supabase as any)
+        .from("stores_public")
         .select("latitude, longitude")
         .eq("id", storeId)
         .maybeSingle();
