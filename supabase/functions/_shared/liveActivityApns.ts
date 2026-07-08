@@ -159,6 +159,7 @@ async function sendLiveActivityApns(
   const topic = `${config.topic}.push-type.liveactivity`;
   const timestamp = Math.floor(Date.now() / 1000);
   const body = JSON.stringify({ aps: { timestamp, event, ...payload } });
+  const payloadKeys = Object.keys(payload);
 
   const hosts = config.useSandbox
     ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
@@ -197,6 +198,8 @@ async function sendLiveActivityApns(
         orderId: logContext?.orderId,
         storeId: logContext?.storeId,
         collapseId,
+        payloadKeys,
+        hasInputPushToken: payload["input-push-token"] === 1,
         payloadBytes: body.length,
       });
       return { ok: true, host, status: res.status };
@@ -304,6 +307,11 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     };
     let sent = 0;
     const errors: string[] = [];
+    console.log("[liveActivity] update existing staff activity", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      updateTokens: updateRows.length,
+    });
     for (const row of updateRows) {
       const result = await sendLiveActivityApns(
         row.token_value,
@@ -394,11 +402,19 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     );
 
     // (cardTitle já calculado acima para dedup)
+    console.log("[liveActivity] start staff activity", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      tokenLen: row.token_value.length,
+      attributesType: "GenericAttributes",
+      inputPushToken: 1,
+    });
     const result = await sendLiveActivityApns(
       row.token_value,
       {
         "content-state": contentState,
         "attributes-type": "GenericAttributes",
+        "input-push-token": 1,
         attributes,
         alert: {
           title: cardTitle,
@@ -511,6 +527,11 @@ export async function dispatchStaffLiveActivityEnd(opts: {
     .eq("token_kind", "activity_update");
 
   let sent = 0;
+  console.log("[liveActivity] end staff activity", {
+    orderId: opts.orderId,
+    storeId: opts.storeId,
+    updateTokens: (updateTokens ?? []).length,
+  });
   for (const row of (updateTokens ?? []) as Array<{ token_value: string }>) {
     const result = await sendLiveActivityApns(
       row.token_value,
