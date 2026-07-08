@@ -790,6 +790,7 @@ Deno.serve(async (req) => {
       nativePlatform,
       requireInteraction,
       pushDiagnostic,
+      liveActivityEndOnly,
       customerPhone,
       marketingBroadcast,
       staffOrderId,
@@ -919,6 +920,23 @@ Deno.serve(async (req) => {
           cancelledByName: cancelledOrder.cancelled_by_name ?? null,
         };
       }
+    }
+
+    if (staffOrderCancelledAlertId && storeId && liveActivityEndOnly === true) {
+      const ended = await dispatchStaffLiveActivityEnd({
+        admin: supabase,
+        storeId,
+        orderId: staffOrderCancelledAlertId,
+      });
+      console.log("[send-push-notification] liveActivityEndOnly", {
+        staffOrderCancelledAlertId,
+        storeId,
+        ended: ended.sent,
+      });
+      return new Response(
+        JSON.stringify({ sent: 0, liveActivitySent: ended.sent, skippedPush: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     let customerOrderContext: CustomerOrderPushContext | null = null;
