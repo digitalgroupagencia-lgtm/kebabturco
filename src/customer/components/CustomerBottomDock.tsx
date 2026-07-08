@@ -14,10 +14,11 @@ const CustomerBottomDock = () => {
   const { t } = useLanguage();
   const { hasActiveOrder, displayNumber, statusLabel, trackOrder, isLoadingOrder } = useActiveOrder();
 
-  if (TAB_BAR_VISIBLE_SCREENS.has(screen)) return null;
-
+  // A barra do pedido activo pode aparecer também em ecrãs com tab bar (home, account,
+  // tracking). O carrinho continua com a mesma regra antiga.
   const showActiveOrder = hasActiveOrder && ACTIVE_ORDER_BAR_SCREENS.has(screen);
-  const showCart = totalItems > 0 && !CART_BAR_HIDDEN_SCREENS.has(screen);
+  const showCart =
+    totalItems > 0 && !CART_BAR_HIDDEN_SCREENS.has(screen) && !TAB_BAR_VISIBLE_SCREENS.has(screen);
 
   if (!showActiveOrder && !showCart) return null;
 

@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardList, Home, Loader2, Package, ShoppingCart, User } from "lucide-react";
+import { ClipboardList, Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,7 +11,7 @@ const CustomerTabBar = () => {
   const { screen, setScreen, accountFocus, setAccountFocus } = useOrder();
   const { totalItems } = useCart();
   const { t } = useLanguage();
-  const { hasActiveOrder, displayNumber, statusLabel, trackOrder, isLoadingOrder } = useActiveOrder();
+  const { hasActiveOrder, trackOrder } = useActiveOrder();
 
   if (!TAB_BAR_VISIBLE_SCREENS.has(screen)) return null;
 
@@ -53,36 +53,14 @@ const CustomerTabBar = () => {
     { id: "account", label: t("navAccount"), icon: User, onClick: goAccount },
   ];
 
-  const showActiveOrderBanner = screen === "home" && hasActiveOrder;
+  // Banner do pedido activo agora é renderizado por `CustomerBottomDock`,
+  // logo acima do tab bar, para ficar bem visível em todos os ecrãs.
 
   return (
     <nav
       className="customer-tab-bar relative z-50 shrink-0 border-t border-border/60 bg-background shadow-[0_-4px_16px_-14px_rgba(0,0,0,0.14)] overscroll-none touch-none"
       aria-label={t("navHome")}
     >
-        {showActiveOrderBanner && (
-          <div className="px-3 pt-1">
-            <button
-              type="button"
-              onClick={trackOrder}
-              className="flex h-9 w-full touch-manipulation items-center gap-2 rounded-xl bg-gradient-primary px-2.5 text-primary-foreground shadow-primary transition-transform active:scale-[0.98]"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
-                {isLoadingOrder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Package className="h-3.5 w-3.5" />}
-              </span>
-              <span className="min-w-0 flex-1 text-left">
-                <span className="block truncate text-[9px] font-bold uppercase tracking-wider opacity-85">
-                  {t("viewOrderStatus")}
-                </span>
-                <span className="block truncate text-xs font-black">
-                  #{displayNumber}
-                  {statusLabel ? ` · ${statusLabel}` : ""}
-                </span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 opacity-80" />
-            </button>
-          </div>
-        )}
 
         <div className="flex h-14 items-center justify-around px-1 pt-0.5">
           {tabs.map(({ id, label, icon: Icon, onClick }) => {
