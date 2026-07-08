@@ -866,9 +866,11 @@ Deno.serve(async (req) => {
       customerOrderContext = await loadCustomerOrderPushContext(supabase, orderId);
     }
 
+    // Tap na notificação = abrir o painel do pedido (SEM aceitar automático).
+    // Aceitar automático só acontece via botão da Live Activity ou fallback explicito.
     const resolvedUrl =
       staffOrderAlertId != null
-        ? `/panel/live?order=${staffOrderAlertId}${storeId ? `&action=accept&store_id=${storeId}&eta=15` : ""}`
+        ? `/panel/live?order=${staffOrderAlertId}`
         : staffOrderCancelledAlertId != null
           ? `/panel/live?order=${staffOrderCancelledAlertId}`
           : orderId && customerEvent
