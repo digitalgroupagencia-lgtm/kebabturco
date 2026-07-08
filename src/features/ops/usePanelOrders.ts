@@ -77,6 +77,24 @@ export function usePanelOrders(storeId: string | undefined) {
   const reconnectTimerRef = useRef<number | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  const endRemoteLiveActivity = useCallback(
+    async (orderId: string) => {
+      if (!storeId) return;
+      try {
+        await supabase.functions.invoke("send-push-notification", {
+          body: {
+            storeId,
+            staffOrderCancelledId: orderId,
+            liveActivityEndOnly: true,
+          },
+        });
+      } catch {
+        /* não bloqueia a operação */
+      }
+    },
+    [storeId],
+  );
+
   const notifyNewPending = useCallback(
     async (row: PanelOrder, items: OrderItem[], withPrint = true) => {
       if (!storeId) return;
@@ -149,12 +167,13 @@ export function usePanelOrders(storeId: string | undefined) {
         if (!stillPending.has(id)) {
           knownPendingRef.current.delete(id);
           acknowledgePendingOrderAlert(id);
+          void endRemoteLiveActivity(id);
         }
       }
       syncPendingOrderAlertLoop(stillPending.size > 0);
     }
     setLoading(false);
-  }, [storeId, notifyNewPending]);
+  }, [storeId, notifyNewPending, endRemoteLiveActivity]);
 
 
   useEffect(() => {
@@ -424,12 +443,13 @@ export function usePanelOrders(storeId: string | undefined) {
       toast.success(`Pedido → ${getStatusLabel(newStatus, order.order_type)}`);
       if (prevStatus === "pending") {
         acknowledgePendingOrderAlert(order.id);
+        void endRemoteLiveActivity(order.id);
       }
       return true;
     } finally {
       updatingRef.current.delete(order.id);
     }
-  }, []);
+  }, [endRemoteLiveActivity]);
 
   const cancelOrder = useCallback(async (orderId: string, staffPin: string) => {
     const order = orders.find((o) => o.id === orderId);
@@ -466,7 +486,8 @@ export function usePanelOrders(storeId: string | undefined) {
     }
 
     acknowledgePendingOrderAlert(orderId);
-  }, [orders, storeId]);
+    void endRemoteLiveActivity(orderId);
+  }, [orders, storeId, endRemoteLiveActivity]);
 
   const setPrepMinutes = useCallback(async (order: PanelOrder, minutes: number) => {
     const eta = new Date();
