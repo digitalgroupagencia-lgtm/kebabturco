@@ -330,6 +330,23 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     return { sent, errors };
   }
 
+  const { data: startMarkers } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("id, updated_at")
+    .eq("store_id", opts.storeId)
+    .eq("order_id", opts.orderId)
+    .eq("token_kind", "staff_start_sent")
+    .limit(1);
+
+  if ((startMarkers ?? []).length > 0) {
+    console.log("[liveActivity] start já enviado; aguarda activity_update token", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      markerUpdatedAt: startMarkers?.[0]?.updated_at,
+    });
+    return { sent: 0, errors: [] };
+  }
+
   const { data: tokens } = await opts.admin
     .from("staff_live_activity_tokens")
     .select("token_value, user_id")
@@ -426,8 +443,16 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       "start",
       { orderId: opts.orderId, storeId: opts.storeId },
     );
-    if (result.ok) sent++;
-    else if (result.error) errors.push(result.error);
+    if (result.ok) {
+      sent++;
+      await opts.admin.from("staff_live_activity_tokens").insert({
+        store_id: opts.storeId,
+        order_id: opts.orderId,
+        token_kind: "staff_start_sent",
+        token_value: row.token_value.slice(0, 64),
+        updated_at: new Date().toISOString(),
+      });
+    } else if (result.error) errors.push(result.error);
   }
 
   return { sent, errors };
