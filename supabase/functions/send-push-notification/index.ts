@@ -442,7 +442,16 @@ async function getApnsJwt(config: ApnsConfig): Promise<string> {
 
 async function sendApns(
   deviceToken: string,
-  payload: { title: string; body: string; tag?: string; url?: string; sound?: string; imageUrl?: string },
+  payload: {
+    title: string;
+    body: string;
+    tag?: string;
+    url?: string;
+    sound?: string;
+    imageUrl?: string;
+    orderId?: string;
+    storeId?: string;
+  },
   config: ApnsConfig,
   opts?: { tryBothHosts?: boolean },
 ): Promise<{ host: string }> {
@@ -462,6 +471,8 @@ async function sendApns(
     },
     url: payload.url ?? "/",
     tag: payload.tag ?? "",
+    ...(payload.orderId ? { order_id: payload.orderId } : {}),
+    ...(payload.storeId ? { store_id: payload.storeId } : {}),
     ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
   });
 
@@ -866,9 +877,11 @@ Deno.serve(async (req) => {
       customerOrderContext = await loadCustomerOrderPushContext(supabase, orderId);
     }
 
+    // Tap na notificação = abrir o painel do pedido (SEM aceitar automático).
+    // Aceitar automático só acontece via botão da Live Activity ou fallback explicito.
     const resolvedUrl =
       staffOrderAlertId != null
-        ? `/panel/live?order=${staffOrderAlertId}${storeId ? `&action=accept&store_id=${storeId}&eta=15` : ""}`
+        ? `/panel/live?order=${staffOrderAlertId}`
         : staffOrderCancelledAlertId != null
           ? `/panel/live?order=${staffOrderCancelledAlertId}`
           : orderId && customerEvent
@@ -1021,6 +1034,8 @@ Deno.serve(async (req) => {
               url: resolvedUrl,
               sound: resolveStaffOrderSound(tag),
               imageUrl,
+              orderId: staffOrderAlertId ?? staffOrderCancelledAlertId ?? (orderId as string | undefined),
+              storeId: (storeId as string | undefined) ?? undefined,
             },
             apns,
             { tryBothHosts: apnsTryBothHosts },
