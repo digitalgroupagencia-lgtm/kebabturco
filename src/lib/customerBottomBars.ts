@@ -18,11 +18,12 @@ export const CART_BAR_HIDDEN_SCREENS = new Set<Screen>([
   "account",
 ]);
 
-/** Pedido activo, barra para reabrir acompanhamento após recarregar (não no ecrã de personalização). */
+/** Pedido activo, barra fixa em cima do tab bar para reabrir acompanhamento. */
 export const ACTIVE_ORDER_BAR_SCREENS = new Set<Screen>([
   "splash",
   "language",
   "storeSelect",
   "orderType",
   "home",
+  "account",
 ]);
