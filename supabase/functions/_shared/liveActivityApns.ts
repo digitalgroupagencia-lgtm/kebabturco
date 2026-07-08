@@ -475,7 +475,7 @@ export async function dispatchCustomerLiveActivityPush(opts: {
   if (!config) return { sent: 0, errors: ["APNs não configurado"] };
 
   const terminal = new Set(["delivered", "completed", "cancelled"]);
-  const event = opts.event ?? (terminal.has(opts.status) ? "end" : "update");
+  const isTerminal = terminal.has(opts.status);
 
   const { data: startTokens } = await opts.admin
     .from("staff_live_activity_tokens")
@@ -489,11 +489,8 @@ export async function dispatchCustomerLiveActivityPush(opts: {
     .eq("order_id", opts.orderId)
     .eq("token_kind", "activity_update");
 
-  const allTokens = [
-    ...((startTokens ?? []) as Array<{ token_value: string }>),
-    ...((updateTokens ?? []) as Array<{ token_value: string }>),
-  ];
-  if (!allTokens.length) return { sent: 0, errors: [] };
+  const startRows = (startTokens ?? []) as Array<{ token_value: string }>;
+  const updateRows = (updateTokens ?? []) as Array<{ token_value: string }>;
 
   const statusLabel = customerStatusLabel(opts.status);
   const title = `${opts.settings.la_customer_card_title} #${opts.orderNumber}`;
@@ -518,23 +515,65 @@ export async function dispatchCustomerLiveActivityPush(opts: {
 
   let sent = 0;
   const errors: string[] = [];
-  for (const row of allTokens) {
-    const payload =
-      event === "start"
-        ? {
-            "content-state": contentState,
-            "attributes-type": "GenericAttributes",
-            attributes,
-            alert: { title, body: message, sound: "default" },
-          }
-        : event === "end"
-          ? { "content-state": contentState, "dismissal-date": Math.floor(Date.now() / 1000) }
-          : { "content-state": contentState };
+  const seen = new Set<string>();
 
-    const result = await sendLiveActivityApns(row.token_value, payload, config, event, {
-      orderId: opts.orderId,
-      storeId: opts.storeId,
-    });
+  // Terminal: dismiss existing activities apenas.
+  if (isTerminal) {
+    for (const row of updateRows) {
+      const key = row.token_value.slice(0, 32);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const result = await sendLiveActivityApns(
+        row.token_value,
+        { "content-state": contentState, "dismissal-date": Math.floor(Date.now() / 1000) },
+        config,
+        "end",
+        { orderId: opts.orderId, storeId: opts.storeId },
+      );
+      if (result.ok) sent++;
+      else if (result.error) errors.push(result.error);
+    }
+    return { sent, errors };
+  }
+
+  // Se já existe activity ativa (temos update tokens), enviar apenas UPDATE.
+  // Nunca reenviar START — isso duplica a Live Activity do cliente.
+  if (updateRows.length > 0) {
+    for (const row of updateRows) {
+      const key = row.token_value.slice(0, 32);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const result = await sendLiveActivityApns(
+        row.token_value,
+        { "content-state": contentState },
+        config,
+        "update",
+        { orderId: opts.orderId, storeId: opts.storeId },
+      );
+      if (result.ok) sent++;
+      else if (result.error) errors.push(result.error);
+    }
+    return { sent, errors };
+  }
+
+  // Sem update tokens: iniciar via push-to-start (uma vez).
+  for (const row of startRows) {
+    const key = row.token_value.slice(0, 32);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const result = await sendLiveActivityApns(
+      row.token_value,
+      {
+        "content-state": contentState,
+        "attributes-type": "GenericAttributes",
+        "input-push-token": 1,
+        attributes,
+        alert: { title, body: message, sound: "default" },
+      },
+      config,
+      "start",
+      { orderId: opts.orderId, storeId: opts.storeId },
+    );
     if (result.ok) sent++;
     else if (result.error) errors.push(result.error);
   }
