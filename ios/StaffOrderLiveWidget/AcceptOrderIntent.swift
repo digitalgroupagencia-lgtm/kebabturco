@@ -2,6 +2,9 @@ import ActivityKit
 import AppIntents
 import Foundation
 import os.log
+#if canImport(LiveActivityPlugin)
+import LiveActivityPlugin
+#endif
 
 private let appGroupId = "group.net.kebabturco.app"
 private let pendingDeepLinkKey = "pendingLiveActivityDeepLink"
