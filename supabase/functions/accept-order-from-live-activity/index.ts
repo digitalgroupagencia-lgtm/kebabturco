@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { verifyLiveActivityAcceptToken } from "../_shared/liveActivityAcceptToken.ts";
+import { dispatchStaffLiveActivityEnd } from "../_shared/liveActivityApns.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
