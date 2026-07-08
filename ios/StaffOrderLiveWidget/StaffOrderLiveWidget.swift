@@ -28,7 +28,8 @@ struct StaffOrderLiveWidget: Widget {
             lockScreenView(context: context)
                 .widgetURL(fallbackDeepLink(context: context))
         } dynamicIsland: { context in
-            DynamicIsland {
+            let started = self.startedAtDate(context)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("#\(context.state.values["orderNumber"] ?? "----")")
@@ -40,9 +41,15 @@ struct StaffOrderLiveWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.values["total"] ?? "")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(context.state.values["total"] ?? "")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .monospacedDigit()
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     actionArea(context: context, compact: true)
@@ -50,8 +57,10 @@ struct StaffOrderLiveWidget: Widget {
             } compactLeading: {
                 Text("🥙")
             } compactTrailing: {
-                Text("#\(context.state.values["orderNumber"] ?? "")")
+                Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
                     .font(.caption2.bold())
+                    .monospacedDigit()
+                    .frame(maxWidth: 44)
             } minimal: {
                 Text("🥙")
             }
@@ -64,12 +73,28 @@ struct StaffOrderLiveWidget: Widget {
         return (normal, urgent)
     }
 
+    private func startedAtDate(_ context: ActivityViewContext<GenericAttributes>) -> Date {
+        if let raw = context.state.values["startedAt"], let epoch = TimeInterval(raw) {
+            return Date(timeIntervalSince1970: epoch)
+        }
+        return Date()
+    }
+
+    private func urgentAfterSeconds(_ context: ActivityViewContext<GenericAttributes>) -> TimeInterval {
+        let mins = Double(context.state.values["urgentAfterMinutes"] ?? "5") ?? 5
+        return max(60, mins * 60)
+    }
+
+    private func isUrgent(_ context: ActivityViewContext<GenericAttributes>) -> Bool {
+        if context.state.values["urgent"] == "1" { return true }
+        return Date().timeIntervalSince(startedAtDate(context)) >= urgentAfterSeconds(context)
+    }
+
     @ViewBuilder
     private func lockScreenView(context: ActivityViewContext<GenericAttributes>) -> some View {
         let role = context.state.values["role"] ?? "staff"
-        let urgent = context.state.values["urgent"] == "1"
         let colors = backgroundColors(context)
-        let bg = urgent ? colors.1 : colors.0
+        let bg = isUrgent(context) ? colors.1 : colors.0
 
         VStack(alignment: .leading, spacing: 10) {
             if role == "customer" {
@@ -87,34 +112,55 @@ struct StaffOrderLiveWidget: Widget {
 
     @ViewBuilder
     private func staffCard(context: ActivityViewContext<GenericAttributes>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("#\(context.state.values["orderNumber"] ?? "----")")
-                .font(.system(size: 30, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-
-            HStack(alignment: .center, spacing: 8) {
-                Text(context.state.values["total"] ?? "—")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text(context.state.values["orderType"] ?? "Balcão")
-                    .font(.system(size: 12, weight: .bold))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .background(.white.opacity(0.20))
-                    .clipShape(Capsule())
-                    .foregroundStyle(.white)
+        let started = startedAtDate(context)
+        HStack(alignment: .top, spacing: 12) {
+            // Logo/ícone Kebab Turco
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Text("🥙")
+                    .font(.system(size: 24))
             }
 
-            HStack(spacing: 6) {
-                Image(systemName: "clock.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.85))
-                Text("Aguardando \(context.state.values["timer"] ?? "0:00")")
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.9))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Kebab Turco · Novo pedido")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .textCase(.uppercase)
+
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("#\(context.state.values["orderNumber"] ?? "----")")
+                        .font(.system(size: 28, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                    Text(context.state.values["total"] ?? "—")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.95))
+                }
+
+                HStack(spacing: 8) {
+                    Text(context.state.values["orderType"] ?? "Balcão")
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(.white.opacity(0.20))
+                        .clipShape(Capsule())
+                        .foregroundStyle(.white)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.85))
+                        Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .monospacedDigit()
+                    }
+                }
             }
+            Spacer(minLength: 0)
         }
     }
 

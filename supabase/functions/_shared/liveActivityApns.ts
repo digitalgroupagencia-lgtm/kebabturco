@@ -282,6 +282,9 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
   const cardTitle = `${opts.settings.la_staff_card_title} #${formattedNumber}`;
 
   if (updateRows.length > 0) {
+    const startedAtEpoch = String(
+      Math.floor((opts.createdAt ? Date.parse(opts.createdAt) : Date.now()) / 1000),
+    );
     const contentState = {
       values: {
         title: opts.settings.la_staff_card_title,
@@ -290,6 +293,8 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
         orderType: orderTypeLabel,
         message: opts.settings.la_staff_urgent_message,
         timer,
+        startedAt: startedAtEpoch,
+        urgentAfterMinutes: String(opts.settings.la_urgent_after_minutes ?? 5),
         status: "PENDENTE",
         urgent: "1",
         colorNormal: opts.settings.la_color_normal,
@@ -357,6 +362,9 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       user_name: userName,
     });
 
+    const startedAtEpoch = String(
+      Math.floor((opts.createdAt ? Date.parse(opts.createdAt) : Date.now()) / 1000),
+    );
     const contentState = {
       values: {
         title: opts.settings.la_staff_card_title,
@@ -365,6 +373,8 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
         orderType: orderTypeLabel,
         message: opts.settings.la_staff_new_message,
         timer,
+        startedAt: startedAtEpoch,
+        urgentAfterMinutes: String(opts.settings.la_urgent_after_minutes ?? 5),
         status: "PENDENTE",
         urgent: "0",
         colorNormal: opts.settings.la_color_normal,
