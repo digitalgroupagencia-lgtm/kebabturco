@@ -1213,6 +1213,14 @@ export type Database = {
           created_at: string
           delivery_schedule: Json
           id: string
+          la_color_normal: string
+          la_color_urgent: string
+          la_customer_card_title: string
+          la_customer_ready_message: string
+          la_staff_card_title: string
+          la_staff_new_message: string
+          la_staff_urgent_message: string
+          la_urgent_after_minutes: number
           msg_counter: string
           msg_paid: string
           pay_apple_enabled: boolean
@@ -1244,6 +1252,14 @@ export type Database = {
           created_at?: string
           delivery_schedule?: Json
           id?: string
+          la_color_normal?: string
+          la_color_urgent?: string
+          la_customer_card_title?: string
+          la_customer_ready_message?: string
+          la_staff_card_title?: string
+          la_staff_new_message?: string
+          la_staff_urgent_message?: string
+          la_urgent_after_minutes?: number
           msg_counter?: string
           msg_paid?: string
           pay_apple_enabled?: boolean
@@ -1275,6 +1291,14 @@ export type Database = {
           created_at?: string
           delivery_schedule?: Json
           id?: string
+          la_color_normal?: string
+          la_color_urgent?: string
+          la_customer_card_title?: string
+          la_customer_ready_message?: string
+          la_staff_card_title?: string
+          la_staff_new_message?: string
+          la_staff_urgent_message?: string
+          la_urgent_after_minutes?: number
           msg_counter?: string
           msg_paid?: string
           pay_apple_enabled?: boolean
@@ -1572,6 +1596,7 @@ export type Database = {
           processing_fee_cents: number
           seller_id: string | null
           source: Database["public"]["Enums"]["order_source"]
+          staff_push_last_reminder_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           stripe_connect_account_id: string | null
@@ -1630,6 +1655,7 @@ export type Database = {
           processing_fee_cents?: number
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
+          staff_push_last_reminder_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
           stripe_connect_account_id?: string | null
@@ -1688,6 +1714,7 @@ export type Database = {
           processing_fee_cents?: number
           seller_id?: string | null
           source?: Database["public"]["Enums"]["order_source"]
+          staff_push_last_reminder_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
           stripe_connect_account_id?: string | null
@@ -3011,6 +3038,64 @@ export type Database = {
           },
           {
             foreignKeyName: "staff_google_pending_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_live_activity_tokens: {
+        Row: {
+          activity_id: string | null
+          customer_phone: string | null
+          id: string
+          order_id: string | null
+          store_id: string
+          token_kind: string
+          token_value: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          activity_id?: string | null
+          customer_phone?: string | null
+          id?: string
+          order_id?: string | null
+          store_id: string
+          token_kind?: string
+          token_value: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          activity_id?: string | null
+          customer_phone?: string | null
+          id?: string
+          order_id?: string | null
+          store_id?: string
+          token_kind?: string
+          token_value?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_live_activity_tokens_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_live_activity_tokens_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_live_activity_tokens_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores_public"
@@ -4535,6 +4620,10 @@ export type Database = {
         Returns: Json
       }
       count_active_sellers: { Args: { _tenant_id: string }; Returns: number }
+      count_staff_la_push_to_start_tokens: {
+        Args: { _store_id: string }
+        Returns: number
+      }
       create_customer_order: {
         Args: {
           _application_fee_cents?: number
@@ -5102,6 +5191,7 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: undefined
       }
+      remind_staff_pending_order_pushes: { Args: never; Returns: undefined }
       reset_tenant_data: {
         Args: {
           _reset_banners?: boolean
@@ -5269,6 +5359,7 @@ export type Database = {
           processing_fee_cents: number
           seller_id: string | null
           source: Database["public"]["Enums"]["order_source"]
+          staff_push_last_reminder_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           stripe_connect_account_id: string | null
