@@ -95,8 +95,8 @@ async function fetchActiveStores(filter: { tenantId?: string } = {}): Promise<St
   if (rows.length && filter.tenantId) {
     const missingImages = rows.some((row) => !row.image_url);
     if (missingImages) {
-      const { data: enriched } = await supabase
-        .from("stores")
+      const { data: enriched } = await (supabase as any)
+        .from("stores_public")
         .select("id, name, address, image_url, short_description")
         .eq("tenant_id", filter.tenantId)
         .eq("is_active", true);
