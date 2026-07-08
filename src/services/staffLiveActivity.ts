@@ -2,7 +2,19 @@ import { registerPlugin } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeIOSAppSync, isNativeAndroidAppSync } from "@/lib/nativeAppPlatform";
 import { mergeLiveActivitySettings, type LiveActivitySettings } from "@/lib/liveActivitySettings";
+import {
+  formatLiveActivityOrderNumber,
+  formatLiveActivityPrice,
+  staffLiveActivityModalityLabel,
+} from "@/lib/liveActivityOrderLabels";
 import { showAndroidOrderCard, endAndroidOrderCard } from "@/services/androidOrderCard";
+
+export type StaffLiveActivityOrderMeta = {
+  total?: number;
+  orderType?: string | null;
+  tableNumber?: string | null;
+  createdAt?: string | null;
+};
 
 export type StaffLiveActivityState = {
   title: string;
@@ -13,6 +25,9 @@ export type StaffLiveActivityState = {
   colorNormal: string;
   colorUrgent: string;
   role: "staff";
+  orderNumber: string;
+  total: string;
+  orderType: string;
 };
 
 type LiveActivityPlugin = {
@@ -33,7 +48,6 @@ type LiveActivityPlugin = {
     alert?: { title: string; body: string; sound?: string };
   }): Promise<void>;
   endActivity(options: { id: string; dismissalPolicy?: "immediate" | "default" }): Promise<void>;
-  isRunning?(options: { id: string }): Promise<{ running: boolean }>;
   observePushToStartToken?(): Promise<void>;
   setUpdateTokenEndpoint?(options: { url: string; headers?: Record<string, string> }): Promise<void>;
   addListener?(
@@ -45,6 +59,7 @@ type LiveActivityPlugin = {
 const LiveActivity = registerPlugin<LiveActivityPlugin>("LiveActivity");
 
 const activeOrderActivities = new Map<string, number>();
+const orderStartedAt = new Map<string, number>();
 const settingsCache = new Map<string, LiveActivitySettings>();
 let pushToStartObserverStarted = false;
 let updateEndpointConfigured = false;
@@ -76,21 +91,35 @@ function formatElapsed(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function resolveStartedAt(orderId: string, meta?: StaffLiveActivityOrderMeta): number {
+  const existing = orderStartedAt.get(orderId);
+  if (existing) return existing;
+  const fromCreated = meta?.createdAt ? Date.parse(meta.createdAt) : NaN;
+  const startedAt = Number.isFinite(fromCreated) ? fromCreated : Date.now();
+  orderStartedAt.set(orderId, startedAt);
+  return startedAt;
+}
+
 function buildState(
   orderNumber: string,
   startedAt: number,
   urgent: boolean,
   settings: LiveActivitySettings,
+  meta?: StaffLiveActivityOrderMeta,
 ): StaffLiveActivityState {
+  const formattedNumber = formatLiveActivityOrderNumber(orderNumber);
   return {
-    title: `${settings.la_staff_card_title} #${orderNumber}`,
+    title: settings.la_staff_card_title,
     message: urgent ? settings.la_staff_urgent_message : settings.la_staff_new_message,
     timer: formatElapsed(Date.now() - startedAt),
-    status: urgent ? "!" : "•••",
+    status: urgent ? "URGENTE" : "PENDENTE",
     urgent: urgent ? "1" : "0",
     colorNormal: settings.la_color_normal,
     colorUrgent: settings.la_color_urgent,
     role: "staff",
+    orderNumber: formattedNumber,
+    total: formatLiveActivityPrice(meta?.total ?? 0),
+    orderType: staffLiveActivityModalityLabel(meta?.orderType, meta?.tableNumber),
   };
 }
 
@@ -170,19 +199,21 @@ export async function startStaffOrderLiveActivity(
   orderId: string,
   orderNumber: string,
   storeId: string,
+  meta?: StaffLiveActivityOrderMeta,
 ): Promise<void> {
   const settings = await loadSettings(storeId);
   const tokenBundle = await issueAcceptToken(orderId, storeId);
-  const startedAt = Date.now();
-  const state = buildState(orderNumber, startedAt, false, settings);
+  const startedAt = resolveStartedAt(orderId, meta);
+  const state = buildState(orderNumber, startedAt, false, settings, meta);
   const acceptDeepLink = `kebabturco://staff/order/${orderId}?action=accept&store_id=${storeId}&eta=15`;
+  const cardTitle = `${state.title} #${state.orderNumber}`;
 
   if (isNativeAndroidAppSync()) {
     await showAndroidOrderCard({
       id: orderId,
-      title: state.title,
-      body: state.message,
-      status: state.status,
+      title: cardTitle,
+      body: `${state.total} · ${state.orderType} · Aguardando ${state.timer}`,
+      status: state.orderType,
       url: `/panel/live?order=${orderId}&action=accept&store_id=${storeId}&eta=15`,
       acceptUrl: acceptDeepLink,
       accentColor: settings.la_color_normal,
@@ -191,7 +222,7 @@ export async function startStaffOrderLiveActivity(
   }
 
   if (!(await isStaffLiveActivitySupported()) || !isNativeIOSAppSync()) {
-    scheduleUrgentTick(orderId, orderNumber, storeId, startedAt, settings);
+    scheduleUrgentTick(orderId, orderNumber, storeId, startedAt, settings, meta);
     return;
   }
 
@@ -204,7 +235,7 @@ export async function startStaffOrderLiveActivity(
       id: orderId,
       attributes: {
         orderId,
-        orderNumber,
+        orderNumber: state.orderNumber,
         storeId,
         role: "staff",
         acceptToken: tokenBundle?.token ?? "",
@@ -214,7 +245,7 @@ export async function startStaffOrderLiveActivity(
       contentState: { ...state },
     });
 
-    scheduleUrgentTick(orderId, orderNumber, storeId, startedAt, settings);
+    scheduleUrgentTick(orderId, orderNumber, storeId, startedAt, settings, meta);
   } catch {
     /* extensão indisponível */
   }
@@ -226,6 +257,7 @@ function scheduleUrgentTick(
   storeId: string,
   startedAt: number,
   settings: LiveActivitySettings,
+  meta?: StaffLiveActivityOrderMeta,
 ) {
   if (activeOrderActivities.has(orderId)) {
     window.clearInterval(activeOrderActivities.get(orderId)!);
@@ -235,13 +267,14 @@ function scheduleUrgentTick(
   const tick = window.setInterval(() => {
     void (async () => {
       const urgent = Date.now() - startedAt >= urgentMs;
-      const next = buildState(orderNumber, startedAt, urgent, settings);
+      const next = buildState(orderNumber, startedAt, urgent, settings, meta);
+      const cardTitle = `${next.title} #${next.orderNumber}`;
       if (isNativeAndroidAppSync()) {
         await showAndroidOrderCard({
           id: orderId,
-          title: next.title,
-          body: next.message,
-          status: next.status,
+          title: cardTitle,
+          body: `${next.total} · ${next.orderType} · Aguardando ${next.timer}`,
+          status: next.orderType,
           url: `/panel/live?order=${orderId}`,
           accentColor: urgent ? settings.la_color_urgent : settings.la_color_normal,
           ongoing: true,
@@ -252,10 +285,10 @@ function scheduleUrgentTick(
       await LiveActivity.updateActivity({
         id: orderId,
         contentState: { ...next },
-        alert: urgent ? { title: next.title, body: next.message, sound: "default" } : undefined,
+        alert: urgent ? { title: cardTitle, body: next.message, sound: "default" } : undefined,
       }).catch(() => undefined);
     })();
-  }, 30_000);
+  }, 15_000);
 
   activeOrderActivities.set(orderId, tick);
 }
@@ -266,6 +299,7 @@ export async function endStaffOrderLiveActivity(orderId: string): Promise<void> 
     window.clearInterval(tick);
     activeOrderActivities.delete(orderId);
   }
+  orderStartedAt.delete(orderId);
   if (isNativeAndroidAppSync()) {
     await endAndroidOrderCard(orderId);
   }

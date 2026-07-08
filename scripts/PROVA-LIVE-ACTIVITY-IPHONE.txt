@@ -1,0 +1,25 @@
+PROVA PRÁTICA — Live Activity grande (estilo Duolingo)
+=====================================================
+
+Push normal = faixa pequena no topo
+Live Activity = CARTÃO GRANDE no ecrã bloqueado com botão
+
+PRÉ-REQUISITOS: Publish Lovable + SQL LIVE_ACTIVITY_FULL + TestFlight 1.1.6 + iOS 17+
+
+PROVA 1 — Cartão grande (app aberta)
+- Login equipa, alertas ON, pedido teste, bloquear iPhone
+- Screenshot: #0005, valor, tipo, Aguardando, botão ACEITAR PEDIDO
+
+PROVA 2 — Aceitar
+- Tocar ACEITAR → painel «A preparar» → cartão desaparece
+
+PROVA 3 — App fechada
+- Fechar app por completo, pedido teste
+- Push normal + cartão grande (sem abrir app)
+- SQL VERIFICAR-LIVE-ACTIVITY.sql deve mostrar token push_to_start
+
+PROVA 4 — Falha
+- Modo avião, tocar aceitar → app abre no pedido
+
+PROVA 5 — Cliente
+- Acompanhar pedido → cartão com barra de 5 estados

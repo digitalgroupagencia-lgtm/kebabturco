@@ -6,6 +6,10 @@ import {
   mergeLiveActivitySettings,
   type LiveActivitySettings,
 } from "@/lib/liveActivitySettings";
+import {
+  customerLiveActivityStepIndex,
+  formatLiveActivityOrderNumber,
+} from "@/lib/liveActivityOrderLabels";
 import { showAndroidOrderCard, endAndroidOrderCard } from "@/services/androidOrderCard";
 
 type LiveActivityPlugin = {
@@ -100,11 +104,14 @@ function buildCustomerState(
 ): Record<string, string> {
   const label = customerStatusLabel(status);
   const message = status === "ready" ? settings.la_customer_ready_message : label;
+  const formatted = formatLiveActivityOrderNumber(orderNumber);
   return {
-    title: `${settings.la_customer_card_title} #${orderNumber}`,
+    title: settings.la_customer_card_title,
+    orderNumber: formatted,
     message,
     timer: "",
     status: label,
+    step: String(customerLiveActivityStepIndex(status)),
     urgent: "0",
     colorNormal: settings.la_color_normal,
     colorUrgent: settings.la_color_urgent,
@@ -157,7 +164,7 @@ export async function syncCustomerOrderLiveActivity(
         id: cardId,
         attributes: {
           orderId,
-          orderNumber,
+          orderNumber: formatLiveActivityOrderNumber(orderNumber),
           storeId,
           role: "customer",
         },

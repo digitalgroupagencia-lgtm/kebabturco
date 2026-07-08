@@ -23,6 +23,9 @@ type PendingOrderRow = {
   table_validated: boolean | null;
   is_test: boolean | null;
   coupon_code: string | null;
+  total: number | null;
+  table_number: string | null;
+  created_at: string | null;
 };
 
 /**
@@ -47,7 +50,7 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
       const { data } = await supabase
         .from("orders")
         .select(
-          "id, order_number, status, payment_status, order_type, table_validated, is_test, coupon_code",
+          "id, order_number, status, payment_status, order_type, table_validated, is_test, coupon_code, total, table_number, created_at",
         )
         .eq("store_id", storeId)
         .eq("status", "pending")
@@ -62,7 +65,12 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
         if (!knownPendingRef.current.has(order.id)) {
           knownPendingRef.current.add(order.id);
           registerNewPendingOrderAlert(order.id);
-          void startStaffOrderLiveActivity(order.id, String(order.order_number ?? "?"), storeId);
+          void startStaffOrderLiveActivity(order.id, String(order.order_number ?? "?"), storeId, {
+            total: Number(order.total) || 0,
+            orderType: order.order_type,
+            tableNumber: order.table_number,
+            createdAt: order.created_at,
+          });
         }
       }
 

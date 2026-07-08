@@ -66,4 +66,23 @@ enum LiveActivityAcceptAPI {
         ]
         return components.url
     }
+
+    /// Abre a app directamente no pedido (fallback quando aceitar falha).
+    static func openOrderDeepLink(orderId: String, storeId: String, customer: Bool = false) -> URL? {
+        var components = URLComponents()
+        components.scheme = "kebabturco"
+        if customer {
+            components.host = "order"
+            components.path = "/track"
+            components.queryItems = [URLQueryItem(name: "order", value: orderId)]
+        } else {
+            components.host = "staff"
+            components.path = "/order/\(orderId)"
+            components.queryItems = [
+                URLQueryItem(name: "open", value: "1"),
+                URLQueryItem(name: "store_id", value: storeId),
+            ]
+        }
+        return components.url
+    }
 }

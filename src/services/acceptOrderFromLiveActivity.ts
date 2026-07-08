@@ -153,7 +153,7 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
 
   const path = parsed.pathname || "";
   const action = parsed.searchParams.get("action")?.trim();
-  if (action !== "accept") return false;
+  const openOnly = parsed.searchParams.get("open")?.trim() === "1";
 
   const orderMatch = path.match(/\/order\/([^/]+)/i) ?? path.match(/\/staff\/order\/([^/]+)/i);
   const orderId =
@@ -161,10 +161,25 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
     parsed.searchParams.get("order")?.trim() ??
     parsed.searchParams.get("order_id")?.trim();
   const storeId = parsed.searchParams.get("store_id")?.trim();
+
+  if (!orderId) return false;
+
+  if (openOnly && action !== "accept") {
+    if (typeof window !== "undefined") {
+      const target = storeId
+        ? `/panel/live?order=${encodeURIComponent(orderId)}`
+        : `/?screen=tracking&order=${encodeURIComponent(orderId)}`;
+      window.location.assign(target);
+    }
+    return true;
+  }
+
+  if (action !== "accept") return false;
+
+  if (!storeId) return false;
+
   const etaRaw = Number(parsed.searchParams.get("eta") ?? DEFAULT_PREP_MINUTES);
   const prepMinutes = Number.isFinite(etaRaw) ? etaRaw : DEFAULT_PREP_MINUTES;
-
-  if (!orderId || !storeId) return false;
 
   const result = await acceptOrderWithSession(orderId, storeId, prepMinutes);
   if (result.ok) {

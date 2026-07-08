@@ -30,18 +30,15 @@ struct StaffOrderLiveWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(emoji(context))
-                        .font(.title2)
+                    Text(emoji(context)).font(.title2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     Text(context.state.values["timer"] ?? "")
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.9))
                 }
                 DynamicIslandExpandedRegion(.center) {
                     Text(context.state.values["title"] ?? "Pedido")
                         .font(.headline)
-                        .foregroundStyle(.white)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     actionArea(context: context)
@@ -49,21 +46,16 @@ struct StaffOrderLiveWidget: Widget {
             } compactLeading: {
                 Text(emoji(context))
             } compactTrailing: {
-                Text(shortStatus(context))
+                Text(context.state.values["total"] ?? "!")
                     .font(.caption2.bold())
             } minimal: {
-                Text(emoji(context))
+                Text("🥙")
             }
         }
     }
 
     private func emoji(_ context: ActivityViewContext<GenericAttributes>) -> String {
         context.state.values["role"] == "customer" ? "📦" : "🥙"
-    }
-
-    private func shortStatus(_ context: ActivityViewContext<GenericAttributes>) -> String {
-        if let status = context.state.values["status"], !status.isEmpty { return status.prefix(3).description }
-        return context.state.values["role"] == "customer" ? "•" : "!"
     }
 
     private func backgroundColors(_ context: ActivityViewContext<GenericAttributes>) -> (Color, Color) {
@@ -74,39 +66,111 @@ struct StaffOrderLiveWidget: Widget {
 
     @ViewBuilder
     private func lockScreenView(context: ActivityViewContext<GenericAttributes>) -> some View {
+        let role = context.state.values["role"] ?? "staff"
         let urgent = context.state.values["urgent"] == "1"
         let colors = backgroundColors(context)
         let bg = urgent ? colors.1 : colors.0
 
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(context.state.values["title"] ?? "Pedido")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text(context.state.values["message"] ?? "")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.9))
-                    if let status = context.state.values["status"], !status.isEmpty {
-                        Text(status)
-                            .font(.caption.bold())
-                            .foregroundStyle(.white.opacity(0.85))
-                    }
-                    if let timer = context.state.values["timer"], !timer.isEmpty {
-                        Text(timer)
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
-                }
-                Spacer(minLength: 8)
-                Text(emoji(context))
-                    .font(.largeTitle)
+        VStack(alignment: .leading, spacing: 14) {
+            if role == "customer" {
+                customerCard(context: context)
+            } else {
+                staffCard(context: context)
             }
             actionArea(context: context)
         }
-        .padding(16)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
         .activityBackgroundTint(bg)
         .activitySystemActionForegroundColor(.white)
+    }
+
+    @ViewBuilder
+    private func staffCard(context: ActivityViewContext<GenericAttributes>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(context.state.values["title"] ?? "Novo pedido")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                        .textCase(.uppercase)
+                    Text("#\(context.state.values["orderNumber"] ?? "----")")
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text("🥙")
+                    .font(.system(size: 36))
+            }
+
+            HStack(alignment: .center, spacing: 10) {
+                Text(context.state.values["total"] ?? "—")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(context.state.values["orderType"] ?? "Balcão")
+                    .font(.system(size: 13, weight: .bold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.18))
+                    .clipShape(Capsule())
+                    .foregroundStyle(.white)
+            }
+
+            HStack(spacing: 8) {
+                Image(systemName: "clock.fill")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.85))
+                Text("Aguardando \(context.state.values["timer"] ?? "0:00")")
+                    .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.95))
+            }
+
+            if let message = context.state.values["message"], !message.isEmpty, context.state.values["urgent"] == "1" {
+                Text(message)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.yellow.opacity(0.95))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func customerCard(context: ActivityViewContext<GenericAttributes>) -> some View {
+        let step = Int(context.state.values["step"] ?? "0") ?? 0
+        let steps = ["Recebido", "Preparação", "Pronto", "Entrega", "Entregue"]
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text(context.state.values["title"] ?? "O seu pedido")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.92))
+            Text(context.state.values["status"] ?? "A acompanhar")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text(context.state.values["message"] ?? "")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.9))
+
+            HStack(spacing: 6) {
+                ForEach(0..<5, id: \.self) { idx in
+                    Capsule()
+                        .fill(idx <= step ? Color.white : Color.white.opacity(0.25))
+                        .frame(height: 5)
+                }
+            }
+            .padding(.top, 4)
+
+            HStack {
+                ForEach(Array(steps.enumerated()), id: \.offset) { idx, label in
+                    if idx == step {
+                        Text(label)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                Spacer()
+            }
+        }
     }
 
     @ViewBuilder
@@ -131,12 +195,13 @@ struct StaffOrderLiveWidget: Widget {
                     apiKey: apiKey
                 )) {
                     Text("ACEITAR PEDIDO")
-                        .font(.subheadline.bold())
+                        .font(.system(size: 17, weight: .heavy))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 14)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.white.opacity(0.25))
+                .tint(.white)
+                .foregroundStyle(defaultWine)
             } else {
                 Text("Abra a app para aceitar")
                     .font(.caption)
@@ -151,15 +216,9 @@ struct StaffOrderLiveWidget: Widget {
         let orderId = statics["orderId"] ?? context.attributes.id
         let storeId = statics["storeId"] ?? ""
         if role == "customer" {
-            var components = URLComponents()
-            components.scheme = "kebabturco"
-            components.host = "order"
-            components.path = "/track"
-            components.queryItems = [URLQueryItem(name: "order", value: orderId)]
-            return components.url
+            return LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId, customer: true)
         }
-        guard !storeId.isEmpty else { return nil }
-        return LiveActivityAcceptAPI.deepLink(orderId: orderId, storeId: storeId)
+        return LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId, customer: false)
     }
 }
 

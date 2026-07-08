@@ -46,7 +46,7 @@ struct AcceptOrderIntent: LiveActivityIntent {
             return .result()
         }
 
-        if let fallback = LiveActivityAcceptAPI.deepLink(orderId: orderId, storeId: storeId) {
+        if let fallback = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId) {
             await MainActor.run {
                 _ = fallback.open()
             }

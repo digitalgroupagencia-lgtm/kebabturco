@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { issueLiveActivityAcceptToken } from "../_shared/liveActivityAcceptToken.ts";
+import {
+  formatStaffOrderPrice,
+  staffOrderModalityLabel,
+} from "../_shared/staffOrderPushMessages.ts";
 
 export type LiveActivityStoreSettings = {
   la_staff_card_title: string;
@@ -83,6 +87,39 @@ async function getApnsJwt(config: ApnsConfig): Promise<string> {
     .sign(key);
   cachedApnsJwt = { token: jwt, expiresAt: now + 3300 };
   return jwt;
+}
+
+function formatOrderNumber(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^\d+$/.test(trimmed)) return trimmed.padStart(4, "0");
+  return trimmed;
+}
+
+function formatElapsedSince(iso: string | null | undefined): string {
+  const start = iso ? Date.parse(iso) : Date.now();
+  const ms = Math.max(0, Date.now() - (Number.isFinite(start) ? start : Date.now()));
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function customerStepIndex(status: string): number {
+  switch (status) {
+    case "pending":
+      return 0;
+    case "preparing":
+      return 1;
+    case "ready":
+      return 2;
+    case "out_for_delivery":
+      return 3;
+    case "delivered":
+    case "completed":
+      return 4;
+    default:
+      return 0;
+  }
 }
 
 function customerStatusLabel(status: string): string {
@@ -176,6 +213,10 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
   settings: LiveActivityStoreSettings;
   supabaseUrl: string;
   anonKey: string;
+  total?: number;
+  orderType?: string | null;
+  tableNumber?: string | null;
+  createdAt?: string | null;
 }): Promise<{ sent: number; errors: string[] }> {
   const config = getApnsConfigFromEnv();
   if (!config) return { sent: 0, errors: ["APNs não configurado"] };
@@ -190,7 +231,10 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
   if (!rows.length) return { sent: 0, errors: [] };
 
   const acceptUrl = `${opts.supabaseUrl}/functions/v1/accept-order-from-live-activity`;
-  const title = `${opts.settings.la_staff_card_title} #${opts.orderNumber}`;
+  const formattedNumber = formatOrderNumber(opts.orderNumber);
+  const totalLabel = formatStaffOrderPrice(Number(opts.total) || 0, "pt");
+  const orderTypeLabel = staffOrderModalityLabel(opts.orderType, opts.tableNumber, "pt");
+  const timer = formatElapsedSince(opts.createdAt);
 
   let sent = 0;
   const errors: string[] = [];
@@ -216,10 +260,13 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
 
     const contentState = {
       values: {
-        title,
+        title: opts.settings.la_staff_card_title,
+        orderNumber: formattedNumber,
+        total: totalLabel,
+        orderType: orderTypeLabel,
         message: opts.settings.la_staff_new_message,
-        timer: "0:00",
-        status: "•••",
+        timer,
+        status: "PENDENTE",
         urgent: "0",
         colorNormal: opts.settings.la_color_normal,
         colorUrgent: opts.settings.la_color_urgent,
@@ -229,7 +276,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
 
     const attributes = buildAttributes(
       opts.orderId,
-      opts.orderNumber,
+      formattedNumber,
       opts.storeId,
       "staff",
       acceptToken,
@@ -237,13 +284,18 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       opts.anonKey,
     );
 
+    const cardTitle = `${opts.settings.la_staff_card_title} #${formattedNumber}`;
     const result = await sendLiveActivityApns(
       row.token_value,
       {
         "content-state": contentState,
         "attributes-type": "GenericAttributes",
         attributes,
-        alert: { title, body: opts.settings.la_staff_new_message, sound: "staff_order_alert.caf" },
+        alert: {
+          title: cardTitle,
+          body: `${totalLabel} · ${orderTypeLabel}`,
+          sound: "staff_order_alert.caf",
+        },
       },
       config,
       "start",
@@ -294,10 +346,12 @@ export async function dispatchCustomerLiveActivityPush(opts: {
 
   const contentState = {
     values: {
-      title,
+      title: opts.settings.la_customer_card_title,
+      orderNumber: formatOrderNumber(opts.orderNumber),
       message,
       timer: "",
       status: statusLabel,
+      step: String(customerStepIndex(opts.status)),
       urgent: "0",
       colorNormal: opts.settings.la_color_normal,
       colorUrgent: opts.settings.la_color_urgent,

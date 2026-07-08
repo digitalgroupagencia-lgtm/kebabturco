@@ -83,6 +83,7 @@ type StaffOrderPushContext = {
   total: number;
   orderType: string | null;
   tableNumber: string | null;
+  createdAt: string | null;
   items: StaffOrderPushItem[];
 };
 
@@ -92,7 +93,7 @@ async function loadStaffOrderPushContext(
 ): Promise<StaffOrderPushContext | null> {
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("order_number, total, order_type, table_number")
+    .select("order_number, total, order_type, table_number, created_at")
     .eq("id", staffOrderId)
     .maybeSingle();
   if (orderErr || !order) return null;
@@ -108,6 +109,7 @@ async function loadStaffOrderPushContext(
     total: Number(order.total) || 0,
     orderType: order.order_type ?? null,
     tableNumber: order.table_number ?? null,
+    createdAt: order.created_at ?? null,
     items: (items ?? []).map((row) => ({
       quantity: Number(row.quantity) || 1,
       product_name: String(row.product_name ?? ""),
@@ -1091,6 +1093,10 @@ Deno.serve(async (req) => {
           settings: laSettingsResolved,
           supabaseUrl,
           anonKey,
+          total: staffOrderContext?.total,
+          orderType: staffOrderContext?.orderType,
+          tableNumber: staffOrderContext?.tableNumber,
+          createdAt: staffOrderContext?.createdAt,
         });
         liveActivitySent += la.sent;
         liveActivityErrors.push(...la.errors);
