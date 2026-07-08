@@ -55,14 +55,22 @@ struct StaffOrderLiveWidget: Widget {
                     actionArea(context: context, compact: true)
                 }
             } compactLeading: {
-                Text("🥙")
+                Image("KebabIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
             } compactTrailing: {
                 Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
                     .font(.caption2.bold())
                     .monospacedDigit()
                     .frame(maxWidth: 44)
             } minimal: {
-                Text("🥙")
+                Image("KebabIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
             }
         }
     }
@@ -115,13 +123,11 @@ struct StaffOrderLiveWidget: Widget {
         let started = startedAtDate(context)
         HStack(alignment: .top, spacing: 12) {
             // Logo/ícone Kebab Turco
-            ZStack {
-                Circle()
-                    .fill(.white.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Text("🥙")
-                    .font(.system(size: 24))
-            }
+            Image("KebabIcon")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Kebab Turco · Novo pedido")
@@ -194,31 +200,17 @@ struct StaffOrderLiveWidget: Widget {
         } else {
             let orderId = statics["orderId"] ?? context.attributes.id
             let storeId = statics["storeId"] ?? ""
-            let acceptToken = statics["acceptToken"] ?? ""
-            let acceptUrl = statics["acceptUrl"] ?? ""
-            let apiKey = statics["apiKey"] ?? ""
+            let openUrl = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId)
+                ?? URL(string: "kebabturco://staff/order/\(orderId)")!
 
-            if #available(iOS 17.0, *) {
-                Button(intent: AcceptOrderIntent(
-                    orderId: orderId,
-                    storeId: storeId,
-                    acceptToken: acceptToken,
-                    acceptUrl: acceptUrl,
-                    apiKey: apiKey
-                )) {
-                    Text("ACEITAR PEDIDO")
-                        .font(.system(size: compact ? 14 : 16, weight: .heavy))
-                        .foregroundStyle(defaultWine)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, compact ? 10 : 12)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text("Abra a app para aceitar")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.85))
+            Link(destination: openUrl) {
+                Text("ACEITAR PEDIDO")
+                    .font(.system(size: compact ? 14 : 16, weight: .heavy))
+                    .foregroundStyle(defaultWine)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, compact ? 10 : 12)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
     }

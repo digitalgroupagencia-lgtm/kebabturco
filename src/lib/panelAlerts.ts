@@ -75,11 +75,15 @@ function clearLockScreenMediaControls() {
   }
 }
 
-/** No iPhone instalado o som vem da notificação push do sistema, nunca do player web. */
+/**
+ * No app nativo iOS o som do alerta vem sempre da notificação push do sistema.
+ * Reproduzir um HTMLAudioElement dentro do WKWebView regista automaticamente a
+ * sessão de mídia no iOS e faz aparecer o player "Now Playing" na tela
+ * bloqueada. Por isso, no iOS nativo NUNCA usamos áudio in-app.
+ */
 function shouldUseInAppAudio(): boolean {
-  if (!isNativeIOSAppSync()) return true;
-  // Com o painel aberto em primeiro plano, tocar o mesmo som localmente.
-  return typeof document !== "undefined" && document.visibilityState === "visible";
+  if (isNativeIOSAppSync()) return false;
+  return true;
 }
 
 function isIOSLike(): boolean {
