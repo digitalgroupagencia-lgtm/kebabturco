@@ -953,6 +953,26 @@ Deno.serve(async (req) => {
     }
 
     const subs = [...targetMap.values()];
+    console.log("[send-push-notification] subsMatched", {
+      storeId,
+      staffOrderAlertId,
+      total: subs.length,
+      byPlatform: subs.reduce((acc: Record<string, number>, s) => {
+        const p = (s.platform ?? "web").toLowerCase();
+        acc[p] = (acc[p] ?? 0) + 1;
+        return acc;
+      }, {}),
+      iosSample: subs
+        .filter((s) => (s.platform ?? "").toLowerCase() === "ios")
+        .map((s) => ({
+          endpointPreview: s.endpoint.slice(0, 40),
+          hasFcmToken: Boolean(s.fcm_token),
+          tokenLen: (s.fcm_token ?? s.endpoint.replace(/^fcm:\/\//i, "")).length,
+          staffAlerts: s.staff_alerts,
+          customerPhone: s.customer_phone,
+          orderId: s.order_id,
+        })),
+    });
 
     let sent = 0;
     let sentWeb = 0;
