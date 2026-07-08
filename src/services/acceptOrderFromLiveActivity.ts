@@ -140,7 +140,30 @@ export async function acceptOrderWithSession(
   return { ok: true, orderId };
 }
 
-export async function handleStaffLiveActivityDeepLink(url: string): Promise<boolean> {
+type DeepLinkNavigate = (to: string, opts?: { replace?: boolean }) => void;
+
+function navigateToPanelOrder(orderId: string, navigate?: DeepLinkNavigate): void {
+  if (typeof window === "undefined") return;
+  const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
+  const current = `${window.location.pathname}${window.location.search}`;
+  if (current === target) {
+    console.info("[LADeepLink] já está no painel do pedido", { target });
+    return;
+  }
+  console.info("[LADeepLink] navegar para painel do pedido", { target, viaRouter: !!navigate });
+  if (navigate) {
+    navigate(target, { replace: true });
+  } else {
+    // Fallback só se router ainda não estiver disponível (sem reload duro).
+    window.history.replaceState({}, "", target);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+}
+
+export async function handleStaffLiveActivityDeepLink(
+  url: string,
+  navigate?: DeepLinkNavigate,
+): Promise<boolean> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -155,62 +178,69 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
 
   if (!isCustom && !isUniversal) return false;
 
-  const path = parsed.pathname || "";
+  // Custom scheme: kebabturco://staff/order/{id} — host+pathname juntos.
+  const rawPath = isCustom
+    ? `/${parsed.hostname}${parsed.pathname || ""}`.replace(/\/+/g, "/")
+    : parsed.pathname || "";
   const action = parsed.searchParams.get("action")?.trim();
   const openOnly = parsed.searchParams.get("open")?.trim() === "1";
 
-  const orderMatch = path.match(/\/order\/([^/]+)/i) ?? path.match(/\/staff\/order\/([^/]+)/i);
+  const orderMatch =
+    rawPath.match(/\/staff\/order\/([^/?#]+)/i) ?? rawPath.match(/\/order\/([^/?#]+)/i);
   const orderId =
     orderMatch?.[1] ??
     parsed.searchParams.get("order")?.trim() ??
     parsed.searchParams.get("order_id")?.trim();
   const storeId = parsed.searchParams.get("store_id")?.trim();
 
-  console.info("[LADeepLink] parsed", { orderId, storeId, action, openOnly });
+  console.info("[LADeepLink] parsed", { orderId, storeId, action, openOnly, rawPath });
 
-  if (!orderId) return false;
+  if (!orderId) {
+    console.warn("[LADeepLink] sem orderId → ignorado", { url });
+    return false;
+  }
+
+  // Dedup por orderId (evita loop se APNs re-entrega em curto período).
+  try {
+    const mod = await import("@/components/NativeDeepLinkEffect");
+    if (mod.isOrderDeepLinkDuplicate(orderId)) {
+      console.info("[LADeepLink] duplicado ignorado", { orderId });
+      // ainda assim garante estar no painel.
+      navigateToPanelOrder(orderId, navigate);
+      return true;
+    }
+    mod.markOrderDeepLinkProcessed(orderId);
+  } catch {
+    /* ignore */
+  }
 
   // Tap no corpo/cartão → abrir painel do pedido (nunca aceitar sem o botão explícito).
   if (openOnly || action !== "accept") {
-    if (typeof window !== "undefined") {
-      const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
-      const current = `${window.location.pathname}${window.location.search}`;
-      if (current !== target) {
-        console.info("[LADeepLink] abrir painel do pedido", { target });
-        window.location.assign(target);
-      } else {
-        console.info("[LADeepLink] já está no painel do pedido", { target });
-      }
-    }
+    navigateToPanelOrder(orderId, navigate);
     return true;
   }
 
-  if (!storeId) return false;
+  if (!storeId) {
+    navigateToPanelOrder(orderId, navigate);
+    return true;
+  }
 
   const etaRaw = Number(parsed.searchParams.get("eta") ?? DEFAULT_PREP_MINUTES);
   const prepMinutes = Number.isFinite(etaRaw) ? etaRaw : DEFAULT_PREP_MINUTES;
 
   console.info("[LADeepLink] aceitar via deep link", { orderId, storeId, prepMinutes });
+  // Navega já para o painel antes de esperar a resposta (UX imediata, sem reload).
+  navigateToPanelOrder(orderId, navigate);
+
   const result = await acceptOrderWithSession(orderId, storeId, prepMinutes);
+  const { toast } = await import("sonner");
   if (result.ok) {
-    const { toast } = await import("sonner");
     toast.success(result.alreadyHandled ? "Pedido já estava aceite" : "Pedido aceite com sucesso");
-    if (typeof window !== "undefined") {
-      const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
-      if (window.location.pathname + window.location.search !== target) {
-        window.location.assign(target);
-      }
-    }
     return true;
   }
 
-  const { toast } = await import("sonner");
   const errorMessage = "error" in result ? result.error : "Erro ao aceitar pedido";
-  console.warn("[LADeepLink] falha aceitar → abrir painel", { errorMessage });
+  console.warn("[LADeepLink] falha aceitar (painel já aberto)", { errorMessage });
   toast.error(errorMessage);
-  // Fallback: mesmo assim abre o painel do pedido para aceitar/recusar manualmente.
-  if (typeof window !== "undefined") {
-    window.location.assign(`/panel/live?order=${encodeURIComponent(orderId)}`);
-  }
   return true;
 }
