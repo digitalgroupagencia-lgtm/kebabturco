@@ -48,6 +48,7 @@
 		LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaffOrderLiveWidget.swift; sourceTree = "<group>"; };
 		LA0000151FED79650016851F /* AcceptOrderIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptOrderIntent.swift; sourceTree = "<group>"; };
 		LA0000171FED79650016851F /* LiveActivityAcceptAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityAcceptAPI.swift; sourceTree = "<group>"; };
+		LA0000191FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		LA0000071FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		LA0000081FED79650016851F /* StaffOrderLiveWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StaffOrderLiveWidget.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
