@@ -53,16 +53,41 @@ Deno.serve(async (req) => {
         .eq("order_id", orderId)
         .eq("token_kind", tokenKind);
 
-      const { error } = await admin.from("staff_live_activity_tokens").insert({
+      const payload = {
         store_id: order.store_id,
         order_id: orderId,
         customer_phone: order.customer_phone,
         token_kind: tokenKind,
         token_value: token,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      const { error } = await admin.from("staff_live_activity_tokens").insert(payload);
+
+      if (error?.code === "23505") {
+        const { error: updateError } = await admin
+          .from("staff_live_activity_tokens")
+          .update({ token_value: token, updated_at: payload.updated_at })
+          .eq("store_id", order.store_id)
+          .eq("order_id", orderId)
+          .eq("token_kind", tokenKind);
+        if (updateError) throw updateError;
+        console.log("[register-staff-live-activity-token] customer token actualizado", {
+          orderId,
+          tokenKind,
+          tokenLen: token.length,
+        });
+        return new Response(JSON.stringify({ success: true, updated: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       if (error) throw error;
+      console.log("[register-staff-live-activity-token] customer token registado", {
+        orderId,
+        tokenKind,
+        tokenLen: token.length,
+      });
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -103,15 +128,44 @@ Deno.serve(async (req) => {
       .eq("user_id", userData.user.id)
       .eq("token_kind", tokenKind);
 
-    const { error } = await admin.from("staff_live_activity_tokens").insert({
+    const payload = {
       store_id: storeId,
       user_id: userData.user.id,
       token_kind: tokenKind,
       token_value: token,
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    const { error } = await admin.from("staff_live_activity_tokens").insert(payload);
+
+    if (error?.code === "23505") {
+      const { error: updateError } = await admin
+        .from("staff_live_activity_tokens")
+        .update({ token_value: token, updated_at: payload.updated_at })
+        .eq("store_id", storeId)
+        .eq("user_id", userData.user.id)
+        .eq("token_kind", tokenKind)
+        .is("order_id", null);
+      if (updateError) throw updateError;
+      console.log("[register-staff-live-activity-token] staff token actualizado", {
+        storeId,
+        userId: userData.user.id,
+        tokenKind,
+        tokenLen: token.length,
+      });
+      return new Response(JSON.stringify({ success: true, updated: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (error) throw error;
+
+    console.log("[register-staff-live-activity-token] staff token registado", {
+      storeId,
+      userId: userData.user.id,
+      tokenKind,
+      tokenLen: token.length,
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

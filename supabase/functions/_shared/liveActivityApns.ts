@@ -159,6 +159,7 @@ async function sendLiveActivityApns(
   const topic = `${config.topic}.push-type.liveactivity`;
   const timestamp = Math.floor(Date.now() / 1000);
   const body = JSON.stringify({ aps: { timestamp, event, ...payload } });
+  const payloadKeys = Object.keys(payload);
 
   const hosts = config.useSandbox
     ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
@@ -197,6 +198,8 @@ async function sendLiveActivityApns(
         orderId: logContext?.orderId,
         storeId: logContext?.storeId,
         collapseId,
+        payloadKeys,
+        hasInputPushToken: payload["input-push-token"] === 1,
         payloadBytes: body.length,
       });
       return { ok: true, host, status: res.status };
@@ -304,6 +307,11 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     };
     let sent = 0;
     const errors: string[] = [];
+    console.log("[liveActivity] update existing staff activity", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      updateTokens: updateRows.length,
+    });
     for (const row of updateRows) {
       const result = await sendLiveActivityApns(
         row.token_value,
@@ -320,6 +328,23 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     }
     console.log("[liveActivity] dedup update (LA já existente)", { orderId: opts.orderId, sent });
     return { sent, errors };
+  }
+
+  const { data: startMarkers } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("id, updated_at")
+    .eq("store_id", opts.storeId)
+    .eq("order_id", opts.orderId)
+    .eq("token_kind", "staff_start_sent")
+    .limit(1);
+
+  if ((startMarkers ?? []).length > 0) {
+    console.log("[liveActivity] start já enviado; aguarda activity_update token", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      markerUpdatedAt: startMarkers?.[0]?.updated_at,
+    });
+    return { sent: 0, errors: [] };
   }
 
   const { data: tokens } = await opts.admin
@@ -394,11 +419,19 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     );
 
     // (cardTitle já calculado acima para dedup)
+    console.log("[liveActivity] start staff activity", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      tokenLen: row.token_value.length,
+      attributesType: "GenericAttributes",
+      inputPushToken: 1,
+    });
     const result = await sendLiveActivityApns(
       row.token_value,
       {
         "content-state": contentState,
         "attributes-type": "GenericAttributes",
+        "input-push-token": 1,
         attributes,
         alert: {
           title: cardTitle,
@@ -410,8 +443,16 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       "start",
       { orderId: opts.orderId, storeId: opts.storeId },
     );
-    if (result.ok) sent++;
-    else if (result.error) errors.push(result.error);
+    if (result.ok) {
+      sent++;
+      await opts.admin.from("staff_live_activity_tokens").insert({
+        store_id: opts.storeId,
+        order_id: opts.orderId,
+        token_kind: "staff_start_sent",
+        token_value: row.token_value.slice(0, 64),
+        updated_at: new Date().toISOString(),
+      });
+    } else if (result.error) errors.push(result.error);
   }
 
   return { sent, errors };
@@ -483,7 +524,7 @@ export async function dispatchCustomerLiveActivityPush(opts: {
             alert: { title, body: message, sound: "default" },
           }
         : event === "end"
-          ? { "content-state": contentState, dismissal_date: Math.floor(Date.now() / 1000) }
+          ? { "content-state": contentState, "dismissal-date": Math.floor(Date.now() / 1000) }
           : { "content-state": contentState };
 
     const result = await sendLiveActivityApns(row.token_value, payload, config, event, {
@@ -511,10 +552,27 @@ export async function dispatchStaffLiveActivityEnd(opts: {
     .eq("token_kind", "activity_update");
 
   let sent = 0;
+  console.log("[liveActivity] end staff activity", {
+    orderId: opts.orderId,
+    storeId: opts.storeId,
+    updateTokens: (updateTokens ?? []).length,
+  });
   for (const row of (updateTokens ?? []) as Array<{ token_value: string }>) {
     const result = await sendLiveActivityApns(
       row.token_value,
-      { dismissal_date: Math.floor(Date.now() / 1000) },
+      {
+        "content-state": {
+          values: {
+            title: "Pedido tratado",
+            message: "Pedido já não está pendente",
+            timer: "",
+            status: "ENCERRADO",
+            urgent: "0",
+            role: "staff",
+          },
+        },
+        "dismissal-date": Math.floor(Date.now() / 1000),
+      },
       config,
       "end",
       { orderId: opts.orderId, storeId: opts.storeId },

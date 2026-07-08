@@ -35,6 +35,21 @@ type PendingOrderRow = {
 export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
   const knownPendingRef = useRef<Set<string>>(new Set());
 
+  const endRemoteLiveActivity = async (orderId: string) => {
+    if (!storeId) return;
+    try {
+      await supabase.functions.invoke("send-push-notification", {
+        body: {
+          storeId,
+          staffOrderCancelledId: orderId,
+          liveActivityEndOnly: true,
+        },
+      });
+    } catch {
+      /* não bloqueia alertas */
+    }
+  };
+
   useEffect(() => {
     if (!storeId) return;
 
@@ -79,6 +94,7 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
           knownPendingRef.current.delete(id);
           acknowledgePendingOrderAlert(id);
           void endStaffOrderLiveActivity(id);
+          void endRemoteLiveActivity(id);
         }
       }
 

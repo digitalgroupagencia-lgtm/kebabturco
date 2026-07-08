@@ -38,14 +38,45 @@ Deno.serve(async (req) => {
       .eq("activity_id", activityId)
       .eq("token_kind", "activity_update");
 
-    const { error } = await admin.from("staff_live_activity_tokens").insert({
+    const row = {
       store_id: resolvedStoreId || null,
       order_id: orderId || null,
       activity_id: activityId,
       token_kind: "activity_update",
       token_value: token,
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    const { error } = await admin.from("staff_live_activity_tokens").insert(row);
+
+    if (error?.code === "23505") {
+      const { error: updateError } = await admin
+        .from("staff_live_activity_tokens")
+        .update({
+          store_id: row.store_id,
+          order_id: row.order_id,
+          token_value: row.token_value,
+          updated_at: row.updated_at,
+        })
+        .eq("activity_id", activityId)
+        .eq("token_kind", "activity_update");
+      if (updateError) {
+        console.error("[register-live-activity-update-token] update failed", updateError);
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log("[register-live-activity-update-token] actualizado", {
+        activityId,
+        orderId,
+        storeId: resolvedStoreId,
+        tokenLen: token.length,
+      });
+      return new Response(JSON.stringify({ success: true, updated: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (error) {
       console.error("[register-live-activity-update-token]", error);
@@ -54,6 +85,13 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("[register-live-activity-update-token] registado", {
+      activityId,
+      orderId,
+      storeId: resolvedStoreId,
+      tokenLen: token.length,
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

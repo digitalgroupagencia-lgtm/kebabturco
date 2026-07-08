@@ -18,6 +18,7 @@ import {
   dispatchStaffLiveActivityPushToStart,
   loadLiveActivitySettings,
 } from "../_shared/liveActivityApns.ts";
+import { issueLiveActivityAcceptToken } from "../_shared/liveActivityAcceptToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,6 +81,7 @@ type PushSubRow = {
 
 type StaffOrderPushContext = {
   orderNumber: string;
+  status: string | null;
   total: number;
   orderType: string | null;
   tableNumber: string | null;
@@ -93,7 +95,7 @@ async function loadStaffOrderPushContext(
 ): Promise<StaffOrderPushContext | null> {
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("order_number, total, order_type, table_number, created_at")
+    .select("order_number, status, total, order_type, table_number, created_at")
     .eq("id", staffOrderId)
     .maybeSingle();
   if (orderErr || !order) return null;
@@ -106,6 +108,7 @@ async function loadStaffOrderPushContext(
 
   return {
     orderNumber: String(order.order_number ?? ""),
+    status: order.status ?? null,
     total: Number(order.total) || 0,
     orderType: order.order_type ?? null,
     tableNumber: order.table_number ?? null,
@@ -451,6 +454,10 @@ async function sendApns(
     imageUrl?: string;
     orderId?: string;
     storeId?: string;
+    category?: string;
+    acceptToken?: string;
+    acceptUrl?: string;
+    apiKey?: string;
   },
   config: ApnsConfig,
   opts?: { tryBothHosts?: boolean },
@@ -467,12 +474,17 @@ async function sendApns(
     aps: {
       alert: { title: payload.title, body: payload.body },
       sound: apnsSound,
+        ...(payload.category ? { category: payload.category } : {}),
+        ...(payload.orderId ? { "thread-id": `staff-order-${payload.orderId}` } : {}),
       ...(payload.imageUrl ? { "mutable-content": 1 } : {}),
     },
     url: payload.url ?? "/",
     tag: payload.tag ?? "",
     ...(payload.orderId ? { order_id: payload.orderId } : {}),
     ...(payload.storeId ? { store_id: payload.storeId } : {}),
+    ...(payload.acceptToken ? { accept_token: payload.acceptToken } : {}),
+    ...(payload.acceptUrl ? { accept_url: payload.acceptUrl } : {}),
+    ...(payload.apiKey ? { api_key: payload.apiKey } : {}),
     ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
   });
 
@@ -778,6 +790,7 @@ Deno.serve(async (req) => {
       nativePlatform,
       requireInteraction,
       pushDiagnostic,
+      liveActivityEndOnly,
       customerPhone,
       marketingBroadcast,
       staffOrderId,
@@ -860,6 +873,38 @@ Deno.serve(async (req) => {
     let staffOrderContext: StaffOrderPushContext | null = null;
     if (staffOrderAlertId && storeId) {
       staffOrderContext = await loadStaffOrderPushContext(supabase, staffOrderAlertId);
+      if (staffOrderContext && staffOrderContext.status !== "pending") {
+        let liveActivitySent = 0;
+        try {
+          const ended = await dispatchStaffLiveActivityEnd({
+            admin: supabase,
+            storeId,
+            orderId: staffOrderAlertId,
+          });
+          liveActivitySent = ended.sent;
+        } catch (e) {
+          console.warn("[send-push-notification] skipped non-pending staff order; LA end failed", {
+            staffOrderAlertId,
+            status: staffOrderContext.status,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+        console.log("[send-push-notification] skipped non-pending staff order", {
+          staffOrderAlertId,
+          status: staffOrderContext.status,
+          liveActivitySent,
+        });
+        return new Response(
+          JSON.stringify({
+            skipped: true,
+            reason: "staff_order_not_pending",
+            status: staffOrderContext.status,
+            sent: 0,
+            liveActivitySent,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     let staffOrderCancelledContext: { orderNumber: string; cancelledByName: string | null } | null = null;
@@ -875,6 +920,23 @@ Deno.serve(async (req) => {
           cancelledByName: cancelledOrder.cancelled_by_name ?? null,
         };
       }
+    }
+
+    if (staffOrderCancelledAlertId && storeId && liveActivityEndOnly === true) {
+      const ended = await dispatchStaffLiveActivityEnd({
+        admin: supabase,
+        storeId,
+        orderId: staffOrderCancelledAlertId,
+      });
+      console.log("[send-push-notification] liveActivityEndOnly", {
+        staffOrderCancelledAlertId,
+        storeId,
+        ended: ended.sent,
+      });
+      return new Response(
+        JSON.stringify({ sent: 0, liveActivitySent: ended.sent, skippedPush: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     let customerOrderContext: CustomerOrderPushContext | null = null;
@@ -998,6 +1060,41 @@ Deno.serve(async (req) => {
       }
     }
 
+    let staffAcceptToken: string | undefined;
+    let staffAcceptUrl: string | undefined;
+    if (staffOrderAlertId && storeId) {
+      try {
+        const { data: tokenOwner } = await supabase
+          .from("staff_live_activity_tokens")
+          .select("user_id")
+          .eq("store_id", storeId)
+          .eq("token_kind", "push_to_start")
+          .not("user_id", "is", null)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (tokenOwner?.user_id) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", tokenOwner.user_id)
+            .maybeSingle();
+          staffAcceptToken = await issueLiveActivityAcceptToken({
+            order_id: staffOrderAlertId,
+            store_id: storeId,
+            user_id: tokenOwner.user_id,
+            user_name: String(prof?.full_name ?? "Operador"),
+          });
+          staffAcceptUrl = `${supabaseUrl}/functions/v1/accept-order-from-live-activity`;
+        }
+      } catch (e) {
+        console.warn("[send-push-notification] accept token para push normal falhou", {
+          staffOrderAlertId,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
     for (const sub of subs) {
       const platform = (sub.platform ?? "web").toLowerCase();
       const localized = staffOrderContext
@@ -1061,6 +1158,10 @@ Deno.serve(async (req) => {
               imageUrl,
               orderId: staffOrderAlertId ?? staffOrderCancelledAlertId ?? (orderId as string | undefined),
               storeId: (storeId as string | undefined) ?? undefined,
+              category: staffOrderAlertId ? "STAFF_ORDER" : undefined,
+              acceptToken: staffAcceptToken,
+              acceptUrl: staffAcceptUrl,
+              apiKey: anonKey,
             },
             apns,
             { tryBothHosts: apnsTryBothHosts },
@@ -1071,6 +1172,10 @@ Deno.serve(async (req) => {
             endpointPreview: sub.endpoint.slice(0, 40),
             host: apnsResult.host,
             tag,
+            url: resolvedUrl,
+            category: staffOrderAlertId ? "STAFF_ORDER" : undefined,
+            hasAcceptToken: Boolean(staffAcceptToken),
+            orderId: staffOrderAlertId ?? staffOrderCancelledAlertId ?? (orderId as string | undefined),
             tokenLen: token.length,
             staffOrderAlertId,
           });
