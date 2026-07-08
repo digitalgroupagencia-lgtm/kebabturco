@@ -156,8 +156,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Sucesso — encerra Live Activities em TODOS os iPhones da equipa para este pedido.
+    try {
+      const ended = await dispatchStaffLiveActivityEnd({ admin, storeId, orderId });
+      console.log("[accept-order-from-live-activity] la ended", { orderId, ended: ended.sent });
+    } catch (e) {
+      console.warn("[accept-order-from-live-activity] end dispatch falhou", String(e));
+    }
+
     return new Response(
-      JSON.stringify({ success: true, order: updated, prep_minutes: prepMinutes }),
+      JSON.stringify({ success: true, order: updated, prep_minutes: prepMinutes, source }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
