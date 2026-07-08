@@ -299,7 +299,14 @@ async function getFcmAccessToken(serviceAccount: {
 
 async function sendFcmV1(
   token: string,
-  payload: { title: string; body: string; tag?: string; url?: string; requireInteraction?: boolean },
+  payload: {
+    title: string;
+    body: string;
+    tag?: string;
+    url?: string;
+    requireInteraction?: boolean;
+    acceptAction?: string;
+  },
   serviceAccount: { project_id: string; client_email: string; private_key: string; token_uri?: string },
 ): Promise<void> {
   const access = await getFcmAccessToken(serviceAccount);
@@ -311,6 +318,7 @@ async function sendFcmV1(
       data: {
         url: payload.url ?? "/",
         tag: payload.tag ?? "",
+        ...(payload.acceptAction ? { action: "accept", accept_url: payload.acceptAction } : {}),
       },
       notification: { title: payload.title, body: payload.body },
       android: {
@@ -830,7 +838,7 @@ Deno.serve(async (req) => {
 
     const resolvedUrl =
       staffOrderAlertId != null
-        ? `/panel/live?order=${staffOrderAlertId}`
+        ? `/panel/live?order=${staffOrderAlertId}${storeId ? `&action=accept&store_id=${storeId}&eta=15` : ""}`
         : staffOrderCancelledAlertId != null
           ? `/panel/live?order=${staffOrderCancelledAlertId}`
           : orderId && customerEvent
@@ -980,7 +988,22 @@ Deno.serve(async (req) => {
         } else if (platform === "android") {
           if (!fcm) throw new Error("FCM not configured");
           const token = normalizeNativeToken(sub.fcm_token ?? sub.endpoint.replace(/^fcm:\/\//i, ""));
-          await sendFcmV1(token, { title: subTitle, body: subBody, tag, url: resolvedUrl, requireInteraction }, fcm);
+          const staffAcceptDeepLink =
+            staffOrderAlertId && storeId
+              ? `kebabturco://staff/order/${staffOrderAlertId}?action=accept&store_id=${storeId}&eta=15`
+              : undefined;
+          await sendFcmV1(
+            token,
+            {
+              title: subTitle,
+              body: subBody,
+              tag,
+              url: resolvedUrl,
+              requireInteraction,
+              acceptAction: staffAcceptDeepLink,
+            },
+            fcm,
+          );
           sent++;
           sentFcm++;
         } else {

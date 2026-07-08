@@ -20,6 +20,7 @@ import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import { SeoDocumentEffect } from "./hooks/useSeoDocument.tsx";
 import StaffGoogleLoginRegistrar from "@/components/staff/StaffGoogleLoginRegistrar.tsx";
+import NativeDeepLinkEffect from "@/components/NativeDeepLinkEffect.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
@@ -114,6 +115,7 @@ const App = () => {
             <BrowserRouter>
               <AppChromeEffect />
               <ScreenOrientationEffect />
+              <NativeDeepLinkEffect />
               <AppCacheBustRouter>
                 <LovablePreviewGate />
                 <PreviewPathGuard />

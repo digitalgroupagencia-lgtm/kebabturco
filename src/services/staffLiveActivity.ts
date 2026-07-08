@@ -1,4 +1,5 @@
 import { registerPlugin } from "@capacitor/core";
+import { supabase } from "@/integrations/supabase/client";
 import { isNativeIOSAppSync } from "@/lib/nativeAppPlatform";
 
 export type StaffLiveActivityState = {
@@ -23,11 +24,21 @@ type LiveActivityPlugin = {
   }): Promise<void>;
   endActivity(options: { id: string; dismissalPolicy?: "immediate" | "default" }): Promise<void>;
   isRunning(options: { id: string }): Promise<{ running: boolean }>;
+  observePushToStartToken?(): Promise<void>;
+  setUpdateTokenEndpoint?(options: { url: string; headers?: Record<string, string> }): Promise<void>;
+  addListener?(
+    eventName: string,
+    listenerFunc: (data: { token?: string }) => void,
+  ): Promise<{ remove: () => void }>;
 };
 
 const LiveActivity = registerPlugin<LiveActivityPlugin>("LiveActivity");
 
 const activeOrderActivities = new Map<string, number>();
+let pushToStartObserverStarted = false;
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 function formatElapsed(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -48,6 +59,44 @@ function buildState(orderNumber: string, startedAt: number, urgent: boolean): St
   };
 }
 
+async function issueAcceptToken(orderId: string, storeId: string): Promise<{ token: string; acceptUrl: string } | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("issue-live-activity-accept-token", {
+      body: { order_id: orderId, store_id: storeId },
+    });
+    if (error || !data?.token) return null;
+    return {
+      token: String(data.token),
+      acceptUrl: String(data.accept_url ?? `${SUPABASE_URL}/functions/v1/accept-order-from-live-activity`),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function ensureStaffLiveActivityPushToStart(storeId: string): Promise<void> {
+  if (!isNativeIOSAppSync() || pushToStartObserverStarted) return;
+  pushToStartObserverStarted = true;
+
+  try {
+    await LiveActivity.observePushToStartToken?.();
+  } catch {
+    /* plugin antigo */
+  }
+
+  try {
+    LiveActivity.addListener?.("liveActivityPushToStartToken", async (event: { token?: string }) => {
+      const token = event?.token?.trim();
+      if (!token || !storeId) return;
+      await supabase.functions.invoke("register-staff-live-activity-token", {
+        body: { store_id: storeId, push_to_start_token: token, token_kind: "push_to_start" },
+      });
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function isStaffLiveActivitySupported(): Promise<boolean> {
   if (!isNativeIOSAppSync()) return false;
   try {
@@ -58,16 +107,30 @@ export async function isStaffLiveActivitySupported(): Promise<boolean> {
   }
 }
 
-export async function startStaffOrderLiveActivity(orderId: string, orderNumber: string): Promise<void> {
+export async function startStaffOrderLiveActivity(
+  orderId: string,
+  orderNumber: string,
+  storeId: string,
+): Promise<void> {
   if (!(await isStaffLiveActivitySupported())) return;
 
+  void ensureStaffLiveActivityPushToStart(storeId);
+
+  const tokenBundle = await issueAcceptToken(orderId, storeId);
   const startedAt = Date.now();
   const state = buildState(orderNumber, startedAt, false);
 
   try {
     await LiveActivity.startActivity({
       id: orderId,
-      attributes: { orderId, orderNumber },
+      attributes: {
+        orderId,
+        orderNumber,
+        storeId,
+        acceptToken: tokenBundle?.token ?? "",
+        acceptUrl: tokenBundle?.acceptUrl ?? `${SUPABASE_URL}/functions/v1/accept-order-from-live-activity`,
+        apiKey: SUPABASE_ANON,
+      },
       contentState: { ...state },
     });
 
@@ -87,7 +150,7 @@ export async function startStaffOrderLiveActivity(orderId: string, orderNumber: 
 
     activeOrderActivities.set(orderId, tick);
   } catch {
-    /* extensão ainda não configurada no Xcode */
+    /* extensão indisponível */
   }
 }
 

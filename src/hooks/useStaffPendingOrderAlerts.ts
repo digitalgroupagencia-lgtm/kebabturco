@@ -62,7 +62,7 @@ export function useStaffPendingOrderAlerts(storeId: string | null | undefined) {
         if (!knownPendingRef.current.has(order.id)) {
           knownPendingRef.current.add(order.id);
           registerNewPendingOrderAlert(order.id);
-          void startStaffOrderLiveActivity(order.id, String(order.order_number ?? "?"));
+          void startStaffOrderLiveActivity(order.id, String(order.order_number ?? "?"), storeId);
         }
       }
 

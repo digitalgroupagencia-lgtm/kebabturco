@@ -21,6 +21,8 @@
 		A1B2C3D91FED79650016851F /* staff_order_alert.caf in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3DA1FED79650016851F /* staff_order_alert.caf */; };
 		LA0000011FED79650016851F /* StaffOrderLiveWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LA0000021FED79650016851F /* StaffOrderLiveWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		LA0000051FED79650016851F /* StaffOrderLiveWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */; };
+		LA0000141FED79650016851F /* AcceptOrderIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000151FED79650016851F /* AcceptOrderIntent.swift */; };
+		LA0000161FED79650016851F /* LiveActivityAcceptAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000171FED79650016851F /* LiveActivityAcceptAPI.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +43,8 @@
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		LA0000021FED79650016851F /* StaffOrderLiveWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StaffOrderLiveWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaffOrderLiveWidget.swift; sourceTree = "<group>"; };
+		LA0000151FED79650016851F /* AcceptOrderIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptOrderIntent.swift; sourceTree = "<group>"; };
+		LA0000171FED79650016851F /* LiveActivityAcceptAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityAcceptAPI.swift; sourceTree = "<group>"; };
 		LA0000071FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		LA0000081FED79650016851F /* StaffOrderLiveWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StaffOrderLiveWidget.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -104,6 +108,8 @@
 			isa = PBXGroup;
 			children = (
 				LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */,
+				LA0000151FED79650016851F /* AcceptOrderIntent.swift */,
+				LA0000171FED79650016851F /* LiveActivityAcceptAPI.swift */,
 				LA0000071FED79650016851F /* Info.plist */,
 				LA0000081FED79650016851F /* StaffOrderLiveWidget.entitlements */,
 			);
@@ -289,6 +295,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				LA0000051FED79650016851F /* StaffOrderLiveWidget.swift in Sources */,
+				LA0000141FED79650016851F /* AcceptOrderIntent.swift in Sources */,
+				LA0000161FED79650016851F /* LiveActivityAcceptAPI.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -447,7 +455,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -472,7 +480,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -492,14 +500,14 @@
 				DEVELOPMENT_TEAM = 4QW32SBR7H;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "$(SRCROOT)/../StaffOrderLiveWidget/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				MACH_O_TYPE = mh_execute;
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app.StaffOrderWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -520,14 +528,14 @@
 				DEVELOPMENT_TEAM = 4QW32SBR7H;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "$(SRCROOT)/../StaffOrderLiveWidget/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				MACH_O_TYPE = mh_execute;
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = net.kebabturco.app.StaffOrderWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

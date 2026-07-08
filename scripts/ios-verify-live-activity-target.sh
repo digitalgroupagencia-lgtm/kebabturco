@@ -10,6 +10,7 @@ for token in \
   "Embed Foundation Extensions" \
   CodeSignOnCopy \
   StaffOrderLiveWidget.swift \
+  AcceptOrderIntent \
   MACH_O_TYPE = mh_execute; do
   if ! grep -q "$token" "$PBX"; then
     echo "ERRO: falta no project.pbxproj: $token"
@@ -19,6 +20,8 @@ done
 
 for file in \
   "$ROOT/ios/StaffOrderLiveWidget/StaffOrderLiveWidget.swift" \
+  "$ROOT/ios/StaffOrderLiveWidget/AcceptOrderIntent.swift" \
+  "$ROOT/ios/StaffOrderLiveWidget/LiveActivityAcceptAPI.swift" \
   "$ROOT/ios/StaffOrderLiveWidget/Info.plist" \
   "$ROOT/ios/StaffOrderLiveWidget/StaffOrderLiveWidget.entitlements"; do
   if [ ! -f "$file" ]; then

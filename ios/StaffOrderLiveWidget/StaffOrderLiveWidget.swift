@@ -18,6 +18,7 @@ struct StaffOrderLiveWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: GenericAttributes.self) { context in
             lockScreenView(context: context)
+                .widgetURL(fallbackDeepLink(context: context))
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -35,9 +36,7 @@ struct StaffOrderLiveWidget: Widget {
                         .foregroundStyle(.white)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.state.values["message"] ?? "Toque para abrir")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.85))
+                    acceptButton(context: context)
                 }
             } compactLeading: {
                 Text("🥙")
@@ -55,27 +54,68 @@ struct StaffOrderLiveWidget: Widget {
         let urgent = context.state.values["urgent"] == "1"
         let bg = urgent ? wineLight : wine
 
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(context.state.values["title"] ?? "Novo pedido")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(context.state.values["message"] ?? "Aceite no painel")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.9))
-                if let timer = context.state.values["timer"], !timer.isEmpty {
-                    Text(timer)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.8))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(context.state.values["title"] ?? "Novo pedido")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text(context.state.values["message"] ?? "Aceite no painel")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.9))
+                    if let timer = context.state.values["timer"], !timer.isEmpty {
+                        Text(timer)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
                 }
+                Spacer(minLength: 8)
+                Text("🥙")
+                    .font(.largeTitle)
             }
-            Spacer(minLength: 8)
-            Text("🥙")
-                .font(.largeTitle)
+            acceptButton(context: context)
         }
         .padding(16)
         .activityBackgroundTint(bg)
         .activitySystemActionForegroundColor(.white)
+    }
+
+    @ViewBuilder
+    private func acceptButton(context: ActivityViewContext<GenericAttributes>) -> some View {
+        let statics = context.attributes.staticValues
+        let orderId = statics["orderId"] ?? context.attributes.id
+        let storeId = statics["storeId"] ?? ""
+        let acceptToken = statics["acceptToken"] ?? ""
+        let acceptUrl = statics["acceptUrl"] ?? ""
+        let apiKey = statics["apiKey"] ?? ""
+
+        if #available(iOS 17.0, *), !storeId.isEmpty, !acceptToken.isEmpty, !acceptUrl.isEmpty {
+            Button(intent: AcceptOrderIntent(
+                orderId: orderId,
+                storeId: storeId,
+                acceptToken: acceptToken,
+                acceptUrl: acceptUrl,
+                apiKey: apiKey
+            )) {
+                Text("ACEITAR PEDIDO")
+                    .font(.subheadline.bold())
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.white.opacity(0.25))
+        } else {
+            Text("Abra a app para aceitar")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.85))
+        }
+    }
+
+    private func fallbackDeepLink(context: ActivityViewContext<GenericAttributes>) -> URL? {
+        let orderId = context.attributes.staticValues["orderId"] ?? context.attributes.id
+        let storeId = context.attributes.staticValues["storeId"] ?? ""
+        guard !storeId.isEmpty else { return nil }
+        return LiveActivityAcceptAPI.deepLink(orderId: orderId, storeId: storeId)
     }
 }
 
