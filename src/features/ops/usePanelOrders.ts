@@ -477,7 +477,7 @@ export function usePanelOrders(storeId: string | undefined) {
     } finally {
       updatingRef.current.delete(order.id);
     }
-  }, [endRemoteLiveActivity]);
+  }, [endRemoteLiveActivity, storeId]);
 
   const cancelOrder = useCallback(async (orderId: string, staffPin: string) => {
     const order = orders.find((o) => o.id === orderId);
