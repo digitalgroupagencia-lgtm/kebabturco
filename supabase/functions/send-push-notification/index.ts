@@ -442,7 +442,16 @@ async function getApnsJwt(config: ApnsConfig): Promise<string> {
 
 async function sendApns(
   deviceToken: string,
-  payload: { title: string; body: string; tag?: string; url?: string; sound?: string; imageUrl?: string },
+  payload: {
+    title: string;
+    body: string;
+    tag?: string;
+    url?: string;
+    sound?: string;
+    imageUrl?: string;
+    orderId?: string;
+    storeId?: string;
+  },
   config: ApnsConfig,
   opts?: { tryBothHosts?: boolean },
 ): Promise<{ host: string }> {
@@ -462,6 +471,8 @@ async function sendApns(
     },
     url: payload.url ?? "/",
     tag: payload.tag ?? "",
+    ...(payload.orderId ? { order_id: payload.orderId } : {}),
+    ...(payload.storeId ? { store_id: payload.storeId } : {}),
     ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
   });
 
