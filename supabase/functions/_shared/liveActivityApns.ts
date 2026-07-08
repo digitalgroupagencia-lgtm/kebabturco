@@ -145,11 +145,13 @@ async function sendLiveActivityApns(
   payload: Record<string, unknown>,
   config: ApnsConfig,
   event: "start" | "update" | "end",
-): Promise<{ ok: boolean; error?: string }> {
+  logContext?: { orderId?: string; storeId?: string },
+): Promise<{ ok: boolean; error?: string; host?: string; status?: number }> {
   const token = deviceToken.replace(/[<>\s]/g, "").toLowerCase();
   // Live Activity push-to-start tokens são hex de comprimento variável (tipicamente 160+ chars),
   // ao contrário dos device tokens normais (64). Aceitar qualquer hex >= 64.
   if (!/^[0-9a-f]+$/i.test(token) || token.length < 64) {
+    console.warn("[liveActivityApns] token inválido", { len: token.length, event });
     return { ok: false, error: `token inválido (len=${token.length})` };
   }
 
@@ -162,6 +164,11 @@ async function sendLiveActivityApns(
     ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
     : ["api.push.apple.com", "api.sandbox.push.apple.com"];
 
+  // Collapse-id por pedido evita cartões duplicados quando alertas repetidos disparam.
+  const orderId = logContext?.orderId;
+  const collapseId = orderId ? `la-staff-${orderId}`.slice(0, 64) : undefined;
+
+  const attempts: Array<{ host: string; status: number; text: string }> = [];
   for (const host of hosts) {
     const res = await fetch(`https://${host}/3/device/${token}`, {
       method: "POST",
@@ -170,16 +177,48 @@ async function sendLiveActivityApns(
         "apns-topic": topic,
         "apns-push-type": "liveactivity",
         "apns-priority": "10",
+        ...(collapseId ? { "apns-collapse-id": collapseId } : {}),
         "content-type": "application/json",
       },
       body,
     });
-    if (res.ok) return { ok: true };
-    const text = await res.text();
-    if (res.status === 410) return { ok: false, error: text };
-    if (host === hosts[hosts.length - 1]) return { ok: false, error: `${res.status} ${text}` };
+    const text = res.ok ? "" : await res.text();
+    attempts.push({ host, status: res.status, text });
+    if (res.ok) {
+      console.log("[liveActivityApns] sent", {
+        host,
+        topic,
+        event,
+        tokenLen: token.length,
+        tokenPreview: token.slice(0, 12),
+        orderId: logContext?.orderId,
+        storeId: logContext?.storeId,
+        collapseId,
+        payloadBytes: body.length,
+      });
+      return { ok: true, host, status: res.status };
+    }
+    if (res.status === 410) {
+      console.warn("[liveActivityApns] 410 gone", { host, event, orderId: logContext?.orderId });
+      return { ok: false, error: text, host, status: 410 };
+    }
   }
-  return { ok: false, error: "APNs live activity falhou" };
+  const last = attempts[attempts.length - 1];
+  console.error("[liveActivityApns] falhou", {
+    event,
+    topic,
+    tokenLen: token.length,
+    tokenPreview: token.slice(0, 12),
+    orderId: logContext?.orderId,
+    storeId: logContext?.storeId,
+    attempts,
+  });
+  return {
+    ok: false,
+    error: attempts.map((a) => `${a.host}:${a.status} ${a.text}`).join(" | ") || "APNs live activity falhou",
+    host: last?.host,
+    status: last?.status,
+  };
 }
 
 function buildAttributes(
@@ -266,6 +305,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
         },
         config,
         "update",
+        { orderId: opts.orderId, storeId: opts.storeId },
       );
       if (result.ok) sent++;
       else if (result.error) errors.push(`update: ${result.error}`);
@@ -355,6 +395,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       },
       config,
       "start",
+      { orderId: opts.orderId, storeId: opts.storeId },
     );
     if (result.ok) sent++;
     else if (result.error) errors.push(result.error);
@@ -432,7 +473,10 @@ export async function dispatchCustomerLiveActivityPush(opts: {
           ? { "content-state": contentState, dismissal_date: Math.floor(Date.now() / 1000) }
           : { "content-state": contentState };
 
-    const result = await sendLiveActivityApns(row.token_value, payload, config, event);
+    const result = await sendLiveActivityApns(row.token_value, payload, config, event, {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+    });
     if (result.ok) sent++;
     else if (result.error) errors.push(result.error);
   }
@@ -460,6 +504,7 @@ export async function dispatchStaffLiveActivityEnd(opts: {
       { dismissal_date: Math.floor(Date.now() / 1000) },
       config,
       "end",
+      { orderId: opts.orderId, storeId: opts.storeId },
     );
     if (result.ok) sent++;
   }
