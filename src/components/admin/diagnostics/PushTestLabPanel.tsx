@@ -248,9 +248,8 @@ export default function PushTestLabPanel() {
           <div>
             <p className="font-semibold">O iPhone ainda não está pronto para o cartão grande</p>
             <p className="text-xs mt-1 opacity-90">
-              Abra a app Kebab Turco no iPhone da equipa → Painel → Definições → desligue e volte a ligar
-              «Notificações push». Depois feche a app completamente e faça um novo pedido teste com o ecrã
-              bloqueado.
+              Na app Kebab Turco no iPhone: Definições → ligue alertas. Precisa de <strong>iOS 17.2 ou mais recente</strong> e
+              Live Activities activas em Definições → Kebab Turco. Depois feche a app e use «Enviar alerta» no pedido.
             </p>
           </div>
         </div>

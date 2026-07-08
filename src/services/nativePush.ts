@@ -63,8 +63,12 @@ function logNative(
 async function syncStaffLiveActivityRemoteStart(storeId: string): Promise<void> {
   try {
     const { ensureStaffLiveActivityPushToStart } = await import("@/services/staffLiveActivity");
-    await ensureStaffLiveActivityPushToStart(storeId);
-    logNative("info", "Live Activity push-to-start sincronizado", { storeId });
+    const result = await ensureStaffLiveActivityPushToStart(storeId, { force: true });
+    if (result.ok) {
+      logNative("info", "Live Activity push-to-start sincronizado", { storeId });
+    } else {
+      logNative("warn", "Live Activity push-to-start não ficou pronto", { storeId, reason: result.reason });
+    }
   } catch (e) {
     logNative("warn", "Live Activity push-to-start não sincronizou", {
       storeId,

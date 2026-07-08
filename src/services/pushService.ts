@@ -83,9 +83,10 @@ function parseStaffOrderPushResponse(data: unknown, error: { message?: string } 
   if (laSent > 0) {
     message += ` Cartão grande no iPhone: ${laSent}.`;
   } else if (laErr) {
-    message += " Cartão grande não enviado — registe push na app iPhone e tente outra vez.";
+    message += ` Cartão grande: ${laErr.slice(0, 160)}`;
   } else if (sent > 0) {
-    message += " Cartão grande: confirme que o iPhone tem alertas ligados na app.";
+    message +=
+      " Só chegou a faixa pequena — na app iPhone ligue alertas (precisa iOS 17.2+) e carregue Enviar alerta outra vez.";
   }
 
   return {

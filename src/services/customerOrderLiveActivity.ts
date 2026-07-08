@@ -152,8 +152,9 @@ export async function syncCustomerOrderLiveActivity(
   if (!isNativeIOSAppSync()) return;
 
   try {
-    const { available } = await LiveActivity.isAvailable();
-    if (!available) return;
+    const result = await LiveActivity.isAvailable();
+    const enabled = Boolean((result as { value?: boolean }).value);
+    if (!enabled) return;
 
     await ensureCustomerUpdateEndpoint();
     void registerCustomerPushToStart(storeId, orderId);

@@ -62,6 +62,9 @@ const activeOrderActivities = new Map<string, number>();
 const orderStartedAt = new Map<string, number>();
 const settingsCache = new Map<string, LiveActivitySettings>();
 let pushToStartObserverStarted = false;
+let pushToStartListenerReady = false;
+let pushToStartStoreId: string | null = null;
+const PUSH_TO_START_CACHE_KEY = "la-staff-push-to-start-token";
 let updateEndpointConfigured = false;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -161,27 +164,93 @@ async function ensureUpdateTokenEndpoint(): Promise<void> {
   }
 }
 
-export async function ensureStaffLiveActivityPushToStart(storeId: string, opts?: { force?: boolean }): Promise<void> {
-  if (!isNativeIOSAppSync()) return;
-  if (pushToStartObserverStarted && !opts?.force) return;
-  pushToStartObserverStarted = true;
+async function persistPushToStartToken(storeId: string, token: string): Promise<boolean> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return false;
+    }
+
+    const { error } = await supabase.functions.invoke("register-staff-live-activity-token", {
+      body: { store_id: storeId, push_to_start_token: token, token_kind: "push_to_start" },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error) return false;
+
+    try {
+      localStorage.setItem(PUSH_TO_START_CACHE_KEY, token);
+    } catch {
+      /* ignore */
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function retryCachedPushToStartToken(storeId: string): Promise<void> {
+  try {
+    const cached = localStorage.getItem(PUSH_TO_START_CACHE_KEY)?.trim();
+    if (!cached) return;
+    await persistPushToStartToken(storeId, cached);
+  } catch {
+    /* ignore */
+  }
+}
+
+async function ensurePushToStartListener(): Promise<void> {
+  if (pushToStartListenerReady || !LiveActivity.addListener) return;
+  pushToStartListenerReady = true;
+
+  await LiveActivity.addListener("liveActivityPushToStartToken", async (event) => {
+    const token = event?.token?.trim();
+    const storeId = pushToStartStoreId;
+    if (!token || !storeId) return;
+    await persistPushToStartToken(storeId, token);
+  });
+}
+
+export type StaffLiveActivityPushToStartResult = {
+  ok: boolean;
+  reason?: "not-ios" | "disabled" | "ios-too-old" | "no-session" | "observer-failed";
+};
+
+export async function ensureStaffLiveActivityPushToStart(
+  storeId: string,
+  opts?: { force?: boolean },
+): Promise<StaffLiveActivityPushToStartResult> {
+  if (!isNativeIOSAppSync()) return { ok: false, reason: "not-ios" };
+
+  pushToStartStoreId = storeId;
+  await retryCachedPushToStartToken(storeId);
 
   try {
-    await LiveActivity.observePushToStartToken?.();
+    const result = await LiveActivity.isAvailable();
+    const enabled = Boolean((result as { value?: boolean }).value);
+    if (!enabled) return { ok: false, reason: "disabled" };
   } catch {
-    /* plugin antigo */
+    return { ok: false, reason: "disabled" };
+  }
+
+  await ensurePushToStartListener();
+
+  if (pushToStartObserverStarted && !opts?.force) {
+    return { ok: true };
+  }
+
+  if (!LiveActivity.observePushToStartToken) {
+    return { ok: false, reason: "ios-too-old" };
   }
 
   try {
-    LiveActivity.addListener?.("liveActivityPushToStartToken", async (event) => {
-      const token = event?.token?.trim();
-      if (!token || !storeId) return;
-      await supabase.functions.invoke("register-staff-live-activity-token", {
-        body: { store_id: storeId, push_to_start_token: token, token_kind: "push_to_start" },
-      });
-    });
+    await LiveActivity.observePushToStartToken();
+    pushToStartObserverStarted = true;
+    return { ok: true };
   } catch {
-    /* ignore */
+    pushToStartObserverStarted = false;
+    return { ok: false, reason: "observer-failed" };
   }
 }
 
@@ -189,8 +258,8 @@ export async function isStaffLiveActivitySupported(): Promise<boolean> {
   if (isNativeAndroidAppSync()) return true;
   if (!isNativeIOSAppSync()) return false;
   try {
-    const { available } = await LiveActivity.isAvailable();
-    return available;
+    const result = await LiveActivity.isAvailable();
+    return Boolean((result as { value?: boolean }).value);
   } catch {
     return false;
   }
@@ -227,7 +296,7 @@ export async function startStaffOrderLiveActivity(
     return;
   }
 
-  void ensureStaffLiveActivityPushToStart(storeId);
+  void ensureStaffLiveActivityPushToStart(storeId, { force: false });
   void ensureUpdateTokenEndpoint();
 
   try {

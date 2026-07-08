@@ -228,7 +228,14 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
     .eq("token_kind", "push_to_start");
 
   const rows = (tokens ?? []) as Array<{ token_value: string; user_id: string | null }>;
-  if (!rows.length) return { sent: 0, errors: [] };
+  if (!rows.length) {
+    return {
+      sent: 0,
+      errors: [
+        "Nenhum iPhone registado para cartão grande (push_to_start). Abra a app da equipa, ligue alertas e iOS 17.2+.",
+      ],
+    };
+  }
 
   const acceptUrl = `${opts.supabaseUrl}/functions/v1/accept-order-from-live-activity`;
   const formattedNumber = formatOrderNumber(opts.orderNumber);
