@@ -1,6 +1,4 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
-import { startAndroidPrintListener } from "@/services/androidPrintListener";
-import { enableTabletKeepAwake } from "@/services/tabletKeepAwake";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppCacheBustRouter from "@/components/AppCacheBustRouter.tsx";
@@ -20,7 +18,6 @@ import { ResolvedStoreProvider } from "./hooks/useResolvedStore.tsx";
 import { SiteBrandingEffect } from "./hooks/useSiteBranding.tsx";
 import { SeoDocumentEffect } from "./hooks/useSeoDocument.tsx";
 import StaffGoogleLoginRegistrar from "@/components/staff/StaffGoogleLoginRegistrar.tsx";
-import NativeDeepLinkEffect from "@/components/NativeDeepLinkEffect.tsx";
 import TotemErrorBoundary from "@/components/TotemErrorBoundary";
 import CustomerAreaBoundary from "@/customer/components/CustomerAreaBoundary.tsx";
 import AdminErrorBoundary from "@/components/AdminErrorBoundary.tsx";
@@ -29,6 +26,7 @@ import StaffSessionRootRedirect from "@/components/StaffSessionRootRedirect.tsx"
 import AdminMasterStaffEntryGate from "@/components/admin/AdminMasterStaffEntryGate.tsx";
 
 const OnboardLinkPage = lazy(() => import("@/views/public/OnboardLinkPage.tsx"));
+const NativeDeepLinkEffect = lazy(() => import("@/components/NativeDeepLinkEffect.tsx"));
 const CatchAllResolver = lazy(() =>
   import("@/routes/internalRouteOutlet.tsx").then((m) => ({ default: m.CatchAllResolver })),
 );
@@ -101,8 +99,8 @@ const LovablePreviewRoutes = () => (
 
 const App = () => {
   useEffect(() => {
-    void startAndroidPrintListener();
-    void enableTabletKeepAwake();
+    void import("@/services/androidPrintListener").then((m) => m.startAndroidPrintListener());
+    void import("@/services/tabletKeepAwake").then((m) => m.enableTabletKeepAwake());
   }, []);
 
   return (
@@ -115,7 +113,7 @@ const App = () => {
             <BrowserRouter>
               <AppChromeEffect />
               <ScreenOrientationEffect />
-              <NativeDeepLinkEffect />
+              {withSuspense(<NativeDeepLinkEffect />)}
               <AppCacheBustRouter>
                 <LovablePreviewGate />
                 <PreviewPathGuard />

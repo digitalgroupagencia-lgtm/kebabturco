@@ -161,6 +161,14 @@ export default defineConfig(({ mode }) => {
          * cacheado, e o fluxo de venda fica protegido.
          */
         manualChunks(id: string) {
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/scheduler/")
+          ) {
+            return "vendor-react";
+          }
+
           if (!id.includes("/src/")) return undefined;
 
           if (id.includes("/src/lib/internalRoutes")) {

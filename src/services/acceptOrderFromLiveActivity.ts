@@ -2,8 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { blocksOperationalProgressUntilPaid, orderReadyForKitchen } from "@/lib/orderKitchenRules";
 import { validateAcceptPrepMinutes } from "@/features/ops/opsOrderUi";
-import { endStaffOrderLiveActivity } from "@/services/staffLiveActivity";
-import { toast } from "sonner";
+
+async function endStaffLiveActivity(orderId: string): Promise<void> {
+  const { endStaffOrderLiveActivity } = await import("@/services/staffLiveActivity");
+  await endStaffOrderLiveActivity(orderId);
+}
 
 const DEFAULT_PREP_MINUTES = 15;
 
@@ -67,7 +70,7 @@ export async function acceptOrderViaEdgeToken(
 
   const payload = data as { success?: boolean; error?: string; already_handled?: boolean; code?: string };
   if (payload?.success) {
-    void endStaffOrderLiveActivity(orderId);
+    void endStaffLiveActivity(orderId);
     return { ok: true, orderId, alreadyHandled: payload.already_handled };
   }
 
@@ -103,7 +106,7 @@ export async function acceptOrderWithSession(
 
   const row = order as OrderAcceptRow;
   if (row.status !== "pending") {
-    void endStaffOrderLiveActivity(orderId);
+    void endStaffLiveActivity(orderId);
     return { ok: true, orderId, alreadyHandled: true };
   }
 
@@ -133,7 +136,7 @@ export async function acceptOrderWithSession(
     return { ok: false, error: v2.error?.message || "Erro ao actualizar pedido" };
   }
 
-  void endStaffOrderLiveActivity(orderId);
+  void endStaffLiveActivity(orderId);
   return { ok: true, orderId };
 }
 
@@ -183,6 +186,7 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
 
   const result = await acceptOrderWithSession(orderId, storeId, prepMinutes);
   if (result.ok) {
+    const { toast } = await import("sonner");
     toast.success(result.alreadyHandled ? "Pedido já estava aceite" : "Pedido aceite com sucesso");
     if (typeof window !== "undefined") {
       const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
@@ -193,6 +197,7 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
     return true;
   }
 
+  const { toast } = await import("sonner");
   toast.error(result.error);
   return true;
 }

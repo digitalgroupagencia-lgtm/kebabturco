@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
-import { handleStaffLiveActivityDeepLink } from "@/services/acceptOrderFromLiveActivity";
 
 const APP_HOSTS = new Set(["kebabturco.net", "www.kebabturco.net"]);
 
 async function routeNativeUrl(rawUrl?: string | null) {
   if (!rawUrl) return;
+
+  const { handleStaffLiveActivityDeepLink } = await import("@/services/acceptOrderFromLiveActivity");
+
   if (rawUrl.startsWith("kebabturco://")) {
     await handleStaffLiveActivityDeepLink(rawUrl);
     return;
