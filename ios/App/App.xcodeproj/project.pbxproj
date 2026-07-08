@@ -114,6 +114,7 @@
 				LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */,
 				LA0000151FED79650016851F /* AcceptOrderIntent.swift */,
 				LA0000171FED79650016851F /* LiveActivityAcceptAPI.swift */,
+				LA0000191FED79650016851F /* Assets.xcassets */,
 				LA0000071FED79650016851F /* Info.plist */,
 				LA0000081FED79650016851F /* StaffOrderLiveWidget.entitlements */,
 			);
