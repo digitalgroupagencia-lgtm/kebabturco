@@ -174,8 +174,13 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
   if (openOnly || action !== "accept") {
     if (typeof window !== "undefined") {
       const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
-      console.info("[LADeepLink] abrir painel do pedido", { target });
-      window.location.assign(target);
+      const current = `${window.location.pathname}${window.location.search}`;
+      if (current !== target) {
+        console.info("[LADeepLink] abrir painel do pedido", { target });
+        window.location.assign(target);
+      } else {
+        console.info("[LADeepLink] já está no painel do pedido", { target });
+      }
     }
     return true;
   }
