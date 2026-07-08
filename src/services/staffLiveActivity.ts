@@ -521,36 +521,6 @@ export async function startStaffOrderLiveActivity(
   void ensureStaffLiveActivityPushToStart(storeId, { force: false });
   void ensureUpdateTokenEndpoint();
   return;
-
-  try {
-    const alreadyActive = activeOrderActivities.has(orderId);
-    if (alreadyActive) {
-      // Dedup: já existe uma Live Activity para este pedido — apenas actualiza.
-      await LiveActivity.updateActivity({
-        id: orderId,
-        contentState: { ...state },
-      }).catch(() => undefined);
-    } else {
-      const starter = LiveActivity.startActivityWithPush ?? LiveActivity.startActivity;
-      await starter.call(LiveActivity, {
-        id: orderId,
-        attributes: {
-          orderId,
-          orderNumber: state.orderNumber,
-          storeId,
-          role: "staff",
-          acceptToken: tokenBundle?.token ?? "",
-          acceptUrl: tokenBundle?.acceptUrl ?? `${SUPABASE_URL}/functions/v1/accept-order-from-live-activity`,
-          apiKey: SUPABASE_ANON,
-        },
-        contentState: { ...state },
-      });
-    }
-
-    scheduleUrgentTick(orderId, orderNumber, storeId, startedAt, settings, meta);
-  } catch {
-    /* extensão indisponível */
-  }
 }
 
 function scheduleUrgentTick(
