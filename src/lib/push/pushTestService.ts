@@ -784,6 +784,24 @@ export async function sendNativeDeviceTestPush(opts: {
   }
 }
 
+export async function fetchStaffPushToStartTokenCount(storeId: string): Promise<number> {
+  try {
+    // @ts-expect-error table added by LIVE_ACTIVITY_FULL.sql, pending codegen
+    const { count, error } = await supabase
+      .from("staff_live_activity_tokens")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId)
+      .eq("token_kind", "push_to_start");
+    if (error) {
+      pushLog("test", "la_token_count", "warn", error.message);
+      return -1;
+    }
+    return count ?? 0;
+  } catch {
+    return -1;
+  }
+}
+
 export type PushLabOrderRow = {
   id: string;
   order_number: string | number;

@@ -161,8 +161,9 @@ async function ensureUpdateTokenEndpoint(): Promise<void> {
   }
 }
 
-export async function ensureStaffLiveActivityPushToStart(storeId: string): Promise<void> {
-  if (!isNativeIOSAppSync() || pushToStartObserverStarted) return;
+export async function ensureStaffLiveActivityPushToStart(storeId: string, opts?: { force?: boolean }): Promise<void> {
+  if (!isNativeIOSAppSync()) return;
+  if (pushToStartObserverStarted && !opts?.force) return;
   pushToStartObserverStarted = true;
 
   try {

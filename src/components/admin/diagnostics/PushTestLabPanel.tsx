@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   Bell,
   Eye,
   FlaskConical,
@@ -38,6 +39,7 @@ import {
   createPushLabTestOrder,
   fetchPushLabBanners,
   fetchPushLabOrders,
+  fetchStaffPushToStartTokenCount,
   sendPushLabScenario,
   type PushLabBannerRow,
   type PushLabOrderRow,
@@ -139,16 +141,19 @@ export default function PushTestLabPanel() {
   const [showPreview, setShowPreview] = useState(true);
   const [sendBusy, setSendBusy] = useState<"device" | "broadcast" | null>(null);
   const [lastResult, setLastResult] = useState<PushTestSendResult | null>(null);
+  const [laTokenCount, setLaTokenCount] = useState<number | null>(null);
 
   const loadOrders = useCallback(async () => {
     if (!storeId) return;
     setLoadingOrders(true);
-    const [orderRows, bannerRows] = await Promise.all([
+    const [orderRows, bannerRows, laCount] = await Promise.all([
       fetchPushLabOrders(storeId),
       fetchPushLabBanners(storeId),
+      fetchStaffPushToStartTokenCount(storeId),
     ]);
     setOrders(orderRows);
     setBanners(bannerRows);
+    setLaTokenCount(laCount);
     if (!orderId && orderRows[0]) setOrderId(orderRows[0].id);
     setLoadingOrders(false);
   }, [storeId, orderId]);
@@ -236,6 +241,20 @@ export default function PushTestLabPanel() {
       />
 
       <AdminStoreSwitcher />
+
+      {(scenarioId === "staff_new_order" || scenarioId === "staff_cancelled") && laTokenCount === 0 ? (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">O iPhone ainda não está pronto para o cartão grande</p>
+            <p className="text-xs mt-1 opacity-90">
+              Abra a app Kebab Turco no iPhone da equipa → Painel → Definições → desligue e volte a ligar
+              «Notificações push». Depois feche a app completamente e faça um novo pedido teste com o ecrã
+              bloqueado.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">

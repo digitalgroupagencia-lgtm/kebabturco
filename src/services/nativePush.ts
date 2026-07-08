@@ -59,6 +59,20 @@ function logNative(
   pushLog("staff", "native_register", level, message, details);
 }
 
+/** Regista o iPhone para cartões grandes no ecrã bloqueado (push-to-start). */
+async function syncStaffLiveActivityRemoteStart(storeId: string): Promise<void> {
+  try {
+    const { ensureStaffLiveActivityPushToStart } = await import("@/services/staffLiveActivity");
+    await ensureStaffLiveActivityPushToStart(storeId);
+    logNative("info", "Live Activity push-to-start sincronizado", { storeId });
+  } catch (e) {
+    logNative("warn", "Live Activity push-to-start não sincronizou", {
+      storeId,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
 function getCapacitorBridgeAvailabilitySync(): NativeAvailability | null {
   if (typeof window === "undefined") return null;
   const cap = (window as unknown as {
@@ -742,6 +756,9 @@ export async function registerNativeStaffPush(
         });
         if (cachedForRefresh) {
           await persistTokenToBackend(cachedForRefresh, storeId, nativePlatform);
+          if (nativePlatform === "ios") {
+            await syncStaffLiveActivityRemoteStart(storeId);
+          }
           return { ok: true, token: cachedForRefresh };
         }
       } else {
@@ -768,6 +785,9 @@ export async function registerNativeStaffPush(
     if (cached && !opts?.forceRefresh) {
       try {
         await persistTokenToBackend(cached, storeId, nativePlatform);
+        if (nativePlatform === "ios") {
+          await syncStaffLiveActivityRemoteStart(storeId);
+        }
         return { ok: true, token: cached };
       } catch (e) {
         logNative("warn", "Token em cache não gravou no servidor, a pedir novo", {
@@ -790,6 +810,9 @@ export async function registerNativeStaffPush(
       token = readCachedNativePushToken() ?? (await tokenPromise);
     }
     await persistTokenToBackend(token, storeId, nativePlatform);
+    if (nativePlatform === "ios") {
+      await syncStaffLiveActivityRemoteStart(storeId);
+    }
     return { ok: true, token };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
