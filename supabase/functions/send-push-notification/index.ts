@@ -1062,6 +1062,13 @@ Deno.serve(async (req) => {
           );
           sent++;
           sentApns++;
+          console.log("[send-push-notification] apnsSent", {
+            endpointPreview: sub.endpoint.slice(0, 40),
+            host: apnsResult.host,
+            tag,
+            tokenLen: token.length,
+            staffOrderAlertId,
+          });
           const expectedHost = apns.useSandbox ? "api.sandbox.push.apple.com" : "api.push.apple.com";
           if (apnsResult.host !== expectedHost) {
             apnsDeliveryNote =
