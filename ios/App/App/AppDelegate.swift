@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import UserNotifications
 
 private let liveActivityAppGroupId = "group.net.kebabturco.app"
 private let pendingLiveActivityDeepLinkKey = "pendingLiveActivityDeepLink"
@@ -8,9 +9,30 @@ private let pendingLiveActivityDeepLinkKey = "pendingLiveActivityDeepLink"
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        configureStaffOrderNotificationActions()
         flushPendingLiveActivityDeepLink(application)
         StaffLiveActivityPushToStartObserver.shared.bootstrapIfConfigured()
         return true
+    }
+
+    private func configureStaffOrderNotificationActions() {
+        let accept = UNNotificationAction(
+            identifier: "ACCEPT_ORDER",
+            title: "Aceitar pedido",
+            options: [.authenticationRequired, .foreground]
+        )
+        let open = UNNotificationAction(
+            identifier: "OPEN_ORDER",
+            title: "Abrir pedido",
+            options: [.foreground]
+        )
+        let category = UNNotificationCategory(
+            identifier: "STAFF_ORDER",
+            actions: [accept, open],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
