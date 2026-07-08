@@ -1307,6 +1307,54 @@ Deno.serve(async (req) => {
         };
         const mappedStatus = statusMap[customerEvent] ?? "pending";
         const terminal = new Set(["delivered", "cancelled"]);
+        const nonPending = mappedStatus !== "pending";
+        console.log("[send-push-notification] order_status_changed", {
+          orderId, storeId, customerEvent, mappedStatus,
+          isTerminal: terminal.has(mappedStatus),
+          nonPending,
+        });
+
+        // Encerrar Live Activity da EQUIPA em qualquer status != pending
+        // (accepted/preparing/ready/out_for_delivery/delivered/cancelled).
+        if (nonPending) {
+          try {
+            const { data: staffUpdateTokens } = await supabase
+              .from("staff_live_activity_tokens")
+              .select("token_value")
+              .eq("store_id", storeId)
+              .eq("order_id", orderId)
+              .eq("token_kind", "activity_update");
+            const staffTokensFound = staffUpdateTokens?.length ?? 0;
+            console.log("[send-push-notification] live_activity_end_requested", {
+              scope: "staff", orderId, storeId, tokens_found: staffTokensFound,
+            });
+            const staffEnded = await dispatchStaffLiveActivityEnd({
+              admin: supabase, storeId, orderId,
+            });
+            console.log("[send-push-notification] end_sent", {
+              scope: "staff", orderId, sent: staffEnded.sent,
+            });
+            // Marcar tokens staff como inativos (remover push_to_start p/ este order,
+            // activity_update e staff_start_sent). Impede novos starts/updates.
+            // Remove apenas activity_update; mantém staff_start_sent para bloquear
+            // futuros push_to_start deste mesmo pedido (evita ressuscitar a LA).
+            const { error: delErr } = await supabase
+              .from("staff_live_activity_tokens")
+              .delete()
+              .eq("store_id", storeId)
+              .eq("order_id", orderId)
+              .eq("token_kind", "activity_update");
+            console.log("[send-push-notification] marked_inactive", {
+              scope: "staff", orderId, error: delErr?.message ?? null,
+            });
+          } catch (e) {
+            console.error("[send-push-notification] end_failed", {
+              scope: "staff", orderId,
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
+        }
+
         const la = await dispatchCustomerLiveActivityPush({
           admin: supabase,
           storeId,
@@ -1316,12 +1364,27 @@ Deno.serve(async (req) => {
           settings: laSettings,
           event: terminal.has(mappedStatus) ? "end" : customerEvent === "pending" ? "start" : "update",
         });
+        console.log("[send-push-notification] end_sent", {
+          scope: "customer", orderId, mappedStatus, sent: la.sent,
+        });
         liveActivitySent += la.sent;
         liveActivityErrors.push(...la.errors);
+
+        if (terminal.has(mappedStatus)) {
+          const { error: custDelErr } = await supabase
+            .from("staff_live_activity_tokens")
+            .delete()
+            .eq("order_id", orderId)
+            .in("token_kind", ["customer_push_to_start", "activity_update"]);
+          console.log("[send-push-notification] marked_inactive", {
+            scope: "customer", orderId, error: custDelErr?.message ?? null,
+          });
+        }
       } catch (e) {
         liveActivityErrors.push(String(e));
       }
     }
+
 
     if (staffOrderCancelledAlertId && storeId) {
       try {
