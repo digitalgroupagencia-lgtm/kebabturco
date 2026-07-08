@@ -618,6 +618,15 @@ export async function dispatchCustomerLiveActivityPush(opts: {
   }
 
   // Sem update tokens: iniciar via push-to-start (uma vez).
+  if (startRows.length === 0) {
+    console.log("[liveActivity] customer token not found", {
+      orderId: opts.orderId,
+      storeId: opts.storeId,
+      status: opts.status,
+    });
+    return { sent: 0, errors: ["customer token not found"] };
+  }
+
   const { error: markerError } = await opts.admin.from("staff_live_activity_tokens").insert({
     store_id: opts.storeId,
     order_id: opts.orderId,
