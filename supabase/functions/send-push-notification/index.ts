@@ -1100,14 +1100,17 @@ Deno.serve(async (req) => {
     if (staffOrderAlertId && storeId) {
       try {
         const laSettingsResolved = laSettings ?? (await loadLiveActivitySettings(supabase, storeId));
-        const { data: tokenRow } = await supabase
+        const { data: tokenRows } = await supabase
           .from("staff_live_activity_tokens")
-          .select("user_id")
+          .select("user_id, token_value")
           .eq("store_id", storeId)
-          .eq("token_kind", "push_to_start")
-          .limit(1)
-          .maybeSingle();
-        const userId = tokenRow?.user_id ?? "system";
+          .eq("token_kind", "push_to_start");
+        const liveActivityTokensFound = tokenRows?.length ?? 0;
+        console.log("[send-push-notification] liveActivityTokensFound", {
+          storeId, staffOrderAlertId, liveActivityTokensFound,
+          tokenLens: (tokenRows ?? []).map((r: any) => (r.token_value ?? "").length),
+        });
+        const userId = tokenRows?.[0]?.user_id ?? "system";
         const la = await dispatchStaffLiveActivityPushToStart({
           admin: supabase,
           storeId,
@@ -1123,9 +1126,15 @@ Deno.serve(async (req) => {
           tableNumber: staffOrderContext?.tableNumber,
           createdAt: staffOrderContext?.createdAt,
         });
+        console.log("[send-push-notification] liveActivityResult", {
+          liveActivitySent: la.sent,
+          liveActivitySuccess: la.sent > 0,
+          liveActivityError: la.errors,
+        });
         liveActivitySent += la.sent;
         liveActivityErrors.push(...la.errors);
       } catch (e) {
+        console.error("[send-push-notification] liveActivityException", String(e));
         liveActivityErrors.push(String(e));
       }
     }

@@ -147,8 +147,10 @@ async function sendLiveActivityApns(
   event: "start" | "update" | "end",
 ): Promise<{ ok: boolean; error?: string }> {
   const token = deviceToken.replace(/[<>\s]/g, "").toLowerCase();
-  if (!/^[0-9a-f]{64}$/i.test(token)) {
-    return { ok: false, error: "token inválido" };
+  // Live Activity push-to-start tokens são hex de comprimento variável (tipicamente 160+ chars),
+  // ao contrário dos device tokens normais (64). Aceitar qualquer hex >= 64.
+  if (!/^[0-9a-f]+$/i.test(token) || token.length < 64) {
+    return { ok: false, error: `token inválido (len=${token.length})` };
   }
 
   const jwt = await getApnsJwt(config);
