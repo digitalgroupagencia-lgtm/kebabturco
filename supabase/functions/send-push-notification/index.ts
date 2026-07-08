@@ -481,9 +481,10 @@ async function sendApns(
   const hosts = opts?.tryBothHosts ? [primaryHost, alternateHost] : [primaryHost];
 
   const attemptErrors: string[] = [];
-  const collapseId = payload.tag && isStaffOrderPushTag(payload.tag)
-    ? payload.tag.slice(0, 64)
-    : undefined;
+  // Sem apns-collapse-id: pedido do restaurante — alertas repetidos devem empilhar
+  // até que alguém aceite o pedido.
+  const collapseId: string | undefined = undefined;
+
   for (const host of hosts) {
     const res = await fetch(`https://${host}/3/device/${token}`, {
       method: "POST",
