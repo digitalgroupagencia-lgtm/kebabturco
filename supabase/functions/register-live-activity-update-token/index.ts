@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
     const orderId = String(body.order_id ?? body.orderId ?? activityId.replace(/^customer-/, "")).trim();
     const token = String(body.token ?? "").trim();
     const storeId = String(body.store_id ?? "").trim();
+    const tokenKind = activityId.startsWith("customer-") ? "customer_activity_update" : "activity_update";
 
     if (!activityId || !token) {
       return new Response(JSON.stringify({ error: "activity_id e token são obrigatórios" }), {
@@ -36,14 +37,16 @@ Deno.serve(async (req) => {
       .from("staff_live_activity_tokens")
       .delete()
       .eq("activity_id", activityId)
-      .eq("token_kind", "activity_update");
+      .eq("token_kind", tokenKind);
 
     const row = {
       store_id: resolvedStoreId || null,
       order_id: orderId || null,
       activity_id: activityId,
-      token_kind: "activity_update",
+      token_kind: tokenKind,
       token_value: token,
+      is_active: true,
+      ended_at: null,
       updated_at: new Date().toISOString(),
     };
 
@@ -56,10 +59,12 @@ Deno.serve(async (req) => {
           store_id: row.store_id,
           order_id: row.order_id,
           token_value: row.token_value,
+          is_active: true,
+          ended_at: null,
           updated_at: row.updated_at,
         })
         .eq("activity_id", activityId)
-        .eq("token_kind", "activity_update");
+        .eq("token_kind", tokenKind);
       if (updateError) {
         console.error("[register-live-activity-update-token] update failed", updateError);
         return new Response(JSON.stringify({ error: updateError.message }), {
@@ -71,6 +76,7 @@ Deno.serve(async (req) => {
         activityId,
         orderId,
         storeId: resolvedStoreId,
+        tokenKind,
         tokenLen: token.length,
       });
       return new Response(JSON.stringify({ success: true, updated: true }), {
@@ -90,6 +96,7 @@ Deno.serve(async (req) => {
       activityId,
       orderId,
       storeId: resolvedStoreId,
+      tokenKind,
       tokenLen: token.length,
     });
 
