@@ -28,7 +28,8 @@ struct StaffOrderLiveWidget: Widget {
             lockScreenView(context: context)
                 .widgetURL(fallbackDeepLink(context: context))
         } dynamicIsland: { context in
-            DynamicIsland {
+            let started = self.startedAtDate(context)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("#\(context.state.values["orderNumber"] ?? "----")")
@@ -40,9 +41,15 @@ struct StaffOrderLiveWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.values["total"] ?? "")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(context.state.values["total"] ?? "")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .monospacedDigit()
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     actionArea(context: context, compact: true)
@@ -50,8 +57,10 @@ struct StaffOrderLiveWidget: Widget {
             } compactLeading: {
                 Text("🥙")
             } compactTrailing: {
-                Text("#\(context.state.values["orderNumber"] ?? "")")
+                Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
                     .font(.caption2.bold())
+                    .monospacedDigit()
+                    .frame(maxWidth: 44)
             } minimal: {
                 Text("🥙")
             }
