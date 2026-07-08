@@ -586,7 +586,29 @@ export async function dispatchCustomerLiveActivityPush(opts: {
 
   // Terminal: dismiss existing activities apenas.
   if (isTerminal) {
-    for (const row of updateRows) {
+    let terminalRows = updateRows;
+    if (terminalRows.length === 0) {
+      // Fallback: apanhar tokens do cliente mesmo que já tenham sido marcados
+      // inativos (p.ex. por um staff-end anterior). Não podemos deixar o cartão
+      // preso na tela bloqueada.
+      const { data: fallbackTokens } = await opts.admin
+        .from("staff_live_activity_tokens")
+        .select("token_value, activity_id, token_kind, updated_at")
+        .eq("order_id", opts.orderId)
+        .in("token_kind", ["customer_activity_update", "activity_update"])
+        .order("updated_at", { ascending: false });
+      terminalRows = uniqueActivityRows(
+        ((fallbackTokens ?? []) as Array<ActivityTokenRow & { token_kind?: string }>).filter((row) =>
+          row.token_kind === "customer_activity_update" || isCustomerActivityForOrder(row, opts.orderId),
+        ),
+      );
+      console.log("[liveActivity] customer terminal fallback", {
+        orderId: opts.orderId,
+        storeId: opts.storeId,
+        fallbackRows: terminalRows.length,
+      });
+    }
+    for (const row of terminalRows) {
       const result = await sendLiveActivityApns(
         row.token_value,
         { "content-state": contentState, "dismissal-date": Math.floor(Date.now() / 1000) },
@@ -597,6 +619,12 @@ export async function dispatchCustomerLiveActivityPush(opts: {
       if (result.ok) sent++;
       else if (result.error) errors.push(result.error);
     }
+    // Marcar como inativos os tokens do cliente para libertar o start-marker.
+    await opts.admin
+      .from("staff_live_activity_tokens")
+      .update({ is_active: false, ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("order_id", opts.orderId)
+      .in("token_kind", ["customer_activity_update", "customer_push_to_start", "customer_start_sent"]);
     return { sent, errors };
   }
 
