@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { verifyLiveActivityAcceptToken } from "../_shared/liveActivityAcceptToken.ts";
+import { dispatchStaffLiveActivityEnd } from "../_shared/liveActivityApns.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,9 +39,14 @@ Deno.serve(async (req) => {
     const orderId = String(body.order_id ?? "").trim();
     const storeId = String(body.store_id ?? "").trim();
     const acceptToken = String(body.accept_token ?? "").trim();
+    const source = String(body.source ?? "unknown").trim();
     let prepMinutes = Number(body.prep_minutes ?? 15);
     if (!Number.isFinite(prepMinutes)) prepMinutes = 15;
     prepMinutes = Math.min(180, Math.max(5, Math.round(prepMinutes)));
+
+    console.log("[accept-order-from-live-activity] request", {
+      orderId, storeId, source, tokenLen: acceptToken.length, prepMinutes,
+    });
 
     if (!orderId || !storeId || !acceptToken) {
       return new Response(JSON.stringify({ error: "Parâmetros em falta" }), {
@@ -51,6 +57,10 @@ Deno.serve(async (req) => {
 
     const payload = await verifyLiveActivityAcceptToken(acceptToken);
     if (!payload || payload.order_id !== orderId || payload.store_id !== storeId) {
+      console.warn("[accept-order-from-live-activity] token inválido", {
+        orderId, storeId, hasPayload: !!payload,
+        payloadOrder: payload?.order_id, payloadStore: payload?.store_id,
+      });
       return new Response(JSON.stringify({ error: "Token inválido ou expirado" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -78,13 +88,19 @@ Deno.serve(async (req) => {
     }
 
     if (order.status !== "pending") {
+      // Já foi aceite/tratado noutro sítio — encerra qualquer Live Activity órfã e responde OK.
+      try {
+        await dispatchStaffLiveActivityEnd({ admin, storeId, orderId });
+      } catch (e) {
+        console.warn("[accept-order-from-live-activity] end dispatch (already handled) falhou", String(e));
+      }
       return new Response(
         JSON.stringify({
-          error: "Pedido já não está pendente",
-          status: order.status,
+          success: true,
           already_handled: true,
+          status: order.status,
         }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -140,8 +156,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Sucesso — encerra Live Activities em TODOS os iPhones da equipa para este pedido.
+    try {
+      const ended = await dispatchStaffLiveActivityEnd({ admin, storeId, orderId });
+      console.log("[accept-order-from-live-activity] la ended", { orderId, ended: ended.sent });
+    } catch (e) {
+      console.warn("[accept-order-from-live-activity] end dispatch falhou", String(e));
+    }
+
     return new Response(
-      JSON.stringify({ success: true, order: updated, prep_minutes: prepMinutes }),
+      JSON.stringify({ success: true, order: updated, prep_minutes: prepMinutes, source }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {

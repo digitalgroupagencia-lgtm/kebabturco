@@ -223,6 +223,57 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
   const config = getApnsConfigFromEnv();
   if (!config) return { sent: 0, errors: ["APNs não configurado"] };
 
+  // Dedup: se já existe uma Live Activity ATIVA para este pedido (temos activity_update tokens),
+  // enviamos apenas UPDATE em vez de criar outra Live Activity via push_to_start.
+  const { data: existingUpdateTokens } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("token_value")
+    .eq("store_id", opts.storeId)
+    .eq("order_id", opts.orderId)
+    .eq("token_kind", "activity_update");
+
+  const updateRows = (existingUpdateTokens ?? []) as Array<{ token_value: string }>;
+  const formattedNumber = formatOrderNumber(opts.orderNumber);
+  const totalLabel = formatStaffOrderPrice(Number(opts.total) || 0, "pt");
+  const orderTypeLabel = staffOrderModalityLabel(opts.orderType, opts.tableNumber, "pt");
+  const timer = formatElapsedSince(opts.createdAt);
+  const cardTitle = `${opts.settings.la_staff_card_title} #${formattedNumber}`;
+
+  if (updateRows.length > 0) {
+    const contentState = {
+      values: {
+        title: opts.settings.la_staff_card_title,
+        orderNumber: formattedNumber,
+        total: totalLabel,
+        orderType: orderTypeLabel,
+        message: opts.settings.la_staff_urgent_message,
+        timer,
+        status: "PENDENTE",
+        urgent: "1",
+        colorNormal: opts.settings.la_color_normal,
+        colorUrgent: opts.settings.la_color_urgent,
+        role: "staff",
+      },
+    };
+    let sent = 0;
+    const errors: string[] = [];
+    for (const row of updateRows) {
+      const result = await sendLiveActivityApns(
+        row.token_value,
+        {
+          "content-state": contentState,
+          alert: { title: cardTitle, body: `${totalLabel} · ${orderTypeLabel}`, sound: "staff_order_alert.caf" },
+        },
+        config,
+        "update",
+      );
+      if (result.ok) sent++;
+      else if (result.error) errors.push(`update: ${result.error}`);
+    }
+    console.log("[liveActivity] dedup update (LA já existente)", { orderId: opts.orderId, sent });
+    return { sent, errors };
+  }
+
   const { data: tokens } = await opts.admin
     .from("staff_live_activity_tokens")
     .select("token_value, user_id")
@@ -240,10 +291,6 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
   }
 
   const acceptUrl = `${opts.supabaseUrl}/functions/v1/accept-order-from-live-activity`;
-  const formattedNumber = formatOrderNumber(opts.orderNumber);
-  const totalLabel = formatStaffOrderPrice(Number(opts.total) || 0, "pt");
-  const orderTypeLabel = staffOrderModalityLabel(opts.orderType, opts.tableNumber, "pt");
-  const timer = formatElapsedSince(opts.createdAt);
 
   let sent = 0;
   const errors: string[] = [];
@@ -293,7 +340,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       opts.anonKey,
     );
 
-    const cardTitle = `${opts.settings.la_staff_card_title} #${formattedNumber}`;
+    // (cardTitle já calculado acima para dedup)
     const result = await sendLiveActivityApns(
       row.token_value,
       {

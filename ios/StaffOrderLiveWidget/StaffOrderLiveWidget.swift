@@ -30,32 +30,32 @@ struct StaffOrderLiveWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(emoji(context)).font(.title2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("#\(context.state.values["orderNumber"] ?? "----")")
+                            .font(.system(size: 20, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text(context.state.values["orderType"] ?? "")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.values["timer"] ?? "")
-                        .font(.caption.monospacedDigit())
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    Text(context.state.values["title"] ?? "Pedido")
-                        .font(.headline)
+                    Text(context.state.values["total"] ?? "")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    actionArea(context: context)
+                    actionArea(context: context, compact: true)
                 }
             } compactLeading: {
-                Text(emoji(context))
+                Text("🥙")
             } compactTrailing: {
-                Text(context.state.values["total"] ?? "!")
+                Text("#\(context.state.values["orderNumber"] ?? "")")
                     .font(.caption2.bold())
             } minimal: {
                 Text("🥙")
             }
         }
-    }
-
-    private func emoji(_ context: ActivityViewContext<GenericAttributes>) -> String {
-        context.state.values["role"] == "customer" ? "📦" : "🥙"
     }
 
     private func backgroundColors(_ context: ActivityViewContext<GenericAttributes>) -> (Color, Color) {
@@ -71,66 +71,49 @@ struct StaffOrderLiveWidget: Widget {
         let colors = backgroundColors(context)
         let bg = urgent ? colors.1 : colors.0
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             if role == "customer" {
                 customerCard(context: context)
             } else {
                 staffCard(context: context)
+                actionArea(context: context, compact: false)
             }
-            actionArea(context: context)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 20)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .activityBackgroundTint(bg)
         .activitySystemActionForegroundColor(.white)
     }
 
     @ViewBuilder
     private func staffCard(context: ActivityViewContext<GenericAttributes>) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(context.state.values["title"] ?? "Novo pedido")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.92))
-                        .textCase(.uppercase)
-                    Text("#\(context.state.values["orderNumber"] ?? "----")")
-                        .font(.system(size: 34, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 8)
-                Text("🥙")
-                    .font(.system(size: 36))
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            Text("#\(context.state.values["orderNumber"] ?? "----")")
+                .font(.system(size: 30, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
 
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
                 Text(context.state.values["total"] ?? "—")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text(context.state.values["orderType"] ?? "Balcão")
-                    .font(.system(size: 13, weight: .bold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.white.opacity(0.18))
+                    .font(.system(size: 12, weight: .bold))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(.white.opacity(0.20))
                     .clipShape(Capsule())
                     .foregroundStyle(.white)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Image(systemName: "clock.fill")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.white.opacity(0.85))
                 Text("Aguardando \(context.state.values["timer"] ?? "0:00")")
-                    .font(.system(size: 17, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.95))
-            }
-
-            if let message = context.state.values["message"], !message.isEmpty, context.state.values["urgent"] == "1" {
-                Text(message)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.yellow.opacity(0.95))
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.9))
             }
         }
     }
@@ -138,19 +121,14 @@ struct StaffOrderLiveWidget: Widget {
     @ViewBuilder
     private func customerCard(context: ActivityViewContext<GenericAttributes>) -> some View {
         let step = Int(context.state.values["step"] ?? "0") ?? 0
-        let steps = ["Recebido", "Preparação", "Pronto", "Entrega", "Entregue"]
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(context.state.values["title"] ?? "O seu pedido")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.92))
-            Text(context.state.values["status"] ?? "A acompanhar")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-            Text(context.state.values["message"] ?? "")
-                .font(.subheadline)
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.9))
-
+            Text(context.state.values["status"] ?? "A acompanhar")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
             HStack(spacing: 6) {
                 ForEach(0..<5, id: \.self) { idx in
                     Capsule()
@@ -158,23 +136,11 @@ struct StaffOrderLiveWidget: Widget {
                         .frame(height: 5)
                 }
             }
-            .padding(.top, 4)
-
-            HStack {
-                ForEach(Array(steps.enumerated()), id: \.offset) { idx, label in
-                    if idx == step {
-                        Text(label)
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.white)
-                    }
-                }
-                Spacer()
-            }
         }
     }
 
     @ViewBuilder
-    private func actionArea(context: ActivityViewContext<GenericAttributes>) -> some View {
+    private func actionArea(context: ActivityViewContext<GenericAttributes>, compact: Bool) -> some View {
         let statics = context.attributes.staticValues
         let role = statics["role"] ?? context.state.values["role"] ?? "staff"
         if role == "customer" {
@@ -186,7 +152,7 @@ struct StaffOrderLiveWidget: Widget {
             let acceptUrl = statics["acceptUrl"] ?? ""
             let apiKey = statics["apiKey"] ?? ""
 
-            if #available(iOS 17.0, *), !storeId.isEmpty, !acceptToken.isEmpty, !acceptUrl.isEmpty {
+            if #available(iOS 17.0, *) {
                 Button(intent: AcceptOrderIntent(
                     orderId: orderId,
                     storeId: storeId,
@@ -195,13 +161,14 @@ struct StaffOrderLiveWidget: Widget {
                     apiKey: apiKey
                 )) {
                     Text("ACEITAR PEDIDO")
-                        .font(.system(size: 17, weight: .heavy))
+                        .font(.system(size: compact ? 14 : 16, weight: .heavy))
+                        .foregroundStyle(defaultWine)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, compact ? 10 : 12)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.white)
-                .foregroundStyle(defaultWine)
+                .buttonStyle(.plain)
             } else {
                 Text("Abra a app para aceitar")
                     .font(.caption)

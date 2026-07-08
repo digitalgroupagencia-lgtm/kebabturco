@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let apiLog = OSLog(subsystem: "net.kebabturco.app.liveactivity", category: "AcceptAPI")
 
 enum LiveActivityAcceptAPI {
     struct AcceptResponse: Decodable {
@@ -14,17 +17,21 @@ enum LiveActivityAcceptAPI {
         storeId: String,
         acceptToken: String,
         apiKey: String = "",
-        prepMinutes: Int = 15
+        prepMinutes: Int = 15,
+        source: String = "live_activity"
     ) async -> (ok: Bool, message: String) {
         guard let url = URL(string: acceptUrl) else {
+            os_log("Invalid accept URL: %{public}@", log: apiLog, type: .error, acceptUrl)
             return (false, "URL inválida")
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 12
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: "apikey")
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
 
         let body: [String: Any] = [
@@ -32,14 +39,26 @@ enum LiveActivityAcceptAPI {
             "store_id": storeId,
             "accept_token": acceptToken,
             "prep_minutes": prepMinutes,
+            "source": source,
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        os_log("POST accept order=%{public}@ store=%{public}@ source=%{public}@",
+               log: apiLog, type: .info, orderId, storeId, source)
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let http = response as? HTTPURLResponse
-            let decoded = try? JSONDecoder().decode(AcceptResponse.self, from: data)
             let status = http?.statusCode ?? 0
+            let decoded = try? JSONDecoder().decode(AcceptResponse.self, from: data)
+            let rawBody = String(data: data, encoding: .utf8) ?? ""
+
+            os_log("Accept response status=%d success=%{public}@ already=%{public}@ body=%{public}@",
+                   log: apiLog, type: .info,
+                   status,
+                   String(decoded?.success == true),
+                   String(decoded?.already_handled == true),
+                   rawBody.prefix(200) as CVarArg)
 
             if status == 200, decoded?.success == true {
                 return (true, "Pedido aceite")
@@ -47,9 +66,10 @@ enum LiveActivityAcceptAPI {
             if decoded?.already_handled == true || status == 409 {
                 return (true, "Pedido já tratado")
             }
-            let err = decoded?.error ?? String(data: data, encoding: .utf8) ?? "Erro desconhecido"
-            return (false, err)
+            let err = decoded?.error ?? rawBody
+            return (false, err.isEmpty ? "Erro (\(status))" : err)
         } catch {
+            os_log("Accept request failed: %{public}@", log: apiLog, type: .error, error.localizedDescription)
             return (false, error.localizedDescription)
         }
     }
@@ -79,6 +99,7 @@ enum LiveActivityAcceptAPI {
             components.host = "staff"
             components.path = "/order/\(orderId)"
             components.queryItems = [
+                URLQueryItem(name: "action", value: "accept"),
                 URLQueryItem(name: "open", value: "1"),
                 URLQueryItem(name: "store_id", value: storeId),
             ]
