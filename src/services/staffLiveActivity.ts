@@ -214,7 +214,7 @@ async function ensurePushToStartListener(): Promise<void> {
 
 export type StaffLiveActivityPushToStartResult = {
   ok: boolean;
-  reason?: "not-ios" | "disabled" | "ios-too-old" | "no-session" | "observer-failed" | "db-not-ready" | "timeout";
+  reason?: "not-ios" | "disabled" | "ios-too-old" | "no-session" | "observer-failed" | "db-not-ready" | "timeout" | "probe-failed";
 };
 
 export async function ensureStaffLiveActivityPushToStart(
@@ -324,6 +324,15 @@ export function describeLockScreenCardStatus(opts: {
     };
   }
 
+  if (result?.reason === "probe-failed") {
+    return {
+      tone: "error",
+      title: "O cartão grande não consegue arrancar neste iPhone",
+      detail:
+        "A extensão do cartão na app pode estar em falta. Confirme que usa a app 1.1.6 (build Codemagic #123) e reinstale se necessário.",
+    };
+  }
+
   if (result?.reason === "timeout" || result?.ok) {
     return {
       tone: "warn",
@@ -338,6 +347,41 @@ export function describeLockScreenCardStatus(opts: {
     title: "Cartão no ecrã bloqueado: ainda não registado",
     detail: "Carregue no botão abaixo. Não feche a app enquanto espera.",
   };
+}
+
+async function probeLocalLiveActivity(storeId: string): Promise<{ ok: boolean }> {
+  const probeId = "__kebab_la_probe__";
+  try {
+    const settings = await loadSettings(storeId);
+    const state = {
+      title: settings.la_staff_card_title,
+      message: "A testar cartão no ecrã…",
+      timer: "0:00",
+      status: "TESTE",
+      urgent: "0",
+      colorNormal: settings.la_color_normal,
+      colorUrgent: settings.la_color_urgent,
+      role: "staff",
+      orderNumber: "0000",
+      total: "€0,00",
+      orderType: "Teste",
+    };
+    const starter = LiveActivity.startActivityWithPush ?? LiveActivity.startActivity;
+    await starter.call(LiveActivity, {
+      id: probeId,
+      attributes: { orderId: probeId, orderNumber: "0000", storeId, role: "staff" },
+      contentState: { ...state },
+    });
+    await new Promise((r) => setTimeout(r, 2500));
+    await LiveActivity.endActivity({
+      id: probeId,
+      contentState: { ...state },
+      dismissalPolicy: "immediate",
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 export async function registerStaffLockScreenCard(
@@ -357,6 +401,11 @@ export async function registerStaffLockScreenCard(
   const initialCount = await checkStaffLockScreenCardCount(storeId);
   if (initialCount === -1) {
     return { ok: false, reason: "db-not-ready" };
+  }
+
+  const probe = await probeLocalLiveActivity(storeId);
+  if (!probe.ok) {
+    return { ok: false, reason: "probe-failed" };
   }
 
   await retryCachedPushToStartToken(storeId);
