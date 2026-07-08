@@ -88,13 +88,19 @@ Deno.serve(async (req) => {
     }
 
     if (order.status !== "pending") {
+      // Já foi aceite/tratado noutro sítio — encerra qualquer Live Activity órfã e responde OK.
+      try {
+        await dispatchStaffLiveActivityEnd({ admin, storeId, orderId });
+      } catch (e) {
+        console.warn("[accept-order-from-live-activity] end dispatch (already handled) falhou", String(e));
+      }
       return new Response(
         JSON.stringify({
-          error: "Pedido já não está pendente",
-          status: order.status,
+          success: true,
           already_handled: true,
+          status: order.status,
         }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
