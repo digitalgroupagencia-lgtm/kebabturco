@@ -340,7 +340,7 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       opts.anonKey,
     );
 
-    const cardTitle = `${opts.settings.la_staff_card_title} #${formattedNumber}`;
+    // (cardTitle já calculado acima para dedup)
     const result = await sendLiveActivityApns(
       row.token_value,
       {
