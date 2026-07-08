@@ -200,31 +200,17 @@ struct StaffOrderLiveWidget: Widget {
         } else {
             let orderId = statics["orderId"] ?? context.attributes.id
             let storeId = statics["storeId"] ?? ""
-            let acceptToken = statics["acceptToken"] ?? ""
-            let acceptUrl = statics["acceptUrl"] ?? ""
-            let apiKey = statics["apiKey"] ?? ""
+            let openUrl = LiveActivityAcceptAPI.openOrderDeepLink(orderId: orderId, storeId: storeId)
+                ?? URL(string: "kebabturco://staff/order/\(orderId)")!
 
-            if #available(iOS 17.0, *) {
-                Button(intent: AcceptOrderIntent(
-                    orderId: orderId,
-                    storeId: storeId,
-                    acceptToken: acceptToken,
-                    acceptUrl: acceptUrl,
-                    apiKey: apiKey
-                )) {
-                    Text("ACEITAR PEDIDO")
-                        .font(.system(size: compact ? 14 : 16, weight: .heavy))
-                        .foregroundStyle(defaultWine)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, compact ? 10 : 12)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text("Abra a app para aceitar")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.85))
+            Link(destination: openUrl) {
+                Text("ACEITAR PEDIDO")
+                    .font(.system(size: compact ? 14 : 16, weight: .heavy))
+                    .foregroundStyle(defaultWine)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, compact ? 10 : 12)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
     }
