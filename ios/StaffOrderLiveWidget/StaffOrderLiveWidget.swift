@@ -123,13 +123,11 @@ struct StaffOrderLiveWidget: Widget {
         let started = startedAtDate(context)
         HStack(alignment: .top, spacing: 12) {
             // Logo/ícone Kebab Turco
-            ZStack {
-                Circle()
-                    .fill(.white.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Text("🥙")
-                    .font(.system(size: 24))
-            }
+            Image("KebabIcon")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Kebab Turco · Novo pedido")
