@@ -183,7 +183,9 @@ workflows:
           xcodebuild -version
           SDK=$(xcrun --sdk iphoneos --show-sdk-version)
           echo "SDK iOS: $SDK"
-          XCODE_MAJOR=$(xcodebuild -version | head -1 | grep -oE '[0-9]+' | head -1)
+          XCODE_VERSION=$(xcodebuild -version | awk '/^Xcode / { print $2; exit }')
+          XCODE_MAJOR=${XCODE_VERSION%%.*}
+          echo "Xcode detectado: $XCODE_VERSION (major $XCODE_MAJOR)"
           if [ "${XCODE_MAJOR:-0}" -lt 26 ]; then
             echo "ERRO: Capacitor 8 exige Xcode 26. Neste yaml use xcode: latest"
             exit 1
