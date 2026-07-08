@@ -155,6 +155,22 @@ const PanelSettingsPage = () => {
           setPushLastError(null);
           setPushNativeHint("Telemóvel registado para alertas.");
           toast.success(t("settings.push.enabled"));
+
+          const { registerStaffLockScreenCard } = await import("@/services/staffLiveActivity");
+          toast.info("A registar cartão no ecrã bloqueado… não feche a app (15 s).");
+          const la = await registerStaffLockScreenCard(effectiveStoreId);
+          if (la.registeredInDb) {
+            setPushNativeHint("Alertas + cartão no ecrã bloqueado registados.");
+            toast.success("Cartão grande (ACEITAR) registado neste iPhone.");
+          } else if (la.reason === "ios-too-old") {
+            toast.error("Este iPhone precisa de iOS 17.2 ou mais recente para o cartão no ecrã.");
+          } else if (la.reason === "disabled") {
+            toast.error("Live Activities desligadas — Definições → Kebab Turco → permitir Atividades em tempo real.");
+          } else {
+            toast.warning(
+              "Faixa pequena OK, mas o cartão grande ainda não registou. Mantenha a app aberta e tente desligar/ligar push outra vez.",
+            );
+          }
         } else {
           const err = res.reason ?? t("settings.push.enable_error");
           setPushLastError(err);

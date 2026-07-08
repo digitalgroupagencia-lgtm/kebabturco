@@ -82,3 +82,25 @@ CREATE POLICY staff_live_activity_tokens_self ON public.staff_live_activity_toke
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.staff_live_activity_tokens TO authenticated;
 GRANT ALL ON public.staff_live_activity_tokens TO service_role;
+
+-- Contagem para o painel admin (equipa com acesso à loja)
+CREATE OR REPLACE FUNCTION public.count_staff_la_push_to_start_tokens(_store_id uuid)
+RETURNS integer
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.user_can_access_store(_store_id) THEN
+    RETURN -1;
+  END IF;
+  RETURN (
+    SELECT count(*)::int
+    FROM public.staff_live_activity_tokens
+    WHERE store_id = _store_id AND token_kind = 'push_to_start'
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.count_staff_la_push_to_start_tokens(uuid) TO authenticated;

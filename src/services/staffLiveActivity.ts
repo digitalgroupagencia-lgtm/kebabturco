@@ -254,6 +254,32 @@ export async function ensureStaffLiveActivityPushToStart(
   }
 }
 
+export async function registerStaffLockScreenCard(
+  storeId: string,
+): Promise<StaffLiveActivityPushToStartResult & { registeredInDb?: boolean }> {
+  await retryCachedPushToStartToken(storeId);
+  const result = await ensureStaffLiveActivityPushToStart(storeId, { force: true });
+  if (!result.ok) return result;
+
+  // O token da Apple pode demorar alguns segundos após observePushToStartToken
+  for (let i = 0; i < 8; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    await retryCachedPushToStartToken(storeId);
+    try {
+      const { data, error } = await supabase.rpc("count_staff_la_push_to_start_tokens", {
+        _store_id: storeId,
+      });
+      if (!error && typeof data === "number" && data > 0) {
+        return { ok: true, registeredInDb: true };
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return { ok: true, registeredInDb: false };
+}
+
 export async function isStaffLiveActivitySupported(): Promise<boolean> {
   if (isNativeAndroidAppSync()) return true;
   if (!isNativeIOSAppSync()) return false;
