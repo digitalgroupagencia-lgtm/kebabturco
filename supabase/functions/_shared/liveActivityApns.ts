@@ -164,9 +164,12 @@ async function sendLiveActivityApns(
     ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
     : ["api.push.apple.com", "api.sandbox.push.apple.com"];
 
-  // Collapse-id por pedido evita cartões duplicados quando alertas repetidos disparam.
+  // Collapse-id só para update/end. Em "start" o iOS ignora silenciosamente o push
+  // colapsado (APNs devolve 200 mas nenhuma Live Activity é criada) — regressão observada.
   const orderId = logContext?.orderId;
-  const collapseId = orderId ? `la-staff-${orderId}`.slice(0, 64) : undefined;
+  const collapseId =
+    event !== "start" && orderId ? `la-staff-${orderId}`.slice(0, 64) : undefined;
+
 
   const attempts: Array<{ host: string; status: number; text: string }> = [];
   for (const host of hosts) {
