@@ -494,6 +494,7 @@ async function attachPushListeners(): Promise<void> {
   await PushNotifications.addListener("pushNotificationActionPerformed", (a) => {
     const data = (a?.notification?.data ?? {}) as Record<string, unknown>;
     const url = typeof data.url === "string" ? data.url : undefined;
+    const actionId = String(a?.actionId ?? "");
     const orderId =
       (typeof data.order_id === "string" && data.order_id) ||
       (typeof data.orderId === "string" && data.orderId) ||
@@ -502,13 +503,39 @@ async function attachPushListeners(): Promise<void> {
       (typeof data.store_id === "string" && data.store_id) ||
       (typeof data.storeId === "string" && data.storeId) ||
       undefined;
+    const acceptToken =
+      (typeof data.accept_token === "string" && data.accept_token) ||
+      (typeof data.acceptToken === "string" && data.acceptToken) ||
+      undefined;
     logNative("info", "Notificação tocada", {
       url,
       orderId,
       storeId,
-      actionId: a?.actionId,
+      actionId,
+      hasAcceptToken: Boolean(acceptToken),
       dataKeys: Object.keys(data),
     });
+    if (orderId && actionId === "ACCEPT_ORDER") {
+      void import("@/services/acceptOrderFromLiveActivity").then(
+        async ({ acceptOrderViaEdgeToken, acceptOrderWithSession }) => {
+          logNative("info", "Botão aceitar do push tocado", { orderId, storeId, hasAcceptToken: Boolean(acceptToken) });
+          const result = acceptToken && storeId
+            ? await acceptOrderViaEdgeToken(orderId, storeId, acceptToken)
+            : storeId
+              ? await acceptOrderWithSession(orderId, storeId)
+              : { ok: false as const, error: "Pedido sem loja" };
+          logNative(result.ok ? "info" : "warn", "Resposta do aceitar via push", {
+            orderId,
+            ok: result.ok,
+            error: "error" in result ? result.error : undefined,
+          });
+          if (typeof window !== "undefined") {
+            navigateCustomerFromPushUrl(`/panel/live?order=${encodeURIComponent(orderId)}`);
+          }
+        },
+      );
+      return;
+    }
     // Se vier order_id explícito na notificação staff, força abertura do painel do pedido.
     if (orderId && typeof window !== "undefined") {
       const target = `/panel/live?order=${encodeURIComponent(orderId)}`;
