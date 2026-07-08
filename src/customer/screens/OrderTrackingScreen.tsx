@@ -40,6 +40,13 @@ const OrderTrackingScreen = () => {
   useOrderTracking(orderId, handleOrder, handleLoading);
   useCustomerOrderNotifications(order);
 
+  useEffect(() => {
+    if (!order || !storeId || !orderId) return;
+    void import("@/services/customerOrderLiveActivity").then(({ syncCustomerOrderLiveActivity }) =>
+      syncCustomerOrderLiveActivity(storeId, orderId, String(order.order_number), order.status),
+    );
+  }, [order, storeId, orderId]);
+
   const steps = useMemo(() => getCustomerTrackingSteps(order?.order_type, t), [order?.order_type, t]);
 
   const currentIdx = useMemo(() => {

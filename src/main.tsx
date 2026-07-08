@@ -55,6 +55,7 @@ forceStaffRecoveryPathWhenNeeded();
 if (typeof window !== "undefined") {
   window.setTimeout(() => {
     void import("./services/nativePush").then((m) => m.initNativePushBridge());
+    void import("./services/androidOrderCard").then((m) => m.initAndroidOrderCardActions());
   }, 2500);
 }
 

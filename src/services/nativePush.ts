@@ -269,6 +269,15 @@ async function ensureAndroidNotificationChannel(): Promise<void> {
       vibration: true,
       visibility: 1,
     });
+    await PushNotifications.createChannel({
+      id: "order_cards",
+      name: "Cartões de pedido",
+      description: "Acompanhar pedidos em tempo real",
+      importance: 5,
+      sound: "default",
+      vibration: true,
+      visibility: 1,
+    });
   } catch (e) {
     logNative("warn", "Canal Android não criado", { error: String(e) });
   }

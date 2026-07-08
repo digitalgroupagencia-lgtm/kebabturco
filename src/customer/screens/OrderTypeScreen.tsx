@@ -33,12 +33,12 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
     type="button"
     onClick={onSelect}
     className={`group flex flex-col items-center touch-action-manipulation active:scale-[0.97] transition-all duration-200 bg-transparent border-0 shadow-none ${
-      compact ? "flex-1 min-w-[100px] max-w-[140px] shrink-0 gap-3 py-4 px-3" : "flex-1 min-w-0 max-w-[280px] gap-4 py-6 px-5"
+      compact ? "flex-1 min-w-0 gap-2 py-3 px-0.5" : "flex-1 min-w-0 max-w-[280px] gap-4 py-6 px-5"
     }`}
   >
     <div
       className={`relative flex items-center justify-center w-full ${
-        compact ? "h-[72px]" : "h-[120px] sm:h-[140px]"
+        compact ? "h-[108px]" : "h-[120px] sm:h-[140px]"
       }`}
     >
       {option.icon ? (
@@ -50,14 +50,14 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
           // @ts-expect-error fetchpriority válido em HTML
           fetchpriority="high"
           className={`object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.16)] transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[0.98] ${
-            compact ? "w-[72px] h-[72px]" : "w-[100px] h-[100px] sm:w-[120px] sm:h-[120px]"
+            compact ? "w-[100px] h-[100px]" : "w-[100px] h-[100px] sm:w-[120px] sm:h-[120px]"
           }`}
           draggable={false}
         />
       ) : (
         <option.Fallback
           className={`text-foreground/70 drop-shadow-[0_8px_20px_rgba(0,0,0,0.12)] ${
-            compact ? "w-14 h-14" : "w-[88px] h-[88px] sm:w-[104px] sm:h-[104px]"
+            compact ? "w-[88px] h-[88px]" : "w-[88px] h-[88px] sm:w-[104px] sm:h-[104px]"
           }`}
           strokeWidth={1.6}
         />
@@ -232,7 +232,7 @@ const OrderTypeScreen = () => {
 
       <div
         className={`flex items-center justify-center w-full flex-1 min-h-0 ${
-          isCompactGrid ? "px-3 pt-2 pb-1" : "px-5 sm:px-8 pt-4 pb-2"
+          isCompactGrid ? "px-1.5 pt-2 pb-1" : "px-5 sm:px-8 pt-4 pb-2"
         }`}
       >
         {enabled.length === 0 ? (
@@ -241,7 +241,7 @@ const OrderTypeScreen = () => {
           <div
             className={`flex w-full mx-auto items-stretch justify-center ${
               isCompactGrid
-                ? "flex-row flex-nowrap gap-3 max-w-lg overflow-x-auto no-scrollbar"
+                ? "flex-row flex-nowrap gap-1 max-w-full overflow-x-auto no-scrollbar"
                 : "flex-row flex-nowrap gap-4 sm:gap-6 max-w-2xl"
             }`}
           >

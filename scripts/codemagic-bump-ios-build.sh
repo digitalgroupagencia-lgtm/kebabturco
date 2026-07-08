@@ -5,7 +5,7 @@ ROOT="${CM_BUILD_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 PBX="$ROOT/ios/App/App.xcodeproj/project.pbxproj"
 
 BUILD_NUM="${CM_BUILD_NUMBER:-${BUILD_NUMBER:-$(date +%s)}}"
-MARKETING_VERSION="${IOS_APP_STORE_VERSION:-1.1.4}"
+MARKETING_VERSION="${IOS_APP_STORE_VERSION:-1.1.5}"
 echo "=== iOS build number: $BUILD_NUM ==="
 echo "=== iOS versão visível: $MARKETING_VERSION ==="
 

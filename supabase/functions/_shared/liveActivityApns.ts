@@ -1,0 +1,357 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { issueLiveActivityAcceptToken } from "../_shared/liveActivityAcceptToken.ts";
+
+export type LiveActivityStoreSettings = {
+  la_staff_card_title: string;
+  la_customer_card_title: string;
+  la_staff_new_message: string;
+  la_staff_urgent_message: string;
+  la_customer_ready_message: string;
+  la_color_normal: string;
+  la_color_urgent: string;
+  la_urgent_after_minutes: number;
+};
+
+export const DEFAULT_LA_SETTINGS: LiveActivityStoreSettings = {
+  la_staff_card_title: "Novo pedido",
+  la_customer_card_title: "O seu pedido",
+  la_staff_new_message: "Aguarda aceitação da equipa",
+  la_staff_urgent_message: "Urgente — aceite já",
+  la_customer_ready_message: "Pode levantar no balcão",
+  la_color_normal: "#3A0205",
+  la_color_urgent: "#5A080C",
+  la_urgent_after_minutes: 5,
+};
+
+type AdminClient = ReturnType<typeof createClient>;
+
+export async function loadLiveActivitySettings(
+  admin: AdminClient,
+  storeId: string,
+): Promise<LiveActivityStoreSettings> {
+  const { data } = await admin
+    .from("operations_settings")
+    .select(
+      "la_staff_card_title, la_customer_card_title, la_staff_new_message, la_staff_urgent_message, la_customer_ready_message, la_color_normal, la_color_urgent, la_urgent_after_minutes",
+    )
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (!data) return { ...DEFAULT_LA_SETTINGS };
+  const row = data as Record<string, unknown>;
+  const mins = Number(row.la_urgent_after_minutes);
+  return {
+    la_staff_card_title: String(row.la_staff_card_title ?? DEFAULT_LA_SETTINGS.la_staff_card_title),
+    la_customer_card_title: String(row.la_customer_card_title ?? DEFAULT_LA_SETTINGS.la_customer_card_title),
+    la_staff_new_message: String(row.la_staff_new_message ?? DEFAULT_LA_SETTINGS.la_staff_new_message),
+    la_staff_urgent_message: String(row.la_staff_urgent_message ?? DEFAULT_LA_SETTINGS.la_staff_urgent_message),
+    la_customer_ready_message: String(row.la_customer_ready_message ?? DEFAULT_LA_SETTINGS.la_customer_ready_message),
+    la_color_normal: String(row.la_color_normal ?? DEFAULT_LA_SETTINGS.la_color_normal),
+    la_color_urgent: String(row.la_color_urgent ?? DEFAULT_LA_SETTINGS.la_color_urgent),
+    la_urgent_after_minutes: Number.isFinite(mins) ? Math.min(120, Math.max(1, Math.round(mins))) : 5,
+  };
+}
+
+type ApnsConfig = {
+  keyId: string;
+  teamId: string;
+  privateKey: string;
+  topic: string;
+  useSandbox: boolean;
+};
+
+let cachedApnsJwt: { token: string; expiresAt: number } | null = null;
+
+export function getApnsConfigFromEnv(): ApnsConfig | null {
+  const keyId = (Deno.env.get("APNS_KEY_ID") ?? "").trim();
+  const teamId = (Deno.env.get("APNS_TEAM_ID") ?? "").trim();
+  const privateKey = (Deno.env.get("APNS_PRIVATE_KEY") ?? "").replace(/\\n/g, "\n").trim();
+  const topic = (Deno.env.get("APNS_BUNDLE_ID") ?? "net.kebabturco.app").trim();
+  if (!keyId || !teamId || !privateKey.includes("BEGIN PRIVATE KEY")) return null;
+  const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") ?? "true").toLowerCase().trim() !== "false";
+  return { keyId, teamId, privateKey, topic, useSandbox };
+}
+
+async function getApnsJwt(config: ApnsConfig): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedApnsJwt && cachedApnsJwt.expiresAt - 120 > now) return cachedApnsJwt.token;
+  const jose = await import("https://deno.land/x/jose@v5.2.0/index.ts");
+  const key = await jose.importPKCS8(config.privateKey, "ES256");
+  const jwt = await new jose.SignJWT({})
+    .setProtectedHeader({ alg: "ES256", kid: config.keyId })
+    .setIssuer(config.teamId)
+    .setIssuedAt(now)
+    .sign(key);
+  cachedApnsJwt = { token: jwt, expiresAt: now + 3300 };
+  return jwt;
+}
+
+function customerStatusLabel(status: string): string {
+  switch (status) {
+    case "pending":
+      return "Pedido recebido";
+    case "preparing":
+      return "Em preparação";
+    case "ready":
+      return "Pronto";
+    case "out_for_delivery":
+      return "Saiu para entrega";
+    case "delivered":
+    case "completed":
+      return "Entregue";
+    default:
+      return "A acompanhar";
+  }
+}
+
+async function sendLiveActivityApns(
+  deviceToken: string,
+  payload: Record<string, unknown>,
+  config: ApnsConfig,
+  event: "start" | "update" | "end",
+): Promise<{ ok: boolean; error?: string }> {
+  const token = deviceToken.replace(/[<>\s]/g, "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/i.test(token)) {
+    return { ok: false, error: "token inválido" };
+  }
+
+  const jwt = await getApnsJwt(config);
+  const topic = `${config.topic}.push-type.liveactivity`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const body = JSON.stringify({ aps: { timestamp, event, ...payload } });
+
+  const hosts = config.useSandbox
+    ? ["api.sandbox.push.apple.com", "api.push.apple.com"]
+    : ["api.push.apple.com", "api.sandbox.push.apple.com"];
+
+  for (const host of hosts) {
+    const res = await fetch(`https://${host}/3/device/${token}`, {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${jwt}`,
+        "apns-topic": topic,
+        "apns-push-type": "liveactivity",
+        "apns-priority": "10",
+        "content-type": "application/json",
+      },
+      body,
+    });
+    if (res.ok) return { ok: true };
+    const text = await res.text();
+    if (res.status === 410) return { ok: false, error: text };
+    if (host === hosts[hosts.length - 1]) return { ok: false, error: `${res.status} ${text}` };
+  }
+  return { ok: false, error: "APNs live activity falhou" };
+}
+
+function buildAttributes(
+  orderId: string,
+  orderNumber: string,
+  storeId: string,
+  role: "staff" | "customer",
+  acceptToken: string,
+  acceptUrl: string,
+  apiKey: string,
+) {
+  return {
+    id: role === "customer" ? `customer-${orderId}` : orderId,
+    staticValues: {
+      orderId,
+      orderNumber,
+      storeId,
+      role,
+      acceptToken,
+      acceptUrl,
+      apiKey,
+    },
+  };
+}
+
+export async function dispatchStaffLiveActivityPushToStart(opts: {
+  admin: AdminClient;
+  storeId: string;
+  orderId: string;
+  orderNumber: string;
+  userId: string;
+  userName: string;
+  settings: LiveActivityStoreSettings;
+  supabaseUrl: string;
+  anonKey: string;
+}): Promise<{ sent: number; errors: string[] }> {
+  const config = getApnsConfigFromEnv();
+  if (!config) return { sent: 0, errors: ["APNs não configurado"] };
+
+  const { data: tokens } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("token_value, user_id")
+    .eq("store_id", opts.storeId)
+    .eq("token_kind", "push_to_start");
+
+  const rows = (tokens ?? []) as Array<{ token_value: string; user_id: string | null }>;
+  if (!rows.length) return { sent: 0, errors: [] };
+
+  const acceptUrl = `${opts.supabaseUrl}/functions/v1/accept-order-from-live-activity`;
+  const title = `${opts.settings.la_staff_card_title} #${opts.orderNumber}`;
+
+  let sent = 0;
+  const errors: string[] = [];
+
+  for (const row of rows) {
+    const uid = row.user_id ?? opts.userId;
+    let userName = opts.userName;
+    if (row.user_id) {
+      const { data: prof } = await opts.admin
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", row.user_id)
+        .maybeSingle();
+      if (prof?.full_name) userName = String(prof.full_name);
+    }
+
+    const acceptToken = await issueLiveActivityAcceptToken({
+      order_id: opts.orderId,
+      store_id: opts.storeId,
+      user_id: uid,
+      user_name: userName,
+    });
+
+    const contentState = {
+      values: {
+        title,
+        message: opts.settings.la_staff_new_message,
+        timer: "0:00",
+        status: "•••",
+        urgent: "0",
+        colorNormal: opts.settings.la_color_normal,
+        colorUrgent: opts.settings.la_color_urgent,
+        role: "staff",
+      },
+    };
+
+    const attributes = buildAttributes(
+      opts.orderId,
+      opts.orderNumber,
+      opts.storeId,
+      "staff",
+      acceptToken,
+      acceptUrl,
+      opts.anonKey,
+    );
+
+    const result = await sendLiveActivityApns(
+      row.token_value,
+      {
+        "content-state": contentState,
+        "attributes-type": "GenericAttributes",
+        attributes,
+        alert: { title, body: opts.settings.la_staff_new_message, sound: "staff_order_alert.caf" },
+      },
+      config,
+      "start",
+    );
+    if (result.ok) sent++;
+    else if (result.error) errors.push(result.error);
+  }
+
+  return { sent, errors };
+}
+
+export async function dispatchCustomerLiveActivityPush(opts: {
+  admin: AdminClient;
+  storeId: string;
+  orderId: string;
+  orderNumber: string;
+  status: string;
+  settings: LiveActivityStoreSettings;
+  event?: "start" | "update" | "end";
+}): Promise<{ sent: number; errors: string[] }> {
+  const config = getApnsConfigFromEnv();
+  if (!config) return { sent: 0, errors: ["APNs não configurado"] };
+
+  const terminal = new Set(["delivered", "completed", "cancelled"]);
+  const event = opts.event ?? (terminal.has(opts.status) ? "end" : "update");
+
+  const { data: startTokens } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("token_value")
+    .eq("order_id", opts.orderId)
+    .eq("token_kind", "customer_push_to_start");
+
+  const { data: updateTokens } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("token_value")
+    .eq("order_id", opts.orderId)
+    .eq("token_kind", "activity_update");
+
+  const allTokens = [
+    ...((startTokens ?? []) as Array<{ token_value: string }>),
+    ...((updateTokens ?? []) as Array<{ token_value: string }>),
+  ];
+  if (!allTokens.length) return { sent: 0, errors: [] };
+
+  const statusLabel = customerStatusLabel(opts.status);
+  const title = `${opts.settings.la_customer_card_title} #${opts.orderNumber}`;
+  const message = opts.status === "ready" ? opts.settings.la_customer_ready_message : statusLabel;
+
+  const contentState = {
+    values: {
+      title,
+      message,
+      timer: "",
+      status: statusLabel,
+      urgent: "0",
+      colorNormal: opts.settings.la_color_normal,
+      colorUrgent: opts.settings.la_color_urgent,
+      role: "customer",
+    },
+  };
+
+  const attributes = buildAttributes(opts.orderId, opts.orderNumber, opts.storeId, "customer", "", "", "");
+
+  let sent = 0;
+  const errors: string[] = [];
+  for (const row of allTokens) {
+    const payload =
+      event === "start"
+        ? {
+            "content-state": contentState,
+            "attributes-type": "GenericAttributes",
+            attributes,
+            alert: { title, body: message, sound: "default" },
+          }
+        : event === "end"
+          ? { "content-state": contentState, dismissal_date: Math.floor(Date.now() / 1000) }
+          : { "content-state": contentState };
+
+    const result = await sendLiveActivityApns(row.token_value, payload, config, event);
+    if (result.ok) sent++;
+    else if (result.error) errors.push(result.error);
+  }
+  return { sent, errors };
+}
+
+export async function dispatchStaffLiveActivityEnd(opts: {
+  admin: AdminClient;
+  storeId: string;
+  orderId: string;
+}): Promise<{ sent: number }> {
+  const config = getApnsConfigFromEnv();
+  if (!config) return { sent: 0 };
+
+  const { data: updateTokens } = await opts.admin
+    .from("staff_live_activity_tokens")
+    .select("token_value")
+    .eq("order_id", opts.orderId)
+    .eq("token_kind", "activity_update");
+
+  let sent = 0;
+  for (const row of (updateTokens ?? []) as Array<{ token_value: string }>) {
+    const result = await sendLiveActivityApns(
+      row.token_value,
+      { dismissal_date: Math.floor(Date.now() / 1000) },
+      config,
+      "end",
+    );
+    if (result.ok) sent++;
+  }
+  return { sent };
+}

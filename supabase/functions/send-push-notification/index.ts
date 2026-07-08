@@ -12,6 +12,12 @@ import {
   buildStaffOrderCancelledPush,
   type StaffOrderPushItem,
 } from "../_shared/staffOrderPushMessages.ts";
+import {
+  dispatchCustomerLiveActivityPush,
+  dispatchStaffLiveActivityEnd,
+  dispatchStaffLiveActivityPushToStart,
+  loadLiveActivitySettings,
+} from "../_shared/liveActivityApns.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -306,6 +312,10 @@ async function sendFcmV1(
     url?: string;
     requireInteraction?: boolean;
     acceptAction?: string;
+    ongoing?: boolean;
+    accentColor?: string;
+    trackLabel?: string;
+    openLabel?: string;
   },
   serviceAccount: { project_id: string; client_email: string; private_key: string; token_uri?: string },
 ): Promise<void> {
@@ -318,18 +328,26 @@ async function sendFcmV1(
       data: {
         url: payload.url ?? "/",
         tag: payload.tag ?? "",
+        title: payload.title,
+        body: payload.body,
+        ongoing: payload.ongoing ? "1" : "0",
+        accent_color: payload.accentColor ?? "#3A0205",
         ...(payload.acceptAction ? { action: "accept", accept_url: payload.acceptAction } : {}),
+        ...(payload.trackLabel ? { track_label: payload.trackLabel } : {}),
+        ...(payload.openLabel ? { open_label: payload.openLabel } : {}),
       },
       notification: { title: payload.title, body: payload.body },
       android: {
         priority: "HIGH",
         notification: {
-          channel_id: "staff_orders",
+          channel_id: payload.ongoing ? "order_cards" : "staff_orders",
           sound: androidSound,
           default_vibrate_timings: true,
           visibility: "PUBLIC",
           notification_priority: "PRIORITY_MAX",
           tag: payload.tag,
+          sticky: Boolean(payload.ongoing),
+          color: payload.accentColor ?? "#3A0205",
         },
       },
       apns: {
@@ -921,6 +939,15 @@ Deno.serve(async (req) => {
     // Sempre tentar sandbox + produção no iOS, corrige APNS_USE_SANDBOX errado e tokens de teste/loja.
     const apnsTryBothHosts = true;
 
+    let laSettings: Awaited<ReturnType<typeof loadLiveActivitySettings>> | null = null;
+    if ((staffOrderAlertId || customerEvent) && storeId) {
+      try {
+        laSettings = await loadLiveActivitySettings(supabase, storeId);
+      } catch {
+        laSettings = null;
+      }
+    }
+
     for (const sub of subs) {
       const platform = (sub.platform ?? "web").toLowerCase();
       const localized = staffOrderContext
@@ -1001,6 +1028,10 @@ Deno.serve(async (req) => {
               url: resolvedUrl,
               requireInteraction,
               acceptAction: staffAcceptDeepLink,
+              ongoing: Boolean(staffOrderAlertId || (orderId && customerEvent)),
+              accentColor: laSettings?.la_color_normal ?? "#3A0205",
+              openLabel: staffOrderAlertId ? "Abrir pedido" : "Acompanhar pedido",
+              trackLabel: staffOrderAlertId ? "Aceitar pedido" : undefined,
             },
             fcm,
           );
@@ -1034,6 +1065,84 @@ Deno.serve(async (req) => {
     const failed = errors.length;
     const partial = sent > 0 && failed > 0;
 
+    let liveActivitySent = 0;
+    const liveActivityErrors: string[] = [];
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+    if (staffOrderAlertId && storeId) {
+      try {
+        const laSettingsResolved = laSettings ?? (await loadLiveActivitySettings(supabase, storeId));
+        const { data: tokenRow } = await supabase
+          .from("staff_live_activity_tokens")
+          .select("user_id")
+          .eq("store_id", storeId)
+          .eq("token_kind", "push_to_start")
+          .limit(1)
+          .maybeSingle();
+        const userId = tokenRow?.user_id ?? "system";
+        const la = await dispatchStaffLiveActivityPushToStart({
+          admin: supabase,
+          storeId,
+          orderId: staffOrderAlertId,
+          orderNumber: String(staffOrderContext?.orderNumber ?? ""),
+          userId,
+          userName: "Operador",
+          settings: laSettingsResolved,
+          supabaseUrl,
+          anonKey,
+        });
+        liveActivitySent += la.sent;
+        liveActivityErrors.push(...la.errors);
+      } catch (e) {
+        liveActivityErrors.push(String(e));
+      }
+    }
+
+    if (orderId && customerEvent && storeId) {
+      try {
+        const laSettings = await loadLiveActivitySettings(supabase, storeId);
+        const statusMap: Record<string, string> = {
+          pending: "pending",
+          payment_paid: "pending",
+          preparing: "preparing",
+          ready: "ready",
+          out_for_delivery: "out_for_delivery",
+          delivered: "delivered",
+          collected: "delivered",
+          served: "delivered",
+          cancelled: "cancelled",
+        };
+        const mappedStatus = statusMap[customerEvent] ?? "pending";
+        const terminal = new Set(["delivered", "cancelled"]);
+        const la = await dispatchCustomerLiveActivityPush({
+          admin: supabase,
+          storeId,
+          orderId,
+          orderNumber: String(customerOrderContext?.orderNumber ?? ""),
+          status: mappedStatus,
+          settings: laSettings,
+          event: terminal.has(mappedStatus) ? "end" : customerEvent === "pending" ? "start" : "update",
+        });
+        liveActivitySent += la.sent;
+        liveActivityErrors.push(...la.errors);
+      } catch (e) {
+        liveActivityErrors.push(String(e));
+      }
+    }
+
+    if (staffOrderCancelledAlertId && storeId) {
+      try {
+        await dispatchStaffLiveActivityEnd({
+          admin: supabase,
+          storeId,
+          orderId: staffOrderCancelledAlertId,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
     return new Response(
       JSON.stringify({
         sent,
@@ -1045,6 +1154,8 @@ Deno.serve(async (req) => {
         matched: matchedInDb,
         targeted: subs.length,
         apnsDeliveryNote,
+        liveActivitySent,
+        liveActivityErrors: liveActivityErrors.length ? liveActivityErrors : undefined,
         errors: errors.length ? errors : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

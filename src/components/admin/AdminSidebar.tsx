@@ -33,6 +33,7 @@ import {
   GitBranch,
   Sparkles,
   Calculator,
+  Smartphone,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -92,6 +93,7 @@ const storeItems = [
   { title: "Idiomas", url: nav.admin("languages"), icon: Globe },
   { title: "Recebimentos", url: nav.admin("finance"), icon: DollarSign },
   { title: "Pagamentos", url: nav.admin("operations"), icon: Wrench },
+  { title: "Cartões no ecrã", url: nav.admin("live-activity"), icon: Smartphone },
   { title: "Impressora", url: nav.admin("printer"), icon: Printer },
   { title: "Totem", url: nav.admin("totem"), icon: Monitor },
   { title: "Estoque", url: nav.admin("stock"), icon: Package },
