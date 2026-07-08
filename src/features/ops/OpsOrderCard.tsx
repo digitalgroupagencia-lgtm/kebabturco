@@ -1,7 +1,7 @@
 import { memo, useState, type MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Clock, Bike, XCircle, Banknote, CreditCard } from "lucide-react";
+import { Bell, ChevronRight, Clock, Bike, XCircle, Banknote, CreditCard } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPanelPaymentBadge } from "@/lib/orderStatusLabels";
 import { getPanelOrderAction, isDeliveryOrder } from "@/lib/orderOperationalFlow";
@@ -41,6 +41,7 @@ interface OpsOrderCardProps {
   onRequestAccept: (order: PanelOrder) => void;
   onRequestAssignDriver: (order: PanelOrder) => void;
   onMarkPaid?: (order: PanelOrder, method: "cash" | "card") => void | Promise<void> | Promise<boolean>;
+  onResendAlert?: (order: PanelOrder) => void | Promise<void>;
   showTapToPayButton?: boolean;
 }
 
@@ -57,6 +58,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   onRequestAccept,
   onRequestAssignDriver,
   onMarkPaid,
+  onResendAlert,
   showTapToPayButton = false,
 }: OpsOrderCardProps) {
   const { t, lang } = useStaffT();
@@ -69,6 +71,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
   const timeLabel = formatOrderClock(order.created_at, lang);
   const [advancing, setAdvancing] = useState(false);
   const [payingNow, setPayingNow] = useState(false);
+  const [resendingAlert, setResendingAlert] = useState(false);
   const isPending = order.status === "pending";
   const canCancel = order.status === "pending" || order.status === "preparing";
   const borderClass = compactCardBorderClass(order.status);
@@ -183,7 +186,7 @@ const OpsOrderCard = memo(function OpsOrderCard({
 
       </button>
 
-      {(action || canQuickPay) && order.status !== "cancelled" && (
+      {(action || canQuickPay || (isPending && onResendAlert)) && order.status !== "cancelled" && (
         <div className="px-2 pb-1.5 space-y-1">
           {action && (
             <div className="flex gap-1">
@@ -213,6 +216,26 @@ const OpsOrderCard = memo(function OpsOrderCard({
               )}
             </div>
           )}
+          {isPending && onResendAlert ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="w-full h-8 font-bold text-[11px] touch-action-manipulation"
+              disabled={resendingAlert}
+              onClick={async (e) => {
+                e.stopPropagation();
+                setResendingAlert(true);
+                try {
+                  await onResendAlert(order);
+                } finally {
+                  setResendingAlert(false);
+                }
+              }}
+            >
+              <Bell className="h-3 w-3 mr-1" />
+              {resendingAlert ? t("ops.card.resending_alert") : t("ops.card.resend_alert")}
+            </Button>
+          ) : null}
           {canQuickPay && (
             <div className={action ? "space-y-1" : "flex gap-1"}>
               <div className="flex gap-1">

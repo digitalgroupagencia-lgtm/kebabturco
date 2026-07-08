@@ -42,6 +42,86 @@ export async function notifyOrderStatusChange(
   }
 }
 
+type StaffOrderPushResult = {
+  ok: boolean;
+  sent?: number;
+  liveActivitySent?: number;
+  liveActivityErrors?: string[];
+  message: string;
+};
+
+function parseStaffOrderPushResponse(data: unknown, error: { message?: string } | null): StaffOrderPushResult {
+  if (error) {
+    return { ok: false, message: error.message ?? "Erro ao enviar alerta" };
+  }
+  const payload = (data ?? {}) as {
+    sent?: number;
+    error?: string;
+    liveActivitySent?: number;
+    liveActivityErrors?: string[];
+  };
+  if (payload.error) {
+    return { ok: false, message: payload.error };
+  }
+  const sent = payload.sent ?? 0;
+  const laSent = payload.liveActivitySent ?? 0;
+  const laErr = payload.liveActivityErrors?.[0];
+
+  if (sent === 0 && laSent === 0) {
+    return {
+      ok: false,
+      sent: 0,
+      liveActivitySent: 0,
+      liveActivityErrors: payload.liveActivityErrors,
+      message: laErr
+        ? `Nenhum dispositivo recebeu. Cartão grande: ${laErr.slice(0, 120)}`
+        : "Nenhum dispositivo da equipa registado para alertas nesta loja.",
+    };
+  }
+
+  let message = `Alerta enviado para ${sent} dispositivo(s).`;
+  if (laSent > 0) {
+    message += ` Cartão grande no iPhone: ${laSent}.`;
+  } else if (laErr) {
+    message += " Cartão grande não enviado — registe push na app iPhone e tente outra vez.";
+  } else if (sent > 0) {
+    message += " Cartão grande: confirme que o iPhone tem alertas ligados na app.";
+  }
+
+  return {
+    ok: true,
+    sent,
+    liveActivitySent: laSent,
+    liveActivityErrors: payload.liveActivityErrors,
+    message,
+  };
+}
+
+async function invokeStaffOrderPush(
+  storeId: string,
+  orderId: string,
+  opts?: { pushDiagnostic?: boolean },
+): Promise<StaffOrderPushResult> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
+
+  const { data, error } = await supabase.functions.invoke("send-push-notification", {
+    body: {
+      storeId,
+      staffOrderId: orderId,
+      tag: `staff-new-order-${orderId}`,
+      url: `/panel/live?order=${orderId}`,
+      requireInteraction: true,
+      ...(opts?.pushDiagnostic ? { pushDiagnostic: true } : {}),
+    },
+    headers,
+  });
+
+  return parseStaffOrderPushResponse(data, error);
+}
+
 /** Aviso push para equipa do restaurante quando entra pedido novo. */
 export async function notifyStaffNewOrder(
   storeId: string,
@@ -49,17 +129,22 @@ export async function notifyStaffNewOrder(
   _orderNumber?: string,
 ) {
   try {
-    await supabase.functions.invoke("send-push-notification", {
-      body: {
-        storeId,
-        staffOrderId: orderId,
-        tag: `staff-new-order-${orderId}`,
-        url: `/panel/live?order=${orderId}`,
-        requireInteraction: true,
-      },
-    });
+    await invokeStaffOrderPush(storeId, orderId);
   } catch {
     /* não bloqueia operação */
+  }
+}
+
+/** Reenvia alerta de pedido pendente (faixa + cartão ACEITAR no iPhone). */
+export async function resendStaffOrderNotification(
+  storeId: string,
+  orderId: string,
+): Promise<StaffOrderPushResult> {
+  try {
+    return await invokeStaffOrderPush(storeId, orderId, { pushDiagnostic: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { ok: false, message };
   }
 }
 

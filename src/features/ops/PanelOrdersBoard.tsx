@@ -307,6 +307,19 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     [cancelOrder, orders, requestStaffPin, t],
   );
 
+  const handleResendAlert = useCallback(
+    async (order: PanelOrder) => {
+      const { resendStaffOrderNotification } = await import("@/services/pushService");
+      const result = await resendStaffOrderNotification(storeId, order.id);
+      if (result.ok) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    },
+    [storeId],
+  );
+
   const confirmMarkPaid = useCallback(
     async (order: PanelOrder, method: "cash" | "card" = "cash") => {
       const isTapPay = method === "card" && isTapToPayPlatform();
@@ -347,6 +360,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     onRequestAccept: openAcceptDialog,
     onRequestAssignDriver: openAssignDialog,
     onMarkPaid: confirmMarkPaid,
+    onResendAlert: handleResendAlert,
     showTapToPayButton: isTapToPayPlatform(),
   });
 
