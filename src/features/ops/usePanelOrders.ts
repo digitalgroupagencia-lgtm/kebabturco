@@ -514,6 +514,7 @@ export function usePanelOrders(storeId: string | undefined) {
                   ...o,
                   payment_status: "paid" as const,
                   payment_method: method,
+                  status: o.status === "pending" ? ("preparing" as const) : o.status,
                   payment_confirmed_by_user_id: null,
                   payment_confirmed_by_name: staffName,
                   payment_confirmed_at: new Date().toISOString(),
@@ -523,6 +524,20 @@ export function usePanelOrders(storeId: string | undefined) {
         );
         const items = itemsByOrder[order.id] || [];
         void tryPrintPanelOrder(storeId!, { ...order, payment_status: "paid" }, items);
+        if (order.status === "pending") {
+          updatingRef.current.delete(order.id);
+          const accepted = await updateStatus(
+            { ...order, payment_status: "paid", payment_method: method } as PanelOrder,
+            "preparing",
+            15,
+          );
+          toast.success(
+            accepted
+              ? `Pagamento registado e pedido aceite, #${order.order_number}`
+              : `Pagamento registado, #${order.order_number}`,
+          );
+          return accepted;
+        }
         toast.success(`Pagamento registado, #${order.order_number}`);
         return true;
       } catch (e) {
@@ -533,7 +548,7 @@ export function usePanelOrders(storeId: string | undefined) {
         updatingRef.current.delete(order.id);
       }
     },
-    [storeId, itemsByOrder, lang],
+    [storeId, itemsByOrder, lang, updateStatus],
   );
 
   const assignDriver = useCallback(async (order: PanelOrder, driverUserId: string): Promise<boolean> => {
