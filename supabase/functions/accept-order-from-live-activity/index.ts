@@ -38,9 +38,14 @@ Deno.serve(async (req) => {
     const orderId = String(body.order_id ?? "").trim();
     const storeId = String(body.store_id ?? "").trim();
     const acceptToken = String(body.accept_token ?? "").trim();
+    const source = String(body.source ?? "unknown").trim();
     let prepMinutes = Number(body.prep_minutes ?? 15);
     if (!Number.isFinite(prepMinutes)) prepMinutes = 15;
     prepMinutes = Math.min(180, Math.max(5, Math.round(prepMinutes)));
+
+    console.log("[accept-order-from-live-activity] request", {
+      orderId, storeId, source, tokenLen: acceptToken.length, prepMinutes,
+    });
 
     if (!orderId || !storeId || !acceptToken) {
       return new Response(JSON.stringify({ error: "Parâmetros em falta" }), {
@@ -51,6 +56,10 @@ Deno.serve(async (req) => {
 
     const payload = await verifyLiveActivityAcceptToken(acceptToken);
     if (!payload || payload.order_id !== orderId || payload.store_id !== storeId) {
+      console.warn("[accept-order-from-live-activity] token inválido", {
+        orderId, storeId, hasPayload: !!payload,
+        payloadOrder: payload?.order_id, payloadStore: payload?.store_id,
+      });
       return new Response(JSON.stringify({ error: "Token inválido ou expirado" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
