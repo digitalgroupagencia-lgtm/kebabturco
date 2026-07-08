@@ -16,6 +16,8 @@ import LiveActivityPlugin
 
     private let queue = DispatchQueue(label: "net.kebabturco.staff-la-observer")
     private var observerTask: Task<Void, Never>?
+    private var activityObserverTask: Task<Void, Never>?
+    private var updateTokenTasks: [String: Task<Void, Never>] = [:]
     private var lastReportedToken: String?
 
     private struct Config: Codable {
@@ -83,12 +85,14 @@ import LiveActivityPlugin
 
         queue.sync {
             if observerTask != nil && !force {
+                startActivityObserverLocked(force: false)
                 return
             }
             observerTask?.cancel()
             observerTask = Task { [weak self] in
                 await self?.runPushToStartLoop()
             }
+            startActivityObserverLocked(force: force)
         }
         print("[StaffLA] observador push-to-start arrancado (force=\(force))")
         #else
@@ -106,6 +110,59 @@ import LiveActivityPlugin
         }
         print("[StaffLA] loop pushToStartTokenUpdates terminou")
     }
+    #endif
+
+    #if canImport(LiveActivityPlugin)
+    @available(iOS 16.2, *)
+    private func startActivityObserverLocked(force: Bool) {
+        if activityObserverTask != nil && !force { return }
+        activityObserverTask?.cancel()
+        activityObserverTask = Task { [weak self] in
+            await self?.runActivityUpdateLoop()
+        }
+
+        for activity in Activity<GenericAttributes>.activities {
+            observeUpdateToken(for: activity)
+        }
+    }
+
+    @available(iOS 16.2, *)
+    private func runActivityUpdateLoop() async {
+        for activity in Activity<GenericAttributes>.activities {
+            observeUpdateToken(for: activity)
+        }
+        for await activity in Activity<GenericAttributes>.activityUpdates {
+            observeUpdateToken(for: activity)
+        }
+        print("[StaffLA] loop activityUpdates terminou")
+    }
+
+    @available(iOS 16.2, *)
+    private func observeUpdateToken(for activity: Activity<GenericAttributes>) {
+        let activityId = activity.id
+        let orderId = activity.attributes.staticValues["orderId"] ?? activity.attributes.id
+        let storeId = activity.attributes.staticValues["storeId"] ?? ""
+        guard !orderId.isEmpty else { return }
+
+        queue.sync {
+            if updateTokenTasks[activityId] != nil { return }
+            updateTokenTasks[activityId] = Task { [weak self] in
+                for await data in activity.pushTokenUpdates {
+                    let token = data.map { String(format: "%02x", $0) }.joined()
+                    guard !token.isEmpty else { continue }
+                    await self?.sendActivityUpdateToken(
+                        token,
+                        activityId: activityId,
+                        orderId: orderId,
+                        storeId: storeId
+                    )
+                }
+            }
+        }
+        print("[StaffLA] a observar update token activity=\(activityId) order=\(orderId)")
+    }
+    #else
+    private func startActivityObserverLocked(force: Bool) {}
     #endif
 
     private func handleReceivedToken(_ token: String) async {
@@ -179,6 +236,56 @@ import LiveActivityPlugin
         } catch {
             print("[StaffLA] erro de rede a registar token: \(error)")
             return false
+        }
+    }
+
+    private func sendActivityUpdateToken(
+        _ token: String,
+        activityId: String,
+        orderId: String,
+        storeId: String
+    ) async {
+        guard let config = loadConfig() else {
+            print("[StaffLA] update token recebido mas sem config — activity=\(activityId)")
+            return
+        }
+        guard var components = URLComponents(string: config.supabaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            print("[StaffLA] supabaseUrl inválido ao registar update token")
+            return
+        }
+        var path = components.path
+        if path.hasSuffix("/") { path.removeLast() }
+        components.path = path + "/functions/v1/register-live-activity-update-token"
+
+        guard let url = components.url else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(config.jwt)", forHTTPHeaderField: "Authorization")
+        request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
+
+        let body: [String: Any] = [
+            "activity_id": activityId,
+            "activityId": activityId,
+            "order_id": orderId,
+            "orderId": orderId,
+            "store_id": storeId.isEmpty ? config.storeId : storeId,
+            "token": token,
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if status >= 200 && status < 300 {
+                print("[StaffLA] Activity update token registado order=\(orderId) activity=\(activityId) …\(token.suffix(8))")
+                return
+            }
+            let bodyStr = String(data: data, encoding: .utf8) ?? ""
+            print("[StaffLA] HTTP \(status) ao registar update token: \(bodyStr)")
+        } catch {
+            print("[StaffLA] erro de rede a registar update token: \(error)")
         }
     }
 
