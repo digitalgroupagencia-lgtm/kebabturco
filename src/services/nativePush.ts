@@ -203,7 +203,7 @@ export async function getNativePushPermission(): Promise<NativePushPermission> {
       /* ignore */
     }
   }
-  return readCachedNativePushToken() || readWindowInjectedApnsToken() ? "granted" : "unknown";
+  return "prompt";
 }
 
 export async function getNativePushRuntimeDiagnostics(): Promise<NativePushRuntimeDiagnostics> {
@@ -951,21 +951,19 @@ export async function unregisterNativeStaffPush(): Promise<void> {
   logNative("info", "Alertas da equipa desactivados (cliente mantido se existir)");
 }
 
-/** Para usar no boot do painel, pede permissão e re-regista (como build 10). */
+/** Para usar no boot do painel — só re-regista se o utilizador já activou e o iOS/browser permitiu. */
 export async function restoreNativeStaffPushIfPossible(storeId: string): Promise<void> {
   if (!(await isNativePushAvailable())) return;
   await initNativePushBridge();
   const perm = await getNativePushPermission();
-  if (perm === "prompt" || perm === "unknown") {
-    const req = await requestNativePermission();
-    if (!req.granted) return;
+  if (perm !== "granted") {
+    const { setStaffPushEnabled } = await import("@/lib/staffPush");
+    setStaffPushEnabled(false);
+    return;
   }
-  if (perm === "denied") return;
 
-  const { isStaffPushEnabled, setStaffPushEnabled } = await import("@/lib/staffPush");
-  if (!isStaffPushEnabled()) {
-    setStaffPushEnabled(true);
-  }
+  const { isStaffPushEnabled } = await import("@/lib/staffPush");
+  if (!isStaffPushEnabled()) return;
   await registerNativeStaffPush(storeId, { skipPermissionRequest: true });
 }
 

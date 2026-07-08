@@ -1,41 +1,42 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useOrder } from "@/contexts/OrderContext";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
 import CustomerNotificationOptInDialog from "@/customer/components/CustomerNotificationOptInDialog";
-import {
-  isCustomerMarketingPushSupportedAsync,
-  shouldPromptCustomerMarketingPush,
-} from "@/lib/customerMarketingPush";
+import { shouldPromptCustomerMarketingPushAsync } from "@/lib/push/pushPermissionSync";
 
-const PROMPT_SCREENS = new Set(["orderType"]);
-
-/** Pede activação de push marketing uma vez por sessão, ao entrar no fluxo cliente. */
+/** Pede activação de notificações no menu cliente enquanto não estiverem activas. */
 const CustomerPushPromptHost = () => {
   const { screen } = useOrder();
   const { storeId, selectedStoreId, loading } = useResolvedStore();
   const activeStoreId = selectedStoreId || storeId || "";
   const [open, setOpen] = useState(false);
-  const promptedRef = useRef(false);
+  const checkSeq = useRef(0);
+
+  const evaluatePrompt = useCallback(async () => {
+    if (loading || !activeStoreId) return;
+    const seq = ++checkSeq.current;
+    const shouldPrompt = await shouldPromptCustomerMarketingPushAsync();
+    if (seq !== checkSeq.current) return;
+    if (shouldPrompt) {
+      window.setTimeout(() => {
+        if (seq === checkSeq.current) setOpen(true);
+      }, 1200);
+    } else {
+      setOpen(false);
+    }
+  }, [loading, activeStoreId]);
 
   useEffect(() => {
-    if (loading || !activeStoreId || promptedRef.current) return;
-    if (!PROMPT_SCREENS.has(screen)) return;
-    if (!shouldPromptCustomerMarketingPush()) return;
+    void evaluatePrompt();
+  }, [evaluatePrompt, screen]);
 
-    let timer = 0;
-    let cancelled = false;
-
-    void isCustomerMarketingPushSupportedAsync().then((supported) => {
-      if (cancelled || !supported || promptedRef.current) return;
-      promptedRef.current = true;
-      timer = window.setTimeout(() => setOpen(true), 1200);
-    });
-
-    return () => {
-      cancelled = true;
-      if (timer) window.clearTimeout(timer);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void evaluatePrompt();
     };
-  }, [loading, activeStoreId, screen]);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [evaluatePrompt]);
 
   if (!activeStoreId) return null;
 

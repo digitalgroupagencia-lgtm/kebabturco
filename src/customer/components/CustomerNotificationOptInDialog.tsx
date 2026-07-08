@@ -4,7 +4,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import PushOptInDialogFrame, { type PushOptInCopy } from "@/components/push/PushOptInDialogFrame";
 import {
   isCustomerMarketingPushSupportedAsync,
-  markCustomerMarketingPromptShown,
   subscribeCustomerMarketingPush,
 } from "@/lib/customerMarketingPush";
 import { initNativePushBridge } from "@/services/nativePush";
@@ -68,7 +67,6 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
   const [busy, setBusy] = useState(false);
 
   const handleLater = () => {
-    markCustomerMarketingPromptShown();
     onOpenChange(false);
   };
 
@@ -88,7 +86,6 @@ const CustomerNotificationOptInDialog = ({ open, storeId, onOpenChange }: Props)
       }
 
       const result = await subscribeCustomerMarketingPush(storeId);
-      markCustomerMarketingPromptShown();
       if (result.ok) {
         appToastSuccess(copy.success);
         onOpenChange(false);

@@ -3,7 +3,6 @@ import { appToastSuccess, appToastError, appToastInfo } from "@/lib/appToast";
 import { useOptionalLanguage } from "@/contexts/LanguageContext";
 import PushOptInDialogFrame, { type PushOptInCopy } from "@/components/push/PushOptInDialogFrame";
 import {
-  markStaffPushPromptShown,
   subscribeStaffPush,
 } from "@/lib/staffPush";
 import { initNativePushBridge } from "@/services/nativePush";
@@ -59,7 +58,6 @@ const StaffPushOptInDialog = ({ open, storeId, onOpenChange }: Props) => {
   const [busy, setBusy] = useState(false);
 
   const handleLater = () => {
-    markStaffPushPromptShown();
     onOpenChange(false);
   };
 
@@ -72,7 +70,6 @@ const StaffPushOptInDialog = ({ open, storeId, onOpenChange }: Props) => {
     try {
       await initNativePushBridge();
       const result = await subscribeStaffPush(storeId);
-      markStaffPushPromptShown();
       if (result.ok) {
         appToastSuccess("Notificações activadas!");
         onOpenChange(false);
