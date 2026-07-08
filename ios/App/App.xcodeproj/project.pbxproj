@@ -24,6 +24,7 @@
 		LA0000051FED79650016851F /* StaffOrderLiveWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000061FED79650016851F /* StaffOrderLiveWidget.swift */; };
 		LA0000141FED79650016851F /* AcceptOrderIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000151FED79650016851F /* AcceptOrderIntent.swift */; };
 		LA0000161FED79650016851F /* LiveActivityAcceptAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = LA0000171FED79650016851F /* LiveActivityAcceptAPI.swift */; };
+		LA0000181FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = LA0000191FED79650016851F /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
