@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, Smartphone } from "lucide-react";
+import { Save, Smartphone, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import PremiumPageHeader from "@/components/admin/premium/PremiumPageHeader";
 import { useAdminStoreId } from "@/hooks/useAdminStoreId";
+import { fetchStaffPushToStartTokenCount } from "@/lib/push/pushTestService";
 import {
   DEFAULT_LIVE_ACTIVITY_SETTINGS,
   mergeLiveActivitySettings,
@@ -19,9 +20,19 @@ const LiveActivitySettingsPage = () => {
   const [s, setS] = useState<LiveActivitySettings>(DEFAULT_LIVE_ACTIVITY_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [laTokenCount, setLaTokenCount] = useState<number | null>(null);
+  const [checkingTokens, setCheckingTokens] = useState(false);
+
+  const refreshTokenStatus = async () => {
+    if (!storeId) return;
+    setCheckingTokens(true);
+    setLaTokenCount(await fetchStaffPushToStartTokenCount(storeId));
+    setCheckingTokens(false);
+  };
 
   useEffect(() => {
     if (!storeId) return;
+    void refreshTokenStatus();
     setLoading(true);
     void supabase
       .from("operations_settings")
@@ -82,6 +93,62 @@ const LiveActivitySettingsPage = () => {
         <p className="text-sm text-muted-foreground">A carregar…</p>
       ) : (
         <>
+          <Card className={laTokenCount && laTokenCount > 0 ? "border-emerald-500/40" : "border-amber-500/50"}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                {laTokenCount && laTokenCount > 0 ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                )}
+                Estado do cartão grande (ACEITAR)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                <strong>Não há botão para ligar isto no admin.</strong> O cartão grande depende do iPhone da equipa
+                estar registado na base de dados. A faixa pequena pode funcionar mesmo sem isto.
+              </p>
+              <div className="rounded-lg bg-muted/50 px-3 py-2">
+                {laTokenCount === null || checkingTokens ? (
+                  <p>A verificar iPhones registados…</p>
+                ) : laTokenCount > 0 ? (
+                  <p className="text-emerald-700 dark:text-emerald-400 font-medium">
+                    {laTokenCount} iPhone(s) registado(s) para cartão no ecrã bloqueado nesta loja.
+                  </p>
+                ) : laTokenCount === -1 ? (
+                  <p className="text-amber-700 dark:text-amber-400">
+                    Não foi possível ler a base de dados — corre o script LIVE_ACTIVITY_FULL.sql no Supabase.
+                  </p>
+                ) : (
+                  <p className="text-amber-700 dark:text-amber-400 font-medium">
+                    Nenhum iPhone registado para cartão grande. Só vai chegar a notificação antiga (faixa pequena).
+                  </p>
+                )}
+              </div>
+              <ol className="list-decimal pl-5 space-y-1.5 text-xs text-muted-foreground">
+                <li>
+                  <strong>Supabase (uma vez):</strong> corre o ficheiro LIVE_ACTIVITY_FULL.sql no SQL Editor.
+                </li>
+                <li>
+                  <strong>Lovable:</strong> Publish (para o servidor e a app web actualizados).
+                </li>
+                <li>
+                  <strong>iPhone da equipa:</strong> app Kebab Turco 1.1.6, iOS 17.2+, entrar no Painel com login,
+                  Definições → desligar e ligar «Notificações push», fechar a app.
+                </li>
+                <li>
+                  <strong>Teste:</strong> no painel ao vivo, «Enviar alerta» no pedido — com ecrã bloqueado deve
+                  aparecer o cartão vermelho com ACEITAR.
+                </li>
+              </ol>
+              <Button type="button" variant="outline" size="sm" onClick={() => void refreshTokenStatus()} disabled={checkingTokens}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${checkingTokens ? "animate-spin" : ""}`} />
+                Actualizar estado
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Equipa — pedido novo</CardTitle>
