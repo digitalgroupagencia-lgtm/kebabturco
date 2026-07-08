@@ -289,6 +289,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A1B2C3D51FED79650016851F /* ApnsTokenStore.swift in Sources */,
 				A1B2C3D71FED79650016851F /* ApnsTokenBridgePlugin.swift in Sources */,
+				A1B2C3F71FED79650016851F /* StaffLiveActivityPushToStartObserver.swift in Sources */,
 				S001SD011FED79650016851F /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
