@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardList, Home, Loader2, Package, ShoppingCart, User } from "lucide-react";
+import { ClipboardList, Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/customer/contexts/CartContext";
 import { useOrder } from "@/contexts/OrderContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,7 +11,7 @@ const CustomerTabBar = () => {
   const { screen, setScreen, accountFocus, setAccountFocus } = useOrder();
   const { totalItems } = useCart();
   const { t } = useLanguage();
-  const { hasActiveOrder, displayNumber, statusLabel, trackOrder, isLoadingOrder } = useActiveOrder();
+  const { hasActiveOrder, trackOrder } = useActiveOrder();
 
   if (!TAB_BAR_VISIBLE_SCREENS.has(screen)) return null;
 
