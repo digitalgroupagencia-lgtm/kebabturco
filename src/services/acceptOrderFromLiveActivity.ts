@@ -198,6 +198,7 @@ export async function handleStaffLiveActivityDeepLink(url: string): Promise<bool
   }
 
   const { toast } = await import("sonner");
-  toast.error(result.ok ? "Erro ao aceitar pedido" : result.error);
+  const errorMessage = "error" in result ? result.error : "Erro ao aceitar pedido";
+  toast.error(errorMessage);
   return true;
 }
