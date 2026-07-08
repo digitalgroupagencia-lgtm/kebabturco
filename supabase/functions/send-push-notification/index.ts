@@ -1343,7 +1343,8 @@ Deno.serve(async (req) => {
               .delete()
               .eq("store_id", storeId)
               .eq("order_id", orderId)
-              .eq("token_kind", "activity_update");
+              .eq("token_kind", "activity_update")
+              .or(`activity_id.is.null,activity_id.eq.${orderId}`);
             console.log("[send-push-notification] marked_inactive", {
               scope: "staff", orderId, error: delErr?.message ?? null,
             });
