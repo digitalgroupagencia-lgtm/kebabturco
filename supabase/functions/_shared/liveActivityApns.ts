@@ -312,13 +312,17 @@ export async function dispatchStaffLiveActivityPushToStart(opts: {
       storeId: opts.storeId,
       updateTokens: updateRows.length,
     });
+    // IMPORTANTE: não incluir `alert` no update — cada alert com liveactivity
+    // cria um novo card na lock screen, o que duplica visualmente a mesma LA.
+    // O som/alerta do pedido é entregue pelo push normal separado.
+    const seenTokens = new Set<string>();
     for (const row of updateRows) {
+      const key = row.token_value.slice(0, 32);
+      if (seenTokens.has(key)) continue;
+      seenTokens.add(key);
       const result = await sendLiveActivityApns(
         row.token_value,
-        {
-          "content-state": contentState,
-          alert: { title: cardTitle, body: `${totalLabel} · ${orderTypeLabel}`, sound: "staff_order_alert.caf" },
-        },
+        { "content-state": contentState },
         config,
         "update",
         { orderId: opts.orderId, storeId: opts.storeId },
