@@ -102,7 +102,7 @@ async function fetchActiveStores(filter: { tenantId?: string } = {}): Promise<St
         .eq("is_active", true);
 
       if (enriched?.length) {
-        const byId = new Map(enriched.map((row) => [row.id, row]));
+        const byId = new Map((enriched as StorePublicRow[]).map((row) => [row.id, row]));
         rows = rows.map((row) => {
           const full = byId.get(row.id);
           if (!full) return row;
