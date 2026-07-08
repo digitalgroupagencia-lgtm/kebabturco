@@ -225,6 +225,36 @@ function readLiveActivityAvailability(result: unknown): boolean {
   return Boolean(row.value ?? row.available);
 }
 
+async function configureNativeStaffLiveActivity(storeId: string): Promise<void> {
+  try {
+    const { ApnsTokenBridge } = await import("@/lib/apnsTokenBridge");
+    if (!ApnsTokenBridge.configureStaffLiveActivity) return;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const jwt = session?.access_token;
+    if (!jwt) return;
+    const appVersion =
+      (import.meta.env.VITE_APP_VERSION as string | undefined) ??
+      (typeof window !== "undefined"
+        ? (window as unknown as { __APP_VERSION__?: string }).__APP_VERSION__
+        : undefined) ??
+      "";
+    await ApnsTokenBridge.configureStaffLiveActivity({
+      supabaseUrl: SUPABASE_URL,
+      anonKey: SUPABASE_ANON,
+      jwt,
+      storeId,
+      userId: session?.user?.id ?? "",
+      deviceId: "",
+      appVersion,
+    });
+    console.info("[StaffLA] observador nativo push-to-start configurado");
+  } catch (e) {
+    console.warn("[StaffLA] falha a configurar observador nativo", e);
+  }
+}
+
 export async function ensureStaffLiveActivityPushToStart(
   storeId: string,
   opts?: { force?: boolean },
@@ -233,6 +263,7 @@ export async function ensureStaffLiveActivityPushToStart(
 
   pushToStartStoreId = storeId;
   await retryCachedPushToStartToken(storeId);
+  void configureNativeStaffLiveActivity(storeId);
 
   try {
     const result = await LiveActivity.isAvailable();
