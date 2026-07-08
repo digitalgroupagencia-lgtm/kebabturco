@@ -68,7 +68,9 @@ CREATE POLICY staff_live_activity_tokens_self ON public.staff_live_activity_toke
       WHERE o.id = order_id
         AND o.customer_phone IS NOT NULL
         AND o.customer_phone = COALESCE(
-          (SELECT p.phone FROM public.profiles p WHERE p.user_id = auth.uid() LIMIT 1),
+          NULLIF(trim(auth.jwt() ->> 'phone'), ''),
+          NULLIF(trim(auth.jwt() -> 'user_metadata' ->> 'phone'), ''),
+          NULLIF(trim(auth.jwt() -> 'user_metadata' ->> 'customer_phone'), ''),
           ''
         )
     ))
