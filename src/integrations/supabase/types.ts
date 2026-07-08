@@ -3049,7 +3049,9 @@ export type Database = {
         Row: {
           activity_id: string | null
           customer_phone: string | null
+          ended_at: string | null
           id: string
+          is_active: boolean
           order_id: string | null
           store_id: string
           token_kind: string
@@ -3060,7 +3062,9 @@ export type Database = {
         Insert: {
           activity_id?: string | null
           customer_phone?: string | null
+          ended_at?: string | null
           id?: string
+          is_active?: boolean
           order_id?: string | null
           store_id: string
           token_kind?: string
@@ -3071,7 +3075,9 @@ export type Database = {
         Update: {
           activity_id?: string | null
           customer_phone?: string | null
+          ended_at?: string | null
           id?: string
+          is_active?: boolean
           order_id?: string | null
           store_id?: string
           token_kind?: string
