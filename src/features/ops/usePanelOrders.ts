@@ -445,6 +445,34 @@ export function usePanelOrders(storeId: string | undefined) {
         acknowledgePendingOrderAlert(order.id);
         void endRemoteLiveActivity(order.id);
       }
+      // Sincroniza o cartão push do cliente (Live Activity) com o novo estado.
+      if (storeId && newStatus !== prevStatus) {
+        const customerEventMap: Record<string, string> = {
+          preparing: "preparing",
+          ready: "ready",
+          out_for_delivery: "out_for_delivery",
+          delivered: "delivered",
+          collected: "collected",
+          served: "served",
+          cancelled: "cancelled",
+        };
+        const customerOrderEvent = customerEventMap[newStatus as string];
+        if (customerOrderEvent) {
+          void supabase.functions
+            .invoke("send-push-notification", {
+              body: {
+                orderId: order.id,
+                storeId,
+                customerOrderEvent,
+                tag: `order-${order.id}-${customerOrderEvent}`,
+                url: `/?screen=tracking&order=${order.id}`,
+              },
+            })
+            .catch(() => {
+              /* não bloqueia operação */
+            });
+        }
+      }
       return true;
     } finally {
       updatingRef.current.delete(order.id);
