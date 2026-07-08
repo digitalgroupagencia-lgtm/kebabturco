@@ -55,14 +55,22 @@ struct StaffOrderLiveWidget: Widget {
                     actionArea(context: context, compact: true)
                 }
             } compactLeading: {
-                Text("🥙")
+                Image("KebabIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
             } compactTrailing: {
                 Text(timerInterval: started...Date.distantFuture, countsDown: false, showsHours: false)
                     .font(.caption2.bold())
                     .monospacedDigit()
                     .frame(maxWidth: 44)
             } minimal: {
-                Text("🥙")
+                Image("KebabIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
             }
         }
     }
