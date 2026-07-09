@@ -174,7 +174,7 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
       syncPendingOrderAlertLoop(stillPending.size > 0);
     }
     setLoading(false);
-  }, [storeId, notifyNewPending, endRemoteLiveActivity]);
+  }, [storeId, notifyNewPending, endRemoteLiveActivity, isAdminMaster]);
 
 
   useEffect(() => {
