@@ -289,23 +289,8 @@ export default function ChoiceGroupSection({
       );
     }
 
-    if (shouldUseChipLayout(group)) {
-      return (
-        <div className="flex flex-wrap gap-2">
-          {group.options.map((opt) => {
-            const sel = (selected.get(opt.id) || 0) > 0;
-            return (
-              <ModifierChipOption
-                key={opt.id}
-                title={tName(opt.name)}
-                selected={sel}
-                onClick={() => toggleSingle(opt.id, sel)}
-              />
-            );
-          })}
-        </div>
-      );
-    }
+    // Chip layout desativado: multi-select sem imagem cai no CheckboxRow abaixo
+    // para manter todos os cards com o mesmo formato (emoji à esquerda + indicador à direita).
 
     if (shouldUseRadioList(group) && !groupHasImages(group)) {
       return (
