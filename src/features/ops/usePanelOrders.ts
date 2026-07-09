@@ -125,7 +125,7 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const rows = (data as PanelOrder[]).filter(shouldShowOrderInRestaurantPanel);
+      const rows = (data as PanelOrder[]).filter((o) => shouldShowOrderInRestaurantPanel(o, { isAdminMaster }));
 
       if (initializedRef.current) {
         for (const o of rows) {
