@@ -272,7 +272,7 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
               visible &&
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
-              !shouldShowOrderInRestaurantPanel(old);
+              !shouldShowOrderInRestaurantPanel(old, { isAdminMaster });
 
             if (becameVisible && row.status === "pending") {
               if (!knownPendingRef.current.has(row.id)) {
