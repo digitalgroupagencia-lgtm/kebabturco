@@ -217,16 +217,19 @@ export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "da
   root.style.setProperty("--browser-chrome-hex", chromeHex);
   root.style.setProperty("--customer-safe-top-bg", chromeHex);
   root.style.setProperty("--customer-browser-top-fill-bg", chromeHex);
-  root.style.setProperty("--customer-viewport-bg", chromeHex);
   root.style.setProperty("--gradient-header", chromeHex);
-  root.style.setProperty("--customer-canvas-bg", chromeHex);
   root.style.setProperty("--browser-chrome-bg", chromeHex);
-  root.style.backgroundColor = chromeHex;
-  document.body.style.backgroundColor = chromeHex;
+  // Viewport/canvas seguem a cor da tela (background), não o vinho — o vinho
+  // fica apenas na safe-area do topo via html::before.
+  root.style.removeProperty("--customer-viewport-bg");
+  root.style.removeProperty("--customer-canvas-bg");
+  root.style.backgroundColor = "";
+  document.body.style.backgroundColor = "";
   root.style.colorScheme = isDark ? "dark" : "light";
 
   const boot = document.getElementById("boot-fallback");
   if (boot) boot.style.background = chromeHex;
+
 
   if (window.matchMedia("(display-mode: standalone)").matches) {
     root.classList.add("pwa-standalone");
