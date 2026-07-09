@@ -169,10 +169,10 @@
     background-color: hsl(var(--background));
   }
   html:not(.staff-app) {
-    background-color: var(--customer-viewport-bg, var(--customer-safe-top-bg, #3A0205));
+    background-color: hsl(var(--background));
   }
   html:not(.staff-app) body {
-    background-color: var(--customer-viewport-bg, var(--customer-safe-top-bg, #3A0205));
+    background-color: hsl(var(--background));
   }
   /* Cardápio cliente: sem scroll no body — só a lista de produtos rola */
   html:not(.staff-app) body,
@@ -182,7 +182,9 @@
     max-height: 100dvh;
     overscroll-behavior: none;
   }
-  /* iPhone: faixa superior vinho; inferior segue o tema (barra de menu / rodapé). */
+  /* iPhone: faixa superior vinho fica só na safe-area do topo (notch).
+     O resto do ecrã segue a cor da tela (background), e a barra inferior
+     desenha o seu próprio fundo até ao fim via padding-bottom safe-area. */
   html:not(.staff-app)::before {
     content: "";
     position: fixed;
@@ -209,8 +211,9 @@
   html:not(.staff-app) #root {
     overflow-x: clip;
     overflow-y: hidden;
-    background-color: var(--customer-viewport-bg, var(--customer-safe-top-bg, #3A0205));
+    background-color: hsl(var(--background));
   }
+
   html.staff-app #root {
     overflow-x: clip;
     overflow-y: auto;
