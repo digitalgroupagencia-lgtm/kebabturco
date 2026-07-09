@@ -8,11 +8,9 @@ import InfoChoiceRow from "@/customer/customization/InfoChoiceRow";
 import ModifierGroupHeader from "@/customer/customization/ModifierGroupHeader";
 import ModifierRadioRow from "@/customer/customization/ModifierRadioRow";
 import ModifierCheckboxRow from "@/customer/customization/ModifierCheckboxRow";
-import ModifierChipOption from "@/customer/customization/ModifierChipOption";
 import { isInformationalModifierGroup } from "@/lib/modifiers/informationalGroups";
 import {
   groupHasImages,
-  shouldUseChipLayout,
   shouldUseImageCarousel,
   shouldUseRadioList,
 } from "@/lib/modifiers/groupRenderStyle";
@@ -31,9 +29,6 @@ type Props = {
   stepMode?: boolean;
   menuProducts?: MenuProduct[];
 };
-
-const INCLUDED = "border-emerald-500/45 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100";
-const REMOVED = "border-primary/70 bg-primary/10";
 
 function updateOption(
   state: SelectionState,
