@@ -348,6 +348,7 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                emoji={emojiForOption(tName(opt.name))}
                 selected={sel}
                 onClick={() => toggleSingle(opt.id, sel)}
               />
