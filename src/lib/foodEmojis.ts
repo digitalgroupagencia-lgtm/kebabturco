@@ -88,3 +88,33 @@ export function emojiFor(name: string, fallback: string = "🥄"): string {
   for (const [k, v] of NORMALIZED) if (n.includes(k)) return v;
   return fallback;
 }
+
+const NEGATION_PATTERNS = /^(sin|sem|no|without|sans)\s+/i;
+
+/**
+ * Igual a `emojiFor`, mas quando o nome começa com "sin/sem/no/without/sans"
+ * devolve o emoji-base acompanhado de 🚫 para reforçar visualmente a remoção.
+ * Também mapeia palavras extra usadas em opções (torrinha, hielo, gelo, etc).
+ */
+export function emojiForOption(name: string, fallback: string = "🥄"): string {
+  if (!name) return fallback;
+  const raw = name.trim();
+  const negated = NEGATION_PATTERNS.test(raw);
+  const cleaned = raw
+    .replace(NEGATION_PATTERNS, "")
+    .replace(/^(añadir|adicionar|add|ajouter|extra|con|com|with|avec)\s+/i, "")
+    .trim();
+
+  const extraMap: Record<string, string> = {
+    torrinha: "🍞", torrada: "🍞", toast: "🍞", tostada: "🍞",
+    hielo: "🧊", ice: "🧊", gelo: "🧊", glace: "🧊", glaçon: "🧊",
+    tarrina: "🥫",
+  };
+  const lc = cleaned.toLowerCase();
+  let base = fallback;
+  for (const [k, v] of Object.entries(extraMap)) {
+    if (lc.includes(k)) { base = v; break; }
+  }
+  if (base === fallback) base = emojiFor(cleaned || raw, fallback);
+  return negated ? `${base}🚫` : base;
+}
