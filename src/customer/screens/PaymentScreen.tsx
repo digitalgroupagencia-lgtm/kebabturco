@@ -305,6 +305,16 @@ const PaymentScreen = () => {
 
   const applyCoupon = async () => {
     if (!couponCode.trim() || !storeId || isTableOrder) return;
+    // Cupom "TESTE" / "TEST": marca o pedido como demo do admin master.
+    // Não aplica desconto e não valida contra a BD — apenas persiste o coupon_code
+    // para que o painel filtre a visibilidade por role.
+    if (isAdminTestCoupon) {
+      setCouponDiscount(0);
+      setCouponId(null);
+      setIsDemoVisitCoupon(false);
+      setCouponError(null);
+      return;
+    }
     try {
       const cartPayload = items.map((it) => ({
         product_id: it.productId,
