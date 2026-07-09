@@ -63,7 +63,8 @@ const POLL_BACKUP_MS = 8_000;
 const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
 
-export function usePanelOrders(storeId: string | undefined) {
+export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaster?: boolean } = {}) {
+  const isAdminMaster = !!opts.isAdminMaster;
   const { lang } = useStaffT();
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
