@@ -7,6 +7,7 @@ type Props = {
   quantity?: number;
   maxQty?: number;
   showStepper?: boolean;
+  emoji?: string | null;
   onClick: () => void;
   onIncrement?: () => void;
   onDecrement?: () => void;
@@ -19,6 +20,7 @@ export default function ModifierCheckboxRow({
   quantity = 0,
   maxQty = 5,
   showStepper = false,
+  emoji,
   onClick,
   onIncrement,
   onDecrement,
@@ -30,16 +32,26 @@ export default function ModifierCheckboxRow({
       }`}
     >
       <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left active:scale-[0.99]">
-        <span
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${
-            selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
-          }`}
-        >
-          {selected ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
-        </span>
+        {emoji ? (
+          <span
+            aria-hidden="true"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-2xl leading-none"
+          >
+            {emoji}
+          </span>
+        ) : null}
         <span className="min-w-0 flex-1 text-[15px] font-bold leading-tight text-foreground">{title}</span>
         {priceLabel && !showStepper && (
           <span className="shrink-0 text-sm font-black tabular-nums text-price">{priceLabel}</span>
+        )}
+        {!showStepper && (
+          <span
+            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${
+              selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
+            }`}
+          >
+            {selected ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+          </span>
         )}
       </button>
 
