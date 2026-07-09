@@ -198,17 +198,11 @@ export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "da
   const chromeHex = chromeHexFromHeader(base);
   const isDark = theme === "dark";
 
-  const themeMedia = [
-    undefined,
-    "(prefers-color-scheme: light)",
-    "(prefers-color-scheme: dark)",
-    "(display-mode: standalone)",
-    "(display-mode: browser)",
-  ] as const;
+  // NOTA: A cor da barra do Safari (theme-color) é controlada por
+  // `setSafariTopBarColor` a partir do ecrã actual do cliente
+  // (branco na entrada, cor primária a partir do cardápio).
+  // Não escrevemos theme-color aqui para não forçar vinho na entrada.
 
-  for (const media of themeMedia) {
-    setOrCreateMeta("theme-color", chromeHex, media ? { media } : undefined);
-  }
 
   setOrCreateMeta("apple-mobile-web-app-capable", "yes");
   setOrCreateMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
