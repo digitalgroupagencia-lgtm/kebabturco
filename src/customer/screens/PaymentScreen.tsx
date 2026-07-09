@@ -969,7 +969,7 @@ const PaymentScreen = () => {
     }
   };
 
-  const showCardOrderConfirmation = async (result: { order_id: string; order_number: string }) => {
+  const showCardOrderConfirmation = async (result: { order_id: string; order_number: string; customer_order_token?: string | null }) => {
     setPaymentMethod(stripeCheckoutMethod);
     setOrderNumber(result.order_number);
     setActiveOrderId(result.order_id);
