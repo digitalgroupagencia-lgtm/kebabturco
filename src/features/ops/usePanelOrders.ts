@@ -288,7 +288,8 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
               orderReadyForKitchen(row) &&
-              !row.kitchen_printed_at
+              !row.kitchen_printed_at &&
+              !isAdminTestOrder(row)
             ) {
               void (async () => {
                 const items = itemsByOrder[row.id] || (await fetchItemsForOrders([row.id]))[row.id] || [];
