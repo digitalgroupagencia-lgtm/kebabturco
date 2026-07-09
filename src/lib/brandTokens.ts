@@ -181,6 +181,26 @@ function setOrCreateMeta(name: string, content: string, extra?: Record<string, s
   el.content = content;
 }
 
+/**
+ * Actualiza SÓ a cor da barra superior do Safari (meta theme-color).
+ * Usar `#ffffff` na entrada (splash/idioma/tipo de pedido) e cor primária
+ * a partir do cardápio.
+ */
+export function setSafariTopBarColor(hex: string): void {
+  if (typeof document === "undefined") return;
+  const themeMedia = [
+    undefined,
+    "(prefers-color-scheme: light)",
+    "(prefers-color-scheme: dark)",
+    "(display-mode: standalone)",
+    "(display-mode: browser)",
+  ] as const;
+  for (const media of themeMedia) {
+    setOrCreateMeta("theme-color", hex, media ? { media } : undefined);
+  }
+}
+
+
 /** Actualiza theme-color, safe-area e meta iOS, só no site do cliente (não admin/painel). */
 export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "dark" = "light"): void {
   if (typeof document === "undefined") return;
@@ -198,17 +218,11 @@ export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "da
   const chromeHex = chromeHexFromHeader(base);
   const isDark = theme === "dark";
 
-  const themeMedia = [
-    undefined,
-    "(prefers-color-scheme: light)",
-    "(prefers-color-scheme: dark)",
-    "(display-mode: standalone)",
-    "(display-mode: browser)",
-  ] as const;
+  // NOTA: A cor da barra do Safari (theme-color) é controlada por
+  // `setSafariTopBarColor` a partir do ecrã actual do cliente
+  // (branco na entrada, cor primária a partir do cardápio).
+  // Não escrevemos theme-color aqui para não forçar vinho na entrada.
 
-  for (const media of themeMedia) {
-    setOrCreateMeta("theme-color", chromeHex, media ? { media } : undefined);
-  }
 
   setOrCreateMeta("apple-mobile-web-app-capable", "yes");
   setOrCreateMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
