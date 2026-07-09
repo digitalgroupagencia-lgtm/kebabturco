@@ -17,6 +17,7 @@ import {
   shouldUseRadioList,
 } from "@/lib/modifiers/groupRenderStyle";
 import { resolveModifierOptionImage } from "@/lib/modifiers/optionImageResolver";
+import { emojiForOption } from "@/lib/foodEmojis";
 import type { MenuProduct } from "@/hooks/useMenuData";
 
 type Props = {
