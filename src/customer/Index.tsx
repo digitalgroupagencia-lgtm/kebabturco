@@ -183,6 +183,8 @@ const ScreenRouter = () => {
 const CustomerShell = () => (
     <div className="customer-shell relative mx-auto flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden overscroll-none bg-background">
       <CustomerBootDismiss />
+      <SafariTopBarSync />
+
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <ScreenRouter />
       </div>
