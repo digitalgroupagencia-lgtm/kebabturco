@@ -253,7 +253,7 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
           async (payload) => {
             const row = payload.new as PanelOrder;
             const old = payload.old as PanelOrder;
-            const visible = shouldShowOrderInRestaurantPanel(row);
+            const visible = shouldShowOrderInRestaurantPanel(row, { isAdminMaster });
 
             setOrders((prev) => {
               const exists = prev.some((o) => o.id === row.id);
