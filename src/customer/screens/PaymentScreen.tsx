@@ -248,6 +248,7 @@ const PaymentScreen = () => {
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [isDemoVisitCoupon, setIsDemoVisitCoupon] = useState(false);
+  const isAdminTestCoupon = ["TESTE", "TEST"].includes(couponCode.trim().toUpperCase());
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [stripeCheckoutMethod, setStripeCheckoutMethod] = useState<"card" | "bizum">("card");
   const [stripePaymentLocked, setStripePaymentLocked] = useState(false);
