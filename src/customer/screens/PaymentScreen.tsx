@@ -248,6 +248,7 @@ const PaymentScreen = () => {
   const [couponId, setCouponId] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [isDemoVisitCoupon, setIsDemoVisitCoupon] = useState(false);
+  const isAdminTestCoupon = ["TESTE", "TEST"].includes(couponCode.trim().toUpperCase());
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [stripeCheckoutMethod, setStripeCheckoutMethod] = useState<"card" | "bizum">("card");
   const [stripePaymentLocked, setStripePaymentLocked] = useState(false);
@@ -304,6 +305,16 @@ const PaymentScreen = () => {
 
   const applyCoupon = async () => {
     if (!couponCode.trim() || !storeId || isTableOrder) return;
+    // Cupom "TESTE" / "TEST": marca o pedido como demo do admin master.
+    // Não aplica desconto e não valida contra a BD — apenas persiste o coupon_code
+    // para que o painel filtre a visibilidade por role.
+    if (isAdminTestCoupon) {
+      setCouponDiscount(0);
+      setCouponId(null);
+      setIsDemoVisitCoupon(false);
+      setCouponError(null);
+      return;
+    }
     try {
       const cartPayload = items.map((it) => ({
         product_id: it.productId,
@@ -672,7 +683,7 @@ const PaymentScreen = () => {
       deliveryFee,
       deliveryZoneId: deliveryQuote.zone?.id || null,
       deliveryZoneName: deliveryQuote.zone?.name || null,
-      couponCode: couponId || isDemoVisitCoupon ? couponCode.trim() : null,
+      couponCode: couponId || isDemoVisitCoupon || isAdminTestCoupon ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
       onlineServiceFeeCents: fin?.onlineServiceFeeCents,
@@ -1136,7 +1147,7 @@ const PaymentScreen = () => {
       deliveryFee,
       deliveryZoneId: deliveryQuote.zone?.id || null,
       deliveryZoneName: deliveryQuote.zone?.name || null,
-      couponCode: couponId || isDemoVisitCoupon ? couponCode.trim() : null,
+      couponCode: couponId || isDemoVisitCoupon || isAdminTestCoupon ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
       onlineServiceFeeCents: fin.onlineServiceFeeCents,

@@ -63,6 +63,7 @@ type Props = {
 const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false }: Props) => {
   const { user } = useAuth();
   const { roleData } = useUserRole(user?.id);
+  const isAdminMaster = roleData?.role === "admin_master";
   const { t, lang } = useStaffT();
   const { requestStaffPin, StaffPinDialog } = useStaffPinConfirm();
   const {
@@ -76,7 +77,7 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
     assignDriver,
     reprintOrder,
     refresh,
-  } = usePanelOrders(storeId);
+  } = usePanelOrders(storeId, { isAdminMaster });
   const { summary: printSummary, loading: printLoading, refresh: refreshPrint, retryFailed, clearJobs } = usePanelPrintStatus(storeId);
   const [mobileTab, setMobileTab] = useState<OrderStatus>("pending");
   const [viewMode, setViewMode] = useState<OpsViewMode>("all");
@@ -256,9 +257,9 @@ const PanelOrdersBoard = ({ storeId, mode = "live", hideInlineAlertsBar = false 
   const visibleOrders = useMemo(
     () =>
       (hideTests ? orders.filter((o) => !(o as unknown as { is_test?: boolean }).is_test) : orders).filter(
-        shouldShowOrderInRestaurantPanel,
+        (o) => shouldShowOrderInRestaurantPanel(o, { isAdminMaster }),
       ),
-    [orders, hideTests],
+    [orders, hideTests, isAdminMaster],
   );
   const filteredOrders = useMemo(() => filterOrdersByMode(visibleOrders, viewMode), [visibleOrders, viewMode]);
   const visibleColumns = BASE_COLUMNS;

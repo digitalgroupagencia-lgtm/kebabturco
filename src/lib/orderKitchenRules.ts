@@ -18,6 +18,16 @@ export function isDemoVisitOrder(order: KitchenOrderLike): boolean {
   return String(order.coupon_code ?? "").trim().toUpperCase() === "DEMO-IMPRESSAO";
 }
 
+/**
+ * Pedido "TESTE" do admin master: usado em demonstrações de push/live activity.
+ * Fica invisível para o staff do restaurante, mas visível para admin master no
+ * painel ao vivo, para poder avançar os estados e disparar as notificações.
+ */
+export function isAdminTestOrder(order: KitchenOrderLike): boolean {
+  const code = String(order.coupon_code ?? "").trim().toUpperCase();
+  return code === "TESTE" || code === "TEST";
+}
+
 /** Cliente abriu cartão/Bizum na app mas o Stripe ainda não confirmou o pagamento. */
 export function isAwaitingOnlinePaymentConfirmation(order: KitchenOrderLike): boolean {
   if (order.payment_status === "paid") return false;
@@ -39,8 +49,18 @@ export function isConfirmedPaidOrder(order: { payment_status?: string | null }):
   return order.payment_status === "paid";
 }
 
-export function shouldShowOrderInRestaurantPanel(order: KitchenOrderLike): boolean {
+export type PanelVisibilityOptions = {
+  /** Quando true, mostra também pedidos de demonstração com cupom TESTE. */
+  isAdminMaster?: boolean;
+};
+
+export function shouldShowOrderInRestaurantPanel(
+  order: KitchenOrderLike,
+  opts: PanelVisibilityOptions = {},
+): boolean {
   if (isDemoVisitOrder(order)) return false;
+  // Pedidos com cupom "TESTE" só aparecem para admin master.
+  if (isAdminTestOrder(order) && !opts.isAdminMaster) return false;
   if (order.status === "cancelled") return true;
   if (order.payment_status === "paid") return true;
   if (order.order_type === "dine_in") return true;
