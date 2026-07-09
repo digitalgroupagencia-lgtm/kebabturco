@@ -1,4 +1,3 @@
-import { Minus, Plus } from "lucide-react";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import { useLanguage } from "@/contexts/LanguageContext";
