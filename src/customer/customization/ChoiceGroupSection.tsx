@@ -240,6 +240,7 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={priceLabel}
+                emoji={emojiForOption(tName(opt.name))}
                 selected={sel}
                 onClick={() => onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex))}
               />
