@@ -106,7 +106,7 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
       if (!sound && !isPanelAlertsEnabled()) {
         toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
       }
-      if (withPrint) {
+      if (withPrint && !isAdminTestOrder(row)) {
         void tryPrintPanelOrder(storeId, row, items);
       }
     },
