@@ -217,6 +217,7 @@ export default function ChoiceGroupSection({
                   key={opt.id}
                   title={tName(opt.name)}
                   priceLabel={priceLabel}
+                  emoji={emojiForOption(tName(opt.name))}
                   selected={sel}
                   quantity={qty}
                   maxQty={max}
