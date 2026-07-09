@@ -215,14 +215,18 @@ export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "da
   setOrCreateMeta("mobile-web-app-capable", "yes");
 
   root.style.setProperty("--browser-chrome-hex", chromeHex);
+  root.style.setProperty("--customer-safe-top-bg", chromeHex);
+  root.style.setProperty("--customer-browser-top-fill-bg", chromeHex);
+  root.style.setProperty("--customer-viewport-bg", chromeHex);
   root.style.setProperty("--gradient-header", chromeHex);
-  root.style.setProperty(
-    "--customer-canvas-bg",
-    isDark ? chromeHex : "hsl(var(--background))",
-  );
-  root.style.setProperty("--browser-chrome-bg", isDark ? `hsl(${palette.wineDark})` : "hsl(var(--background))");
-  root.style.backgroundColor = isDark ? chromeHex : "";
+  root.style.setProperty("--customer-canvas-bg", chromeHex);
+  root.style.setProperty("--browser-chrome-bg", chromeHex);
+  root.style.backgroundColor = chromeHex;
+  document.body.style.backgroundColor = chromeHex;
   root.style.colorScheme = isDark ? "dark" : "light";
+
+  const boot = document.getElementById("boot-fallback");
+  if (boot) boot.style.background = chromeHex;
 
   if (window.matchMedia("(display-mode: standalone)").matches) {
     root.classList.add("pwa-standalone");
@@ -239,7 +243,12 @@ export function applyStaffAppChrome(): void {
   root.classList.remove("pwa-standalone");
   root.style.setProperty("--browser-chrome-bg", "hsl(var(--background))");
   root.style.removeProperty("--browser-chrome-hex");
+  root.style.removeProperty("--customer-safe-top-bg");
+  root.style.removeProperty("--customer-browser-top-fill-bg");
+  root.style.removeProperty("--customer-viewport-bg");
+  root.style.removeProperty("--customer-canvas-bg");
   root.style.backgroundColor = "";
+  document.body.style.backgroundColor = "";
   root.style.colorScheme = "light dark";
 
   setOrCreateMeta("theme-color", "#ffffff");
