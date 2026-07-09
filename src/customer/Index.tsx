@@ -23,6 +23,35 @@ import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import { dismissBootShell } from "@/lib/bootShell";
+import { setSafariTopBarColor, chromeHexFromHeader, BRAND_WINE_HEX } from "@/lib/brandTokens";
+
+/**
+ * Barra superior do Safari:
+ * - branca na entrada (splash / idioma / loja / tipo de pedido)
+ * - cor primária a partir do cardápio (home) em diante
+ */
+const SafariTopBarSync = () => {
+  const { screen } = useOrder();
+  const { settings } = useBranding();
+  useEffect(() => {
+    const isEntry =
+      screen === "splash" ||
+      screen === "language" ||
+      screen === "storeSelect" ||
+      screen === "orderType";
+    if (isEntry) {
+      setSafariTopBarColor("#ffffff");
+    } else {
+      const header =
+        (settings as { header_color?: string } | null)?.header_color ||
+        settings?.primary_color ||
+        BRAND_WINE_HEX;
+      setSafariTopBarColor(chromeHexFromHeader(header));
+    }
+  }, [screen, settings]);
+  return null;
+};
+
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
