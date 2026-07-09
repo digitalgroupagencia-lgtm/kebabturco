@@ -137,7 +137,7 @@ export default function ChoiceGroupSection({
   const renderOptions = () => {
     if (isRemoval) {
       return (
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           {group.options.map((opt) => {
             const removed = (selected.get(opt.id) || 0) > 0;
             const label = tName(opt.name);
@@ -146,12 +146,25 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 type="button"
                 onClick={() => onChange(updateOption(state, group, opt.id, removed ? 0 : 1, unitIndex))}
-                className={`rounded-full border px-4 py-2.5 text-left transition-all active:scale-[0.97] ${
-                  removed ? REMOVED : INCLUDED
+                className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all active:scale-[0.99] ${
+                  removed ? "border-primary/70 bg-primary/[0.06]" : "border-emerald-500/40 bg-emerald-500/[0.06]"
                 }`}
               >
-                <span className={`block text-sm font-bold leading-tight ${removed ? "line-through text-primary" : ""}`}>
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-2xl leading-none"
+                >
+                  {emojiForOption(label)}
+                </span>
+                <span className={`flex-1 text-[15px] font-bold leading-tight ${removed ? "text-primary line-through" : "text-foreground"}`}>
                   {label}
+                </span>
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 text-[10px] font-black ${
+                    removed ? "border-primary bg-primary text-primary-foreground" : "border-emerald-500/60 bg-emerald-500/20 text-emerald-700"
+                  }`}
+                >
+                  {removed ? "✕" : "✓"}
                 </span>
               </button>
             );
