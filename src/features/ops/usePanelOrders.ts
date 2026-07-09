@@ -224,7 +224,7 @@ export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaste
             const row = payload.new as PanelOrder;
             if (!isToday(row.created_at)) return;
             if (updatingRef.current.has(row.id)) return;
-            if (!shouldShowOrderInRestaurantPanel(row)) return;
+            if (!shouldShowOrderInRestaurantPanel(row, { isAdminMaster })) return;
 
             setOrders((prev) => {
               if (prev.some((o) => o.id === row.id)) return prev;
