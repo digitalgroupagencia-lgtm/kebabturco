@@ -12,6 +12,7 @@ import {
 } from "@/lib/panelAlerts";
 import {
   blocksOperationalProgressUntilPaid,
+  isAdminTestOrder,
   isAwaitingCounterPaymentConfirmation,
   orderReadyForKitchen,
   shouldShowOrderInRestaurantPanel,
