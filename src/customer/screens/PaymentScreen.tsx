@@ -683,7 +683,7 @@ const PaymentScreen = () => {
       deliveryFee,
       deliveryZoneId: deliveryQuote.zone?.id || null,
       deliveryZoneName: deliveryQuote.zone?.name || null,
-      couponCode: couponId || isDemoVisitCoupon ? couponCode.trim() : null,
+      couponCode: couponId || isDemoVisitCoupon || isAdminTestCoupon ? couponCode.trim() : null,
       discountAmount: couponDiscount,
       couponId,
       onlineServiceFeeCents: fin?.onlineServiceFeeCents,
