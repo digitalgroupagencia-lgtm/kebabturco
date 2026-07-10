@@ -14,8 +14,9 @@ const PHONE_BEZEL =
 export default function MobileFrame({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-[var(--browser-chrome-hex,#3A0205)] ${DESKTOP_FRAME}`}
+      className={`flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-background ${DESKTOP_FRAME}`}
     >
+
       <div className={`relative flex h-full w-full min-h-0 flex-col overflow-hidden ${PHONE_BEZEL}`}>
         <div
           className="pointer-events-none absolute top-3 left-1/2 z-20 hidden h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-black [@media(hover:hover)_and_(pointer:fine)]:block"
@@ -28,7 +29,7 @@ export default function MobileFrame({ children }: { children: ReactNode }) {
             className="pointer-events-none fixed top-0 left-0 right-0 z-[60] [@media(hover:hover)_and_(pointer:fine)]:hidden"
             style={{
               height: "max(env(safe-area-inset-top), 0px)",
-              background: "var(--browser-chrome-hex, #3A0205)",
+              background: "var(--customer-safe-top-bg, var(--browser-chrome-hex, #3A0205))",
               boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.08)",
             }}
           />

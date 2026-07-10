@@ -195,6 +195,22 @@ export function applyCustomerChromeMode(mode: CustomerChromeMode): void {
   document.documentElement.dataset.customerChrome = mode;
 }
 
+/** Actualiza SÓ a cor da barra superior do Safari (meta theme-color). */
+export function setSafariTopBarColor(hex: string): void {
+  if (typeof document === "undefined") return;
+  const themeMedia = [
+    undefined,
+    "(prefers-color-scheme: light)",
+    "(prefers-color-scheme: dark)",
+    "(display-mode: standalone)",
+    "(display-mode: browser)",
+  ] as const;
+  for (const media of themeMedia) {
+    setOrCreateMeta("theme-color", hex, media ? { media } : undefined);
+  }
+}
+
+
 /** Actualiza theme-color, safe-area e meta iOS, só no site do cliente (não admin/painel). */
 export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "dark" = "light"): void {
   if (typeof document === "undefined") return;
@@ -211,29 +227,26 @@ export function applyBrowserChromeColor(headerHex?: string, theme: "light" | "da
   const chromeHex = chromeHexFromHeader(base);
   const isDark = theme === "dark";
 
-  const themeMedia = [
-    undefined,
-    "(prefers-color-scheme: light)",
-    "(prefers-color-scheme: dark)",
-    "(display-mode: standalone)",
-    "(display-mode: browser)",
-  ] as const;
-
-  for (const media of themeMedia) {
-    setOrCreateMeta("theme-color", chromeHex, media ? { media } : undefined);
-  }
+  setSafariTopBarColor(chromeHex);
 
   setOrCreateMeta("apple-mobile-web-app-capable", "yes");
   setOrCreateMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
   setOrCreateMeta("mobile-web-app-capable", "yes");
 
   root.style.setProperty("--browser-chrome-hex", chromeHex);
+  root.style.setProperty("--customer-safe-top-bg", chromeHex);
+  root.style.setProperty("--customer-browser-top-fill-bg", chromeHex);
   root.style.setProperty("--gradient-header", chromeHex);
   // Vinho por trás da barra do Safari / notch em todo o fluxo cliente.
   root.style.setProperty("--customer-canvas-bg", chromeHex);
   root.style.setProperty("--browser-chrome-bg", chromeHex);
   root.style.backgroundColor = chromeHex;
+  document.body.style.backgroundColor = chromeHex;
   root.style.colorScheme = isDark ? "dark" : "light";
+
+  const boot = document.getElementById("boot-fallback");
+  if (boot) boot.style.background = chromeHex;
+
 
   if (window.matchMedia("(display-mode: standalone)").matches) {
     root.classList.add("pwa-standalone");
@@ -250,7 +263,12 @@ export function applyStaffAppChrome(): void {
   root.classList.remove("pwa-standalone");
   root.style.setProperty("--browser-chrome-bg", "hsl(var(--background))");
   root.style.removeProperty("--browser-chrome-hex");
+  root.style.removeProperty("--customer-safe-top-bg");
+  root.style.removeProperty("--customer-browser-top-fill-bg");
+  root.style.removeProperty("--customer-viewport-bg");
+  root.style.removeProperty("--customer-canvas-bg");
   root.style.backgroundColor = "";
+  document.body.style.backgroundColor = "";
   root.style.colorScheme = "light dark";
 
   setOrCreateMeta("theme-color", "#ffffff");

@@ -1,4 +1,3 @@
-import { Minus, Plus } from "lucide-react";
 import type { ModifierGroup, SelectionState } from "@/lib/modifiers/types";
 import { getGroupSelectionCount, groupKey } from "@/lib/modifiers/validation";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,15 +7,14 @@ import InfoChoiceRow from "@/customer/customization/InfoChoiceRow";
 import ModifierGroupHeader from "@/customer/customization/ModifierGroupHeader";
 import ModifierRadioRow from "@/customer/customization/ModifierRadioRow";
 import ModifierCheckboxRow from "@/customer/customization/ModifierCheckboxRow";
-import ModifierChipOption from "@/customer/customization/ModifierChipOption";
 import { isInformationalModifierGroup } from "@/lib/modifiers/informationalGroups";
 import {
   groupHasImages,
-  shouldUseChipLayout,
   shouldUseImageCarousel,
   shouldUseRadioList,
 } from "@/lib/modifiers/groupRenderStyle";
 import { resolveModifierOptionImage } from "@/lib/modifiers/optionImageResolver";
+import { emojiForOption } from "@/lib/foodEmojis";
 import type { MenuProduct } from "@/hooks/useMenuData";
 
 type Props = {
@@ -30,9 +28,6 @@ type Props = {
   stepMode?: boolean;
   menuProducts?: MenuProduct[];
 };
-
-const INCLUDED = "border-emerald-500/45 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100";
-const REMOVED = "border-primary/70 bg-primary/10";
 
 function updateOption(
   state: SelectionState,
@@ -136,7 +131,7 @@ export default function ChoiceGroupSection({
   const renderOptions = () => {
     if (isRemoval) {
       return (
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           {group.options.map((opt) => {
             const removed = (selected.get(opt.id) || 0) > 0;
             const label = tName(opt.name);
@@ -145,12 +140,25 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 type="button"
                 onClick={() => onChange(updateOption(state, group, opt.id, removed ? 0 : 1, unitIndex))}
-                className={`rounded-full border px-4 py-2.5 text-left transition-all active:scale-[0.97] ${
-                  removed ? REMOVED : INCLUDED
+                className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all active:scale-[0.99] ${
+                  removed ? "border-primary/70 bg-primary/[0.06]" : "border-emerald-500/40 bg-emerald-500/[0.06]"
                 }`}
               >
-                <span className={`block text-sm font-bold leading-tight ${removed ? "line-through text-primary" : ""}`}>
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-2xl leading-none"
+                >
+                  {emojiForOption(label)}
+                </span>
+                <span className={`flex-1 text-[15px] font-bold leading-tight ${removed ? "text-primary line-through" : "text-foreground"}`}>
                   {label}
+                </span>
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 text-[10px] font-black ${
+                    removed ? "border-primary bg-primary text-primary-foreground" : "border-emerald-500/60 bg-emerald-500/20 text-emerald-700"
+                  }`}
+                >
+                  {removed ? "✕" : "✓"}
                 </span>
               </button>
             );
@@ -203,6 +211,7 @@ export default function ChoiceGroupSection({
                   key={opt.id}
                   title={tName(opt.name)}
                   priceLabel={priceLabel}
+                  emoji={emojiForOption(tName(opt.name))}
                   selected={sel}
                   quantity={qty}
                   maxQty={max}
@@ -225,6 +234,7 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={priceLabel}
+                emoji={emojiForOption(tName(opt.name))}
                 selected={sel}
                 onClick={() => onChange(updateOption(state, group, opt.id, sel ? 0 : 1, unitIndex))}
               />
@@ -275,23 +285,8 @@ export default function ChoiceGroupSection({
       );
     }
 
-    if (shouldUseChipLayout(group)) {
-      return (
-        <div className="flex flex-wrap gap-2">
-          {group.options.map((opt) => {
-            const sel = (selected.get(opt.id) || 0) > 0;
-            return (
-              <ModifierChipOption
-                key={opt.id}
-                title={tName(opt.name)}
-                selected={sel}
-                onClick={() => toggleSingle(opt.id, sel)}
-              />
-            );
-          })}
-        </div>
-      );
-    }
+    // Chip layout desativado: multi-select sem imagem cai no CheckboxRow abaixo
+    // para manter todos os cards com o mesmo formato (emoji à esquerda + indicador à direita).
 
     if (shouldUseRadioList(group) && !groupHasImages(group)) {
       return (
@@ -303,6 +298,7 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                emoji={emojiForOption(tName(opt.name))}
                 selected={sel}
                 onClick={() => toggleSingle(opt.id, sel)}
               />
@@ -322,6 +318,7 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                emoji={emojiForOption(tName(opt.name))}
                 selected={sel}
                 onClick={() => toggleSingle(opt.id, sel)}
               />
@@ -345,6 +342,7 @@ export default function ChoiceGroupSection({
                 key={opt.id}
                 title={tName(opt.name)}
                 priceLabel={opt.priceDelta > 0 ? `+${opt.priceDelta.toFixed(2)}€` : null}
+                emoji={emojiForOption(tName(opt.name))}
                 selected={sel}
                 onClick={() => toggleSingle(opt.id, sel)}
               />

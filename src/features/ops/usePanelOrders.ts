@@ -12,6 +12,7 @@ import {
 } from "@/lib/panelAlerts";
 import {
   blocksOperationalProgressUntilPaid,
+  isAdminTestOrder,
   isAwaitingCounterPaymentConfirmation,
   orderReadyForKitchen,
   shouldShowOrderInRestaurantPanel,
@@ -63,7 +64,8 @@ const POLL_BACKUP_MS = 8_000;
 const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
 
-export function usePanelOrders(storeId: string | undefined) {
+export function usePanelOrders(storeId: string | undefined, opts: { isAdminMaster?: boolean } = {}) {
+  const isAdminMaster = !!opts.isAdminMaster;
   const { lang } = useStaffT();
   const [orders, setOrders] = useState<PanelOrder[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
@@ -104,7 +106,7 @@ export function usePanelOrders(storeId: string | undefined) {
       if (!sound && !isPanelAlertsEnabled()) {
         toast.message("Toca em «Activar alertas» para ouvir novos pedidos", { duration: 4000 });
       }
-      if (withPrint) {
+      if (withPrint && !isAdminTestOrder(row)) {
         void tryPrintPanelOrder(storeId, row, items);
       }
     },
@@ -124,7 +126,7 @@ export function usePanelOrders(storeId: string | undefined) {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const rows = (data as PanelOrder[]).filter(shouldShowOrderInRestaurantPanel);
+      const rows = (data as PanelOrder[]).filter((o) => shouldShowOrderInRestaurantPanel(o, { isAdminMaster }));
 
       if (initializedRef.current) {
         for (const o of rows) {
@@ -173,7 +175,7 @@ export function usePanelOrders(storeId: string | undefined) {
       syncPendingOrderAlertLoop(stillPending.size > 0);
     }
     setLoading(false);
-  }, [storeId, notifyNewPending, endRemoteLiveActivity]);
+  }, [storeId, notifyNewPending, endRemoteLiveActivity, isAdminMaster]);
 
 
   useEffect(() => {
@@ -223,7 +225,7 @@ export function usePanelOrders(storeId: string | undefined) {
             const row = payload.new as PanelOrder;
             if (!isToday(row.created_at)) return;
             if (updatingRef.current.has(row.id)) return;
-            if (!shouldShowOrderInRestaurantPanel(row)) return;
+            if (!shouldShowOrderInRestaurantPanel(row, { isAdminMaster })) return;
 
             setOrders((prev) => {
               if (prev.some((o) => o.id === row.id)) return prev;
@@ -252,7 +254,7 @@ export function usePanelOrders(storeId: string | undefined) {
           async (payload) => {
             const row = payload.new as PanelOrder;
             const old = payload.old as PanelOrder;
-            const visible = shouldShowOrderInRestaurantPanel(row);
+            const visible = shouldShowOrderInRestaurantPanel(row, { isAdminMaster });
 
             setOrders((prev) => {
               const exists = prev.some((o) => o.id === row.id);
@@ -271,7 +273,7 @@ export function usePanelOrders(storeId: string | undefined) {
               visible &&
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
-              !shouldShowOrderInRestaurantPanel(old);
+              !shouldShowOrderInRestaurantPanel(old, { isAdminMaster });
 
             if (becameVisible && row.status === "pending") {
               if (!knownPendingRef.current.has(row.id)) {
@@ -286,7 +288,8 @@ export function usePanelOrders(storeId: string | undefined) {
               old?.payment_status !== "paid" &&
               row.payment_status === "paid" &&
               orderReadyForKitchen(row) &&
-              !row.kitchen_printed_at
+              !row.kitchen_printed_at &&
+              !isAdminTestOrder(row)
             ) {
               void (async () => {
                 const items = itemsByOrder[row.id] || (await fetchItemsForOrders([row.id]))[row.id] || [];

@@ -23,6 +23,7 @@ import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
 import CustomerChromeEffect from "@/customer/components/CustomerChromeEffect";
+import { dismissBootShell } from "@/lib/bootShell";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
@@ -163,6 +164,7 @@ const CustomerShell = () => {
     >
       <CustomerChromeEffect />
       <CustomerBootDismiss />
+
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <ScreenRouter />
       </div>
