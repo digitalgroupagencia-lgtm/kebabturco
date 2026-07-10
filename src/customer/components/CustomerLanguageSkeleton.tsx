@@ -6,18 +6,14 @@ type Props = {
 
 const CustomerLanguageSkeleton = ({ languageCount = 3 }: Props) => (
   <div
-    className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background"
-    style={{ paddingTop: "env(safe-area-inset-top)" }}
+    className="customer-theme-full relative flex h-full min-h-0 flex-col overflow-hidden"
+    style={{
+      paddingTop: "env(safe-area-inset-top)",
+      backgroundColor: "var(--browser-chrome-hex, #3A0205)",
+    }}
     aria-busy="true"
     aria-label="A carregar"
   >
-    <div
-      className="absolute top-0 left-0 right-0 pointer-events-none z-0"
-      style={{
-        height: "env(safe-area-inset-top)",
-        background: "var(--browser-chrome-hex, #3A0205)",
-      }}
-    />
     <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
       <Skeleton className="h-9 w-9 rounded-full" />
     </div>

@@ -22,7 +22,7 @@ import { useResolvedStore } from "@/hooks/useResolvedStore";
 import { usePreviewBootstrap } from "@/hooks/usePreviewBootstrap";
 import CustomerPushPromptHost from "@/customer/components/CustomerPushPromptHost";
 import { useBranding } from "@/contexts/BrandingContext";
-import { dismissBootShell } from "@/lib/bootShell";
+import CustomerChromeEffect from "@/customer/components/CustomerChromeEffect";
 
 const OrderTrackingScreen = lazy(() => import("@/customer/screens/OrderTrackingScreen"));
 const CustomerAccountScreen = lazy(() => import("@/customer/screens/CustomerAccountScreen"));
@@ -151,8 +151,17 @@ const ScreenRouter = () => {
   }
 };
 
-const CustomerShell = () => (
-    <div className="customer-shell relative mx-auto flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden overscroll-none bg-background">
+const CustomerShell = () => {
+  const { screen } = useOrder();
+  const fullTheme = screen === "language" || screen === "orderType";
+
+  return (
+    <div
+      className={`customer-shell relative mx-auto flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden overscroll-none ${
+        fullTheme ? "customer-theme-full" : "bg-background"
+      }`}
+    >
+      <CustomerChromeEffect />
       <CustomerBootDismiss />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <ScreenRouter />
@@ -165,7 +174,8 @@ const CustomerShell = () => (
         </div>
       </CustomerScreenErrorBoundary>
     </div>
-);
+  );
+};
 
 // Kiosk Self-Service App
 const Index = () => {

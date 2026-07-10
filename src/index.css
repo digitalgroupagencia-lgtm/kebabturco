@@ -175,6 +175,13 @@
     max-height: 100dvh;
     overscroll-behavior: none;
   }
+  /* Ecrãs de idioma / tipo de pedido: fundo 100% vinho do tema */
+  html:not(.staff-app)[data-customer-chrome="full"] body,
+  html:not(.staff-app)[data-customer-chrome="full"] #root,
+  html:not(.staff-app) .customer-theme-full {
+    background-color: var(--browser-chrome-hex, #3A0205);
+    color: hsl(var(--primary-foreground));
+  }
   /* iPhone: faixa superior vinho; inferior segue o tema (barra de menu / rodapé). */
   html:not(.staff-app)::before {
     content: "";

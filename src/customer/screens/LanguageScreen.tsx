@@ -80,18 +80,14 @@ const LanguageScreen = () => {
 
   return (
     <div
-      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="customer-theme-full relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        backgroundColor: "var(--browser-chrome-hex, #3A0205)",
+      }}
     >
-      <div
-        className="absolute top-0 left-0 right-0 pointer-events-none z-0"
-        style={{
-          height: "env(safe-area-inset-top)",
-          background: "var(--browser-chrome-hex, #3A0205)",
-        }}
-      />
       <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
-        <ThemeToggle />
+        <ThemeToggle variant="onColor" />
       </div>
 
       {/* Logo + títulos, tamanho original, sem flex-1 (evita espaço branco gigante) */}
@@ -108,7 +104,7 @@ const LanguageScreen = () => {
             <h1
               key={idx}
               className={`leading-tight font-black tracking-tight ${
-                idx === 0 ? "text-[24px] text-foreground" : "text-[16px] text-muted-foreground"
+                idx === 0 ? "text-[24px] text-primary-foreground" : "text-[16px] text-primary-foreground/75"
               }`}
             >
               {tt}
@@ -155,7 +151,7 @@ const LanguageScreen = () => {
 
       <div className={`${STOREFRONT_FOOTER_WRAP_CLASS} space-y-2`}>
         <InstallAppButton lang={primaryLang} />
-        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-bold pb-1">
+        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-primary-foreground/50 font-bold pb-1">
           {translateForLang("poweredBy", primaryLang)}
         </p>
       </div>

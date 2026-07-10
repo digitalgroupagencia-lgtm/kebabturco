@@ -56,7 +56,7 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
         />
       ) : (
         <option.Fallback
-          className={`text-foreground/70 drop-shadow-[0_8px_20px_rgba(0,0,0,0.12)] ${
+          className={`text-primary-foreground/80 drop-shadow-[0_8px_20px_rgba(0,0,0,0.12)] ${
             compact ? "w-[88px] h-[88px]" : "w-[88px] h-[88px] sm:w-[104px] sm:h-[104px]"
           }`}
           strokeWidth={1.6}
@@ -65,14 +65,14 @@ const OrderTypeCard = ({ option, compact, onSelect }: OrderTypeCardProps) => (
     </div>
     <div className="text-center w-full px-1">
       <span
-        className={`font-bold text-foreground block leading-tight tracking-tight ${
+        className={`font-bold text-primary-foreground block leading-tight tracking-tight ${
           compact ? "text-sm" : "text-xl sm:text-[22px]"
         }`}
       >
         {option.label}
       </span>
       <span
-        className={`text-muted-foreground mt-1 block leading-snug ${
+        className={`text-primary-foreground/75 mt-1 block leading-snug ${
           compact ? "text-[10px] line-clamp-2" : "text-sm"
         }`}
       >
@@ -192,18 +192,14 @@ const OrderTypeScreen = () => {
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background animate-fade-in"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="customer-theme-full relative flex h-full min-h-0 flex-col overflow-hidden animate-fade-in"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        backgroundColor: "var(--browser-chrome-hex, #3A0205)",
+      }}
     >
-      <div
-        className="absolute top-0 left-0 right-0 pointer-events-none z-0"
-        style={{
-          height: "env(safe-area-inset-top)",
-          background: "var(--browser-chrome-hex, #3A0205)",
-        }}
-      />
       <div className="absolute right-4 z-10" style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}>
-        <ThemeToggle />
+        <ThemeToggle variant="onColor" />
       </div>
 
       <div className="flex flex-col items-center px-6 pt-[4.25rem] md:pt-[4.75rem] shrink-0">
@@ -218,15 +214,15 @@ const OrderTypeScreen = () => {
 
         <div className="text-center flex flex-col gap-1 w-full mt-1">
           {(mesaLocked || mesaManual) && tableNumber && (
-            <div className="mb-3 inline-flex items-center gap-2.5 px-5 py-2 rounded-full mx-auto border border-border/30 bg-background/70 dark:bg-white/8 backdrop-blur-xl shadow-[0_4px_24px_-6px_rgba(0,0,0,0.12)] dark:border-white/12 dark:shadow-[0_4px_24px_-6px_rgba(0,0,0,0.35)]">
-              <UtensilsCrossed className="w-4 h-4 text-foreground/55" strokeWidth={2} />
-              <span className="text-sm font-semibold text-foreground/90 tracking-wide">
+            <div className="mb-3 inline-flex items-center gap-2.5 px-5 py-2 rounded-full mx-auto border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_4px_24px_-6px_rgba(0,0,0,0.25)]">
+              <UtensilsCrossed className="w-4 h-4 text-primary-foreground/80" strokeWidth={2} />
+              <span className="text-sm font-semibold text-primary-foreground tracking-wide">
                 {t("tableLabel")} {tableNumber}
               </span>
             </div>
           )}
-          <h1 className="text-[24px] leading-tight font-black text-foreground tracking-tight">{t("howOrder")}</h1>
-          <p className="text-[16px] text-muted-foreground">{t("pickOption")}</p>
+          <h1 className="text-[24px] leading-tight font-black text-primary-foreground tracking-tight">{t("howOrder")}</h1>
+          <p className="text-[16px] text-primary-foreground/75">{t("pickOption")}</p>
         </div>
       </div>
 
@@ -236,7 +232,7 @@ const OrderTypeScreen = () => {
         }`}
       >
         {enabled.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center">Nenhuma opção de pedido ativa.</p>
+          <p className="text-sm text-primary-foreground/75 text-center">Nenhuma opção de pedido ativa.</p>
         ) : (
           <div
             className={`flex w-full mx-auto items-stretch justify-center ${
@@ -267,7 +263,7 @@ const OrderTypeScreen = () => {
 
       <div className={`${STOREFRONT_FOOTER_WRAP_CLASS} pt-4 mt-auto space-y-3`}>
         <InstallAppButton lang={lang} variant="subtle" />
-        <p className="text-center text-[9px] uppercase tracking-[0.22em] text-muted-foreground/30 font-medium pb-1">
+        <p className="text-center text-[9px] uppercase tracking-[0.22em] text-primary-foreground/40 font-medium pb-1">
           {t("poweredBy")}
         </p>
       </div>
