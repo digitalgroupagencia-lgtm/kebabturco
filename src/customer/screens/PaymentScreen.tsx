@@ -807,22 +807,7 @@ const PaymentScreen = () => {
       console.warn("[push] registo cliente falhou:", e);
     }
 
-    // Boas-vindas ao cliente (idempotente, só envia se for primeiro pedido).
-    if (fullCustomerPhone) {
-      void (async () => {
-        try {
-          const { sendImmediateWelcomePushIfNeeded } = await import("@/lib/customerWelcomePush");
-          await sendImmediateWelcomePushIfNeeded(
-            storeId,
-            fullCustomerPhone,
-            customerName.trim() || null,
-            brandingCtx?.settings?.company_name || null,
-          );
-        } catch (e) {
-          console.warn("[push] boas-vindas falharam:", e);
-        }
-      })();
-    }
+    // Boas-vindas: só em usePushNotifications.subscribe (evita duplicar «Bem-vindo»).
 
     // Push imediato "Pedido recebido" ao cliente que acabou de fazer o pedido.
     // Alvo por order_id (subscrição foi atualizada acima com este pedido).

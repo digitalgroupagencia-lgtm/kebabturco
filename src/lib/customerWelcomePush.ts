@@ -53,6 +53,9 @@ export async function sendImmediateWelcomePushIfNeeded(
 
   if (countErr || (count ?? 0) > 1) return;
 
+  // Travar já (evita 2 avisos se subscribe + checkout chamarem ao mesmo tempo).
+  markWelcomeSent(storeId, customerPhone);
+
   const { error } = await supabase.functions.invoke("send-push-notification", {
     body: {
       storeId,
@@ -67,8 +70,11 @@ export async function sendImmediateWelcomePushIfNeeded(
 
   if (error) {
     console.warn("[push] boas-vindas imediatas falharam:", error.message);
+    try {
+      localStorage.removeItem(welcomeSentKey(storeId, customerPhone));
+    } catch {
+      /* ignore */
+    }
     return;
   }
-
-  markWelcomeSent(storeId, customerPhone);
 }

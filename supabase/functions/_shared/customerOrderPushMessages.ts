@@ -11,6 +11,7 @@ export type CustomerOrderPushContext = {
   whatsappPhone: string | null;
   orderType: string | null;
   deliveryCode: string | null;
+  cancelledByName: string | null;
 };
 
 export type CustomerOrderPushEvent =
@@ -36,9 +37,18 @@ function firstName(fullName: string | null | undefined): string {
   return trimmed.split(/\s+/)[0] ?? "";
 }
 
-function namePrefix(name: string, locale: MessageLocale): string {
+function namePrefix(name: string, _locale: MessageLocale): string {
   if (!name) return "";
   return `${name}, `;
+}
+
+/** Título sempre com o nome do cliente quando existir — visível no ecrã bloqueado. */
+function orderPushTitle(name: string, orderNumber: string, locale: MessageLocale): string {
+  const num = `#${orderNumber}`;
+  const orderLabel =
+    locale === "en" ? `Order ${num}` : `Pedido ${num}`;
+  if (!name) return orderLabel;
+  return `${name} · ${orderLabel}`;
 }
 
 const TRACK_CTA: Record<MessageLocale, string> = {
@@ -79,13 +89,7 @@ export function buildCustomerOrderPush(params: {
   const prefix = namePrefix(name, locale);
   const num = `#${orderNumber}`;
 
-  const title = sanitizeNotificationText(
-    locale === "pt"
-      ? `Pedido ${num}`
-      : locale === "es"
-        ? `Pedido ${num}`
-        : `Order ${num}`,
-  );
+  const title = sanitizeNotificationText(orderPushTitle(name, orderNumber, locale));
 
   let body: string;
 
@@ -179,15 +183,22 @@ export function buildCustomerOrderPush(params: {
             : `${prefix}order ${num} served. Enjoy!`,
       );
       break;
-    case "cancelled":
+    case "cancelled": {
+      const by = params.context.cancelledByName?.trim();
+      const store = params.context.storeName?.trim();
+      const actor =
+        by ||
+        store ||
+        (locale === "pt" ? "o restaurante" : locale === "es" ? "el restaurante" : "the restaurant");
       body = sanitizeNotificationText(
         locale === "pt"
-          ? `${prefix}lamentamos, o teu pedido ${num} foi cancelado. Se precisares de ajuda, fala connosco no WhatsApp.`
+          ? `${prefix}o teu pedido ${num} foi cancelado por ${actor}.`
           : locale === "es"
-            ? `${prefix}lo sentimos, tu pedido ${num} fue cancelado. Si necesitas ayuda, escríbenos por WhatsApp.`
-            : `${prefix}sorry, your order ${num} was cancelled. Contact us on WhatsApp if you need help.`,
+            ? `${prefix}tu pedido ${num} ha sido cancelado por ${actor}.`
+            : `${prefix}your order ${num} was cancelled by ${actor}.`,
       );
       break;
+    }
     default:
       body = buildTrackingBody(
         locale,
@@ -211,14 +222,22 @@ export function buildCustomerWelcomePush(params: {
   const locale = normalizeLocale(params.locale);
   const name = firstName(params.customerName);
   const prefix = namePrefix(name, locale);
-  const store = params.storeName?.trim() || (locale === "es" ? "o restaurante" : locale === "pt" ? "o restaurante" : "the restaurant");
+  const store =
+    params.storeName?.trim() ||
+    (locale === "es" ? "el restaurante" : locale === "pt" ? "o restaurante" : "the restaurant");
 
   const title = sanitizeNotificationText(
-    locale === "pt"
-      ? "Bem-vindo à família!"
-      : locale === "es"
-        ? "¡Bienvenido a la familia!"
-        : "Welcome to the family!",
+    name
+      ? locale === "pt"
+        ? `${name}, bem-vindo à família!`
+        : locale === "es"
+          ? `¡${name}, bienvenido a la familia!`
+          : `${name}, welcome to the family!`
+      : locale === "pt"
+        ? "Bem-vindo à família!"
+        : locale === "es"
+          ? "¡Bienvenido a la familia!"
+          : "Welcome to the family!",
   );
 
   const body = sanitizeNotificationText(
