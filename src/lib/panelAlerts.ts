@@ -150,7 +150,10 @@ export function acknowledgePendingOrderAlert(orderId: string) {
   if (!unacknowledgedPending.delete(orderId)) return;
   pendingRegisteredAt.delete(orderId);
   dispatchUnackChanged();
-  if (unacknowledgedPending.size === 0) stopPendingOrderAlertLoop();
+  if (unacknowledgedPending.size === 0) {
+    stopPendingOrderAlertLoop();
+    if (isNativeIOSAppSync()) clearLockScreenMediaControls();
+  }
 }
 
 function currentAlertRepeatMs(): number {
@@ -613,6 +616,7 @@ export function stopPendingOrderAlertLoop() {
     window.clearInterval(repeatTimer);
     repeatTimer = null;
   }
+  if (isNativeIOSAppSync()) clearLockScreenMediaControls();
 }
 
 export function isIOSPanelDevice(): boolean {
