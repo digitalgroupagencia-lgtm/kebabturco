@@ -5,7 +5,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import ScreenHeader from "@/components/ScreenHeader";
 import OrderTypeIcon from "@/components/OrderTypeIcon";
 import UpsellProductCard from "@/customer/customization/UpsellProductCard";
-import { Trash2, ShoppingCart, Pencil, ChevronRight, Sparkles, ArrowRight, UtensilsCrossed } from "lucide-react";
+import ReviewCartItemCard from "@/customer/review/ReviewCartItemCard";
+import { Trash2, ShoppingCart, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
 import { supabase } from "@/integrations/supabase/client";
 import { useResolvedStore } from "@/hooks/useResolvedStore";
@@ -246,7 +247,7 @@ const ReviewScreen = () => {
 
 
         {/* Items */}
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between px-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{t("yourProducts")}</p>
             <div className="flex items-center gap-3">
@@ -264,85 +265,43 @@ const ReviewScreen = () => {
             </div>
           </div>
 
-          {items.map((item) => (
-            <article key={item.id} className="bg-card rounded-3xl border border-border shadow-card overflow-hidden">
-              <div className="flex gap-3 p-3">
-                {item.productImage ? (
-                  <img
-                    src={item.productImage}
-                    alt={tProduct(item.productName)}
-                    className="w-20 h-20 object-cover rounded-2xl shrink-0"
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center shrink-0">
-                    <UtensilsCrossed className="w-8 h-8 text-muted-foreground/60" aria-hidden="true" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-black text-foreground text-[15px] leading-tight line-clamp-2">
-                      {tProduct(item.productName).replace(/^\d{1,3}[A-Za-z]?\s*[.\-–, :)]\s*/, "")}
-                    </h3>
+          {items.map((item, index) => {
+            const cleanName = tProduct(item.productName).replace(
+              /^\d{1,3}[A-Za-z]?\s*[.\-–, :)]\s*/,
+              "",
+            );
+            const configLines = item.configuration
+              ? configurationSummaryLines(item.configuration as CartConfiguration, tProduct, t("without"))
+              : [];
+            const extraBits = [
+              item.sizeName ? `${t("size_label")}: ${tProduct(item.sizeName)}` : null,
+              ...item.extras.map((e) => `+${e.quantity}× ${tProduct(e.name)}`),
+              item.removedIngredients.length > 0
+                ? `${t("without")}: ${item.removedIngredients.map((label) => tProduct(label)).join(", ")}`
+                : null,
+              ...configLines,
+              item.note?.trim() ? item.note.trim() : null,
+            ].filter(Boolean) as string[];
+            const description = extraBits.length > 0 ? extraBits.join(" · ") : null;
 
-                    <span className="text-[16px] font-black text-price tabular-nums shrink-0">
-                      {item.totalPrice.toFixed(2)}€
-                    </span>
-                  </div>
-                  {item.sizeName && (
-                    <p className="text-xs text-muted-foreground font-semibold mt-0.5">
-                      {t("size_label")}: {tProduct(item.sizeName)}
-                    </p>
-                  )}
-                  {item.extras.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {item.extras.map((e) => (
-                        <span
-                          key={e.id}
-                          className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full"
-                        >
-                          +{e.quantity}× {tProduct(e.name)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {item.removedIngredients.length > 0 && (
-                    <p className="text-[11px] text-destructive font-semibold mt-1">
-                      {t("without")}: {item.removedIngredients.map((label) => tProduct(label)).join(", ")}
-                    </p>
-                  )}
-                  {item.configuration && (
-                    <ul className="mt-1.5 space-y-0.5">
-                      {configurationSummaryLines(item.configuration as CartConfiguration, tProduct, t("without")).map((line) => (
-                        <li key={line} className="text-[11px] text-foreground/80 font-medium">
-                          · {line}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {item.note && (
-                    <p className="text-[11px] text-foreground/80 italic mt-1 bg-warning/10 px-2 py-1 rounded-md border-l-2 border-warning">
-                      📝 {item.note}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 px-3 py-2 bg-secondary/30 border-t border-border">
-                <button
-                  onClick={() => handleEdit(item.productId, item.id)}
-                  className="flex items-center gap-1.5 text-primary text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
-                >
-                  <Pencil className="w-3.5 h-3.5" /> {t("edit2")}
-                </button>
-                <button
-                  onClick={() => setRemoveItemId(item.id)}
-                  className="flex items-center gap-1.5 text-destructive text-[13px] font-black px-3 py-1.5 rounded-full hover:bg-destructive/5 active:scale-95 transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> {t("remove2")}
-                </button>
-              </div>
-            </article>
-          ))}
+            return (
+              <ReviewCartItemCard
+                key={item.id}
+                layout={items.length === 1 ? "single" : "multi"}
+                name={cleanName}
+                priceLabel={`${item.totalPrice.toFixed(2)}€`}
+                imageUrl={item.productImage}
+                description={description}
+                editLabel={t("edit2")}
+                removeLabel={t("remove2")}
+                editAriaLabel={`${t("edit2")} ${cleanName}`}
+                removeAriaLabel={`${t("remove2")} ${cleanName}`}
+                onEdit={() => handleEdit(item.productId, item.id)}
+                onRemove={() => setRemoveItemId(item.id)}
+                priorityImage={index === 0}
+              />
+            );
+          })}
 
           {items.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-card rounded-3xl border border-border">

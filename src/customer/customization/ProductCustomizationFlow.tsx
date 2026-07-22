@@ -566,25 +566,11 @@ export default function ProductCustomizationFlow({
               quantity={quantity}
               onQuantityChange={setQuantity}
               showQuantity={true}
+              summaryTitle={t("customizationSummary")}
+              selectionLines={summaryLines}
+              note={note.trim() || null}
+              quantityLabel={t("quantity")}
             />
-            {summaryLines.length > 0 && (
-              <section className="space-y-2 rounded-[22px] border border-border/50 bg-card p-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.2)]">
-                <h3 className="text-sm font-black text-foreground">{t("customizationSummary")}</h3>
-                <ul className="space-y-1 text-sm text-foreground/90">
-                  {summaryLines.map((line) => (
-                    <li key={line} className="leading-snug">
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {note.trim() && (
-              <section className="rounded-[22px] border border-border/50 bg-card p-4 text-sm text-muted-foreground">
-                <span className="font-bold text-foreground">{t("note")}: </span>
-                {note.trim()}
-              </section>
-            )}
           </>
         )}
       </div>
